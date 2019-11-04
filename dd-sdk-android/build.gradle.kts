@@ -1,13 +1,10 @@
-import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.config.*
 
 plugins {
     id("com.android.library")
     kotlin("android")
     kotlin("android.extensions")
+    `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
@@ -42,3 +39,4 @@ kotlinConfig()
 detektConfig()
 ktLintConfig()
 dependencyUpdateConfig()
+publishingConfig("${rootDir.canonicalPath}/repo")
