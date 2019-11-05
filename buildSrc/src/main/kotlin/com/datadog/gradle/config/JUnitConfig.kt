@@ -6,12 +6,14 @@
 
 package com.datadog.gradle.config
 
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
 
-fun Project.dependencyUpdateConfig() {
-
-    taskConfig<DependencyUpdatesTask> {
-        revision = "release"
+@Suppress("UnstableApiUsage")
+fun Project.junitConfig() {
+    tasks.withType(Test::class.java) {
+        useJUnitPlatform {
+            includeEngines("spek", "junit-jupiter", "junit-vintage")
+        }
     }
 }
