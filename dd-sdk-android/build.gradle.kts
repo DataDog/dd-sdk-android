@@ -1,4 +1,11 @@
-import com.datadog.gradle.config.*
+import com.datadog.gradle.Dependencies
+import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.detektConfig
+import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.testImplementation
 
 plugins {
     id("com.android.library")
@@ -8,6 +15,7 @@ plugins {
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
+    id("thirdPartyLicences")
 }
 
 android {
@@ -23,16 +31,19 @@ android {
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }
+    sourceSets.named("test") {
+        java.srcDir("src/test/kotlin")
+    }
 
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
 }
 
-repositories {
-    google()
-    mavenCentral()
-    jcenter()
+dependencies {
+    implementation(Dependencies.Libraries.Kotlin)
+    testImplementation(Dependencies.Libraries.JUnit5)
+    testImplementation(Dependencies.Libraries.TestTools)
 }
 
 kotlinConfig()

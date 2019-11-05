@@ -1,3 +1,5 @@
+import com.datadog.gradle.Dependencies
+
 buildscript {
     repositories {
         google()
@@ -17,6 +19,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
         jcenter()
     }
 }

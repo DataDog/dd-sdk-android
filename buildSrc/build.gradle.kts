@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
+    id("java-gradle-plugin")
     id("com.github.ben-manes.versions") version ("0.27.0")
-    id("org.jlleitschuh.gradle.ktlint") version ("9.1.0")
 }
 
 buildscript {
@@ -28,21 +28,25 @@ repositories {
 dependencies {
 
     // Dependencies used to configure the gradle plugins
-    compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.41")
-    compile("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.41")
-    compile("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.1.1")
-    compile("org.jlleitschuh.gradle:ktlint-gradle:9.1.0")
-    compile("com.android.tools.build:gradle:3.5.1")
-    compile("com.github.ben-manes:gradle-versions-plugin:0.27.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.41")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.41")
+    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.1.1")
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:9.1.0")
+    implementation("com.android.tools.build:gradle:3.5.1")
+    implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
 
-    testCompile("junit:junit:4.12")
+    testImplementation("junit:junit:4.12")
+}
+
+gradlePlugin {
+    plugins {
+        register("thirdPartyLicences") {
+            id = "thirdPartyLicences" // the alias
+            implementationClass = "com.datadog.gradle.plugin.ThirdPartyLicensesPlugin"
+        }
+    }
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8.toString()
-}
-
-tasks.named("check") {
-//    dependsOn("dependencyUpdates")
-//    dependsOn("ktlintCheck")
 }
