@@ -7,7 +7,12 @@
 package com.datadog.android.log
 
 import android.content.Context
+import android.os.Build
+import android.util.Log
 
+/**
+ * A class enabling Datadog logging features.
+ */
 class Logger
 private constructor(
     val clientToken: String,
@@ -21,6 +26,76 @@ private constructor(
 
     // TODO xgouchet 2019/11/5 allow overriding the user agent ?
     private val userAgent: String = System.getProperty("http.agent").orEmpty()
+
+    // region Log
+
+    /**
+     * Sends a VERBOSE log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun v(message: String, throwable: Throwable? = null) {
+        internalLog(Log.VERBOSE, message, throwable)
+    }
+
+    /**
+     * Sends a Debug log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun d(message: String, throwable: Throwable? = null) {
+        internalLog(Log.DEBUG, message, throwable)
+    }
+
+    /**
+     * Sends an Info log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun i(message: String, throwable: Throwable? = null) {
+        internalLog(Log.INFO, message, throwable)
+    }
+
+    /**
+     * Sends a Warning log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun w(message: String, throwable: Throwable? = null) {
+        internalLog(Log.WARN, message, throwable)
+    }
+
+    /**
+     * Sends an Error log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun e(message: String, throwable: Throwable? = null) {
+        internalLog(Log.ERROR, message, throwable)
+    }
+
+    /**
+     * Sends an Assert log message.
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     */
+    @Suppress("FunctionMinLength")
+    @JvmOverloads
+    fun wtf(message: String, throwable: Throwable? = null) {
+        internalLog(Log.ASSERT, message, throwable)
+    }
+
+    // endregion
 
     // region Builder
 
@@ -118,7 +193,41 @@ private constructor(
 
     // endregion
 
+    // region Internal/Log
+
+    private fun internalLog(
+        level: Int,
+        message: String,
+        throwable: Throwable?
+    ) {
+        if (logcatLogsEnabled) {
+            if (Build.MODEL == null) {
+                println("${levelPrefixes[level]}/$serviceName: $message")
+            } else {
+                Log.println(level, serviceName, message)
+            }
+        }
+
+        // TODO build log object with relevant infos :
+        // fields, tags, timestamp, userAgent, networkInfo
+
+        // TODO include information about the throwable
+
+        // TODO persist the log somewhere
+    }
+
+    // endregion
+
     companion object {
         const val DEFAULT_SERVICE_NAME = "android"
+
+        private val levelPrefixes = mapOf(
+            Log.VERBOSE to "V",
+            Log.DEBUG to "D",
+            Log.INFO to "I",
+            Log.WARN to "W",
+            Log.ERROR to "E",
+            Log.ASSERT to "A"
+        )
     }
 }
