@@ -1,10 +1,10 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
+import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.testImplementation
 
