@@ -7,6 +7,8 @@
 package com.datadog.gradle.plugin
 
 import com.datadog.gradle.utils.asSequence
+import java.io.PrintWriter
+import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ComponentIdentifier
@@ -16,8 +18,6 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.tasks.TaskAction
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
-import java.io.PrintWriter
-import javax.xml.parsers.DocumentBuilderFactory
 
 open class UpdateThirdPartyLicensesTask : DefaultTask() {
 
@@ -42,11 +42,10 @@ open class UpdateThirdPartyLicensesTask : DefaultTask() {
             it.println("Component,Origin,License,Copyright")
             printPomDependencies(it, pomFilesList)
         }
-
     }
 
     private fun printPomDependencies(
-        writer : PrintWriter,
+        writer: PrintWriter,
         pomFilesList: List<String>
     ) {
         val knownGroups = mutableListOf<String>()
@@ -108,8 +107,8 @@ open class UpdateThirdPartyLicensesTask : DefaultTask() {
 
     private fun useConfiguration(configuration: Configuration): Boolean {
         return configuration.isCanBeResolved &&
-            (configuration.name.contains("implementation", true)
-                || configuration.name.contains("api", true))
+            (configuration.name.contains("implementation", true) ||
+                configuration.name.contains("api", true))
     }
 
     private fun useDependency(dependency: ResolvedDependencyResult): Boolean {
