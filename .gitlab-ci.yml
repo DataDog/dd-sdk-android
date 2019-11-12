@@ -1,0 +1,48 @@
+variables:
+  CURRENT_CI_IMAGE: "1"
+  CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
+
+stages:
+  - ci-image
+  - analysis
+  - test
+
+ci-image:
+  stage: ci-image
+  when: manual
+  except: [ tags, schedules ]
+  tags: [ "runner:docker", "size:large" ]
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:18.03.1
+  script:
+    - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
+    - docker push $CI_IMAGE_DOCKER
+
+analysis:ktlint:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - ./gradlew :dd-sdk-android:ktlintCheck --configure-on-demand
+
+analysis:lint:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - echo "sdk.dir=$ANDROID_HOME" > local.properties
+    - cat local.properties
+    - ./gradlew :dd-sdk-android:lint
+
+analysis:detekt:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - ./gradlew :dd-sdk-android:detekt --configure-on-demand
+
+test:unit:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  script:
+    - ./gradlew :dd-sdk-android:jacocoTestDebugUnitTestReport
