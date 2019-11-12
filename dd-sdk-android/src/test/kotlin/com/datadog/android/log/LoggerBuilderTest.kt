@@ -122,6 +122,6 @@ internal class LoggerBuilderTest {
             .build()
         // TODO check broadcastReceiver is registered
 
-        assertThat(logger.networkInfoEnabled).isTrue()
+        assertThat(logger.networkInfoEnabled).isEqualTo(networkInfoEnabled)
     }
 }

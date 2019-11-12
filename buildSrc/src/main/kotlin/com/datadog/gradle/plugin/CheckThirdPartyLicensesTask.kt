@@ -1,5 +1,5 @@
 /*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * Unless explicitly stated otherwise all pomFilesList in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-2019 Datadog, Inc.
  */
@@ -7,7 +7,7 @@
 package com.datadog.gradle.plugin
 
 import com.datadog.gradle.utils.asSequence
-import java.io.PrintWriter
+import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
@@ -15,17 +15,18 @@ import org.gradle.api.artifacts.component.ComponentIdentifier
 import org.gradle.api.artifacts.result.ComponentSelectionCause
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
 
-open class UpdateThirdPartyLicensesTask : DefaultTask() {
+open class CheckThirdPartyLicensesTask : DefaultTask() {
 
     var extension: ThirdPartyLicensesExtension = ThirdPartyLicensesExtension()
 
     init {
         group = "datadog"
-        description = "Lists Third Party Licences in a csv file"
+        description = "Check all Third Party Licences appear in the csv file"
     }
 
     // region Task
@@ -37,38 +38,38 @@ open class UpdateThirdPartyLicensesTask : DefaultTask() {
         val dependencyIds = dependencies.map { it.selected.id }
 
         val pomFilesList = resolvePomFiles(dependencyIds)
+        val dependenciesMap = resolveDependencies(pomFilesList)
 
-        extension.csvFile.printWriter().use {
-            it.println("Component,Origin,License,Copyright")
-            printPomDependencies(it, pomFilesList)
-        }
-    }
+        val knownDependencies = parseCsvFile()
 
-    private fun printPomDependencies(
-        writer: PrintWriter,
-        pomFilesList: List<String>
-    ) {
-        val knownGroups = mutableListOf<String>()
-        pomFilesList.forEach { path ->
-            val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(path)
-            val groupIdNode = document.getElementsByTagName(TAG_GROUP_ID).asSequence().firstOrNull()
-            val groupId = groupIdNode?.textContent
+        var error = false
 
-            if (groupId != null && groupId !in knownGroups) {
-                knownGroups.add(groupId)
-                val licencesNode = document.getElementsByTagName(TAG_LICENSES).asSequence().firstOrNull()
-                val licenceNodes = licencesNode?.childNodes?.asSequence()?.filter { it.nodeName == TAG_LICENSE }
-                val licenses = licenceNodes?.asSequence()
-                    ?.mapNotNull {
-                        it.childNodes
-                            .asSequence()
-                            .firstOrNull { child -> child.nodeName == TAG_NAME }
-                    }
-                    ?.joinToString("/") { it.textContent }
-
-                writer.println("__,$groupId,$licenses,__")
+        // Report missing dependencies
+        dependenciesMap.forEach { (dep, v) ->
+            if (!knownDependencies.containsKey(dep)) {
+                error = true
+                System.err.println("✗ Missing dependency in ${extension.csvFile.name} : $dep $v")
             }
         }
+
+        // Report obsolete dependencies
+        knownDependencies.forEach { (dep, v) ->
+            if (!dependenciesMap.containsKey(dep)) {
+                if (extension.checkObsoleteDependencies) {
+                    error = true
+                    System.err.println("✗ Obsolete dependency in ${extension.csvFile.name} : $dep [$v]")
+                } else {
+                    println("• Obsolete dependency in ${extension.csvFile.name} : $dep [$v]")
+                }
+            }
+        }
+
+        check(!error) { "Some dependencies are missing or obsolete in ${extension.csvFile.name}" }
+    }
+
+    @InputFile
+    fun getCsvInputFile(): File {
+        return extension.csvFile
     }
 
     // endregion
@@ -99,6 +100,47 @@ open class UpdateThirdPartyLicensesTask : DefaultTask() {
                     .map { it.file.absolutePath }
             }
             .sorted()
+    }
+
+    private fun resolveDependencies(pomFilesList: List<String>): Map<String, Set<String>> {
+        val result = mutableMapOf<String, MutableSet<String>>()
+        pomFilesList.forEach { path ->
+            val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(path)
+            val groupIdNode = document.getElementsByTagName(TAG_GROUP_ID).asSequence().firstOrNull()
+            val groupId = groupIdNode?.textContent.orEmpty()
+
+            val licencesNode = document.getElementsByTagName(TAG_LICENSES).asSequence().firstOrNull()
+            val licenceNodes = licencesNode?.childNodes?.asSequence()?.filter { it.nodeName == TAG_LICENSE }
+            val licenses = licenceNodes?.asSequence()
+                ?.mapNotNull {
+                    it.childNodes
+                        .asSequence()
+                        .firstOrNull { child -> child.nodeName == TAG_NAME }
+                        ?.textContent
+                }
+                ?.toList().orEmpty()
+
+            if (result.containsKey(groupId)) {
+                result[groupId]?.addAll(licenses)
+            } else {
+                result[groupId] = licenses.toMutableSet()
+            }
+        }
+
+        return result
+    }
+
+    private fun parseCsvFile(): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        extension.csvFile.forEachLine {
+            val (_, origin, license) = it.split(",")
+
+            if (origin != "Origin") {
+                result[origin] = license
+            }
+        }
+
+        return result
     }
 
     // endregion

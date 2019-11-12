@@ -9,20 +9,16 @@ import com.datadog.gradle.Dependencies
 pluginManagement {
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.namespace == Dependencies.PluginNamespaces.Kotlin) {
-                useVersion(Dependencies.Versions.Kotlin)
-            } else if (requested.id.namespace == Dependencies.PluginNamespaces.KotlinAndroid) {
-                useVersion(Dependencies.Versions.Kotlin)
-            } else if (requested.id.namespace == Dependencies.PluginNamespaces.Detetk) {
-                useVersion(Dependencies.Versions.Detekt)
-            } else if (requested.id.namespace == Dependencies.PluginNamespaces.DependencyVersion) {
-                useVersion(Dependencies.Versions.DependencyVersion)
-            } else if (requested.id.namespace == Dependencies.PluginNamespaces.KtLint) {
-                useVersion(Dependencies.Versions.KtLint)
-            } else if (requested.id.namespace == Dependencies.PluginNamespaces.Gradle) {
-                // Do nothing, plugin handled by Gradle
-            } else {
-                println("⋄⋄⋄ namespace:${requested.id.namespace} / name:${requested.id.name}")
+            when (requested.id.namespace) {
+                Dependencies.PluginNamespaces.Kotlin -> useVersion(Dependencies.Versions.Kotlin)
+                Dependencies.PluginNamespaces.KotlinAndroid -> useVersion(Dependencies.Versions.Kotlin)
+                Dependencies.PluginNamespaces.Detetk -> useVersion(Dependencies.Versions.Detekt)
+                Dependencies.PluginNamespaces.DependencyVersion -> useVersion(Dependencies.Versions.DependencyVersion)
+                Dependencies.PluginNamespaces.KtLint -> useVersion(Dependencies.Versions.KtLint)
+                Dependencies.PluginNamespaces.Gradle -> {
+                    // Do nothing, plugin handled by Gradle
+                }
+                else -> println("⋄⋄⋄ namespace:${requested.id.namespace} / name:${requested.id.name}")
             }
         }
     }

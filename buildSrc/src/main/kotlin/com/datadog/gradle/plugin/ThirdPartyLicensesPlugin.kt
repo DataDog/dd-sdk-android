@@ -15,16 +15,21 @@ class ThirdPartyLicensesPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions
             .create(EXT_NAME, ThirdPartyLicensesExtension::class.java)
-        extension.output = File(target.rootDir, ThirdPartyLicensesExtension.DEFAULT_TP_LICENCE_FILENAME)
+        extension.csvFile = File(target.rootDir, ThirdPartyLicensesExtension.DEFAULT_TP_LICENCE_FILENAME)
 
         val updateTask = target.tasks
             .create(TASK_UPDATE_NAME, UpdateThirdPartyLicensesTask::class.java)
         updateTask.extension = extension
+
+        val checkTask = target.tasks
+            .create(TASK_CHECK_NAME, CheckThirdPartyLicensesTask::class.java)
+        checkTask.extension = extension
     }
 
     companion object {
         const val EXT_NAME = "thirdPartyLicences"
 
         const val TASK_UPDATE_NAME = "updateThirdPartyLicences"
+        const val TASK_CHECK_NAME = "checkThirdPartyLicences"
     }
 }
