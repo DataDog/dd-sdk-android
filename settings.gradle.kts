@@ -19,6 +19,8 @@ pluginManagement {
                 useVersion(Dependencies.Versions.DependencyVersion)
             } else if (requested.id.namespace == Dependencies.PluginNamespaces.KtLint) {
                 useVersion(Dependencies.Versions.KtLint)
+            } else if (requested.id.namespace == Dependencies.PluginNamespaces.Gradle) {
+                // Do nothing, plugin handled by Gradle
             } else {
                 println("⋄⋄⋄ namespace:${requested.id.namespace} / name:${requested.id.name}")
             }

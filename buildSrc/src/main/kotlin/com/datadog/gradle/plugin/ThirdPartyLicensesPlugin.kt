@@ -6,9 +6,9 @@
 
 package com.datadog.gradle.plugin
 
+import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import java.io.File
 
 class ThirdPartyLicensesPlugin : Plugin<Project> {
 

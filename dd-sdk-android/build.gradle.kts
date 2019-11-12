@@ -1,10 +1,11 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.detektConfig
+import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.junitConfig
+import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.testImplementation
 
@@ -17,6 +18,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
+    jacoco
 }
 
 android {
@@ -51,5 +53,6 @@ kotlinConfig()
 detektConfig()
 ktLintConfig()
 junitConfig()
+jacocoConfig()
 dependencyUpdateConfig()
 publishingConfig("${rootDir.canonicalPath}/repo")
