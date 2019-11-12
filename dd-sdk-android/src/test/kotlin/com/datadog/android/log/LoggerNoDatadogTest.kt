@@ -7,11 +7,11 @@
 package com.datadog.android.log
 
 import android.content.Context
-import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
-import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -34,13 +34,12 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class LoggerNoLogcatTest {
+internal class LoggerNoDatadogTest {
 
     lateinit var testedLogger: Logger
 
     lateinit var fakeServiceName: String
     lateinit var fakeMessage: String
-    lateinit var fakeUserAgent: String
 
     @Mock
     lateinit var mockContext: Context
@@ -61,16 +60,14 @@ internal class LoggerNoLogcatTest {
 
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
-        fakeUserAgent = forge.anAlphabeticalString()
 
         testedLogger = Logger.Builder(mockContext, "not-a-token")
             .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
-            .setLogcatLogsEnabled(false) // <<<<
-            .setDatadogLogsEnabled(true)
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(false) // <<<<
             .setNetworkInfoEnabled(true)
             .setUserAgentEnabled(true)
-            .overrideUserAgent(fakeUserAgent)
             .overrideLogStrategy(mockLogStrategy)
             .build()
     }
@@ -101,64 +98,54 @@ internal class LoggerNoLogcatTest {
     fun `logger logs message with verbose level`() {
         testedLogger.v(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.VERBOSE)
+        verifyLogSideEffects("V")
     }
 
     @Test
     fun `logger logs message with debug level`() {
         testedLogger.d(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.DEBUG)
+        verifyLogSideEffects("D")
     }
 
     @Test
     fun `logger logs message with info level`() {
         testedLogger.i(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.INFO)
+        verifyLogSideEffects("I")
     }
 
     @Test
     fun `logger logs message with warning level`() {
         testedLogger.w(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.WARN)
+        verifyLogSideEffects("W")
     }
 
     @Test
     fun `logger logs message with error level`() {
         testedLogger.e(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.ERROR)
+        verifyLogSideEffects("E")
     }
 
     @Test
     fun `logger logs message with assert level`() {
         testedLogger.wtf(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.ASSERT)
+        verifyLogSideEffects("A")
     }
 
     // endregion
 
     // region Internal
 
-    private fun verifyLogSideEffects(level: Int) {
-        val timestamp = System.currentTimeMillis()
-
-        assertThat(outStreamContent.toString()).isEmpty()
+    private fun verifyLogSideEffects(logCatPrefix: String) {
+        assertThat(outStreamContent.toString())
+            .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage\n")
         assertThat(errStreamContent.toString()).isEmpty()
 
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-
-            LogAssert.assertThat(lastValue)
-                .hasServiceName(fakeServiceName)
-                .hasLevel(level)
-                .hasMessage(fakeMessage)
-                .hasTimestamp(timestamp)
-                .hasUserAgent(fakeUserAgent)
-        }
+        verify(mockLogWriter, never()).writeLog(any())
     }
 
     // endregion

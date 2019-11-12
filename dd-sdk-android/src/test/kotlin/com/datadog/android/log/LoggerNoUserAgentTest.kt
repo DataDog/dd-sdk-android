@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.log.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -15,6 +16,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -34,7 +36,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class LoggerNoLogcatTest {
+internal class LoggerNoUserAgentTest {
 
     lateinit var testedLogger: Logger
 
@@ -66,10 +68,10 @@ internal class LoggerNoLogcatTest {
         testedLogger = Logger.Builder(mockContext, "not-a-token")
             .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
-            .setLogcatLogsEnabled(false) // <<<<
+            .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)
-            .setUserAgentEnabled(true)
+            .setUserAgentEnabled(false)
             .overrideUserAgent(fakeUserAgent)
             .overrideLogStrategy(mockLogStrategy)
             .build()
@@ -98,66 +100,67 @@ internal class LoggerNoLogcatTest {
     // TODO allow logging with an error !
 
     @Test
-    fun `logger logs message with verbose level`() {
+    fun `logger logs message with verbose level`(@Forgery forge: Forge) {
         testedLogger.v(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.VERBOSE)
+        verifyLogSideEffects(AndroidLog.VERBOSE, "V")
     }
 
     @Test
-    fun `logger logs message with debug level`() {
+    fun `logger logs message with debug level`(@Forgery forge: Forge) {
         testedLogger.d(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.DEBUG)
+        verifyLogSideEffects(AndroidLog.DEBUG, "D")
     }
 
     @Test
-    fun `logger logs message with info level`() {
+    fun `logger logs message with info level`(@Forgery forge: Forge) {
         testedLogger.i(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.INFO)
+        verifyLogSideEffects(AndroidLog.INFO, "I")
     }
 
     @Test
-    fun `logger logs message with warning level`() {
+    fun `logger logs message with warning level`(@Forgery forge: Forge) {
         testedLogger.w(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.WARN)
+        verifyLogSideEffects(AndroidLog.WARN, "W")
     }
 
     @Test
-    fun `logger logs message with error level`() {
+    fun `logger logs message with error level`(@Forgery forge: Forge) {
         testedLogger.e(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.ERROR)
+        verifyLogSideEffects(AndroidLog.ERROR, "E")
     }
 
     @Test
-    fun `logger logs message with assert level`() {
+    fun `logger logs message with assert level`(@Forgery forge: Forge) {
         testedLogger.wtf(fakeMessage)
 
-        verifyLogSideEffects(AndroidLog.ASSERT)
+        verifyLogSideEffects(AndroidLog.ASSERT, "A")
     }
 
     // endregion
 
     // region Internal
 
-    private fun verifyLogSideEffects(level: Int) {
+    private fun verifyLogSideEffects(level: Int, logCatPrefix: String) {
         val timestamp = System.currentTimeMillis()
 
-        assertThat(outStreamContent.toString()).isEmpty()
+        assertThat(outStreamContent.toString())
+            .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage\n")
         assertThat(errStreamContent.toString()).isEmpty()
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
 
-            LogAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLevel(level)
                 .hasMessage(fakeMessage)
                 .hasTimestamp(timestamp)
-                .hasUserAgent(fakeUserAgent)
+                .hasUserAgent(null)
         }
     }
 
