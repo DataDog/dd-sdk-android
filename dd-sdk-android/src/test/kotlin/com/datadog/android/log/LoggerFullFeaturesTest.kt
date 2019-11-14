@@ -7,10 +7,15 @@
 package com.datadog.android.log
 
 import android.content.Context
+import android.util.Log as AndroidLog
+import com.datadog.android.log.LogAssert.Companion.assertThat
+import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.log.internal.LogWriter
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -32,12 +37,18 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class LoggerFullFeaturesTest {
 
-    // TODO create additional test classes where the logger is configured differently
-    // ie : with options disabled
-
     lateinit var testedLogger: Logger
 
-    @Mock lateinit var mockContext: Context
+    lateinit var fakeServiceName: String
+    lateinit var fakeMessage: String
+    lateinit var fakeUserAgent: String
+
+    @Mock
+    lateinit var mockContext: Context
+    @Mock
+    lateinit var mockLogStrategy: LogStrategy
+    @Mock
+    lateinit var mockLogWriter: LogWriter
 
     private lateinit var originalErrStream: PrintStream
     private lateinit var originalOutStream: PrintStream
@@ -45,13 +56,23 @@ internal class LoggerFullFeaturesTest {
     private lateinit var errStreamContent: ByteArrayOutputStream
 
     @BeforeEach
-    fun `set up logger`() {
+    fun `set up logger`(forge: Forge) {
         whenever(mockContext.applicationContext) doReturn mockContext
-        testedLogger = Logger.Builder(mockContext, "not-a-token")
+        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
+
+        fakeServiceName = forge.anAlphabeticalString()
+        fakeMessage = forge.anAlphabeticalString()
+        fakeUserAgent = forge.anAlphabeticalString()
+
+        testedLogger = Logger.Builder(mockContext, forge.anHexadecimalString())
+            .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)
             .setUserAgentEnabled(true)
+            .overrideUserAgent(fakeUserAgent)
+            .overrideLogStrategy(mockLogStrategy)
             .build()
     }
 
@@ -78,80 +99,69 @@ internal class LoggerFullFeaturesTest {
     // TODO allow logging with an error !
 
     @Test
-    fun `logger logs message with verbose level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with verbose level`() {
+        testedLogger.v(fakeMessage)
 
-        testedLogger.v(message)
-
-        assertThat(outStreamContent.toString())
-            .isEqualTo("V/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
-        assertThat(errStreamContent.toString()).isEmpty()
-
-        // TODO assert log object is persisted somewhere
+        verifyLogSideEffects(AndroidLog.VERBOSE, "V")
     }
 
     @Test
-    fun `logger logs message with debug level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with debug level`() {
+        testedLogger.d(fakeMessage)
 
-        testedLogger.d(message)
-
-        assertThat(outStreamContent.toString())
-            .isEqualTo("D/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
-        assertThat(errStreamContent.toString()).isEmpty()
-
-        // TODO assert log object is persisted somewhere
+        verifyLogSideEffects(AndroidLog.DEBUG, "D")
     }
 
     @Test
-    fun `logger logs message with info level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with info level`() {
+        testedLogger.i(fakeMessage)
 
-        testedLogger.i(message)
-
-        assertThat(outStreamContent.toString())
-            .isEqualTo("I/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
-        assertThat(errStreamContent.toString()).isEmpty()
-
-        // TODO assert log object is persisted somewhere
+        verifyLogSideEffects(AndroidLog.INFO, "I")
     }
 
     @Test
-    fun `logger logs message with warning level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with warning level`() {
+        testedLogger.w(fakeMessage)
 
-        testedLogger.w(message)
-
-        assertThat(outStreamContent.toString())
-            .isEqualTo("W/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
-        assertThat(errStreamContent.toString()).isEmpty()
-
-        // TODO assert log object is persisted somewhere
+        verifyLogSideEffects(AndroidLog.WARN, "W")
     }
 
     @Test
-    fun `logger logs message with error level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with error level`() {
+        testedLogger.e(fakeMessage)
 
-        testedLogger.e(message)
-
-        assertThat(outStreamContent.toString())
-            .isEqualTo("E/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
-        assertThat(errStreamContent.toString()).isEmpty()
-
-        // TODO assert log object is persisted somewhere
+        verifyLogSideEffects(AndroidLog.ERROR, "E")
     }
 
     @Test
-    fun `logger logs message with assert level`(@Forgery forge: Forge) {
-        val message = forge.anAlphabeticalString()
+    fun `logger logs message with assert level`() {
+        testedLogger.wtf(fakeMessage)
 
-        testedLogger.wtf(message)
+        verifyLogSideEffects(AndroidLog.ASSERT, "A")
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun verifyLogSideEffects(level: Int, logCatPrefix: String) {
+        val timestamp = System.currentTimeMillis()
 
         assertThat(outStreamContent.toString())
-            .isEqualTo("A/${Logger.DEFAULT_SERVICE_NAME}: $message\n")
+            .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage\n")
+        assertThat(errStreamContent.toString()).isEmpty()
 
-        // TODO assert log object is persisted somewhere
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+
+            assertThat(lastValue)
+                .hasServiceName(fakeServiceName)
+                .hasLevel(level)
+                .hasMessage(fakeMessage)
+                .hasTimestamp(timestamp)
+                .hasUserAgent(fakeUserAgent)
+            // TODO test network info
+        }
     }
 
     // endregion

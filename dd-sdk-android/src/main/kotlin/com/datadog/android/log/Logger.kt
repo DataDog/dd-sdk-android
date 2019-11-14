@@ -8,7 +8,9 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
+import android.util.Log as AndroidLog
+import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.log.internal.file.LogFileStrategy
 
 /**
  * A class enabling Datadog logging features.
@@ -18,14 +20,15 @@ private constructor(
     val clientToken: String,
     val serviceName: String,
     val timestampsEnabled: Boolean,
-    val userAgentEnabled: Boolean,
     val datadogLogsEnabled: Boolean,
     val logcatLogsEnabled: Boolean,
-    val networkInfoEnabled: Boolean
+    val networkInfoEnabled: Boolean,
+    val userAgentEnabled: Boolean,
+    private val userAgent: String,
+    strategy: LogStrategy
 ) {
 
-    // TODO xgouchet 2019/11/5 allow overriding the user agent ?
-    private val userAgent: String = System.getProperty("http.agent").orEmpty()
+    private val logWriter = strategy.getLogWriter()
 
     // region Log
 
@@ -37,7 +40,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun v(message: String, throwable: Throwable? = null) {
-        internalLog(Log.VERBOSE, message, throwable)
+        internalLog(AndroidLog.VERBOSE, message, throwable)
     }
 
     /**
@@ -48,7 +51,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun d(message: String, throwable: Throwable? = null) {
-        internalLog(Log.DEBUG, message, throwable)
+        internalLog(AndroidLog.DEBUG, message, throwable)
     }
 
     /**
@@ -59,7 +62,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun i(message: String, throwable: Throwable? = null) {
-        internalLog(Log.INFO, message, throwable)
+        internalLog(AndroidLog.INFO, message, throwable)
     }
 
     /**
@@ -70,7 +73,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun w(message: String, throwable: Throwable? = null) {
-        internalLog(Log.WARN, message, throwable)
+        internalLog(AndroidLog.WARN, message, throwable)
     }
 
     /**
@@ -81,7 +84,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun e(message: String, throwable: Throwable? = null) {
-        internalLog(Log.ERROR, message, throwable)
+        internalLog(AndroidLog.ERROR, message, throwable)
     }
 
     /**
@@ -92,7 +95,7 @@ private constructor(
     @Suppress("FunctionMinLength")
     @JvmOverloads
     fun wtf(message: String, throwable: Throwable? = null) {
-        internalLog(Log.ASSERT, message, throwable)
+        internalLog(AndroidLog.ASSERT, message, throwable)
     }
 
     // endregion
@@ -117,6 +120,9 @@ private constructor(
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
 
+        private var logStrategy: LogStrategy? = null
+        private var userAgent: String ? = null
+
         /**
          * Builds a [Logger] based on the current state of this Builder.
          */
@@ -125,10 +131,13 @@ private constructor(
             // TODO register broadcast receiver
 
             return Logger(
+                strategy = logStrategy ?: LogFileStrategy(withContext),
                 clientToken = clientToken,
                 serviceName = serviceName,
                 timestampsEnabled = timestampsEnabled,
                 userAgentEnabled = userAgentEnabled,
+                // TODO xgouchet 2019/11/5 allow overriding the user agent ?
+                userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
                 datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
                 networkInfoEnabled = networkInfoEnabled
@@ -189,6 +198,16 @@ private constructor(
             networkInfoEnabled = enabled
             return this
         }
+
+        internal fun overrideLogStrategy(strategy: LogStrategy): Builder {
+            logStrategy = strategy
+            return this
+        }
+
+        internal fun overrideUserAgent(userAgent: String): Builder {
+            this.userAgent = userAgent
+            return this
+        }
     }
 
     // endregion
@@ -204,8 +223,13 @@ private constructor(
             if (Build.MODEL == null) {
                 println("${levelPrefixes[level]}/$serviceName: $message")
             } else {
-                Log.println(level, serviceName, message)
+                AndroidLog.println(level, serviceName, message)
             }
+        }
+
+        if (datadogLogsEnabled) {
+            val log = createLog(level, message, throwable)
+            logWriter.writeLog(log)
         }
 
         // TODO build log object with relevant infos :
@@ -216,18 +240,30 @@ private constructor(
         // TODO persist the log somewhere
     }
 
+    private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
+        // TODO timestamp based on phone local time = error prone
+        return Log(
+            serviceName = serviceName,
+            level = level,
+            message = message,
+            throwable = throwable,
+            timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
+            userAgent = if (userAgentEnabled) userAgent else null
+        )
+    }
+
     // endregion
 
     companion object {
         const val DEFAULT_SERVICE_NAME = "android"
 
         private val levelPrefixes = mapOf(
-            Log.VERBOSE to "V",
-            Log.DEBUG to "D",
-            Log.INFO to "I",
-            Log.WARN to "W",
-            Log.ERROR to "E",
-            Log.ASSERT to "A"
+            AndroidLog.VERBOSE to "V",
+            AndroidLog.DEBUG to "D",
+            AndroidLog.INFO to "I",
+            AndroidLog.WARN to "W",
+            AndroidLog.ERROR to "E",
+            AndroidLog.ASSERT to "A"
         )
     }
 }
