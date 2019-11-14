@@ -1,8 +1,9 @@
 Component,Origin,License,Copyright
+import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
+import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import (test),com.github.xgouchet.Elmyr,MIT,Copyright 2017-2019 Xavier F. Gouchet
 import (test),com.nhaarman.mockitokotlin2,MIT,"Copyright (c) 2018 Niek Haarman, Copyright (c) 2007 Mockito contributors"
 import (test),net.wuerl.kotlin,Apache-2.0,Copyright 2016 Andreas Würl
-import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import (test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author or authors
 import (test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
 import (test),org.junit.vintage,EPL-2.0,Copyright 2015-2019 the original author or authors

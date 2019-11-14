@@ -46,6 +46,8 @@ android {
 
 dependencies {
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.Gson)
+
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
 }

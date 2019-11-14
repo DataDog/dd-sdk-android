@@ -12,6 +12,7 @@ object Dependencies {
         // Commons
         const val Kotlin = "1.3.41"
         const val AndroidToolsPlugin = "3.5.1"
+        const val Gson = "2.8.6"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
@@ -34,6 +35,8 @@ object Dependencies {
     object Libraries {
 
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
+
+        const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
 
         @JvmField
         val JUnit5 = arrayOf(

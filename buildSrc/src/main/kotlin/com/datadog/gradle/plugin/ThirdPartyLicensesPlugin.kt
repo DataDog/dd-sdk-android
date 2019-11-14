@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin
 
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -24,6 +25,8 @@ class ThirdPartyLicensesPlugin : Plugin<Project> {
         val checkTask = target.tasks
             .create(TASK_CHECK_NAME, CheckThirdPartyLicensesTask::class.java)
         checkTask.extension = extension
+
+        target.tasks.named("check").dependsOn(TASK_CHECK_NAME)
     }
 
     companion object {
