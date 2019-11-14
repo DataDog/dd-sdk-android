@@ -6,20 +6,56 @@
 
 package com.datadog.android.log.internal.file
 
+import android.annotation.TargetApi
+import android.os.Build
+import android.util.Base64 as AndroidBase64
 import com.datadog.android.log.internal.LogReader
+import com.datadog.android.log.internal.utils.split
 import java.io.File
 import java.io.FileFilter
+import java.util.Base64 as JavaBase64
 
 internal class LogFileReader(private val rootDirectory: File) : LogReader {
+
+    private val fileFilter: FileFilter = LogFileFilter()
 
     // region LogReader
 
     override fun readNextLog(): String? {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+        return readNextBatch().firstOrNull()
     }
 
     override fun readNextBatch(): List<String> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+        val files = rootDirectory.listFiles(fileFilter).sorted()
+        val nextLogFile = files.firstOrNull()
+        return if (nextLogFile == null) {
+            emptyList()
+        } else {
+            val inputBytes = nextLogFile.readBytes()
+            val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
+
+            logs.map { deobfuscate(it) }
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun deobfuscate(input: ByteArray): String {
+        val output = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O || Build.MODEL == null) {
+            deobfuscateApi26(input)
+        } else {
+            AndroidBase64.decode(input, AndroidBase64.DEFAULT)
+        }
+
+        return String(output, Charsets.UTF_8)
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private fun deobfuscateApi26(input: ByteArray): ByteArray {
+        val decoder = JavaBase64.getDecoder()
+        return decoder.decode(input)
     }
 
     // endregion

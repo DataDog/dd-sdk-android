@@ -15,7 +15,7 @@ import java.io.File
 internal class LogFileStrategy(private val rootDir: File) : LogStrategy {
 
     constructor(context: Context) :
-        this(File(context.filesDir, LogFileWriter.LOGS_FOLDER_NAME))
+        this(File(context.filesDir, LOGS_FOLDER_NAME))
 
     // region LogPersistingStrategy
 
@@ -28,4 +28,10 @@ internal class LogFileStrategy(private val rootDir: File) : LogStrategy {
     }
 
     // endregion
+
+    companion object {
+
+        internal const val LOGS_FOLDER_NAME = "dd-logs"
+        internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
+    }
 }

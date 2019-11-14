@@ -114,7 +114,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can enable network info`(@Forgery forge: Forge, @Mock context: Context) {
+    fun `builder can enable network info`(@Forgery forge: Forge) {
         val networkInfoEnabled = forge.aBool()
 
         val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
