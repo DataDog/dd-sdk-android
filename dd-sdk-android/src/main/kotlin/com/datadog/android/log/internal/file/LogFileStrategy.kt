@@ -12,29 +12,35 @@ import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import java.io.File
 
-internal class LogFileStrategy(private val rootDir: File) : LogStrategy {
+internal class LogFileStrategy(
+    private val rootDir: File,
+    private val recentDelayMs: Long
+) : LogStrategy {
 
-    constructor(context: Context) :
-        this(File(context.filesDir, LOGS_FOLDER_NAME))
+    constructor(
+        context: Context,
+        recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS
+    ) :
+        this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs)
 
     // region LogPersistingStrategy
 
     override fun getLogWriter(): LogWriter {
-        return LogFileWriter(rootDir)
+        return LogFileWriter(rootDir, recentDelayMs)
     }
 
     override fun getLogReader(): LogReader {
-        return LogFileReader(rootDir)
+        return LogFileReader(rootDir, recentDelayMs)
     }
 
     // endregion
 
     companion object {
 
-        internal fun isFileRecent(file: File): Boolean {
+        internal fun isFileRecent(file: File, recentDelayMs: Long): Boolean {
             val now = System.currentTimeMillis()
             val fileTimestamp = file.name.toLong()
-            return fileTimestamp >= (now - MAX_DELAY_BETWEEN_LOGS_MS)
+            return fileTimestamp >= (now - recentDelayMs)
         }
 
         internal const val LOGS_FOLDER_NAME = "dd-logs"

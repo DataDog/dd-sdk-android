@@ -16,24 +16,23 @@ import java.io.File
 import java.io.FileFilter
 import java.util.Base64 as JavaBase64
 
-internal class LogFileReader(private val rootDirectory: File) : LogReader {
+internal class LogFileReader(
+    private val rootDirectory: File,
+    private val recentDelayMs: Long
+) : LogReader {
 
     private val fileFilter: FileFilter = LogFileFilter()
     private val sentBatches: MutableSet<String> = mutableSetOf()
 
     // region LogReader
 
-    override fun readNextLog(): String? {
-        return readNextBatch()?.second?.firstOrNull()
-    }
-
     override fun readNextBatch(): Pair<String, List<String>>? {
         val files = rootDirectory.listFiles(fileFilter).sorted()
-        val nextLogFile = files.firstOrNull() { it.name !in sentBatches }
+        val nextLogFile = files.firstOrNull { it.name !in sentBatches }
         return if (nextLogFile == null) {
             null
         } else {
-            if (LogFileStrategy.isFileRecent(nextLogFile)) {
+            if (LogFileStrategy.isFileRecent(nextLogFile, recentDelayMs)) {
                 null
             } else {
                 val inputBytes = nextLogFile.readBytes()
@@ -50,9 +49,13 @@ internal class LogFileReader(private val rootDirectory: File) : LogReader {
         val fileToDelete = File(rootDirectory, batchId)
 
         if (fileToDelete.exists()) {
-            if (!fileToDelete.delete()) {
+            if (fileToDelete.delete()) {
+                Log.d("datadog", "File ${fileToDelete.path} deleted")
+            } else {
                 Log.e("datadog", "Error deleting file ${fileToDelete.path}")
             }
+        } else {
+            Log.w("datadog", "Sent batch with  unknown id $batchId")
         }
     }
 

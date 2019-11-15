@@ -18,7 +18,8 @@ import com.datadog.android.log.internal.net.LogUploader
  */
 object Datadog {
 
-    private var initialized: Boolean = false
+    internal var initialized: Boolean = false
+        private set
 
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
@@ -33,9 +34,7 @@ object Datadog {
      * @param clientToken your API key of type Client Token
      */
     fun initialize(context: Context, clientToken: String) {
-        check(!initialized) {
-            "Datadog has already been initialized."
-        }
+        check(!initialized) { "Datadog has already been initialized." }
 
         // this.contextRef = WeakReference(context.applicationContext)
         this.clientToken = clientToken

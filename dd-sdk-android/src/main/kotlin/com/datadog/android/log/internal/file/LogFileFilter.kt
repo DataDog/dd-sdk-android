@@ -12,7 +12,9 @@ import java.io.FileFilter
 internal class LogFileFilter : FileFilter {
 
     override fun accept(file: File?): Boolean {
-        return file != null && file.isFile && file.name.matches(logFileNameRegex)
+        return file != null &&
+            file.isFile &&
+            file.name.matches(logFileNameRegex)
     }
 
     companion object {

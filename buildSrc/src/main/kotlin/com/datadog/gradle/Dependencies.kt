@@ -24,7 +24,7 @@ object Dependencies {
 
         // Tests Tools
         const val AssertJ = "0.2.1"
-        const val Elmyr = "1.0.0-alpha2"
+        const val Elmyr = "1.0.0-alpha3"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.1.0"
 

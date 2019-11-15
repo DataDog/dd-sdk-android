@@ -6,13 +6,16 @@
 
 package com.datadog.android.log.internal
 
-import android.util.Log as AndroidLog
+import com.datadog.android.log.Configurator
 import com.datadog.android.log.internal.file.LogFileWriter
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -25,21 +28,20 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
+@ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal abstract class LogStrategyTest {
 
     lateinit var testedLogWriter: LogWriter
     lateinit var testedLogReader: LogReader
 
-    lateinit var fakeLog: Log
     lateinit var fakeLogs: List<Log>
 
     // region Setup
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeLog = createFakeLog(forge)
-        fakeLogs = forge.aList { createFakeLog(this) }
+    fun `set up`(forge: Forge, @Forgery fakeLog: Log) {
+        fakeLogs = forge.aList(size = 512) { fakeLog.copy(message = anAlphabeticalString()) }
 
         val persistingStrategy = getStrategy()
 
@@ -53,21 +55,22 @@ internal abstract class LogStrategyTest {
 
     // endregion
 
-    // region Tests
+    // region Writer Tests
 
     @Test
-    fun `writes full log as json`() {
+    fun `writes full log as json`(@Forgery fakeLog: Log) {
 
         testedLogWriter.writeLog(fakeLog)
         waitForNextBatch()
-        val log = testedLogReader.readNextLog()!!
+        val batch = testedLogReader.readNextBatch()!!
+        val log = batch.second.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, fakeLog)
     }
 
     @Test
-    fun `writes minimal log as json`() {
+    fun `writes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
             timestamp = null,
             userAgent = null,
@@ -76,7 +79,8 @@ internal abstract class LogStrategyTest {
 
         testedLogWriter.writeLog(minimalLog)
         waitForNextBatch()
-        val log = testedLogReader.readNextLog()!!
+        val batch = testedLogReader.readNextBatch()!!
+        val log = batch.second.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
 
@@ -102,6 +106,62 @@ internal abstract class LogStrategyTest {
         }
     }
 
+    @Test
+    fun `writes in new batch if delay passed`(@Forgery fakeLog: Log, @Forgery nextLog: Log) {
+        testedLogWriter.writeLog(fakeLog)
+        waitForNextBatch()
+
+        testedLogWriter.writeLog(nextLog)
+        val batch = testedLogReader.readNextBatch()!!
+        val log = batch.second.first()
+
+        val jsonObject = JsonParser.parseString(log).asJsonObject
+        assertLogMatches(jsonObject, fakeLog)
+    }
+
+    // endregion
+
+    // region Reader Tests
+
+    @Test
+    fun `read returns null when first batch is already sent`(@Forgery fakeLog: Log) {
+        testedLogWriter.writeLog(fakeLog)
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()
+        checkNotNull(batch)
+
+        testedLogReader.onBatchSent(batch.first)
+        val batch2 = testedLogReader.readNextBatch()
+
+        assertThat(batch2)
+            .isNull()
+    }
+
+    @Test
+    fun `read returns null when first batch is too recent`(@Forgery fakeLog: Log) {
+        testedLogWriter.writeLog(fakeLog)
+        val batch = testedLogReader.readNextBatch()
+
+        assertThat(batch)
+            .isNull()
+    }
+
+    @Test
+    fun `read returns null when nothing was written`() {
+
+        val batch = testedLogReader.readNextBatch()
+
+        assertThat(batch)
+            .isNull()
+    }
+
+    @Test
+    fun `fails gracefully if sent batch with unknown id`(forge: Forge) {
+        testedLogReader.onBatchSent(forge.aNumericalString())
+
+        // Nothing to do, just check that no exception is thrown
+    }
+
     // endregion
 
     // region Internal
@@ -115,25 +175,11 @@ internal abstract class LogStrategyTest {
             .hasStringField(LogFileWriter.TAG_DATE, nullable = false)
     }
 
-    private fun createFakeLog(forge: Forge): Log {
-        return Log(
-            serviceName = forge.anAlphabeticalString(),
-            message = forge.anAlphabeticalString(),
-            userAgent = forge.anAlphabeticalString(),
-            level = forge.anElementFrom(
-                AndroidLog.VERBOSE, AndroidLog.DEBUG, AndroidLog.INFO, AndroidLog.WARN,
-                AndroidLog.ERROR, AndroidLog.ASSERT
-            ),
-            timestamp = forge.aLong(),
-            throwable = null
-        )
-    }
-
     // endregion
 
     companion object {
         private val levels = arrayOf(
-            "0", "1", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "ERROR"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "ERROR"
         )
     }
 }

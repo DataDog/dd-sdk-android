@@ -24,15 +24,6 @@ analysis:ktlint:
   script:
     - ./gradlew :dd-sdk-android:ktlintCheck --configure-on-demand
 
-analysis:lint:
-  tags: [ "runner:docker", "size:large" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  script:
-    - echo "sdk.dir=$ANDROID_HOME" > local.properties
-    - cat local.properties
-    - ./gradlew :dd-sdk-android:lint
-
 analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER

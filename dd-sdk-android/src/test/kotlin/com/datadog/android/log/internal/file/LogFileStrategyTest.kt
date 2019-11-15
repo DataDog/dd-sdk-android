@@ -7,14 +7,17 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
+import com.datadog.android.log.Configurator
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 
+@ForgeConfiguration(Configurator::class)
 internal class LogFileStrategyTest :
     LogStrategyTest() {
 
@@ -23,12 +26,16 @@ internal class LogFileStrategyTest :
     @TempDir
     lateinit var tempDir: File
 
+    // region LogStrategyTest
+
     override fun getStrategy(): LogStrategy {
         whenever(mockContext.filesDir) doReturn tempDir
-        return LogFileStrategy(mockContext)
+        return LogFileStrategy(mockContext, 250)
     }
 
     override fun waitForNextBatch() {
-        Thread.sleep(LogFileStrategy.MAX_DELAY_BETWEEN_LOGS_MS)
+        Thread.sleep(300)
     }
+
+    // endregion
 }

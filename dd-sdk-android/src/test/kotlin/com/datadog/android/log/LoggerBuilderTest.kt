@@ -7,19 +7,18 @@
 package com.datadog.android.log
 
 import android.content.Context
-import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.Datadog
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -31,23 +30,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class LoggerBuilderTest {
 
-    @Mock
-    lateinit var mockContext: Context
-
-    @Mock
-    lateinit var mockLogStrategy: LogStrategy
-    @Mock
-    lateinit var mockLogWriter: LogWriter
-
-    @BeforeEach
-    fun `set up mock`() {
-        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
-    }
-
     @Test
     fun `builder without custom settings uses defaults`() {
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .build()
 
         assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
@@ -63,7 +48,6 @@ internal class LoggerBuilderTest {
         val serviceName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setServiceName(serviceName)
             .build()
 
@@ -75,7 +59,6 @@ internal class LoggerBuilderTest {
         val timestampsEnabled = forge.aBool()
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setTimestampsEnabled(timestampsEnabled)
             .build()
 
@@ -85,13 +68,15 @@ internal class LoggerBuilderTest {
     @Test
     fun `builder can enable or disable user agent`(@Forgery forge: Forge) {
         val userAgentEnabled = forge.aBool()
+        val systemUserAgent = forge.anAlphabeticalString()
+        System.setProperty("http.agent", systemUserAgent)
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setUserAgentEnabled(userAgentEnabled)
             .build()
 
         assertThat(logger.userAgentEnabled).isEqualTo(userAgentEnabled)
+        assertThat(logger.userAgent).isEqualTo(systemUserAgent)
     }
 
     @Test
@@ -99,7 +84,6 @@ internal class LoggerBuilderTest {
         val datadogLogsEnabled = forge.aBool()
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
@@ -111,7 +95,6 @@ internal class LoggerBuilderTest {
         val logcatLogsEnabled = forge.aBool()
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
@@ -123,11 +106,20 @@ internal class LoggerBuilderTest {
         val networkInfoEnabled = forge.aBool()
 
         val logger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
         // TODO check broadcastReceiver is registered
 
         assertThat(logger.networkInfoEnabled).isEqualTo(networkInfoEnabled)
+    }
+
+    companion object {
+        @BeforeAll
+        @JvmStatic
+        fun `set up Datadog`(forge: Forge) {
+            val mockContext: Context = mock()
+            whenever(mockContext.applicationContext) doReturn mockContext
+            Datadog.initialize(mockContext, forge.anHexadecimalString())
+        }
     }
 }

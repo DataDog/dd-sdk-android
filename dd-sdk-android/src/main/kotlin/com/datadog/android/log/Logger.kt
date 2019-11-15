@@ -28,7 +28,7 @@ private constructor(
     val logcatLogsEnabled: Boolean,
     val networkInfoEnabled: Boolean,
     val userAgentEnabled: Boolean,
-    private val userAgent: String,
+    val userAgent: String,
     strategy: LogStrategy
 ) {
 
