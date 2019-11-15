@@ -6,18 +6,22 @@
 
 package com.datadog.android.log
 
-import android.content.Context
 import android.os.Build
 import android.util.Log as AndroidLog
+import com.datadog.android.Datadog
+import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.file.LogFileStrategy
 
 /**
  * A class enabling Datadog logging features.
+ *
+ * It allows you to create a specific context (automatic information, custom fields, tags) that will be embedded in all
+ * logs sent through this logger.
+ *
+ * You can have multiple loggers configured in your application, each with their own settings.
  */
 class Logger
 private constructor(
-    val clientToken: String,
     val serviceName: String,
     val timestampsEnabled: Boolean,
     val datadogLogsEnabled: Boolean,
@@ -104,15 +108,9 @@ private constructor(
 
     /**
      * A Builder class for a [Logger].
-     * @param context the application context
-     * @param clientToken your API key of type Client Token
      */
-    class Builder(
-        context: Context,
-        private val clientToken: String
-    ) {
+    class Builder {
 
-        private val withContext: Context = context.applicationContext
         private var serviceName: String = DEFAULT_SERVICE_NAME
         private var timestampsEnabled: Boolean = true
         private var userAgentEnabled: Boolean = true
@@ -131,8 +129,7 @@ private constructor(
             // TODO register broadcast receiver
 
             return Logger(
-                strategy = logStrategy ?: LogFileStrategy(withContext),
-                clientToken = clientToken,
+                strategy = logStrategy ?: Datadog.getLogStrategy(),
                 serviceName = serviceName,
                 timestampsEnabled = timestampsEnabled,
                 userAgentEnabled = userAgentEnabled,

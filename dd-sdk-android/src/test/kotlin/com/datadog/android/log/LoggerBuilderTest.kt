@@ -7,6 +7,8 @@
 package com.datadog.android.log
 
 import android.content.Context
+import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -32,23 +34,21 @@ internal class LoggerBuilderTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockLogStrategy: LogStrategy
+    @Mock
+    lateinit var mockLogWriter: LogWriter
+
     @BeforeEach
     fun `set up mock`() {
-        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
     }
 
     @Test
-    fun `builder requires a ClientToken`(@Forgery forge: Forge) {
-        val token = forge.anHexadecimalString()
-
-        val logger = Logger.Builder(mockContext, token).build()
-
-        assertThat(logger.clientToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `builder without custom settings uses defaults`(@Forgery forge: Forge) {
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString()).build()
+    fun `builder without custom settings uses defaults`() {
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
+            .build()
 
         assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
         assertThat(logger.timestampsEnabled).isTrue()
@@ -62,7 +62,8 @@ internal class LoggerBuilderTest {
     fun `builder can set a ServiceName`(@Forgery forge: Forge) {
         val serviceName = forge.anAlphabeticalString()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setServiceName(serviceName)
             .build()
 
@@ -73,7 +74,8 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable timestamps`(@Forgery forge: Forge) {
         val timestampsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setTimestampsEnabled(timestampsEnabled)
             .build()
 
@@ -84,7 +86,8 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable user agent`(@Forgery forge: Forge) {
         val userAgentEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setUserAgentEnabled(userAgentEnabled)
             .build()
 
@@ -95,7 +98,8 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable datadog logs`(@Forgery forge: Forge) {
         val datadogLogsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
@@ -106,7 +110,8 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable logcat logs`(@Forgery forge: Forge) {
         val logcatLogsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
@@ -117,7 +122,8 @@ internal class LoggerBuilderTest {
     fun `builder can enable network info`(@Forgery forge: Forge) {
         val networkInfoEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
+            .overrideLogStrategy(mockLogStrategy)
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
         // TODO check broadcastReceiver is registered

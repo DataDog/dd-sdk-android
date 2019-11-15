@@ -61,7 +61,7 @@ internal class LoggerNoDatadogTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
 
-        testedLogger = Logger.Builder(mockContext, "not-a-token")
+        testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(true)

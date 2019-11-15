@@ -8,6 +8,8 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.LogAssert
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -63,7 +65,7 @@ internal class LoggerNoLogcatTest {
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
 
-        testedLogger = Logger.Builder(mockContext, "not-a-token")
+        testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(false) // <<<<
