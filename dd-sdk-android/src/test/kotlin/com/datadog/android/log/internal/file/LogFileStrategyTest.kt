@@ -27,4 +27,8 @@ internal class LogFileStrategyTest :
         whenever(mockContext.filesDir) doReturn tempDir
         return LogFileStrategy(mockContext)
     }
+
+    override fun waitForNextBatch() {
+        Thread.sleep(LogFileStrategy.MAX_DELAY_BETWEEN_LOGS_MS)
+    }
 }

@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal
 
 import android.util.Log as AndroidLog
-import com.datadog.android.log.Log
 import com.datadog.android.log.internal.file.LogFileWriter
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
@@ -50,6 +49,8 @@ internal abstract class LogStrategyTest {
 
     abstract fun getStrategy(): LogStrategy
 
+    abstract fun waitForNextBatch()
+
     // endregion
 
     // region Tests
@@ -58,7 +59,8 @@ internal abstract class LogStrategyTest {
     fun `writes full log as json`() {
 
         testedLogWriter.writeLog(fakeLog)
-        val log = testedLogReader.readNextLog()
+        waitForNextBatch()
+        val log = testedLogReader.readNextLog()!!
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, fakeLog)
@@ -73,7 +75,8 @@ internal abstract class LogStrategyTest {
         )
 
         testedLogWriter.writeLog(minimalLog)
-        val log = testedLogReader.readNextLog()
+        waitForNextBatch()
+        val log = testedLogReader.readNextLog()!!
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
 
@@ -90,10 +93,10 @@ internal abstract class LogStrategyTest {
         fakeLogs.forEach {
             testedLogWriter.writeLog(it)
         }
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
 
-        val batch = testedLogReader.readNextBatch()
-
-        batch.forEachIndexed { i, log ->
+        batch.second.forEachIndexed { i, log ->
             val jsonObject = JsonParser.parseString(log).asJsonObject
             assertLogMatches(jsonObject, fakeLogs[i])
         }
@@ -127,6 +130,7 @@ internal abstract class LogStrategyTest {
     }
 
     // endregion
+
     companion object {
         private val levels = arrayOf(
             "0", "1", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "ERROR"

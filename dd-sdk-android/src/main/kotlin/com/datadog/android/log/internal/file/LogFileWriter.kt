@@ -10,7 +10,7 @@ import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
-import com.datadog.android.log.Log
+import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
 import com.google.gson.JsonObject
 import java.io.File
@@ -55,14 +55,22 @@ internal class LogFileWriter(private val rootDirectory: File) : LogWriter {
 
     private fun getWritableFile(logSize: Int): File {
         val maxLogLength = MAX_BATCH_SIZE - logSize
+        val now = System.currentTimeMillis()
 
         val files = rootDirectory.listFiles(fileFilter).sorted()
         val lastFile = files.lastOrNull()
 
-        return if (lastFile != null && lastFile.length() < maxLogLength) {
-            lastFile
+        return if (lastFile != null) {
+            val fileHasRoomForMore = lastFile.length() < maxLogLength
+            val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile)
+
+            if (fileHasRoomForMore && fileIsRecentEnough) {
+                lastFile
+            } else {
+                File(rootDirectory, now.toString())
+            }
         } else {
-            File(rootDirectory, System.currentTimeMillis().toString())
+            File(rootDirectory, now.toString())
         }
     }
 

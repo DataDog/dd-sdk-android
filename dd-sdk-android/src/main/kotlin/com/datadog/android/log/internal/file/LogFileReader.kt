@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.file
 import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
+import android.util.Log
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.utils.split
 import java.io.File
@@ -18,23 +19,40 @@ import java.util.Base64 as JavaBase64
 internal class LogFileReader(private val rootDirectory: File) : LogReader {
 
     private val fileFilter: FileFilter = LogFileFilter()
+    private val sentBatches: MutableSet<String> = mutableSetOf()
 
     // region LogReader
 
     override fun readNextLog(): String? {
-        return readNextBatch().firstOrNull()
+        return readNextBatch()?.second?.firstOrNull()
     }
 
-    override fun readNextBatch(): List<String> {
+    override fun readNextBatch(): Pair<String, List<String>>? {
         val files = rootDirectory.listFiles(fileFilter).sorted()
-        val nextLogFile = files.firstOrNull()
+        val nextLogFile = files.firstOrNull() { it.name !in sentBatches }
         return if (nextLogFile == null) {
-            emptyList()
+            null
         } else {
-            val inputBytes = nextLogFile.readBytes()
-            val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
+            if (LogFileStrategy.isFileRecent(nextLogFile)) {
+                null
+            } else {
+                val inputBytes = nextLogFile.readBytes()
+                val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
 
-            logs.map { deobfuscate(it) }
+                nextLogFile.name to logs.map { deobfuscate(it) }
+            }
+        }
+    }
+
+    override fun onBatchSent(batchId: String) {
+        Log.i("T", "onBatchSent $batchId")
+        sentBatches.add(batchId)
+        val fileToDelete = File(rootDirectory, batchId)
+
+        if (fileToDelete.exists()) {
+            if (!fileToDelete.delete()) {
+                Log.e("datadog", "Error deleting file ${fileToDelete.path}")
+            }
         }
     }
 

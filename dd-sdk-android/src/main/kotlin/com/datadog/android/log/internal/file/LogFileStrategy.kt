@@ -31,7 +31,14 @@ internal class LogFileStrategy(private val rootDir: File) : LogStrategy {
 
     companion object {
 
+        internal fun isFileRecent(file: File): Boolean {
+            val now = System.currentTimeMillis()
+            val fileTimestamp = file.name.toLong()
+            return fileTimestamp >= (now - MAX_DELAY_BETWEEN_LOGS_MS)
+        }
+
         internal const val LOGS_FOLDER_NAME = "dd-logs"
         internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
+        internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
     }
 }
