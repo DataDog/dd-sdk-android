@@ -13,6 +13,8 @@ object Dependencies {
         const val Kotlin = "1.3.41"
         const val AndroidToolsPlugin = "3.5.1"
         const val Gson = "2.8.6"
+        // WARNING Bumping version of OkHttp, will mean dropping support for API KitKat and below
+        const val OkHttp = "3.12.6"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
@@ -37,6 +39,8 @@ object Dependencies {
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
+
+        const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
 
         @JvmField
         val JUnit5 = arrayOf(
