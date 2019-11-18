@@ -9,17 +9,25 @@ import com.datadog.gradle.Dependencies
 pluginManagement {
     resolutionStrategy {
         eachPlugin {
-            when (requested.id.namespace) {
-                Dependencies.PluginNamespaces.Kotlin -> useVersion(Dependencies.Versions.Kotlin)
-                Dependencies.PluginNamespaces.KotlinAndroid -> useVersion(Dependencies.Versions.Kotlin)
-                Dependencies.PluginNamespaces.Detetk -> useVersion(Dependencies.Versions.Detekt)
-                Dependencies.PluginNamespaces.DependencyVersion -> useVersion(Dependencies.Versions.DependencyVersion)
-                Dependencies.PluginNamespaces.KtLint -> useVersion(Dependencies.Versions.KtLint)
-                Dependencies.PluginNamespaces.Gradle -> {
-                    // Do nothing, plugin handled by Gradle
+            val version = when (requested.id.id) {
+                Dependencies.PluginIds.Android -> Dependencies.Versions.AndroidToolsPlugin
+                Dependencies.PluginIds.KotlinAndroid -> Dependencies.Versions.Kotlin
+                Dependencies.PluginIds.KotlinAndroidExtension -> Dependencies.Versions.Kotlin
+                Dependencies.PluginIds.Detetk -> Dependencies.Versions.Detekt
+                Dependencies.PluginIds.DependencyVersion -> Dependencies.Versions.DependencyVersion
+                Dependencies.PluginIds.KtLint -> Dependencies.Versions.KtLint
+
+                else -> {
+                    if (
+                        requested.id.namespace != Dependencies.PluginNamespaces.Gradle &&
+                        requested.id.namespace != null
+                    ) {
+                        println("✗ unknown plugin ${requested.id.namespace}.${requested.id.name}")
+                    }
+                    null
                 }
-                else -> println("⋄⋄⋄ namespace:${requested.id.namespace} / name:${requested.id.name}")
             }
+            version?.let { useVersion(it) }
         }
     }
 }

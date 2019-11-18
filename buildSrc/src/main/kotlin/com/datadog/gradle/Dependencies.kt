@@ -73,12 +73,17 @@ object Dependencies {
         const val Jitpack = "https://jitpack.io"
     }
 
-    object PluginNamespaces {
-        const val Detetk = "io.gitlab.arturbosch"
-        const val KtLint = "org.jlleitschuh.gradle"
-        const val DependencyVersion = "com.github.ben-manes"
+    object PluginIds {
+        const val Android = "com.android.library"
+        const val Detetk = "io.gitlab.arturbosch.detekt"
+        const val KtLint = "org.jlleitschuh.gradle.ktlint"
+        const val DependencyVersion = "com.github.ben-manes.versions"
         const val Kotlin = "org.jetbrains.kotlin"
         const val KotlinAndroid = "org.jetbrains.kotlin.android"
+        const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
+    }
+
+    object PluginNamespaces {
         const val Gradle = "org.gradle"
     }
 }
