@@ -68,3 +68,57 @@ The pull request will be run through our CI pipeline, and a project member will 
  - Receive at least one approval from a project member with push permissions.
 
 Make sure that your code is clean and readable, that your commits are small and atomic, with a proper commit message. We tend to use [gitmoji](https://gitmoji.carloscuesta.me/) but this is not mandatory.
+
+## Coding Conventions
+
+Our repository uses Kotlin, as it is now the recommended language for Android. But because this library can still be used by Java based application, make sure any change you introduce are still compatible with Java. If you want to add Kotlin specific features (DSL, lambdas, …), make sure there is a way to get the same feature from a Java source code.
+
+### Code style
+
+Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the default settings. A KtLint check is ran on every PR to ensure that all new code follow this rule.
+
+Classes should group their methods in folding regions named after the declaring class. Private methods should be grouped in an `Internal` named folding region. 
+For example, a class inheriting from `Runnable` and `Observable` should use the following regions.
+
+```kotlin
+
+class Foo :Observable(), Runnable {
+    
+    // region Observable
+
+    override fun addObserver(o: Observer?) {
+        super.addObserver(o)
+        doSomething()
+    }
+
+    // endregion
+
+    // region Runnable
+
+    override fun run() {}
+
+    // endregion
+
+    
+    // region Internal
+    
+    private fun doSomething() {}
+    
+    // endregion
+}
+```
+
+### #TestMatters
+
+It is important to be sure that our library work properly in any scenario. All non trivial code must be tested.
+If you're not used to writing tests, you can take a look at the `test` folder to get some ideas on how we write them at Datadog.
+
+We use a variety of tools to help us write tests easy to read and maintain:
+
+ - [JUnit5 Jupiter](https://junit.org/junit5/): the test runner, quite similar to JUnit4;
+ - [Mockito](https://site.mockito.org/): a mocking framework to decouple concerns in the Unit Tests;
+ - [AssertJ](https://assertj.github.io/doc/): a framework to write fluent assertions;
+ - [Elmyr](https://github.com/xgouchet/Elmyr): a framework to generate fake data in the Unit Tests.
+
+
+
