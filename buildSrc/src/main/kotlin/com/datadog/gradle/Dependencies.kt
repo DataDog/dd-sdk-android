@@ -57,6 +57,8 @@ object Dependencies {
             "com.github.xgouchet.Elmyr:junit5:${Versions.Elmyr}",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MockitoKotlin}"
         )
+
+        const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
     }
 
     object ClassPaths {

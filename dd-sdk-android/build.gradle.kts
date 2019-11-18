@@ -51,6 +51,7 @@ dependencies {
 
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
+    testImplementation(Dependencies.Libraries.OkHttpMock)
 }
 
 kotlinConfig()
