@@ -91,6 +91,131 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasField(name: String, expectedValue: Boolean): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isBoolean)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Boolean value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asBoolean
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(name: String, expectedValue: Int): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Int value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asInt
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(name: String, expectedValue: Long): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Long value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asLong
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(name: String, expectedValue: Float): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Float value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asFloat
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(name: String, expectedValue: Double): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Double value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asDouble
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: JsonObject): JsonObjectAssert = JsonObjectAssert(actual)

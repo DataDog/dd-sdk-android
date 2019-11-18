@@ -12,7 +12,9 @@ import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import java.io.File
 import java.io.FileFilter
 import java.text.SimpleDateFormat
@@ -100,7 +102,24 @@ internal class LogFileWriter(
 
         // TODO Network Infos
 
-        // TODO Custom Fields
+        // Custom Fields
+        log.fields
+            .filter { it.key.isNotBlank() }
+            .forEach {
+                val value = it.value
+                val jsonValue = when (value) {
+                    null -> JsonNull.INSTANCE
+                    is Boolean -> JsonPrimitive(value)
+                    is Int -> JsonPrimitive(value)
+                    is Long -> JsonPrimitive(value)
+                    is Float -> JsonPrimitive(value)
+                    is Double -> JsonPrimitive(value)
+                    is String -> JsonPrimitive(value)
+                    is Date -> JsonPrimitive(value.time)
+                    else -> JsonNull.INSTANCE
+                }
+                jsonLog.add(it.key, jsonValue)
+            }
 
         // TODO Tags
 

@@ -15,6 +15,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.IllegalStateException
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -173,6 +175,25 @@ internal abstract class LogStrategyTest {
             .hasField(LogFileWriter.TAG_STATUS, levels[log.level])
             .hasField(LogFileWriter.TAG_USER_AGENT_SDK, log.userAgent)
             .hasStringField(LogFileWriter.TAG_DATE, nullable = false)
+
+        log.fields
+            .filter { it.key.isNotBlank() }
+            .forEach {
+            val value = it.value
+            when (value) {
+                null -> assertThat(jsonObject).hasNullField(it.key)
+                is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                is Int -> assertThat(jsonObject).hasField(it.key, value)
+                is Long -> assertThat(jsonObject).hasField(it.key, value)
+                is Float -> assertThat(jsonObject).hasField(it.key, value)
+                is Double -> assertThat(jsonObject).hasField(it.key, value)
+                is String -> assertThat(jsonObject).hasField(it.key, value)
+                is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                else -> throw IllegalStateException(
+                    "Unable to handle key:${it.key} with value:$value"
+                )
+            }
+        }
     }
 
     // endregion
