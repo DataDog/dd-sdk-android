@@ -43,7 +43,7 @@ internal class LogFileReader(
         }
     }
 
-    override fun onBatchSent(batchId: String) {
+    override fun dropBatch(batchId: String) {
         Log.i("T", "onBatchSent $batchId")
         sentBatches.add(batchId)
         val fileToDelete = File(rootDirectory, batchId)

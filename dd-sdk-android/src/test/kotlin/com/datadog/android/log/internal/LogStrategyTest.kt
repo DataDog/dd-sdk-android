@@ -130,7 +130,7 @@ internal abstract class LogStrategyTest {
         val batch = testedLogReader.readNextBatch()
         checkNotNull(batch)
 
-        testedLogReader.onBatchSent(batch.first)
+        testedLogReader.dropBatch(batch.first)
         val batch2 = testedLogReader.readNextBatch()
 
         assertThat(batch2)
@@ -157,7 +157,7 @@ internal abstract class LogStrategyTest {
 
     @Test
     fun `fails gracefully if sent batch with unknown id`(forge: Forge) {
-        testedLogReader.onBatchSent(forge.aNumericalString())
+        testedLogReader.dropBatch(forge.aNumericalString())
 
         // Nothing to do, just check that no exception is thrown
     }

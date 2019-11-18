@@ -6,15 +6,19 @@
 
 package com.datadog.android.log.internal
 
+import android.os.Handler
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 
-internal class LogUploadRunnable(private val handler: LogHandler) : Runnable {
-
-    private val logReader: LogReader = Datadog.getLogStrategy().getLogReader()
+internal class LogUploadRunnable(
+    private val handler: Handler,
+    private val logReader: LogReader = Datadog.getLogStrategy().getLogReader(),
     private val logUploader: LogUploader = Datadog.getLogUploader()
+) : Runnable {
+
+    private val attemptsCount = mutableMapOf<String, Int>()
 
     //  region Runnable
 
@@ -22,10 +26,11 @@ internal class LogUploadRunnable(private val handler: LogHandler) : Runnable {
         val batch = logReader.readNextBatch()
 
         if (batch != null) {
-                Log.i("T", "Sending batch ${batch.first}")
+            val batchId = batch.first
+            Log.i("T", "Sending batch $batchId")
             val status = logUploader.uploadLogs(batch.second)
-            if (status == LogUploadStatus.SUCCESS) {
-                logReader.onBatchSent(batch.first)
+            if (shouldDropBatch(batchId, status)) {
+                logReader.dropBatch(batchId)
             }
         } else {
             Log.d("T", "No batch to send")
@@ -36,7 +41,29 @@ internal class LogUploadRunnable(private val handler: LogHandler) : Runnable {
 
     // endregion
 
+    // region Internal
+
+    private fun shouldDropBatch(batchId: String, status: LogUploadStatus): Boolean {
+        val maxAttempts = maxAttemptsMap[status] ?: 1
+        val attemptCount = (attemptsCount[batchId] ?: 0) + 1
+
+        val shouldDropBatch = attemptCount >= maxAttempts
+        if (shouldDropBatch) {
+            attemptsCount.remove(batchId)
+        } else {
+            attemptsCount[batchId] = attemptCount
+        }
+        return shouldDropBatch
+    }
+
+    // endregion
+
     companion object {
+        private val maxAttemptsMap = mapOf(
+            LogUploadStatus.NETWORK_ERROR to 3,
+            LogUploadStatus.HTTP_SERVER_ERROR to 3
+        )
+
         const val DELAY_MS = 5000L
     }
 }

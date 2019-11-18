@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.net
 internal enum class LogUploadStatus {
     SUCCESS,
     NETWORK_ERROR,
+    HTTP_REDIRECTION,
     HTTP_CLIENT_ERROR,
     HTTP_SERVER_ERROR,
     UNKNOWN_ERROR

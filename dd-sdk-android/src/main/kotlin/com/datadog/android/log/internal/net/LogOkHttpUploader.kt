@@ -16,11 +16,9 @@ import okhttp3.RequestBody
 
 internal class LogOkHttpUploader(
     private val endpoint: String,
-    private val token: String
+    private val token: String,
+    private val client: OkHttpClient = OkHttpClient.Builder().build()
 ) : LogUploader {
-
-    private val client = OkHttpClient.Builder()
-        .build()
 
     // region LogUploader
 
@@ -35,9 +33,6 @@ internal class LogOkHttpUploader(
         } catch (e: IOException) {
             Log.e("T", "Network error", e)
             LogUploadStatus.NETWORK_ERROR
-        } catch (e: Throwable) {
-            Log.e("T", "Unknown error", e)
-            LogUploadStatus.UNKNOWN_ERROR
         }
     }
 
@@ -66,11 +61,11 @@ internal class LogOkHttpUploader(
     }
 
     private fun responseCodeToLogUploadStatus(code: Int): LogUploadStatus {
-        return when {
-            code in 200..299 -> LogUploadStatus.SUCCESS
-            code in 300..399 -> LogUploadStatus.HTTP_CLIENT_ERROR
-            code in 400..499 -> LogUploadStatus.HTTP_CLIENT_ERROR
-            code >= 500 -> LogUploadStatus.HTTP_SERVER_ERROR
+        return when (code) {
+            in 200..299 -> LogUploadStatus.SUCCESS
+            in 300..399 -> LogUploadStatus.HTTP_REDIRECTION
+            in 400..499 -> LogUploadStatus.HTTP_CLIENT_ERROR
+            in 500..599 -> LogUploadStatus.HTTP_SERVER_ERROR
             else -> LogUploadStatus.UNKNOWN_ERROR
         }
     }
