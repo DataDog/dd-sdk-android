@@ -10,10 +10,12 @@ import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogForgeryFactory
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
+import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(Log::class.java, LogForgeryFactory())
+        forge.useJvmFactories()
     }
 }
