@@ -8,7 +8,8 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
-import com.datadog.android.log.LogAssert.Companion.assertThat
+import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -16,7 +17,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -65,7 +65,7 @@ internal class LoggerNoUserAgentTest {
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
 
-        testedLogger = Logger.Builder(mockContext, "not-a-token")
+        testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
             .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(true)
@@ -100,42 +100,42 @@ internal class LoggerNoUserAgentTest {
     // TODO allow logging with an error !
 
     @Test
-    fun `logger logs message with verbose level`(@Forgery forge: Forge) {
+    fun `logger logs message with verbose level`() {
         testedLogger.v(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.VERBOSE, "V")
     }
 
     @Test
-    fun `logger logs message with debug level`(@Forgery forge: Forge) {
+    fun `logger logs message with debug level`() {
         testedLogger.d(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.DEBUG, "D")
     }
 
     @Test
-    fun `logger logs message with info level`(@Forgery forge: Forge) {
+    fun `logger logs message with info level`() {
         testedLogger.i(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.INFO, "I")
     }
 
     @Test
-    fun `logger logs message with warning level`(@Forgery forge: Forge) {
+    fun `logger logs message with warning level`() {
         testedLogger.w(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.WARN, "W")
     }
 
     @Test
-    fun `logger logs message with error level`(@Forgery forge: Forge) {
+    fun `logger logs message with error level`() {
         testedLogger.e(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.ERROR, "E")
     }
 
     @Test
-    fun `logger logs message with assert level`(@Forgery forge: Forge) {
+    fun `logger logs message with assert level`() {
         testedLogger.wtf(fakeMessage)
 
         verifyLogSideEffects(AndroidLog.ASSERT, "A")

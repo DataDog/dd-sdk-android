@@ -10,7 +10,7 @@ import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
-import com.datadog.android.log.Log
+import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
 import com.google.gson.JsonObject
 import java.io.File
@@ -20,26 +20,33 @@ import java.util.Base64 as JavaBase64
 import java.util.Date
 import java.util.Locale
 
-internal class LogFileWriter(private val rootDirectory: File) : LogWriter {
+internal class LogFileWriter(
+    private val rootDirectory: File,
+    private val recentDelayMs: Long
+) : LogWriter {
 
+    private val writeable: Boolean
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
     private val fileFilter: FileFilter = LogFileFilter()
 
     init {
-        if (!rootDirectory.exists()) {
-            check(rootDirectory.mkdirs()) {
-                "Unable to create logs folder ${rootDirectory.absolutePath}."
-            }
+        writeable = if (!rootDirectory.exists()) {
+            rootDirectory.mkdirs()
         } else {
-            check(rootDirectory.isDirectory) {
-                "Expected ${rootDirectory.absolutePath} to be a directory but was not."
-            }
+            rootDirectory.isDirectory
+        }
+        if (!writeable) {
+            AndroidLog.e(
+                "datadog",
+                "Can't write logs on disk: directory ${rootDirectory.path} is invalid."
+            )
         }
     }
 
     // region LoggerWriter
 
     override fun writeLog(log: Log) {
+        if (!writeable) return
 
         val strLog = serializeLog(log)
         val obfLog = obfuscate(strLog)
@@ -55,14 +62,22 @@ internal class LogFileWriter(private val rootDirectory: File) : LogWriter {
 
     private fun getWritableFile(logSize: Int): File {
         val maxLogLength = MAX_BATCH_SIZE - logSize
+        val now = System.currentTimeMillis()
 
         val files = rootDirectory.listFiles(fileFilter).sorted()
         val lastFile = files.lastOrNull()
 
-        return if (lastFile != null && lastFile.length() < maxLogLength) {
-            lastFile
+        return if (lastFile != null) {
+            val fileHasRoomForMore = lastFile.length() < maxLogLength
+            val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile, recentDelayMs)
+
+            if (fileHasRoomForMore && fileIsRecentEnough) {
+                lastFile
+            } else {
+                File(rootDirectory, now.toString())
+            }
         } else {
-            File(rootDirectory, System.currentTimeMillis().toString())
+            File(rootDirectory, now.toString())
         }
     }
 

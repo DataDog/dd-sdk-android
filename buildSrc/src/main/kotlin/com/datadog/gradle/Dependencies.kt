@@ -10,21 +10,23 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.3.41"
+        const val Kotlin = "1.3.60"
         const val AndroidToolsPlugin = "3.5.1"
         const val Gson = "2.8.6"
+        // WARNING Bumping version of OkHttp, will mean dropping support for API KitKat and below
+        const val OkHttp = "3.12.6"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
         const val JUnitPlatform = "1.5.2"
         const val JUnitVintage = "5.5.2"
-        const val JunitMockitoExt = "2.23.0"
+        const val JunitMockitoExt = "3.1.0"
 
         // Tests Tools
         const val AssertJ = "0.2.1"
-        const val Elmyr = "1.0.0-alpha2"
+        const val Elmyr = "1.0.0-alpha5"
         const val Jacoco = "0.8.4"
-        const val MockitoKotlin = "2.1.0"
+        const val MockitoKotlin = "2.2.0"
 
         // Tools
         const val Detekt = "1.0.1"
@@ -37,6 +39,8 @@ object Dependencies {
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
+
+        const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -53,6 +57,8 @@ object Dependencies {
             "com.github.xgouchet.Elmyr:junit5:${Versions.Elmyr}",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MockitoKotlin}"
         )
+
+        const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
     }
 
     object ClassPaths {
@@ -67,12 +73,17 @@ object Dependencies {
         const val Jitpack = "https://jitpack.io"
     }
 
-    object PluginNamespaces {
-        const val Detetk = "io.gitlab.arturbosch"
-        const val KtLint = "org.jlleitschuh.gradle"
-        const val DependencyVersion = "com.github.ben-manes"
+    object PluginIds {
+        const val Android = "com.android.library"
+        const val Detetk = "io.gitlab.arturbosch.detekt"
+        const val KtLint = "org.jlleitschuh.gradle.ktlint"
+        const val DependencyVersion = "com.github.ben-manes.versions"
         const val Kotlin = "org.jetbrains.kotlin"
         const val KotlinAndroid = "org.jetbrains.kotlin.android"
+        const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
+    }
+
+    object PluginNamespaces {
         const val Gradle = "org.gradle"
     }
 }

@@ -7,17 +7,18 @@
 package com.datadog.android.log
 
 import android.content.Context
+import com.datadog.android.Datadog
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -29,26 +30,10 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class LoggerBuilderTest {
 
-    @Mock
-    lateinit var mockContext: Context
-
-    @BeforeEach
-    fun `set up mock`() {
-        whenever(mockContext.applicationContext) doReturn mockContext
-    }
-
     @Test
-    fun `builder requires a ClientToken`(@Forgery forge: Forge) {
-        val token = forge.anHexadecimalString()
-
-        val logger = Logger.Builder(mockContext, token).build()
-
-        assertThat(logger.clientToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `builder without custom settings uses defaults`(@Forgery forge: Forge) {
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString()).build()
+    fun `builder without custom settings uses defaults`() {
+        val logger = Logger.Builder()
+            .build()
 
         assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
         assertThat(logger.timestampsEnabled).isTrue()
@@ -62,7 +47,7 @@ internal class LoggerBuilderTest {
     fun `builder can set a ServiceName`(@Forgery forge: Forge) {
         val serviceName = forge.anAlphabeticalString()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setServiceName(serviceName)
             .build()
 
@@ -73,7 +58,7 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable timestamps`(@Forgery forge: Forge) {
         val timestampsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setTimestampsEnabled(timestampsEnabled)
             .build()
 
@@ -83,19 +68,22 @@ internal class LoggerBuilderTest {
     @Test
     fun `builder can enable or disable user agent`(@Forgery forge: Forge) {
         val userAgentEnabled = forge.aBool()
+        val systemUserAgent = forge.anAlphabeticalString()
+        System.setProperty("http.agent", systemUserAgent)
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setUserAgentEnabled(userAgentEnabled)
             .build()
 
         assertThat(logger.userAgentEnabled).isEqualTo(userAgentEnabled)
+        assertThat(logger.userAgent).isEqualTo(systemUserAgent)
     }
 
     @Test
     fun `builder can enable or disable datadog logs`(@Forgery forge: Forge) {
         val datadogLogsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
@@ -106,7 +94,7 @@ internal class LoggerBuilderTest {
     fun `builder can enable or disable logcat logs`(@Forgery forge: Forge) {
         val logcatLogsEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
@@ -117,11 +105,21 @@ internal class LoggerBuilderTest {
     fun `builder can enable network info`(@Forgery forge: Forge) {
         val networkInfoEnabled = forge.aBool()
 
-        val logger = Logger.Builder(mockContext, forge.anHexadecimalString())
+        val logger = Logger.Builder()
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
         // TODO check broadcastReceiver is registered
 
         assertThat(logger.networkInfoEnabled).isEqualTo(networkInfoEnabled)
+    }
+
+    companion object {
+        @BeforeAll
+        @JvmStatic
+        fun `set up Datadog`(forge: Forge) {
+            val mockContext: Context = mock()
+            whenever(mockContext.applicationContext) doReturn mockContext
+            Datadog.initialize(mockContext, forge.anHexadecimalString())
+        }
     }
 }

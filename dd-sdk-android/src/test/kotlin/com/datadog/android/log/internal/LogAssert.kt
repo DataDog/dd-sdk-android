@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log
+package com.datadog.android.log.internal
 
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -70,6 +70,7 @@ internal class LogAssert(actual: Log) :
 
         private const val TIMESTAMP_THRESHOLD_MS = 50
 
-        internal fun assertThat(actual: Log): LogAssert = LogAssert(actual)
+        internal fun assertThat(actual: Log): LogAssert =
+            LogAssert(actual)
     }
 }

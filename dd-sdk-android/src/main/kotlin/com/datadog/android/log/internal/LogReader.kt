@@ -12,7 +12,7 @@ package com.datadog.android.log.internal
  */
 internal interface LogReader {
 
-    fun readNextLog(): String?
+    fun readNextBatch(): Pair<String, List<String>>?
 
-    fun readNextBatch(): List<String>
+    fun dropBatch(batchId: String)
 }
