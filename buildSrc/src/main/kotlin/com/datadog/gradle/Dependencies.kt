@@ -10,7 +10,7 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.3.41"
+        const val Kotlin = "1.3.60"
         const val AndroidToolsPlugin = "3.5.1"
         const val Gson = "2.8.6"
         // WARNING Bumping version of OkHttp, will mean dropping support for API KitKat and below
@@ -20,13 +20,13 @@ object Dependencies {
         const val JUnitJupiter = "5.5.2"
         const val JUnitPlatform = "1.5.2"
         const val JUnitVintage = "5.5.2"
-        const val JunitMockitoExt = "2.23.0"
+        const val JunitMockitoExt = "3.1.0"
 
         // Tests Tools
         const val AssertJ = "0.2.1"
-        const val Elmyr = "1.0.0-alpha3"
+        const val Elmyr = "1.0.0-alpha4"
         const val Jacoco = "0.8.4"
-        const val MockitoKotlin = "2.1.0"
+        const val MockitoKotlin = "2.2.0"
 
         // Tools
         const val Detekt = "1.0.1"
