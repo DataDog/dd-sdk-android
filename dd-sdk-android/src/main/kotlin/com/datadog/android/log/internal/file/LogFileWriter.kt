@@ -160,7 +160,7 @@ internal class LogFileWriter(
 
     private fun logLevelStatusName(level: Int): String {
         return when (level) {
-            AndroidLog.ASSERT -> "ERROR"
+            AndroidLog.ASSERT -> "CRITICAL"
             AndroidLog.ERROR -> "ERROR"
             AndroidLog.WARN -> "WARN"
             AndroidLog.INFO -> "INFO"
