@@ -18,6 +18,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.io.File
 import java.io.FileFilter
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Base64 as JavaBase64
 import java.util.Date
@@ -128,6 +130,15 @@ internal class LogFileWriter(
             .map { "${it.key}:${it.value}" }
             .joinToString(",")
         jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
+
+        // Throwable
+        log.throwable?.let {
+            val sw = StringWriter()
+            it.printStackTrace(PrintWriter(sw))
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_KIND, it.javaClass.simpleName)
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_MESSAGE, it.message)
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_STACK, sw.toString())
+        }
 
         return jsonLog.toString()
     }

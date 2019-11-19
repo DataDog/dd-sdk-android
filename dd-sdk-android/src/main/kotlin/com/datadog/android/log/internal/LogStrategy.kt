@@ -24,6 +24,11 @@ internal interface LogStrategy {
         // COMMON TAGS
         internal const val TAG_DATADOG_TAGS = "ddtags"
 
+        // ERROR TAGS
+        internal const val TAG_ERROR_KIND = "error.kind"
+        internal const val TAG_ERROR_MESSAGE = "error.message"
+        internal const val TAG_ERROR_STACK = "error.stack"
+
         // ANDROID SPECIFIC TAGS
         internal const val TAG_USER_AGENT_SDK = "http.useragent_sdk"
         internal const val TAG_NETWORK_INFO = "networkinfo"
@@ -36,6 +41,9 @@ internal interface LogStrategy {
             TAG_SERVICE_NAME,
             TAG_SOURCE,
             TAG_USER_AGENT_SDK,
+            TAG_ERROR_KIND,
+            TAG_ERROR_MESSAGE,
+            TAG_ERROR_STACK,
             TAG_DATADOG_TAGS
         )
     }
