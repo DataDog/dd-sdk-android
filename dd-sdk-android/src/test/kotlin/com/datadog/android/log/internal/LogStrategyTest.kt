@@ -7,15 +7,14 @@
 package com.datadog.android.log.internal
 
 import com.datadog.android.log.Configurator
-import com.datadog.android.log.internal.file.LogFileWriter
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.IllegalStateException
 import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -85,13 +84,24 @@ internal abstract class LogStrategyTest {
         val log = batch.second.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
+        assertLogMatches(jsonObject, minimalLog)
+    }
 
-        assertThat(jsonObject)
-            .hasField(LogFileWriter.TAG_MESSAGE, fakeLog.message)
-            .hasField(LogFileWriter.TAG_SERVICE_NAME, fakeLog.serviceName)
-            .hasField(LogFileWriter.TAG_STATUS, levels[fakeLog.level])
-            .hasNoField(LogFileWriter.TAG_USER_AGENT_SDK)
-            .hasNoField(LogFileWriter.TAG_DATE)
+    @Test
+    fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
+        val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
+        val attributes = forge.aMap {
+            anElementFrom(*LogStrategy.reservedAttributes) to forge.anAsciiString()
+        }.toMap()
+        val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
+
+        testedLogWriter.writeLog(logWithReservedAttributes)
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
+        val log = batch.second.first()
+
+        val jsonObject = JsonParser.parseString(log).asJsonObject
+        assertLogMatches(jsonObject, logWithoutAttributes)
     }
 
     @Test
@@ -170,30 +180,44 @@ internal abstract class LogStrategyTest {
 
     private fun assertLogMatches(jsonObject: JsonObject, log: Log) {
         assertThat(jsonObject)
-            .hasField(LogFileWriter.TAG_MESSAGE, log.message)
-            .hasField(LogFileWriter.TAG_SERVICE_NAME, log.serviceName)
-            .hasField(LogFileWriter.TAG_STATUS, levels[log.level])
-            .hasField(LogFileWriter.TAG_USER_AGENT_SDK, log.userAgent)
-            .hasStringField(LogFileWriter.TAG_DATE, nullable = false)
+            .hasField(LogStrategy.TAG_MESSAGE, log.message)
+            .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
+            .hasField(LogStrategy.TAG_STATUS, levels[log.level])
 
-        log.fields
+        if (!log.userAgent.isNullOrBlank()) {
+            assertThat(jsonObject).hasField(LogStrategy.TAG_USER_AGENT_SDK, log.userAgent)
+        }
+        if (log.timestamp != null) {
+            assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
+        }
+
+        log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
-            val value = it.value
-            when (value) {
-                null -> assertThat(jsonObject).hasNullField(it.key)
-                is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                is Int -> assertThat(jsonObject).hasField(it.key, value)
-                is Long -> assertThat(jsonObject).hasField(it.key, value)
-                is Float -> assertThat(jsonObject).hasField(it.key, value)
-                is Double -> assertThat(jsonObject).hasField(it.key, value)
-                is String -> assertThat(jsonObject).hasField(it.key, value)
-                is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                else -> throw IllegalStateException(
-                    "Unable to handle key:${it.key} with value:$value"
-                )
+                val value = it.value
+                when (value) {
+                    null -> assertThat(jsonObject).hasNullField(it.key)
+                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                    is Int -> assertThat(jsonObject).hasField(it.key, value)
+                    is Long -> assertThat(jsonObject).hasField(it.key, value)
+                    is Float -> assertThat(jsonObject).hasField(it.key, value)
+                    is Double -> assertThat(jsonObject).hasField(it.key, value)
+                    is String -> assertThat(jsonObject).hasField(it.key, value)
+                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                    else -> throw IllegalStateException(
+                        "Unable to handle key:${it.key} with value:$value"
+                    )
+                }
             }
-        }
+
+        val tags = (jsonObject[LogStrategy.TAG_DATADOG_TAGS] as JsonPrimitive).asString
+            .split(',')
+            .map { it.split(':') }
+            .map { it[0] to it[1] }
+            .toMap()
+
+        assertThat(tags)
+            .containsAllEntriesOf(log.tags)
     }
 
     // endregion

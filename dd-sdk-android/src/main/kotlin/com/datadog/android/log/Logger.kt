@@ -16,7 +16,7 @@ import java.util.Date
 /**
  * A class enabling Datadog logging features.
  *
- * It allows you to create a specific context (automatic information, custom fields, tags) that will be embedded in all
+ * It allows you to create a specific context (automatic information, custom attributes, tags) that will be embedded in all
  * logs sent through this logger.
  *
  * You can have multiple loggers configured in your application, each with their own settings.
@@ -35,7 +35,8 @@ private constructor(
 ) {
 
     private val logWriter = strategy.getLogWriter()
-    private val fields = mutableMapOf<String, Any?>()
+    private val attributes = mutableMapOf<String, Any?>()
+    private val tags = mutableMapOf<String, String?>()
 
     // region Log
 
@@ -212,77 +213,96 @@ private constructor(
 
     // endregion
 
-    // region Context Information (fields, tags)
+    // region Context Information (attributes, tags)
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the boolean value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the boolean value of this attribute
      */
-    fun addField(key: String, value: Boolean) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Boolean) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the integer value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the integer value of this attribute
      */
-    fun addField(key: String, value: Int) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Int) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the long value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the long value of this attribute
      */
-    fun addField(key: String, value: Long) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Long) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the float value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the float value of this attribute
      */
-    fun addField(key: String, value: Float) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Float) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the double value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the double value of this attribute
      */
-    fun addField(key: String, value: Double) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Double) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the (nullable) String value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the (nullable) String value of this attribute
      */
-    fun addField(key: String, value: String?) {
-        fields[key] = value
+    fun addAttribute(key: String, value: String?) {
+        attributes[key] = value
     }
 
     /**
-     * Add a custom field to all future logs sent by this logger.
-     * @param key the key for this field
-     * @param value the (nullable) Date value of this field
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the (nullable) Date value of this attribute
      */
-    fun addField(key: String, value: Date?) {
-        fields[key] = value
+    fun addAttribute(key: String, value: Date?) {
+        attributes[key] = value
     }
+
     /**
-     * Remove a custom field from all future logs sent by this logger.
-     * Previous log won't lose the field value associated with this key if they were created prior to this.
-     * @param key the key of the field to remove
+     * Remove a custom attribute from all future logs sent by this logger.
+     * Previous log won't lose the attribute value associated with this key if they were created prior to this.
+     * @param key the key of the attribute to remove
      */
-    fun removeField(key: String) {
-        fields.remove(key)
+    fun removeAttribute(key: String) {
+        attributes.remove(key)
+    }
+
+    /**
+     * Add a tag to all future logs sent by this logger.
+     * @param key the key for this tag
+     * @param value the (nullable) String value of this tag
+     */
+    fun addTag(key: String, value: String?) {
+        tags[key] = value
+    }
+
+    /**
+     * Remove atag from all future logs sent by this logger.
+     * Previous log won't lose the tag associated with this key if they were created prior to this.
+     * @param key the key of the tag to remove
+     */
+    fun removeTag(key: String) {
+        tags.remove(key)
     }
 
     // endregion
@@ -311,9 +331,9 @@ private constructor(
     private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
         // TODO timestamp based on phone local time = error prone
 
-        // TODO build log object with relevant infos : fields, tags, networkInfo
+        // TODO build log object with networkInfo
 
-        // TODO include information about the throwable
+        // TODO RUMM-53 include information about the throwable
 
         return Log(
             serviceName = serviceName,
@@ -322,7 +342,8 @@ private constructor(
             timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
             userAgent = if (userAgentEnabled) userAgent else null,
             throwable = throwable,
-            fields = fields
+            attributes = attributes.toMap(),
+            tags = tags.toMap()
         )
     }
 
