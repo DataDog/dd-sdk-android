@@ -11,6 +11,7 @@ import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -87,17 +88,17 @@ internal class LogFileWriter(
         val jsonLog = JsonObject()
 
         // Mandatory info
-        jsonLog.addProperty(TAG_MESSAGE, log.message)
-        jsonLog.addProperty(TAG_SERVICE_NAME, log.serviceName)
-        jsonLog.addProperty(TAG_STATUS, logLevelStatusName(log.level))
+        jsonLog.addProperty(LogStrategy.TAG_MESSAGE, log.message)
+        jsonLog.addProperty(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
+        jsonLog.addProperty(LogStrategy.TAG_STATUS, logLevelStatusName(log.level))
 
         // User Agent
-        log.userAgent?.let { jsonLog.addProperty(TAG_USER_AGENT_SDK, it) }
+        log.userAgent?.let { jsonLog.addProperty(LogStrategy.TAG_USER_AGENT_SDK, it) }
 
         // Timestamp
         log.timestamp?.let {
             val formattedDate = simpleDateFormat.format(Date(log.timestamp))
-            jsonLog.addProperty(TAG_DATE, formattedDate)
+            jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
         }
 
         // TODO Network Infos
@@ -161,13 +162,5 @@ internal class LogFileWriter(
         private val logSeparator = ByteArray(1) { LogFileStrategy.SEPARATOR_BYTE }
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-
-        internal const val TAG_USER_AGENT_SDK = "http.useragent_sdk"
-        internal const val TAG_NETWORK_INFO = "networkinfo"
-        internal const val TAG_MESSAGE = "message"
-        internal const val TAG_STATUS = "status"
-        internal const val TAG_SERVICE_NAME = "service"
-        internal const val TAG_DATE = "date"
-        internal const val TAG_DATADOG_TAGS = "ddtags"
     }
 }

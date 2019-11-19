@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal
 
 import com.datadog.android.log.Configurator
-import com.datadog.android.log.internal.file.LogFileWriter
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
@@ -87,11 +86,11 @@ internal abstract class LogStrategyTest {
         val jsonObject = JsonParser.parseString(log).asJsonObject
 
         assertThat(jsonObject)
-            .hasField(LogFileWriter.TAG_MESSAGE, fakeLog.message)
-            .hasField(LogFileWriter.TAG_SERVICE_NAME, fakeLog.serviceName)
-            .hasField(LogFileWriter.TAG_STATUS, levels[fakeLog.level])
-            .hasNoField(LogFileWriter.TAG_USER_AGENT_SDK)
-            .hasNoField(LogFileWriter.TAG_DATE)
+            .hasField(LogStrategy.TAG_MESSAGE, fakeLog.message)
+            .hasField(LogStrategy.TAG_SERVICE_NAME, fakeLog.serviceName)
+            .hasField(LogStrategy.TAG_STATUS, levels[fakeLog.level])
+            .hasNoField(LogStrategy.TAG_USER_AGENT_SDK)
+            .hasNoField(LogStrategy.TAG_DATE)
     }
 
     @Test
@@ -170,28 +169,29 @@ internal abstract class LogStrategyTest {
 
     private fun assertLogMatches(jsonObject: JsonObject, log: Log) {
         assertThat(jsonObject)
-            .hasField(LogFileWriter.TAG_MESSAGE, log.message)
-            .hasField(LogFileWriter.TAG_SERVICE_NAME, log.serviceName)
-            .hasField(LogFileWriter.TAG_STATUS, levels[log.level])
-            .hasField(LogFileWriter.TAG_USER_AGENT_SDK, log.userAgent)
-            .hasStringField(LogFileWriter.TAG_DATE, nullable = false)
+            .hasField(LogStrategy.TAG_MESSAGE, log.message)
+            .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
+            .hasField(LogStrategy.TAG_STATUS, levels[log.level])
+            .hasField(LogStrategy.TAG_USER_AGENT_SDK, log.userAgent)
+            .hasStringField(LogStrategy.TAG_DATE, nullable = false)
 
         log.fields
             .filter { it.key.isNotBlank() }
             .forEach {
-            val value = it.value
-            when (value) {
-                null -> assertThat(jsonObject).hasNullField(it.key)
-                is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                is Int -> assertThat(jsonObject).hasField(it.key, value)
-                is Long -> assertThat(jsonObject).hasField(it.key, value)
-                is Float -> assertThat(jsonObject).hasField(it.key, value)
-                is Double -> assertThat(jsonObject).hasField(it.key, value)
-                is String -> assertThat(jsonObject).hasField(it.key, value)
-                is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                else -> throw IllegalStateException(
-                    "Unable to handle key:${it.key} with value:$value"
-                )
+                val value = it.value
+                when (value) {
+                    null -> assertThat(jsonObject).hasNullField(it.key)
+                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                    is Int -> assertThat(jsonObject).hasField(it.key, value)
+                    is Long -> assertThat(jsonObject).hasField(it.key, value)
+                    is Float -> assertThat(jsonObject).hasField(it.key, value)
+                    is Double -> assertThat(jsonObject).hasField(it.key, value)
+                    is String -> assertThat(jsonObject).hasField(it.key, value)
+                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                    else -> throw IllegalStateException(
+                        "Unable to handle key:${it.key} with value:$value"
+                    )
+                }
             }
         }
     }
