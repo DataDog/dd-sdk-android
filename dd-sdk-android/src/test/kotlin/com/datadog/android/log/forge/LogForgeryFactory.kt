@@ -4,8 +4,9 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.log.forge
 
+import com.datadog.android.log.internal.Log
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.Date
