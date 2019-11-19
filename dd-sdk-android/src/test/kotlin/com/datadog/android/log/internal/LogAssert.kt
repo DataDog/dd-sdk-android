@@ -71,6 +71,11 @@ internal class LogAssert(actual: Log) :
             .containsExactly(*fields.entries.toTypedArray())
     }
 
+    fun hasTags(tags: Map<String, String?>) {
+        assertThat(actual.tags)
+            .containsExactly(*tags.entries.toTypedArray())
+    }
+
     companion object {
 
         private const val TIMESTAMP_THRESHOLD_MS = 50

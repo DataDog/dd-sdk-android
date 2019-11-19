@@ -13,6 +13,7 @@ import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -288,6 +289,62 @@ internal class LoggerContextTest {
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    // endregion
+
+    // region Tags
+
+    @Test
+    fun `add tag to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aNumericalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(key, value)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasTags(mapOf(key to value))
+        }
+    }
+
+    @Test
+    fun `add tag with null value to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value: String? = null
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(key, value)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasTags(mapOf(key to value))
+        }
+    }
+
+    @Test
+    fun `remove tag from logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aNumericalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(key, value)
+        testedLogger.i(message)
+        testedLogger.removeTag(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasTags(mapOf(key to value))
+            assertThat(lastValue.tags)
                 .isEmpty()
         }
     }

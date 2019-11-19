@@ -36,6 +36,7 @@ private constructor(
 
     private val logWriter = strategy.getLogWriter()
     private val fields = mutableMapOf<String, Any?>()
+    private val tags = mutableMapOf<String, String?>()
 
     // region Log
 
@@ -276,6 +277,7 @@ private constructor(
     fun addField(key: String, value: Date?) {
         fields[key] = value
     }
+
     /**
      * Remove a custom field from all future logs sent by this logger.
      * Previous log won't lose the field value associated with this key if they were created prior to this.
@@ -283,6 +285,24 @@ private constructor(
      */
     fun removeField(key: String) {
         fields.remove(key)
+    }
+
+    /**
+     * Add a tag to all future logs sent by this logger.
+     * @param key the key for this tag
+     * @param value the (nullable) String value of this tag
+     */
+    fun addTag(key: String, value: String?) {
+        tags[key] = value
+    }
+
+    /**
+     * Remove atag from all future logs sent by this logger.
+     * Previous log won't lose the tag associated with this key if they were created prior to this.
+     * @param key the key of the tag to remove
+     */
+    fun removeTag(key: String) {
+        tags.remove(key)
     }
 
     // endregion
@@ -322,7 +342,8 @@ private constructor(
             timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
             userAgent = if (userAgentEnabled) userAgent else null,
             throwable = throwable,
-            fields = fields
+            fields = fields.toMap(),
+            tags = tags.toMap()
         )
     }
 

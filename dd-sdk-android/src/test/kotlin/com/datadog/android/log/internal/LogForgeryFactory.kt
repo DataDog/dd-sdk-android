@@ -24,7 +24,8 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             timestamp = forge.aLong(),
             userAgent = forge.anAlphabeticalString(),
             throwable = null,
-            fields = forge.exhaustiveFields()
+            fields = forge.exhaustiveFields(),
+            tags = forge.aMap { anAlphabeticalString() to aNumericalString() }
         )
     }
 

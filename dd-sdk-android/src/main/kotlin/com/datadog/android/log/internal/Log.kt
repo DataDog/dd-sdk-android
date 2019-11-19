@@ -16,5 +16,6 @@ internal data class Log(
     val timestamp: Long?,
     val userAgent: String?,
     val fields: Map<String, Any?>,
+    val tags: Map<String, String?>,
     val throwable: Throwable?
 )
