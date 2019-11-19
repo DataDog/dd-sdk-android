@@ -26,9 +26,9 @@ internal class LogUploadRunnable(
         val batch = logReader.readNextBatch()
 
         if (batch != null) {
-            val batchId = batch.first
+            val batchId = batch.id
             Log.i("T", "Sending batch $batchId")
-            val status = logUploader.uploadLogs(batch.second)
+            val status = logUploader.uploadLogs(batch.logs)
             if (shouldDropBatch(batchId, status)) {
                 logReader.dropBatch(batchId)
             }

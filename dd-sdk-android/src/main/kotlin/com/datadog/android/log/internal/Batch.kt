@@ -7,12 +7,9 @@
 package com.datadog.android.log.internal
 
 /**
- * Reads logs from a persistent location, when they can be sent.
- * @see [LogWriter]
+ * Represent a batch of logs read from a persisted location
  */
-internal interface LogReader {
-
-    fun readNextBatch(): Batch?
-
-    fun dropBatch(batchId: String)
-}
+internal data class Batch(
+    val id: String,
+    val logs: List<String>
+)

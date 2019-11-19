@@ -66,7 +66,7 @@ internal abstract class LogStrategyTest {
         testedLogWriter.writeLog(fakeLog)
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
-        val log = batch.second.first()
+        val log = batch.logs.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, fakeLog)
@@ -83,7 +83,7 @@ internal abstract class LogStrategyTest {
         testedLogWriter.writeLog(minimalLog)
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
-        val log = batch.second.first()
+        val log = batch.logs.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, minimalLog)
@@ -100,7 +100,7 @@ internal abstract class LogStrategyTest {
         testedLogWriter.writeLog(logWithReservedAttributes)
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
-        val log = batch.second.first()
+        val log = batch.logs.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, logWithoutAttributes)
@@ -114,7 +114,7 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
 
-        batch.second.forEachIndexed { i, log ->
+        batch.logs.forEachIndexed { i, log ->
             val jsonObject = JsonParser.parseString(log).asJsonObject
             assertLogMatches(jsonObject, fakeLogs[i])
         }
@@ -127,7 +127,7 @@ internal abstract class LogStrategyTest {
 
         testedLogWriter.writeLog(nextLog)
         val batch = testedLogReader.readNextBatch()!!
-        val log = batch.second.first()
+        val log = batch.logs.first()
 
         val jsonObject = JsonParser.parseString(log).asJsonObject
         assertLogMatches(jsonObject, fakeLog)
@@ -144,7 +144,7 @@ internal abstract class LogStrategyTest {
         val batch = testedLogReader.readNextBatch()
         checkNotNull(batch)
 
-        testedLogReader.dropBatch(batch.first)
+        testedLogReader.dropBatch(batch.id)
         val batch2 = testedLogReader.readNextBatch()
 
         assertThat(batch2)

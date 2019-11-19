@@ -68,7 +68,7 @@ internal class LogUploadRunnableTest {
     fun `batch sent successfully`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.SUCCESS
 
         testedRunnable.run()
@@ -82,7 +82,7 @@ internal class LogUploadRunnableTest {
     fun `batch kept on Network Error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
@@ -96,7 +96,7 @@ internal class LogUploadRunnableTest {
     fun `batch dropped on third Network Error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
@@ -112,7 +112,7 @@ internal class LogUploadRunnableTest {
     fun `batch dropped on Redirection`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_REDIRECTION
 
         testedRunnable.run()
@@ -126,7 +126,7 @@ internal class LogUploadRunnableTest {
     fun `batch dropped on Client Error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_CLIENT_ERROR
 
         testedRunnable.run()
@@ -140,7 +140,7 @@ internal class LogUploadRunnableTest {
     fun `batch kept on Server Error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
@@ -154,7 +154,7 @@ internal class LogUploadRunnableTest {
     fun `batch dropped on third Server Error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
@@ -170,7 +170,7 @@ internal class LogUploadRunnableTest {
     fun `batch dropped on Unknown error`(forge: Forge) {
         val fakeId = forge.anHexadecimalString()
         val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
+        whenever(mockLogReader.readNextBatch()) doReturn Batch(fakeId, fakeLogs)
         whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.UNKNOWN_ERROR
 
         testedRunnable.run()

@@ -10,6 +10,7 @@ import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log
+import com.datadog.android.log.internal.Batch
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.utils.split
 import java.io.File
@@ -26,7 +27,7 @@ internal class LogFileReader(
 
     // region LogReader
 
-    override fun readNextBatch(): Pair<String, List<String>>? {
+    override fun readNextBatch(): Batch? {
         val files = rootDirectory.listFiles(fileFilter).sorted()
         val nextLogFile = files.firstOrNull { it.name !in sentBatches }
         return if (nextLogFile == null) {
@@ -38,7 +39,7 @@ internal class LogFileReader(
                 val inputBytes = nextLogFile.readBytes()
                 val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
 
-                nextLogFile.name to logs.map { deobfuscate(it) }
+                Batch(nextLogFile.name, logs.map { deobfuscate(it) })
             }
         }
     }
