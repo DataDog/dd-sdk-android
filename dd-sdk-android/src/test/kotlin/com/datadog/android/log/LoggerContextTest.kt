@@ -58,258 +58,258 @@ internal class LoggerContextTest {
             .build()
     }
 
-    // region addField
+    // region addAttribute
 
     @Test
-    fun `add boolean field to logger`(forge: Forge) {
+    fun `add boolean attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aBool()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add int field to logger`(forge: Forge) {
+    fun `add int attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.anInt()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add long field to logger`(forge: Forge) {
+    fun `add long attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aLong()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add float field to logger`(forge: Forge) {
+    fun `add float attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aFloat()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add double field to logger`(forge: Forge) {
+    fun `add double attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aDouble()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add String field to logger`(forge: Forge) {
+    fun `add String attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aNumericalString()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     @Test
-    fun `add Date field to logger`(forge: Forge, @Forgery value: Date) {
+    fun `add Date attribute to logger`(forge: Forge, @Forgery value: Date) {
         val key = forge.anAlphabeticalString()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
             assertThat(lastValue)
-                .hasFields(mapOf(key to value))
+                .hasAttributes(mapOf(key to value))
         }
     }
 
     // endregion
 
-    // region removeField
+    // region removeAttribute
 
     @Test
-    fun `remove boolean field to logger`(forge: Forge) {
+    fun `remove boolean attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aBool()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove int field to logger`(forge: Forge) {
+    fun `remove int attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.anInt()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove long field to logger`(forge: Forge) {
+    fun `remove long attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aLong()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove float field to logger`(forge: Forge) {
+    fun `remove float attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aFloat()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove double field to logger`(forge: Forge) {
+    fun `remove double attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aDouble()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove String field to logger`(forge: Forge) {
+    fun `remove String attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value = forge.aNumericalString()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }
 
     @Test
-    fun `remove Date field to logger`(forge: Forge, @Forgery value: Date) {
+    fun `remove Date attribute to logger`(forge: Forge, @Forgery value: Date) {
         val key = forge.anAlphabeticalString()
         val message = forge.anAlphabeticalString()
 
-        testedLogger.addField(key, value)
+        testedLogger.addAttribute(key, value)
         testedLogger.i(message)
-        testedLogger.removeField(key)
+        testedLogger.removeAttribute(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
-                .hasFields(mapOf(key to value))
-            assertThat(lastValue.fields)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue.attributes)
                 .isEmpty()
         }
     }

@@ -66,9 +66,9 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasFields(fields: Map<String, Any?>) {
-        assertThat(actual.fields)
-            .containsExactly(*fields.entries.toTypedArray())
+    fun hasAttributes(attributes: Map<String, Any?>) {
+        assertThat(actual.attributes)
+            .containsExactly(*attributes.entries.toTypedArray())
     }
 
     fun hasTags(tags: Map<String, String?>) {

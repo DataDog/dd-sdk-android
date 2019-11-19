@@ -103,8 +103,8 @@ internal class LogFileWriter(
 
         // TODO Network Infos
 
-        // Custom Fields
-        log.fields
+        // Custom Attributes
+        log.attributes
             .filter { it.key.isNotBlank() && it.key !in LogStrategy.reservedAttributes }
             .forEach {
                 val value = it.value

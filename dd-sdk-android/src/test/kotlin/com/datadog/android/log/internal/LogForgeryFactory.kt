@@ -24,12 +24,12 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             timestamp = forge.aLong(),
             userAgent = forge.anAlphabeticalString(),
             throwable = null,
-            fields = forge.exhaustiveFields(),
+            attributes = forge.exhaustiveAttributes(),
             tags = forge.aMap { anAlphabeticalString() to aNumericalString() }
         )
     }
 
-    private fun Forge.exhaustiveFields(): Map<String, Any?> {
+    private fun Forge.exhaustiveAttributes(): Map<String, Any?> {
         val map = listOf(
             aBool(),
             anInt(),

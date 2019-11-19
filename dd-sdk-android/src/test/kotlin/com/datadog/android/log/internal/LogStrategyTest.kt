@@ -89,11 +89,11 @@ internal abstract class LogStrategyTest {
 
     @Test
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
-        val logWithoutAttributes = fakeLog.copy(fields = emptyMap())
+        val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
         val attributes = forge.aMap {
             anElementFrom(*LogStrategy.reservedAttributes) to forge.anAsciiString()
         }.toMap()
-        val logWithReservedAttributes = fakeLog.copy(fields = attributes)
+        val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
 
         testedLogWriter.writeLog(logWithReservedAttributes)
         waitForNextBatch()
@@ -191,7 +191,7 @@ internal abstract class LogStrategyTest {
             assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
         }
 
-        log.fields
+        log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
                 val value = it.value
