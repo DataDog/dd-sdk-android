@@ -182,11 +182,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -199,11 +202,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -216,11 +222,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -233,11 +242,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -250,11 +262,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -267,11 +282,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
@@ -283,11 +301,14 @@ internal class LoggerContextTest {
         val message = forge.anAlphabeticalString()
 
         testedLogger.addField(key, value)
+        testedLogger.i(message)
         testedLogger.removeField(key)
         testedLogger.i(message)
 
         argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasFields(mapOf(key to value))
             assertThat(lastValue.fields)
                 .isEmpty()
         }
