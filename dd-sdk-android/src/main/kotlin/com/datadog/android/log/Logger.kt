@@ -276,6 +276,14 @@ private constructor(
     fun addField(key: String, value: Date?) {
         fields[key] = value
     }
+    /**
+     * Remove a custom field from all future logs sent by this logger.
+     * Previous log won't lose the field value associated with this key if they were created prior to this.
+     * @param key the key of the field to remove
+     */
+    fun removeField(key: String) {
+        fields.remove(key)
+    }
 
     // endregion
 

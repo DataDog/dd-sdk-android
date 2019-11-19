@@ -20,6 +20,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Date
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -55,6 +56,8 @@ internal class LoggerContextTest {
             .overrideLogStrategy(mockLogStrategy)
             .build()
     }
+
+    // region addField
 
     @Test
     fun `add boolean field to logger`(forge: Forge) {
@@ -166,4 +169,128 @@ internal class LoggerContextTest {
                 .hasFields(mapOf(key to value))
         }
     }
+
+    // endregion
+
+    // region removeField
+
+    @Test
+    fun `remove boolean field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aBool()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove int field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.anInt()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove long field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aLong()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove float field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aFloat()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove double field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aDouble()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove String field to logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.aNumericalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove Date field to logger`(forge: Forge, @Forgery value: Date) {
+        val key = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addField(key, value)
+        testedLogger.removeField(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.fields)
+                .isEmpty()
+        }
+    }
+
+    // endregion
 }
