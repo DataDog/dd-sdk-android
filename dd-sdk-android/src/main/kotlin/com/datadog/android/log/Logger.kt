@@ -11,6 +11,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
+import java.util.Date
 
 /**
  * A class enabling Datadog logging features.
@@ -20,6 +21,7 @@ import com.datadog.android.log.internal.LogStrategy
  *
  * You can have multiple loggers configured in your application, each with their own settings.
  */
+@Suppress("TooManyFunctions", "MethodOverloading")
 class Logger
 private constructor(
     val serviceName: String,
@@ -33,6 +35,7 @@ private constructor(
 ) {
 
     private val logWriter = strategy.getLogWriter()
+    private val fields = mutableMapOf<String, Any?>()
 
     // region Log
 
@@ -119,7 +122,7 @@ private constructor(
         private var networkInfoEnabled: Boolean = false
 
         private var logStrategy: LogStrategy? = null
-        private var userAgent: String ? = null
+        private var userAgent: String? = null
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -209,6 +212,81 @@ private constructor(
 
     // endregion
 
+    // region Context Information (fields, tags)
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the boolean value of this field
+     */
+    fun addField(key: String, value: Boolean) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the integer value of this field
+     */
+    fun addField(key: String, value: Int) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the long value of this field
+     */
+    fun addField(key: String, value: Long) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the float value of this field
+     */
+    fun addField(key: String, value: Float) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the double value of this field
+     */
+    fun addField(key: String, value: Double) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the (nullable) String value of this field
+     */
+    fun addField(key: String, value: String?) {
+        fields[key] = value
+    }
+
+    /**
+     * Add a custom field to all future logs sent by this logger.
+     * @param key the key for this field
+     * @param value the (nullable) Date value of this field
+     */
+    fun addField(key: String, value: Date?) {
+        fields[key] = value
+    }
+    /**
+     * Remove a custom field from all future logs sent by this logger.
+     * Previous log won't lose the field value associated with this key if they were created prior to this.
+     * @param key the key of the field to remove
+     */
+    fun removeField(key: String) {
+        fields.remove(key)
+    }
+
+    // endregion
+
     // region Internal/Log
 
     private fun internalLog(
@@ -228,24 +306,23 @@ private constructor(
             val log = createLog(level, message, throwable)
             logWriter.writeLog(log)
         }
-
-        // TODO build log object with relevant infos :
-        // fields, tags, timestamp, userAgent, networkInfo
-
-        // TODO include information about the throwable
-
-        // TODO persist the log somewhere
     }
 
     private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
         // TODO timestamp based on phone local time = error prone
+
+        // TODO build log object with relevant infos : fields, tags, networkInfo
+
+        // TODO include information about the throwable
+
         return Log(
             serviceName = serviceName,
             level = level,
             message = message,
-            throwable = throwable,
             timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
-            userAgent = if (userAgentEnabled) userAgent else null
+            userAgent = if (userAgentEnabled) userAgent else null,
+            throwable = throwable,
+            fields = fields
         )
     }
 

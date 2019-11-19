@@ -55,6 +55,7 @@ object Dependencies {
             "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:junit5:${Versions.Elmyr}",
+            "com.github.xgouchet.Elmyr:jvm:${Versions.Elmyr}",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MockitoKotlin}"
         )
 

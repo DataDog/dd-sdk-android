@@ -191,7 +191,9 @@ internal class LogOkHttpUploaderTest {
         mockWebServer.enqueue(
             MockResponse()
                 .throttleBody(THROTTLE_RATE, THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS)
-                .setBody("{ 'success': 'ok', 'message': '...' }")
+                .setBody("{ 'success': 'ok', " +
+                    "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
+                    "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }")
         )
 
         val status = testedUploader.uploadLogs(logs)
@@ -257,6 +259,6 @@ internal class LogOkHttpUploaderTest {
     companion object {
         const val TIMEOUT_TEST_MS = 250L
         const val THROTTLE_RATE = 8L
-        const val THROTTLE_PERIOD_MS = TIMEOUT_TEST_MS
+        const val THROTTLE_PERIOD_MS = TIMEOUT_TEST_MS * 2
     }
 }
