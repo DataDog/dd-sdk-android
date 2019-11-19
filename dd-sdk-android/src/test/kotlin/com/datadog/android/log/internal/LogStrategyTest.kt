@@ -10,11 +10,11 @@ import com.datadog.android.log.Configurator
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.IllegalStateException
 import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -193,7 +193,15 @@ internal abstract class LogStrategyTest {
                     )
                 }
             }
-        }
+
+        val tags = (jsonObject[LogStrategy.TAG_DATADOG_TAGS] as JsonPrimitive).asString
+            .split(',')
+            .map { it.split(':') }
+            .map { it[0] to it[1] }
+            .toMap()
+
+        assertThat(tags)
+            .containsAllEntriesOf(log.tags)
     }
 
     // endregion

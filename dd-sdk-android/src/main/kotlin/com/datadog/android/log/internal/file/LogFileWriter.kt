@@ -122,7 +122,12 @@ internal class LogFileWriter(
                 jsonLog.add(it.key, jsonValue)
             }
 
-        // TODO Tags
+        // Tags
+        val tags = log.tags
+            .filter { it.key.isNotBlank() }
+            .map { "${it.key}:${it.value}" }
+            .joinToString(",")
+        jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
 
         return jsonLog.toString()
     }
