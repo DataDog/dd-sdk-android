@@ -105,7 +105,7 @@ internal class LogFileWriter(
 
         // Custom Fields
         log.fields
-            .filter { it.key.isNotBlank() }
+            .filter { it.key.isNotBlank() && it.key !in LogStrategy.reservedAttributes }
             .forEach {
                 val value = it.value
                 val jsonValue = when (value) {
