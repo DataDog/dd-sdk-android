@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.net
 
-import com.datadog.android.log.Configurator
+import com.datadog.android.log.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

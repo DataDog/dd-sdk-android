@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import android.content.Context
+import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.LogStrategy

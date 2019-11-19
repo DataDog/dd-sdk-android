@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal
 
-import com.datadog.android.log.Configurator
+import com.datadog.android.log.forge.Configurator
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
