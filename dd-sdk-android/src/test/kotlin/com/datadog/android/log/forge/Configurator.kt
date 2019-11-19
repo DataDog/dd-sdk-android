@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log
+package com.datadog.android.log.forge
 
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogForgeryFactory
@@ -16,6 +16,7 @@ class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(Log::class.java, LogForgeryFactory())
+        forge.addFactory(ThrowableForgeryFactory())
         forge.useJvmFactories()
     }
 }

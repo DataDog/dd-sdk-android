@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal
 
-import com.datadog.android.log.Configurator
+import com.datadog.android.log.forge.Configurator
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
@@ -15,6 +15,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -218,6 +220,17 @@ internal abstract class LogStrategyTest {
 
         assertThat(tags)
             .containsAllEntriesOf(log.tags)
+
+        val throwable = log.throwable
+        if (throwable != null) {
+            val sw = StringWriter()
+            throwable.printStackTrace(PrintWriter(sw))
+
+            assertThat(jsonObject)
+                .hasField(LogStrategy.TAG_ERROR_KIND, throwable.javaClass.simpleName)
+                .hasField(LogStrategy.TAG_ERROR_MESSAGE, throwable.message)
+                .hasField(LogStrategy.TAG_ERROR_STACK, sw.toString())
+        }
     }
 
     // endregion

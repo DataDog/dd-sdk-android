@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
-import com.datadog.android.log.Configurator
+import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.nhaarman.mockitokotlin2.any

@@ -23,7 +23,7 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             message = forge.anAlphabeticalString(),
             timestamp = forge.aLong(),
             userAgent = forge.anAlphabeticalString(),
-            throwable = null,
+            throwable = forge.getForgery(),
             attributes = forge.exhaustiveAttributes(),
             tags = forge.aMap { anAlphabeticalString() to aNumericalString() }
         )

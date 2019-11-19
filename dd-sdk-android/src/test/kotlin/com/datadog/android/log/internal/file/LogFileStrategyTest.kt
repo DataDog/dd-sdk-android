@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
-import com.datadog.android.log.Configurator
+import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.nhaarman.mockitokotlin2.doReturn

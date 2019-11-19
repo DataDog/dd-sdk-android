@@ -39,6 +39,15 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
+    fun hasThrowable(expected: Throwable?): LogAssert {
+        assertThat(actual.throwable)
+            .overridingErrorMessage(
+                "Expected log to have throwable $expected but was ${actual.throwable}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTimestamp(expected: Long): LogAssert {
         assertThat(actual.timestamp)
             .overridingErrorMessage(
