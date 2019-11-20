@@ -248,7 +248,7 @@ internal abstract class LogStrategyTest {
 
     companion object {
         private val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "ERROR"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )
     }
 }
