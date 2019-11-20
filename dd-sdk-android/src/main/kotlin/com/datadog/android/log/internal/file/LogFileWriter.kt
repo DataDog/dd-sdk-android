@@ -103,7 +103,7 @@ internal class LogFileWriter(
             jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
         }
 
-        // TODO Network Infos
+        // TODO RUMM-45 Network Infos
 
         // Custom Attributes
         log.attributes

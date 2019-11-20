@@ -130,14 +130,14 @@ private constructor(
          */
         fun build(): Logger {
 
-            // TODO register broadcast receiver
+            // TODO RUMM-45 register broadcast receiver
 
             return Logger(
                 strategy = logStrategy ?: Datadog.getLogStrategy(),
                 serviceName = serviceName,
                 timestampsEnabled = timestampsEnabled,
                 userAgentEnabled = userAgentEnabled,
-                // TODO xgouchet 2019/11/5 allow overriding the user agent ?
+                // TODO RUMM-34 allow overriding the user agent ?
                 userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
                 datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
@@ -329,9 +329,9 @@ private constructor(
     }
 
     private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
-        // TODO timestamp based on phone local time = error prone
+        // TODO RUMM-58 timestamp based on phone local time = error prone
 
-        // TODO build log object with networkInfo
+        // TODO RUMM-45 build log object with networkInfo
 
         // TODO RUMM-53 include information about the throwable
 

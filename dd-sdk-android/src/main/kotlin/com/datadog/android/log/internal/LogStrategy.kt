@@ -19,7 +19,7 @@ internal interface LogStrategy {
         internal const val TAG_MESSAGE = "message"
         internal const val TAG_STATUS = "status"
         internal const val TAG_SERVICE_NAME = "service"
-        internal const val TAG_SOURCE = "source" // TODO automatically set the source
+        internal const val TAG_SOURCE = "source"
 
         // COMMON TAGS
         internal const val TAG_DATADOG_TAGS = "ddtags"

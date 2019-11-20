@@ -97,8 +97,6 @@ internal class LoggerNoTimestampTest {
 
     // region Log
 
-    // TODO allow logging with an error !
-
     @Test
     fun `logger logs message with verbose level`() {
         testedLogger.v(fakeMessage)

@@ -108,7 +108,7 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder()
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
-        // TODO check broadcastReceiver is registered
+        // TODO RUMM-45 check broadcastReceiver is registered
 
         assertThat(logger.networkInfoEnabled).isEqualTo(networkInfoEnabled)
     }

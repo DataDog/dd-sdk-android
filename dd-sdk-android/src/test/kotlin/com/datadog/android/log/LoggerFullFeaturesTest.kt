@@ -97,8 +97,6 @@ internal class LoggerFullFeaturesTest {
 
     // region Log
 
-    // TODO allow logging with an error !
-
     @Test
     fun `logger logs message with verbose level`() {
         testedLogger.v(fakeMessage)
@@ -161,7 +159,7 @@ internal class LoggerFullFeaturesTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(timestamp)
                 .hasUserAgent(fakeUserAgent)
-            // TODO test network info
+            // TODO RUMM-45 test network info
         }
     }
 
