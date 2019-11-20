@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal
 
 /**
- * Represent a batch of logs read from a persisted location
+ * Represent a batch of logs read from a persisted location.
  */
 internal data class Batch(
     val id: String,
