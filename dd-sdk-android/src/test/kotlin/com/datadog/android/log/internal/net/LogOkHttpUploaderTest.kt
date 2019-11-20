@@ -65,6 +65,28 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
+    fun `uploads logs 100-Continue (timeout)`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.enqueue(mockResponse(100))
+
+        val status = testedUploader.uploadLogs(logs)
+
+        assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+        assertValidRequest(mockWebServer.takeRequest(), logs)
+    }
+
+    @Test
+    fun `uploads logs 1xx-Informational`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.enqueue(mockResponse(forge.anInt(101, 200)))
+
+        val status = testedUploader.uploadLogs(logs)
+
+        assertThat(status).isEqualTo(LogUploadStatus.UNKNOWN_ERROR)
+        assertValidRequest(mockWebServer.takeRequest(), logs)
+    }
+
+    @Test
     fun `uploads logs 200-OK`(forge: Forge) {
         val logs = forge.aList { anHexadecimalString() }
         mockWebServer.enqueue(mockResponse(200))
@@ -160,17 +182,6 @@ internal class LogOkHttpUploaderTest {
         val status = testedUploader.uploadLogs(logs)
 
         assertThat(status).isEqualTo(LogUploadStatus.HTTP_SERVER_ERROR)
-        assertValidRequest(mockWebServer.takeRequest(), logs)
-    }
-
-    @Test
-    fun `uploads logs 1xx-Informational`(forge: Forge) {
-        val logs = forge.aList { anHexadecimalString() }
-        mockWebServer.enqueue(mockResponse(forge.anInt(100, 200)))
-
-        val status = testedUploader.uploadLogs(logs)
-
-        assertThat(status).isEqualTo(LogUploadStatus.UNKNOWN_ERROR)
         assertValidRequest(mockWebServer.takeRequest(), logs)
     }
 
