@@ -4,8 +4,11 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.google.gson
+package com.datadog.android.log.assertj
 
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -217,7 +220,7 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     companion object {
-
-        internal fun assertThat(actual: JsonObject): JsonObjectAssert = JsonObjectAssert(actual)
+        internal fun assertThat(actual: JsonObject): JsonObjectAssert =
+            JsonObjectAssert(actual)
     }
 }

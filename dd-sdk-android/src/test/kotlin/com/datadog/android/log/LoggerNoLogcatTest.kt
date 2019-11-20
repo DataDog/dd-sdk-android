@@ -8,8 +8,8 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.Log
-import com.datadog.android.log.internal.LogAssert
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -152,7 +152,7 @@ internal class LoggerNoLogcatTest {
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
 
-            LogAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLevel(level)
                 .hasMessage(fakeMessage)

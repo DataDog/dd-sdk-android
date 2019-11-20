@@ -7,11 +7,11 @@
 package com.datadog.android.log.internal
 
 import android.os.Build
+import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.utils.ApiLevelExtension
 import com.datadog.android.utils.TestTargetApi
 import com.google.gson.JsonObject
-import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
