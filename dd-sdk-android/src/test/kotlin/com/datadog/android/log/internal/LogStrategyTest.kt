@@ -6,7 +6,10 @@
 
 package com.datadog.android.log.internal
 
+import android.os.Build
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.ApiLevelExtension
+import com.datadog.android.utils.TestTargetApi
 import com.google.gson.JsonObject
 import com.google.gson.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
@@ -29,7 +32,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -61,6 +65,7 @@ internal abstract class LogStrategyTest {
     // region Writer Tests
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes full log as json`(@Forgery fakeLog: Log) {
 
         testedLogWriter.writeLog(fakeLog)
@@ -73,6 +78,7 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
             timestamp = null,
@@ -90,6 +96,7 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
         val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
         val attributes = forge.aMap {
@@ -107,6 +114,7 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes batch of logs`() {
         fakeLogs.forEach {
             testedLogWriter.writeLog(it)
@@ -121,6 +129,7 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes in new batch if delay passed`(@Forgery fakeLog: Log, @Forgery nextLog: Log) {
         testedLogWriter.writeLog(fakeLog)
         waitForNextBatch()
@@ -138,6 +147,7 @@ internal abstract class LogStrategyTest {
     // region Reader Tests
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is already sent`(@Forgery fakeLog: Log) {
         testedLogWriter.writeLog(fakeLog)
         waitForNextBatch()
@@ -152,6 +162,7 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is too recent`(@Forgery fakeLog: Log) {
         testedLogWriter.writeLog(fakeLog)
         val batch = testedLogReader.readNextBatch()

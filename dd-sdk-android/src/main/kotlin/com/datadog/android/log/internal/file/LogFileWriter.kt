@@ -145,7 +145,7 @@ internal class LogFileWriter(
 
     private fun obfuscate(log: String): ByteArray {
         val input = log.toByteArray(Charsets.UTF_8)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O || Build.MODEL == null) {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             obfuscateApi26(input)
         } else {
             AndroidBase64.encode(input, AndroidBase64.NO_WRAP)

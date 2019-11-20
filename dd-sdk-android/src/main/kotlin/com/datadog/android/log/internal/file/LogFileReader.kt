@@ -65,7 +65,7 @@ internal class LogFileReader(
     // region Internal
 
     private fun deobfuscate(input: ByteArray): String {
-        val output = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O || Build.MODEL == null) {
+        val output = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             deobfuscateApi26(input)
         } else {
             AndroidBase64.decode(input, AndroidBase64.DEFAULT)
