@@ -12,6 +12,7 @@ import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -23,6 +24,7 @@ object Datadog {
 
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
+    private lateinit var networkInfoProvider: NetworkInfoProvider
 
     var endpointBaseUrl: String = "https://browser-http-intake.logs.datadoghq.com"
 
@@ -55,6 +57,10 @@ object Datadog {
     internal fun getLogUploader(): LogUploader {
         checkInitialized()
         return LogOkHttpUploader(endpointBaseUrl, clientToken)
+    }
+
+    internal fun getNetworkInfoProvider(): NetworkInfoProvider {
+        return networkInfoProvider
     }
 
     // endregion

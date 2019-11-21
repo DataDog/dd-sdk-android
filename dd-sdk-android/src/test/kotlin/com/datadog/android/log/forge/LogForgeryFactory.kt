@@ -19,14 +19,15 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
                 android.util.Log.VERBOSE, android.util.Log.DEBUG,
                 android.util.Log.INFO, android.util.Log.WARN,
                 android.util.Log.ERROR, android.util.Log.ASSERT,
-                0, 1 // Yes those don't exist, but let's over all the edge cases…
+                0, 1 // Yes those don't exist, but let's cover all the edge cases…
             ),
             message = forge.anAlphabeticalString(),
             timestamp = forge.aLong(),
             userAgent = forge.anAlphabeticalString(),
             throwable = forge.getForgery(),
             attributes = forge.exhaustiveAttributes(),
-            tags = forge.aMap { anAlphabeticalString() to aNumericalString() }
+            tags = forge.aMap { anAlphabeticalString() to aNumericalString() },
+            networkInfo = forge.getForgery()
         )
     }
 

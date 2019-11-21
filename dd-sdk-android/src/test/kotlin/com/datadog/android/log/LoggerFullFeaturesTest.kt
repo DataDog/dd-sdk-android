@@ -9,14 +9,18 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
+import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -36,6 +40,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class LoggerFullFeaturesTest {
 
     lateinit var testedLogger: Logger
@@ -43,6 +48,7 @@ internal class LoggerFullFeaturesTest {
     lateinit var fakeServiceName: String
     lateinit var fakeMessage: String
     lateinit var fakeUserAgent: String
+    lateinit var fakeNetworkInfo: NetworkInfo
 
     @Mock
     lateinit var mockContext: Context
@@ -50,6 +56,8 @@ internal class LoggerFullFeaturesTest {
     lateinit var mockLogStrategy: LogStrategy
     @Mock
     lateinit var mockLogWriter: LogWriter
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     private lateinit var originalErrStream: PrintStream
     private lateinit var originalOutStream: PrintStream
@@ -64,6 +72,8 @@ internal class LoggerFullFeaturesTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
+        fakeNetworkInfo = forge.getForgery()
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
         testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
@@ -74,6 +84,7 @@ internal class LoggerFullFeaturesTest {
             .setUserAgentEnabled(true)
             .overrideUserAgent(fakeUserAgent)
             .overrideLogStrategy(mockLogStrategy)
+            .overrideNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
     }
 
@@ -159,7 +170,7 @@ internal class LoggerFullFeaturesTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(timestamp)
                 .hasUserAgent(fakeUserAgent)
-            // TODO RUMM-45 test network info
+                .hasNetworkInfo(fakeNetworkInfo)
         }
     }
 
