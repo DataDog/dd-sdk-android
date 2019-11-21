@@ -27,6 +27,8 @@ android {
 
         buildConfigField("String", "GIT_COMMIT_H", "\"${getGitHash()}\"")
         buildConfigField("String", "DD_CLIENT_TOKEN", "\"${project.property("DD_CLIENT_TOKEN")}\"")
+
+        vectorDrawables.useSupportLibrary = true
     }
 
     // Specifies one flavor dimension.
@@ -57,6 +59,8 @@ dependencies {
     // Android dependencies
     implementation "androidx.appcompat:appcompat:1.1.0"
     implementation "androidx.constraintlayout:constraintlayout:2.0.0-beta3"
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.vectordrawable:vectordrawable:1.1.0'
 
     implementation "com.datadoghq:dd-sdk-android:0.0.1"
 }

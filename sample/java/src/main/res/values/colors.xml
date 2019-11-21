@@ -6,7 +6,12 @@
   -->
 
 <resources>
-    <string name="app_name">Datadog SDK Sample</string>
-    <string name="title_logs">Logs</string>
-    <string name="title_webview">WebView</string>
+
+    <!-- Common -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Main Palette -->
+    <color name="datadog_violet">#632CA6</color>
+
 </resources>

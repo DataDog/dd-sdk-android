@@ -6,7 +6,10 @@
   -->
 
 <resources>
-    <string name="app_name">Datadog SDK Sample</string>
-    <string name="title_logs">Logs</string>
-    <string name="title_webview">WebView</string>
+    <style name="Sample.Theme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/datadog_violet</item>
+
+        <item name="colorPrimary">@color/datadog_violet</item>
+    </style>
 </resources>

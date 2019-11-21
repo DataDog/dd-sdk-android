@@ -7,14 +7,36 @@
 package com.datadog.android.sample;
 
 import android.os.Bundle;
+import android.view.MenuItem;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import com.datadog.android.log.Logger;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private Logger logger;
+
+    private BottomNavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+            boolean result = true;
+            switch (menuItem.getItemId()) {
+                case R.id.navigation_logs:
+                    logger.i("Switching to Logs screen");
+                    break;
+                case R.id.navigation_webview :
+                    logger.i("Switching to Webview screen");
+                    break;
+                default:
+                    result = false;
+            }
+            return result;
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -22,6 +44,10 @@ public class MainActivity extends AppCompatActivity {
 
         logger = SampleApplication.fromContext(this).getLogger();
         logger.d("MainActivity/onCreate");
+
+        setContentView(R.layout.activity_main);
+        ((BottomNavigationView )findViewById(R.id.navigation))
+                .setOnNavigationItemSelectedListener(navigationItemSelectedListener);
     }
 
     @Override
