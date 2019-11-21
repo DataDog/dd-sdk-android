@@ -42,14 +42,10 @@ internal abstract class LogStrategyTest {
     lateinit var testedLogWriter: LogWriter
     lateinit var testedLogReader: LogReader
 
-    lateinit var fakeLogs: List<Log>
-
     // region Setup
 
     @BeforeEach
-    fun `set up`(forge: Forge, @Forgery fakeLog: Log) {
-        fakeLogs = forge.aList(size = 512) { fakeLog.copy(message = anAlphabeticalString()) }
-
+    fun `set up`() {
         val persistingStrategy = getStrategy()
 
         testedLogWriter = persistingStrategy.getLogWriter()
@@ -67,7 +63,6 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes full log as json`(@Forgery fakeLog: Log) {
-
         testedLogWriter.writeLog(fakeLog)
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
@@ -83,7 +78,10 @@ internal abstract class LogStrategyTest {
         val minimalLog = fakeLog.copy(
             timestamp = null,
             userAgent = null,
-            throwable = null
+            throwable = null,
+            networkInfo = null,
+            attributes = emptyMap(),
+            tags = emptyMap()
         )
 
         testedLogWriter.writeLog(minimalLog)
@@ -115,16 +113,19 @@ internal abstract class LogStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `writes batch of logs`() {
-        fakeLogs.forEach {
-            testedLogWriter.writeLog(it)
+    fun `writes batch of logs`(@Forgery fakeLogs: List<Log>) {
+        val sentLogs = mutableListOf<Log>()
+        fakeLogs.forEachIndexed { i, log ->
+            val updatedLog = log.copy(level = i % 9)
+            testedLogWriter.writeLog(updatedLog)
+            sentLogs.add(updatedLog)
         }
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
 
         batch.logs.forEachIndexed { i, log ->
             val jsonObject = JsonParser.parseString(log).asJsonObject
-            assertLogMatches(jsonObject, fakeLogs[i])
+            assertLogMatches(jsonObject, sentLogs[i])
         }
     }
 
@@ -191,7 +192,10 @@ internal abstract class LogStrategyTest {
 
     // region Internal
 
-    private fun assertLogMatches(jsonObject: JsonObject, log: Log) {
+    private fun assertLogMatches(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         assertThat(jsonObject)
             .hasField(LogStrategy.TAG_MESSAGE, log.message)
             .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
@@ -199,11 +203,42 @@ internal abstract class LogStrategyTest {
 
         if (!log.userAgent.isNullOrBlank()) {
             assertThat(jsonObject).hasField(LogStrategy.TAG_USER_AGENT_SDK, log.userAgent)
-        }
-        if (log.timestamp != null) {
-            assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
+        } else {
+            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_DATE)
         }
 
+        if (log.timestamp != null) {
+            assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
+        } else {
+            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_DATE)
+        }
+
+        assertNetworkInfoMatches(log, jsonObject)
+
+        assertFieldsMatch(log, jsonObject)
+        assertTagsMatch(jsonObject, log)
+        assertThrowableMatches(log, jsonObject)
+    }
+
+    private fun assertNetworkInfoMatches(log: Log, jsonObject: JsonObject) {
+        val info = log.networkInfo
+        if (info != null) {
+            assertThat(jsonObject)
+                .hasField(LogStrategy.TAG_NETWORK_INFO) {
+                    hasField(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+                    if (!info.carrierName.isNullOrBlank()) {
+                        hasField(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
+                    }
+                    if (info.carrierId >= 0) {
+                        hasField(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
+                    }
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_NETWORK_INFO)
+        }
+    }
+
+    private fun assertFieldsMatch(log: Log, jsonObject: JsonObject) {
         log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
@@ -222,16 +257,27 @@ internal abstract class LogStrategyTest {
                     )
                 }
             }
+    }
 
-        val tags = (jsonObject[LogStrategy.TAG_DATADOG_TAGS] as JsonPrimitive).asString
-            .split(',')
-            .map { it.split(':') }
-            .map { it[0] to it[1] }
-            .toMap()
+    private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
+        val jsonTagString = (jsonObject[LogStrategy.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
 
-        assertThat(tags)
-            .containsAllEntriesOf(log.tags)
+        if (jsonTagString.isNullOrBlank()) {
+            assertThat(log.tags)
+                .isEmpty()
+        } else {
+            val tags = jsonTagString
+                .split(',')
+                .map { it.split(':') }
+                .map { it[0] to it[1] }
+                .toMap()
 
+            assertThat(tags)
+                .containsAllEntriesOf(log.tags.filter { it.key.isNotBlank() && it.value != null })
+        }
+    }
+
+    private fun assertThrowableMatches(log: Log, jsonObject: JsonObject) {
         val throwable = log.throwable
         if (throwable != null) {
             val sw = StringWriter()

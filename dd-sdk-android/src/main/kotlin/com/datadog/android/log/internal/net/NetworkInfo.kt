@@ -12,7 +12,7 @@ internal data class NetworkInfo(
     val carrierId: Int = -1
 ) {
 
-    internal enum class Connectivity(val serializedName: String) {
+    internal enum class Connectivity(val serialized: String) {
         NETWORK_NOT_CONNECTED("network_not_connected"),
         NETWORK_WIFI("network_wifi"),
         NETWORK_2G("network_2g"),

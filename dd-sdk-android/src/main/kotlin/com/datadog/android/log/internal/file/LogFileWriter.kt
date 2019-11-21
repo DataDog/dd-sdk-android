@@ -103,7 +103,19 @@ internal class LogFileWriter(
             jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
         }
 
-        // TODO RUMM-45 Network Infos
+        // Network Infos
+        val info = log.networkInfo
+        if (info != null) {
+            val network = JsonObject()
+            network.addProperty(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            if (!info.carrierName.isNullOrBlank()) {
+                network.addProperty(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
+            }
+            if (info.carrierId >= 0) {
+                network.addProperty(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
+            }
+            jsonLog.add(LogStrategy.TAG_NETWORK_INFO, network)
+        }
 
         // Custom Attributes
         log.attributes
@@ -111,7 +123,6 @@ internal class LogFileWriter(
             .forEach {
                 val value = it.value
                 val jsonValue = when (value) {
-                    null -> JsonNull.INSTANCE
                     is Boolean -> JsonPrimitive(value)
                     is Int -> JsonPrimitive(value)
                     is Long -> JsonPrimitive(value)

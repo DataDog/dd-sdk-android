@@ -32,6 +32,9 @@ internal interface LogStrategy {
         // ANDROID SPECIFIC TAGS
         internal const val TAG_USER_AGENT_SDK = "http.useragent_sdk"
         internal const val TAG_NETWORK_INFO = "networkinfo"
+        internal const val TAG_NETWORK_CONNECTIVITY = "connectivity"
+        internal const val TAG_NETWORK_CARRIER_NAME = "carrierName"
+        internal const val TAG_NETWORK_CARRIER_ID = "carrierId"
         internal const val TAG_DATE = "date"
 
         internal val reservedAttributes = arrayOf(

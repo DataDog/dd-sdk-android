@@ -15,6 +15,16 @@ import org.assertj.core.api.Assertions.assertThat
 class JsonObjectAssert(actual: JsonObject) :
     AbstractObjectAssert<JsonObjectAssert, JsonObject>(actual, JsonObjectAssert::class.java) {
 
+    fun doesNotHaveField(name: String): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to not have field named $name but found ${actual[name]}"
+            )
+            .isFalse()
+
+        return this
+    }
+
     fun hasNullField(name: String): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -216,6 +226,29 @@ class JsonObjectAssert(actual: JsonObject) :
                     "but was $value"
             )
             .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(
+        name: String,
+        withAssertions: JsonObjectAssert.() -> Unit
+    ): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonObject)
+            .overridingErrorMessage(
+                "Expected json object to have object field $name " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        JsonObjectAssert(element as JsonObject).withAssertions()
+
         return this
     }
 

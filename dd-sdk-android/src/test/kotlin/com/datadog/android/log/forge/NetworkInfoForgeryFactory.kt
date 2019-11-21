@@ -24,8 +24,12 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
                 NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
                 NetworkInfo.Connectivity.NETWORK_OTHER
             ),
-            forge.anAlphabeticalString(),
-            forge.anInt(-1, 10000)
+            forge.anElementFrom(
+                forge.anAlphabeticalString(),
+                forge.aWhitespaceString(),
+                null
+            ),
+            if (forge.aBool()) forge.anInt(0, 10000) else -1
         )
     }
 }
