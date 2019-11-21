@@ -14,7 +14,6 @@ import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
-import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 /**
@@ -22,29 +21,36 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
  */
 object Datadog {
 
+    private const val DEFAULT_URL: String = "https://browser-http-intake.logs.datadoghq.com"
+
     internal var initialized: Boolean = false
         private set
 
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
     private lateinit var networkInfoProvider: NetworkInfoProvider
-
-    var endpointBaseUrl: String = "https://browser-http-intake.logs.datadoghq.com"
-
-    private val handlerThread = LogHandlerThread()
+    private lateinit var handlerThread: LogHandlerThread
 
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
+     * @param endpointUrl (optional) the endpoint url to target, or null to use the default one
      */
-    fun initialize(context: Context, clientToken: String) {
+    @JvmOverloads
+    fun initialize(
+        context: Context,
+        clientToken: String,
+        endpointUrl: String? = null
+    ) {
         check(!initialized) { "Datadog has already been initialized." }
 
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(context.applicationContext)
 
         // Start handler to send logs
+        val uploader = LogOkHttpUploader(endpointUrl ?: DEFAULT_URL, Datadog.clientToken)
+        handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
         handlerThread.start()
 
         // Register Broadcast Receiver
@@ -62,11 +68,6 @@ object Datadog {
     internal fun getLogStrategy(): LogStrategy {
         checkInitialized()
         return logStrategy
-    }
-
-    internal fun getLogUploader(): LogUploader {
-        checkInitialized()
-        return LogOkHttpUploader(endpointBaseUrl, clientToken)
     }
 
     internal fun getNetworkInfoProvider(): NetworkInfoProvider {

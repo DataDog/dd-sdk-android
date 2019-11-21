@@ -6,18 +6,26 @@
 
 package com.datadog.android.log.internal
 
+import android.os.Handler
 import android.os.HandlerThread
+import com.datadog.android.log.internal.net.LogUploader
 
-internal class LogHandlerThread : HandlerThread(THREAD_NAME) {
+internal class LogHandlerThread(
+    private val logReader: LogReader,
+    private val logUploader: LogUploader
+) : HandlerThread(THREAD_NAME) {
 
-    internal lateinit var handler: LogHandler
+    private lateinit var handler: Handler
 
     override fun onLooperPrepared() {
         super.onLooperPrepared()
-        handler = LogHandler(looper)
+        handler = Handler(looper)
+        val runnable = LogUploadRunnable(handler, logReader, logUploader)
+        handler.postDelayed(runnable, INITIAL_DELAY_MS)
     }
 
     companion object {
         private const val THREAD_NAME = "ddog"
+        const val INITIAL_DELAY_MS = 5000L
     }
 }

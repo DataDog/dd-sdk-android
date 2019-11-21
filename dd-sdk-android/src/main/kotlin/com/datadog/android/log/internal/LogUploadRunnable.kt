@@ -8,14 +8,13 @@ package com.datadog.android.log.internal
 
 import android.os.Handler
 import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 
 internal class LogUploadRunnable(
     private val handler: Handler,
-    private val logReader: LogReader = Datadog.getLogStrategy().getLogReader(),
-    private val logUploader: LogUploader = Datadog.getLogUploader()
+    private val logReader: LogReader,
+    private val logUploader: LogUploader
 ) : Runnable {
 
     private val attemptsCount = mutableMapOf<String, Int>()
