@@ -4,8 +4,10 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.log.forge
 
+import android.util.Log as AndroidLog
+import com.datadog.android.log.internal.Log
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.Date
@@ -15,17 +17,18 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
         return Log(
             serviceName = forge.anAlphabeticalString(),
             level = forge.anElementFrom(
-                android.util.Log.VERBOSE, android.util.Log.DEBUG,
-                android.util.Log.INFO, android.util.Log.WARN,
-                android.util.Log.ERROR, android.util.Log.ASSERT,
-                0, 1 // Yes those don't exist, but let's over all the edge cases…
+                0, 1,
+                AndroidLog.VERBOSE, AndroidLog.DEBUG,
+                AndroidLog.INFO, AndroidLog.WARN,
+                AndroidLog.ERROR, AndroidLog.ASSERT
             ),
             message = forge.anAlphabeticalString(),
             timestamp = forge.aLong(),
             userAgent = forge.anAlphabeticalString(),
             throwable = forge.getForgery(),
             attributes = forge.exhaustiveAttributes(),
-            tags = forge.aMap { anAlphabeticalString() to aNumericalString() }
+            tags = forge.exhaustiveTags(),
+            networkInfo = forge.getForgery()
         )
     }
 
@@ -38,6 +41,18 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             aDouble(),
             anAsciiString(),
             getForgery<Date>(),
+            null
+        ).map { anAlphabeticalString() to it }
+            .toMap().toMutableMap()
+        map[""] = anHexadecimalString()
+        map[aWhitespaceString()] = anHexadecimalString()
+        return map
+    }
+
+    private fun Forge.exhaustiveTags(): Map<String, String?> {
+        val map = listOf(
+            aNumericalString(),
+            anAlphabeticalString(),
             null
         ).map { anAlphabeticalString() to it }
             .toMap().toMutableMap()

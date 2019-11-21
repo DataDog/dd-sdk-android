@@ -4,13 +4,26 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.google.gson
+package com.datadog.android.log.assertj
 
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
 class JsonObjectAssert(actual: JsonObject) :
     AbstractObjectAssert<JsonObjectAssert, JsonObject>(actual, JsonObjectAssert::class.java) {
+
+    fun doesNotHaveField(name: String): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to not have field named $name but found ${actual[name]}"
+            )
+            .isFalse()
+
+        return this
+    }
 
     fun hasNullField(name: String): JsonObjectAssert {
         assertThat(actual.has(name))
@@ -216,8 +229,31 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
-    companion object {
+    fun hasField(
+        name: String,
+        withAssertions: JsonObjectAssert.() -> Unit
+    ): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
 
-        internal fun assertThat(actual: JsonObject): JsonObjectAssert = JsonObjectAssert(actual)
+        val element = actual.get(name)
+        assertThat(element is JsonObject)
+            .overridingErrorMessage(
+                "Expected json object to have object field $name " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        JsonObjectAssert(element as JsonObject).withAssertions()
+
+        return this
+    }
+
+    companion object {
+        internal fun assertThat(actual: JsonObject): JsonObjectAssert =
+            JsonObjectAssert(actual)
     }
 }

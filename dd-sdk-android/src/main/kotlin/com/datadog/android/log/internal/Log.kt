@@ -6,6 +6,8 @@
 
 package com.datadog.android.log.internal
 
+import com.datadog.android.log.internal.net.NetworkInfo
+
 /**
  * Represents a Log before it is persisted and sent to Datadog servers.
  */
@@ -17,5 +19,6 @@ internal data class Log(
     val userAgent: String?,
     val attributes: Map<String, Any?>,
     val tags: Map<String, String?>,
-    val throwable: Throwable?
+    val throwable: Throwable?,
+    val networkInfo: NetworkInfo?
 )

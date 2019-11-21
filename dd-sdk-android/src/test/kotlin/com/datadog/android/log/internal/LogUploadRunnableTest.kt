@@ -19,7 +19,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -65,118 +65,102 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `batch sent successfully`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.SUCCESS
+    fun `batch sent successfully`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch kept on Network Error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.NETWORK_ERROR
+    fun `batch kept on Network Error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch dropped on third Network Error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.NETWORK_ERROR
+    fun `batch dropped on third Network Error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
         testedRunnable.run()
         testedRunnable.run()
 
-        verify(mockLogUploader, times(3)).uploadLogs(fakeLogs)
-        verify(mockLogReader).dropBatch(fakeId)
+        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
+        verify(mockLogReader).dropBatch(batch.id)
         verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch dropped on Redirection`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_REDIRECTION
+    fun `batch dropped on Redirection`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_REDIRECTION
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch dropped on Client Error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_CLIENT_ERROR
+    fun `batch dropped on Client Error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_CLIENT_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch kept on Server Error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
+    fun `batch kept on Server Error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch dropped on third Server Error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
+    fun `batch dropped on third Server Error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
         testedRunnable.run()
         testedRunnable.run()
 
-        verify(mockLogUploader, times(3)).uploadLogs(fakeLogs)
-        verify(mockLogReader).dropBatch(fakeId)
+        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
+        verify(mockLogReader).dropBatch(batch.id)
         verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
-    fun `batch dropped on Unknown error`(forge: Forge) {
-        val fakeId = forge.anHexadecimalString()
-        val fakeLogs = forge.aList { anAlphabeticalString() }
-        whenever(mockLogReader.readNextBatch()) doReturn (fakeId to fakeLogs)
-        whenever(mockLogUploader.uploadLogs(fakeLogs)) doReturn LogUploadStatus.UNKNOWN_ERROR
+    fun `batch dropped on Unknown error`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.UNKNOWN_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(fakeId)
-        verify(mockLogUploader).uploadLogs(fakeLogs)
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 }

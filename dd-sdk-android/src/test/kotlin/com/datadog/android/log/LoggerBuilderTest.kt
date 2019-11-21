@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import android.content.Context
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -30,6 +32,8 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class LoggerBuilderTest {
 
+    @Mock lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Test
     fun `builder without custom settings uses defaults`() {
         val logger = Logger.Builder()
@@ -40,7 +44,7 @@ internal class LoggerBuilderTest {
         assertThat(logger.userAgentEnabled).isTrue()
         assertThat(logger.datadogLogsEnabled).isTrue()
         assertThat(logger.logcatLogsEnabled).isFalse()
-        assertThat(logger.networkInfoEnabled).isFalse()
+        assertThat(logger.networkInfoProvider).isNull()
     }
 
     @Test
@@ -107,10 +111,14 @@ internal class LoggerBuilderTest {
 
         val logger = Logger.Builder()
             .setNetworkInfoEnabled(networkInfoEnabled)
+            .overrideNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
-        // TODO check broadcastReceiver is registered
 
-        assertThat(logger.networkInfoEnabled).isEqualTo(networkInfoEnabled)
+        if (networkInfoEnabled) {
+            assertThat(logger.networkInfoProvider).isEqualTo(mockNetworkInfoProvider)
+        } else {
+            assertThat(logger.networkInfoProvider).isNull()
+        }
     }
 
     companion object {

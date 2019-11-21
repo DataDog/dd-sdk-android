@@ -7,40 +7,58 @@
 package com.datadog.android
 
 import android.content.Context
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
+import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
-import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
 object Datadog {
 
+    private const val DEFAULT_URL: String = "https://browser-http-intake.logs.datadoghq.com"
+
     internal var initialized: Boolean = false
         private set
 
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
-
-    var endpointBaseUrl: String = "https://browser-http-intake.logs.datadoghq.com"
-
-    private val handlerThread = LogHandlerThread()
+    private lateinit var networkInfoProvider: NetworkInfoProvider
+    private lateinit var handlerThread: LogHandlerThread
 
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
+     * @param endpointUrl (optional) the endpoint url to target, or null to use the default one
      */
-    fun initialize(context: Context, clientToken: String) {
+    @JvmOverloads
+    fun initialize(
+        context: Context,
+        clientToken: String,
+        endpointUrl: String? = null
+    ) {
         check(!initialized) { "Datadog has already been initialized." }
 
-        // this.contextRef = WeakReference(context.applicationContext)
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(context.applicationContext)
 
+        // Start handler to send logs
+        val uploader = LogOkHttpUploader(endpointUrl ?: DEFAULT_URL, Datadog.clientToken)
+        handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
         handlerThread.start()
+
+        // Register Broadcast Receiver
+        // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
+        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider()
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        context.registerReceiver(broadcastReceiver, filter)
+        networkInfoProvider = broadcastReceiver
 
         initialized = true
     }
@@ -52,9 +70,8 @@ object Datadog {
         return logStrategy
     }
 
-    internal fun getLogUploader(): LogUploader {
-        checkInitialized()
-        return LogOkHttpUploader(endpointBaseUrl, clientToken)
+    internal fun getNetworkInfoProvider(): NetworkInfoProvider {
+        return networkInfoProvider
     }
 
     // endregion

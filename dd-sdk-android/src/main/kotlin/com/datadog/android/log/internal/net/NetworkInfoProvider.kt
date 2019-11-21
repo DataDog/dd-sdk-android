@@ -4,15 +4,8 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.log.internal.net
 
-/**
- * Reads logs from a persistent location, when they can be sent.
- * @see [LogWriter]
- */
-internal interface LogReader {
-
-    fun readNextBatch(): Batch?
-
-    fun dropBatch(batchId: String)
+internal interface NetworkInfoProvider {
+    fun getLatestNetworkInfos(): NetworkInfo
 }

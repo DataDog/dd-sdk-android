@@ -4,15 +4,12 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.utils
 
-/**
- * Reads logs from a persistent location, when they can be sent.
- * @see [LogWriter]
- */
-internal interface LogReader {
+import android.os.Build
 
-    fun readNextBatch(): Batch?
-
-    fun dropBatch(batchId: String)
-}
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class TestTargetApi(
+    val value: Int = Build.VERSION_CODES.BASE
+)

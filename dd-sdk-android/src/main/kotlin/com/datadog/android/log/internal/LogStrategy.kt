@@ -19,7 +19,7 @@ internal interface LogStrategy {
         internal const val TAG_MESSAGE = "message"
         internal const val TAG_STATUS = "status"
         internal const val TAG_SERVICE_NAME = "service"
-        internal const val TAG_SOURCE = "source" // TODO automatically set the source
+        internal const val TAG_SOURCE = "source"
 
         // COMMON TAGS
         internal const val TAG_DATADOG_TAGS = "ddtags"
@@ -32,6 +32,9 @@ internal interface LogStrategy {
         // ANDROID SPECIFIC TAGS
         internal const val TAG_USER_AGENT_SDK = "http.useragent_sdk"
         internal const val TAG_NETWORK_INFO = "networkinfo"
+        internal const val TAG_NETWORK_CONNECTIVITY = "connectivity"
+        internal const val TAG_NETWORK_CARRIER_NAME = "carrierName"
+        internal const val TAG_NETWORK_CARRIER_ID = "carrierId"
         internal const val TAG_DATE = "date"
 
         internal val reservedAttributes = arrayOf(

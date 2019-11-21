@@ -4,8 +4,10 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.log.assertj
 
+import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.net.NetworkInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -83,6 +85,16 @@ internal class LogAssert(actual: Log) :
     fun hasTags(tags: Map<String, String?>) {
         assertThat(actual.tags)
             .containsExactly(*tags.entries.toTypedArray())
+    }
+
+    fun hasNetworkInfo(expected: NetworkInfo?): LogAssert {
+        assertThat(actual.networkInfo)
+            .overridingErrorMessage(
+                "Expected log to have networkInfo $expected " +
+                    "but was ${actual.networkInfo}"
+            )
+            .isEqualTo(expected)
+        return this
     }
 
     companion object {

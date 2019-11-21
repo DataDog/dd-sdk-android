@@ -28,7 +28,11 @@ internal class LogOkHttpUploader(
         return try {
             val request = buildRequest(logs)
             val response = client.newCall(request).execute()
-            Log.i("T", "Got response : ${response.code()}")
+            Log.i(
+                "T", "Response code:${response.code()} " +
+                    "body:${response.body()?.string()} " +
+                    "headers:${response.headers()}"
+            )
             responseCodeToLogUploadStatus(response.code())
         } catch (e: IOException) {
             Log.e("T", "Network error", e)
@@ -44,17 +48,18 @@ internal class LogOkHttpUploader(
         return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
-    private fun buildBody(logs: List<String>): RequestBody {
-        return RequestBody.create(
-            null,
-            logs.joinToString(separator = ",", prefix = "[", postfix = "]")
-        )
+    private fun buildBody(logs: List<String>): String {
+        return logs.joinToString(separator = ",", prefix = "[", postfix = "]")
     }
 
     private fun buildRequest(logs: List<String>): Request {
+        val url = buildUrl(endpoint, token)
+        val body = buildBody(logs)
+        Log.d("T", "Sending logs to $url")
+        Log.d("T", body)
         return Request.Builder()
-            .url(buildUrl(endpoint, token))
-            .post(buildBody(logs))
+            .url(url)
+            .post(RequestBody.create(null, body))
             .addHeader(HEADER_UA, USER_AGENT)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()
