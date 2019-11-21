@@ -7,9 +7,12 @@
 package com.datadog.android
 
 import android.content.Context
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
+import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
@@ -38,11 +41,18 @@ object Datadog {
     fun initialize(context: Context, clientToken: String) {
         check(!initialized) { "Datadog has already been initialized." }
 
-        // this.contextRef = WeakReference(context.applicationContext)
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(context.applicationContext)
 
+        // Start handler to send logs
         handlerThread.start()
+
+        // Register Broadcast Receiver
+        // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
+        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider()
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        context.registerReceiver(broadcastReceiver, filter)
+        networkInfoProvider = broadcastReceiver
 
         initialized = true
     }
