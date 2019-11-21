@@ -7,13 +7,47 @@
 package com.datadog.android.sample;
 
 import android.app.Application;
+import android.content.Context;
+import com.datadog.android.Datadog;
+import com.datadog.android.log.Logger;
 
 public class SampleApplication extends Application {
+
+    private Logger logger;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
+        // Initialise Datadog
+        Datadog.INSTANCE.initialize(
+                this,
+                BuildConfig.DD_CLIENT_TOKEN,
+                BuildConfig.DD_OVERRIDE_URL
+        );
 
+        // Initialise Logger
+        logger = new Logger.Builder()
+                .setNetworkInfoEnabled(true)
+                .setServiceName("android-sample-java")
+                .build();
+        logger.v("Created a logger");
+
+        logger.addAttribute("git_commit", BuildConfig.GIT_COMMIT_H);
+        logger.addAttribute("version_code", BuildConfig.VERSION_CODE);
+        logger.addAttribute("version_name", BuildConfig.VERSION_CODE);
+        logger.v("Added custom attributes");
+
+        logger.addTag("flavor", BuildConfig.FLAVOR);
+        logger.addTag("build_type", BuildConfig.BUILD_TYPE);
+        logger.v("Added tags");
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public static SampleApplication fromContext(Context context) {
+        return (SampleApplication) context.getApplicationContext();
     }
 }
