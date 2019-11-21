@@ -1,0 +1,32 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-2019 Datadog, Inc.
+ */
+
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode = 1
+        versionName = "1.0"
+        applicationId = "com.datadog.android.sample"
+
+        buildConfigField("String", "DD_CLIENT_TOKEN", "\"${project.property("DD_CLIENT_TOKEN")}\"")
+    }
+}
+
+repositories {
+    google()
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    // Android dependencies
+    implementation "androidx.appcompat:appcompat:1.1.0"
+}
