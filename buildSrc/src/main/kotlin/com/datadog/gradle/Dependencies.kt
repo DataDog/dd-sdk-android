@@ -27,6 +27,7 @@ object Dependencies {
         const val Elmyr = "1.0.0-alpha5"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.2.0"
+        const val AndroidBenchmark = "1.0.0"
 
         // Tools
         const val Detekt = "1.0.1"
@@ -42,6 +43,11 @@ object Dependencies {
 
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
 
+        val JetpackBenchmark = arrayOf(
+            "androidx.benchmark:benchmark-junit4:${Versions.AndroidBenchmark}",
+            "androidx.test.ext:junit:1.1.1"
+        )
+
         @JvmField
         val JUnit5 = arrayOf(
             "org.junit.platform:junit-platform-launcher:${Versions.JUnitPlatform}",
@@ -50,13 +56,21 @@ object Dependencies {
             "org.mockito:mockito-junit-jupiter:${Versions.JunitMockitoExt}"
         )
 
-        @JvmField val TestTools = arrayOf(
+        @JvmField
+        val TestTools = arrayOf(
             "net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}",
             "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:junit5:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:jvm:${Versions.Elmyr}",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MockitoKotlin}"
+        )
+
+        @JvmField
+        val AndroidTestTools = arrayOf(
+            "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
+            "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
+            "com.github.xgouchet.Elmyr:junit4:${Versions.Elmyr}"
         )
 
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
@@ -66,6 +80,7 @@ object Dependencies {
         const val AndroidTools = "com.android.tools.build:gradle:${Versions.AndroidToolsPlugin}"
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
+        const val AndroidBenchmark = "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
     }
 
     object Repositories {
