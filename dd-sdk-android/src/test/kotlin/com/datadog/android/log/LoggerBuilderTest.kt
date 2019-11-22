@@ -16,6 +16,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -128,6 +129,12 @@ internal class LoggerBuilderTest {
             val mockContext: Context = mock()
             whenever(mockContext.applicationContext) doReturn mockContext
             Datadog.initialize(mockContext, forge.anHexadecimalString())
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun `tear down Datadog`() {
+            Datadog.stop()
         }
     }
 }

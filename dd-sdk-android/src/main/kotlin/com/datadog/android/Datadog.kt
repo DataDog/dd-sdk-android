@@ -9,12 +9,14 @@ package com.datadog.android
 import android.content.Context
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Build
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import java.lang.ref.WeakReference
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -40,8 +42,9 @@ object Datadog {
     private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
-    private lateinit var networkInfoProvider: NetworkInfoProvider
+    private lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
+    private lateinit var contextRef: WeakReference<Context>
 
     /**
      * Initializes the Datadog SDK.
@@ -59,8 +62,10 @@ object Datadog {
     ) {
         check(!initialized) { "Datadog has already been initialized." }
 
+        val appContext = context.applicationContext
+        contextRef = WeakReference(appContext)
         this.clientToken = clientToken
-        logStrategy = LogFileStrategy(context.applicationContext)
+        logStrategy = LogFileStrategy(appContext)
 
         // Start handler to send logs
         val uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
@@ -71,10 +76,25 @@ object Datadog {
         // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
         val broadcastReceiver = BroadcastReceiverNetworkInfoProvider()
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        context.registerReceiver(broadcastReceiver, filter)
+        appContext.registerReceiver(broadcastReceiver, filter)
         networkInfoProvider = broadcastReceiver
 
         initialized = true
+    }
+
+    /**
+     * Stop all Datadog work.
+     */
+    fun stop() {
+        checkInitialized()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            handlerThread.quitSafely()
+        } else {
+            handlerThread.quit()
+        }
+        contextRef.get()?.unregisterReceiver(networkInfoProvider)
+        contextRef.clear()
+        initialized = false
     }
 
     // region Internal Provider
