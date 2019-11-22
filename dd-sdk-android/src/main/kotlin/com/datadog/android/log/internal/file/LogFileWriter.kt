@@ -57,9 +57,11 @@ internal class LogFileWriter(
         val strLog = serializeLog(log)
         val obfLog = obfuscate(strLog)
 
-        val file = getWritableFile(obfLog.size)
-        file.appendBytes(obfLog)
-        file.appendBytes(logSeparator)
+        synchronized(this) {
+            val file = getWritableFile(obfLog.size)
+            file.appendBytes(obfLog)
+            file.appendBytes(logSeparator)
+        }
     }
 
     // endregion
