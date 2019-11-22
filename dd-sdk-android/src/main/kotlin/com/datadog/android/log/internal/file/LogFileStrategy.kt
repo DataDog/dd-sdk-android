@@ -14,19 +14,21 @@ import java.io.File
 
 internal class LogFileStrategy(
     private val rootDir: File,
-    private val recentDelayMs: Long
+    private val recentDelayMs: Long,
+    private val maxBatchSize: Long
 ) : LogStrategy {
 
     constructor(
         context: Context,
-        recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS
+        recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
+        maxBatchSize: Long = MAX_BATCH_SIZE
     ) :
-        this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs)
+        this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs, maxBatchSize)
 
     // region LogPersistingStrategy
 
     override fun getLogWriter(): LogWriter {
-        return LogFileWriter(rootDir, recentDelayMs)
+        return LogFileWriter(rootDir, recentDelayMs, maxBatchSize)
     }
 
     override fun getLogReader(): LogReader {
@@ -43,6 +45,8 @@ internal class LogFileStrategy(
             return fileTimestamp >= (now - recentDelayMs)
         }
 
+        // Arbitrary size for now
+        private const val MAX_BATCH_SIZE: Long = 512 * 1024
         internal const val LOGS_FOLDER_NAME = "dd-logs"
         internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L

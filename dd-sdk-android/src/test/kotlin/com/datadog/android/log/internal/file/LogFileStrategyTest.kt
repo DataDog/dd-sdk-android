@@ -30,7 +30,7 @@ internal class LogFileStrategyTest :
 
     override fun getStrategy(): LogStrategy {
         whenever(mockContext.filesDir) doReturn tempDir
-        return LogFileStrategy(mockContext, 250)
+        return LogFileStrategy(mockContext, 250, MAX_BATCH_SIZE)
     }
 
     override fun waitForNextBatch() {

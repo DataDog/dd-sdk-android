@@ -293,6 +293,9 @@ internal abstract class LogStrategyTest {
     // endregion
 
     companion object {
+
+        const val MAX_BATCH_SIZE: Long = 32 * 1024
+
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )

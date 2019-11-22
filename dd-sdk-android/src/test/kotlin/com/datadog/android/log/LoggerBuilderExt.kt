@@ -11,7 +11,8 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 internal fun Logger.Builder.withNetworkInfoProvider(provider: NetworkInfoProvider): Logger.Builder {
     val method =
-        Logger.Builder::class.java.getDeclaredMethod("overrideNetworkInfoProvider", NetworkInfoProvider::class.java)
+        Logger.Builder::class.java
+            .getDeclaredMethod("overrideNetworkInfoProvider", NetworkInfoProvider::class.java)
 
     method.isAccessible = true
     method.invoke(this, provider)
@@ -21,7 +22,8 @@ internal fun Logger.Builder.withNetworkInfoProvider(provider: NetworkInfoProvide
 }
 
 internal fun Logger.Builder.withLogStrategy(strategy: LogStrategy): Logger.Builder {
-    val method = Logger.Builder::class.java.getDeclaredMethod("overrideLogStrategy", LogStrategy::class.java)
+    val method = Logger.Builder::class.java
+        .getDeclaredMethod("overrideLogStrategy", LogStrategy::class.java)
 
     method.isAccessible = true
     method.invoke(this, strategy)
@@ -31,7 +33,8 @@ internal fun Logger.Builder.withLogStrategy(strategy: LogStrategy): Logger.Build
 }
 
 internal fun Logger.Builder.withUserAgent(userAgent: String): Logger.Builder {
-    val method = Logger.Builder::class.java.getDeclaredMethod("overrideUserAgent", String::class.java)
+    val method = Logger.Builder::class.java
+        .getDeclaredMethod("overrideUserAgent", String::class.java)
 
     method.isAccessible = true
     method.invoke(this, userAgent)
