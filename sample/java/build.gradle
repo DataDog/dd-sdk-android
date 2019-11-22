@@ -26,7 +26,12 @@ android {
         applicationId = "com.datadog.android.sample"
 
         buildConfigField("String", "GIT_COMMIT_H", "\"${getGitHash()}\"")
-        buildConfigField("String", "DD_CLIENT_TOKEN", "\"${project.property("DD_CLIENT_TOKEN")}\"")
+
+        if (project.hasProperty("DD_CLIENT_TOKEN")) {
+            buildConfigField("String", "DD_CLIENT_TOKEN", "\"${project.property("DD_CLIENT_TOKEN")}\"")
+        } else {
+            buildConfigField("String", "DD_CLIENT_TOKEN", "\"\"")
+        }
 
         vectorDrawables.useSupportLibrary = true
     }
