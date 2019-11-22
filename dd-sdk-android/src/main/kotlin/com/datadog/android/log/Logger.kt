@@ -204,17 +204,17 @@ private constructor(
             return this
         }
 
-        internal fun overrideLogStrategy(strategy: LogStrategy): Builder {
+        private fun overrideLogStrategy(strategy: LogStrategy): Builder {
             logStrategy = strategy
             return this
         }
 
-        internal fun overrideUserAgent(userAgent: String): Builder {
+        private fun overrideUserAgent(userAgent: String): Builder {
             this.userAgent = userAgent
             return this
         }
 
-        internal fun overrideNetworkInfoProvider(provider: NetworkInfoProvider): Builder {
+        private fun overrideNetworkInfoProvider(provider: NetworkInfoProvider): Builder {
             networkInfoProvider = provider
             return this
         }

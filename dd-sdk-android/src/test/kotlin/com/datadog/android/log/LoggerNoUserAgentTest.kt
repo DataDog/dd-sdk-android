@@ -82,9 +82,9 @@ internal class LoggerNoUserAgentTest {
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)
             .setUserAgentEnabled(false)
-            .overrideUserAgent(fakeUserAgent)
-            .overrideLogStrategy(mockLogStrategy)
-            .overrideNetworkInfoProvider(mockNetworkInfoProvider)
+            .withUserAgent(fakeUserAgent)
+            .withLogStrategy(mockLogStrategy)
+            .withNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
     }
 

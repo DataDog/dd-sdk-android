@@ -111,7 +111,7 @@ internal class LoggerBuilderTest {
 
         val logger = Logger.Builder()
             .setNetworkInfoEnabled(networkInfoEnabled)
-            .overrideNetworkInfoProvider(mockNetworkInfoProvider)
+            .withNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
 
         if (networkInfoEnabled) {
