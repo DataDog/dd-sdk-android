@@ -7,13 +7,19 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
+import android.os.Build
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
+import com.datadog.android.utils.TestTargetApi
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 
@@ -38,4 +44,24 @@ internal class LogFileStrategyTest :
     }
 
     // endregion
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `read returns null when 1st batch is already sent but file still present`(
+        @Forgery fakeLog: Log
+    ) {
+        testedLogWriter.writeLog(fakeLog)
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()
+        checkNotNull(batch)
+
+        testedLogReader.dropBatch(batch.id)
+        val logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
+        val file = File(logsDir, batch.id)
+        file.writeText("I'm still there !")
+        val batch2 = testedLogReader.readNextBatch()
+
+        Assertions.assertThat(batch2)
+            .isNull()
+    }
 }
