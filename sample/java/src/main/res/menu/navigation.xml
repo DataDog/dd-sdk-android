@@ -17,4 +17,9 @@
         android:icon="@drawable/ic_webview_black_24dp"
         android:title="@string/title_webview"/>
 
+    <item
+        android:id="@+id/navigation_unknown"
+        android:icon="@drawable/ic_unknown_black_24dp"
+        android:title="@string/title_webview"/>
+
 </menu>

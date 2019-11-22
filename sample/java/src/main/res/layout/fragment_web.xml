@@ -5,9 +5,12 @@
   ~ Copyright 2016-2019 Datadog, Inc.
   -->
 
-<resources>
-    <string name="app_name">Datadog SDK Sample</string>
-    <string name="title_logs">Logs</string>
-    <string name="title_webview">WebView</string>
-    <string name="title_unknown">"?"</string>
-</resources>
+<WebView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/webview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".webview.WebFragment">
+
+</WebView>

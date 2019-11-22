@@ -8,10 +8,16 @@ package com.datadog.android.sample;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.Toast;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import com.datadog.android.log.Logger;
+import com.datadog.android.sample.logs.LogsFragment;
+import com.datadog.android.sample.webview.WebFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 
@@ -23,20 +29,11 @@ public class MainActivity extends AppCompatActivity {
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-            boolean result = true;
-            switch (menuItem.getItemId()) {
-                case R.id.navigation_logs:
-                    logger.i("Switching to Logs screen");
-                    break;
-                case R.id.navigation_webview :
-                    logger.i("Switching to Webview screen");
-                    break;
-                default:
-                    result = false;
-            }
-            return result;
+           return switchToFragment(menuItem.getItemId());
         }
     };
+
+    // region Activity Lifecycle
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -46,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
         logger.d("MainActivity/onCreate");
 
         setContentView(R.layout.activity_main);
+
+        switchToFragment(R.id.navigation_logs);
         ((BottomNavigationView )findViewById(R.id.navigation))
                 .setOnNavigationItemSelectedListener(navigationItemSelectedListener);
     }
@@ -85,4 +84,35 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         logger.d("MainActivity/onDestroy");
     }
+
+    // endregion
+
+    // region Internal
+
+    private boolean switchToFragment(@IdRes int id){
+        Fragment fragmentToUse = null;
+        switch (id) {
+            case R.id.navigation_logs:
+                logger.i("Switching to fragment: Logs");
+                fragmentToUse = LogsFragment.newInstance();
+                break;
+            case R.id.navigation_webview :
+                logger.i("Switching to fragment: Web");
+                fragmentToUse =  WebFragment.newInstance();
+                break;
+        }
+
+        if (fragmentToUse == null) {
+            logger.w("Switching to fragment: unknown @" + id);
+            Toast.makeText(this, "We're unable to create this fragment.", Toast.LENGTH_LONG).show();
+            return false;
+        } else {
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.replace(R.id.fragment_host, fragmentToUse);
+            ft.commit();
+            return true;
+        }
+    }
+
+    // endregion
 }
