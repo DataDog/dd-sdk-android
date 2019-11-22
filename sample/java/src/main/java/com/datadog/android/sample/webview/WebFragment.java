@@ -36,7 +36,9 @@ public class WebFragment extends Fragment {
     private WebView mWebView;
 
     private Logger mLogger = new Logger.Builder()
+            .setServiceName("android-sample-java")
             .setNetworkInfoEnabled(true)
+            .setLogcatLogsEnabled(true)
             .build();
 
     public static WebFragment newInstance() {
@@ -59,10 +61,6 @@ public class WebFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(WebViewModel.class);
-        FragmentActivity activity = getActivity();
-        if (activity != null) {
-            mLogger = SampleApplication.fromContext(activity).getLogger();
-        }
     }
 
     @Override

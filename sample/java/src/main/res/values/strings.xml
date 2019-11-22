@@ -7,7 +7,15 @@
 
 <resources>
     <string name="app_name">Datadog SDK Sample</string>
+
     <string name="title_logs">Logs</string>
     <string name="title_webview">WebView</string>
     <string name="title_unknown">"?"</string>
+
+
+    <string name="button_warning">⚠️</string>
+    <string name="button_error">🚨</string>
+    <string name="button_critical">💥</string>
+    <string name="title_sendLog">Send a log</string>
+
 </resources>

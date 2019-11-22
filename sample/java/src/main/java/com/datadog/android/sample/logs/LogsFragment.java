@@ -14,27 +14,68 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import com.datadog.android.log.Logger;
 import com.datadog.android.sample.R;
 
-public class LogsFragment extends Fragment {
+public class LogsFragment extends Fragment implements View.OnClickListener{
 
     private LogsViewModel mViewModel;
+    private Logger mLogger = new Logger.Builder()
+            .setServiceName("android-sample-java")
+            .setLogcatLogsEnabled(true)
+            .build();
+
+    private int interactionsCount = 0;
 
     public static LogsFragment newInstance() {
         return new LogsFragment();
     }
 
+    // region Fragment
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_logs, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_logs, container, false);
+        rootView.findViewById(R.id.log_warning).setOnClickListener(this);
+        rootView.findViewById(R.id.log_error).setOnClickListener(this);
+        rootView.findViewById(R.id.log_critical).setOnClickListener(this);
+        return rootView;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(LogsViewModel.class);
-        // TODO: Use the ViewModel
+        mLogger.addAttribute("interactions", interactionsCount);
     }
+
+    // endregion
+
+    // region View.OnClickListener
+
+    @Override
+    public void onClick(View v) {
+
+        interactionsCount++;
+        mLogger.addAttribute("interactions", interactionsCount);
+
+        switch (v.getId()) {
+            case R.id.log_warning :
+                mLogger.w("User triggered a warning");
+                break;
+
+            case R.id.log_error :
+                mLogger.e("User triggered an error", new IllegalStateException("Oops"));
+                break;
+
+            case R.id.log_critical :
+                mLogger.wtf("User triggered a critical event", new UnsupportedOperationException("Oops"));
+                break;
+        }
+
+    }
+
+    //endregion
 
 }
