@@ -34,6 +34,7 @@ android {
         versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,UNLOCKED")
     }
 
     sourceSets.named("main") {

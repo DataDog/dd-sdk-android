@@ -49,9 +49,13 @@ internal abstract class LogStrategyTest {
 
         testedLogWriter = persistingStrategy.getLogWriter()
         testedLogReader = persistingStrategy.getLogReader()
+
+        setUp(testedLogWriter, testedLogReader)
     }
 
     abstract fun getStrategy(): LogStrategy
+
+    abstract fun setUp(writer: LogWriter, reader: LogReader)
 
     abstract fun waitForNextBatch()
 
