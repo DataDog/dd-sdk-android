@@ -9,7 +9,8 @@ package com.datadog.gradle.utils
 data class Version(
     val major: Int,
     val minor: Int,
-    val hotfix: Int
+    val hotfix: Int,
+    val suffix: String = ""
 ) {
 
     init {
@@ -18,9 +19,26 @@ data class Version(
         require(hotfix < MAX_HOTFIX) { "The hotfix component must be smaller than $MAX_HOTFIX" }
     }
 
+    /**
+     * @return a human readable Semantic Version name based on the information, with an optional suffix
+     * (eg: 1.0.0, 2.3.0-rc1, 0.0.4-alpha1, etc...).
+     * ** See also ** [Semantic Versioning](https://semver.org/)
+     */
     val name: String
-        get() = "$major.$minor.$hotfix"
+        get() {
+            return if (suffix.isBlank()) {
+                "$major.$minor.$hotfix"
+            } else {
+                val sanitized = suffix.trim()
+                    .toLowerCase()
+                    .replace(Regex("[^a-z0-9]"), "-")
+                "$major.$minor.$hotfix-$sanitized"
+            }
+        }
 
+    /**
+     * @return an Android compatible version code as a unique integer.
+     */
     val code: Int
         get() {
             val minPart = minor * MAX_HOTFIX
