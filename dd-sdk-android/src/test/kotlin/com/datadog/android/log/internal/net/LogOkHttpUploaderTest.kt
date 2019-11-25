@@ -260,7 +260,7 @@ internal class LogOkHttpUploaderTest {
         assertThat(request.path)
             .isEqualTo("/v1/input/$fakeToken?ddsource=mobile")
         assertThat(request.getHeader("User-Agent"))
-            .matches("datadog-android/log:\\d+.\\d+.\\d+")
+            .matches("datadog-android/log:\\d+.\\d+.\\d+(-\\w+)?")
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo("application/json")
         assertThat(request.body.readUtf8())
