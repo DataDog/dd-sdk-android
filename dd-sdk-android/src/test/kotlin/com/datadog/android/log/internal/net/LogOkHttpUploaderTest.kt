@@ -24,13 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 @ForgeConfiguration(Configurator::class)
 internal class LogOkHttpUploaderTest {
 
