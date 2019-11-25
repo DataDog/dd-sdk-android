@@ -15,6 +15,7 @@ import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.file.DummyLogWriter
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.util.Date
+import java.util.Locale
 
 /**
  * A class enabling Datadog logging features.
@@ -38,7 +39,7 @@ private constructor(
 ) {
 
     private val attributes = mutableMapOf<String, Any?>()
-    private val tags = mutableMapOf<String, String?>()
+    private val tags = mutableSetOf<String>()
 
     // region Log
 
@@ -136,17 +137,17 @@ private constructor(
             // TODO RUMM-45 register broadcast receiver
 
             return Logger(
-                    datadogLogsEnabled = datadogLogsEnabled,
-                    logWriter = logWriter,
-                    serviceName = serviceName,
-                    timestampsEnabled = timestampsEnabled,
-                    userAgentEnabled = userAgentEnabled,
-                    // TODO RUMM-34 allow overriding the user agent ?
-                    userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
-                    logcatLogsEnabled = logcatLogsEnabled,
-                    networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
-                        networkInfoProvider ?: Datadog.getNetworkInfoProvider()
-                    } else null
+                datadogLogsEnabled = datadogLogsEnabled,
+                logWriter = logWriter,
+                serviceName = serviceName,
+                timestampsEnabled = timestampsEnabled,
+                userAgentEnabled = userAgentEnabled,
+                // TODO RUMM-34 allow overriding the user agent ?
+                userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
+                logcatLogsEnabled = logcatLogsEnabled,
+                networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
+                    networkInfoProvider ?: Datadog.getNetworkInfoProvider()
+                } else null
             )
         }
 
@@ -299,7 +300,8 @@ private constructor(
 
     /**
      * Remove a custom attribute from all future logs sent by this logger.
-     * Previous log won't lose the attribute value associated with this key if they were created prior to this.
+     * Previous log won't lose the attribute value associated with this key if they were created
+     * prior to this call.
      * @param key the key of the attribute to remove
      */
     fun removeAttribute(key: String) {
@@ -309,19 +311,31 @@ private constructor(
     /**
      * Add a tag to all future logs sent by this logger.
      * @param key the key for this tag
-     * @param value the (nullable) String value of this tag
+     * @param value the (non null) value of this tag
      */
-    fun addTag(key: String, value: String?) {
-        tags[key] = value
+    fun addTag(key: String, value: String) {
+        addTagInternal("$key:$value")
     }
 
     /**
-     * Remove atag from all future logs sent by this logger.
-     * Previous log won't lose the tag associated with this key if they were created prior to this.
-     * @param key the key of the tag to remove
+     * Add a tag to all future logs sent by this logger.
+     * @param tag the (non null) tag
+     *
+     * Make sure that your tag follows the rule defined in our
+     * [documentation](https://docs.datadoghq.com/tagging/#defining-tags).
+     *
      */
-    fun removeTag(key: String) {
-        tags.remove(key)
+    fun addTag(tag: String) {
+        addTagInternal(tag)
+    }
+
+    /**
+     * Remove a tag from all future logs sent by this logger.
+     * Previous log won't lose the this tag if they were created prior to this call.
+     * @param tag the tag to remove
+     */
+    fun removeTag(tag: String) {
+        tags.remove(tag)
     }
 
     // endregion
@@ -351,16 +365,54 @@ private constructor(
         // TODO RUMM-58 timestamp based on phone local time = error prone
 
         return Log(
-                serviceName = serviceName,
-                level = level,
-                message = message,
-                timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
-                userAgent = if (userAgentEnabled) userAgent else null,
-                throwable = throwable,
-                attributes = attributes.toMap(),
-                tags = tags.toMap(),
-                networkInfo = networkInfoProvider?.getLatestNetworkInfos()
+            serviceName = serviceName,
+            level = level,
+            message = message,
+            timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
+            userAgent = if (userAgentEnabled) userAgent else null,
+            throwable = throwable,
+            attributes = attributes.toMap(),
+            tags = tags.toList(),
+            networkInfo = networkInfoProvider?.getLatestNetworkInfos()
         )
+    }
+
+    // endregion
+
+    // region Internal/Tag
+
+    private fun addTagInternal(tag: String) {
+        val convertedTag = convertTag(tag)
+        if (convertedTag != null) {
+            val firstColon = convertedTag.indexOf(':')
+            val key = if (firstColon > 0) {
+                convertedTag.substring(0, firstColon)
+            } else {
+                ""
+            }
+            if (key in reservedTagKeys) {
+                // TODO RUMM-49 warn that tag key is reserved
+                // Do nothing
+            } else {
+                // TODO RUMM-49 warn if tag value was modified automatically
+                tags.add(convertedTag)
+            }
+        }
+    }
+
+    private fun convertTag(tag: String): String? {
+        val lowerCaseTag = tag.toLowerCase(Locale.US)
+        return if (lowerCaseTag[0] !in 'a'..'z') {
+            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
+            null
+        } else {
+            val valid = lowerCaseTag.replace(Regex("[^a-z0-9_:./-]"), "_")
+            if (valid.length <= MAX_TAG_LENGTH) {
+                valid
+            } else {
+                valid.substring(0, MAX_TAG_LENGTH)
+            }
+        }
     }
 
     // endregion
@@ -368,13 +420,19 @@ private constructor(
     companion object {
         const val DEFAULT_SERVICE_NAME = "android"
 
+        const val MAX_TAG_LENGTH = 200
+
+        private val reservedTagKeys = setOf(
+            "host", "device", "source", "service"
+        )
+
         private val levelPrefixes = mapOf(
-                AndroidLog.VERBOSE to "V",
-                AndroidLog.DEBUG to "D",
-                AndroidLog.INFO to "I",
-                AndroidLog.WARN to "W",
-                AndroidLog.ERROR to "E",
-                AndroidLog.ASSERT to "A"
+            AndroidLog.VERBOSE to "V",
+            AndroidLog.DEBUG to "D",
+            AndroidLog.INFO to "I",
+            AndroidLog.WARN to "W",
+            AndroidLog.ERROR to "E",
+            AndroidLog.ASSERT to "A"
         )
     }
 }

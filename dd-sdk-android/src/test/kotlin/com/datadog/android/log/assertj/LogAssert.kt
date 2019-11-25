@@ -82,9 +82,9 @@ internal class LogAssert(actual: Log) :
             .containsExactly(*attributes.entries.toTypedArray())
     }
 
-    fun hasTags(tags: Map<String, String?>) {
+    fun hasTags(tags: List<String>) {
         assertThat(actual.tags)
-            .containsExactly(*tags.entries.toTypedArray())
+            .containsExactlyInAnyOrder(*tags.toTypedArray())
     }
 
     fun hasNetworkInfo(expected: NetworkInfo?): LogAssert {

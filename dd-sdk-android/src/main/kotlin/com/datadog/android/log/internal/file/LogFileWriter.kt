@@ -157,10 +157,7 @@ internal class LogFileWriter(
             }
 
         // Tags
-        val tags = log.tags
-            .filter { it.key.isNotBlank() }
-            .map { "${it.key}:${it.value}" }
-            .joinToString(",")
+        val tags = log.tags.joinToString(",")
         jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
 
         // Throwable
