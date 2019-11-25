@@ -9,7 +9,8 @@ package com.datadog.gradle.utils
 data class Version(
     val major: Int,
     val minor: Int,
-    val hotfix: Int
+    val hotfix: Int,
+    val suffix: String = ""
 ) {
 
     init {
@@ -19,7 +20,16 @@ data class Version(
     }
 
     val name: String
-        get() = "$major.$minor.$hotfix"
+        get() {
+            return if (suffix.isBlank()) {
+                "$major.$minor.$hotfix"
+            } else {
+                val sanitized = suffix.trim()
+                    .toLowerCase()
+                    .replace(Regex("[^a-z0-9]"), "-")
+                "$major.$minor.$hotfix-$sanitized"
+            }
+        }
 
     val code: Int
         get() {

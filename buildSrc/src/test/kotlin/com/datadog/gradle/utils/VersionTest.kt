@@ -53,4 +53,18 @@ class VersionTest {
 
         assert(code == next - 1) { "expected code to be next - 1 = ${next - 1} but was $code (@next:$next)" }
     }
+
+    @Test
+    fun addSuffix() {
+        val name = Version(3, 12, 7, "alpha1").name
+        val expected = "3.12.7-alpha1"
+        assert(name == expected) { " expected name to be $expected but was $name" }
+    }
+
+    @Test
+    fun addSuffixSanitized() {
+        val name = Version(3, 12, 7, " Beta 1\t").name
+        val expected = "3.12.7-beta-1"
+        assert(name == expected) { " expected name to be $expected but was $name" }
+    }
 }
