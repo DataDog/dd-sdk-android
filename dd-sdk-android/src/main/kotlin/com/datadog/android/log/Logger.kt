@@ -143,7 +143,7 @@ private constructor(
                 userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
                 datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
-                networkInfoProvider = if (networkInfoEnabled) {
+                networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
                     networkInfoProvider ?: Datadog.getNetworkInfoProvider()
                 } else null
             )
