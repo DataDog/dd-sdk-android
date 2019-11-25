@@ -19,6 +19,11 @@ data class Version(
         require(hotfix < MAX_HOTFIX) { "The hotfix component must be smaller than $MAX_HOTFIX" }
     }
 
+    /**
+     * @return a human readable Semantic Version name based on the information, with an optional suffix
+     * (eg: 1.0.0, 2.3.0-rc1, 0.0.4-alpha1, etc...).
+     * ** See also ** [Semantic Versioning](https://semver.org/)
+     */
     val name: String
         get() {
             return if (suffix.isBlank()) {
@@ -31,6 +36,9 @@ data class Version(
             }
         }
 
+    /**
+     * @return an Android compatible version code as a unique integer.
+     */
     val code: Int
         get() {
             val minPart = minor * MAX_HOTFIX
