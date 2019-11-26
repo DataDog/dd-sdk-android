@@ -39,6 +39,7 @@ internal class LogOkHttpUploaderTest {
 
     lateinit var fakeEndpoint: String
     lateinit var fakeToken: String
+    lateinit var fakeUserAgent: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -46,6 +47,8 @@ internal class LogOkHttpUploaderTest {
         mockWebServer.start()
         fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
         fakeToken = forge.anHexadecimalString()
+        fakeUserAgent = forge.anAlphaNumericalString()
+        System.setProperty("http.agent", fakeUserAgent)
 
         testedUploader = LogOkHttpUploader(
             fakeEndpoint,
@@ -270,7 +273,7 @@ internal class LogOkHttpUploaderTest {
         assertThat(request.path)
             .isEqualTo("/v1/input/$fakeToken?ddsource=mobile")
         assertThat(request.getHeader("User-Agent"))
-            .matches("datadog-android/log:\\d+.\\d+.\\d+(-\\w+)?")
+            .matches(fakeUserAgent)
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo("application/json")
         assertThat(request.body.readUtf8())
