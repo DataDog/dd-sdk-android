@@ -155,6 +155,8 @@ internal abstract class LogStrategyTest {
         runnables.forEach {
             Thread(it).start()
         }
+
+        waitForNextBatch()
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
 
