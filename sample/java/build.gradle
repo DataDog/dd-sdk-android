@@ -71,6 +71,6 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
 
-    implementation "com.datadoghq:dd-sdk-android:0.0.1"
+    implementation "com.datadoghq:dd-sdk-android:1.0.0-alpha1"
 
 }

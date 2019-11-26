@@ -21,11 +21,23 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
  */
 object Datadog {
 
-    private const val DEFAULT_URL: String = "https://browser-http-intake.logs.datadoghq.com"
+    /**
+     * The endpoint for our US based servers, used by default by the SDK.
+     * @see [initialize]
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_US = "https://mobile-http-intake.logs.datadoghq.com"
 
-    internal var initialized: Boolean = false
-        private set
+    /**
+     * The endpoint for our Europe based servers.
+     * Use this in your call to [initialize] if you log on
+     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_EU = "https://mobile-http-intake.logs.datadoghq.eu"
 
+    private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
     private lateinit var networkInfoProvider: NetworkInfoProvider
@@ -35,8 +47,10 @@ object Datadog {
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
-     * @param endpointUrl (optional) the endpoint url to target, or null to use the default one
+     * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
+     * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
      */
+    @JvmStatic
     @JvmOverloads
     fun initialize(
         context: Context,
@@ -49,7 +63,7 @@ object Datadog {
         logStrategy = LogFileStrategy(context.applicationContext)
 
         // Start handler to send logs
-        val uploader = LogOkHttpUploader(endpointUrl ?: DEFAULT_URL, Datadog.clientToken)
+        val uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
         handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
         handlerThread.start()
 
