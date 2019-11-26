@@ -20,7 +20,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 /**
  * This test checks the behavior of a FileWriter
@@ -29,7 +28,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 @ForgeConfiguration(Configurator::class)
 internal class LogFileWriterInvalidTest {
 

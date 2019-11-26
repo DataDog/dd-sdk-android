@@ -28,7 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -36,7 +35,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 internal abstract class LogStrategyTest {
 
     lateinit var testedLogWriter: LogWriter
@@ -50,9 +49,13 @@ internal abstract class LogStrategyTest {
 
         testedLogWriter = persistingStrategy.getLogWriter()
         testedLogReader = persistingStrategy.getLogReader()
+
+        setUp(testedLogWriter, testedLogReader)
     }
 
     abstract fun getStrategy(): LogStrategy
+
+    abstract fun setUp(writer: LogWriter, reader: LogReader)
 
     abstract fun waitForNextBatch()
 
@@ -152,6 +155,8 @@ internal abstract class LogStrategyTest {
         runnables.forEach {
             Thread(it).start()
         }
+
+        waitForNextBatch()
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
 

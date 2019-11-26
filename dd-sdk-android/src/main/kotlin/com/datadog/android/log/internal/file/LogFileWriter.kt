@@ -8,6 +8,8 @@ package com.datadog.android.log.internal.file
 
 import android.annotation.TargetApi
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
@@ -29,10 +31,12 @@ internal class LogFileWriter(
     private val rootDirectory: File,
     private val recentDelayMs: Long,
     private val maxBatchSize: Long
-) : LogWriter {
+) : HandlerThread(THREAD_NAME), LogWriter {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
     private val fileFilter: FileFilter = LogFileFilter()
+    internal lateinit var handler: Handler
+    internal lateinit var deferredHandler: DeferredHandler
 
     private val writeable: Boolean = if (!rootDirectory.exists()) {
         rootDirectory.mkdirs()
@@ -46,22 +50,36 @@ internal class LogFileWriter(
                 "datadog",
                 "Can't write logs on disk: directory ${rootDirectory.path} is invalid."
             )
+        } else {
+            start()
         }
     }
 
-    // region LoggerWriter
+    // region Handler
+
+    override fun onLooperPrepared() {
+        super.onLooperPrepared()
+        handler = Handler(looper)
+        deferredHandler = AndroidDeferredHandler(handler)
+    }
+
+    // endregion
+
+    // region LogWriter
 
     override fun writeLog(log: Log) {
         if (!writeable) return
 
-        val strLog = serializeLog(log)
-        val obfLog = obfuscate(strLog)
+        deferredHandler.handle(Runnable {
+            val strLog = serializeLog(log)
+            val obfLog = obfuscate(strLog)
 
-        synchronized(this) {
-            val file = getWritableFile(obfLog.size)
-            file.appendBytes(obfLog)
-            file.appendBytes(logSeparator)
-        }
+            synchronized(this) {
+                val file = getWritableFile(obfLog.size)
+                file.appendBytes(obfLog)
+                file.appendBytes(logSeparator)
+            }
+        })
     }
 
     // endregion
@@ -190,5 +208,6 @@ internal class LogFileWriter(
         private val logSeparator = ByteArray(1) { LogFileStrategy.SEPARATOR_BYTE }
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        private const val THREAD_NAME = "ddog_w"
     }
 }

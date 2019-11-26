@@ -10,9 +10,13 @@ import android.content.Context
 import android.os.Build
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
+import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.utils.TestTargetApi
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -29,6 +33,8 @@ internal class LogFileStrategyTest :
 
     @Mock
     lateinit var mockContext: Context
+    @Mock(lenient = true)
+    lateinit var mockDeferredHandler: DeferredHandler
     @TempDir
     lateinit var tempDir: File
 
@@ -37,6 +43,14 @@ internal class LogFileStrategyTest :
     override fun getStrategy(): LogStrategy {
         whenever(mockContext.filesDir) doReturn tempDir
         return LogFileStrategy(mockContext, 250, MAX_BATCH_SIZE)
+    }
+
+    override fun setUp(writer: LogWriter, reader: LogReader) {
+        whenever(mockDeferredHandler.handle(any())) doAnswer {
+            val runnable = it.arguments[0] as Runnable
+            runnable.run()
+        }
+        (writer as LogFileWriter).deferredHandler = mockDeferredHandler
     }
 
     override fun waitForNextBatch() {

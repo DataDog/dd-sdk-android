@@ -9,3 +9,5 @@ import (test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author 
 import (test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
 import (test),org.junit.vintage,EPL-2.0,Copyright 2015-2019 the original author or authors
 import (test),org.mockito,MIT,Copyright (c) 2018 Mockito contributors
+import (test),androidx.benchmark,Apache-2.0,Copyright 2019 The Android Open Source Project
+import (test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source Project

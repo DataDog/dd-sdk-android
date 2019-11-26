@@ -16,6 +16,7 @@ buildscript {
 
     dependencies {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.AndroidTools)
+        classpath(com.datadog.gradle.Dependencies.ClassPaths.AndroidBenchmark)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Kotlin)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
     }
