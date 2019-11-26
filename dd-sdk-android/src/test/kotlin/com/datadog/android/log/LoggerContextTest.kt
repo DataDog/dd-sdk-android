@@ -55,7 +55,7 @@ internal class LoggerContextTest {
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
 
         testedLogger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
+            .withLogStrategy(mockLogStrategy)
             .build()
     }
 

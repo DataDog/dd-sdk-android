@@ -175,9 +175,20 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
+    fun `uploads logs 407-Proxy`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.enqueue(mockResponse(407))
+
+        val status = testedUploader.uploadLogs(logs)
+
+        assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+        assertValidRequest(mockWebServer.takeRequest(), logs)
+    }
+
+    @Test
     fun `uploads logs 4xx-ClientError`(forge: Forge) {
         val logs = forge.aList { anHexadecimalString() }
-        mockWebServer.enqueue(mockResponse(forge.anInt(400, 499)))
+        mockWebServer.enqueue(mockResponse(forge.anInt(408, 499)))
 
         val status = testedUploader.uploadLogs(logs)
 

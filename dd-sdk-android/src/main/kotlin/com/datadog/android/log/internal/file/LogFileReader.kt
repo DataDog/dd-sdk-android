@@ -28,7 +28,7 @@ internal class LogFileReader(
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        val files = rootDirectory.listFiles(fileFilter).sorted()
+        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
         val nextLogFile = files.firstOrNull { it.name !in sentBatches }
         return if (nextLogFile == null) {
             null

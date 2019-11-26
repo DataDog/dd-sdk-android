@@ -143,6 +143,24 @@ internal abstract class LogStrategyTest {
         assertLogMatches(jsonObject, fakeLog)
     }
 
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes batch of logs from mutliple threads`(@Forgery fakeLogs: List<Log>) {
+        val runnables = fakeLogs.map {
+            Runnable { testedLogWriter.writeLog(it) }
+        }
+        runnables.forEach {
+            Thread(it).start()
+        }
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
+
+        batch.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertHasMatches(jsonObject, fakeLogs)
+        }
+    }
+
     // endregion
 
     // region Reader Tests
@@ -191,6 +209,21 @@ internal abstract class LogStrategyTest {
     // endregion
 
     // region Internal
+
+    private fun assertHasMatches(
+        jsonObject: JsonObject,
+        logs: List<Log>
+    ) {
+        val message = (jsonObject[LogStrategy.TAG_MESSAGE] as JsonPrimitive).asString
+        val serviceName = (jsonObject[LogStrategy.TAG_SERVICE_NAME] as JsonPrimitive).asString
+        val status = (jsonObject[LogStrategy.TAG_STATUS] as JsonPrimitive).asString
+
+        val roughMatches = logs.filter {
+            message == it.message && serviceName == it.serviceName && status == levels[it.level]
+        }
+
+        assertThat(roughMatches).isNotEmpty()
+    }
 
     private fun assertLogMatches(
         jsonObject: JsonObject,
@@ -293,6 +326,9 @@ internal abstract class LogStrategyTest {
     // endregion
 
     companion object {
+
+        const val MAX_BATCH_SIZE: Long = 32 * 1024
+
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )

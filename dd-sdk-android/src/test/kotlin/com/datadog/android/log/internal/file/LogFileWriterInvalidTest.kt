@@ -45,7 +45,7 @@ internal class LogFileWriterInvalidTest {
         logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         logsDir.writeText(I_LIED)
 
-        testedFileWriter = LogFileWriter(logsDir, 250L)
+        testedFileWriter = LogFileWriter(logsDir, 250L, 1024)
     }
 
     @Test

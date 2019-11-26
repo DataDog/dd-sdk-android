@@ -53,7 +53,7 @@ internal class LoggerThrowableTest {
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
 
         testedLogger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
+            .withLogStrategy(mockLogStrategy)
             .build()
     }
 

@@ -82,9 +82,9 @@ internal class LoggerNoLogcatTest {
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)
             .setUserAgentEnabled(true)
-            .overrideUserAgent(fakeUserAgent)
-            .overrideLogStrategy(mockLogStrategy)
-            .overrideNetworkInfoProvider(mockNetworkInfoProvider)
+            .withUserAgent(fakeUserAgent)
+            .withLogStrategy(mockLogStrategy)
+            .withNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
     }
 

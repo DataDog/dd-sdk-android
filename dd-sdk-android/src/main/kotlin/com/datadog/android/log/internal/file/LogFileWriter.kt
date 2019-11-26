@@ -27,19 +27,20 @@ import java.util.Locale
 
 internal class LogFileWriter(
     private val rootDirectory: File,
-    private val recentDelayMs: Long
+    private val recentDelayMs: Long,
+    private val maxBatchSize: Long
 ) : LogWriter {
 
-    private val writeable: Boolean
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
     private val fileFilter: FileFilter = LogFileFilter()
 
+    private val writeable: Boolean = if (!rootDirectory.exists()) {
+        rootDirectory.mkdirs()
+    } else {
+        rootDirectory.isDirectory
+    }
+
     init {
-        writeable = if (!rootDirectory.exists()) {
-            rootDirectory.mkdirs()
-        } else {
-            rootDirectory.isDirectory
-        }
         if (!writeable) {
             AndroidLog.e(
                 "datadog",
@@ -56,9 +57,11 @@ internal class LogFileWriter(
         val strLog = serializeLog(log)
         val obfLog = obfuscate(strLog)
 
-        val file = getWritableFile(obfLog.size)
-        file.appendBytes(obfLog)
-        file.appendBytes(logSeparator)
+        synchronized(this) {
+            val file = getWritableFile(obfLog.size)
+            file.appendBytes(obfLog)
+            file.appendBytes(logSeparator)
+        }
     }
 
     // endregion
@@ -66,10 +69,10 @@ internal class LogFileWriter(
     // region Internal
 
     private fun getWritableFile(logSize: Int): File {
-        val maxLogLength = MAX_BATCH_SIZE - logSize
+        val maxLogLength = maxBatchSize - logSize
         val now = System.currentTimeMillis()
 
-        val files = rootDirectory.listFiles(fileFilter).sorted()
+        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
         val lastFile = files.lastOrNull()
 
         return if (lastFile != null) {
@@ -184,8 +187,6 @@ internal class LogFileWriter(
     // endregion
 
     companion object {
-
-        private const val MAX_BATCH_SIZE: Long = 16 * 1024
         private val logSeparator = ByteArray(1) { LogFileStrategy.SEPARATOR_BYTE }
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
