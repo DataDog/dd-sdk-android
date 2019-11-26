@@ -115,9 +115,6 @@ internal class LogFileWriter(
         jsonLog.addProperty(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
         jsonLog.addProperty(LogStrategy.TAG_STATUS, logLevelStatusName(log.level))
 
-        // User Agent
-        log.userAgent?.let { jsonLog.addProperty(LogStrategy.TAG_USER_AGENT_SDK, it) }
-
         // Timestamp
         log.timestamp?.let {
             val formattedDate = simpleDateFormat.format(Date(log.timestamp))

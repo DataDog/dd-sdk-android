@@ -41,7 +41,6 @@ internal class LoggerBuilderTest {
 
         assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
         assertThat(logger.timestampsEnabled).isTrue()
-        assertThat(logger.userAgentEnabled).isTrue()
         assertThat(logger.datadogLogsEnabled).isTrue()
         assertThat(logger.logcatLogsEnabled).isFalse()
         assertThat(logger.networkInfoProvider).isNull()
@@ -67,20 +66,6 @@ internal class LoggerBuilderTest {
             .build()
 
         assertThat(logger.timestampsEnabled).isEqualTo(timestampsEnabled)
-    }
-
-    @Test
-    fun `builder can enable or disable user agent`(@Forgery forge: Forge) {
-        val userAgentEnabled = forge.aBool()
-        val systemUserAgent = forge.anAlphabeticalString()
-        System.setProperty("http.agent", systemUserAgent)
-
-        val logger = Logger.Builder()
-            .setUserAgentEnabled(userAgentEnabled)
-            .build()
-
-        assertThat(logger.userAgentEnabled).isEqualTo(userAgentEnabled)
-        assertThat(logger.userAgent).isEqualTo(systemUserAgent)
     }
 
     @Test

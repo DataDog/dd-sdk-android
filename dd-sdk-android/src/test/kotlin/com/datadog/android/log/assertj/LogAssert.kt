@@ -68,15 +68,6 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasUserAgent(expected: String?): LogAssert {
-        assertThat(actual.userAgent)
-            .overridingErrorMessage(
-                "Expected log to have userAgent $expected but was ${actual.userAgent}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
     fun hasAttributes(attributes: Map<String, Any?>) {
         assertThat(actual.attributes)
             .containsExactly(*attributes.entries.toTypedArray())

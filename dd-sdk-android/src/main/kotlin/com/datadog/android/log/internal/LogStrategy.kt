@@ -30,7 +30,6 @@ internal interface LogStrategy {
         internal const val TAG_ERROR_STACK = "error.stack"
 
         // ANDROID SPECIFIC TAGS
-        internal const val TAG_USER_AGENT_SDK = "http.useragent_sdk"
         internal const val TAG_NETWORK_INFO = "networkinfo"
         internal const val TAG_NETWORK_CONNECTIVITY = "connectivity"
         internal const val TAG_NETWORK_CARRIER_NAME = "carrierName"
@@ -43,7 +42,6 @@ internal interface LogStrategy {
             TAG_STATUS,
             TAG_SERVICE_NAME,
             TAG_SOURCE,
-            TAG_USER_AGENT_SDK,
             TAG_ERROR_KIND,
             TAG_ERROR_MESSAGE,
             TAG_ERROR_STACK,

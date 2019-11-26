@@ -32,8 +32,6 @@ private constructor(
     val timestampsEnabled: Boolean,
     val datadogLogsEnabled: Boolean,
     val logcatLogsEnabled: Boolean,
-    val userAgentEnabled: Boolean,
-    val userAgent: String,
     private val logWriter: LogWriter,
     internal val networkInfoProvider: NetworkInfoProvider?
 ) {
@@ -120,13 +118,11 @@ private constructor(
 
         private var serviceName: String = DEFAULT_SERVICE_NAME
         private var timestampsEnabled: Boolean = true
-        private var userAgentEnabled: Boolean = true
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
 
         private var logStrategy: LogStrategy? = null
-        private var userAgent: String? = null
         private var networkInfoProvider: NetworkInfoProvider? = null
 
         /**
@@ -134,16 +130,11 @@ private constructor(
          */
         fun build(): Logger {
 
-            // TODO RUMM-45 register broadcast receiver
-
             return Logger(
-                datadogLogsEnabled = datadogLogsEnabled,
                 logWriter = logWriter,
                 serviceName = serviceName,
                 timestampsEnabled = timestampsEnabled,
-                userAgentEnabled = userAgentEnabled,
-                // TODO RUMM-34 allow overriding the user agent ?
-                userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
+                datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
                 networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
                     networkInfoProvider ?: Datadog.getNetworkInfoProvider()
@@ -179,15 +170,6 @@ private constructor(
         }
 
         /**
-         * Enables the system User Agent to be automatically added in your logs.
-         * @param enabled true by default
-         */
-        fun setUserAgentEnabled(enabled: Boolean): Builder {
-            userAgentEnabled = enabled
-            return this
-        }
-
-        /**
          * Enables your logs to be sent to the Datadog servers.
          * You can use this feature to disable Datadog logs based on a configuration or an application flavor.
          * @param enabled true by default
@@ -217,11 +199,6 @@ private constructor(
 
         private fun overrideLogStrategy(strategy: LogStrategy): Builder {
             logStrategy = strategy
-            return this
-        }
-
-        private fun overrideUserAgent(userAgent: String): Builder {
-            this.userAgent = userAgent
             return this
         }
 
@@ -398,7 +375,6 @@ private constructor(
             level = level,
             message = message,
             timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
-            userAgent = if (userAgentEnabled) userAgent else null,
             throwable = throwable,
             attributes = attributes.toMap(),
             tags = tags.toList(),

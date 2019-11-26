@@ -39,7 +39,6 @@ class BenchmarkLogWriting {
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
-            .setUserAgentEnabled(true)
             .setTimestampsEnabled(true)
             .setNetworkInfoEnabled(true)
             .build()

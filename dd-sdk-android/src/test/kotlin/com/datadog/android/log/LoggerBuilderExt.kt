@@ -31,14 +31,3 @@ internal fun Logger.Builder.withLogStrategy(strategy: LogStrategy): Logger.Build
 
     return this
 }
-
-internal fun Logger.Builder.withUserAgent(userAgent: String): Logger.Builder {
-    val method = Logger.Builder::class.java
-        .getDeclaredMethod("overrideUserAgent", String::class.java)
-
-    method.isAccessible = true
-    method.invoke(this, userAgent)
-    method.isAccessible = false
-
-    return this
-}
