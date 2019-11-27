@@ -11,7 +11,7 @@ internal val sdkLogger: Logger by lazy {
     buildLogger()
 }
 
-private fun buildLogger(): Logger {
+internal fun buildLogger(): Logger {
     return Logger.Builder()
             .setDatadogLogsEnabled(false)
             .setLogcatLogsEnabled(BuildConfig.LOGCAT_ENABLED)
