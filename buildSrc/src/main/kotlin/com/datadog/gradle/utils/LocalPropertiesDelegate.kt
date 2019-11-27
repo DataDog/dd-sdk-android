@@ -1,9 +1,9 @@
 package com.datadog.gradle.utils
 
-import org.gradle.api.Project
-import org.jetbrains.kotlin.konan.properties.Properties
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
+import org.gradle.api.Project
+import org.jetbrains.kotlin.konan.properties.Properties
 
 class LocalPropertiesDelegate : ReadOnlyProperty<Project, Properties> {
     private var localProperties: Properties? = null
@@ -15,7 +15,6 @@ class LocalPropertiesDelegate : ReadOnlyProperty<Project, Properties> {
                 if (localPropsFile.exists()) {
                     load(localPropsFile.inputStream())
                 }
-
             }
         }
         return localProperties!!
