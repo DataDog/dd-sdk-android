@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.file.DummyFileWriter
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.util.Date
 
@@ -135,19 +136,28 @@ private constructor(
             // TODO RUMM-45 register broadcast receiver
 
             return Logger(
-                logWriter = (logStrategy ?: Datadog.getLogStrategy()).getLogWriter(),
-                serviceName = serviceName,
-                timestampsEnabled = timestampsEnabled,
-                userAgentEnabled = userAgentEnabled,
-                // TODO RUMM-34 allow overriding the user agent ?
-                userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
-                datadogLogsEnabled = datadogLogsEnabled,
-                logcatLogsEnabled = logcatLogsEnabled,
-                networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
-                    networkInfoProvider ?: Datadog.getNetworkInfoProvider()
-                } else null
+                    datadogLogsEnabled = datadogLogsEnabled,
+                    logWriter = logWriter,
+                    serviceName = serviceName,
+                    timestampsEnabled = timestampsEnabled,
+                    userAgentEnabled = userAgentEnabled,
+                    // TODO RUMM-34 allow overriding the user agent ?
+                    userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
+                    logcatLogsEnabled = logcatLogsEnabled,
+                    networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
+                        networkInfoProvider ?: Datadog.getNetworkInfoProvider()
+                    } else null
             )
         }
+
+        private val logWriter: LogWriter
+            get() {
+                return if (datadogLogsEnabled) {
+                    (logStrategy ?: Datadog.getLogStrategy()).getLogWriter()
+                } else {
+                    DummyFileWriter()
+                }
+            }
 
         /**
          * Sets the service name that will appear in your logs.
@@ -341,15 +351,15 @@ private constructor(
         // TODO RUMM-58 timestamp based on phone local time = error prone
 
         return Log(
-            serviceName = serviceName,
-            level = level,
-            message = message,
-            timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
-            userAgent = if (userAgentEnabled) userAgent else null,
-            throwable = throwable,
-            attributes = attributes.toMap(),
-            tags = tags.toMap(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfos()
+                serviceName = serviceName,
+                level = level,
+                message = message,
+                timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
+                userAgent = if (userAgentEnabled) userAgent else null,
+                throwable = throwable,
+                attributes = attributes.toMap(),
+                tags = tags.toMap(),
+                networkInfo = networkInfoProvider?.getLatestNetworkInfos()
         )
     }
 
@@ -359,12 +369,12 @@ private constructor(
         const val DEFAULT_SERVICE_NAME = "android"
 
         private val levelPrefixes = mapOf(
-            AndroidLog.VERBOSE to "V",
-            AndroidLog.DEBUG to "D",
-            AndroidLog.INFO to "I",
-            AndroidLog.WARN to "W",
-            AndroidLog.ERROR to "E",
-            AndroidLog.ASSERT to "A"
+                AndroidLog.VERBOSE to "V",
+                AndroidLog.DEBUG to "D",
+                AndroidLog.INFO to "I",
+                AndroidLog.WARN to "W",
+                AndroidLog.ERROR to "E",
+                AndroidLog.ASSERT to "A"
         )
     }
 }

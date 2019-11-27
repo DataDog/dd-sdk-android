@@ -1,5 +1,6 @@
 package com.datadog.android.log.internal.utils
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -10,6 +11,7 @@ class RuntimeUtilsTest {
 
     @Test
     fun `the sdk logger should always be disabled for remote logs`() {
+        assertThat(sdkLogger.datadogLogsEnabled).isFalse()
     }
 
     @Test

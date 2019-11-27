@@ -8,7 +8,11 @@ import com.datadog.android.log.Logger
  * to Datadog endpoint and should be conditioned by the BuildConfig flag.
  */
 internal val sdkLogger: Logger by lazy {
-    Logger.Builder()
+    buildLogger()
+}
+
+private fun buildLogger(): Logger {
+    return Logger.Builder()
             .setDatadogLogsEnabled(false)
             .setLogcatLogsEnabled(BuildConfig.LOGCAT_ENABLED)
             .build()
