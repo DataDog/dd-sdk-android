@@ -28,7 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -36,7 +35,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 internal abstract class LogStrategyTest {
 
     lateinit var testedLogWriter: LogWriter
@@ -50,9 +49,13 @@ internal abstract class LogStrategyTest {
 
         testedLogWriter = persistingStrategy.getLogWriter()
         testedLogReader = persistingStrategy.getLogReader()
+
+        setUp(testedLogWriter, testedLogReader)
     }
 
     abstract fun getStrategy(): LogStrategy
+
+    abstract fun setUp(writer: LogWriter, reader: LogReader)
 
     abstract fun waitForNextBatch()
 
@@ -143,6 +146,26 @@ internal abstract class LogStrategyTest {
         assertLogMatches(jsonObject, fakeLog)
     }
 
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes batch of logs from mutliple threads`(@Forgery fakeLogs: List<Log>) {
+        val runnables = fakeLogs.map {
+            Runnable { testedLogWriter.writeLog(it) }
+        }
+        runnables.forEach {
+            Thread(it).start()
+        }
+
+        waitForNextBatch()
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
+
+        batch.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertHasMatches(jsonObject, fakeLogs)
+        }
+    }
+
     // endregion
 
     // region Reader Tests
@@ -191,6 +214,21 @@ internal abstract class LogStrategyTest {
     // endregion
 
     // region Internal
+
+    private fun assertHasMatches(
+        jsonObject: JsonObject,
+        logs: List<Log>
+    ) {
+        val message = (jsonObject[LogStrategy.TAG_MESSAGE] as JsonPrimitive).asString
+        val serviceName = (jsonObject[LogStrategy.TAG_SERVICE_NAME] as JsonPrimitive).asString
+        val status = (jsonObject[LogStrategy.TAG_STATUS] as JsonPrimitive).asString
+
+        val roughMatches = logs.filter {
+            message == it.message && serviceName == it.serviceName && status == levels[it.level]
+        }
+
+        assertThat(roughMatches).isNotEmpty()
+    }
 
     private fun assertLogMatches(
         jsonObject: JsonObject,
@@ -293,6 +331,9 @@ internal abstract class LogStrategyTest {
     // endregion
 
     companion object {
+
+        const val MAX_BATCH_SIZE: Long = 32 * 1024
+
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )

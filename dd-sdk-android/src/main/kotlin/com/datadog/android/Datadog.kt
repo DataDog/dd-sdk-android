@@ -9,34 +9,51 @@ package com.datadog.android
 import android.content.Context
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Build
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import java.lang.ref.WeakReference
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
 object Datadog {
 
-    private const val DEFAULT_URL: String = "https://browser-http-intake.logs.datadoghq.com"
+    /**
+     * The endpoint for our US based servers, used by default by the SDK.
+     * @see [initialize]
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_US = "https://mobile-http-intake.logs.datadoghq.com"
 
-    internal var initialized: Boolean = false
-        private set
+    /**
+     * The endpoint for our Europe based servers.
+     * Use this in your call to [initialize] if you log on
+     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_EU = "https://mobile-http-intake.logs.datadoghq.eu"
 
+    private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
-    private lateinit var networkInfoProvider: NetworkInfoProvider
+    private lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
+    private lateinit var contextRef: WeakReference<Context>
 
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
-     * @param endpointUrl (optional) the endpoint url to target, or null to use the default one
+     * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
+     * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
      */
+    @JvmStatic
     @JvmOverloads
     fun initialize(
         context: Context,
@@ -45,11 +62,13 @@ object Datadog {
     ) {
         check(!initialized) { "Datadog has already been initialized." }
 
+        val appContext = context.applicationContext
+        contextRef = WeakReference(appContext)
         this.clientToken = clientToken
-        logStrategy = LogFileStrategy(context.applicationContext)
+        logStrategy = LogFileStrategy(appContext)
 
         // Start handler to send logs
-        val uploader = LogOkHttpUploader(endpointUrl ?: DEFAULT_URL, Datadog.clientToken)
+        val uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
         handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
         handlerThread.start()
 
@@ -57,10 +76,25 @@ object Datadog {
         // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
         val broadcastReceiver = BroadcastReceiverNetworkInfoProvider()
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        context.registerReceiver(broadcastReceiver, filter)
+        appContext.registerReceiver(broadcastReceiver, filter)
         networkInfoProvider = broadcastReceiver
 
         initialized = true
+    }
+
+    /**
+     * Stop all Datadog work.
+     */
+    fun stop() {
+        checkInitialized()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            handlerThread.quitSafely()
+        } else {
+            handlerThread.quit()
+        }
+        contextRef.get()?.unregisterReceiver(networkInfoProvider)
+        contextRef.clear()
+        initialized = false
     }
 
     // region Internal Provider

@@ -4,15 +4,15 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.config
+package com.datadog.android.log.internal.file
 
-import com.datadog.gradle.utils.Version
+import android.os.Handler
 
-object AndroidConfig {
+internal class AndroidDeferredHandler(
+    private val handler: Handler
+) : DeferredHandler {
 
-    const val TARGET_SDK = 29
-    const val MIN_SDK = 16
-    const val BUILD_TOOLS_VERSION = "29.0.2"
-
-    val VERSION = Version(1, 0, 0, "alpha1")
+    override fun handle(r: Runnable) {
+        handler.post(r)
+    }
 }

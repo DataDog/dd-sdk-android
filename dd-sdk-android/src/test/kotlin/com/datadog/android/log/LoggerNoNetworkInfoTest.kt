@@ -6,7 +6,6 @@
 
 package com.datadog.android.log
 
-import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.Log
@@ -29,13 +28,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 internal class LoggerNoNetworkInfoTest {
 
     lateinit var testedLogger: Logger
@@ -44,8 +42,6 @@ internal class LoggerNoNetworkInfoTest {
     lateinit var fakeMessage: String
     lateinit var fakeUserAgent: String
 
-    @Mock
-    lateinit var mockContext: Context
     @Mock
     lateinit var mockLogStrategy: LogStrategy
     @Mock
@@ -58,7 +54,6 @@ internal class LoggerNoNetworkInfoTest {
 
     @BeforeEach
     fun `set up logger`(forge: Forge) {
-        whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
 
         fakeServiceName = forge.anAlphabeticalString()
@@ -72,8 +67,8 @@ internal class LoggerNoNetworkInfoTest {
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(false) // <<<<
             .setUserAgentEnabled(true)
-            .overrideUserAgent(fakeUserAgent)
-            .overrideLogStrategy(mockLogStrategy)
+            .withUserAgent(fakeUserAgent)
+            .withLogStrategy(mockLogStrategy)
             .build()
     }
 

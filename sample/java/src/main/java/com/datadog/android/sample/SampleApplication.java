@@ -20,10 +20,10 @@ public class SampleApplication extends Application {
         super.onCreate();
 
         // Initialise Datadog
-        Datadog.INSTANCE.initialize(
+        Datadog.initialize(
                 this,
                 BuildConfig.DD_CLIENT_TOKEN,
-                BuildConfig.DD_OVERRIDE_URL
+                (BuildConfig.DD_OVERRIDE_URL == null) ? Datadog.DATADOG_US : BuildConfig.DD_OVERRIDE_URL
         );
 
         // Initialise Logger

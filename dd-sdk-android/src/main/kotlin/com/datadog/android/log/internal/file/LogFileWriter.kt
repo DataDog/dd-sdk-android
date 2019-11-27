@@ -8,6 +8,8 @@ package com.datadog.android.log.internal.file
 
 import android.annotation.TargetApi
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
@@ -27,38 +29,57 @@ import java.util.Locale
 
 internal class LogFileWriter(
     private val rootDirectory: File,
-    private val recentDelayMs: Long
-) : LogWriter {
+    private val recentDelayMs: Long,
+    private val maxBatchSize: Long
+) : HandlerThread(THREAD_NAME), LogWriter {
 
-    private val writeable: Boolean
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
     private val fileFilter: FileFilter = LogFileFilter()
+    internal lateinit var handler: Handler
+    internal lateinit var deferredHandler: DeferredHandler
+
+    private val writeable: Boolean = if (!rootDirectory.exists()) {
+        rootDirectory.mkdirs()
+    } else {
+        rootDirectory.isDirectory
+    }
 
     init {
-        writeable = if (!rootDirectory.exists()) {
-            rootDirectory.mkdirs()
-        } else {
-            rootDirectory.isDirectory
-        }
         if (!writeable) {
             AndroidLog.e(
                 "datadog",
                 "Can't write logs on disk: directory ${rootDirectory.path} is invalid."
             )
+        } else {
+            start()
         }
     }
 
-    // region LoggerWriter
+    // region Handler
+
+    override fun onLooperPrepared() {
+        super.onLooperPrepared()
+        handler = Handler(looper)
+        deferredHandler = AndroidDeferredHandler(handler)
+    }
+
+    // endregion
+
+    // region LogWriter
 
     override fun writeLog(log: Log) {
         if (!writeable) return
 
-        val strLog = serializeLog(log)
-        val obfLog = obfuscate(strLog)
+        deferredHandler.handle(Runnable {
+            val strLog = serializeLog(log)
+            val obfLog = obfuscate(strLog)
 
-        val file = getWritableFile(obfLog.size)
-        file.appendBytes(obfLog)
-        file.appendBytes(logSeparator)
+            synchronized(this) {
+                val file = getWritableFile(obfLog.size)
+                file.appendBytes(obfLog)
+                file.appendBytes(logSeparator)
+            }
+        })
     }
 
     // endregion
@@ -66,10 +87,10 @@ internal class LogFileWriter(
     // region Internal
 
     private fun getWritableFile(logSize: Int): File {
-        val maxLogLength = MAX_BATCH_SIZE - logSize
+        val maxLogLength = maxBatchSize - logSize
         val now = System.currentTimeMillis()
 
-        val files = rootDirectory.listFiles(fileFilter).sorted()
+        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
         val lastFile = files.lastOrNull()
 
         return if (lastFile != null) {
@@ -184,10 +205,9 @@ internal class LogFileWriter(
     // endregion
 
     companion object {
-
-        private const val MAX_BATCH_SIZE: Long = 16 * 1024
         private val logSeparator = ByteArray(1) { LogFileStrategy.SEPARATOR_BYTE }
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        private const val THREAD_NAME = "ddog_w"
     }
 }

@@ -31,3 +31,9 @@ fun DependencyHandler.testImplementation(dependencies: Array<String>) {
         add("testImplementation", it)
     }
 }
+
+fun DependencyHandler.androidTestImplementation(dependencies: Array<String>) {
+    dependencies.forEach {
+        add("androidTestImplementation", it)
+    }
+}

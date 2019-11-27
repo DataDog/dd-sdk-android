@@ -24,13 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 @ForgeConfiguration(Configurator::class)
 internal class LogOkHttpUploaderTest {
 
@@ -175,9 +174,20 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
+    fun `uploads logs 407-Proxy`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.enqueue(mockResponse(407))
+
+        val status = testedUploader.uploadLogs(logs)
+
+        assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+        assertValidRequest(mockWebServer.takeRequest(), logs)
+    }
+
+    @Test
     fun `uploads logs 4xx-ClientError`(forge: Forge) {
         val logs = forge.aList { anHexadecimalString() }
-        mockWebServer.enqueue(mockResponse(forge.anInt(400, 499)))
+        mockWebServer.enqueue(mockResponse(forge.anInt(408, 499)))
 
         val status = testedUploader.uploadLogs(logs)
 
@@ -260,7 +270,7 @@ internal class LogOkHttpUploaderTest {
         assertThat(request.path)
             .isEqualTo("/v1/input/$fakeToken?ddsource=mobile")
         assertThat(request.getHeader("User-Agent"))
-            .matches("datadog-android/log:\\d+.\\d+.\\d+")
+            .matches("datadog-android/log:\\d+.\\d+.\\d+(-\\w+)?")
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo("application/json")
         assertThat(request.body.readUtf8())

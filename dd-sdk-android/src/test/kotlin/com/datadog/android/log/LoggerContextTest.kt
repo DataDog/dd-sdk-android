@@ -6,7 +6,6 @@
 
 package com.datadog.android.log
 
-import android.content.Context
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
@@ -30,20 +29,17 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
+@MockitoSettings()
 @ForgeConfiguration(Configurator::class)
 internal class LoggerContextTest {
 
     lateinit var testedLogger: Logger
 
-    @Mock
-    lateinit var mockContext: Context
     @Mock
     lateinit var mockLogStrategy: LogStrategy
     @Mock
@@ -51,11 +47,10 @@ internal class LoggerContextTest {
 
     @BeforeEach
     fun `set up logger`(forge: Forge) {
-        whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
 
         testedLogger = Logger.Builder()
-            .overrideLogStrategy(mockLogStrategy)
+            .withLogStrategy(mockLogStrategy)
             .build()
     }
 

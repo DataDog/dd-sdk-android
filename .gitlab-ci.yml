@@ -37,3 +37,6 @@ test:unit:
   stage: test
   script:
     - ./gradlew :dd-sdk-android:jacocoTestDebugUnitTestReport
+  artifacts:
+    reports:
+      junit: dd-sdk-android/build/test-results/test/**/TEST-*.xml
