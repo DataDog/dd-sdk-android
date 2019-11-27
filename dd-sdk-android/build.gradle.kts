@@ -1,15 +1,14 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.GlobalBuildConfigProperties
-import com.datadog.gradle.config.LocalProjectProperties
+import com.datadog.gradle.config.BuildConfigPropertiesKeys
+import com.datadog.gradle.config.GradlePropertiesKeys
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.config.localProperties
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.testImplementation
 
@@ -28,7 +27,11 @@ plugins {
 
 val isLogEnabledInRelease: String
     get() {
-        return localProperties.getProperty(LocalProjectProperties.FORCE_ENABLE_LOGCAT) ?: "false"
+        return if (project.hasProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT)) {
+            project.property(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as String
+        } else {
+            "false"
+        }
     }
 val isLogEnabledInDebug: String
     get() {
@@ -68,13 +71,13 @@ android {
     buildTypes {
         getByName("release") {
             buildConfigField("Boolean",
-                    GlobalBuildConfigProperties.LOGCAT_ENABLED,
+                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
                     isLogEnabledInRelease)
         }
 
         getByName("debug") {
             buildConfigField("Boolean",
-                    GlobalBuildConfigProperties.LOGCAT_ENABLED,
+                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
                     isLogEnabledInDebug)
         }
     }

@@ -4,9 +4,9 @@ import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
 
 /**
- * Dummy Log File Writer.
+ * Dummy Log Writer.
  */
-internal class DummyFileWriter : LogWriter {
+internal class DummyLogWriter : LogWriter {
     override fun writeLog(log: Log) {
         // NO-OP
     }

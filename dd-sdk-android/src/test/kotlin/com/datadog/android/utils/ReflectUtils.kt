@@ -9,7 +9,6 @@ internal inline fun <reified T, R> Class<T>.setStaticValue(
 ) {
 
     val field = getDeclaredField(fieldName)
-    field
     // make it accessible
 
     field.isAccessible = true
@@ -19,4 +18,10 @@ internal inline fun <reified T, R> Class<T>.setStaticValue(
     modifiersField.isAccessible = true
     modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
     field.set(null, fieldValue)
+}
+
+inline fun <reified T> Any.getFieldValue(fieldName: String): T {
+    val field = this.javaClass.getDeclaredField(fieldName)
+    field.isAccessible = true
+    return field.get(this) as T
 }

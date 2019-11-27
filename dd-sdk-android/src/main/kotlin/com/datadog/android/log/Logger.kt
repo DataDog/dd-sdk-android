@@ -12,7 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.log.internal.file.DummyFileWriter
+import com.datadog.android.log.internal.file.DummyLogWriter
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.util.Date
 
@@ -155,7 +155,7 @@ private constructor(
                 return if (datadogLogsEnabled) {
                     (logStrategy ?: Datadog.getLogStrategy()).getLogWriter()
                 } else {
-                    DummyFileWriter()
+                    DummyLogWriter()
                 }
             }
 

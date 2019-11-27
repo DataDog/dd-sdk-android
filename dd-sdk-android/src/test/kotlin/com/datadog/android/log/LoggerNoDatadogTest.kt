@@ -8,7 +8,8 @@ package com.datadog.android.log
 
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.log.internal.file.DummyFileWriter
+import com.datadog.android.log.internal.file.DummyLogWriter
+import com.datadog.android.utils.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
@@ -122,8 +123,8 @@ internal class LoggerNoDatadogTest {
 
     @Test
     fun `logger has a dummy file writer`() {
-        val logWriter: LogWriter = testedLogger.getField("logWriter")
-        assertThat(logWriter).isInstanceOf(DummyFileWriter::class.java)
+        val logWriter: LogWriter = testedLogger.getFieldValue("logWriter")
+        assertThat(logWriter).isInstanceOf(DummyLogWriter::class.java)
     }
 
     // endregion

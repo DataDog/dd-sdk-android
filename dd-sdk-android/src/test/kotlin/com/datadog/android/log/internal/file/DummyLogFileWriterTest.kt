@@ -16,11 +16,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 @ForgeConfiguration(Configurator::class)
 internal class DummyLogFileWriterTest {
 
-    lateinit var underTest: DummyFileWriter
+    lateinit var underTest: DummyLogWriter
 
     @BeforeEach
     fun `set up`() {
-        underTest = DummyFileWriter()
+        underTest = DummyLogWriter()
     }
 
     @Test
