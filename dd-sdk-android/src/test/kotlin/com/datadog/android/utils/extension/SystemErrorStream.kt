@@ -4,10 +4,9 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.utils
+package com.datadog.android.utils.extension
 
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class EnableLogcat(
-    val isEnabled: Boolean = false
+annotation class SystemErrorStream(
 )

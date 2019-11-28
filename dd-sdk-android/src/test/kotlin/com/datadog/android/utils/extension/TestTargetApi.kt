@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.utils
+package com.datadog.android.utils.extension
 
 import android.os.Build
 
