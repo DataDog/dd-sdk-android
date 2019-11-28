@@ -1,6 +1,8 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.BuildConfigPropertiesKeys
+import com.datadog.gradle.config.GradlePropertiesKeys
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
@@ -22,6 +24,19 @@ plugins {
     id("thirdPartyLicences")
     jacoco
 }
+
+val isLogEnabledInRelease: String
+    get() {
+        return if (project.hasProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT)) {
+            project.property(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as String
+        } else {
+            "false"
+        }
+    }
+val isLogEnabledInDebug: String
+    get() {
+        return "true"
+    }
 
 android {
     compileSdkVersion(AndroidConfig.TARGET_SDK)
@@ -51,6 +66,20 @@ android {
     // enableAdditionalTestOutput=true
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+
+    buildTypes {
+        getByName("release") {
+            buildConfigField("Boolean",
+                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
+                    isLogEnabledInRelease)
+        }
+
+        getByName("debug") {
+            buildConfigField("Boolean",
+                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
+                    isLogEnabledInDebug)
+        }
     }
 }
 

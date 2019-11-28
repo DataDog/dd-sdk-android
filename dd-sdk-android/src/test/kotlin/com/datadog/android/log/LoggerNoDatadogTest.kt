@@ -8,11 +8,8 @@ package com.datadog.android.log
 
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import com.datadog.android.log.internal.file.DummyLogWriter
+import com.datadog.android.utils.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
@@ -41,9 +38,6 @@ internal class LoggerNoDatadogTest {
 
     @Mock
     lateinit var mockLogStrategy: LogStrategy
-    @Mock
-    lateinit var mockLogWriter: LogWriter
-
     private lateinit var originalErrStream: PrintStream
     private lateinit var originalOutStream: PrintStream
     private lateinit var outStreamContent: ByteArrayOutputStream
@@ -51,8 +45,6 @@ internal class LoggerNoDatadogTest {
 
     @BeforeEach
     fun `set up logger`(forge: Forge) {
-        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
-
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
 
@@ -129,6 +121,12 @@ internal class LoggerNoDatadogTest {
         verifyLogSideEffects("A")
     }
 
+    @Test
+    fun `logger has a dummy file writer`() {
+        val logWriter: LogWriter = testedLogger.getFieldValue("logWriter")
+        assertThat(logWriter).isInstanceOf(DummyLogWriter::class.java)
+    }
+
     // endregion
 
     // region Internal
@@ -137,8 +135,6 @@ internal class LoggerNoDatadogTest {
         assertThat(outStreamContent.toString())
             .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage\n")
         assertThat(errStreamContent.toString()).isEmpty()
-
-        verify(mockLogWriter, never()).writeLog(any())
     }
 
     // endregion
