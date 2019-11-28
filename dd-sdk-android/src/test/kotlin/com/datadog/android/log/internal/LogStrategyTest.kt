@@ -7,9 +7,11 @@
 package com.datadog.android.log.internal
 
 import android.os.Build
+import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.utils.extension.ApiLevelExtension
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
@@ -168,6 +170,36 @@ internal abstract class LogStrategyTest {
             val jsonObject = JsonParser.parseString(log).asJsonObject
             assertHasMatches(jsonObject, fakeLogs)
         }
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `don't write log if size is too big`(forge: Forge) {
+        val bigLog = Log(
+            level = AndroidLog.ASSERT,
+            serviceName = forge.anAlphabeticalString(size = 65536),
+            message = forge.anAlphabeticalString(size = 131072),
+            tags = forge.aList(size = 256) { forge.anAlphabeticalString(size = 128) },
+            attributes = forge.aMap(size = 256) {
+                forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
+                    size = 128
+                )
+            },
+            networkInfo = NetworkInfo(
+                connectivity = NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+                carrierId = forge.aHugeInt(),
+                carrierName = forge.anAlphabeticalString(size = 256)
+            ),
+            throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
+            timestamp = forge.aLong()
+        )
+
+        testedLogWriter.writeLog(bigLog)
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()
+
+        assertThat(batch)
+            .isNull()
     }
 
     // endregion

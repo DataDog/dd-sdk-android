@@ -73,12 +73,11 @@ internal class LogFileWriter(
 
         deferredHandler.handle(Runnable {
             val strLog = serializeLog(log)
-            val obfLog = obfuscate(strLog)
 
-            synchronized(this) {
-                val file = getWritableFile(obfLog.size)
-                file.appendBytes(obfLog)
-                file.appendBytes(logSeparator)
+            if (strLog.length >= MAX_LOG_SIZE) {
+                // TODO RUMM-49 warn user that the log is too big !
+            } else {
+                obfuscateAndWriteLog(strLog)
             }
         })
     }
@@ -170,6 +169,16 @@ internal class LogFileWriter(
         return jsonLog.toString()
     }
 
+    private fun obfuscateAndWriteLog(strLog: String) {
+        val obfLog = obfuscate(strLog)
+
+        synchronized(this) {
+            val file = getWritableFile(obfLog.size)
+            file.appendBytes(obfLog)
+            file.appendBytes(logSeparator)
+        }
+    }
+
     private fun obfuscate(log: String): ByteArray {
         val input = log.toByteArray(Charsets.UTF_8)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -204,6 +213,9 @@ internal class LogFileWriter(
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         private const val THREAD_NAME = "ddog_w"
-        val TAG = "LogFileWriter".asDataDogTag()
+
+        private const val MAX_LOG_SIZE = 256 * 1024
+
+        private val TAG = "LogFileWriter".asDataDogTag()
     }
 }
