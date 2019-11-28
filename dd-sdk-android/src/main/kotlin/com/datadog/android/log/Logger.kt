@@ -310,8 +310,18 @@ private constructor(
 
     /**
      * Add a tag to all future logs sent by this logger.
+     * The tag will take the form "key:value"
+     *
+     * Tags must start with a letter and after that may contain the following characters:
+     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * are converted to underscores.
+     * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
+     * longer, only the first 200 characters will be used.
+     *
+     *
      * @param key the key for this tag
      * @param value the (non null) value of this tag
+     * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
     fun addTag(key: String, value: String) {
         addTagInternal("$key:$value")
@@ -319,11 +329,15 @@ private constructor(
 
     /**
      * Add a tag to all future logs sent by this logger.
+     *
+     * Tags must start with a letter and after that may contain the following characters:
+     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * are converted to underscores.
+     * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
+     * longer, only the first 200 characters will be used.
+     *
      * @param tag the (non null) tag
-     *
-     * Make sure that your tag follows the rule defined in our
-     * [documentation](https://docs.datadoghq.com/tagging/#defining-tags).
-     *
+     * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
     fun addTag(tag: String) {
         addTagInternal(tag)
