@@ -84,7 +84,7 @@ internal abstract class LogStrategyTest {
             throwable = null,
             networkInfo = null,
             attributes = emptyMap(),
-            tags = emptyMap()
+            tags = emptyList()
         )
 
         testedLogWriter.writeLog(minimalLog)
@@ -306,12 +306,10 @@ internal abstract class LogStrategyTest {
         } else {
             val tags = jsonTagString
                 .split(',')
-                .map { it.split(':') }
-                .map { it[0] to it[1] }
-                .toMap()
+                .toList()
 
             assertThat(tags)
-                .containsAllEntriesOf(log.tags.filter { it.key.isNotBlank() && it.value != null })
+                .containsExactlyInAnyOrder(*log.tags.toTypedArray())
         }
     }
 

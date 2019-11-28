@@ -15,6 +15,7 @@ import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.file.DummyLogWriter
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.util.Date
+import java.util.Locale
 
 /**
  * A class enabling Datadog logging features.
@@ -38,7 +39,7 @@ private constructor(
 ) {
 
     private val attributes = mutableMapOf<String, Any?>()
-    private val tags = mutableMapOf<String, String?>()
+    private val tags = mutableSetOf<String>()
 
     // region Log
 
@@ -136,17 +137,17 @@ private constructor(
             // TODO RUMM-45 register broadcast receiver
 
             return Logger(
-                    datadogLogsEnabled = datadogLogsEnabled,
-                    logWriter = logWriter,
-                    serviceName = serviceName,
-                    timestampsEnabled = timestampsEnabled,
-                    userAgentEnabled = userAgentEnabled,
-                    // TODO RUMM-34 allow overriding the user agent ?
-                    userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
-                    logcatLogsEnabled = logcatLogsEnabled,
-                    networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
-                        networkInfoProvider ?: Datadog.getNetworkInfoProvider()
-                    } else null
+                datadogLogsEnabled = datadogLogsEnabled,
+                logWriter = logWriter,
+                serviceName = serviceName,
+                timestampsEnabled = timestampsEnabled,
+                userAgentEnabled = userAgentEnabled,
+                // TODO RUMM-34 allow overriding the user agent ?
+                userAgent = userAgent ?: System.getProperty("http.agent").orEmpty(),
+                logcatLogsEnabled = logcatLogsEnabled,
+                networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
+                    networkInfoProvider ?: Datadog.getNetworkInfoProvider()
+                } else null
             )
         }
 
@@ -299,7 +300,8 @@ private constructor(
 
     /**
      * Remove a custom attribute from all future logs sent by this logger.
-     * Previous log won't lose the attribute value associated with this key if they were created prior to this.
+     * Previous log won't lose the attribute value associated with this key if they were created
+     * prior to this call.
      * @param key the key of the attribute to remove
      */
     fun removeAttribute(key: String) {
@@ -308,20 +310,61 @@ private constructor(
 
     /**
      * Add a tag to all future logs sent by this logger.
+     * The tag will take the form "key:value"
+     *
+     * Tags must start with a letter and after that may contain the following characters:
+     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * are converted to underscores.
+     * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
+     * longer, only the first 200 characters will be used.
+     *
+     *
      * @param key the key for this tag
-     * @param value the (nullable) String value of this tag
+     * @param value the (non null) value of this tag
+     * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
-    fun addTag(key: String, value: String?) {
-        tags[key] = value
+    fun addTag(key: String, value: String) {
+        addTagInternal("$key:$value")
     }
 
     /**
-     * Remove atag from all future logs sent by this logger.
-     * Previous log won't lose the tag associated with this key if they were created prior to this.
-     * @param key the key of the tag to remove
+     * Add a tag to all future logs sent by this logger.
+     *
+     * Tags must start with a letter and after that may contain the following characters:
+     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * are converted to underscores.
+     * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
+     * longer, only the first 200 characters will be used.
+     *
+     * @param tag the (non null) tag
+     * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
-    fun removeTag(key: String) {
-        tags.remove(key)
+    fun addTag(tag: String) {
+        addTagInternal(tag)
+    }
+
+    /**
+     * Remove a tag from all future logs sent by this logger.
+     * Previous log won't lose the this tag if they were created prior to this call.
+     * @param tag the tag to remove
+     */
+    fun removeTag(tag: String) {
+        removeTagInternal(tag)
+    }
+
+    /**
+     * Remove all tags with the given key from all future logs sent by this logger.
+     * Previous log won't lose the this tag if they were created prior to this call.
+     * @param key the key of the tags to remove
+     */
+    fun removeTagsWithKey(key: String) {
+        val convertedKey = convertTag(key)
+        if (convertedKey != null) {
+            val prefix = "$key:"
+            tags.removeAll {
+                it.startsWith(prefix)
+            }
+        }
     }
 
     // endregion
@@ -351,16 +394,82 @@ private constructor(
         // TODO RUMM-58 timestamp based on phone local time = error prone
 
         return Log(
-                serviceName = serviceName,
-                level = level,
-                message = message,
-                timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
-                userAgent = if (userAgentEnabled) userAgent else null,
-                throwable = throwable,
-                attributes = attributes.toMap(),
-                tags = tags.toMap(),
-                networkInfo = networkInfoProvider?.getLatestNetworkInfos()
+            serviceName = serviceName,
+            level = level,
+            message = message,
+            timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
+            userAgent = if (userAgentEnabled) userAgent else null,
+            throwable = throwable,
+            attributes = attributes.toMap(),
+            tags = tags.toList(),
+            networkInfo = networkInfoProvider?.getLatestNetworkInfos()
         )
+    }
+
+    // endregion
+
+    // region Internal/Tag
+
+    private fun addTagInternal(tag: String) {
+        val convertedTag = convertTag(tag)
+        if (convertedTag != null) {
+            // TODO RUMM-49 warn if tag value was modified automatically
+            if (isKeyValid(convertedTag)) {
+                tags.add(convertedTag)
+            } else {
+                // TODO RUMM-49 warn that tag key is reserved
+                // Do nothing
+            }
+        } else {
+            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
+            // Do nothing
+        }
+    }
+
+    private fun removeTagInternal(tag: String) {
+        val convertedTag = convertTag(tag)
+        if (convertedTag != null) {
+            tags.remove(convertedTag)
+        } else {
+            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
+            // Do nothing
+        }
+    }
+
+    private fun convertTag(tag: String): String? {
+        val lowerCaseTag = tag.toLowerCase(Locale.US)
+        // Tags must start with a letter
+        return if (lowerCaseTag[0] !in 'a'..'z') {
+            null
+        } else {
+            // Tag can only contain Alphanumerics, Underscores, Minuses, Colons, Periods, Slashes
+            // Other special characters are converted to underscores
+            val valid = lowerCaseTag.replace(Regex("[^a-z0-9_:./-]"), "_")
+
+            // Tags can be up to 200 characters long
+            val resized = if (valid.length <= MAX_TAG_LENGTH) {
+                valid
+            } else {
+                valid.substring(0, MAX_TAG_LENGTH)
+            }
+
+            // A tag cannot end with a colon, for example tag:
+            if (resized.endsWith(':')) {
+                resized.substring(0, resized.lastIndex)
+            } else {
+                resized
+            }
+        }
+    }
+
+    private fun isKeyValid(tag: String): Boolean {
+        val firstColon = tag.indexOf(':')
+        return if (firstColon > 0) {
+            val key = tag.substring(0, firstColon)
+            key !in reservedTagKeys
+        } else {
+            true
+        }
     }
 
     // endregion
@@ -368,13 +477,19 @@ private constructor(
     companion object {
         const val DEFAULT_SERVICE_NAME = "android"
 
+        const val MAX_TAG_LENGTH = 200
+
+        private val reservedTagKeys = setOf(
+            "host", "device", "source", "service"
+        )
+
         private val levelPrefixes = mapOf(
-                AndroidLog.VERBOSE to "V",
-                AndroidLog.DEBUG to "D",
-                AndroidLog.INFO to "I",
-                AndroidLog.WARN to "W",
-                AndroidLog.ERROR to "E",
-                AndroidLog.ASSERT to "A"
+            AndroidLog.VERBOSE to "V",
+            AndroidLog.DEBUG to "D",
+            AndroidLog.INFO to "I",
+            AndroidLog.WARN to "W",
+            AndroidLog.ERROR to "E",
+            AndroidLog.ASSERT to "A"
         )
     }
 }
