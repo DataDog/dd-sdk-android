@@ -349,7 +349,7 @@ private constructor(
      * @param tag the tag to remove
      */
     fun removeTag(tag: String) {
-        tags.remove(tag)
+        removeTagInternal(tag)
     }
 
     // endregion
@@ -405,6 +405,16 @@ private constructor(
                 // TODO RUMM-49 warn that tag key is reserved
                 // Do nothing
             }
+        } else {
+            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
+            // Do nothing
+        }
+    }
+
+    private fun removeTagInternal(tag: String) {
+        val convertedTag = convertTag(tag)
+        if (convertedTag != null) {
+            tags.remove(convertedTag)
         } else {
             // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
             // Do nothing

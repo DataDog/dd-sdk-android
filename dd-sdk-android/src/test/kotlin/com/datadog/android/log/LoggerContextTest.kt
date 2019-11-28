@@ -332,25 +332,6 @@ internal class LoggerContextTest {
     }
 
     @Test
-    fun `remove tag from logger`(forge: Forge) {
-        val tag = forge.anAlphabeticalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(tag)
-        testedLogger.i(message)
-        testedLogger.removeTag(tag)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter, times(2)).writeLog(capture())
-            assertThat(firstValue)
-                .hasTags(listOf(tag))
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
-    @Test
     fun `ignore invalid tag - start with a letter`(forge: Forge) {
         val key = forge.aStringMatching("\\d[a-z]+")
         val value = forge.aNumericalString()
@@ -474,6 +455,58 @@ internal class LoggerContextTest {
 
         argumentCaptor<Log> {
             verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue.tags)
+                .isEmpty()
+        }
+    }
+
+    // endregion
+
+    // region remove Tags
+
+    @Test
+    fun `remove tag from logger`(forge: Forge) {
+        val tag = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(tag)
+        testedLogger.i(message)
+        testedLogger.removeTag(tag)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasTags(listOf(tag))
+            assertThat(lastValue.tags)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove converted tag from logger`(forge: Forge) {
+        val validPart = forge.randomizeCase(forge.anAlphabeticalString(size = 10))
+        val invalidPart = forge.aString {
+            anElementFrom(
+                ',', '?', '%', '(', ')', '[', ']', '{', '}',
+                '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u0020'
+            )
+        }
+        val value = forge.aNumericalString()
+        val tag = "$validPart:$invalidPart:$value"
+
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(tag)
+        testedLogger.i(message)
+        testedLogger.removeTag(tag)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            val converted = '_' * invalidPart.length
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasTags(listOf("${validPart.toLowerCase()}:$converted:$value"))
             assertThat(lastValue.tags)
                 .isEmpty()
         }
