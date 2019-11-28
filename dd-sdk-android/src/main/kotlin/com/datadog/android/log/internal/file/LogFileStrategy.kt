@@ -25,14 +25,16 @@ internal class LogFileStrategy(
     ) :
         this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs, maxBatchSize)
 
+    private val fileOrchestrator = LogFileOrchestrator(rootDir, recentDelayMs, maxBatchSize)
+
     // region LogPersistingStrategy
 
     override fun getLogWriter(): LogWriter {
-        return LogFileWriter(rootDir, recentDelayMs, maxBatchSize)
+        return LogFileWriter(fileOrchestrator, rootDir)
     }
 
     override fun getLogReader(): LogReader {
-        return LogFileReader(rootDir, recentDelayMs)
+        return LogFileReader(fileOrchestrator, rootDir, recentDelayMs)
     }
 
     // endregion

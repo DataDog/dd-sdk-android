@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 
@@ -37,6 +38,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 @ForgeConfiguration(Configurator::class)
 internal class LogFileWriterInvalidTest {
 
+    @Mock
+    lateinit var mockFileOrchestrator: FileOrchestrator
+
     @TempDir
     lateinit var tempDir: File
 
@@ -49,7 +53,7 @@ internal class LogFileWriterInvalidTest {
         logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         logsDir.writeText(I_LIED)
 
-        testedFileWriter = LogFileWriter(logsDir, 250L, 1024)
+        testedFileWriter = LogFileWriter(mockFileOrchestrator, logsDir)
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())
                 .withFailMessage("We were expecting a log error message")

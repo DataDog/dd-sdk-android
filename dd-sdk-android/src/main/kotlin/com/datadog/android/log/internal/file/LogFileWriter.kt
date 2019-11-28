@@ -21,7 +21,6 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.io.File
-import java.io.FileFilter
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.text.SimpleDateFormat
@@ -30,13 +29,11 @@ import java.util.Date
 import java.util.Locale
 
 internal class LogFileWriter(
-    private val rootDirectory: File,
-    private val recentDelayMs: Long,
-    private val maxBatchSize: Long
+    private val fileOrchestrator: FileOrchestrator,
+    rootDirectory: File
 ) : HandlerThread(THREAD_NAME), LogWriter {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
-    private val fileFilter: FileFilter = LogFileFilter()
     internal lateinit var handler: Handler
     internal lateinit var deferredHandler: DeferredHandler
 
@@ -85,27 +82,6 @@ internal class LogFileWriter(
     // endregion
 
     // region Internal
-
-    private fun getWritableFile(logSize: Int): File {
-        val maxLogLength = maxBatchSize - logSize
-        val now = System.currentTimeMillis()
-
-        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
-        val lastFile = files.lastOrNull()
-
-        return if (lastFile != null) {
-            val fileHasRoomForMore = lastFile.length() < maxLogLength
-            val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile, recentDelayMs)
-
-            if (fileHasRoomForMore && fileIsRecentEnough) {
-                lastFile
-            } else {
-                File(rootDirectory, now.toString())
-            }
-        } else {
-            File(rootDirectory, now.toString())
-        }
-    }
 
     private fun serializeLog(log: Log): String {
         val jsonLog = JsonObject()
@@ -173,7 +149,7 @@ internal class LogFileWriter(
         val obfLog = obfuscate(strLog)
 
         synchronized(this) {
-            val file = getWritableFile(obfLog.size)
+            val file = fileOrchestrator.getWritableFile(obfLog.size)
             file.appendBytes(obfLog)
             file.appendBytes(logSeparator)
         }
