@@ -384,26 +384,22 @@ private constructor(
     private fun addTagInternal(tag: String) {
         val convertedTag = convertTag(tag)
         if (convertedTag != null) {
-            val firstColon = convertedTag.indexOf(':')
-            val key = if (firstColon > 0) {
-                convertedTag.substring(0, firstColon)
+            // TODO RUMM-49 warn if tag value was modified automatically
+            if (isKeyValid(convertedTag)) {
+                tags.add(convertedTag)
             } else {
-                ""
-            }
-            if (key in reservedTagKeys) {
                 // TODO RUMM-49 warn that tag key is reserved
                 // Do nothing
-            } else {
-                // TODO RUMM-49 warn if tag value was modified automatically
-                tags.add(convertedTag)
             }
+        } else {
+            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
+            // Do nothing
         }
     }
 
     private fun convertTag(tag: String): String? {
         val lowerCaseTag = tag.toLowerCase(Locale.US)
         return if (lowerCaseTag[0] !in 'a'..'z') {
-            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
             null
         } else {
             val valid = lowerCaseTag.replace(Regex("[^a-z0-9_:./-]"), "_")
@@ -412,6 +408,16 @@ private constructor(
             } else {
                 valid.substring(0, MAX_TAG_LENGTH)
             }
+        }
+    }
+
+    private fun isKeyValid(tag: String): Boolean {
+        val firstColon = tag.indexOf(':')
+        return if (firstColon > 0) {
+            val key = tag.substring(0, firstColon)
+            key !in reservedTagKeys
+        } else {
+            true
         }
     }
 
