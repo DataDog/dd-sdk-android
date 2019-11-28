@@ -1,7 +1,7 @@
 package com.datadog.android.log.internal.utils
 
-import com.datadog.android.utils.BuildConfigExtension
-import com.datadog.android.utils.EnableLogcat
+import com.datadog.android.utils.extension.BuildConfigExtension
+import com.datadog.android.utils.extension.EnableLogcat
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

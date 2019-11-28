@@ -8,9 +8,12 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
+import com.datadog.android.utils.extension.SystemOutStream
+import com.datadog.android.utils.extension.SystemOutputExtension
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -26,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoSettings
  */
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -40,11 +44,14 @@ internal class LogFileWriterInvalidTest {
     lateinit var logsDir: File
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(@SystemOutStream outputStream: ByteArrayOutputStream) {
         logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         logsDir.writeText(I_LIED)
 
         testedFileWriter = LogFileWriter(logsDir, 250L, 1024)
+        assertThat(outputStream.toString().trim())
+            .withFailMessage("We were expecting a log error message")
+            .matches("E/android: LogFileWriter: .+")
     }
 
     @Test

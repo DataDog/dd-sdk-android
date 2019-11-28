@@ -7,9 +7,9 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
-import android.util.Log
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.utils.sdkLogger
 
 internal class LogUploadRunnable(
     private val handler: Handler,
@@ -26,13 +26,13 @@ internal class LogUploadRunnable(
 
         if (batch != null) {
             val batchId = batch.id
-            Log.i("T", "Sending batch $batchId")
+            sdkLogger.i("$TAG: Sending batch $batchId")
             val status = logUploader.uploadLogs(batch.logs)
             if (shouldDropBatch(batchId, status)) {
                 logReader.dropBatch(batchId)
             }
         } else {
-            Log.d("T", "No batch to send")
+            sdkLogger.i("$TAG: There was no batch to send")
         }
 
         handler.postDelayed(this, DELAY_MS)
@@ -59,10 +59,11 @@ internal class LogUploadRunnable(
 
     companion object {
         private val maxAttemptsMap = mapOf(
-            LogUploadStatus.NETWORK_ERROR to 3,
-            LogUploadStatus.HTTP_SERVER_ERROR to 3
+                LogUploadStatus.NETWORK_ERROR to 3,
+                LogUploadStatus.HTTP_SERVER_ERROR to 3
         )
 
         const val DELAY_MS = 5000L
+        const val TAG = "LogUploadRunnable"
     }
 }

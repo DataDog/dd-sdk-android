@@ -15,6 +15,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.utils.sdkLogger
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -46,9 +47,8 @@ internal class LogFileWriter(
 
     init {
         if (!writeable) {
-            AndroidLog.e(
-                "datadog",
-                "Can't write logs on disk: directory ${rootDirectory.path} is invalid."
+            sdkLogger.e(
+                "$TAG: Can't write logs on disk: directory ${rootDirectory.path} is invalid."
             )
         } else {
             start()
@@ -203,5 +203,6 @@ internal class LogFileWriter(
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         private const val THREAD_NAME = "ddog_w"
+        const val TAG = "LogFileWriter"
     }
 }

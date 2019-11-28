@@ -10,9 +10,12 @@ import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.utils.setStaticValue
+import com.datadog.android.utils.extension.SystemOutStream
+import com.datadog.android.utils.extension.SystemOutputExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -29,7 +32,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -243,7 +247,10 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
-    fun `uploads with IOException (timeout)`(forge: Forge) {
+    fun `uploads with IOException (timeout)`(
+        forge: Forge,
+        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+    ) {
         val logs = forge.aList { anHexadecimalString() }
         mockWebServer.enqueue(
             MockResponse()
@@ -257,6 +264,13 @@ internal class LogOkHttpUploaderTest {
 
         val status = testedUploader.uploadLogs(logs)
         assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+        val logMessages = systemOutputStream.toString().trim().split("\n")
+        val errorMessage = logMessages[logMessages.size - 1].trim()
+        assertThat(errorMessage)
+            .withFailMessage(
+                "We were expecting an error log message here"
+            )
+            .matches("E/android: LogOkHttpUploader: .+")
     }
 
     @Test

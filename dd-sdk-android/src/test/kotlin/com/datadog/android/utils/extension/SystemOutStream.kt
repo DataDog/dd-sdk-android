@@ -8,5 +8,4 @@ package com.datadog.android.utils.extension
 
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class SystemOutStream(
-)
+annotation class SystemOutStream()
