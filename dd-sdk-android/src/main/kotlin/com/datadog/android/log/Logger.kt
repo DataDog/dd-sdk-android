@@ -438,14 +438,26 @@ private constructor(
 
     private fun convertTag(tag: String): String? {
         val lowerCaseTag = tag.toLowerCase(Locale.US)
+        // Tags must start with a letter
         return if (lowerCaseTag[0] !in 'a'..'z') {
             null
         } else {
+            // Tag can only contain Alphanumerics, Underscores, Minuses, Colons, Periods, Slashes
+            // Other special characters are converted to underscores
             val valid = lowerCaseTag.replace(Regex("[^a-z0-9_:./-]"), "_")
-            if (valid.length <= MAX_TAG_LENGTH) {
+
+            // Tags can be up to 200 characters long
+            val resized = if (valid.length <= MAX_TAG_LENGTH) {
                 valid
             } else {
                 valid.substring(0, MAX_TAG_LENGTH)
+            }
+
+            // A tag cannot end with a colon, for example tag:
+            if (resized.endsWith(':')) {
+                resized.substring(0, resized.lastIndex)
+            } else {
+                resized
             }
         }
     }

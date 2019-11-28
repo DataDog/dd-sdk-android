@@ -404,6 +404,21 @@ internal class LoggerContextTest {
     }
 
     @Test
+    fun `trim tags ending with a colon`(forge: Forge) {
+        val tag = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag("$tag:")
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasTags(listOf(tag))
+        }
+    }
+
+    @Test
     fun `ignore reserved tag keys`(forge: Forge) {
         val key = forge.anElementFrom(
             "host", "device", "source", "service"
