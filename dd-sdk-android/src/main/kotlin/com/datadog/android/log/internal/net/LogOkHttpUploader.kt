@@ -6,7 +6,9 @@
 
 package com.datadog.android.log.internal.net
 
+import android.os.Build
 import android.util.Log
+import com.datadog.android.BuildConfig
 import java.io.IOException
 import java.util.Locale
 import okhttp3.OkHttpClient
@@ -19,7 +21,15 @@ internal class LogOkHttpUploader(
     private val client: OkHttpClient = OkHttpClient.Builder().build()
 ) : LogUploader {
 
-    private val userAgent = System.getProperty(SYSTEM_UA).orEmpty()
+    private val userAgent = System.getProperty(SYSTEM_UA).let {
+        if (it.isNullOrBlank()) {
+            "Datadog/${BuildConfig.VERSION_NAME} " +
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
+        } else {
+            it
+        }
+    }
 
     // region LogUploader
 
