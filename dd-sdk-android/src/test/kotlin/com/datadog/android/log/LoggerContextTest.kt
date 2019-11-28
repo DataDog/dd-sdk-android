@@ -512,6 +512,50 @@ internal class LoggerContextTest {
         }
     }
 
+    @Test
+    fun `remove tag with key from logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(key, value)
+        testedLogger.i(message)
+        testedLogger.removeTagsWithKey(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasTags(listOf("$key:$value"))
+            assertThat(lastValue.tags)
+                .isEmpty()
+        }
+    }
+
+    @Test
+    fun `remove all tags with key from logger`(forge: Forge) {
+        val key = forge.anAlphabeticalString()
+        val value1 = forge.anAlphabeticalString()
+        val value2 = forge.anAlphabeticalString()
+        val value3 = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addTag(key, value1)
+        testedLogger.addTag(key, value2)
+        testedLogger.addTag(key, value3)
+        testedLogger.i(message)
+        testedLogger.removeTagsWithKey(key)
+        testedLogger.i(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue.tags)
+                .hasSize(3)
+            assertThat(lastValue.tags)
+                .isEmpty()
+        }
+    }
+
     // endregion
 }
 

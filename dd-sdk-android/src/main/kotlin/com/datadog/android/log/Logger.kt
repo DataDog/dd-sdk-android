@@ -352,6 +352,21 @@ private constructor(
         removeTagInternal(tag)
     }
 
+    /**
+     * Remove all tags with the given key from all future logs sent by this logger.
+     * Previous log won't lose the this tag if they were created prior to this call.
+     * @param key the key of the tags to remove
+     */
+    fun removeTagsWithKey(key: String) {
+        val convertedKey = convertTag(key)
+        if (convertedKey != null) {
+            val prefix = "$key:"
+            tags.removeAll {
+                it.startsWith(prefix)
+            }
+        }
+    }
+
     // endregion
 
     // region Internal/Log
