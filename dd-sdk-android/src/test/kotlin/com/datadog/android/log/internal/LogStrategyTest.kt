@@ -202,6 +202,29 @@ internal abstract class LogStrategyTest {
             .isNull()
     }
 
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `limit the number of logs per batch`(forge: Forge) {
+        val logs = forge.aList(MAX_LOGS_PER_BATCH * 2) {
+            forge.getForgery<Log>().copy(
+                serviceName = anAlphabeticalString(size = aTinyInt()),
+                message = anAlphabeticalString(size = aTinyInt()),
+                timestamp = null,
+                throwable = null,
+                networkInfo = null,
+                attributes = emptyMap(),
+                tags = emptyList()
+            )
+        }
+
+        logs.forEach { testedLogWriter.writeLog(it) }
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
+
+        assertThat(batch.logs.size)
+            .isEqualTo(MAX_LOGS_PER_BATCH)
+    }
+
     // endregion
 
     // region Reader Tests
@@ -368,6 +391,7 @@ internal abstract class LogStrategyTest {
     companion object {
 
         const val MAX_BATCH_SIZE: Long = 32 * 1024
+        const val MAX_LOGS_PER_BATCH: Int = 32
 
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"

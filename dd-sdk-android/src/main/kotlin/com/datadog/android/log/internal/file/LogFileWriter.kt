@@ -190,7 +190,7 @@ internal class LogFileWriter(
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         private const val THREAD_NAME = "ddog_w"
 
-        private const val MAX_LOG_SIZE = 256 * 1024
+        private const val MAX_LOG_SIZE = 256 * 1024 // 256 Kb
 
         private val TAG = "LogFileWriter".asDataDogTag()
     }
