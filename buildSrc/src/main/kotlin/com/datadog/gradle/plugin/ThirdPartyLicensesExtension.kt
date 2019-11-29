@@ -12,7 +12,7 @@ open class ThirdPartyLicensesExtension(
     var csvFile: File = File(DEFAULT_TP_LICENCE_FILENAME),
     var listDependencyOnce: Boolean = true,
     var transitiveDependencies: Boolean = false,
-    var checkObsoleteDependencies: Boolean = true
+    var checkObsoleteDependencies: Boolean = false
 ) {
     companion object {
         const val DEFAULT_TP_LICENCE_FILENAME = "LICENSE-3rdparty.csv"

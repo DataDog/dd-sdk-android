@@ -216,6 +216,7 @@ class DependenciesLicenseProvider {
         private val knownBuildConfiguration = setOf(
             "_internal_aapt2_binary",
             "detekt",
+            "ktlint",
             "kotlinCompilerClasspath",
             "kotlinCompilerPluginClasspath",
             "lintClassPath"
