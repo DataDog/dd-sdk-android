@@ -205,7 +205,7 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `limit the number of logs per batch`(forge: Forge) {
-        val logs = forge.aList(MAX_LOGS_PER_BATCH * 2) {
+        val logs = forge.aList(MAX_LOGS_PER_BATCH * 3) {
             forge.getForgery<Log>().copy(
                 serviceName = anAlphabeticalString(size = aTinyInt()),
                 message = anAlphabeticalString(size = aTinyInt()),
@@ -220,9 +220,22 @@ internal abstract class LogStrategyTest {
         logs.forEach { testedLogWriter.writeLog(it) }
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
+        testedLogReader.dropBatch(batch.id)
+        waitForNextBatch()
+        val batch2 = testedLogReader.readNextBatch()!!
 
         assertThat(batch.logs.size)
             .isEqualTo(MAX_LOGS_PER_BATCH)
+        assertThat(batch2.logs.size)
+            .isEqualTo(MAX_LOGS_PER_BATCH)
+        batch.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertLogMatches(jsonObject, logs[i])
+        }
+        batch2.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertLogMatches(jsonObject, logs[i + MAX_LOGS_PER_BATCH])
+        }
     }
 
     // endregion
