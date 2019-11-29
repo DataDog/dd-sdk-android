@@ -14,7 +14,7 @@ import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.utils.TestTargetApi
+import com.datadog.android.utils.extension.TestTargetApi
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -22,7 +22,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
@@ -75,7 +75,7 @@ internal class LogFileStrategyTest :
         file.writeText("I'm still there !")
         val batch2 = testedLogReader.readNextBatch()
 
-        Assertions.assertThat(batch2)
+        assertThat(batch2)
             .isNull()
     }
 }

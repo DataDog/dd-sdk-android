@@ -9,9 +9,10 @@ package com.datadog.android.log.internal.file
 import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
-import android.util.Log
 import com.datadog.android.log.internal.Batch
 import com.datadog.android.log.internal.LogReader
+import com.datadog.android.log.internal.extensions.asDataDogTag
+import com.datadog.android.log.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.split
 import java.io.File
 import java.io.FileFilter
@@ -45,18 +46,18 @@ internal class LogFileReader(
     }
 
     override fun dropBatch(batchId: String) {
-        Log.i("T", "onBatchSent $batchId")
+        sdkLogger.i("$TAG: onBatchSent $batchId")
         sentBatches.add(batchId)
         val fileToDelete = File(rootDirectory, batchId)
 
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {
-                Log.d("datadog", "File ${fileToDelete.path} deleted")
+                sdkLogger.d("$TAG: File ${fileToDelete.path} deleted")
             } else {
-                Log.e("datadog", "Error deleting file ${fileToDelete.path}")
+                sdkLogger.e("$TAG: Error deleting file ${fileToDelete.path}")
             }
         } else {
-            Log.w("datadog", "Sent batch with  unknown id $batchId")
+            sdkLogger.w("$TAG: Sent batch with  unknown id $batchId")
         }
     }
 
@@ -81,4 +82,8 @@ internal class LogFileReader(
     }
 
     // endregion
+
+    companion object {
+        val TAG = "LogFileReader".asDataDogTag()
+    }
 }

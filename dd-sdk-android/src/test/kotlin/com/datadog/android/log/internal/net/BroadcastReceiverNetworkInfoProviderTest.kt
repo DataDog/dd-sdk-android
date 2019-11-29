@@ -15,8 +15,8 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.ApiLevelExtension
-import com.datadog.android.utils.TestTargetApi
+import com.datadog.android.utils.extension.ApiLevelExtension
+import com.datadog.android.utils.extension.TestTargetApi
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge

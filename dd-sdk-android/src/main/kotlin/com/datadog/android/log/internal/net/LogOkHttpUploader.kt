@@ -7,8 +7,9 @@
 package com.datadog.android.log.internal.net
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.BuildConfig
+import com.datadog.android.log.internal.extensions.asDataDogTag
+import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.IOException
 import java.util.Locale
 import okhttp3.OkHttpClient
@@ -39,14 +40,14 @@ internal class LogOkHttpUploader(
         return try {
             val request = buildRequest(logs)
             val response = client.newCall(request).execute()
-            Log.i(
-                "T", "Response code:${response.code()} " +
-                    "body:${response.body()?.string()} " +
-                    "headers:${response.headers()}"
+            sdkLogger.i(
+                    "$TAG: Response code:${response.code()} " +
+                            "body:${response.body()?.string()} " +
+                            "headers:${response.headers()}"
             )
             responseCodeToLogUploadStatus(response.code())
         } catch (e: IOException) {
-            Log.e("T", "Network error", e)
+            sdkLogger.e("$TAG: Network error", e)
             LogUploadStatus.NETWORK_ERROR
         }
     }
@@ -66,8 +67,8 @@ internal class LogOkHttpUploader(
     private fun buildRequest(logs: List<String>): Request {
         val url = buildUrl(endpoint, token)
         val body = buildBody(logs)
-        Log.d("T", "Sending logs to $url")
-        Log.d("T", body)
+        sdkLogger.d("$TAG: Sending logs to $url")
+        sdkLogger.d("$TAG: $body")
         return Request.Builder()
             .url(url)
             .post(RequestBody.create(null, body))
@@ -101,5 +102,6 @@ internal class LogOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
 
         const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
+        val TAG = "LogOkHttpUploader".asDataDogTag()
     }
 }

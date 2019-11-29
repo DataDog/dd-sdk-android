@@ -9,10 +9,13 @@ package com.datadog.android.log.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.extension.SystemOutStream
+import com.datadog.android.utils.extension.SystemOutputExtension
 import com.datadog.android.utils.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -29,7 +32,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -243,7 +247,10 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
-    fun `uploads with IOException (timeout)`(forge: Forge) {
+    fun `uploads with IOException (timeout)`(
+        forge: Forge,
+        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+    ) {
         val logs = forge.aList { anHexadecimalString() }
         mockWebServer.enqueue(
             MockResponse()
@@ -257,6 +264,35 @@ internal class LogOkHttpUploaderTest {
 
         val status = testedUploader.uploadLogs(logs)
         assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+    }
+
+    @Test
+    fun `uploads with IOException (timeout) will spit a error log message`(
+        forge: Forge,
+        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+    ) {
+        // we need to set the Build.MODEL to null, for some reason the AndroidLog... does not go
+        // through the System.out
+        Build::class.java.setStaticValue("MODEL", null)
+
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.enqueue(
+            MockResponse()
+                .throttleBody(THROTTLE_RATE, THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS)
+                .setBody(
+                    "{ 'success': 'ok', " +
+                        "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
+                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
+                )
+        )
+
+        testedUploader.uploadLogs(logs)
+        if (BuildConfig.DEBUG) {
+            val logMessages = systemOutputStream.toString().trim().split("\n")
+            val errorMessage = logMessages[logMessages.size - 1].trim()
+            assertThat(errorMessage)
+                .matches("E/android: DD_LOG\\+LogOkHttpUploader: .+")
+        }
     }
 
     @Test

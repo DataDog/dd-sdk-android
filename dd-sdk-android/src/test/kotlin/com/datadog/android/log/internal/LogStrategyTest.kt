@@ -7,10 +7,13 @@
 package com.datadog.android.log.internal
 
 import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.ApiLevelExtension
-import com.datadog.android.utils.TestTargetApi
+import com.datadog.android.utils.extension.ApiLevelExtension
+import com.datadog.android.utils.extension.SystemOutStream
+import com.datadog.android.utils.extension.SystemOutputExtension
+import com.datadog.android.utils.extension.TestTargetApi
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -18,6 +21,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
@@ -32,7 +36,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings()
@@ -204,10 +209,17 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
-    fun `fails gracefully if sent batch with unknown id`(forge: Forge) {
+    fun `fails gracefully if sent batch with unknown id`(
+        forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
         testedLogReader.dropBatch(forge.aNumericalString())
-
-        // Nothing to do, just check that no exception is thrown
+        if (BuildConfig.DEBUG) {
+            val logMessages = outputStream.toString().trim().split("\n")
+            assertThat(logMessages[logMessages.size - 1].trim())
+                .withFailMessage("We were expecting a log message here")
+                .matches("W/android: DD_LOG\\+LogFileReader: .+")
+        }
     }
 
     // endregion

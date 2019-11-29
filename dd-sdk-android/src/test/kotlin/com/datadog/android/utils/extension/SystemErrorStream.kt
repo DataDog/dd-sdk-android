@@ -4,12 +4,8 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.utils
+package com.datadog.android.utils.extension
 
-import android.os.Build
-
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class TestTargetApi(
-    val value: Int = Build.VERSION_CODES.BASE
-)
+annotation class SystemErrorStream()
