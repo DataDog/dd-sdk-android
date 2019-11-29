@@ -7,9 +7,11 @@
 package com.datadog.android.log.internal
 
 import android.os.Build
+import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.utils.extension.ApiLevelExtension
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
@@ -167,6 +169,72 @@ internal abstract class LogStrategyTest {
         batch.logs.forEachIndexed { i, log ->
             val jsonObject = JsonParser.parseString(log).asJsonObject
             assertHasMatches(jsonObject, fakeLogs)
+        }
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `don't write log if size is too big`(forge: Forge) {
+        val bigLog = Log(
+            level = AndroidLog.ASSERT,
+            serviceName = forge.anAlphabeticalString(size = 65536),
+            message = forge.anAlphabeticalString(size = 131072),
+            tags = forge.aList(size = 256) { forge.anAlphabeticalString(size = 128) },
+            attributes = forge.aMap(size = 256) {
+                forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
+                    size = 128
+                )
+            },
+            networkInfo = NetworkInfo(
+                connectivity = NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+                carrierId = forge.aHugeInt(),
+                carrierName = forge.anAlphabeticalString(size = 256)
+            ),
+            throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
+            timestamp = forge.aLong()
+        )
+
+        testedLogWriter.writeLog(bigLog)
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()
+
+        assertThat(batch)
+            .isNull()
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `limit the number of logs per batch`(forge: Forge) {
+        val logs = forge.aList(MAX_LOGS_PER_BATCH * 3) {
+            forge.getForgery<Log>().copy(
+                serviceName = anAlphabeticalString(size = aTinyInt()),
+                message = anAlphabeticalString(size = aTinyInt()),
+                timestamp = null,
+                throwable = null,
+                networkInfo = null,
+                attributes = emptyMap(),
+                tags = emptyList()
+            )
+        }
+
+        logs.forEach { testedLogWriter.writeLog(it) }
+        waitForNextBatch()
+        val batch = testedLogReader.readNextBatch()!!
+        testedLogReader.dropBatch(batch.id)
+        waitForNextBatch()
+        val batch2 = testedLogReader.readNextBatch()!!
+
+        assertThat(batch.logs.size)
+            .isEqualTo(MAX_LOGS_PER_BATCH)
+        assertThat(batch2.logs.size)
+            .isEqualTo(MAX_LOGS_PER_BATCH)
+        batch.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertLogMatches(jsonObject, logs[i])
+        }
+        batch2.logs.forEachIndexed { i, log ->
+            val jsonObject = JsonParser.parseString(log).asJsonObject
+            assertLogMatches(jsonObject, logs[i + MAX_LOGS_PER_BATCH])
         }
     }
 
@@ -336,6 +404,7 @@ internal abstract class LogStrategyTest {
     companion object {
 
         const val MAX_BATCH_SIZE: Long = 32 * 1024
+        const val MAX_LOGS_PER_BATCH: Int = 32
 
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"

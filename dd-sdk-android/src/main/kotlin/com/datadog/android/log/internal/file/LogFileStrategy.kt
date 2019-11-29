@@ -15,38 +15,39 @@ import java.io.File
 internal class LogFileStrategy(
     private val rootDir: File,
     private val recentDelayMs: Long,
-    private val maxBatchSize: Long
+    maxBatchSize: Long,
+    maxLogPerBatch: Int
 ) : LogStrategy {
 
     constructor(
         context: Context,
         recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
-        maxBatchSize: Long = MAX_BATCH_SIZE
+        maxBatchSize: Long = MAX_BATCH_SIZE,
+        maxLogPerBatch: Int = MAX_LOG_PER_BATCH
     ) :
-        this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs, maxBatchSize)
+        this(File(context.filesDir, LOGS_FOLDER_NAME), recentDelayMs, maxBatchSize, maxLogPerBatch)
+
+    private val fileOrchestrator = LogFileOrchestrator(
+        rootDir, recentDelayMs, maxBatchSize, maxLogPerBatch
+    )
 
     // region LogPersistingStrategy
 
     override fun getLogWriter(): LogWriter {
-        return LogFileWriter(rootDir, recentDelayMs, maxBatchSize)
+        return LogFileWriter(fileOrchestrator, rootDir)
     }
 
     override fun getLogReader(): LogReader {
-        return LogFileReader(rootDir, recentDelayMs)
+        return LogFileReader(fileOrchestrator, rootDir, recentDelayMs)
     }
 
     // endregion
 
     companion object {
 
-        internal fun isFileRecent(file: File, recentDelayMs: Long): Boolean {
-            val now = System.currentTimeMillis()
-            val fileTimestamp = file.name.toLong()
-            return fileTimestamp >= (now - recentDelayMs)
-        }
+        private const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
+        private const val MAX_LOG_PER_BATCH: Int = 500
 
-        // Arbitrary size for now
-        private const val MAX_BATCH_SIZE: Long = 512 * 1024
         internal const val LOGS_FOLDER_NAME = "dd-logs"
         internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L

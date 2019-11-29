@@ -19,6 +19,7 @@ import java.io.FileFilter
 import java.util.Base64 as JavaBase64
 
 internal class LogFileReader(
+    private val fileOrchestrator: FileOrchestrator,
     private val rootDirectory: File,
     private val recentDelayMs: Long
 ) : LogReader {
@@ -29,20 +30,11 @@ internal class LogFileReader(
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
-        val nextLogFile = files.firstOrNull { it.name !in sentBatches }
-        return if (nextLogFile == null) {
-            null
-        } else {
-            if (LogFileStrategy.isFileRecent(nextLogFile, recentDelayMs)) {
-                null
-            } else {
-                val inputBytes = nextLogFile.readBytes()
-                val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
+        val nextLogFile = fileOrchestrator.getReadableFile(sentBatches) ?: return null
+        val inputBytes = nextLogFile.readBytes()
+        val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
 
-                Batch(nextLogFile.name, logs.map { deobfuscate(it) })
-            }
-        }
+        return Batch(nextLogFile.name, logs.map { deobfuscate(it) })
     }
 
     override fun dropBatch(batchId: String) {

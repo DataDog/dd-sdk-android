@@ -21,7 +21,6 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.io.File
-import java.io.FileFilter
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.text.SimpleDateFormat
@@ -30,13 +29,11 @@ import java.util.Date
 import java.util.Locale
 
 internal class LogFileWriter(
-    private val rootDirectory: File,
-    private val recentDelayMs: Long,
-    private val maxBatchSize: Long
+    private val fileOrchestrator: FileOrchestrator,
+    rootDirectory: File
 ) : HandlerThread(THREAD_NAME), LogWriter {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
-    private val fileFilter: FileFilter = LogFileFilter()
     internal lateinit var handler: Handler
     internal lateinit var deferredHandler: DeferredHandler
 
@@ -73,12 +70,11 @@ internal class LogFileWriter(
 
         deferredHandler.handle(Runnable {
             val strLog = serializeLog(log)
-            val obfLog = obfuscate(strLog)
 
-            synchronized(this) {
-                val file = getWritableFile(obfLog.size)
-                file.appendBytes(obfLog)
-                file.appendBytes(logSeparator)
+            if (strLog.length >= MAX_LOG_SIZE) {
+                // TODO RUMM-49 warn user that the log is too big !
+            } else {
+                obfuscateAndWriteLog(strLog)
             }
         })
     }
@@ -86,27 +82,6 @@ internal class LogFileWriter(
     // endregion
 
     // region Internal
-
-    private fun getWritableFile(logSize: Int): File {
-        val maxLogLength = maxBatchSize - logSize
-        val now = System.currentTimeMillis()
-
-        val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
-        val lastFile = files.lastOrNull()
-
-        return if (lastFile != null) {
-            val fileHasRoomForMore = lastFile.length() < maxLogLength
-            val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile, recentDelayMs)
-
-            if (fileHasRoomForMore && fileIsRecentEnough) {
-                lastFile
-            } else {
-                File(rootDirectory, now.toString())
-            }
-        } else {
-            File(rootDirectory, now.toString())
-        }
-    }
 
     private fun serializeLog(log: Log): String {
         val jsonLog = JsonObject()
@@ -170,6 +145,16 @@ internal class LogFileWriter(
         return jsonLog.toString()
     }
 
+    private fun obfuscateAndWriteLog(strLog: String) {
+        val obfLog = obfuscate(strLog)
+
+        synchronized(this) {
+            val file = fileOrchestrator.getWritableFile(obfLog.size)
+            file.appendBytes(obfLog)
+            file.appendBytes(logSeparator)
+        }
+    }
+
     private fun obfuscate(log: String): ByteArray {
         val input = log.toByteArray(Charsets.UTF_8)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -204,6 +189,9 @@ internal class LogFileWriter(
 
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         private const val THREAD_NAME = "ddog_w"
-        val TAG = "LogFileWriter".asDataDogTag()
+
+        private const val MAX_LOG_SIZE = 256 * 1024 // 256 Kb
+
+        private val TAG = "LogFileWriter".asDataDogTag()
     }
 }
