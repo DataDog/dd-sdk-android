@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.net
 
+import android.os.Build
 import android.util.Log
 import com.datadog.android.BuildConfig
 import java.io.IOException
@@ -19,6 +20,16 @@ internal class LogOkHttpUploader(
     private val token: String,
     private val client: OkHttpClient = OkHttpClient.Builder().build()
 ) : LogUploader {
+
+    private val userAgent = System.getProperty(SYSTEM_UA).let {
+        if (it.isNullOrBlank()) {
+            "Datadog/${BuildConfig.VERSION_NAME} " +
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
+        } else {
+            it
+        }
+    }
 
     // region LogUploader
 
@@ -60,7 +71,7 @@ internal class LogOkHttpUploader(
         return Request.Builder()
             .url(url)
             .post(RequestBody.create(null, body))
-            .addHeader(HEADER_UA, USER_AGENT)
+            .addHeader(HEADER_UA, userAgent)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()
     }
@@ -83,7 +94,8 @@ internal class LogOkHttpUploader(
         private const val HEADER_CT = "Content-Type"
 
         private const val CONTENT_TYPE = "application/json"
-        private const val USER_AGENT = "datadog-android/log:" + BuildConfig.VERSION_NAME
+
+        const val SYSTEM_UA = "http.agent"
 
         private const val QP_SOURCE = "ddsource"
         private const val DD_SOURCE_MOBILE = "mobile"

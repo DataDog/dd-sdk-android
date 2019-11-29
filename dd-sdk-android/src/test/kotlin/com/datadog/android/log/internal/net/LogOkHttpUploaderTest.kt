@@ -6,13 +6,15 @@
 
 package com.datadog.android.log.internal.net
 
+import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
-import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -39,13 +41,21 @@ internal class LogOkHttpUploaderTest {
 
     lateinit var fakeEndpoint: String
     lateinit var fakeToken: String
+    lateinit var fakeUserAgent: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+
+        Build.VERSION::class.java.setStaticValue("RELEASE", forge.anAlphaNumericalString())
+        Build::class.java.setStaticValue("MODEL", forge.anAlphabeticalString())
+        Build::class.java.setStaticValue("ID", forge.anAlphabeticalString())
+
         mockWebServer = MockWebServer()
         mockWebServer.start()
         fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
         fakeToken = forge.anHexadecimalString()
+        fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
+        System.setProperty("http.agent", fakeUserAgent)
 
         testedUploader = LogOkHttpUploader(
             fakeEndpoint,
@@ -61,6 +71,10 @@ internal class LogOkHttpUploaderTest {
     @AfterEach
     fun `tear down`() {
         mockWebServer.shutdown()
+
+        Build.VERSION::class.java.setStaticValue("RELEASE", null)
+        Build::class.java.setStaticValue("MODEL", null)
+        Build::class.java.setStaticValue("ID", null)
     }
 
     @Test
@@ -234,9 +248,11 @@ internal class LogOkHttpUploaderTest {
         mockWebServer.enqueue(
             MockResponse()
                 .throttleBody(THROTTLE_RATE, THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS)
-                .setBody("{ 'success': 'ok', " +
-                    "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-                    "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }")
+                .setBody(
+                    "{ 'success': 'ok', " +
+                        "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
+                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
+                )
         )
 
         val status = testedUploader.uploadLogs(logs)
@@ -267,10 +283,18 @@ internal class LogOkHttpUploaderTest {
         request: RecordedRequest,
         logs: List<String>
     ) {
+        val expectedUserAgent = if (fakeUserAgent.isBlank()) {
+            "Datadog/${BuildConfig.VERSION_NAME} " +
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
+        } else {
+            fakeUserAgent
+        }
+
         assertThat(request.path)
             .isEqualTo("/v1/input/$fakeToken?ddsource=mobile")
         assertThat(request.getHeader("User-Agent"))
-            .matches("datadog-android/log:\\d+.\\d+.\\d+(-\\w+)?")
+            .isEqualTo(expectedUserAgent)
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo("application/json")
         assertThat(request.body.readUtf8())
@@ -290,14 +314,6 @@ internal class LogOkHttpUploaderTest {
     }
 
     // endregion
-
-    class ThrowableDispatcher(
-        private val throwable: Throwable
-    ) : Dispatcher() {
-        override fun dispatch(request: RecordedRequest?): MockResponse {
-            throw throwable
-        }
-    }
 
     companion object {
         const val TIMEOUT_TEST_MS = 250L

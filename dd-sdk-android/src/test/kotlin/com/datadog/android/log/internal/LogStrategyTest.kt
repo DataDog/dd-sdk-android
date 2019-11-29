@@ -80,7 +80,6 @@ internal abstract class LogStrategyTest {
     fun `writes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
             timestamp = null,
-            userAgent = null,
             throwable = null,
             networkInfo = null,
             attributes = emptyMap(),
@@ -238,12 +237,6 @@ internal abstract class LogStrategyTest {
             .hasField(LogStrategy.TAG_MESSAGE, log.message)
             .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
             .hasField(LogStrategy.TAG_STATUS, levels[log.level])
-
-        if (!log.userAgent.isNullOrBlank()) {
-            assertThat(jsonObject).hasField(LogStrategy.TAG_USER_AGENT_SDK, log.userAgent)
-        } else {
-            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_DATE)
-        }
 
         if (log.timestamp != null) {
             assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)

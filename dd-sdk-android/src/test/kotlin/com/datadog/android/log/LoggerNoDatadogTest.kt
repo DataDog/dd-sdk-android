@@ -6,6 +6,7 @@
 
 package com.datadog.android.log
 
+import android.content.Context
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.file.DummyLogWriter
@@ -23,12 +24,13 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class LoggerNoDatadogTest {
 
     lateinit var testedLogger: Logger
@@ -36,6 +38,8 @@ internal class LoggerNoDatadogTest {
     lateinit var fakeServiceName: String
     lateinit var fakeMessage: String
 
+    @Mock
+    lateinit var mockContext: Context
     @Mock
     lateinit var mockLogStrategy: LogStrategy
     private lateinit var originalErrStream: PrintStream
@@ -54,7 +58,6 @@ internal class LoggerNoDatadogTest {
             .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(false) // <<<<
             .setNetworkInfoEnabled(true)
-            .setUserAgentEnabled(true)
             .withLogStrategy(mockLogStrategy)
             .build()
     }
