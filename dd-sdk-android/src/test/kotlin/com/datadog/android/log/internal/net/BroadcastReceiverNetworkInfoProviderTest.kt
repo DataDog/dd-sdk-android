@@ -75,6 +75,21 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
+    fun `read network info on register`() {
+        whenever(mockNetworkInfo.isConnected) doReturn true
+        whenever(mockNetworkInfo.type) doReturn ConnectivityManager.TYPE_WIFI
+        whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
+
+        testedProvider.register(mockContext)
+        val networkInfo = testedProvider.getLatestNetworkInfos()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+    }
+
+    @Test
     fun `not connected (null)`() {
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn null
         testedProvider.onReceive(mockContext, mockIntent)

@@ -7,8 +7,6 @@
 package com.datadog.android
 
 import android.content.Context
-import android.content.IntentFilter
-import android.net.ConnectivityManager
 import android.os.Build
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
@@ -74,9 +72,10 @@ object Datadog {
 
         // Register Broadcast Receiver
         // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
-        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider()
-        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        appContext.registerReceiver(broadcastReceiver, filter)
+        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
+            register(appContext)
+        }
+
         networkInfoProvider = broadcastReceiver
 
         initialized = true
