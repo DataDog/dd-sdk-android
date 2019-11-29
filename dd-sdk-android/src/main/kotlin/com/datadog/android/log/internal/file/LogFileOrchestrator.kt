@@ -36,6 +36,11 @@ internal class LogFileOrchestrator(
         val lastKnownFile = previousFile
         val lastKnownFileCount = previousFileLogCount
 
+        // regarding the (lastKnownFile == lastFile) check, it can fail for 3 reasons :
+        //  1. the last file was written during a previous session (lastKnownFile == null)
+        //  2. something else created a more recent file in the folder
+        //  3. the lastKnownFile was deleted from the system
+        // In any case, we don't know the log count, so to be safe, we create a new log file.
         return if (lastFile != null && lastKnownFile == lastFile) {
             val newSize = lastFile.length() + itemSize
             val fileHasRoomForMore = newSize < maxBatchSize
