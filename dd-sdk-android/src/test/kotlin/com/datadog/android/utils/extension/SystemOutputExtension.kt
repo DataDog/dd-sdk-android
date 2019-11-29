@@ -34,11 +34,12 @@ class SystemOutputExtension : ParameterResolver, BeforeTestExecutionCallback,
         val systemOutAnnotation = parameterContext?.findAnnotation(SystemOutStream::class.java)
         val errorOutAnnotation = parameterContext?.findAnnotation(SystemErrorStream::class.java)
         val byteStream = ByteArrayOutputStream()
-        if (systemOutAnnotation != null) {
+
+        if (systemOutAnnotation?.isPresent == true) {
             System.setOut(PrintStream(byteStream))
         }
 
-        if (errorOutAnnotation != null) {
+        if (errorOutAnnotation?.isPresent == true) {
             System.setErr(PrintStream(byteStream))
         }
         return byteStream
