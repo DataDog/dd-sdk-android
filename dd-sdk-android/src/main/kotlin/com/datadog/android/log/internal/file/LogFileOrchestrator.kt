@@ -17,34 +17,33 @@ internal class LogFileOrchestrator(
 ) : FileOrchestrator {
 
     private val fileFilter: FileFilter = LogFileFilter()
-    private val writeAccessPerFile = mutableMapOf<String, Int>()
+
+    private var previousFile: File? = null
+    private var previousFileLogCount: Int = 0
 
     // region FileOrchestrator
 
     override fun getWritableFile(itemSize: Int): File {
-        val maxLogLength = maxBatchSize - itemSize
-        val now = System.currentTimeMillis()
 
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
         val lastFile = files.lastOrNull()
+        val lastKnownFile = previousFile
+        val lastKnownFileCount = previousFileLogCount
 
-        val newFileName = now.toString()
-        return if (lastFile != null) {
-            val fileHasRoomForMore = lastFile.length() < maxLogLength
+        return if (lastFile != null && lastKnownFile == lastFile) {
+            val newSize = lastFile.length() + itemSize
+            val fileHasRoomForMore = newSize < maxBatchSize
             val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile, recentDelayMs)
-            val fileLogCount = writeAccessPerFile[lastFile.name] ?: 0
-            val fileHasSlotForMore = (fileLogCount > 0) && (fileLogCount < maxLogPerBatch)
+            val fileHasSlotForMore = (lastKnownFileCount < maxLogPerBatch)
 
             if (fileHasRoomForMore && fileIsRecentEnough && fileHasSlotForMore) {
-                writeAccessPerFile[lastFile.name] = fileLogCount + 1
+                previousFileLogCount = lastKnownFileCount + 1
                 lastFile
             } else {
-                writeAccessPerFile[newFileName] = 1
-                File(rootDirectory, newFileName)
+                newLogFile()
             }
         } else {
-            writeAccessPerFile[newFileName] = 1
-            File(rootDirectory, newFileName)
+            newLogFile()
         }
     }
 
@@ -60,6 +59,18 @@ internal class LogFileOrchestrator(
                 nextLogFile
             }
         }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun newLogFile(): File {
+        val newFileName = System.currentTimeMillis().toString()
+        val newFile = File(rootDirectory, newFileName)
+        previousFile = newFile
+        previousFileLogCount = 1
+        return newFile
     }
 
     // endregion
