@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
 import com.datadog.android.utils.extension.SystemOutStream
@@ -49,9 +50,11 @@ internal class LogFileWriterInvalidTest {
         logsDir.writeText(I_LIED)
 
         testedFileWriter = LogFileWriter(logsDir, 250L, 1024)
-        assertThat(outputStream.toString().trim())
-            .withFailMessage("We were expecting a log error message")
-            .matches("E/android: DD_LOG\\+LogFileWriter: .+")
+        if (BuildConfig.DEBUG) {
+            assertThat(outputStream.toString().trim())
+                .withFailMessage("We were expecting a log error message")
+                .matches("E/android: DD_LOG\\+LogFileWriter: .+")
+        }
     }
 
     @Test

@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
+import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
@@ -66,9 +67,11 @@ internal class LogUploadRunnableTest {
         verify(mockLogReader, never()).dropBatch(anyOrNull())
         verifyZeroInteractions(mockLogUploader)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
-        assertThat(systemOutStream.toString().trim())
-            .withFailMessage("We were expecting an info log message here")
-            .matches("I/android: DD_LOG\\+LogUploadRunnable: .+")
+        if (BuildConfig.DEBUG) {
+            assertThat(systemOutStream.toString().trim())
+                .withFailMessage("We were expecting an info log message here")
+                .matches("I/android: DD_LOG\\+LogUploadRunnable: .+")
+        }
     }
 
     @Test

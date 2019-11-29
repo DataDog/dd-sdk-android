@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal
 
 import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.utils.extension.ApiLevelExtension
@@ -213,10 +214,12 @@ internal abstract class LogStrategyTest {
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         testedLogReader.dropBatch(forge.aNumericalString())
-        val logMessages = outputStream.toString().trim().split("\n")
-        assertThat(logMessages[logMessages.size - 1].trim())
-            .withFailMessage("We were expecting a log message here")
-            .matches("W/android: DD_LOG\\+LogFileReader: .+")
+        if (BuildConfig.DEBUG) {
+            val logMessages = outputStream.toString().trim().split("\n")
+            assertThat(logMessages[logMessages.size - 1].trim())
+                .withFailMessage("We were expecting a log message here")
+                .matches("W/android: DD_LOG\\+LogFileReader: .+")
+        }
     }
 
     // endregion
