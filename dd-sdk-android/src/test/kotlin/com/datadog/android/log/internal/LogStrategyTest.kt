@@ -255,7 +255,7 @@ internal abstract class LogStrategyTest {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject)
-                .hasField(LogStrategy.TAG_NETWORK_INFO) {
+                .hasField(LogStrategy.TAG_NETWORK) {
                     hasField(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
                     if (!info.carrierName.isNullOrBlank()) {
                         hasField(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
@@ -265,7 +265,7 @@ internal abstract class LogStrategyTest {
                     }
                 }
         } else {
-            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_NETWORK_INFO)
+            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_NETWORK)
         }
     }
 

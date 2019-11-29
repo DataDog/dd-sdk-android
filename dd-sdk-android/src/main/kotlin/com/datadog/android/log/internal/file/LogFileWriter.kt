@@ -132,7 +132,7 @@ internal class LogFileWriter(
             if (info.carrierId >= 0) {
                 network.addProperty(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
             }
-            jsonLog.add(LogStrategy.TAG_NETWORK_INFO, network)
+            jsonLog.add(LogStrategy.TAG_NETWORK, network)
         }
 
         // Custom Attributes
