@@ -18,27 +18,28 @@ class SystemOutputExtension : ParameterResolver, BeforeTestExecutionCallback,
         parameterContext: ParameterContext?,
         extensionContext: ExtensionContext?
     ): Boolean {
-        return parameterContext
+        val isMatchingType = (parameterContext
             ?.parameter?.type?.isAssignableFrom(ByteArrayOutputStream::class.java)
-            ?: false
+            ?: false)
+        val isMatchingAnnotation =
+            (parameterContext?.isAnnotated(SystemOutStream::class.java) ?: false) ||
+                    (parameterContext?.isAnnotated(SystemErrorStream::class.java) ?: false)
+        return isMatchingType && isMatchingAnnotation
     }
 
     override fun resolveParameter(
         parameterContext: ParameterContext?,
         extensionContext: ExtensionContext?
     ): Any {
-        val annotation = parameterContext?.parameter?.annotations?.get(0)?.annotationClass
+        val systemOutAnnotation = parameterContext?.findAnnotation(SystemOutStream::class.java)
+        val errorOutAnnotation = parameterContext?.findAnnotation(SystemErrorStream::class.java)
         val byteStream = ByteArrayOutputStream()
-        when (annotation) {
-            SystemOutStream::class -> {
-                System.setOut(PrintStream(byteStream))
-            }
-            SystemErrorStream::class -> {
-                System.setErr(PrintStream(byteStream))
-            }
-            else -> {
-                // do nothing
-            }
+        if (systemOutAnnotation != null) {
+            System.setOut(PrintStream(byteStream))
+        }
+
+        if (errorOutAnnotation != null) {
+            System.setErr(PrintStream(byteStream))
         }
         return byteStream
     }

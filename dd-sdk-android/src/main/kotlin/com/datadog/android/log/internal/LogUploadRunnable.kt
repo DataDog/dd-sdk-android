@@ -32,7 +32,7 @@ internal class LogUploadRunnable(
                 logReader.dropBatch(batchId)
             }
         } else {
-            sdkLogger.i("$TAG: There was no batch to send")
+            sdkLogger.i("$TAG: There was no batch to be sent")
         }
 
         handler.postDelayed(this, DELAY_MS)
