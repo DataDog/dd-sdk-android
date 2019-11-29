@@ -216,7 +216,7 @@ internal abstract class LogStrategyTest {
         val logMessages = outputStream.toString().trim().split("\n")
         assertThat(logMessages[logMessages.size - 1].trim())
             .withFailMessage("We were expecting a log message here")
-            .matches("W/android: LogFileReader: .+")
+            .matches("W/android: DD_LOG\\+LogFileReader: .+")
     }
 
     // endregion

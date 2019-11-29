@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
+import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.utils.sdkLogger
@@ -59,11 +60,11 @@ internal class LogUploadRunnable(
 
     companion object {
         private val maxAttemptsMap = mapOf(
-                LogUploadStatus.NETWORK_ERROR to 3,
-                LogUploadStatus.HTTP_SERVER_ERROR to 3
+            LogUploadStatus.NETWORK_ERROR to 3,
+            LogUploadStatus.HTTP_SERVER_ERROR to 3
         )
 
         const val DELAY_MS = 5000L
-        const val TAG = "LogUploadRunnable"
+        val TAG = "LogUploadRunnable".asDataDogTag()
     }
 }

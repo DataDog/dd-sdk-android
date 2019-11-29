@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
+import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.IOException
 import java.util.Locale
@@ -101,6 +102,6 @@ internal class LogOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
 
         const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
-        const val TAG = "LogOkHttpUploader"
+        val TAG = "LogOkHttpUploader".asDataDogTag()
     }
 }

@@ -51,7 +51,7 @@ internal class LogFileWriterInvalidTest {
         testedFileWriter = LogFileWriter(logsDir, 250L, 1024)
         assertThat(outputStream.toString().trim())
             .withFailMessage("We were expecting a log error message")
-            .matches("E/android: LogFileWriter: .+")
+            .matches("E/android: DD_LOG\\+LogFileWriter: .+")
     }
 
     @Test

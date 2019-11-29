@@ -68,7 +68,7 @@ internal class LogUploadRunnableTest {
         verify(mockHandler).postDelayed(same(testedRunnable), any())
         assertThat(systemOutStream.toString().trim())
             .withFailMessage("We were expecting an info log message here")
-            .matches("I/android: LogUploadRunnable: .+")
+            .matches("I/android: DD_LOG\\+LogUploadRunnable: .+")
     }
 
     @Test
