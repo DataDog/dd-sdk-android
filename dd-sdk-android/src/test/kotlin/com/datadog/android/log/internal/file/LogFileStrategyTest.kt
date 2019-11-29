@@ -42,7 +42,7 @@ internal class LogFileStrategyTest :
 
     override fun getStrategy(): LogStrategy {
         whenever(mockContext.filesDir) doReturn tempDir
-        return LogFileStrategy(mockContext, 250, MAX_BATCH_SIZE, MAX_LOGS_PER_BATCH)
+        return LogFileStrategy(mockContext, RECENT_DELAY_MS, MAX_BATCH_SIZE, MAX_LOGS_PER_BATCH)
     }
 
     override fun setUp(writer: LogWriter, reader: LogReader) {
@@ -54,7 +54,7 @@ internal class LogFileStrategyTest :
     }
 
     override fun waitForNextBatch() {
-        Thread.sleep(300)
+        Thread.sleep(RECENT_DELAY_MS * 2)
     }
 
     // endregion
@@ -77,5 +77,9 @@ internal class LogFileStrategyTest :
 
         assertThat(batch2)
             .isNull()
+    }
+
+    companion object {
+        private const val RECENT_DELAY_MS = 250L
     }
 }

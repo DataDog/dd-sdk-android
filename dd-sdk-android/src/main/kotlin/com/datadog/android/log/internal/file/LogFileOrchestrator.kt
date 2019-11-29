@@ -8,10 +8,11 @@ package com.datadog.android.log.internal.file
 
 import java.io.File
 import java.io.FileFilter
+import java.util.concurrent.TimeUnit
 
 internal class LogFileOrchestrator(
     private val rootDirectory: File,
-    private val recentDelayMs: Long,
+    recentDelayMs: Long,
     private val maxBatchSize: Long,
     private val maxLogPerBatch: Int
 ) : FileOrchestrator {
@@ -20,6 +21,11 @@ internal class LogFileOrchestrator(
 
     private var previousFile: File? = null
     private var previousFileLogCount: Int = 0
+
+    // Offset the recent threshold for read and write to avoid conflicts
+    // Arbitrary offset as 5% of the threshold
+    private val recentWriteDelayMs = recentDelayMs - (recentDelayMs / 20)
+    private val recentReadDelayMs = recentDelayMs + (recentDelayMs / 20)
 
     // region FileOrchestrator
 
@@ -33,7 +39,7 @@ internal class LogFileOrchestrator(
         return if (lastFile != null && lastKnownFile == lastFile) {
             val newSize = lastFile.length() + itemSize
             val fileHasRoomForMore = newSize < maxBatchSize
-            val fileIsRecentEnough = LogFileStrategy.isFileRecent(lastFile, recentDelayMs)
+            val fileIsRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
             val fileHasSlotForMore = (lastKnownFileCount < maxLogPerBatch)
 
             if (fileHasRoomForMore && fileIsRecentEnough && fileHasSlotForMore) {
@@ -53,7 +59,7 @@ internal class LogFileOrchestrator(
         return if (nextLogFile == null) {
             null
         } else {
-            if (LogFileStrategy.isFileRecent(nextLogFile, recentDelayMs)) {
+            if (isFileRecent(nextLogFile, recentReadDelayMs)) {
                 null
             } else {
                 nextLogFile
@@ -73,5 +79,15 @@ internal class LogFileOrchestrator(
         return newFile
     }
 
+    private fun isFileRecent(file: File, recentDelayMs: Long): Boolean {
+        val now = System.currentTimeMillis()
+        val fileTimestamp = file.name.toLong()
+        return fileTimestamp >= (now - recentDelayMs)
+    }
+
     // endregion
+
+    companion object {
+        private var ONE_SECOND_MS = TimeUnit.SECONDS.toMillis(1)
+    }
 }

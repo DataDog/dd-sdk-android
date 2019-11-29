@@ -45,12 +45,6 @@ internal class LogFileStrategy(
 
     companion object {
 
-        internal fun isFileRecent(file: File, recentDelayMs: Long): Boolean {
-            val now = System.currentTimeMillis()
-            val fileTimestamp = file.name.toLong()
-            return fileTimestamp >= (now - recentDelayMs)
-        }
-
         private const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
         private const val MAX_LOG_PER_BATCH: Int = 500
 
