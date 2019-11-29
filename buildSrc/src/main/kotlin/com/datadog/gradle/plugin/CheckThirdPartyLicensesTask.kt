@@ -6,23 +6,15 @@
 
 package com.datadog.gradle.plugin
 
-import com.datadog.gradle.utils.asSequence
 import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.component.ComponentIdentifier
-import org.gradle.api.artifacts.result.ComponentSelectionCause
-import org.gradle.api.artifacts.result.ResolvedArtifactResult
-import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
-import org.gradle.maven.MavenModule
-import org.gradle.maven.MavenPomArtifact
 
 open class CheckThirdPartyLicensesTask : DefaultTask() {
 
-    var extension: ThirdPartyLicensesExtension = ThirdPartyLicensesExtension()
+    internal var extension: ThirdPartyLicensesExtension = ThirdPartyLicensesExtension()
+    private val provider: DependenciesLicenseProvider = DependenciesLicenseProvider()
 
     init {
         group = "datadog"
@@ -34,37 +26,60 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
     @TaskAction
     fun applyTask() {
 
-        val dependencies = getDependencyIds()
-        val dependencyIds = dependencies.map { it.selected.id }
+        val projectDependencies = provider.getThirdPartyDependencies(
+            project,
+            extension.transitiveDependencies,
+            extension.listDependencyOnce
+        )
 
-        val pomFilesList = resolvePomFiles(dependencyIds)
-        val dependenciesMap = resolveDependencies(pomFilesList)
+        val listedDependencies = parseCsvFile()
 
-        val knownDependencies = parseCsvFile()
+        checkMatchingDependencies(projectDependencies, listedDependencies, "missing")
 
+        if (extension.checkObsoleteDependencies) {
+            checkMatchingDependencies(listedDependencies, projectDependencies, "obsolete")
+        }
+
+        listedDependencies.filter { it.license is License.Empty }
+            .forEach {
+                System.err.println("License for ${it.origin} is empty")
+            }
+
+        listedDependencies.filter { it.license is License.Raw }
+            .forEach {
+                System.err.println("License for ${it.origin} is not valid : ${it.license}")
+            }
+
+        listedDependencies.filter { it.copyright == "__" }
+            .forEach {
+                System.err.println("Copyright for ${it.origin} is missing")
+            }
+    }
+
+    private fun checkMatchingDependencies(
+        trueDependencies: List<ThirdPartyDependency>,
+        testedDependencies: List<ThirdPartyDependency>,
+        check: String
+    ) {
         var error = false
 
-        // Report missing dependencies
-        dependenciesMap.forEach { (dep, v) ->
-            if (!knownDependencies.containsKey(dep)) {
+        trueDependencies.forEach { dep ->
+            val known = testedDependencies.firstOrNull {
+                it.component == dep.component && it.origin == dep.origin
+            }
+            val knownInOtherComponent = testedDependencies.firstOrNull {
+                it.component != dep.component && it.origin == dep.origin
+            }
+
+            if (known == null && knownInOtherComponent == null) {
                 error = true
-                System.err.println("✗ Missing dependency in ${extension.csvFile.name} : $dep $v")
+                System.err.println("✗ $check dependency in ${extension.csvFile.name} : $dep")
+            } else if (knownInOtherComponent != null) {
+                System.err.println("✗ $dep $check but exist in component ${knownInOtherComponent.component}")
             }
         }
 
-        // Report obsolete dependencies
-        knownDependencies.forEach { (dep, v) ->
-            if (!dependenciesMap.containsKey(dep)) {
-                if (extension.checkObsoleteDependencies) {
-                    error = true
-                    System.err.println("✗ Obsolete dependency in ${extension.csvFile.name} : $dep [$v]")
-                } else {
-                    println("• Obsolete dependency in ${extension.csvFile.name} : $dep [$v]")
-                }
-            }
-        }
-
-        check(!error) { "Some dependencies are missing or obsolete in ${extension.csvFile.name}" }
+        check(!error) { "Some dependencies are missing in ${extension.csvFile.name}" }
     }
 
     @InputFile
@@ -74,103 +89,35 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
     // endregion
 
-    // region Internal/Process
+    // region Internal
 
-    private fun getDependencyIds(): List<ResolvedDependencyResult> {
-        return project.configurations.filter { useConfiguration(it) }
-            .flatMap { getConfigurationDependencies(it) }
-    }
-
-    private fun getConfigurationDependencies(configuration: Configuration): List<ResolvedDependencyResult> {
-        return configuration.incoming.resolutionResult.allDependencies
-            .filterIsInstance<ResolvedDependencyResult>()
-            .filter { useDependency(it) }
-    }
-
-    private fun resolvePomFiles(dependencyIds: List<ComponentIdentifier>): List<String> {
-        return project.dependencies
-            .createArtifactResolutionQuery()
-            .withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java)
-            .forComponents(dependencyIds)
-            .execute()
-            .resolvedComponents
-            .flatMap {
-                it.getArtifacts(MavenPomArtifact::class.java)
-                    .filterIsInstance<ResolvedArtifactResult>()
-                    .map { it.file.absolutePath }
-            }
-            .sorted()
-    }
-
-    private fun resolveDependencies(pomFilesList: List<String>): Map<String, Set<String>> {
-        val result = mutableMapOf<String, MutableSet<String>>()
-        pomFilesList.forEach { path ->
-            val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(path)
-            val groupIdNode = document.getElementsByTagName(TAG_GROUP_ID).asSequence().firstOrNull()
-            val groupId = groupIdNode?.textContent.orEmpty()
-
-            val licencesNode = document.getElementsByTagName(TAG_LICENSES).asSequence().firstOrNull()
-            val licenceNodes = licencesNode?.childNodes?.asSequence()?.filter { it.nodeName == TAG_LICENSE }
-            val licenses = licenceNodes?.asSequence()
-                ?.mapNotNull {
-                    it.childNodes
-                        .asSequence()
-                        .firstOrNull { child -> child.nodeName == TAG_NAME }
-                        ?.textContent
-                }
-                ?.toList().orEmpty()
-
-            if (result.containsKey(groupId)) {
-                result[groupId]?.addAll(licenses)
-            } else {
-                result[groupId] = licenses.toMutableSet()
-            }
-        }
-
-        return result
-    }
-
-    private fun parseCsvFile(): Map<String, String> {
-        val result = mutableMapOf<String, String>()
+    private fun parseCsvFile(): List<ThirdPartyDependency> {
+        val result = mutableListOf<ThirdPartyDependency>()
+        var firstLineRead = false
         extension.csvFile.forEachLine {
-            val (_, origin, license) = it.split(",")
-
-            if (origin != "Origin") {
-                result[origin] = license
+            if (firstLineRead) {
+                val (component, origin, license, copyright) = it.split(",")
+                result.add(
+                    ThirdPartyDependency(
+                        component = componentMap[component] ?: ThirdPartyDependency.Component.UNKNOWN,
+                        origin = origin,
+                        license = License.from(license),
+                        copyright = copyright
+                    )
+                )
+            } else {
+                firstLineRead = true
             }
         }
 
         return result
-    }
-
-    // endregion
-
-    // region Internal/Filters
-
-    private fun useConfiguration(configuration: Configuration): Boolean {
-        return configuration.isCanBeResolved &&
-            (configuration.name.contains("implementation", true) ||
-                configuration.name.contains("api", true))
-    }
-
-    private fun useDependency(dependency: ResolvedDependencyResult): Boolean {
-        return extension.transitiveDependencies || dependency.isRoot()
-    }
-
-    @Suppress("UnstableApiUsage")
-    private fun ResolvedDependencyResult.isRoot(): Boolean {
-        return from.selectionReason.descriptions.any {
-            it.cause == ComponentSelectionCause.ROOT
-        }
     }
 
     // endregion
 
     companion object {
-        private const val TAG_GROUP_ID = "groupId"
-        private const val TAG_LICENSES = "licenses"
-        private const val TAG_LICENSE = "license"
-        private const val TAG_NAME = "name"
-        private const val TAG_URL = "url"
+        private val componentMap = ThirdPartyDependency.Component.values()
+            .map { it.csvName to it }
+            .toMap()
     }
 }

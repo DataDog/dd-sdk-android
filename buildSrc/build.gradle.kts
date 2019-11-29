@@ -40,6 +40,7 @@ dependencies {
     implementation("org.jlleitschuh.gradle:ktlint-gradle:9.1.0")
     implementation("com.android.tools.build:gradle:3.5.1")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
+    implementation("me.xdrop:fuzzywuzzy:1.2.0")
 
     testImplementation("junit:junit:4.12")
 }
