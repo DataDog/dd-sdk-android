@@ -31,6 +31,13 @@ analysis:detekt:
   script:
     - ./gradlew :dd-sdk-android:detekt --configure-on-demand
 
+analysis:licenses:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - ./gradlew :dd-sdk-android:checkThirdPartyLicences --configure-on-demand
+
 test:unit:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
