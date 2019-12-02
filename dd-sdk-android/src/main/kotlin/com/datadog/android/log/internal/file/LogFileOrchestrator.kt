@@ -6,16 +6,17 @@
 
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileFilter
-import java.util.concurrent.TimeUnit
 
 internal class LogFileOrchestrator(
     private val rootDirectory: File,
     recentDelayMs: Long,
     private val maxBatchSize: Long,
     private val maxLogPerBatch: Int,
-    private val oldFileThreshold: Long
+    private val oldFileThreshold: Long,
+    private val maxDiskSpace: Long
 ) : FileOrchestrator {
 
     private val fileFilter: FileFilter = LogFileFilter()
@@ -33,6 +34,9 @@ internal class LogFileOrchestrator(
     override fun getWritableFile(itemSize: Int): File {
 
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
+
+        deleteBigFiles(files, itemSize)
+
         val lastFile = files.lastOrNull()
         val lastKnownFile = previousFile
         val lastKnownFileCount = previousFileLogCount
@@ -61,17 +65,13 @@ internal class LogFileOrchestrator(
 
     override fun getReadableFile(excludeFileNames: Set<String>): File? {
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
-        val threshold = System.currentTimeMillis() - oldFileThreshold
 
-        // delete really old files !
-        files
-            .asSequence()
-            .filter { it.name.toLong() < threshold }
-            .forEach { it.delete() }
+        deleteObsoleteFiles(files)
 
         val nextLogFile = files.firstOrNull {
-            (it.name !in excludeFileNames) && (it.name.toLong() >= threshold)
+            (it.name !in excludeFileNames) && (it.exists())
         }
+
         return if (nextLogFile == null) {
             null
         } else {
@@ -101,9 +101,43 @@ internal class LogFileOrchestrator(
         return fileTimestamp >= (now - recentDelayMs)
     }
 
+    private fun deleteObsoleteFiles(files: List<File>) {
+        val threshold = System.currentTimeMillis() - oldFileThreshold
+        files
+            .asSequence()
+            .filter { it.name.toLong() < threshold }
+            .forEach { it.delete() }
+    }
+
+    private fun deleteBigFiles(files: List<File>, itemSize: Int) {
+        val sizeOnDisk = files.fold(0L) { total, file ->
+            total + file.length()
+        }
+        val sizeToFree = sizeOnDisk - maxDiskSpace
+        if (sizeToFree > 0) {
+            sdkLogger.w(
+                "$TAG: Too much disk space used ($sizeOnDisk / $maxDiskSpace): " +
+                    "cleaning up to free $sizeToFree bytes…"
+            )
+            files.asSequence()
+                .fold(sizeToFree) { remainingSizeToFree, file ->
+                    if (remainingSizeToFree > 0) {
+                        val fileSize = file.length()
+                        if (file.delete()) {
+                            remainingSizeToFree - fileSize
+                        } else {
+                            remainingSizeToFree
+                        }
+                    } else {
+                        remainingSizeToFree
+                    }
+                }
+        }
+    }
+
     // endregion
 
     companion object {
-        private var ONE_SECOND_MS = TimeUnit.SECONDS.toMillis(1)
+        private const val TAG = "LogFileOrchestrator"
     }
 }

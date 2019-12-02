@@ -49,7 +49,8 @@ internal class LogFileOrchestratorTest {
             RECENT_DELAY_MS,
             MAX_BATCH_SIZE,
             MAX_LOGS_PER_BATCH,
-            OLD_FILE_THRESHOLD
+            OLD_FILE_THRESHOLD,
+            MAX_DISK_SPACE
         )
     }
 
@@ -168,6 +169,30 @@ internal class LogFileOrchestratorTest {
     }
 
     @Test
+    fun `write discards oldest files if too many space is taken on disk`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int,
+        forge: Forge
+    ) {
+        val batches = MAX_DISK_SPACE / MAX_BATCH_SIZE
+        val earlier = System.currentTimeMillis() - OLD_FILE_THRESHOLD - RECENT_DELAY_MS
+        val writtenFiles = mutableListOf<File>()
+        for (i in 0..batches) {
+            val writtenFile = File(tempLogsDir, (earlier + i).toString())
+            writtenFile.createNewFile()
+            writtenFile.writeText(forge.anAsciiString(MAX_BATCH_SIZE.toInt()))
+            writtenFiles.add(writtenFile)
+        }
+
+        val writeableFile = testedOrchestrator.getWritableFile(logSize)
+
+        assertThat(writeableFile)
+            .doesNotExist()
+            .isNotIn(writtenFiles)
+        assertThat(writtenFiles.first())
+            .doesNotExist()
+    }
+
+    @Test
     fun `read writeable file`() {
         val earlier = System.currentTimeMillis() - RECENT_DELAY_MS - RECENT_DELAY_MS
         val writtenFile = File(tempLogsDir, earlier.toString())
@@ -224,8 +249,9 @@ internal class LogFileOrchestratorTest {
 
         const val MAX_BATCH_SIZE: Long = 32 * 1024
         const val MAX_LOGS_PER_BATCH: Int = 32
-        const val MAX_LOG_SIZE: Int = 512
+        const val MAX_LOG_SIZE: Int = 256
 
         const val OLD_FILE_THRESHOLD: Long = RECENT_DELAY_MS * 4
+        const val MAX_DISK_SPACE = MAX_BATCH_SIZE * 4
     }
 }

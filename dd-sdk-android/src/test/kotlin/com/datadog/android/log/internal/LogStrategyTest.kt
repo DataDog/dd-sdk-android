@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
+import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -124,15 +125,19 @@ internal abstract class LogStrategyTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes batch of logs`(@Forgery fakeLogs: List<Log>) {
         val sentLogs = mutableListOf<Log>()
-        fakeLogs.forEachIndexed { i, log ->
-            val updatedLog = log.copy(level = i % 9)
+        val logCount = min(MAX_LOGS_PER_BATCH, fakeLogs.size)
+        for (i in 0 until logCount) {
+            val log = fakeLogs[i]
+            val updatedLog = log.copy(level = i % 8)
             testedLogWriter.writeLog(updatedLog)
             sentLogs.add(updatedLog)
         }
         waitForNextBatch()
         val batch = testedLogReader.readNextBatch()!!
 
-        batch.logs.forEachIndexed { i, log ->
+        val batchLogCount = min(MAX_LOGS_PER_BATCH, batch.logs.size)
+        for (i in 0 until batchLogCount) {
+            val log = batch.logs[i]
             val jsonObject = JsonParser.parseString(log).asJsonObject
             assertLogMatches(jsonObject, sentLogs[i])
         }
@@ -403,7 +408,7 @@ internal abstract class LogStrategyTest {
 
     companion object {
 
-        const val MAX_BATCH_SIZE: Long = 32 * 1024
+        const val MAX_BATCH_SIZE: Long = 128 * 1024
         const val MAX_LOGS_PER_BATCH: Int = 32
 
         private val levels = arrayOf(
