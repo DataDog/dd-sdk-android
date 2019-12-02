@@ -23,7 +23,7 @@ object Dependencies {
 
         // Tests Tools
         const val AssertJ = "0.2.1"
-        const val Elmyr = "1.0.0-alpha5"
+        const val Elmyr = "1.0.0-beta2"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.2.0"
         const val AndroidBenchmark = "1.0.0"
