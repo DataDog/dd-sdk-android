@@ -14,7 +14,8 @@ internal class LogFileOrchestrator(
     private val rootDirectory: File,
     recentDelayMs: Long,
     private val maxBatchSize: Long,
-    private val maxLogPerBatch: Int
+    private val maxLogPerBatch: Int,
+    private val oldFileThreshold: Long
 ) : FileOrchestrator {
 
     private val fileFilter: FileFilter = LogFileFilter()
@@ -60,7 +61,17 @@ internal class LogFileOrchestrator(
 
     override fun getReadableFile(excludeFileNames: Set<String>): File? {
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
-        val nextLogFile = files.firstOrNull { it.name !in excludeFileNames }
+        val threshold = System.currentTimeMillis() - oldFileThreshold
+
+        // delete really old files !
+        files
+            .asSequence()
+            .filter { it.name.toLong() < threshold }
+            .forEach { it.delete() }
+
+        val nextLogFile = files.firstOrNull {
+            (it.name !in excludeFileNames) && (it.name.toLong() >= threshold)
+        }
         return if (nextLogFile == null) {
             null
         } else {
