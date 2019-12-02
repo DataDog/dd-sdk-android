@@ -80,6 +80,6 @@ internal class LogFileStrategyTest :
     }
 
     companion object {
-        private const val RECENT_DELAY_MS = 250L
+        private const val RECENT_DELAY_MS = 150L
     }
 }

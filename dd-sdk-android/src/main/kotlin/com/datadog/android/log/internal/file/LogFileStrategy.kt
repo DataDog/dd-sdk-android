@@ -38,7 +38,7 @@ internal class LogFileStrategy(
     }
 
     override fun getLogReader(): LogReader {
-        return LogFileReader(fileOrchestrator, rootDir, recentDelayMs)
+        return LogFileReader(fileOrchestrator, rootDir)
     }
 
     // endregion
