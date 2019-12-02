@@ -70,7 +70,7 @@ internal class LogUploadRunnableTest {
         if (BuildConfig.DEBUG) {
             assertThat(systemOutStream.toString().trim())
                 .withFailMessage("We were expecting an info log message here")
-                .matches("I/android: DD_LOG\\+LogUploadRunnable: .+")
+                .matches("I/DD_LOG: LogUploadRunnable: .+")
         }
     }
 

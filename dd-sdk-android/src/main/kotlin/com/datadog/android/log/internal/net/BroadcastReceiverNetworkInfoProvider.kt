@@ -14,7 +14,6 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
-import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
@@ -133,6 +132,6 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
         private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
 
-        private val TAG = "BroadcastReceiver".asDataDogTag()
+        private val TAG = "BroadcastReceiver"
     }
 }

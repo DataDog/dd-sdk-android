@@ -57,7 +57,7 @@ internal class LogFileWriterInvalidTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())
                 .withFailMessage("We were expecting a log error message")
-                .matches("E/android: DD_LOG\\+LogFileWriter: .+")
+                .matches("E/DD_LOG: LogFileWriter: .+")
         }
     }
 

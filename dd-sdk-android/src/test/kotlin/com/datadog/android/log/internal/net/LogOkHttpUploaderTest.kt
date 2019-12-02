@@ -291,7 +291,7 @@ internal class LogOkHttpUploaderTest {
             val logMessages = systemOutputStream.toString().trim().split("\n")
             val errorMessage = logMessages[logMessages.size - 1].trim()
             assertThat(errorMessage)
-                .matches("E/android: DD_LOG\\+LogOkHttpUploader: .+")
+                .matches("E/DD_LOG: LogOkHttpUploader: .+")
         }
     }
 
