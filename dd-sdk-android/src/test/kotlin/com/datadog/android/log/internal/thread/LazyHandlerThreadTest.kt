@@ -4,7 +4,8 @@ import com.datadog.android.log.internal.file.AndroidDeferredHandler
 import com.datadog.android.utils.accessMethod
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
-import org.assertj.core.api.Assertions.assertThat
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import java.util.concurrent.CountDownLatch
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -26,10 +27,12 @@ internal class LazyHandlerThreadTest {
     lateinit var mockRunnable1: Runnable
     @Mock
     lateinit var mockRunnable2: Runnable
+    @Mock
+    lateinit var mockRunnable3: Runnable
 
     @BeforeEach
     fun `set up`() {
-        underTest = LazyHandlerThread("LazyHandlerThread")
+        underTest = LazyHandlerThread("LazyHandlerThread", { _ -> mockDeferredHandler })
     }
 
     @Test
@@ -37,8 +40,9 @@ internal class LazyHandlerThreadTest {
         // when
         underTest.post(mockRunnable1)
         underTest.post(mockRunnable2)
+
         // then
-        assertThat(underTest.messagesQueue).contains(mockRunnable1, mockRunnable2)
+        verifyZeroInteractions(mockDeferredHandler)
     }
 
     @Test
@@ -51,32 +55,85 @@ internal class LazyHandlerThreadTest {
         underTest.accessMethod("onLooperPrepared")
 
         // then
-        assertThat(underTest.messagesQueue).isEmpty()
-    }
-
-    @Test
-    fun `when looper is prepared the handlers will be initialized`() {
-        // when
-        underTest.accessMethod("onLooperPrepared")
-
-        // then
-        assertThat(underTest.handler).isNotNull()
-        assertThat(underTest.deferredHandler).isNotNull()
+        val inOrder = inOrder(mockDeferredHandler)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable1)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable2)
     }
 
     @Test
     fun `when looper prepared the message will be executed on the handler`() {
         // given
-        underTest.deferredHandler = mockDeferredHandler
+        underTest.accessMethod("onLooperPrepared")
 
         // when
         underTest.post(mockRunnable1)
         underTest.post(mockRunnable2)
 
         // then
-        assertThat(underTest.messagesQueue).isEmpty()
         val inOrder = inOrder(mockDeferredHandler)
         inOrder.verify(mockDeferredHandler).handle(mockRunnable1)
         inOrder.verify(mockDeferredHandler).handle(mockRunnable2)
+    }
+
+    @Test
+    fun `when multiple threads post messages in same time they will be executed in order`() {
+        val thread1 = Thread()
+        val countDownLatch = CountDownLatch(2)
+        val thread2 = Thread()
+        // when
+        thread1.apply {
+            start()
+            run {
+                underTest.post(mockRunnable1)
+                underTest.post(mockRunnable2)
+                underTest.accessMethod("onLooperPrepared")
+                countDownLatch.countDown()
+            }
+        }
+        thread2.apply {
+            start()
+            run {
+                underTest.post(mockRunnable3)
+                countDownLatch.countDown()
+            }
+        }
+        countDownLatch.await()
+
+        // then
+        val inOrder = inOrder(mockDeferredHandler)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable1)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable2)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable3)
+    }
+
+    @Test
+    fun `when looper ready in second thread the messages will be consumed in order`() {
+        val thread1 = Thread()
+        val countDownLatch = CountDownLatch(2)
+        val thread2 = Thread()
+        // when
+        thread1.apply {
+            start()
+            run {
+                underTest.post(mockRunnable1)
+                underTest.post(mockRunnable2)
+                countDownLatch.countDown()
+            }
+        }
+        thread2.apply {
+            start()
+            run {
+                underTest.accessMethod("onLooperPrepared")
+                underTest.post(mockRunnable3)
+                countDownLatch.countDown()
+            }
+        }
+        countDownLatch.await()
+
+        // then
+        val inOrder = inOrder(mockDeferredHandler)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable1)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable2)
+        inOrder.verify(mockDeferredHandler).handle(mockRunnable3)
     }
 }

@@ -10,17 +10,26 @@ import java.util.LinkedList
  * This is a lazy HandlerThread which will queue any runnable sent before the Looper is
  * prepared in order to be later consumed when the looper is ready.
  */
-internal open class LazyHandlerThread(name: String) : HandlerThread(name) {
-    internal val messagesQueue: LinkedList<Runnable> = LinkedList()
+internal open class LazyHandlerThread(
+    name: String,
+    private val handlerBuilder: (Handler) ->
+    DeferredHandler = { handler -> AndroidDeferredHandler(handler) }
+) :
+    HandlerThread(name) {
+    private val messagesQueue: LinkedList<Runnable> = LinkedList()
 
+    @Volatile
     internal lateinit var handler: Handler
+    @Volatile
     internal var deferredHandler: DeferredHandler? = null
 
     override fun onLooperPrepared() {
         super.onLooperPrepared()
-        handler = Handler(looper)
-        deferredHandler = AndroidDeferredHandler(handler)
-        consumeQueue()
+        synchronized(this) {
+            handler = Handler(looper)
+            deferredHandler = handlerBuilder(handler)
+            consumeQueue()
+        }
     }
 
     private fun consumeQueue() {
@@ -31,10 +40,12 @@ internal open class LazyHandlerThread(name: String) : HandlerThread(name) {
 
     internal fun post(runnable: Runnable) {
         val currentDeferred = deferredHandler
-        if (currentDeferred != null) {
-            currentDeferred.handle(runnable)
+        if (currentDeferred == null) {
+            synchronized(this) {
+                messagesQueue.add(runnable)
+            }
         } else {
-            messagesQueue.add(runnable)
+            currentDeferred.handle(runnable)
         }
     }
 }
