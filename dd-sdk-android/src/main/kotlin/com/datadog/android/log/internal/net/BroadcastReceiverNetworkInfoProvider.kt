@@ -9,10 +9,13 @@ package com.datadog.android.log.internal.net
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.log.internal.extensions.asDataDogTag
+import com.datadog.android.log.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
 internal class BroadcastReceiverNetworkInfoProvider :
@@ -20,9 +23,16 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
     private var networkInfo: NetworkInfo = NetworkInfo()
 
+    internal fun register(context: Context) {
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        val firstIntent = context.registerReceiver(this, filter)
+        onReceive(context, firstIntent)
+    }
+
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
+        sdkLogger.d("$TAG: received network update")
         val connectivityMgr =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetworkInfo = connectivityMgr.activeNetworkInfo
@@ -122,5 +132,7 @@ internal class BroadcastReceiverNetworkInfoProvider :
         )
 
         private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
+
+        private val TAG = "BroadcastReceiver".asDataDogTag()
     }
 }
