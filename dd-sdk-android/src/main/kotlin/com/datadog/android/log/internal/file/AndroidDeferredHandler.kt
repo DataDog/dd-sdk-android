@@ -8,7 +8,7 @@ package com.datadog.android.log.internal.file
 
 import android.os.Handler
 
-internal class AndroidDeferredHandler(
+internal open class AndroidDeferredHandler(
     private val handler: Handler
 ) : DeferredHandler {
 

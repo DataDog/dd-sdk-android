@@ -20,8 +20,21 @@ internal inline fun <reified T, R> Class<T>.setStaticValue(
     field.set(null, fieldValue)
 }
 
-inline fun <reified T> Any.getFieldValue(fieldName: String): T {
+internal inline fun <reified T> Any.getFieldValue(fieldName: String): T {
     val field = this.javaClass.getDeclaredField(fieldName)
     field.isAccessible = true
     return field.get(this) as T
+}
+
+internal fun Any.accessMethod(methodName: String, vararg params: Any) {
+    val declarationParams = Array<Class<*>>(params.size) {
+        params[it].javaClass
+    }
+    val method = this.javaClass.getDeclaredMethod(methodName, *declarationParams)
+    method.isAccessible = true
+    if (params.isEmpty()) {
+        method.invoke(this)
+    } else {
+        method.invoke(this, params)
+    }
 }
