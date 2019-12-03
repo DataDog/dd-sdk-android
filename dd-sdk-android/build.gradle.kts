@@ -91,9 +91,6 @@ dependencies {
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
-
-    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
-    androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
 }
 
 kotlinConfig()
