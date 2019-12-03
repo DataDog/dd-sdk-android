@@ -8,7 +8,7 @@
 
 ```groovy
 dependencies {
-    testCompile("com.datadoghq:dd-sdk-android:x.x.x")
+    implementation("com.datadoghq:dd-sdk-android:x.x.x")
 }
 ```
 
@@ -30,15 +30,35 @@ class SampleApplication : Application() {
 }
 ```
 
-### Logging
+### Setup for Europe
+
+If you're targetting our [Europe servers](https://datadoghq.eu), you can
+initialize the library like this: 
+
+```kotlin
+class SampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN, Datadog.DATADOG_EU)
+    }
+}
+```
+
+### Initialization
 
 You can create a `Logger` instance using the dedicated builder, as follow:
 
 ```kotlin
-val logger = Logger.Builder().build()
+    logger = Logger.Builder()
+            .setNetworkInfoEnabled(true)
+            .setServiceName("com.example.app.android")
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
+            .build();
 ```
 
-> TODO document every feature of the Builder
+### Logging
 
 You can then send logs with the following methods, mimicking the ones available
 in the Android Framework: 
@@ -50,6 +70,21 @@ in the Android Framework:
     logger.e("An error was met!")
     logger.wtf("What a Terrible Failure!")
 ```
+
+### Logging Errors
+
+If you caught an exception and want to log it with a message, you can do so as
+follow:
+
+```kotlin
+    try {
+        doSomething()
+    } catch (e : IOException) {
+        logger.e("Error while doing something", e)
+    }
+```
+
+> Note: All log level methods can have a throwable attached to them.
 
 ## Contributing
 
