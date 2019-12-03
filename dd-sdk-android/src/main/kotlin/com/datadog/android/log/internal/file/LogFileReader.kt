@@ -11,7 +11,6 @@ import android.os.Build
 import android.util.Base64 as AndroidBase64
 import com.datadog.android.log.internal.Batch
 import com.datadog.android.log.internal.LogReader
-import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.split
 import java.io.File
@@ -76,6 +75,6 @@ internal class LogFileReader(
     // endregion
 
     companion object {
-        val TAG = "LogFileReader".asDataDogTag()
+        val TAG = "LogFileReader"
     }
 }

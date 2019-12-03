@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
-import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.utils.sdkLogger
@@ -65,6 +64,6 @@ internal class LogUploadRunnable(
         )
 
         const val DELAY_MS = 5000L
-        val TAG = "LogUploadRunnable".asDataDogTag()
+        val TAG = "LogUploadRunnable"
     }
 }

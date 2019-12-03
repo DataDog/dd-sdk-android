@@ -14,6 +14,7 @@ class RuntimeUtilsTest {
     @Test
     fun `the sdk logger should always be disabled for remote logs`() {
         assertThat(sdkLogger.datadogLogsEnabled).isFalse()
+        assertThat(sdkLogger.serviceName).isEqualTo(SDK_LOG_PREFIX)
     }
 
     @Test

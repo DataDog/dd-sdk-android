@@ -13,7 +13,6 @@ import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.log.internal.extensions.asDataDogTag
 import com.datadog.android.log.internal.thread.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.google.gson.JsonNull
@@ -179,6 +178,6 @@ internal class LogFileWriter(
 
         private const val MAX_LOG_SIZE = 256 * 1024 // 256 Kb
 
-        private val TAG = "LogFileWriter".asDataDogTag()
+        private val TAG = "LogFileWriter"
     }
 }
