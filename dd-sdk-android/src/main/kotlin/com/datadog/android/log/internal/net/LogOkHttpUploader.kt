@@ -16,10 +16,12 @@ import okhttp3.Request
 import okhttp3.RequestBody
 
 internal class LogOkHttpUploader(
-    private val endpoint: String,
+    endpoint: String,
     private val token: String,
     private val client: OkHttpClient = OkHttpClient.Builder().build()
 ) : LogUploader {
+
+    private var url: String = buildUrl(endpoint, token)
 
     private val userAgent = System.getProperty(SYSTEM_UA).let {
         if (it.isNullOrBlank()) {
@@ -32,6 +34,10 @@ internal class LogOkHttpUploader(
     }
 
     // region LogUploader
+
+    override fun setEndpoint(endpoint: String) {
+        url = buildUrl(endpoint, token)
+    }
 
     @Suppress("TooGenericExceptionCaught")
     override fun uploadLogs(logs: List<String>): LogUploadStatus {
@@ -56,6 +62,7 @@ internal class LogOkHttpUploader(
     // region Internal
 
     private fun buildUrl(endpoint: String, token: String): String {
+        sdkLogger.i("$TAG: using endpoint $endpoint")
         return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
@@ -64,7 +71,6 @@ internal class LogOkHttpUploader(
     }
 
     private fun buildRequest(logs: List<String>): Request {
-        val url = buildUrl(endpoint, token)
         val body = buildBody(logs)
         sdkLogger.d("$TAG: Sending logs to $url")
         sdkLogger.d("$TAG: $body")

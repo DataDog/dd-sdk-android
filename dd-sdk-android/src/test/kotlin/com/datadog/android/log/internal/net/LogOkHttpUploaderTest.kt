@@ -330,6 +330,20 @@ internal class LogOkHttpUploaderTest {
         }
     }
 
+    @Test
+    fun `uploads with updated endpoint`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.shutdown()
+        val mockWebServer2 = MockWebServer()
+        mockWebServer2.start(forge.anInt(2000, 8000))
+        mockWebServer2.enqueue(mockResponse(200))
+        fakeEndpoint = mockWebServer2.url("/").toString().removeSuffix("/")
+
+        testedUploader.setEndpoint(fakeEndpoint)
+        val status = testedUploader.uploadLogs(logs)
+        assertThat(status).isEqualTo(LogUploadStatus.SUCCESS)
+    }
+
     // region Internal
 
     private fun assertValidRequest(
