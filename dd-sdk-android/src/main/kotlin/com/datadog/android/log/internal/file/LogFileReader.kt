@@ -14,16 +14,13 @@ import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.split
 import java.io.File
-import java.io.FileFilter
 import java.util.Base64 as JavaBase64
 
 internal class LogFileReader(
     private val fileOrchestrator: FileOrchestrator,
-    private val rootDirectory: File,
-    private val recentDelayMs: Long
+    private val rootDirectory: File
 ) : LogReader {
 
-    private val fileFilter: FileFilter = LogFileFilter()
     private val sentBatches: MutableSet<String> = mutableSetOf()
 
     // region LogReader

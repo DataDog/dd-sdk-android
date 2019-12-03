@@ -42,7 +42,13 @@ internal class LogFileStrategyTest :
 
     override fun getStrategy(): LogStrategy {
         whenever(mockContext.filesDir) doReturn tempDir
-        return LogFileStrategy(mockContext, RECENT_DELAY_MS, MAX_BATCH_SIZE, MAX_LOGS_PER_BATCH)
+        return LogFileStrategy(
+            context = mockContext,
+            recentDelayMs = RECENT_DELAY_MS,
+            maxBatchSize = MAX_BATCH_SIZE,
+            maxLogPerBatch = MAX_LOGS_PER_BATCH,
+            maxDiskSpace = MAX_DISK_SPACE
+        )
     }
 
     override fun setUp(writer: LogWriter, reader: LogReader) {
@@ -80,6 +86,7 @@ internal class LogFileStrategyTest :
     }
 
     companion object {
-        private const val RECENT_DELAY_MS = 250L
+        private const val RECENT_DELAY_MS = 150L
+        private const val MAX_DISK_SPACE = 16 * 32 * 1024L
     }
 }
