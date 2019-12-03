@@ -46,7 +46,7 @@ internal class LogOkHttpUploader(
             )
             responseCodeToLogUploadStatus(response.code)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Network error", e)
+            sdkLogger.e("$TAG: unable to upload logs", e)
             LogUploadStatus.NETWORK_ERROR
         }
     }

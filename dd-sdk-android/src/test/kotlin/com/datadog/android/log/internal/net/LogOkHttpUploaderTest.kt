@@ -267,35 +267,6 @@ internal class LogOkHttpUploaderTest {
     }
 
     @Test
-    fun `uploads with IOException (timeout) will spit a error log message`(
-        forge: Forge,
-        @SystemOutStream systemOutputStream: ByteArrayOutputStream
-    ) {
-        // we need to set the Build.MODEL to null, for some reason the AndroidLog... does not go
-        // through the System.out
-        Build::class.java.setStaticValue("MODEL", null)
-
-        val logs = forge.aList { anHexadecimalString() }
-        mockWebServer.enqueue(
-            MockResponse()
-                .throttleBody(THROTTLE_RATE, THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS)
-                .setBody(
-                    "{ 'success': 'ok', " +
-                        "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
-                )
-        )
-
-        testedUploader.uploadLogs(logs)
-        if (BuildConfig.DEBUG) {
-            val logMessages = systemOutputStream.toString().trim().split("\n")
-            val errorMessage = logMessages[logMessages.size - 1].trim()
-            assertThat(errorMessage)
-                .matches("E/DD_LOG: LogOkHttpUploader: .+")
-        }
-    }
-
-    @Test
     fun `uploads with IOException (protocol)`(forge: Forge) {
         val logs = forge.aList { anHexadecimalString() }
         mockWebServer.enqueue(mockResponse(forge.anInt(0, 100)))
@@ -311,6 +282,52 @@ internal class LogOkHttpUploaderTest {
 
         val status = testedUploader.uploadLogs(logs)
         assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+    }
+
+    @Test
+    fun `uploads with IOException (no server)`(forge: Forge) {
+        val logs = forge.aList { anHexadecimalString() }
+        mockWebServer.shutdown()
+
+        val status = testedUploader.uploadLogs(logs)
+        assertThat(status).isEqualTo(LogUploadStatus.NETWORK_ERROR)
+    }
+
+    @Test
+    fun `uploads with an exception will log an error message`(
+        forge: Forge,
+        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+    ) {
+        if (BuildConfig.DEBUG) {
+            // we need to set the Build.MODEL to null, to override the setup
+            Build::class.java.setStaticValue("MODEL", null)
+            val logs = forge.aList { anHexadecimalString() }
+            mockWebServer.enqueue(mockResponse(forge.anInt(1000)))
+
+            testedUploader.uploadLogs(logs)
+            val logMessages = systemOutputStream.toString().trim().split("\n")
+            assertThat(logMessages.last())
+                .isEqualTo("E/DD_LOG: LogOkHttpUploader: unable to upload logs")
+        }
+    }
+
+    @Test
+    fun `uploads with a response will log an info message`(
+        forge: Forge,
+        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+    ) {
+        if (BuildConfig.DEBUG) {
+            // we need to set the Build.MODEL to null, to override the setup
+            Build::class.java.setStaticValue("MODEL", null)
+            val logs = forge.aList { anHexadecimalString() }
+            val code = forge.anInt(500, 599)
+            mockWebServer.enqueue(mockResponse(code))
+
+            testedUploader.uploadLogs(logs)
+            val logMessages = systemOutputStream.toString().trim().split("\n")
+            assertThat(logMessages.last())
+                .matches("I/DD_LOG: LogOkHttpUploader: Response code:$code .+")
+        }
     }
 
     // region Internal
