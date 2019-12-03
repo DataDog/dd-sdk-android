@@ -12,5 +12,7 @@
     <application
         android:debuggable="false"
         tools:ignore="HardcodedDebugMode"
+        android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         tools:replace="android:debuggable" />
 </manifest>

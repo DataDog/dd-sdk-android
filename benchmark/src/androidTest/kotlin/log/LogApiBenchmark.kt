@@ -17,6 +17,10 @@ import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InvalidObjectException
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -24,7 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class BenchmarkLogWriting {
+class LogApiBenchmark {
     @get:Rule
     val benchmark = BenchmarkRule()
     @get:Rule
@@ -32,10 +36,23 @@ class BenchmarkLogWriting {
 
     lateinit var testedLogger: Logger
 
+    lateinit var mockWebServer: MockWebServer
+
     @Before
     fun setUp() {
+        mockWebServer = MockWebServer()
+            .apply {
+                start()
+            }
+        mockWebServer.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return mockResponse(200)
+            }
+        }
+        val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
+
         val context = InstrumentationRegistry.getInstrumentation().context
-        Datadog.initialize(context, "NO_TOKEN", "http://127.0.0.1")
+        Datadog.initialize(context, "NO_TOKEN", fakeEndpoint)
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
@@ -47,6 +64,7 @@ class BenchmarkLogWriting {
     @After
     fun tearDown() {
         Datadog.stop()
+        mockWebServer.shutdown()
     }
 
     @Test
@@ -93,6 +111,30 @@ class BenchmarkLogWriting {
         }
     }
 
+    @Test
+    fun benchmark_sending_medium_load_of_logs() {
+        sendLogs(MEDIUM_ITERATIONS)
+    }
+
+    @Test
+    fun benchmark_sending_heavy_load_of_logs() {
+        sendLogs(BIG_ITERATIONS)
+    }
+
+    private fun sendLogs(iterations: Int) {
+        benchmark.measureRepeated {
+            var counter = 0
+            do {
+
+                val (message, throwable) = runWithTimingDisabled {
+                    forge.anAlphabeticalString() to forge.aThrowable()
+                }
+                testedLogger.e(message, throwable)
+                counter++
+            } while (counter < iterations)
+        }
+    }
+
     // region Internal
 
     private fun Forge.aThrowable(): Throwable {
@@ -108,6 +150,18 @@ class BenchmarkLogWriting {
             UnsupportedOperationException(errorMessage),
             FileNotFoundException(errorMessage)
         )
+    }
+
+    private fun mockResponse(code: Int): MockResponse {
+        return MockResponse()
+            .setResponseCode(code)
+            .setBody("{}")
+    }
+
+    companion object {
+        const val MAX_LOGS_PER_BATCH = 500
+        const val MEDIUM_ITERATIONS = MAX_LOGS_PER_BATCH / 2
+        const val BIG_ITERATIONS = MAX_LOGS_PER_BATCH
     }
 
     // endregion

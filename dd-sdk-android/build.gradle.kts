@@ -1,5 +1,4 @@
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys

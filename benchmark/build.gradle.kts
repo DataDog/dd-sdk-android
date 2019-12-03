@@ -29,6 +29,7 @@ android {
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,UNLOCKED")
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,DEBUGGABLE")
     }
 
     // TODO when using Android Plugin 3.6.+
@@ -54,15 +55,12 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
     implementation("com.datadoghq:dd-sdk-android:1.0.0-alpha1")
     implementation(Dependencies.Libraries.Kotlin)
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
-
 }
 
 kotlinConfig()
-
