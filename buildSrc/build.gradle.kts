@@ -14,7 +14,7 @@ plugins {
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.41")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.61")
     }
     repositories {
         mavenCentral()
@@ -34,11 +34,11 @@ repositories {
 dependencies {
 
     // Dependencies used to configure the gradle plugins
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.41")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.41")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.61")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.61")
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.1.1")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:9.1.0")
-    implementation("com.android.tools.build:gradle:3.5.1")
+    implementation("com.android.tools.build:gradle:3.5.2")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
 

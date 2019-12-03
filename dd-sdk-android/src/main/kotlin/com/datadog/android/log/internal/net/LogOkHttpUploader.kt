@@ -40,11 +40,11 @@ internal class LogOkHttpUploader(
             val request = buildRequest(logs)
             val response = client.newCall(request).execute()
             sdkLogger.i(
-                    "$TAG: Response code:${response.code()} " +
-                            "body:${response.body()?.string()} " +
-                            "headers:${response.headers()}"
+                    "$TAG: Response code:${response.code} " +
+                            "body:${response.body?.string()} " +
+                            "headers:${response.headers}"
             )
-            responseCodeToLogUploadStatus(response.code())
+            responseCodeToLogUploadStatus(response.code)
         } catch (e: IOException) {
             sdkLogger.e("$TAG: Network error", e)
             LogUploadStatus.NETWORK_ERROR
