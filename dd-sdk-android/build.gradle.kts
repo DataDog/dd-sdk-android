@@ -1,4 +1,5 @@
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
@@ -48,7 +49,11 @@ android {
         versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,UNLOCKED")
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
+            "EMULATOR,UNLOCKED")
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
+            "EMULATOR,DEBUGGABLE")
+        testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
     sourceSets.named("main") {
@@ -90,6 +95,10 @@ dependencies {
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
+
+    androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
+    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
+    androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 }
 
 kotlinConfig()
