@@ -282,6 +282,23 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `read returns null when drop all was called`(
+        @Forgery firstLogs: List<Log>,
+        @Forgery secondLogs: List<Log>
+    ) {
+        firstLogs.forEach { testedLogWriter.writeLog(it) }
+        waitForNextBatch()
+        secondLogs.forEach { testedLogWriter.writeLog(it) }
+
+        testedLogReader.dropAllBatches()
+        val batch = testedLogReader.readNextBatch()
+
+        assertThat(batch)
+            .isNull()
+    }
+
+    @Test
     fun `fails gracefully if sent batch with unknown id`(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream

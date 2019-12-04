@@ -34,19 +34,16 @@ internal class LogFileReader(
     }
 
     override fun dropBatch(batchId: String) {
-        sdkLogger.i("$TAG: onBatchSent $batchId")
+        sdkLogger.i("$TAG: dropBatch $batchId")
         sentBatches.add(batchId)
         val fileToDelete = File(rootDirectory, batchId)
 
-        if (fileToDelete.exists()) {
-            if (fileToDelete.delete()) {
-                sdkLogger.d("$TAG: File ${fileToDelete.path} deleted")
-            } else {
-                sdkLogger.e("$TAG: Error deleting file ${fileToDelete.path}")
-            }
-        } else {
-            sdkLogger.w("$TAG: Sent batch with  unknown id $batchId")
-        }
+        deleteFile(fileToDelete)
+    }
+
+    override fun dropAllBatches() {
+        sdkLogger.i("$TAG: dropAllBatches")
+        fileOrchestrator.getAllFiles().forEach { deleteFile(it) }
     }
 
     // endregion
@@ -67,6 +64,18 @@ internal class LogFileReader(
     private fun deobfuscateApi26(input: ByteArray): ByteArray {
         val decoder = JavaBase64.getDecoder()
         return decoder.decode(input)
+    }
+
+    private fun deleteFile(fileToDelete: File) {
+        if (fileToDelete.exists()) {
+            if (fileToDelete.delete()) {
+                sdkLogger.d("$TAG: File ${fileToDelete.path} deleted")
+            } else {
+                sdkLogger.e("$TAG: Error deleting file ${fileToDelete.path}")
+            }
+        } else {
+            sdkLogger.w("$TAG: file ${fileToDelete.path} does not exist")
+        }
     }
 
     // endregion

@@ -15,4 +15,6 @@ internal interface LogReader {
     fun readNextBatch(): Batch?
 
     fun dropBatch(batchId: String)
+
+    fun dropAllBatches()
 }
