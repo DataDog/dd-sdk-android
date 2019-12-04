@@ -29,7 +29,7 @@ object Dependencies {
         const val AndroidBenchmark = "1.0.0"
 
         // Tools
-        const val Detekt = "1.0.1"
+        const val Detekt = "1.2.1"
         const val KtLint = "8.2.0"
         const val DependencyVersion = "0.27.0"
     }

@@ -6,13 +6,14 @@
 
 package com.datadog.gradle.config
 
+import com.datadog.gradle.Dependencies
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.Project
 
 fun Project.detektConfig() {
 
     extensionConfig<DetektExtension> {
-        version = "1.0.1"
+        version = Dependencies.Versions.Detekt
 
         input = files("$projectDir/src/main/kotlin")
         config = files("${project.rootDir}/detekt.yml")
