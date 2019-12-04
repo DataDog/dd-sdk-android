@@ -11,5 +11,5 @@ package com.datadog.android.log.internal
  */
 internal data class Batch(
     val id: String,
-    val logs: List<String>
+    val logs: String
 )

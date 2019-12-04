@@ -8,5 +8,5 @@ package com.datadog.android.log.internal.net
 
 internal interface LogUploader {
 
-    fun uploadLogs(logs: List<String>): LogUploadStatus
+    fun uploadLogs(logs: String): LogUploadStatus
 }

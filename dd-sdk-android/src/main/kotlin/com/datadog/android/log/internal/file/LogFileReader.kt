@@ -27,11 +27,32 @@ internal class LogFileReader(
 
     override fun readNextBatch(): Batch? {
         val nextLogFile = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-        val inputBytes = nextLogFile.readBytes()
-        val logs = inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
+        var inputBytes = nextLogFile.readBytesExceptLastOne()
+        var logs = inputBytes.toString(Charsets.UTF_8)
+        logs = "[" + logs + "]"
 
-        return Batch(nextLogFile.name, logs.map { deobfuscate(it) })
+        return Batch(nextLogFile.name, logs)
     }
+
+    fun File.readBytesExceptLastOne(): ByteArray = inputStream().use { input ->
+        var offset = 0
+        val length = length()
+        if (length > Int.MAX_VALUE) throw OutOfMemoryError("File $this is too big ($length bytes) to fit in memory.")
+        var remaining = if(length>0){
+            (length-1).toInt()
+        }else{
+            length.toInt()
+        }
+        val result = ByteArray(remaining)
+        while (remaining > 0) {
+            val read = input.read(result, offset, remaining)
+            if (read < 0) break
+            remaining -= read
+            offset += read
+        }
+        if (remaining == 0) result else result.copyOf(offset)
+    }
+
 
     override fun dropBatch(batchId: String) {
         sdkLogger.i("$TAG: onBatchSent $batchId")

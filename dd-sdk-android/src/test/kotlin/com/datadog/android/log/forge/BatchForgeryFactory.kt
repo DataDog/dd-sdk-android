@@ -14,7 +14,7 @@ internal class BatchForgeryFactory : ForgeryFactory<Batch> {
     override fun getForgery(forge: Forge): Batch {
         return Batch(
             forge.anHexadecimalString(),
-            forge.aList { anAlphabeticalString() }
+            forge.aList { anAlphabeticalString() }.joinToString(",", prefix = "[", postfix = "]")
         )
     }
 }

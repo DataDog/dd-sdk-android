@@ -34,7 +34,7 @@ internal class LogOkHttpUploader(
     // region LogUploader
 
     @Suppress("TooGenericExceptionCaught")
-    override fun uploadLogs(logs: List<String>): LogUploadStatus {
+    override fun uploadLogs(logs: String): LogUploadStatus {
 
         return try {
             val request = buildRequest(logs)
@@ -63,14 +63,13 @@ internal class LogOkHttpUploader(
         return logs.joinToString(separator = ",", prefix = "[", postfix = "]")
     }
 
-    private fun buildRequest(logs: List<String>): Request {
+    private fun buildRequest(logs: String): Request {
         val url = buildUrl(endpoint, token)
-        val body = buildBody(logs)
         sdkLogger.d("$TAG: Sending logs to $url")
-        sdkLogger.d("$TAG: $body")
+        sdkLogger.d("$TAG: $logs")
         return Request.Builder()
             .url(url)
-            .post(RequestBody.create(null, body))
+            .post(RequestBody.create(null, logs))
             .addHeader(HEADER_UA, userAgent)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()
