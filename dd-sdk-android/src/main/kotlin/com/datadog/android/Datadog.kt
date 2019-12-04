@@ -7,13 +7,15 @@
 package com.datadog.android
 
 import android.content.Context
-import android.os.Build
+import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
+import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
 
 /**
@@ -37,12 +39,16 @@ object Datadog {
     @Suppress("MemberVisibilityCanBePrivate")
     const val DATADOG_EU = "https://mobile-http-intake.logs.datadoghq.eu"
 
+    private const val TAG = "Datadog"
+
     private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
     private lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
+    private lateinit var uploader: LogUploader
+    private var endpointUrl: String = DATADOG_US
 
     /**
      * Initializes the Datadog SDK.
@@ -66,7 +72,7 @@ object Datadog {
         logStrategy = LogFileStrategy(appContext)
 
         // Start handler to send logs
-        val uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
+        uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
         handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
         handlerThread.start()
 
@@ -82,15 +88,38 @@ object Datadog {
     }
 
     /**
+     * Changes the endpoint to which data is sent.
+     * @param endpointUrl the endpoint url to target, or null to use the default.
+     * Possible values are [DATADOG_US], [DATADOG_EU] or a custom endpoint.
+     * @param strategy the strategy defining how to handle logs created previously.
+     * Because logs are sent asynchronously, some logs intended for the previous endpoint
+     * might still be yet to sent.
+     */
+    fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
+        when (strategy) {
+            EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
+                logStrategy.getLogReader().dropAllBatches()
+                sdkLogger.w(
+                    "$TAG: old logs targeted at $endpointUrl " +
+                        "will now be deleted"
+                )
+            }
+            EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
+                sdkLogger.w(
+                    "$TAG: old logs targeted at $endpointUrl " +
+                        "will now be sent to $endpointUrl"
+                )
+            }
+        }
+        uploader.setEndpoint(endpointUrl)
+    }
+
+    /**
      * Stop all Datadog work.
      */
     fun stop() {
         checkInitialized()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            handlerThread.quitSafely()
-        } else {
-            handlerThread.quit()
-        }
+        handlerThread.quitSafely()
         contextRef.get()?.unregisterReceiver(networkInfoProvider)
         contextRef.clear()
         initialized = false
