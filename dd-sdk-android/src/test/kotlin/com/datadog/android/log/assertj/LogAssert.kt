@@ -59,15 +59,6 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasNoTimestamp(): LogAssert {
-        assertThat(actual.timestamp)
-            .overridingErrorMessage(
-                "Expected log to have no timestamp but was ${actual.timestamp}"
-            )
-            .isNull()
-        return this
-    }
-
     fun hasAttributes(attributes: Map<String, Any?>) {
         assertThat(actual.attributes)
             .containsExactly(*attributes.entries.toTypedArray())

@@ -70,7 +70,6 @@ internal class LoggerBuilderTest {
             .build()
 
         assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
-        assertThat(logger.timestampsEnabled).isTrue()
         assertThat(logger.datadogLogsEnabled).isTrue()
         assertThat(logger.logcatLogsEnabled).isFalse()
         assertThat(logger.networkInfoProvider).isNull()
@@ -85,17 +84,6 @@ internal class LoggerBuilderTest {
             .build()
 
         assertThat(logger.serviceName).isEqualTo(serviceName)
-    }
-
-    @Test
-    fun `builder can enable or disable timestamps`(@Forgery forge: Forge) {
-        val timestampsEnabled = forge.aBool()
-
-        val logger = Logger.Builder()
-            .setTimestampsEnabled(timestampsEnabled)
-            .build()
-
-        assertThat(logger.timestampsEnabled).isEqualTo(timestampsEnabled)
     }
 
     @Test

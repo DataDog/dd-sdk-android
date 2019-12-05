@@ -87,7 +87,6 @@ internal abstract class LogStrategyTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
-            timestamp = null,
             throwable = null,
             networkInfo = null,
             attributes = emptyMap(),
@@ -214,7 +213,6 @@ internal abstract class LogStrategyTest {
             forge.getForgery<Log>().copy(
                 serviceName = anAlphabeticalString(size = aTinyInt()),
                 message = anAlphabeticalString(size = aTinyInt()),
-                timestamp = null,
                 throwable = null,
                 networkInfo = null,
                 attributes = emptyMap(),
@@ -340,11 +338,7 @@ internal abstract class LogStrategyTest {
             .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
             .hasField(LogStrategy.TAG_STATUS, levels[log.level])
 
-        if (log.timestamp != null) {
-            assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
-        } else {
-            assertThat(jsonObject).doesNotHaveField(LogStrategy.TAG_DATE)
-        }
+        assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
 
         assertNetworkInfoMatches(log, jsonObject)
 
