@@ -36,7 +36,7 @@ class CheckInternal : Rule() {
             report(
                 CodeSmell(
                     issue, Entity.from(expression),
-                    message = "A Kotlin check is done from an internal or private part of the code."
+                    message = "A Kotlin check is called from an internal or private part of the code."
                 )
             )
         }
