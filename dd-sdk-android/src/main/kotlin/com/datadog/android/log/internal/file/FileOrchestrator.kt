@@ -13,4 +13,6 @@ internal interface FileOrchestrator {
     fun getWritableFile(itemSize: Int): File
 
     fun getReadableFile(excludeFileNames: Set<String>): File?
+
+    fun getAllFiles(): Array<out File>
 }

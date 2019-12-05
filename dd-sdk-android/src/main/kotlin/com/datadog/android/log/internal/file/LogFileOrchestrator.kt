@@ -83,6 +83,10 @@ internal class LogFileOrchestrator(
         }
     }
 
+    override fun getAllFiles(): Array<out File> {
+        return rootDirectory.listFiles(fileFilter).orEmpty()
+    }
+
     // endregion
 
     // region Internal
