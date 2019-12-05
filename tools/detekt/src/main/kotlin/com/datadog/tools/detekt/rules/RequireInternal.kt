@@ -36,7 +36,7 @@ class RequireInternal : Rule() {
             report(
                 CodeSmell(
                     issue, Entity.from(expression),
-                    message = "A Kotlin require is called from an internal or private part of the code."
+                    message = "A require is called from an internal or private part of the code."
                 )
             )
         }

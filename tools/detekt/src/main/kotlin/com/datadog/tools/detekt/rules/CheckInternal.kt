@@ -32,11 +32,14 @@ class CheckInternal : Rule() {
         val callee = expression.calleeExpression
         val isCheckMethod = callee?.textMatches(CHECK_LITERAL) == true
         val isCheckNotNullMethod = callee?.textMatches(CHECK_NOT_NULL_LITERAL) == true
-        if ((isCheckMethod || isCheckNotNullMethod) && !expression.isContainingEntryPointPublic()) {
+        if (
+            (isCheckMethod || isCheckNotNullMethod) &&
+            !expression.isContainingEntryPointPublic()
+        ) {
             report(
                 CodeSmell(
                     issue, Entity.from(expression),
-                    message = "A Kotlin check is called from an internal or private part of the code."
+                    message = "A check is called from an internal or private part of the code."
                 )
             )
         }
