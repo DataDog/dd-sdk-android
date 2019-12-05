@@ -34,7 +34,10 @@ internal open class LazyHandlerThread(
 
     private fun consumeQueue() {
         while (messagesQueue.isNotEmpty()) {
-            post(messagesQueue.poll()!!)
+            val runnable = messagesQueue.poll()
+            if (runnable != null) {
+                post(runnable)
+            }
         }
     }
 

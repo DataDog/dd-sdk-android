@@ -5,10 +5,11 @@ build:
   # LongParameterList: 1
   # style: 1
   # comments: 1
-
+  
 processors:
   active: true
   exclude:
+  # - 'DetektProgressListener'
   # - 'FunctionCountProcessor'
   # - 'PropertyCountProcessor'
   # - 'ClassCountProcessor'
@@ -18,10 +19,11 @@ processors:
 console-reports:
   active: true
   exclude:
-  #  - 'ProjectStatisticsReport'
-  #  - 'ComplexityReport'
-  #  - 'NotificationReport'
-  #  - 'FindingsReport'
+    #  - 'ProjectStatisticsReport'
+    #  - 'ComplexityReport'
+    #  - 'NotificationReport'
+    #  - 'FindingsReport'
+    - 'FileBasedFindingsReport'
   #  - 'BuildFailureReport'
 
 comments:
@@ -41,6 +43,8 @@ comments:
     searchInInnerObject: true
     searchInInnerInterface: true
   UndocumentedPublicFunction:
+    active: true
+  UndocumentedPublicProperty:
     active: true
 
 complexity:
@@ -69,7 +73,7 @@ complexity:
   LongParameterList:
     active: true
     threshold: 6
-    ignoreDefaultParameters: false
+    ignoreDefaultParameters: true
   MethodOverloading:
     active: true
     threshold: 6
@@ -79,7 +83,7 @@ complexity:
   StringLiteralDuplication:
     active: true
     excludes: "**/test/**,**/androidTest/**,**/*.Test.kt,**/*.Spec.kt,**/*.Spek.kt"
-    threshold: 5
+    threshold: 3
     ignoreAnnotation: true
     excludeStringsWithLessThan5Characters: true
     ignoreStringsRegex: '$^'
@@ -91,9 +95,9 @@ complexity:
     thresholdInInterfaces: 11
     thresholdInObjects: 11
     thresholdInEnums: 11
-    ignoreDeprecated: false
-    ignorePrivate: false
-    ignoreOverridden: false
+    ignoreDeprecated: true
+    ignorePrivate: true
+    ignoreOverridden: true
 
 empty-blocks:
   active: true
@@ -144,9 +148,11 @@ exceptions:
     active: true
   ReturnFromFinally:
     active: true
+    ignoreLabeled: true
   SwallowedException:
     active: true
     ignoredExceptionTypes: 'InterruptedException,NumberFormatException,ParseException,MalformedURLException'
+    allowedExceptionNameRegex: "^(_|(ignore|expected).*)"
   ThrowingExceptionFromFinally:
     active: true
   ThrowingExceptionInMain:
@@ -183,6 +189,7 @@ formatting:
   autoCorrect: true
   AnnotationOnSeparateLine:
     active: true
+    autoCorrect: true
   ChainWrapping:
     active: true
     autoCorrect: true
@@ -196,8 +203,10 @@ formatting:
     autoCorrect: true
   ImportOrdering:
     active: true
+    autoCorrect: true
   Indentation:
     active: true
+    autoCorrect: true
     indentSize: 4
     continuationIndentSize: 4
   MaximumLineLength:
@@ -218,8 +227,6 @@ formatting:
   NoEmptyClassBody:
     active: true
     autoCorrect: true
-  NoItParamInMultilineLambda:
-    active: true
   NoLineBreakAfterElse:
     active: true
     autoCorrect: true
@@ -273,9 +280,6 @@ formatting:
     active: true
     autoCorrect: true
   SpacingAroundRangeOperator:
-    active: true
-    autoCorrect: true
-  SpacingAroundUnaryOperators:
     active: true
     autoCorrect: true
   StringTemplate:
@@ -370,13 +374,15 @@ performance:
     active: true
     excludes: "**/test/**,**/androidTest/**,**/*.Test.kt,**/*.Spec.kt,**/*.Spek.kt"
   SpreadOperator:
-    active: false
+    active: true
     excludes: "**/test/**,**/androidTest/**,**/*.Test.kt,**/*.Spec.kt,**/*.Spek.kt"
   UnnecessaryTemporaryInstantiation:
     active: true
 
 potential-bugs:
   active: true
+  Deprecation:
+    active: true
   DuplicateCaseInWhenExpression:
     active: true
   EqualsAlwaysReturnsTrueOrFalse:
@@ -384,6 +390,8 @@ potential-bugs:
   EqualsWithHashCodeExist:
     active: true
   ExplicitGarbageCollectionCall:
+    active: true
+  HasPlatformType:
     active: true
   InvalidRange:
     active: true
@@ -434,16 +442,20 @@ style:
   ForbiddenComment:
     active: true
     values: 'TODO:,FIXME:,STOPSHIP:'
+    allowedPatterns: ""
   ForbiddenImport:
     active: true
     imports: ''
+    forbiddenPatterns: ""
   ForbiddenVoid:
     active: true
     ignoreOverridden: false
+    ignoreUsageInGenerics: true
   FunctionOnlyReturningConstant:
     active: true
     ignoreOverridableFunction: true
     excludedFunctions: 'describeContents'
+    excludeAnnotatedFunction: "dagger.Provides"
   LibraryCodeMustSpecifyReturnType:
     active: true
   LoopWithTooManyJumpStatements:
@@ -489,6 +501,8 @@ style:
     active: true
   ProtectedMemberInFinalClass:
     active: true
+  RedundantExplicitType:
+    active: true
   RedundantVisibilityModifierRule:
     active: true
   ReturnCount:
@@ -497,6 +511,7 @@ style:
     excludedFunctions: "equals"
     excludeLabeled: false
     excludeReturnFromLambda: true
+    excludeGuardClauses: true
   SafeCast:
     active: true
   SerialVersionUIDInSerializableClass:
@@ -531,11 +546,16 @@ style:
   UnusedPrivateMember:
     active: true
     allowedNames: "(_|ignored|expected|serialVersionUID)"
+  UseArrayLiteralsInAnnotations:
+    active: true
   UseCheckOrError:
     active: true
   UseDataClass:
     active: true
     excludeAnnotatedClasses: ""
+    allowVars: true
+  UseIfInsteadOfWhen:
+    active: true
   UseRequire:
     active: true
   UselessCallOnNotNull:

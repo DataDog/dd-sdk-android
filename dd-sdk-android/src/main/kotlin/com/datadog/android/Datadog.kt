@@ -140,6 +140,7 @@ object Datadog {
 
     // region Internal
 
+    @Suppress("CheckInternal")
     private fun checkInitialized() {
         check(initialized) {
             "Datadog has not been initialized.\n" +

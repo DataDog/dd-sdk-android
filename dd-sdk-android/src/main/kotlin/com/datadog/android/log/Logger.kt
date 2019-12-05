@@ -451,9 +451,10 @@ private constructor(
     // endregion
 
     companion object {
-        const val DEFAULT_SERVICE_NAME = "android"
 
-        const val MAX_TAG_LENGTH = 200
+        internal const val DEFAULT_SERVICE_NAME = "android"
+
+        private const val MAX_TAG_LENGTH = 200
 
         private val reservedTagKeys = setOf(
             "host", "device", "source", "service"

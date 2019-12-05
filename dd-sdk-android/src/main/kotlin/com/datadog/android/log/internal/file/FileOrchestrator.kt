@@ -10,8 +10,10 @@ import java.io.File
 
 internal interface FileOrchestrator {
 
+    @Throws(SecurityException::class)
     fun getWritableFile(itemSize: Int): File
 
+    @Throws(SecurityException::class)
     fun getReadableFile(excludeFileNames: Set<String>): File?
 
     fun getAllFiles(): Array<out File>

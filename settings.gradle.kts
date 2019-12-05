@@ -11,7 +11,8 @@ pluginManagement {
         eachPlugin {
             val version = when (requested.id.id) {
                 Dependencies.PluginIds.Android -> Dependencies.Versions.AndroidToolsPlugin
-                Dependencies.PluginIds.KotlinAndroid -> Dependencies.Versions.Kotlin
+                Dependencies.PluginIds.KotlinJVM,
+                Dependencies.PluginIds.KotlinAndroid,
                 Dependencies.PluginIds.KotlinAndroidExtension -> Dependencies.Versions.Kotlin
                 Dependencies.PluginIds.Detetk -> Dependencies.Versions.Detekt
                 Dependencies.PluginIds.DependencyVersion -> Dependencies.Versions.DependencyVersion
@@ -35,3 +36,4 @@ pluginManagement {
 include(":dd-sdk-android")
 include(":benchmark")
 include(":sample:java")
+include(":tools:detekt")
