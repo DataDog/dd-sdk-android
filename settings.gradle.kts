@@ -33,4 +33,5 @@ pluginManagement {
 }
 
 include(":dd-sdk-android")
+include(":benchmark")
 include(":sample:java")

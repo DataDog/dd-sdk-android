@@ -49,7 +49,11 @@ android {
         versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,UNLOCKED")
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
+            "EMULATOR,UNLOCKED")
+        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
+            "EMULATOR,DEBUGGABLE")
+        testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
     sourceSets.named("main") {
@@ -92,8 +96,9 @@ dependencies {
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
 
-    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
+    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
+    androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 }
 
 kotlinConfig()
