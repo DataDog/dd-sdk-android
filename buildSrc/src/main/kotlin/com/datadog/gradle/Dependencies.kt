@@ -73,6 +73,10 @@ object Dependencies {
         )
 
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
+
+        const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
+        const val DetektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.Detekt}"
+        const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
     }
 
     object ClassPaths {
@@ -94,6 +98,7 @@ object Dependencies {
         const val KtLint = "org.jlleitschuh.gradle.ktlint"
         const val DependencyVersion = "com.github.ben-manes.versions"
         const val Kotlin = "org.jetbrains.kotlin"
+        const val KotlinJVM = "org.jetbrains.kotlin.jvm"
         const val KotlinAndroid = "org.jetbrains.kotlin.android"
         const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
     }

@@ -7,8 +7,10 @@
 package com.datadog.gradle.config
 
 import com.datadog.gradle.Dependencies
+import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.withType
 
 fun Project.detektConfig() {
 
@@ -17,12 +19,17 @@ fun Project.detektConfig() {
 
         input = files("$projectDir/src/main/kotlin")
         config = files("${project.rootDir}/detekt.yml")
+
         reports {
             xml {
                 enabled = true
                 destination = file("build/reports/detekt.xml")
             }
         }
+    }
+
+    tasks.withType<Detekt> {
+        dependsOn(":tools:detekt:assemble")
     }
 
     tasks.named("check") {
