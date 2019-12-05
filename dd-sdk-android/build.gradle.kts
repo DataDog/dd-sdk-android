@@ -105,6 +105,9 @@ dependencies {
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
+
+    detekt(project(":tools:detekt"))
+    detekt(Dependencies.Libraries.DetektCli)
 }
 
 kotlinConfig()
