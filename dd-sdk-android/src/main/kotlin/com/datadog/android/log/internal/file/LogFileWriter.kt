@@ -19,6 +19,8 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.text.SimpleDateFormat
@@ -135,9 +137,19 @@ internal class LogFileWriter(
         val obfLog = obfuscate(strLog)
 
         synchronized(this) {
-            val file = fileOrchestrator.getWritableFile(obfLog.size)
+            writeLogSafely(obfLog)
+        }
+    }
+
+    private fun writeLogSafely(obfLog: ByteArray) {
+        val file = fileOrchestrator.getWritableFile(obfLog.size)
+        try {
             file.appendBytes(obfLog)
             file.appendBytes(logSeparator)
+        } catch (e: FileNotFoundException) {
+            sdkLogger.e("$TAG: Couldn't create an output stream to file ${file.path}", e)
+        } catch (e: IOException) {
+            sdkLogger.e("$TAG: Couldn't write log to file ${file.path}", e)
         }
     }
 
