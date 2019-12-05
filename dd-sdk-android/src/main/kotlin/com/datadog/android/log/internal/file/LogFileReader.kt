@@ -28,20 +28,27 @@ internal class LogFileReader(
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        val nextLogFile = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-
+        var file: File? = null
         val logs = try {
-            val inputBytes = nextLogFile.readBytes()
+            file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
+            val inputBytes = file.readBytes()
             inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
         } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an input stream from file ${nextLogFile.path}", e)
+            sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
             emptyList<ByteArray>()
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't read logs from file ${nextLogFile.path}", e)
+            sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
+            emptyList<ByteArray>()
+        } catch (e: SecurityException) {
+            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
             emptyList<ByteArray>()
         }
 
-        return Batch(nextLogFile.name, logs.map { deobfuscate(it) })
+        return if (file == null) {
+            null
+        } else {
+            Batch(file.name, logs.map { deobfuscate(it) })
+        }
     }
 
     override fun dropBatch(batchId: String) {

@@ -31,6 +31,7 @@ internal class LogFileOrchestrator(
 
     // region FileOrchestrator
 
+    @Throws(SecurityException::class)
     override fun getWritableFile(itemSize: Int): File {
 
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
@@ -63,6 +64,7 @@ internal class LogFileOrchestrator(
         }
     }
 
+    @Throws(SecurityException::class)
     override fun getReadableFile(excludeFileNames: Set<String>): File? {
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
 

@@ -142,14 +142,17 @@ internal class LogFileWriter(
     }
 
     private fun writeLogSafely(obfLog: ByteArray) {
-        val file = fileOrchestrator.getWritableFile(obfLog.size)
+        var file: File? = null
         try {
+            file = fileOrchestrator.getWritableFile(obfLog.size)
             file.appendBytes(obfLog)
             file.appendBytes(logSeparator)
         } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an output stream to file ${file.path}", e)
+            sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't write log to file ${file.path}", e)
+            sdkLogger.e("$TAG: Couldn't write log to file ${file?.path}", e)
+        } catch (e: SecurityException) {
+            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
         }
     }
 
