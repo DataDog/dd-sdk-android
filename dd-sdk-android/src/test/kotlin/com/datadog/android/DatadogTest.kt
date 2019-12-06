@@ -64,6 +64,8 @@ internal class DatadogTest {
 
     lateinit var fakeToken: String
 
+    lateinit var packageName: String
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeToken = forge.anHexadecimalString()
@@ -77,6 +79,9 @@ internal class DatadogTest {
         whenever(mockConnectivityMgr.activeNetworkInfo) doReturn mockNetworkInfo
         whenever(mockNetworkInfo.isConnected) doReturn true
         whenever(mockNetworkInfo.type) doReturn ConnectivityManager.TYPE_WIFI
+
+        packageName = forge.anAlphabeticalString()
+        whenever(mockContext.packageName) doReturn packageName
     }
 
     @AfterEach
@@ -86,6 +91,12 @@ internal class DatadogTest {
         } catch (e: IllegalStateException) {
             // nevermind
         }
+    }
+
+    fun `it will initialize all dependencies at initialize`(){
+        Datadog.initialize(mockContext, fakeToken)
+
+        assertThat(Datadog.packageName).isEqualTo(packageName)
     }
 
     @Test
