@@ -152,11 +152,11 @@ internal class LoggerFullFeaturesTest {
         Thread({
             logger = createLogger()
             countDownLatch.countDown()
+            Thread({
+                logger?.e(fakeMessage)
+                countDownLatch.countDown()
+            }, logSendThreadName).start()
         }, loggerCreateThreadName).start()
-        Thread({
-            logger?.e(fakeMessage)
-            countDownLatch.countDown()
-        }, logSendThreadName).start()
 
         countDownLatch.await()
 
