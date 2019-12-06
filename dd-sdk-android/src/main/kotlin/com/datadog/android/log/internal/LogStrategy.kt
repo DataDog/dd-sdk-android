@@ -32,6 +32,7 @@ internal interface LogStrategy {
 
         // THREAD RELATED TAGS
         internal const val TAG_LOGGER_NAME = "logger.name"
+        internal const val TAG_THREAD_NAME = "logger.thread_name"
 
         // ANDROID SPECIFIC TAGS
         internal const val TAG_NETWORK = "network"

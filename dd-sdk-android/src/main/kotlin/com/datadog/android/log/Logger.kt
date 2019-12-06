@@ -379,7 +379,8 @@ private constructor(
             attributes = attributes.toMap(),
             tags = tags.toList(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfos(),
-            loggerName = loggerName
+            loggerName = loggerName,
+            threadName = Thread.currentThread().name
         )
     }
 

@@ -122,6 +122,7 @@ internal class LogFileWriter(
     ) {
         log.throwable?.let {
             jsonLog.addProperty(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
+            jsonLog.addProperty(LogStrategy.TAG_THREAD_NAME, log.threadName)
             val sw = StringWriter()
             it.printStackTrace(PrintWriter(sw))
             jsonLog.addProperty(LogStrategy.TAG_ERROR_KIND, it.javaClass.simpleName)

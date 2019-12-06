@@ -20,5 +20,6 @@ internal data class Log(
     val tags: List<String>,
     val throwable: Throwable?,
     val networkInfo: NetworkInfo?,
-    val loggerName: String
+    val loggerName: String,
+    val threadName: String
 )

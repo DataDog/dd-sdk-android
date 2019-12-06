@@ -33,7 +33,8 @@ internal fun randomLog(forge: Forge): Log {
             carrierName = forge.anAlphaNumericalString(),
             carrierId = forge.anInt()
         ),
-        loggerName = forge.anAlphabeticalString()
+        loggerName = forge.anAlphabeticalString(),
+        threadName = forge.anAlphabeticalString()
     )
 }
 

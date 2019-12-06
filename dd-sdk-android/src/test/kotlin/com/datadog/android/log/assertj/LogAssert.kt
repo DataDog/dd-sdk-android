@@ -79,12 +79,22 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasLoggerName(expected: String) {
+    fun hasLoggerName(expected: String): LogAssert {
         assertThat(actual.loggerName)
             .overridingErrorMessage(
                 "Expected log to have loggerName $expected but was ${actual.loggerName}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun hasThreadName(expected: String): LogAssert {
+        assertThat(actual.threadName)
+            .overridingErrorMessage(
+                "Expected log to have threadName $expected but was ${actual.threadName}"
+            )
+            .isEqualTo(expected)
+        return this
     }
 
     companion object {

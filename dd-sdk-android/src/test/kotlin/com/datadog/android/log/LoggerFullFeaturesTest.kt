@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import java.util.concurrent.CountDownLatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -77,15 +78,7 @@ internal class LoggerFullFeaturesTest {
         fakeLoggerName = forge.anAlphabeticalString()
         whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
-        testedLogger = Logger.Builder()
-            .setServiceName(fakeServiceName)
-            .setLogcatLogsEnabled(true)
-            .setDatadogLogsEnabled(true)
-            .setNetworkInfoEnabled(true)
-            .setLoggerName(fakeLoggerName)
-            .withLogStrategy(mockLogStrategy)
-            .withNetworkInfoProvider(mockNetworkInfoProvider)
-            .build()
+        testedLogger = createLogger()
     }
 
     @BeforeEach
@@ -150,9 +143,35 @@ internal class LoggerFullFeaturesTest {
         verifyLogSideEffects(AndroidLog.ASSERT, "A")
     }
 
+    @Test
+    fun `the thread name will be the name of the thread from which the logger was built`() {
+        val countDownLatch = CountDownLatch(1)
+        var logger: Logger
+        Thread().start().run {
+            logger = createLogger()
+            countDownLatch.countDown()
+        }
+        countDownLatch.await()
+
+        logger.e(fakeMessage)
+        verifyLogSideEffects(AndroidLog.ERROR, "E")
+    }
+
     // endregion
 
     // region Internal
+
+    private fun createLogger(): Logger {
+        return Logger.Builder()
+            .setServiceName(fakeServiceName)
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
+            .setNetworkInfoEnabled(true)
+            .setLoggerName(fakeLoggerName)
+            .withLogStrategy(mockLogStrategy)
+            .withNetworkInfoProvider(mockNetworkInfoProvider)
+            .build()
+    }
 
     private fun verifyLogSideEffects(level: Int, logCatPrefix: String) {
         val timestamp = System.currentTimeMillis()
@@ -171,6 +190,7 @@ internal class LoggerFullFeaturesTest {
                 .hasTimestamp(timestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasLoggerName(fakeLoggerName)
+                .hasThreadName(Thread.currentThread().name)
         }
     }
 
