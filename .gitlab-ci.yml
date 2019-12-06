@@ -38,6 +38,13 @@ analysis:licenses:
   script:
     - ./gradlew :dd-sdk-android:checkThirdPartyLicences 
 
+test:benchmark:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  script:
+    - ./gradlew :benchmark:packageDebugAndroidTest
+
 test:unit:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
