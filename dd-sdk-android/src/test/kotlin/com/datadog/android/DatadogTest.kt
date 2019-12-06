@@ -93,7 +93,7 @@ internal class DatadogTest {
         }
     }
 
-    fun `it will initialize all dependencies at initialize`(){
+    fun `it will initialize all dependencies at initialize`() {
         Datadog.initialize(mockContext, fakeToken)
 
         assertThat(Datadog.packageName).isEqualTo(packageName)

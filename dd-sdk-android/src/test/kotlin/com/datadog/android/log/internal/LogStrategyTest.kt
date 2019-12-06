@@ -195,7 +195,8 @@ internal abstract class LogStrategyTest {
                 carrierName = forge.anAlphabeticalString(size = 256)
             ),
             throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
-            timestamp = forge.aLong()
+            timestamp = forge.aLong(),
+            loggerName = forge.anAlphabeticalString()
         )
 
         testedLogWriter.writeLog(bigLog)
@@ -409,9 +410,16 @@ internal abstract class LogStrategyTest {
             throwable.printStackTrace(PrintWriter(sw))
 
             assertThat(jsonObject)
+                .hasField(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
                 .hasField(LogStrategy.TAG_ERROR_KIND, throwable.javaClass.simpleName)
                 .hasField(LogStrategy.TAG_ERROR_MESSAGE, throwable.message)
                 .hasField(LogStrategy.TAG_ERROR_STACK, sw.toString())
+        } else {
+            assertThat(jsonObject)
+                .doesNotHaveField(LogStrategy.TAG_LOGGER_NAME)
+                .doesNotHaveField(LogStrategy.TAG_ERROR_KIND)
+                .doesNotHaveField(LogStrategy.TAG_ERROR_MESSAGE)
+                .doesNotHaveField(LogStrategy.TAG_ERROR_STACK)
         }
     }
 

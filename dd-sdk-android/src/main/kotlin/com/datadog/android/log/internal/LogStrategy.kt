@@ -30,6 +30,9 @@ internal interface LogStrategy {
         internal const val TAG_ERROR_MESSAGE = "error.message"
         internal const val TAG_ERROR_STACK = "error.stack"
 
+        // THREAD RELATED TAGS
+        internal const val TAG_LOGGER_NAME = "logger.name"
+
         // ANDROID SPECIFIC TAGS
         internal const val TAG_NETWORK = "network"
         internal const val TAG_NETWORK_CONNECTIVITY = "connectivity"

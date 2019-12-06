@@ -32,7 +32,8 @@ internal fun randomLog(forge: Forge): Log {
         networkInfo = NetworkInfo(
             carrierName = forge.anAlphaNumericalString(),
             carrierId = forge.anInt()
-        )
+        ),
+        loggerName = forge.anAlphabeticalString()
     )
 }
 

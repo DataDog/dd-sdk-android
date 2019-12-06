@@ -27,7 +27,8 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             throwable = forge.getForgery(),
             attributes = forge.exhaustiveAttributes(),
             tags = forge.exhaustiveTags(),
-            networkInfo = forge.getForgery()
+            networkInfo = forge.getForgery(),
+            loggerName = forge.anAlphabeticalString(size = forge.aTinyInt())
         )
     }
 

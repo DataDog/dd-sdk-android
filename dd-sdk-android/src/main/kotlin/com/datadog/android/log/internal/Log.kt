@@ -19,5 +19,6 @@ internal data class Log(
     val attributes: Map<String, Any?>,
     val tags: List<String>,
     val throwable: Throwable?,
-    val networkInfo: NetworkInfo?
+    val networkInfo: NetworkInfo?,
+    val loggerName: String
 )

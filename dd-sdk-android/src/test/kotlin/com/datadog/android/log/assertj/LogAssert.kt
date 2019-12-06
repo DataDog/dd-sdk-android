@@ -73,10 +73,18 @@ internal class LogAssert(actual: Log) :
         assertThat(actual.networkInfo)
             .overridingErrorMessage(
                 "Expected log to have networkInfo $expected " +
-                    "but was ${actual.networkInfo}"
+                        "but was ${actual.networkInfo}"
             )
             .isEqualTo(expected)
         return this
+    }
+
+    fun hasLoggerName(expected: String) {
+        assertThat(actual.loggerName)
+            .overridingErrorMessage(
+                "Expected log to have loggerName $expected but was ${actual.loggerName}"
+            )
+            .isEqualTo(expected)
     }
 
     companion object {

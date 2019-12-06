@@ -49,6 +49,7 @@ internal class LoggerFullFeaturesTest {
     lateinit var fakeMessage: String
     lateinit var fakeUserAgent: String
     lateinit var fakeNetworkInfo: NetworkInfo
+    lateinit var fakeLoggerName: String
 
     @Mock
     lateinit var mockContext: Context
@@ -73,6 +74,7 @@ internal class LoggerFullFeaturesTest {
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
         fakeNetworkInfo = forge.getForgery()
+        fakeLoggerName = forge.anAlphabeticalString()
         whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
         testedLogger = Logger.Builder()
@@ -80,6 +82,7 @@ internal class LoggerFullFeaturesTest {
             .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)
+            .setLoggerName(fakeLoggerName)
             .withLogStrategy(mockLogStrategy)
             .withNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
@@ -167,6 +170,7 @@ internal class LoggerFullFeaturesTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(timestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasLoggerName(fakeLoggerName)
         }
     }
 
