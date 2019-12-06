@@ -77,7 +77,6 @@ internal class LoggerNoLogcatTest {
 
         testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
-            .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(false) // <<<<
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)

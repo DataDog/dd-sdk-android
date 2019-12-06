@@ -77,7 +77,6 @@ internal class LoggerFullFeaturesTest {
 
         testedLogger = Logger.Builder()
             .setServiceName(fakeServiceName)
-            .setTimestampsEnabled(true)
             .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(true)
             .setNetworkInfoEnabled(true)

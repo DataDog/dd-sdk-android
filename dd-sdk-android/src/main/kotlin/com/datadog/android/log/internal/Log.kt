@@ -15,7 +15,7 @@ internal data class Log(
     val serviceName: String,
     val level: Int,
     val message: String,
-    val timestamp: Long?,
+    val timestamp: Long,
     val attributes: Map<String, Any?>,
     val tags: List<String>,
     val throwable: Throwable?,

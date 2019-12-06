@@ -29,7 +29,6 @@ import java.util.Locale
 class Logger
 private constructor(
     val serviceName: String,
-    val timestampsEnabled: Boolean,
     val datadogLogsEnabled: Boolean,
     val logcatLogsEnabled: Boolean,
     private val logWriter: LogWriter,
@@ -117,7 +116,6 @@ private constructor(
     class Builder {
 
         private var serviceName: String = DEFAULT_SERVICE_NAME
-        private var timestampsEnabled: Boolean = true
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
@@ -133,7 +131,6 @@ private constructor(
             return Logger(
                 logWriter = logWriter,
                 serviceName = serviceName,
-                timestampsEnabled = timestampsEnabled,
                 datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
                 networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
@@ -157,15 +154,6 @@ private constructor(
          */
         fun setServiceName(serviceName: String): Builder {
             this.serviceName = serviceName
-            return this
-        }
-
-        /**
-         * Enables timestamp to be automatically added in your logs.
-         * @param enabled true by default
-         */
-        fun setTimestampsEnabled(enabled: Boolean): Builder {
-            timestampsEnabled = enabled
             return this
         }
 
@@ -374,7 +362,7 @@ private constructor(
             serviceName = serviceName,
             level = level,
             message = message,
-            timestamp = if (timestampsEnabled) System.currentTimeMillis() else null,
+            timestamp = System.currentTimeMillis(),
             throwable = throwable,
             attributes = attributes.toMap(),
             tags = tags.toList(),

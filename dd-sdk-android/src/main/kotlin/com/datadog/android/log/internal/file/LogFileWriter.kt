@@ -80,10 +80,8 @@ internal class LogFileWriter(
         jsonLog.addProperty(LogStrategy.TAG_STATUS, logLevelStatusName(log.level))
 
         // Timestamp
-        log.timestamp?.let {
-            val formattedDate = simpleDateFormat.format(Date(log.timestamp))
-            jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
-        }
+        val formattedDate = simpleDateFormat.format(Date(log.timestamp))
+        jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
 
         // Network Infos
         val info = log.networkInfo
