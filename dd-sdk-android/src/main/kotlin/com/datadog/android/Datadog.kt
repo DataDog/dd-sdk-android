@@ -48,7 +48,7 @@ object Datadog {
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
-    private var endpointUrl: String = DATADOG_US
+    internal var packageName: String = ""
 
     /**
      * Initializes the Datadog SDK.
@@ -67,6 +67,7 @@ object Datadog {
         check(!initialized) { "Datadog has already been initialized." }
 
         val appContext = context.applicationContext
+        packageName = context.packageName
         contextRef = WeakReference(appContext)
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(appContext)
@@ -101,13 +102,13 @@ object Datadog {
                 logStrategy.getLogReader().dropAllBatches()
                 sdkLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be deleted"
+                            "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
                 sdkLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be sent to $endpointUrl"
+                            "will now be sent to $endpointUrl"
                 )
             }
         }
@@ -144,8 +145,8 @@ object Datadog {
     private fun checkInitialized() {
         check(initialized) {
             "Datadog has not been initialized.\n" +
-                "Please add the following code in your application's onCreate() method:\n" +
-                "Datadog.initialized(context, \"CLIENT_TOKEN\");"
+                    "Please add the following code in your application's onCreate() method:\n" +
+                    "Datadog.initialized(context, \"CLIENT_TOKEN\");"
         }
     }
 

@@ -55,6 +55,7 @@ You can create a `Logger` instance using the dedicated builder, as follow:
             .setServiceName("com.example.app.android")
             .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(true)
+            .setLoggerName("name")
             .build();
 ```
 

@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import java.util.concurrent.CountDownLatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,6 +50,7 @@ internal class LoggerFullFeaturesTest {
     lateinit var fakeMessage: String
     lateinit var fakeUserAgent: String
     lateinit var fakeNetworkInfo: NetworkInfo
+    lateinit var fakeLoggerName: String
 
     @Mock
     lateinit var mockContext: Context
@@ -73,16 +75,10 @@ internal class LoggerFullFeaturesTest {
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
         fakeNetworkInfo = forge.getForgery()
+        fakeLoggerName = forge.anAlphabeticalString()
         whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
-        testedLogger = Logger.Builder()
-            .setServiceName(fakeServiceName)
-            .setLogcatLogsEnabled(true)
-            .setDatadogLogsEnabled(true)
-            .setNetworkInfoEnabled(true)
-            .withLogStrategy(mockLogStrategy)
-            .withNetworkInfoProvider(mockNetworkInfoProvider)
-            .build()
+        testedLogger = createLogger()
     }
 
     @BeforeEach
@@ -147,11 +143,47 @@ internal class LoggerFullFeaturesTest {
         verifyLogSideEffects(AndroidLog.ASSERT, "A")
     }
 
+    @Test
+    fun `thread name will be the name of the thread from which the logger was built`(forge: Forge) {
+        val loggerCreateThreadName = forge.anAlphabeticalString(size = 10)
+        val logSendThreadName = loggerCreateThreadName + forge.anAlphaNumericalString(size = 5)
+        val countDownLatch = CountDownLatch(2)
+        var logger: Logger? = null
+        Thread({
+            logger = createLogger()
+            countDownLatch.countDown()
+            Thread({
+                logger?.e(fakeMessage)
+                countDownLatch.countDown()
+            }, logSendThreadName).start()
+        }, loggerCreateThreadName).start()
+
+        countDownLatch.await()
+
+        verifyLogSideEffects(AndroidLog.ERROR, "E", logSendThreadName)
+    }
+
     // endregion
 
     // region Internal
 
-    private fun verifyLogSideEffects(level: Int, logCatPrefix: String) {
+    private fun createLogger(): Logger {
+        return Logger.Builder()
+            .setServiceName(fakeServiceName)
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
+            .setNetworkInfoEnabled(true)
+            .setLoggerName(fakeLoggerName)
+            .withLogStrategy(mockLogStrategy)
+            .withNetworkInfoProvider(mockNetworkInfoProvider)
+            .build()
+    }
+
+    private fun verifyLogSideEffects(
+        level: Int,
+        logCatPrefix: String,
+        threadName: String = Thread.currentThread().name
+    ) {
         val timestamp = System.currentTimeMillis()
 
         assertThat(outStreamContent.toString())
@@ -167,6 +199,8 @@ internal class LoggerFullFeaturesTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(timestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasLoggerName(fakeLoggerName)
+                .hasThreadName(threadName)
         }
     }
 

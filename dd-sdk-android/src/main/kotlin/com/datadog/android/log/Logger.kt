@@ -31,6 +31,7 @@ private constructor(
     val serviceName: String,
     val datadogLogsEnabled: Boolean,
     val logcatLogsEnabled: Boolean,
+    val loggerName: String,
     private val logWriter: LogWriter,
     internal val networkInfoProvider: NetworkInfoProvider?
 ) {
@@ -122,6 +123,7 @@ private constructor(
 
         private var logStrategy: LogStrategy? = null
         private var networkInfoProvider: NetworkInfoProvider? = null
+        private var loggerName: String = Datadog.packageName
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -133,6 +135,7 @@ private constructor(
                 serviceName = serviceName,
                 datadogLogsEnabled = datadogLogsEnabled,
                 logcatLogsEnabled = logcatLogsEnabled,
+                loggerName = loggerName,
                 networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
                     networkInfoProvider ?: Datadog.getNetworkInfoProvider()
                 } else null
@@ -182,6 +185,15 @@ private constructor(
          */
         fun setNetworkInfoEnabled(enabled: Boolean): Builder {
             networkInfoEnabled = enabled
+            return this
+        }
+
+        /**
+         * Sets the logger name that will appear in your logs when a throwable is attached.
+         * @param name the logger custom name (default = application package name)
+         */
+        fun setLoggerName(name: String): Builder {
+            loggerName = name
             return this
         }
 
@@ -366,7 +378,9 @@ private constructor(
             throwable = throwable,
             attributes = attributes.toMap(),
             tags = tags.toList(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfos()
+            networkInfo = networkInfoProvider?.getLatestNetworkInfos(),
+            loggerName = loggerName,
+            threadName = Thread.currentThread().name
         )
     }
 

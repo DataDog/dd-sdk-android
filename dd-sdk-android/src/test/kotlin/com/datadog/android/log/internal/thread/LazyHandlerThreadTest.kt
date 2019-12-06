@@ -108,26 +108,20 @@ internal class LazyHandlerThreadTest {
 
     @Test
     fun `when looper ready in second thread the messages will be consumed in order`() {
-        val thread1 = Thread()
         val countDownLatch = CountDownLatch(2)
-        val thread2 = Thread()
+        val thread1 = Thread {
+            underTest.post(mockRunnable1)
+            underTest.post(mockRunnable2)
+            countDownLatch.countDown()
+        }
+        val thread2 = Thread {
+            underTest.accessMethod("onLooperPrepared")
+            underTest.post(mockRunnable3)
+            countDownLatch.countDown()
+        }
         // when
-        thread1.apply {
-            start()
-            run {
-                underTest.post(mockRunnable1)
-                underTest.post(mockRunnable2)
-                countDownLatch.countDown()
-            }
-        }
-        thread2.apply {
-            start()
-            run {
-                underTest.accessMethod("onLooperPrepared")
-                underTest.post(mockRunnable3)
-                countDownLatch.countDown()
-            }
-        }
+        thread1.start()
+        thread2.start()
         countDownLatch.await()
 
         // then

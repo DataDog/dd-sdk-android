@@ -17,14 +17,12 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -42,15 +40,16 @@ internal class LoggerBuilderTest {
     @Mock
     lateinit var mockContext: Context
 
-    @TempDir
-    lateinit var tempDir: File
+    lateinit var packageName: String
 
     @BeforeEach
     fun `set up Datadog`(forge: Forge) {
+        packageName = forge.anAlphabeticalString()
         val mockContext: Context = mock()
         val mockConnectivityMgr: ConnectivityManager = mock()
         val mockNetworkInfo: NetworkInfo = mock()
         whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockContext.packageName) doReturn packageName
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
         whenever(mockConnectivityMgr.activeNetworkInfo) doReturn mockNetworkInfo
@@ -73,6 +72,7 @@ internal class LoggerBuilderTest {
         assertThat(logger.datadogLogsEnabled).isTrue()
         assertThat(logger.logcatLogsEnabled).isFalse()
         assertThat(logger.networkInfoProvider).isNull()
+        assertThat(logger.loggerName).isEqualTo(packageName)
     }
 
     @Test
@@ -122,5 +122,16 @@ internal class LoggerBuilderTest {
         } else {
             assertThat(logger.networkInfoProvider).isNull()
         }
+    }
+
+    @Test
+    fun `buider can set the logger name`(@Forgery forge: Forge) {
+        val loggerName = forge.anAlphabeticalString()
+
+        val logger = Logger.Builder()
+            .setLoggerName(loggerName)
+            .build()
+
+        assertThat(logger.loggerName).isEqualTo(loggerName)
     }
 }

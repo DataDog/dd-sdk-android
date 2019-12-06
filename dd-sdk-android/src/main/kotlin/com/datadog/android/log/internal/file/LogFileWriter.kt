@@ -84,6 +84,24 @@ internal class LogFileWriter(
         jsonLog.addProperty(LogStrategy.TAG_DATE, formattedDate)
 
         // Network Infos
+        addLogNetworkInfo(log, jsonLog)
+
+        // Custom Attributes
+        addLogAttributes(log, jsonLog)
+
+        // Tags
+        addLogTags(log, jsonLog)
+
+        // Throwable
+        addLogThrowable(log, jsonLog)
+
+        return jsonLog.toString()
+    }
+
+    private fun addLogNetworkInfo(
+        log: Log,
+        jsonLog: JsonObject
+    ) {
         val info = log.networkInfo
         if (info != null) {
             val network = JsonObject()
@@ -96,8 +114,35 @@ internal class LogFileWriter(
             }
             jsonLog.add(LogStrategy.TAG_NETWORK, network)
         }
+    }
 
-        // Custom Attributes
+    private fun addLogThrowable(
+        log: Log,
+        jsonLog: JsonObject
+    ) {
+        log.throwable?.let {
+            jsonLog.addProperty(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
+            jsonLog.addProperty(LogStrategy.TAG_THREAD_NAME, log.threadName)
+            val sw = StringWriter()
+            it.printStackTrace(PrintWriter(sw))
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_KIND, it.javaClass.simpleName)
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_MESSAGE, it.message)
+            jsonLog.addProperty(LogStrategy.TAG_ERROR_STACK, sw.toString())
+        }
+    }
+
+    private fun addLogTags(
+        log: Log,
+        jsonLog: JsonObject
+    ) {
+        val tags = log.tags.joinToString(",")
+        jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
+    }
+
+    private fun addLogAttributes(
+        log: Log,
+        jsonLog: JsonObject
+    ) {
         log.attributes
             .filter { it.key.isNotBlank() && it.key !in LogStrategy.reservedAttributes }
             .forEach {
@@ -114,21 +159,6 @@ internal class LogFileWriter(
                 }
                 jsonLog.add(it.key, jsonValue)
             }
-
-        // Tags
-        val tags = log.tags.joinToString(",")
-        jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
-
-        // Throwable
-        log.throwable?.let {
-            val sw = StringWriter()
-            it.printStackTrace(PrintWriter(sw))
-            jsonLog.addProperty(LogStrategy.TAG_ERROR_KIND, it.javaClass.simpleName)
-            jsonLog.addProperty(LogStrategy.TAG_ERROR_MESSAGE, it.message)
-            jsonLog.addProperty(LogStrategy.TAG_ERROR_STACK, sw.toString())
-        }
-
-        return jsonLog.toString()
     }
 
     private fun obfuscateAndWriteLog(strLog: String) {

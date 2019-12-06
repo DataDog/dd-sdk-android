@@ -56,7 +56,6 @@ class LogApiBenchmark {
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
-            .setTimestampsEnabled(true)
             .setNetworkInfoEnabled(true)
             .build()
     }
