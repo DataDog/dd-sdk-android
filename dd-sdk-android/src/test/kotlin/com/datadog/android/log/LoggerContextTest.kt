@@ -16,7 +16,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,7 +46,7 @@ internal class LoggerContextTest {
     lateinit var mockLogWriter: LogWriter
 
     @BeforeEach
-    fun `set up logger`(forge: Forge) {
+    fun `set up logger`() {
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
 
         testedLogger = Logger.Builder()
@@ -331,153 +330,9 @@ internal class LoggerContextTest {
         }
     }
 
-    @Test
-    fun `ignore invalid tag - start with a letter`(forge: Forge) {
-        val key = forge.aStringMatching("\\d[a-z]+")
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(key, value)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
-    @Test
-    fun `replace illegal characters`(forge: Forge) {
-        val validPart = forge.anAlphabeticalString(size = 3)
-        val invalidPart = forge.aString {
-            anElementFrom(
-                ',', '?', '%', '(', ')', '[', ']', '{', '}',
-                '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u0020'
-            )
-        }
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag("$validPart$invalidPart", value)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            val converted = '_' * invalidPart.length
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .containsExactly("$validPart$converted:$value")
-        }
-    }
-
-    @Test
-    fun `convert uppercase to lowercase`(forge: Forge) {
-        val key = forge.anAlphabeticalString(case = Case.UPPER)
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(key, value)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            val converted = key.toLowerCase()
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .containsExactly("$converted:$value")
-        }
-    }
-
-    @Test
-    fun `trim tags over 200 characters`(forge: Forge) {
-        val tag = forge.anAlphabeticalString(size = forge.aSmallInt() + 200)
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(tag)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            val trimmed = tag.substring(0, 200)
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .containsExactly(trimmed)
-        }
-    }
-
-    @Test
-    fun `trim tags ending with a colon`(forge: Forge) {
-        val tag = forge.anAlphabeticalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag("$tag:")
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue)
-                .hasTags(listOf(tag))
-        }
-    }
-
-    @Test
-    fun `ignore reserved tag keys`(forge: Forge) {
-        val key = forge.anElementFrom(
-            "host", "device", "source", "service"
-        )
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(key, value)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
-    @Test
-    fun `ignore reserved tag keys (workaround 1)`(forge: Forge) {
-        val key = forge.anElementFrom(
-            "host", "device", "source", "service"
-        )
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag("$key:$value")
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
-    @Test
-    fun `ignore reserved tag keys (workaround 2)`(forge: Forge) {
-        val key = forge.randomizeCase(
-            forge.anElementFrom(
-                "host", "device", "source", "service"
-            )
-        )
-
-        val value = forge.aNumericalString()
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag("$key:$value")
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).writeLog(capture())
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
     // endregion
 
-    // region remove Tags
+    // region Remove Tags
 
     @Test
     fun `remove tag from logger`(forge: Forge) {
@@ -493,35 +348,6 @@ internal class LoggerContextTest {
             verify(mockLogWriter, times(2)).writeLog(capture())
             assertThat(firstValue)
                 .hasTags(listOf(tag))
-            assertThat(lastValue.tags)
-                .isEmpty()
-        }
-    }
-
-    @Test
-    fun `remove converted tag from logger`(forge: Forge) {
-        val validPart = forge.randomizeCase(forge.anAlphabeticalString(size = 10))
-        val invalidPart = forge.aString {
-            anElementFrom(
-                ',', '?', '%', '(', ')', '[', ']', '{', '}',
-                '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u0020'
-            )
-        }
-        val value = forge.aNumericalString()
-        val tag = "$validPart:$invalidPart:$value"
-
-        val message = forge.anAlphabeticalString()
-
-        testedLogger.addTag(tag)
-        testedLogger.i(message)
-        testedLogger.removeTag(tag)
-        testedLogger.i(message)
-
-        argumentCaptor<Log> {
-            val converted = '_' * invalidPart.length
-            verify(mockLogWriter, times(2)).writeLog(capture())
-            assertThat(firstValue)
-                .hasTags(listOf("${validPart.toLowerCase()}:$converted:$value"))
             assertThat(lastValue.tags)
                 .isEmpty()
         }
@@ -572,16 +398,4 @@ internal class LoggerContextTest {
     }
 
     // endregion
-}
-
-private operator fun Char.times(i: Int): String {
-    check(i >= 0) { "Can't repeat character negative times " }
-    return String(CharArray(i) { this })
-}
-
-private fun Forge.randomizeCase(string: String): String {
-    return string.toCharArray().joinToString("") {
-        val s = it.toString()
-        if (aBool()) s.toLowerCase() else s.toUpperCase()
-    }
 }

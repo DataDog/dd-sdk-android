@@ -310,28 +310,5 @@ internal class DatadogLogConstraintsTest {
         }
     }
 
-    @Test
-    fun `limit attribute value to 1024 character`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
-        val attributes = forge.aList(300) { anAlphabeticalString() to anInt() }.toMap()
-        val firstAttributes = attributes.toList().take(256).toMap()
-
-        val result = testedConstraints.validateAttributes(attributes)
-
-        val discardedCount = attributes.size - 256
-        assertThat(result)
-            .hasSize(256)
-            .containsAllEntriesOf(firstAttributes)
-        if (BuildConfig.DEBUG) {
-            assertThat(outputStream.lastLine())
-                .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: too many attributes were added, " +
-                        "$discardedCount had to be discarded."
-                )
-        }
-    }
-
     // endregion
 }

@@ -13,6 +13,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.constraints.LogConstraints
 import com.datadog.android.log.internal.thread.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.google.gson.JsonNull
@@ -30,6 +31,7 @@ import java.util.Locale
 
 internal class LogFileWriter(
     private val fileOrchestrator: FileOrchestrator,
+    private val logConstraints: LogConstraints,
     rootDirectory: File
 ) : LazyHandlerThread(THREAD_NAME), LogWriter {
 
@@ -135,7 +137,8 @@ internal class LogFileWriter(
         log: Log,
         jsonLog: JsonObject
     ) {
-        val tags = log.tags.joinToString(",")
+        val tags = logConstraints.validateTags(log.tags)
+            .joinToString(",")
         jsonLog.addProperty(LogStrategy.TAG_DATADOG_TAGS, tags)
     }
 
@@ -143,7 +146,7 @@ internal class LogFileWriter(
         log: Log,
         jsonLog: JsonObject
     ) {
-        log.attributes
+        logConstraints.validateAttributes(log.attributes)
             .filter { it.key.isNotBlank() && it.key !in LogStrategy.reservedAttributes }
             .forEach {
                 val value = it.value
