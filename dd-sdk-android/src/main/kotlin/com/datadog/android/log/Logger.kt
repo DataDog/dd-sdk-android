@@ -189,7 +189,7 @@ private constructor(
         }
 
         /**
-         * Use this if you want to set a custom name for this logger.
+         * Sets the logger name that will appear in your logs when a throwable is attached.
          * @param name the logger custom name (default = application package name)
          */
         fun setLoggerName(name: String): Builder {

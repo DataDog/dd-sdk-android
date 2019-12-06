@@ -46,7 +46,7 @@ object Datadog {
     private lateinit var logStrategy: LogStrategy
     private lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
-    private var contextRef: WeakReference<Context> = WeakReference<Context>(null)
+    private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
     internal var packageName: String = ""
 

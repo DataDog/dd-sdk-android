@@ -144,17 +144,23 @@ internal class LoggerFullFeaturesTest {
     }
 
     @Test
-    fun `the thread name will be the name of the thread from which the logger was built`() {
-        val countDownLatch = CountDownLatch(1)
-        var logger: Logger
-        Thread().start().run {
+    fun `thread name will be the name of the thread from which the logger was built`(forge: Forge) {
+        val loggerCreateThreadName = forge.anAlphabeticalString(size = 10)
+        val logSendThreadName = loggerCreateThreadName + forge.anAlphaNumericalString(size = 5)
+        val countDownLatch = CountDownLatch(2)
+        var logger: Logger? = null
+        Thread({
             logger = createLogger()
             countDownLatch.countDown()
-        }
+        }, loggerCreateThreadName).start()
+        Thread({
+            logger?.e(fakeMessage)
+            countDownLatch.countDown()
+        }, logSendThreadName).start()
+
         countDownLatch.await()
 
-        logger.e(fakeMessage)
-        verifyLogSideEffects(AndroidLog.ERROR, "E")
+        verifyLogSideEffects(AndroidLog.ERROR, "E", logSendThreadName)
     }
 
     // endregion
@@ -173,7 +179,11 @@ internal class LoggerFullFeaturesTest {
             .build()
     }
 
-    private fun verifyLogSideEffects(level: Int, logCatPrefix: String) {
+    private fun verifyLogSideEffects(
+        level: Int,
+        logCatPrefix: String,
+        threadName: String = Thread.currentThread().name
+    ) {
         val timestamp = System.currentTimeMillis()
 
         assertThat(outStreamContent.toString())
@@ -190,7 +200,7 @@ internal class LoggerFullFeaturesTest {
                 .hasTimestamp(timestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasLoggerName(fakeLoggerName)
-                .hasThreadName(Thread.currentThread().name)
+                .hasThreadName(threadName)
         }
     }
 
