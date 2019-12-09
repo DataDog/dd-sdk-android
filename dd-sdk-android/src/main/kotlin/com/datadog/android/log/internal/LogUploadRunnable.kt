@@ -18,12 +18,12 @@ internal class LogUploadRunnable(
 ) : Runnable {
 
     private val attemptsCount = mutableMapOf<String, Int>()
+    private var currentDelayInterval = MAX_DELAY_MS
 
     //  region Runnable
 
     override fun run() {
         val batch = logReader.readNextBatch()
-
         if (batch != null) {
             val batchId = batch.id
             sdkLogger.i("$TAG: Sending batch $batchId")
@@ -31,11 +31,13 @@ internal class LogUploadRunnable(
             if (shouldDropBatch(batchId, status)) {
                 logReader.dropBatch(batchId)
             }
+            currentDelayInterval = resolveInterval()
+            handler.postDelayed(this, currentDelayInterval)
         } else {
             sdkLogger.i("$TAG: There was no batch to be sent")
+            currentDelayInterval = MAX_DELAY_MS
+            handler.removeCallbacks(this)
         }
-
-        handler.postDelayed(this, DELAY_MS)
     }
 
     // endregion
@@ -55,6 +57,10 @@ internal class LogUploadRunnable(
         return shouldDropBatch
     }
 
+    private fun resolveInterval(): Long {
+        return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
+    }
+
     // endregion
 
     companion object {
@@ -63,7 +69,9 @@ internal class LogUploadRunnable(
             LogUploadStatus.HTTP_SERVER_ERROR to 3
         )
 
-        const val DELAY_MS = 5000L
+        const val MAX_DELAY_MS = 5000L // 5 seconds
+        const val MIN_DELAY_MS = 1000L // 1 second
+        const val DELAY_PERCENT = 90 // as 90 percent of
         val TAG = "LogUploadRunnable"
     }
 }
