@@ -11,7 +11,7 @@ object Dependencies {
     object Versions {
         // Commons
         const val Kotlin = "1.3.61"
-        const val AndroidToolsPlugin = "3.5.2"
+        const val AndroidToolsPlugin = "3.5.3"
         const val Gson = "2.8.6"
         const val OkHttp = "4.2.2"
 
