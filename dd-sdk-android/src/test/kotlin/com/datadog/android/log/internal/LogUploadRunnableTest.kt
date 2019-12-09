@@ -11,6 +11,8 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
@@ -23,7 +25,9 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
@@ -51,12 +55,44 @@ internal class LogUploadRunnableTest {
     lateinit var mockLogReader: LogReader
     @Mock
     lateinit var mockLogUploader: LogUploader
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     lateinit var testedRunnable: LogUploadRunnable
 
     @BeforeEach
-    fun `set up`() {
-        testedRunnable = LogUploadRunnable(mockHandler, mockLogReader, mockLogUploader)
+    fun `set up`(forge: Forge) {
+        val fakeNetworkInfo = NetworkInfo(
+            connectivity = forge.anElementFrom(
+                NetworkInfo.Connectivity.NETWORK_WIFI,
+                NetworkInfo.Connectivity.NETWORK_2G,
+                NetworkInfo.Connectivity.NETWORK_3G,
+                NetworkInfo.Connectivity.NETWORK_4G,
+                NetworkInfo.Connectivity.NETWORK_5G,
+                NetworkInfo.Connectivity.NETWORK_OTHER,
+                NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER
+            )
+        )
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
+
+        testedRunnable = LogUploadRunnable(
+            mockHandler,
+            mockLogReader,
+            mockLogUploader,
+            mockNetworkInfoProvider
+        )
+    }
+
+    @Test
+    fun `doesn't send batch when offline`(@Forgery batch: Batch) {
+        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn networkInfo
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockLogUploader, never()).uploadLogs(batch.logs)
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
@@ -100,17 +136,19 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on third Network Error`(@Forgery batch: Batch) {
+    fun `batch kept after n Network Error`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 3, max = 42) runCount: Int
+    ) {
         whenever(mockLogReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
-        testedRunnable.run()
-        testedRunnable.run()
-        testedRunnable.run()
-
-        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
-        verify(mockLogReader).dropBatch(batch.id)
-        verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
+        for (i in 0 until runCount) {
+            testedRunnable.run()
+        }
+        verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
@@ -150,17 +188,20 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on third Server Error`(@Forgery batch: Batch) {
+    fun `batch kept after n Server Error`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 3, max = 42) runCount: Int
+    ) {
         whenever(mockLogReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
-        testedRunnable.run()
-        testedRunnable.run()
-        testedRunnable.run()
+        for (i in 0 until runCount) {
+            testedRunnable.run()
+        }
 
-        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
-        verify(mockLogReader).dropBatch(batch.id)
-        verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
+        verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test

@@ -9,30 +9,40 @@ package com.datadog.android.log.internal
 import android.os.Handler
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class LogUploadRunnable(
     private val handler: Handler,
     private val logReader: LogReader,
-    private val logUploader: LogUploader
+    private val logUploader: LogUploader,
+    private val networkInfoProvider: NetworkInfoProvider
 ) : UploadRunnable {
 
-    private val attemptsCount = mutableMapOf<String, Int>()
     private var currentDelayInterval = DEFAULT_DELAY
     private val isDelayed: AtomicBoolean = AtomicBoolean(false)
 
     //  region Runnable
 
     override fun run() {
+        val networkInfo = networkInfoProvider.getLatestNetworkInfos()
         isDelayed.set(false)
-        val batch = logReader.readNextBatch()
+        val batch =
+            if (networkInfo.connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED) {
+                logReader.readNextBatch()
+            } else null
         if (batch != null) {
             consumeBatch(batch)
         } else {
             delayTheRunnable()
         }
     }
+
+    // endregion
+
+    // region Internal
 
     private fun delayTheRunnable() {
         sdkLogger.i("$TAG: There was no batch to be sent")
@@ -46,28 +56,11 @@ internal class LogUploadRunnable(
         val batchId = batch.id
         sdkLogger.i("$TAG: Sending batch $batchId")
         val status = logUploader.uploadLogs(batch.logs)
-        if (shouldDropBatch(batchId, status)) {
+        if (status in dropableBatchStatus) {
             logReader.dropBatch(batchId)
         }
         currentDelayInterval = decreaseInterval()
         handler.postDelayed(this, currentDelayInterval)
-    }
-
-    // endregion
-
-    // region Internal
-
-    private fun shouldDropBatch(batchId: String, status: LogUploadStatus): Boolean {
-        val maxAttempts = maxAttemptsMap[status] ?: 1
-        val attemptCount = (attemptsCount[batchId] ?: 0) + 1
-
-        val shouldDropBatch = attemptCount >= maxAttempts
-        if (shouldDropBatch) {
-            attemptsCount.remove(batchId)
-        } else {
-            attemptsCount[batchId] = attemptCount
-        }
-        return shouldDropBatch
     }
 
     private fun decreaseInterval(): Long {
@@ -77,9 +70,12 @@ internal class LogUploadRunnable(
     // endregion
 
     companion object {
-        private val maxAttemptsMap = mapOf(
-            LogUploadStatus.NETWORK_ERROR to 3,
-            LogUploadStatus.HTTP_SERVER_ERROR to 3
+
+        private val dropableBatchStatus = setOf(
+            LogUploadStatus.SUCCESS,
+            LogUploadStatus.HTTP_REDIRECTION,
+            LogUploadStatus.HTTP_CLIENT_ERROR,
+            LogUploadStatus.UNKNOWN_ERROR
         )
 
         const val DEFAULT_DELAY = 5000L // 5 seconds

@@ -85,6 +85,13 @@ object Datadog {
         timeProvider = DatadogTimeProvider(appContext)
         val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
 
+        // Register Broadcast Receiver
+        // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
+        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
+            register(appContext)
+        }
+        networkInfoProvider = broadcastReceiver
+
         // Start handler to send logs
         uploader = LogOkHttpUploader(
             endpointUrl ?: DATADOG_US,
@@ -96,17 +103,10 @@ object Datadog {
         )
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
-            uploader
+            uploader,
+            broadcastReceiver
         )
         handlerThread.start()
-
-        // Register Broadcast Receiver
-        // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
-        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
-            register(appContext)
-        }
-
-        networkInfoProvider = broadcastReceiver
 
         initialized = true
     }
