@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.file
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.constraints.NoOpLogConstraints
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -50,7 +51,7 @@ internal class LogFileWriterInvalidTest {
         logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         logsDir.writeText(I_LIED)
 
-        testedFileWriter = LogFileWriter(mockFileOrchestrator, logsDir)
+        testedFileWriter = LogFileWriter(mockFileOrchestrator, NoOpLogConstraints(), logsDir)
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())
                 .withFailMessage("We were expecting a log error message")

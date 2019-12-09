@@ -15,7 +15,6 @@ import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.file.DummyLogWriter
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.util.Date
-import java.util.Locale
 
 /**
  * A class enabling Datadog logging features.
@@ -335,12 +334,9 @@ private constructor(
      * @param key the key of the tags to remove
      */
     fun removeTagsWithKey(key: String) {
-        val convertedKey = convertTag(key)
-        if (convertedKey != null) {
-            val prefix = "$key:"
-            tags.removeAll {
-                it.startsWith(prefix)
-            }
+        val prefix = "$key:"
+        tags.removeAll {
+            it.startsWith(prefix)
         }
     }
 
@@ -389,65 +385,11 @@ private constructor(
     // region Internal/Tag
 
     private fun addTagInternal(tag: String) {
-        val convertedTag = convertTag(tag)
-        if (convertedTag != null) {
-            // TODO RUMM-49 warn if tag value was modified automatically
-            if (isKeyValid(convertedTag)) {
-                tags.add(convertedTag)
-            } else {
-                // TODO RUMM-49 warn that tag key is reserved
-                // Do nothing
-            }
-        } else {
-            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
-            // Do nothing
-        }
+        tags.add(tag)
     }
 
     private fun removeTagInternal(tag: String) {
-        val convertedTag = convertTag(tag)
-        if (convertedTag != null) {
-            tags.remove(convertedTag)
-        } else {
-            // TODO RUMM-49 print warning that the tag is illegal and cannot be converted
-            // Do nothing
-        }
-    }
-
-    private fun convertTag(tag: String): String? {
-        val lowerCaseTag = tag.toLowerCase(Locale.US)
-        // Tags must start with a letter
-        return if (lowerCaseTag[0] !in 'a'..'z') {
-            null
-        } else {
-            // Tag can only contain Alphanumerics, Underscores, Minuses, Colons, Periods, Slashes
-            // Other special characters are converted to underscores
-            val valid = lowerCaseTag.replace(Regex("[^a-z0-9_:./-]"), "_")
-
-            // Tags can be up to 200 characters long
-            val resized = if (valid.length <= MAX_TAG_LENGTH) {
-                valid
-            } else {
-                valid.substring(0, MAX_TAG_LENGTH)
-            }
-
-            // A tag cannot end with a colon, for example tag:
-            if (resized.endsWith(':')) {
-                resized.substring(0, resized.lastIndex)
-            } else {
-                resized
-            }
-        }
-    }
-
-    private fun isKeyValid(tag: String): Boolean {
-        val firstColon = tag.indexOf(':')
-        return if (firstColon > 0) {
-            val key = tag.substring(0, firstColon)
-            key !in reservedTagKeys
-        } else {
-            true
-        }
+        tags.remove(tag)
     }
 
     // endregion
@@ -455,12 +397,6 @@ private constructor(
     companion object {
 
         internal const val DEFAULT_SERVICE_NAME = "android"
-
-        private const val MAX_TAG_LENGTH = 200
-
-        private val reservedTagKeys = setOf(
-            "host", "device", "source", "service"
-        )
 
         private val levelPrefixes = mapOf(
             AndroidLog.VERBOSE to "V",

@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import java.io.File
 
 internal class LogFileStrategy(
@@ -50,7 +51,7 @@ internal class LogFileStrategy(
     // region LogPersistingStrategy
 
     override fun getLogWriter(): LogWriter {
-        return LogFileWriter(fileOrchestrator, rootDir)
+        return LogFileWriter(fileOrchestrator, DatadogLogConstraints(), rootDir)
     }
 
     override fun getLogReader(): LogReader {
