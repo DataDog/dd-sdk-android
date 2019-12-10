@@ -13,6 +13,8 @@ import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.system.SystemInfo
+import com.datadog.android.log.internal.system.SystemInfoProvider
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
@@ -39,13 +41,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(SystemOutputExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class LogUploadRunnableTest {
 
@@ -57,24 +60,32 @@ internal class LogUploadRunnableTest {
     lateinit var mockLogUploader: LogUploader
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockSystemInfoProvider: SystemInfoProvider
 
     lateinit var testedRunnable: LogUploadRunnable
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         val fakeNetworkInfo = NetworkInfo(
-            connectivity = forge.aValueFrom(
+            forge.aValueFrom(
                 enumClass = NetworkInfo.Connectivity::class.java,
                 exclude = listOf(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             )
         )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        val fakeSystemInfo = SystemInfo(
+            batteryStatus = forge.aValueFrom(SystemInfo.BatteryStatus::class.java),
+            batteryLevel = forge.anInt(20, 100)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         testedRunnable = LogUploadRunnable(
             mockHandler,
             mockLogReader,
             mockLogUploader,
-            mockNetworkInfoProvider
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
         )
     }
 
@@ -87,6 +98,46 @@ internal class LogUploadRunnableTest {
 
         verify(mockLogReader, never()).dropBatch(batch.id)
         verify(mockLogUploader, never()).uploadLogs(batch.logs)
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `doesn't send batch when battery is low and unplugged`(
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            forge.anElementFrom(
+                SystemInfo.BatteryStatus.DISCHARGING,
+                SystemInfo.BatteryStatus.NOT_CHARGING
+            ),
+            forge.anInt(1, 10)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockLogUploader, never()).uploadLogs(anyOrNull())
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `batch sent when battery is low and charging`(
+        @Forgery batch: Batch,
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            SystemInfo.BatteryStatus.CHARGING,
+            forge.anInt(1, 10)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 

@@ -11,6 +11,8 @@ import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.system.SystemInfo
+import com.datadog.android.log.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -18,7 +20,8 @@ internal class LogUploadRunnable(
     private val handler: Handler,
     private val logReader: LogReader,
     private val logUploader: LogUploader,
-    private val networkInfoProvider: NetworkInfoProvider
+    private val networkInfoProvider: NetworkInfoProvider,
+    private val systemInfoProvider: SystemInfoProvider
 ) : UploadRunnable {
 
     private var currentDelayInterval = DEFAULT_DELAY
@@ -27,10 +30,9 @@ internal class LogUploadRunnable(
     //  region Runnable
 
     override fun run() {
-        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
         isDelayed.set(false)
         val batch =
-            if (networkInfo.connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED) {
+            if (isNetworkAvailable() && isSystemReady()) {
                 logReader.readNextBatch()
             } else null
         if (batch != null) {
@@ -43,6 +45,18 @@ internal class LogUploadRunnable(
     // endregion
 
     // region Internal
+
+    private fun isNetworkAvailable(): Boolean {
+        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
+        return networkInfo.connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+    }
+
+    private fun isSystemReady(): Boolean {
+        val systemInfo = systemInfoProvider.getLatestSystemInfo()
+        val batteryFullOrCharging = systemInfo.batteryStatus in batteryFullOrChargingStatus
+        val batteryLevel = systemInfo.batteryLevel
+        return batteryFullOrCharging || batteryLevel > LOW_BATTERY_THRESHOLD
+    }
 
     private fun delayTheRunnable() {
         sdkLogger.i("$TAG: There was no batch to be sent")
@@ -77,6 +91,13 @@ internal class LogUploadRunnable(
             LogUploadStatus.HTTP_CLIENT_ERROR,
             LogUploadStatus.UNKNOWN_ERROR
         )
+
+        private val batteryFullOrChargingStatus = setOf(
+            SystemInfo.BatteryStatus.CHARGING,
+            SystemInfo.BatteryStatus.FULL
+        )
+
+        private const val LOW_BATTERY_THRESHOLD = 10
 
         const val DEFAULT_DELAY = 5000L // 5 seconds
         const val MIN_DELAY_MS = 1000L // 1 second

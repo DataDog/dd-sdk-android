@@ -8,9 +8,7 @@ package com.datadog.android.log.internal.system
 
 import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
 import android.os.BatteryManager
-import android.telephony.TelephonyManager
 import com.datadog.android.log.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.utils.extension.ApiLevelExtension

@@ -11,17 +11,20 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -104,9 +107,11 @@ internal class DatadogTest {
         Datadog.initialize(mockContext, fakeToken)
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockContext).registerReceiver(broadcastReceiverCaptor.capture(), any())
-        assertThat(broadcastReceiverCaptor.lastValue)
-            .isInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
+        verify(mockContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+
+        assertThat(broadcastReceiverCaptor.allValues)
+            .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
+            .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
     }
 
     @Test

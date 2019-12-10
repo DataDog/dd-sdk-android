@@ -19,6 +19,7 @@ import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
@@ -85,12 +86,15 @@ object Datadog {
         timeProvider = DatadogTimeProvider(appContext)
         val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
 
-        // Register Broadcast Receiver
+        // Register Broadcast Receivers
         // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
-        val broadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
+        val networkBroadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
             register(appContext)
         }
-        networkInfoProvider = broadcastReceiver
+        networkInfoProvider = networkBroadcastReceiver
+        val systemBroadcastReceiver = BroadcastReceiverSystemInfoProvider().apply {
+            register(appContext)
+        }
 
         // Start handler to send logs
         uploader = LogOkHttpUploader(
@@ -104,7 +108,8 @@ object Datadog {
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
             uploader,
-            broadcastReceiver
+            networkBroadcastReceiver,
+            systemBroadcastReceiver
         )
         handlerThread.start()
 
