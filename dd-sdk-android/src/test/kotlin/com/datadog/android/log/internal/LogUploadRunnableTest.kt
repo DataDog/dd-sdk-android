@@ -69,7 +69,7 @@ internal class LogUploadRunnableTest {
 
         verify(mockLogReader, never()).dropBatch(anyOrNull())
         verifyZeroInteractions(mockLogUploader)
-        verify(mockHandler, never()).postDelayed(same(testedRunnable), any())
+        verify(mockHandler).postDelayed(testedRunnable, LogUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
             assertThat(systemOutStream.toString().trim())
                 .withFailMessage("We were expecting an info log message here")
@@ -207,13 +207,15 @@ internal class LogUploadRunnableTest {
             .postDelayed(same(testedRunnable), captor.capture())
         captor.allValues.reduce { previous, next ->
             assertThat(next).isGreaterThanOrEqualTo(LogUploadRunnable.MIN_DELAY_MS)
-            assertThat(next).isLessThan(LogUploadRunnable.MAX_DELAY_MS)
+            assertThat(next).isLessThan(LogUploadRunnable.DEFAULT_DELAY)
             next
         }
     }
 
     @Test
-    fun `when it has no more batches to upload the handler will pause`(@Forgery batch: Batch) {
+    fun `when no more batches available the scheduler delay will be increased`(
+        @Forgery batch: Batch
+    ) {
         whenever(mockLogReader.readNextBatch())
             .doReturn(batch)
             .doReturn(null)
@@ -223,31 +225,14 @@ internal class LogUploadRunnableTest {
         }
 
         val captor = argumentCaptor<Long>()
-        verify(mockHandler, times(1))
-            .postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.lastValue).isLessThanOrEqualTo(LogUploadRunnable.MAX_DELAY_MS)
-        verify(mockHandler).removeCallbacks(same(testedRunnable))
-    }
-
-    @Test
-    fun `when new batch after pause the scheduler should start`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch())
-            .doReturn(batch)
-            .doReturn(null)
-            .doReturn(batch)
-
-        repeat(3) {
-            testedRunnable.run()
-        }
-
-        val captor = argumentCaptor<Long>()
         verify(mockHandler, times(2))
             .postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.firstValue).isEqualTo(captor.secondValue) // frequency should reset
+        verify(mockHandler).removeCallbacks(same(testedRunnable))
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY)
     }
 
     @Test
-    fun `it will resume from the producer if it was paused from the consumer`() {
+    fun `it will be re - scheduled with a default delay when new data available`() {
         whenever(mockLogReader.readNextBatch())
             .doReturn(null)
         val countDownLatch = CountDownLatch(2)
@@ -263,9 +248,14 @@ internal class LogUploadRunnableTest {
 
         val captor = argumentCaptor<Long>()
         val inOrder = inOrder(mockHandler)
-        inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
-        inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+        inOrder.verify(mockHandler).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler)
+            .postDelayed(same(testedRunnable), captor.capture())
+        inOrder.verify(mockHandler).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler)
+            .postDelayed(same(testedRunnable), captor.capture())
+        assertThat(captor.firstValue).isEqualTo(LogUploadRunnable.MAX_DELAY)
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.DEFAULT_DELAY)
     }
 
     @Test
@@ -287,9 +277,46 @@ internal class LogUploadRunnableTest {
 
         val captor = argumentCaptor<Long>()
         val inOrder = inOrder(mockHandler)
-        inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
-        inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+        inOrder.verify(mockHandler).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler)
+            .postDelayed(same(testedRunnable), captor.capture())
+        inOrder.verify(mockHandler).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler)
+            .postDelayed(same(testedRunnable), captor.capture())
+        assertThat(captor.firstValue).isEqualTo(LogUploadRunnable.MAX_DELAY)
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.DEFAULT_DELAY)
+    }
+
+    @Test
+    fun `if notified while already resuming it will only schedule and run once`(
+        @Forgery batch: Batch
+    ) {
+        whenever(mockLogReader.readNextBatch())
+            .doReturn(null)
+            .doReturn(batch)
+        val countDownLatch = CountDownLatch(2)
+        // put it in max delay
+        testedRunnable.run()
+
+        Thread {
+            testedRunnable.run()
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            Thread.sleep(50)
+            testedRunnable.onDataAdded()
+            countDownLatch.countDown()
+        }.start()
+        countDownLatch.await()
+
+        val captor = argumentCaptor<Long>()
+        val inOrder = inOrder(mockHandler)
+        inOrder.verify(mockHandler).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler, times(2))
+            .postDelayed(same(testedRunnable), captor.capture())
+        inOrder.verifyNoMoreInteractions()
+        assertThat(captor.firstValue).isEqualTo(LogUploadRunnable.MAX_DELAY)
+        assertThat(captor.lastValue).isLessThan(LogUploadRunnable.DEFAULT_DELAY)
     }
 
     @Test

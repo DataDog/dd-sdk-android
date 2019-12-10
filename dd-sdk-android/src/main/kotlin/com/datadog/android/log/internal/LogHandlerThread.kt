@@ -26,7 +26,7 @@ internal class LogHandlerThread(
         handler = Handler(looper)
         val runnable = runnableFactory(handler)
         logWriter.setCallback(runnable)
-        handler.postDelayed(runnable, LogUploadRunnable.MAX_DELAY_MS)
+        handler.postDelayed(runnable, LogUploadRunnable.DEFAULT_DELAY)
     }
 
     companion object {

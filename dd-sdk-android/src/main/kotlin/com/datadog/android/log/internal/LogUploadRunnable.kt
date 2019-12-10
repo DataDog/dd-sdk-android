@@ -19,25 +19,27 @@ internal class LogUploadRunnable(
 ) : UploadRunnable {
 
     private val attemptsCount = mutableMapOf<String, Int>()
-    private var currentDelayInterval = MAX_DELAY_MS
-    private val isPaused: AtomicBoolean = AtomicBoolean(false)
+    private var currentDelayInterval = DEFAULT_DELAY
+    private val isDelayed: AtomicBoolean = AtomicBoolean(false)
 
     //  region Runnable
 
     override fun run() {
+        isDelayed.set(false)
         val batch = logReader.readNextBatch()
         if (batch != null) {
             consumeBatch(batch)
         } else {
-            pauseTheRunnable()
+            delayTheRunnable()
         }
     }
 
-    private fun pauseTheRunnable() {
+    private fun delayTheRunnable() {
         sdkLogger.i("$TAG: There was no batch to be sent")
-        currentDelayInterval = MAX_DELAY_MS
+        currentDelayInterval = DEFAULT_DELAY
         handler.removeCallbacks(this)
-        isPaused.set(true)
+        isDelayed.set(true)
+        handler.postDelayed(this, MAX_DELAY)
     }
 
     private fun consumeBatch(batch: Batch) {
@@ -64,9 +66,9 @@ internal class LogUploadRunnable(
     // region Internal
 
     private fun resume() {
-        if (isPaused.compareAndSet(true, false)) {
+        if (isDelayed.compareAndSet(true, false)) {
             handler.removeCallbacks(this) // we want to make sure we removed everything
-            handler.postDelayed(this, MAX_DELAY_MS)
+            handler.postDelayed(this, DEFAULT_DELAY)
         }
     }
 
@@ -96,8 +98,9 @@ internal class LogUploadRunnable(
             LogUploadStatus.HTTP_SERVER_ERROR to 3
         )
 
-        const val MAX_DELAY_MS = 5000L // 5 seconds
+        const val DEFAULT_DELAY = 5000L // 5 seconds
         const val MIN_DELAY_MS = 1000L // 1 second
+        const val MAX_DELAY = DEFAULT_DELAY * 4 // 20 seconds
         const val DELAY_PERCENT = 90 // as 90 percent of
         val TAG = "LogUploadRunnable"
     }
