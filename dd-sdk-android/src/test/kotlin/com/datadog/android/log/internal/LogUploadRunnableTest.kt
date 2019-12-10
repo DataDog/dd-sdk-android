@@ -213,7 +213,7 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `when we had and no more batches the upload the handler will pause`(@Forgery batch: Batch) {
+    fun `when it has no more batches to upload the handler will pause`(@Forgery batch: Batch) {
         whenever(mockLogReader.readNextBatch())
             .doReturn(batch)
             .doReturn(null)
@@ -265,7 +265,7 @@ internal class LogUploadRunnableTest {
         val inOrder = inOrder(mockHandler)
         inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
         inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.lastValue).isLessThanOrEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY_MS)
     }
 
     @Test
@@ -289,7 +289,7 @@ internal class LogUploadRunnableTest {
         val inOrder = inOrder(mockHandler)
         inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
         inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
-        assertThat(captor.lastValue).isLessThanOrEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY_MS)
     }
 
     @Test

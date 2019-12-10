@@ -27,21 +27,33 @@ internal class LogUploadRunnable(
     override fun run() {
         val batch = logReader.readNextBatch()
         if (batch != null) {
-            val batchId = batch.id
-            sdkLogger.i("$TAG: Sending batch $batchId")
-            val status = logUploader.uploadLogs(batch.logs)
-            if (shouldDropBatch(batchId, status)) {
-                logReader.dropBatch(batchId)
-            }
-            currentDelayInterval = resolveInterval()
-            handler.postDelayed(this, currentDelayInterval)
+            consumeBatch(batch)
         } else {
-            sdkLogger.i("$TAG: There was no batch to be sent")
-            currentDelayInterval = MAX_DELAY_MS
-            handler.removeCallbacks(this)
-            isPaused.set(true)
+            pauseTheRunnable()
         }
     }
+
+    private fun pauseTheRunnable() {
+        sdkLogger.i("$TAG: There was no batch to be sent")
+        currentDelayInterval = MAX_DELAY_MS
+        handler.removeCallbacks(this)
+        isPaused.set(true)
+    }
+
+    private fun consumeBatch(batch: Batch) {
+        val batchId = batch.id
+        sdkLogger.i("$TAG: Sending batch $batchId")
+        val status = logUploader.uploadLogs(batch.logs)
+        if (shouldDropBatch(batchId, status)) {
+            logReader.dropBatch(batchId)
+        }
+        currentDelayInterval = decreaseInterval
+        handler.postDelayed(this, currentDelayInterval)
+    }
+
+    // endregion
+
+    // region DataStorageCallback
 
     override fun onDataAdded() {
         resume()
@@ -50,10 +62,11 @@ internal class LogUploadRunnable(
     // endregion
 
     // region Internal
+
     private fun resume() {
         if (isPaused.compareAndSet(true, false)) {
             handler.removeCallbacks(this) // we want to make sure we removed everything
-            handler.postDelayed(this, resolveInterval())
+            handler.postDelayed(this, MAX_DELAY_MS)
         }
     }
 
@@ -70,9 +83,10 @@ internal class LogUploadRunnable(
         return shouldDropBatch
     }
 
-    private fun resolveInterval(): Long {
-        return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
-    }
+    private val decreaseInterval: Long
+        get() {
+            return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
+        }
 
     // endregion
 
