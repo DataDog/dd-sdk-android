@@ -63,17 +63,12 @@ internal class LogUploadRunnableTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         val fakeNetworkInfo = NetworkInfo(
-            connectivity = forge.anElementFrom(
-                NetworkInfo.Connectivity.NETWORK_WIFI,
-                NetworkInfo.Connectivity.NETWORK_2G,
-                NetworkInfo.Connectivity.NETWORK_3G,
-                NetworkInfo.Connectivity.NETWORK_4G,
-                NetworkInfo.Connectivity.NETWORK_5G,
-                NetworkInfo.Connectivity.NETWORK_OTHER,
-                NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER
+            connectivity = forge.aValueFrom(
+                enumClass = NetworkInfo.Connectivity::class.java,
+                exclude = listOf(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             )
         )
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
 
         testedRunnable = LogUploadRunnable(
             mockHandler,
@@ -86,7 +81,7 @@ internal class LogUploadRunnableTest {
     @Test
     fun `doesn't send batch when offline`(@Forgery batch: Batch) {
         val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn networkInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
 
         testedRunnable.run()
 

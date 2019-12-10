@@ -7,5 +7,5 @@
 package com.datadog.android.log.internal.net
 
 internal interface NetworkInfoProvider {
-    fun getLatestNetworkInfos(): NetworkInfo
+    fun getLatestNetworkInfo(): NetworkInfo
 }

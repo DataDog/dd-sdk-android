@@ -27,7 +27,7 @@ internal class LogUploadRunnable(
     //  region Runnable
 
     override fun run() {
-        val networkInfo = networkInfoProvider.getLatestNetworkInfos()
+        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
         isDelayed.set(false)
         val batch =
             if (networkInfo.connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED) {

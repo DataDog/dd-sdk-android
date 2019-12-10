@@ -66,7 +66,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `initial state is not connected`() {
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
@@ -81,7 +81,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
 
         testedProvider.register(mockContext)
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
@@ -94,7 +94,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn null
         testedProvider.onReceive(mockContext, mockIntent)
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
@@ -106,7 +106,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     fun `not connected (connected but no internet)`() {
         broadcastNetworkChangeEvent(-1 /* @hide ConnectivityManager.TYPE_NONE*/)
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
@@ -118,7 +118,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     fun `connected to wifi`() {
         broadcastNetworkChangeEvent(ConnectivityManager.TYPE_WIFI)
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
@@ -135,7 +135,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
@@ -153,7 +153,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
@@ -170,7 +170,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
@@ -188,7 +188,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
@@ -205,7 +205,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
@@ -223,7 +223,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
@@ -240,7 +240,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
@@ -258,7 +258,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
@@ -275,7 +275,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
@@ -293,7 +293,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
@@ -311,7 +311,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             0
         )
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
@@ -323,7 +323,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     fun `connected to unknown network`(forge: Forge) {
         broadcastNetworkChangeEvent(forge.anInt(min = 6))
 
-        val networkInfo = testedProvider.getLatestNetworkInfos()
+        val networkInfo = testedProvider.getLatestNetworkInfo()
 
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)

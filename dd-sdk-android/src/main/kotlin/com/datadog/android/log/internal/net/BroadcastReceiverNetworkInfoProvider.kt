@@ -43,7 +43,7 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
     // region NetworkInfoProvider
 
-    override fun getLatestNetworkInfos(): NetworkInfo {
+    override fun getLatestNetworkInfo(): NetworkInfo {
         return networkInfo
     }
 

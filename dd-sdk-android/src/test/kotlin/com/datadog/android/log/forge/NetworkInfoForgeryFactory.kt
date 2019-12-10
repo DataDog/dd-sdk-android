@@ -14,16 +14,7 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
 
     override fun getForgery(forge: Forge): NetworkInfo {
         return NetworkInfo(
-            forge.anElementFrom(
-                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
-                NetworkInfo.Connectivity.NETWORK_WIFI,
-                NetworkInfo.Connectivity.NETWORK_2G,
-                NetworkInfo.Connectivity.NETWORK_3G,
-                NetworkInfo.Connectivity.NETWORK_4G,
-                NetworkInfo.Connectivity.NETWORK_5G,
-                NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-                NetworkInfo.Connectivity.NETWORK_OTHER
-            ),
+            forge.aValueFrom(NetworkInfo.Connectivity::class.java),
             forge.anElementFrom(
                 forge.anAlphabeticalString(),
                 forge.aWhitespaceString(),

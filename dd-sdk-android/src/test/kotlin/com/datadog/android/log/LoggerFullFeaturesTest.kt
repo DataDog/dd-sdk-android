@@ -83,7 +83,7 @@ internal class LoggerFullFeaturesTest {
         whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeServerDate
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
 
         testedLogger = createLogger()
     }
