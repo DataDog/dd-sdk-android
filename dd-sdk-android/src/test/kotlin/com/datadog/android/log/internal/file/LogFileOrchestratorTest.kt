@@ -7,7 +7,11 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.log.internal.DataStorageCallback
 import com.datadog.android.utils.extension.SystemOutputExtension
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -20,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 
@@ -35,6 +40,8 @@ internal class LogFileOrchestratorTest {
     @TempDir
     lateinit var tempDir: File
     lateinit var tempLogsDir: File
+    @Mock
+    lateinit var mockCallback: DataStorageCallback
 
     lateinit var testedOrchestrator: FileOrchestrator
 
@@ -52,6 +59,7 @@ internal class LogFileOrchestratorTest {
             OLD_FILE_THRESHOLD,
             MAX_DISK_SPACE
         )
+        testedOrchestrator.setCallback(mockCallback)
     }
 
     @Test
@@ -69,6 +77,7 @@ internal class LogFileOrchestratorTest {
         assertThat(writeableFile)
             .isEqualTo(previousFile)
             .exists()
+        verify(mockCallback).onDataAdded()
     }
 
     @Test
@@ -80,6 +89,7 @@ internal class LogFileOrchestratorTest {
         assertThat(writeableFile)
             .doesNotExist()
             .hasParent(tempLogsDir)
+        verify(mockCallback).onDataAdded()
     }
 
     @Test
@@ -96,6 +106,7 @@ internal class LogFileOrchestratorTest {
             .doesNotExist()
             .hasParent(tempLogsDir)
             .isNotEqualTo(previousFile)
+        verify(mockCallback).onDataAdded()
     }
 
     @Test
@@ -111,6 +122,7 @@ internal class LogFileOrchestratorTest {
             .doesNotExist()
             .hasParent(tempLogsDir)
             .isNotEqualTo(previousFile)
+        verify(mockCallback, times(2)).onDataAdded()
     }
 
     @Test
@@ -127,6 +139,7 @@ internal class LogFileOrchestratorTest {
             .doesNotExist()
             .hasParent(tempLogsDir)
             .isNotEqualTo(previousFile)
+        verify(mockCallback, times(2)).onDataAdded()
     }
 
     @Test
@@ -144,6 +157,7 @@ internal class LogFileOrchestratorTest {
             .doesNotExist()
             .hasParent(tempLogsDir)
             .isNotEqualTo(previousFile)
+        verify(mockCallback, times(2)).onDataAdded()
     }
 
     @Test
@@ -166,6 +180,8 @@ internal class LogFileOrchestratorTest {
             .doesNotExist()
             .hasParent(tempLogsDir)
             .isNotEqualTo(previousFile)
+
+        verify(mockCallback, times(2)).onDataAdded()
     }
 
     @Test
@@ -242,6 +258,36 @@ internal class LogFileOrchestratorTest {
             .isNull()
         assertThat(writtenFile)
             .doesNotExist()
+    }
+
+    @Test
+    fun `does not notify the callback when removed when previous file was filled`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int,
+        forge: Forge
+    ) {
+        testedOrchestrator.removeCallback()
+        val previousFile = testedOrchestrator.getWritableFile(logSize)
+        previousFile.createNewFile()
+        previousFile.writeText(forge.anAsciiString(MAX_BATCH_SIZE.toInt()))
+
+        testedOrchestrator.getWritableFile(logSize)
+
+        verifyZeroInteractions(mockCallback)
+    }
+
+    @Test
+    fun `does not notify the callback when removed when previous too old`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int,
+        forge: Forge
+    ) {
+        testedOrchestrator.removeCallback()
+        val previousFile = testedOrchestrator.getWritableFile(logSize)
+        previousFile.createNewFile()
+        Thread.sleep(RECENT_DELAY_MS)
+
+        testedOrchestrator.getWritableFile(logSize)
+
+        verifyZeroInteractions(mockCallback)
     }
 
     companion object {

@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.log.internal.DataStorageCallback
 import java.io.File
 
 internal interface FileOrchestrator {
@@ -17,4 +18,7 @@ internal interface FileOrchestrator {
     fun getReadableFile(excludeFileNames: Set<String>): File?
 
     fun getAllFiles(): Array<out File>
+
+    fun setCallback(callback: DataStorageCallback)
+    fun removeCallback()
 }

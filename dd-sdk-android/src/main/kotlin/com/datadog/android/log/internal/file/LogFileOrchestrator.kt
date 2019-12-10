@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.log.internal.DataStorageCallback
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileFilter
@@ -23,6 +24,9 @@ internal class LogFileOrchestrator(
 
     private var previousFile: File? = null
     private var previousFileLogCount: Int = 0
+
+    @Volatile
+    private var callback: DataStorageCallback? = null
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as 5% of the threshold
@@ -89,6 +93,14 @@ internal class LogFileOrchestrator(
         return rootDirectory.listFiles(fileFilter).orEmpty()
     }
 
+    override fun setCallback(callback: DataStorageCallback) {
+        this.callback = callback
+    }
+
+    override fun removeCallback() {
+        this.callback = null
+    }
+
     // endregion
 
     // region Internal
@@ -98,6 +110,7 @@ internal class LogFileOrchestrator(
         val newFile = File(rootDirectory, newFileName)
         previousFile = newFile
         previousFileLogCount = 1
+        callback?.onDataAdded()
         return newFile
     }
 
@@ -123,7 +136,7 @@ internal class LogFileOrchestrator(
         if (sizeToFree > 0) {
             sdkLogger.w(
                 "$TAG: Too much disk space used ($sizeOnDisk / $maxDiskSpace): " +
-                    "cleaning up to free $sizeToFree bytes…"
+                        "cleaning up to free $sizeToFree bytes…"
             )
             files.asSequence()
                 .fold(sizeToFree) { remainingSizeToFree, file ->

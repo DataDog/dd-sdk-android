@@ -10,15 +10,17 @@ import android.os.Handler
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.utils.sdkLogger
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class LogUploadRunnable(
     private val handler: Handler,
     private val logReader: LogReader,
     private val logUploader: LogUploader
-) : Runnable {
+) : UploadRunnable {
 
     private val attemptsCount = mutableMapOf<String, Int>()
     private var currentDelayInterval = MAX_DELAY_MS
+    private val isPaused: AtomicBoolean = AtomicBoolean(false)
 
     //  region Runnable
 
@@ -37,12 +39,23 @@ internal class LogUploadRunnable(
             sdkLogger.i("$TAG: There was no batch to be sent")
             currentDelayInterval = MAX_DELAY_MS
             handler.removeCallbacks(this)
+            isPaused.set(true)
         }
+    }
+
+    override fun onDataAdded() {
+        resume()
     }
 
     // endregion
 
     // region Internal
+    private fun resume() {
+        if (isPaused.compareAndSet(true, false)) {
+            handler.removeCallbacks(this) // we want to make sure we removed everything
+            handler.postDelayed(this, resolveInterval())
+        }
+    }
 
     private fun shouldDropBatch(batchId: String, status: LogUploadStatus): Boolean {
         val maxAttempts = maxAttemptsMap[status] ?: 1

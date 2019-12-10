@@ -74,7 +74,11 @@ object Datadog {
 
         // Start handler to send logs
         uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
-        handlerThread = LogHandlerThread(logStrategy.getLogReader(), uploader)
+        handlerThread = LogHandlerThread(
+            logStrategy.getLogReader(),
+            logStrategy.getLogWriter(),
+            uploader
+        )
         handlerThread.start()
 
         // Register Broadcast Receiver

@@ -13,4 +13,8 @@ package com.datadog.android.log.internal
 internal interface LogWriter {
 
     fun writeLog(log: Log)
+
+    fun setCallback(callback: DataStorageCallback)
+
+    fun removeCallback()
 }

@@ -17,6 +17,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
@@ -27,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.CountDownLatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -242,5 +244,65 @@ internal class LogUploadRunnableTest {
         verify(mockHandler, times(2))
             .postDelayed(same(testedRunnable), captor.capture())
         assertThat(captor.firstValue).isEqualTo(captor.secondValue) // frequency should reset
+    }
+
+    @Test
+    fun `it will resume from the producer if it was paused from the consumer`() {
+        whenever(mockLogReader.readNextBatch())
+            .doReturn(null)
+        val countDownLatch = CountDownLatch(2)
+        Thread {
+            testedRunnable.run()
+            countDownLatch.countDown()
+            Thread {
+                testedRunnable.onDataAdded()
+                countDownLatch.countDown()
+            }.start()
+        }.start()
+        countDownLatch.await()
+
+        val captor = argumentCaptor<Long>()
+        val inOrder = inOrder(mockHandler)
+        inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
+        assertThat(captor.lastValue).isLessThanOrEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+    }
+
+    @Test
+    fun `if resumed from multiple threads it will only resume once`() {
+        whenever(mockLogReader.readNextBatch())
+            .doReturn(null)
+        val countDownLatch = CountDownLatch(6)
+        Thread {
+            testedRunnable.run()
+            countDownLatch.countDown()
+            repeat(5) {
+                Thread {
+                    testedRunnable.onDataAdded()
+                    countDownLatch.countDown()
+                }.start()
+            }
+        }.start()
+        countDownLatch.await()
+
+        val captor = argumentCaptor<Long>()
+        val inOrder = inOrder(mockHandler)
+        inOrder.verify(mockHandler, times(2)).removeCallbacks(same(testedRunnable))
+        inOrder.verify(mockHandler).postDelayed(same(testedRunnable), captor.capture())
+        assertThat(captor.lastValue).isLessThanOrEqualTo(LogUploadRunnable.MAX_DELAY_MS)
+    }
+
+    @Test
+    fun `if not paused resume will do nothing`() {
+        val countDownLatch = CountDownLatch(5)
+        repeat(5) {
+            Thread {
+                testedRunnable.onDataAdded()
+                countDownLatch.countDown()
+            }.start()
+        }
+        countDownLatch.await()
+
+        verifyZeroInteractions(mockHandler)
     }
 }
