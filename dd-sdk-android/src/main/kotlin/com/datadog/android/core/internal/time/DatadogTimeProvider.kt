@@ -90,6 +90,6 @@ internal class DatadogTimeProvider(
         private const val MAX_SAMPLES = 64
 
         // The Max allowed deviation, accounting for long transport in bad network conditions
-        private const val MAX_OFFSET_DEVIATION: Long = 60L * 1000L
+        internal const val MAX_OFFSET_DEVIATION: Long = 60L * 1000L
     }
 }

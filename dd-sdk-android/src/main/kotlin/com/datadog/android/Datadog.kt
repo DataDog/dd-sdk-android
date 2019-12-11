@@ -21,6 +21,7 @@ import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 
 /**
@@ -45,6 +46,8 @@ object Datadog {
     const val DATADOG_EU = "https://mobile-http-intake.logs.datadoghq.eu"
 
     private const val TAG = "Datadog"
+
+    private const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
 
     private var initialized: Boolean = false
     private lateinit var clientToken: String
@@ -88,6 +91,7 @@ object Datadog {
             Datadog.clientToken,
             OkHttpClient.Builder()
                 .addInterceptor(networkTimeInterceptor)
+                .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .build()
         )
         handlerThread = LogHandlerThread(
