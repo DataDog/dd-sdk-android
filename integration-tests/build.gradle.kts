@@ -3,6 +3,7 @@ import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.implementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.Dependencies.Versions
 
 plugins {
     id("com.android.application")
@@ -52,9 +53,11 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android"))
+    implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidSupportBase)
 
+    androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 }
