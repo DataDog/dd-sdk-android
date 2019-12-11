@@ -8,5 +8,10 @@ package com.datadog.android.core.internal.time
 
 internal interface MutableTimeProvider : TimeProvider {
 
+    /**
+     * Updates the offset between device and server time.
+     *
+     * ```offset = server - device```
+     */
     fun updateOffset(offsetMs: Long)
 }
