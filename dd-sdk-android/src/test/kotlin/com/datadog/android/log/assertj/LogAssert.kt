@@ -55,7 +55,7 @@ internal class LogAssert(actual: Log) :
             .overridingErrorMessage(
                 "Expected log to have timestamp $expected but was ${actual.timestamp}"
             )
-            .isBetween(expected - TIMESTAMP_THRESHOLD_MS, expected)
+            .isEqualTo(expected)
         return this
     }
 

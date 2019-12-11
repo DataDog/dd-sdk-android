@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
@@ -60,6 +61,10 @@ internal class LoggerFullFeaturesTest {
     lateinit var mockLogWriter: LogWriter
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    var fakeServerDate: Long = 0L
 
     private lateinit var originalErrStream: PrintStream
     private lateinit var originalOutStream: PrintStream
@@ -68,14 +73,16 @@ internal class LoggerFullFeaturesTest {
 
     @BeforeEach
     fun `set up logger`(forge: Forge) {
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
-
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
         fakeNetworkInfo = forge.getForgery()
         fakeLoggerName = forge.anAlphabeticalString()
+        fakeServerDate = forge.aLong()
+
+        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeServerDate
         whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
         testedLogger = createLogger()
@@ -176,6 +183,7 @@ internal class LoggerFullFeaturesTest {
             .setLoggerName(fakeLoggerName)
             .withLogStrategy(mockLogStrategy)
             .withNetworkInfoProvider(mockNetworkInfoProvider)
+            .withTimeProvider(mockTimeProvider)
             .build()
     }
 
@@ -184,8 +192,6 @@ internal class LoggerFullFeaturesTest {
         logCatPrefix: String,
         threadName: String = Thread.currentThread().name
     ) {
-        val timestamp = System.currentTimeMillis()
-
         assertThat(outStreamContent.toString())
             .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage\n")
         assertThat(errStreamContent.toString()).isEmpty()
@@ -197,7 +203,7 @@ internal class LoggerFullFeaturesTest {
                 .hasServiceName(fakeServiceName)
                 .hasLevel(level)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(timestamp)
+                .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(threadName)
