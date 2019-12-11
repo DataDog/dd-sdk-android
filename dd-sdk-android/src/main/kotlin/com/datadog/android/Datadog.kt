@@ -7,6 +7,10 @@
 package com.datadog.android
 
 import android.content.Context
+import com.datadog.android.core.internal.net.NetworkTimeInterceptor
+import com.datadog.android.core.internal.time.DatadogTimeProvider
+import com.datadog.android.core.internal.time.MutableTimeProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
@@ -17,6 +21,7 @@ import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
+import okhttp3.OkHttpClient
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -48,6 +53,7 @@ object Datadog {
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
+    private lateinit var timeProvider: MutableTimeProvider
     internal var packageName: String = ""
 
     /**
@@ -72,8 +78,18 @@ object Datadog {
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(appContext)
 
+        // prepare time management
+        timeProvider = DatadogTimeProvider(appContext)
+        val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
+
         // Start handler to send logs
-        uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
+        uploader = LogOkHttpUploader(
+            endpointUrl ?: DATADOG_US,
+            Datadog.clientToken,
+            OkHttpClient.Builder()
+                .addInterceptor(networkTimeInterceptor)
+                .build()
+        )
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
             uploader
@@ -105,13 +121,13 @@ object Datadog {
                 logStrategy.getLogReader().dropAllBatches()
                 sdkLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                            "will now be deleted"
+                        "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
                 sdkLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                            "will now be sent to $endpointUrl"
+                        "will now be sent to $endpointUrl"
                 )
             }
         }
@@ -140,6 +156,10 @@ object Datadog {
         return networkInfoProvider
     }
 
+    internal fun getTimeProvider(): TimeProvider {
+        return timeProvider
+    }
+
     // endregion
 
     // region Internal
@@ -148,8 +168,8 @@ object Datadog {
     private fun checkInitialized() {
         check(initialized) {
             "Datadog has not been initialized.\n" +
-                    "Please add the following code in your application's onCreate() method:\n" +
-                    "Datadog.initialized(context, \"CLIENT_TOKEN\");"
+                "Please add the following code in your application's onCreate() method:\n" +
+                "Datadog.initialized(context, \"CLIENT_TOKEN\");"
         }
     }
 

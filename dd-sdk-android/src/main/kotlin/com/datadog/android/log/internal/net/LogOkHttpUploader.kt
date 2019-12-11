@@ -18,7 +18,7 @@ import okhttp3.RequestBody
 internal class LogOkHttpUploader(
     endpoint: String,
     private val token: String,
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+    private val client: OkHttpClient
 ) : LogUploader {
 
     private var url: String = buildUrl(endpoint, token)
@@ -73,7 +73,6 @@ internal class LogOkHttpUploader(
     private fun buildRequest(logs: List<String>): Request {
         val body = buildBody(logs)
         sdkLogger.d("$TAG: Sending logs to $url")
-        sdkLogger.d("$TAG: $body")
         return Request.Builder()
             .url(url)
             .post(RequestBody.create(null, body))
@@ -107,6 +106,6 @@ internal class LogOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
 
         const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
-        val TAG = "LogOkHttpUploader"
+        private const val TAG = "LogOkHttpUploader"
     }
 }
