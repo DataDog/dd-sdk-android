@@ -352,8 +352,16 @@ private constructor(
         if (logcatLogsEnabled) {
             if (Build.MODEL == null) {
                 println("${levelPrefixes[level]}/$serviceName: $message")
+                throwable?.printStackTrace()
             } else {
                 AndroidLog.println(level, serviceName, message)
+                if (throwable != null) {
+                    AndroidLog.println(
+                        level,
+                        serviceName,
+                        AndroidLog.getStackTraceString(throwable)
+                    )
+                }
             }
         }
 
