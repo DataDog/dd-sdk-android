@@ -12,6 +12,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -20,6 +21,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.SocketTimeoutException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,6 +33,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -110,6 +113,19 @@ internal class NetworkTimeInterceptorTest {
         setupFakeResponse(null)
 
         testedInterceptor.intercept(mockChain)
+
+        verify(mockTimeProvider, never()).updateOffset(anyOrNull())
+    }
+
+    @Test
+    fun `ignores timeout`(forge: Forge) {
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn forge.aLong()
+        setupFakeResponse(null)
+        whenever(mockChain.proceed(any())) doThrow SocketTimeoutException()
+
+        assertThrows<SocketTimeoutException> {
+            testedInterceptor.intercept(mockChain)
+        }
 
         verify(mockTimeProvider, never()).updateOffset(anyOrNull())
     }
