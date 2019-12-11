@@ -14,7 +14,7 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfo
 import com.datadog.android.log.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.max
 
 internal class LogUploadRunnable(
     private val handler: Handler,
@@ -25,12 +25,10 @@ internal class LogUploadRunnable(
 ) : UploadRunnable {
 
     private var currentDelayInterval = DEFAULT_DELAY
-    private val isDelayed: AtomicBoolean = AtomicBoolean(false)
 
     //  region Runnable
 
     override fun run() {
-        isDelayed.set(false)
         val batch =
             if (isNetworkAvailable() && isSystemReady()) {
                 logReader.readNextBatch()
@@ -62,7 +60,6 @@ internal class LogUploadRunnable(
         sdkLogger.i("$TAG: There was no batch to be sent")
         currentDelayInterval = DEFAULT_DELAY
         handler.removeCallbacks(this)
-        isDelayed.set(true)
         handler.postDelayed(this, MAX_DELAY)
     }
 
@@ -78,7 +75,7 @@ internal class LogUploadRunnable(
     }
 
     private fun decreaseInterval(): Long {
-        return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
+        return max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
     }
 
     // endregion
