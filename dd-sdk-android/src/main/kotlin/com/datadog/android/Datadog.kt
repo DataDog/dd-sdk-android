@@ -76,7 +76,6 @@ object Datadog {
         uploader = LogOkHttpUploader(endpointUrl ?: DATADOG_US, Datadog.clientToken)
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
-            logStrategy.getLogWriter(),
             uploader
         )
         handlerThread.start()

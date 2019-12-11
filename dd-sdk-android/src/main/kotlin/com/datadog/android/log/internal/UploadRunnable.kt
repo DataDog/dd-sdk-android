@@ -1,3 +1,3 @@
 package com.datadog.android.log.internal
 
-internal interface UploadRunnable : Runnable, DataStorageCallback
+internal interface UploadRunnable : Runnable

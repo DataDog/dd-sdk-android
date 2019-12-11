@@ -10,7 +10,6 @@ import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
-import com.datadog.android.log.internal.DataStorageCallback
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
@@ -68,14 +67,6 @@ internal class LogFileWriter(
                 obfuscateAndWriteLog(strLog)
             }
         })
-    }
-
-    override fun setCallback(callback: DataStorageCallback) {
-        fileOrchestrator.setCallback(callback)
-    }
-
-    override fun removeCallback() {
-        fileOrchestrator.removeCallback()
     }
 
     // endregion

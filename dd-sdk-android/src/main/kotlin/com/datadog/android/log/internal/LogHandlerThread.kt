@@ -12,11 +12,7 @@ import com.datadog.android.log.internal.net.LogUploader
 
 internal class LogHandlerThread(
     private val logReader: LogReader,
-    private val logWriter: LogWriter,
-    private val logUploader: LogUploader,
-    private val runnableFactory: (Handler) -> UploadRunnable = {
-        LogUploadRunnable(it, logReader, logUploader)
-    }
+    private val logUploader: LogUploader
 ) : HandlerThread(THREAD_NAME) {
 
     private lateinit var handler: Handler
@@ -24,8 +20,7 @@ internal class LogHandlerThread(
     override fun onLooperPrepared() {
         super.onLooperPrepared()
         handler = Handler(looper)
-        val runnable = runnableFactory(handler)
-        logWriter.setCallback(runnable)
+        val runnable = LogUploadRunnable(handler, logReader, logUploader)
         handler.postDelayed(runnable, LogUploadRunnable.DEFAULT_DELAY)
     }
 

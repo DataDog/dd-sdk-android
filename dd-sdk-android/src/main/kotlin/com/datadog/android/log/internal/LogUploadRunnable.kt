@@ -49,28 +49,13 @@ internal class LogUploadRunnable(
         if (shouldDropBatch(batchId, status)) {
             logReader.dropBatch(batchId)
         }
-        currentDelayInterval = decreaseInterval
+        currentDelayInterval = decreaseInterval()
         handler.postDelayed(this, currentDelayInterval)
     }
 
     // endregion
 
-    // region DataStorageCallback
-
-    override fun onDataAdded() {
-        resume()
-    }
-
-    // endregion
-
     // region Internal
-
-    private fun resume() {
-        if (isDelayed.compareAndSet(true, false)) {
-            handler.removeCallbacks(this) // we want to make sure we removed everything
-            handler.postDelayed(this, DEFAULT_DELAY)
-        }
-    }
 
     private fun shouldDropBatch(batchId: String, status: LogUploadStatus): Boolean {
         val maxAttempts = maxAttemptsMap[status] ?: 1
@@ -85,10 +70,9 @@ internal class LogUploadRunnable(
         return shouldDropBatch
     }
 
-    private val decreaseInterval: Long
-        get() {
-            return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
-        }
+    private fun decreaseInterval(): Long {
+        return Math.max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
+    }
 
     // endregion
 
