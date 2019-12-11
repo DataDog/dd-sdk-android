@@ -21,11 +21,10 @@ internal class LogHandlerThread(
         super.onLooperPrepared()
         handler = Handler(looper)
         val runnable = LogUploadRunnable(handler, logReader, logUploader)
-        handler.postDelayed(runnable, INITIAL_DELAY_MS)
+        handler.postDelayed(runnable, LogUploadRunnable.DEFAULT_DELAY)
     }
 
     companion object {
         private const val THREAD_NAME = "ddog"
-        const val INITIAL_DELAY_MS = 5000L
     }
 }

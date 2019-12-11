@@ -15,6 +15,7 @@ import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
@@ -51,7 +52,7 @@ internal class LogUploadRunnableTest {
     @Mock
     lateinit var mockLogUploader: LogUploader
 
-    lateinit var testedRunnable: Runnable
+    lateinit var testedRunnable: LogUploadRunnable
 
     @BeforeEach
     fun `set up`() {
@@ -66,7 +67,7 @@ internal class LogUploadRunnableTest {
 
         verify(mockLogReader, never()).dropBatch(anyOrNull())
         verifyZeroInteractions(mockLogUploader)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockHandler).postDelayed(testedRunnable, LogUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
             assertThat(systemOutStream.toString().trim())
                 .withFailMessage("We were expecting an info log message here")
@@ -172,5 +173,59 @@ internal class LogUploadRunnableTest {
         verify(mockLogReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `when has batches the upload frequency will increase`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()).doReturn(batch)
+
+        repeat(5) {
+            testedRunnable.run()
+        }
+
+        val captor = argumentCaptor<Long>()
+        verify(mockHandler, times(5))
+            .postDelayed(same(testedRunnable), captor.capture())
+        captor.allValues.reduce { previous, next ->
+            assertThat(next).isLessThan(previous)
+            next
+        }
+    }
+
+    @Test
+    fun `when has batches will increase the frequency up to a specific max`(@Forgery batch: Batch) {
+        whenever(mockLogReader.readNextBatch()).doReturn(batch)
+
+        repeat(30) {
+            testedRunnable.run()
+        }
+
+        val captor = argumentCaptor<Long>()
+        verify(mockHandler, times(30))
+            .postDelayed(same(testedRunnable), captor.capture())
+        captor.allValues.reduce { previous, next ->
+            assertThat(next).isGreaterThanOrEqualTo(LogUploadRunnable.MIN_DELAY_MS)
+            assertThat(next).isLessThan(LogUploadRunnable.DEFAULT_DELAY)
+            next
+        }
+    }
+
+    @Test
+    fun `when no more batches available the scheduler delay will be increased`(
+        @Forgery batch: Batch
+    ) {
+        whenever(mockLogReader.readNextBatch())
+            .doReturn(batch)
+            .doReturn(null)
+
+        repeat(2) {
+            testedRunnable.run()
+        }
+
+        val captor = argumentCaptor<Long>()
+        verify(mockHandler, times(2))
+            .postDelayed(same(testedRunnable), captor.capture())
+        verify(mockHandler).removeCallbacks(same(testedRunnable))
+        assertThat(captor.lastValue).isEqualTo(LogUploadRunnable.MAX_DELAY)
     }
 }
