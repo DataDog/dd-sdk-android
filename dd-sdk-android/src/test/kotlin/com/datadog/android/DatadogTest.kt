@@ -8,8 +8,6 @@ package com.datadog.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkInfo
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator
@@ -64,16 +62,7 @@ internal class DatadogTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeToken = forge.anHexadecimalString()
-
-        // Setup network in mock context
-        val mockConnectivityMgr: ConnectivityManager = mock()
-        val mockNetworkInfo: NetworkInfo = mock()
         whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
-            .doReturn(mockConnectivityMgr)
-        whenever(mockConnectivityMgr.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockNetworkInfo.isConnected) doReturn true
-        whenever(mockNetworkInfo.type) doReturn ConnectivityManager.TYPE_WIFI
 
         packageName = forge.anAlphabeticalString()
         whenever(mockContext.packageName) doReturn packageName

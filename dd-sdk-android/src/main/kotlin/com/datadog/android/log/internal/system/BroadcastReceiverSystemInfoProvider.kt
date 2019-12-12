@@ -75,8 +75,8 @@ internal class BroadcastReceiverSystemInfoProvider :
     }
 
     private fun handlePowerSaveIntent(context: Context) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val powerSaveMode = powerManager.isPowerSaveMode
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val powerSaveMode = powerManager?.isPowerSaveMode ?: false
         systemInfo = systemInfo.copy(
             powerSaveMode = powerSaveMode
         )
