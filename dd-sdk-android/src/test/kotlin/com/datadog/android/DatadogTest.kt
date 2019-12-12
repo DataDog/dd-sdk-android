@@ -54,14 +54,6 @@ internal class DatadogTest {
     // lateinit var clientToken: String
     @Mock
     lateinit var mockLogStrategy: LogStrategy
-    // @Mock
-    // lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
-    // @Mock
-    // lateinit var handlerThread: LogHandlerThread
-    // @Mock
-    // lateinit var contextRef: WeakReference<Context>
-    // @Mock
-    // lateinit var uploader: LogUploader
     @Mock
     lateinit var mockContext: Context
 
@@ -107,7 +99,7 @@ internal class DatadogTest {
         Datadog.initialize(mockContext, fakeToken)
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
 
         assertThat(broadcastReceiverCaptor.allValues)
             .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)

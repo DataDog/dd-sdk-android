@@ -25,6 +25,16 @@ internal class SystemInfoAssert(actual: SystemInfo) :
         return this
     }
 
+    fun hasPowerSaveMode(expected: Boolean): SystemInfoAssert {
+        assertThat(actual.powerSaveMode)
+            .overridingErrorMessage(
+                "Expected systemInfo to have powerSaveMode $expected " +
+                    "but was ${actual.powerSaveMode}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasBatteryLevel(expected: Int, scale: Int = 100): SystemInfoAssert {
         assertThat(actual.batteryLevel)
             .overridingErrorMessage(

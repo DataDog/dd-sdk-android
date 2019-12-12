@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.PowerManager
 import com.datadog.android.log.internal.utils.sdkLogger
 
 internal class BroadcastReceiverSystemInfoProvider :
@@ -19,17 +20,24 @@ internal class BroadcastReceiverSystemInfoProvider :
     private var systemInfo: SystemInfo = SystemInfo()
 
     internal fun register(context: Context) {
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val firstIntent = context.registerReceiver(this, filter)
-        onReceive(context, firstIntent)
+        registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
+        registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
     }
 
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        sdkLogger.d("$TAG: received network update")
-        if (intent?.action == Intent.ACTION_BATTERY_CHANGED) {
-            handleBatteryIntent(intent)
+        val action = intent?.action
+        when (action) {
+            Intent.ACTION_BATTERY_CHANGED -> {
+                sdkLogger.d("$TAG: received battery update")
+                handleBatteryIntent(intent)
+            }
+            PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                sdkLogger.d("$TAG: received power save mode update")
+                handlePowerSaveIntent(context)
+            }
+            else -> sdkLogger.d("$TAG: received unknown update $action")
         }
     }
 
@@ -45,6 +53,13 @@ internal class BroadcastReceiverSystemInfoProvider :
 
     // region Internal
 
+    private fun registerIntentFilter(context: Context, action: String) {
+        val filter = IntentFilter()
+        filter.addAction(action)
+        val intent = context.registerReceiver(this, filter)
+        onReceive(context, intent)
+    }
+
     private fun handleBatteryIntent(intent: Intent) {
         val status = intent.getIntExtra(
             BatteryManager.EXTRA_STATUS,
@@ -56,6 +71,14 @@ internal class BroadcastReceiverSystemInfoProvider :
         systemInfo = systemInfo.copy(
             batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status),
             batteryLevel = (level * 100) / scale
+        )
+    }
+
+    private fun handlePowerSaveIntent(context: Context) {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val powerSaveMode = powerManager.isPowerSaveMode
+        systemInfo = systemInfo.copy(
+            powerSaveMode = powerSaveMode
         )
     }
 

@@ -10,7 +10,8 @@ import android.os.BatteryManager
 
 internal data class SystemInfo(
     val batteryStatus: BatteryStatus = BatteryStatus.UNKNOWN,
-    val batteryLevel: Int = -1
+    val batteryLevel: Int = -1,
+    val powerSaveMode: Boolean = false
 ) {
 
     internal enum class BatteryStatus {
