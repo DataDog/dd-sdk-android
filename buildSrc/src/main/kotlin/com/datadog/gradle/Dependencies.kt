@@ -99,7 +99,7 @@ object Dependencies {
         )
 
         @JvmField
-        val AndroidSupportBase = arrayOf(
+        val AndroidxSupportBase = arrayOf(
             "androidx.appcompat:appcompat:${Versions.AppCompatVersion}",
             "androidx.constraintlayout:constraintlayout:${Versions.ConstraintLayoutVersion}",
             "com.google.android.material:material:${Versions.GoogleMaterialVersion}"

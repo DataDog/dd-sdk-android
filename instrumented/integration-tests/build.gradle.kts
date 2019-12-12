@@ -1,9 +1,9 @@
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.Dependencies.Versions
 import com.datadog.gradle.androidTestImplementation
-import com.datadog.gradle.implementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.Dependencies.Versions
+import com.datadog.gradle.implementation
 
 plugins {
     id("com.android.application")
@@ -28,8 +28,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // TODO when using Android Plugin 3.6.+
-    // enableAdditionalTestOutput=true
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -55,7 +53,7 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.AndroidSupportBase)
+    implementation(Dependencies.Libraries.AndroidxSupportBase)
 
     androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)

@@ -2,16 +2,21 @@ package com.datadog.android.sdk.integrationtests
 
 import android.app.Application
 import com.datadog.android.Datadog
-import com.datadog.android.log.Logger
 
-class IntegrationTestsApplication:Application() {
+class IntegrationTestsApplication : Application() {
+    init {
+        application = this
+    }
 
     override fun onCreate() {
         super.onCreate()
-        // we just make an initialisation here. We will not need the clientToken for now as we
-        // will not send any events to the server. The endpointUrl will be set to the
+        // we just make an initialisation here. The endpointUrl will be set to the
         // MockWebServer url in the test rule.
-        Datadog.initialize(this, "", "")
+        Datadog.initialize(this, Runtime.DD_TOKEN, "")
+    }
 
+    companion object {
+        lateinit var application: IntegrationTestsApplication
+            private set
     }
 }

@@ -3,7 +3,7 @@ package com.datadog.android.sdk.integrationtests
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity:AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,10 +16,8 @@ class MainActivity:AppCompatActivity() {
         Runtime.appLogger.i("MainActivity/onStart")
     }
 
-
     override fun onResume() {
         super.onResume()
         Runtime.appLogger.i("MainActivity/onResume")
     }
-
 }
