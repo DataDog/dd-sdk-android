@@ -4,13 +4,12 @@ import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.implementation
+import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
-    `maven-publish`
-    id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     jacoco
@@ -22,7 +21,7 @@ android {
     buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
+        minSdkVersion(24) // we need this for desugaring the assertJ
         targetSdkVersion(AndroidConfig.TARGET_SDK)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -41,6 +40,11 @@ android {
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
 }
 
 repositories {
