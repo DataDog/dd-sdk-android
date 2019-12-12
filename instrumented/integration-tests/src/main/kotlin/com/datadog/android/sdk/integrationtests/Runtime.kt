@@ -19,15 +19,15 @@ object Runtime{
     }
 
     val tags = arrayOf(
-        Pair<String,String>("flavor", com.datadog.android.sdk.integrationtests.BuildConfig.FLAVOR),
-        Pair<String,String>("build_type", com.datadog.android.sdk.integrationtests.BuildConfig
+        Pair<String,String>("flavor", BuildConfig.FLAVOR),
+        Pair<String,String>("build_type", BuildConfig
             .BUILD_TYPE)
     )
 
     val attributes = arrayOf(
-        Pair<String,String>("version_code", com.datadog.android.sdk.integrationtests.BuildConfig
+        Pair<String,String>("version_code", BuildConfig
             .VERSION_CODE.toString()),
-        Pair<String,String>("version_name", com.datadog.android.sdk.integrationtests.BuildConfig
+        Pair<String,String>("version_name", BuildConfig
             .VERSION_NAME)
     )
 

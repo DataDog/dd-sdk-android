@@ -34,7 +34,7 @@ pluginManagement {
 }
 
 include(":dd-sdk-android")
-include(":benchmark")
-include(":integration-tests")
+include(":instrumented:benchmark")
+include(":instrumented:integration-tests")
 include(":sample:java")
 include(":tools:detekt")

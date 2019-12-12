@@ -2,7 +2,6 @@ package com.datadog.android.sdk.integrationtests.utils.assertj
 
 import com.google.gson.JsonObject
 import org.assertj.core.api.AbstractAssert
-import java.lang.reflect.Array
 
 class JsonListAssert(actual: List<JsonObject>) : AbstractAssert<JsonListAssert, List<JsonObject>>
     (actual, JsonListAssert::class.java) {
