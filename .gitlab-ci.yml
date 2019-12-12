@@ -43,7 +43,14 @@ test:benchmark:
   image: $CI_IMAGE_DOCKER
   stage: test
   script:
-    - ./gradlew :benchmark:packageDebugAndroidTest
+    - ./gradlew :instrumented:benchmark:packageDebugAndroidTest
+
+test:integration:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  script:
+    - ./gradlew :instrumented:integration:packageDebugAndroidTest
 
 test:unit:
   tags: [ "runner:docker", "size:large" ]

@@ -32,6 +32,17 @@ object Dependencies {
         const val Detekt = "1.2.1"
         const val KtLint = "8.2.0"
         const val DependencyVersion = "0.27.0"
+
+        // AndroidJunit
+        const val AndroidJunitRunner = "1.2.0"
+        const val AndroidExtJunit = "1.1.1"
+        const val AndroidJunitCore = "1.2.0"
+        const val Espresso = "3.1.0"
+
+        // Sample Apps
+        const val AppCompatVersion = "1.1.0"
+        const val ConstraintLayoutVersion = "2.0.0-beta3"
+        const val GoogleMaterialVersion = "1.0.0"
     }
 
     object Libraries {
@@ -72,6 +83,28 @@ object Dependencies {
             "com.github.xgouchet.Elmyr:junit4:${Versions.Elmyr}"
         )
 
+        @JvmField
+        val IntegrationTests = arrayOf(
+            // Core library
+            "androidx.test:core:${Versions.AndroidJunitCore}",
+            // AndroidJUnitRunner and JUnit Rules
+            "androidx.test:runner:${Versions.AndroidJunitRunner}",
+            "androidx.test:runner:${Versions.AndroidJunitRunner}",
+            "androidx.test:rules:${Versions.AndroidJunitRunner}",
+            "androidx.test.ext:junit:${Versions.AndroidExtJunit}",
+            // Espresso
+            "androidx.test.espresso:espresso-core:${Versions.Espresso}",
+            "androidx.test.espresso:espresso-contrib:${Versions.Espresso}",
+            "androidx.test.espresso:espresso-intents:${Versions.Espresso}"
+        )
+
+        @JvmField
+        val AndroidxSupportBase = arrayOf(
+            "androidx.appcompat:appcompat:${Versions.AppCompatVersion}",
+            "androidx.constraintlayout:constraintlayout:${Versions.ConstraintLayoutVersion}",
+            "com.google.android.material:material:${Versions.GoogleMaterialVersion}"
+        )
+
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
 
         const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
@@ -83,7 +116,8 @@ object Dependencies {
         const val AndroidTools = "com.android.tools.build:gradle:${Versions.AndroidToolsPlugin}"
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
-        const val AndroidBenchmark = "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
+        const val AndroidBenchmark =
+            "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
     }
 
     object Repositories {
