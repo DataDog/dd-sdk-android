@@ -106,15 +106,13 @@ internal class LogFileWriter(
     ) {
         val info = log.networkInfo
         if (info != null) {
-            val network = JsonObject()
-            network.addProperty(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            jsonLog.addProperty(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
             if (!info.carrierName.isNullOrBlank()) {
-                network.addProperty(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
+                jsonLog.addProperty(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
             }
             if (info.carrierId >= 0) {
-                network.addProperty(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
+                jsonLog.addProperty(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
             }
-            jsonLog.add(LogStrategy.TAG_NETWORK, network)
         }
     }
 

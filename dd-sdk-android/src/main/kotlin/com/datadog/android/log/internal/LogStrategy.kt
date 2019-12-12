@@ -35,10 +35,9 @@ internal interface LogStrategy {
         internal const val TAG_THREAD_NAME = "logger.thread_name"
 
         // ANDROID SPECIFIC TAGS
-        internal const val TAG_NETWORK = "network"
-        internal const val TAG_NETWORK_CONNECTIVITY = "connectivity"
-        internal const val TAG_NETWORK_CARRIER_NAME = "carrier.name"
-        internal const val TAG_NETWORK_CARRIER_ID = "carrier.id"
+        internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
+        internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
+        internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
 
         internal val reservedAttributes = arrayOf(
             TAG_HOST,
