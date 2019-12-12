@@ -29,10 +29,9 @@ internal class LogUploadRunnable(
     //  region Runnable
 
     override fun run() {
-        val batch =
-            if (isNetworkAvailable() && isSystemReady()) {
-                logReader.readNextBatch()
-            } else null
+        val batch = if (isNetworkAvailable() && isSystemReady()) {
+            logReader.readNextBatch()
+        } else null
         if (batch != null) {
             consumeBatch(batch)
         } else {
@@ -53,7 +52,8 @@ internal class LogUploadRunnable(
         val systemInfo = systemInfoProvider.getLatestSystemInfo()
         val batteryFullOrCharging = systemInfo.batteryStatus in batteryFullOrChargingStatus
         val batteryLevel = systemInfo.batteryLevel
-        return batteryFullOrCharging || batteryLevel > LOW_BATTERY_THRESHOLD
+        val powerSaveMode = systemInfo.powerSaveMode
+        return (batteryFullOrCharging || batteryLevel > LOW_BATTERY_THRESHOLD) && !powerSaveMode
     }
 
     private fun delayTheRunnable() {

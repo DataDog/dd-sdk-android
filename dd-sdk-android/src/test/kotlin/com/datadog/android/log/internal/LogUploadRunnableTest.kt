@@ -103,6 +103,7 @@ internal class LogUploadRunnableTest {
 
     @Test
     fun `doesn't send batch when battery is low and unplugged`(
+        @Forgery batch: Batch,
         forge: Forge
     ) {
         val systemInfo = SystemInfo(
@@ -113,6 +114,30 @@ internal class LogUploadRunnableTest {
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockLogUploader, never()).uploadLogs(anyOrNull())
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `doesn't send batch when power save mode is enabled`(
+        @Forgery batch: Batch,
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            batteryStatus = forge.anElementFrom(
+                SystemInfo.BatteryStatus.DISCHARGING,
+                SystemInfo.BatteryStatus.NOT_CHARGING
+            ),
+            batteryLevel = forge.anInt(50, 100),
+            powerSaveMode = true
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
 
         testedRunnable.run()
 
