@@ -6,6 +6,7 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 
@@ -27,6 +28,17 @@ internal fun Logger.Builder.withLogStrategy(strategy: LogStrategy): Logger.Build
 
     method.isAccessible = true
     method.invoke(this, strategy)
+    method.isAccessible = false
+
+    return this
+}
+
+internal fun Logger.Builder.withTimeProvider(timeProvider: TimeProvider): Logger.Builder {
+    val method = Logger.Builder::class.java
+        .getDeclaredMethod("overrideTimeProvider", TimeProvider::class.java)
+
+    method.isAccessible = true
+    method.invoke(this, timeProvider)
     method.isAccessible = false
 
     return this

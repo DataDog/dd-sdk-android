@@ -9,6 +9,7 @@ package com.datadog.android.log
 import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
@@ -32,7 +33,8 @@ private constructor(
     val logcatLogsEnabled: Boolean,
     val loggerName: String,
     private val logWriter: LogWriter,
-    internal val networkInfoProvider: NetworkInfoProvider?
+    internal val networkInfoProvider: NetworkInfoProvider?,
+    internal val timeProvider: TimeProvider
 ) {
 
     private val attributes = mutableMapOf<String, Any?>()
@@ -122,6 +124,7 @@ private constructor(
 
         private var logStrategy: LogStrategy? = null
         private var networkInfoProvider: NetworkInfoProvider? = null
+        private var timeProvider: TimeProvider? = null
         private var loggerName: String = Datadog.packageName
 
         /**
@@ -137,7 +140,8 @@ private constructor(
                 loggerName = loggerName,
                 networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
                     networkInfoProvider ?: Datadog.getNetworkInfoProvider()
-                } else null
+                } else null,
+                timeProvider = timeProvider ?: Datadog.getTimeProvider()
             )
         }
 
@@ -203,6 +207,11 @@ private constructor(
 
         private fun overrideNetworkInfoProvider(provider: NetworkInfoProvider): Builder {
             networkInfoProvider = provider
+            return this
+        }
+
+        private fun overrideTimeProvider(provider: TimeProvider): Builder {
+            timeProvider = provider
             return this
         }
     }
@@ -352,8 +361,16 @@ private constructor(
         if (logcatLogsEnabled) {
             if (Build.MODEL == null) {
                 println("${levelPrefixes[level]}/$serviceName: $message")
+                throwable?.printStackTrace()
             } else {
                 AndroidLog.println(level, serviceName, message)
+                if (throwable != null) {
+                    AndroidLog.println(
+                        level,
+                        serviceName,
+                        AndroidLog.getStackTraceString(throwable)
+                    )
+                }
             }
         }
 
@@ -364,13 +381,11 @@ private constructor(
     }
 
     private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
-        // TODO RUMM-58 timestamp based on phone local time = error prone
-
         return Log(
             serviceName = serviceName,
             level = level,
             message = message,
-            timestamp = System.currentTimeMillis(),
+            timestamp = timeProvider.getServerTimestamp(),
             throwable = throwable,
             attributes = attributes.toMap(),
             tags = tags.toList(),

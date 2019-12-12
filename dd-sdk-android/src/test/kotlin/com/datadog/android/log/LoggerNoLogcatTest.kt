@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
@@ -58,6 +59,10 @@ internal class LoggerNoLogcatTest {
     lateinit var mockLogWriter: LogWriter
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    var fakeServerDate: Long = 0L
 
     private lateinit var originalErrStream: PrintStream
     private lateinit var originalOutStream: PrintStream
@@ -66,13 +71,15 @@ internal class LoggerNoLogcatTest {
 
     @BeforeEach
     fun `set up logger`(forge: Forge) {
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
-
         fakeServiceName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
         fakeUserAgent = forge.anAlphabeticalString()
         fakeNetworkInfo = forge.getForgery()
+        fakeServerDate = forge.aLong()
+
+        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockLogStrategy.getLogWriter()) doReturn mockLogWriter
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeServerDate
         whenever(mockNetworkInfoProvider.getLatestNetworkInfos()) doReturn fakeNetworkInfo
 
         testedLogger = Logger.Builder()
@@ -82,6 +89,7 @@ internal class LoggerNoLogcatTest {
             .setNetworkInfoEnabled(true)
             .withLogStrategy(mockLogStrategy)
             .withNetworkInfoProvider(mockNetworkInfoProvider)
+            .withTimeProvider(mockTimeProvider)
             .build()
     }
 
@@ -152,8 +160,6 @@ internal class LoggerNoLogcatTest {
     // region Internal
 
     private fun verifyLogSideEffects(level: Int) {
-        val timestamp = System.currentTimeMillis()
-
         assertThat(outStreamContent.toString()).isEmpty()
         assertThat(errStreamContent.toString()).isEmpty()
 
@@ -164,7 +170,7 @@ internal class LoggerNoLogcatTest {
                 .hasServiceName(fakeServiceName)
                 .hasLevel(level)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(timestamp)
+                .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(fakeNetworkInfo)
         }
     }
