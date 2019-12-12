@@ -331,6 +331,22 @@ internal class LoggerContextTest {
     }
 
     @Test
+    fun `log message with local attributes (null value)`(forge: Forge) {
+
+        val key = forge.anAlphabeticalString()
+        val value: Any? = null
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.d(message, null, mapOf(key to value))
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasAttributes(mapOf(key to value))
+        }
+    }
+
+    @Test
     fun `log message with local attributes override logger value`(forge: Forge) {
 
         val key = forge.anAlphabeticalString()

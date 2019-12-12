@@ -64,8 +64,9 @@ class JsonObjectAssert(actual: JsonObject) :
             val value = (element as JsonPrimitive).asString
             assertThat(value)
                 .overridingErrorMessage(
-                    "Expected json object to have field $name value \"$expectedValue\" " +
-                        "but was \"$value\""
+                    "Expected json object to have field $name with value \"%s\" " +
+                        "but was \"%s\"",
+                    expectedValue, value
                 )
                 .isEqualTo(expectedValue)
             return this
