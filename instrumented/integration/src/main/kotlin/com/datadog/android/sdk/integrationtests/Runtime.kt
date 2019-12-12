@@ -3,7 +3,7 @@ package com.datadog.android.sdk.integrationtests
 import android.content.Context
 import com.datadog.android.log.Logger
 
-object Runtime {
+internal object Runtime {
     fun logger(context: Context): Logger {
         // Initialise Logger
         val logger = Logger.Builder()

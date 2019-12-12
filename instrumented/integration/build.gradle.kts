@@ -2,7 +2,9 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.Dependencies.Versions
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.implementation
 import org.gradle.api.JavaVersion
 
@@ -44,7 +46,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-
 }
 
 repositories {
@@ -62,6 +63,11 @@ dependencies {
     androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
+
+    detekt(project(":tools:detekt"))
+    detekt(Dependencies.Libraries.DetektCli)
 }
 
 kotlinConfig()
+detektConfig()
+ktLintConfig()

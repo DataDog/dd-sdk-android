@@ -23,6 +23,8 @@ analysis:ktlint:
   stage: analysis
   script:
     - ./gradlew :dd-sdk-android:ktlintCheck
+    - ./gradlew :instrumented:integration:ktlintCheck
+    - ./gradlew :instrumented:benchmark:ktlintCheck
 
 analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
@@ -30,6 +32,8 @@ analysis:detekt:
   stage: analysis
   script:
     - ./gradlew :dd-sdk-android:detekt
+    - ./gradlew :instrumented:integration:detekt
+    - ./gradlew :instrumented:benchmark:detekt
 
 analysis:licenses:
   tags: [ "runner:docker", "size:large" ]

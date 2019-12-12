@@ -1,7 +1,9 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.ktLintConfig
 
 plugins {
     id("com.android.library")
@@ -27,8 +29,14 @@ android {
         versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,UNLOCKED")
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors", "EMULATOR,DEBUGGABLE")
+        testInstrumentationRunnerArgument(
+            "androidx.benchmark.suppressErrors",
+            "EMULATOR,UNLOCKED"
+        )
+        testInstrumentationRunnerArgument(
+            "androidx.benchmark.suppressErrors",
+            "EMULATOR,DEBUGGABLE"
+        )
         testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
@@ -64,6 +72,11 @@ dependencies {
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
+
+    detekt(project(":tools:detekt"))
+    detekt(Dependencies.Libraries.DetektCli)
 }
 
 kotlinConfig()
+detektConfig()
+ktLintConfig()
