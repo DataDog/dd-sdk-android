@@ -34,3 +34,19 @@ allprojects {
 task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
+
+tasks.register("ktlintCheckAll") {
+    dependsOn(
+        ":dd-sdk-android:ktlintCheck",
+        ":instrumented:integration:ktlintCheck",
+        ":instrumented:benchmark:ktlintCheck"
+    )
+}
+
+tasks.register("detektAll") {
+    dependsOn(
+        ":dd-sdk-android:detekt",
+        ":instrumented:integration:detekt",
+        ":instrumented:benchmark:detekt"
+    )
+}
