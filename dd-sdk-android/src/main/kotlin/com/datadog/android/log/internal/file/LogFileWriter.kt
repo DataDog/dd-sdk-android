@@ -149,6 +149,7 @@ internal class LogFileWriter(
             .forEach {
                 val value = it.value
                 val jsonValue = when (value) {
+                    null -> JsonNull.INSTANCE
                     is Boolean -> JsonPrimitive(value)
                     is Int -> JsonPrimitive(value)
                     is Long -> JsonPrimitive(value)
@@ -156,7 +157,7 @@ internal class LogFileWriter(
                     is Double -> JsonPrimitive(value)
                     is String -> JsonPrimitive(value)
                     is Date -> JsonPrimitive(value.time)
-                    else -> JsonNull.INSTANCE
+                    else -> JsonPrimitive(value.toString())
                 }
                 jsonLog.add(it.key, jsonValue)
             }

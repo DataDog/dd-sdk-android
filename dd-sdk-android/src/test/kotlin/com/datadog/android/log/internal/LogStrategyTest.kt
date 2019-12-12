@@ -387,9 +387,7 @@ internal abstract class LogStrategyTest {
                     is Double -> assertThat(jsonObject).hasField(it.key, value)
                     is String -> assertThat(jsonObject).hasField(it.key, value)
                     is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                    else -> throw IllegalStateException(
-                        "Unable to handle key:${it.key} with value:$value"
-                    )
+                    else -> assertThat(jsonObject).hasField(it.key, value.toString())
                 }
             }
     }
