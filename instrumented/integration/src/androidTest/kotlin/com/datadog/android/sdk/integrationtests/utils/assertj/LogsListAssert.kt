@@ -8,7 +8,7 @@ class LogsListAssert(actual: List<JsonObject>) : AbstractAssert<LogsListAssert, 
 
     fun containsOnlyLogsWithMessagesInOrder(vararg messages: String): LogsListAssert {
         if (messages.size != actual.size) failWithMessage(
-            "There were more or less logs than expected"
+            "Expected to find ${messages.size} logs, but was ${actual.size}"
         )
 
         actual.forEachIndexed { index, log ->
@@ -72,14 +72,9 @@ class LogsListAssert(actual: List<JsonObject>) : AbstractAssert<LogsListAssert, 
         return this
     }
 
-    fun hasTags(vararg tags: Pair<String, String>): LogsListAssert {
+    fun hasTags(vararg tags: String): LogsListAssert {
         val parsedTags = tags
-            .map {
-                val transformed = "${it.first}:${it.second}"
-                transformed.trim(':')
-            }
             .joinToString(",")
-
         actual.forEach { log ->
             if (log.get(TAGS_KEY)?.asString != parsedTags) {
                 failWithMessage(

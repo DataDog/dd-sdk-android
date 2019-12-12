@@ -17,7 +17,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
-class DDTestRule<T : Activity>(activityClass: Class<T>) : ActivityTestRule<T>(activityClass) {
+class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) : ActivityTestRule<T>(activityClass) {
     private val mockWebServer: MockWebServer = MockWebServer()
     val requestObjects = LinkedList<JsonObject>()
     var requestHeaders: Headers? = null

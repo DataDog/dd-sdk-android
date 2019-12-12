@@ -2,22 +2,26 @@ package com.datadog.android.sdk.integrationtests
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.log.Logger
 
 class MainActivity : AppCompatActivity() {
 
+    lateinit var logger: Logger
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        logger = Runtime.logger(this)
         setContentView(R.layout.main_activity_layout)
-        Runtime.appLogger.i("MainActivity/onCreate")
+        logger.i("MainActivity/onCreate")
     }
 
     override fun onStart() {
         super.onStart()
-        Runtime.appLogger.i("MainActivity/onStart")
+        logger.i("MainActivity/onStart")
     }
 
     override fun onResume() {
         super.onResume()
-        Runtime.appLogger.i("MainActivity/onResume")
+        logger.i("MainActivity/onResume")
     }
 }
