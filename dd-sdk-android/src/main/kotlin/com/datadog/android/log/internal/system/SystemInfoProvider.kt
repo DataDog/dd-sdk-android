@@ -4,8 +4,8 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.log.internal.system
 
-internal interface NetworkInfoProvider {
-    fun getLatestNetworkInfo(): NetworkInfo
+internal interface SystemInfoProvider {
+    fun getLatestSystemInfo(): SystemInfo
 }

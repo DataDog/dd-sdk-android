@@ -11,6 +11,10 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.system.SystemInfo
+import com.datadog.android.log.internal.system.SystemInfoProvider
 import com.datadog.android.utils.extension.SystemOutStream
 import com.datadog.android.utils.extension.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
@@ -23,7 +27,9 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
@@ -35,13 +41,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(SystemOutputExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class LogUploadRunnableTest {
 
@@ -51,12 +58,112 @@ internal class LogUploadRunnableTest {
     lateinit var mockLogReader: LogReader
     @Mock
     lateinit var mockLogUploader: LogUploader
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockSystemInfoProvider: SystemInfoProvider
 
     lateinit var testedRunnable: LogUploadRunnable
 
     @BeforeEach
-    fun `set up`() {
-        testedRunnable = LogUploadRunnable(mockHandler, mockLogReader, mockLogUploader)
+    fun `set up`(forge: Forge) {
+        val fakeNetworkInfo = NetworkInfo(
+            forge.aValueFrom(
+                enumClass = NetworkInfo.Connectivity::class.java,
+                exclude = listOf(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+            )
+        )
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        val fakeSystemInfo = SystemInfo(
+            batteryStatus = forge.aValueFrom(SystemInfo.BatteryStatus::class.java),
+            batteryLevel = forge.anInt(20, 100)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+
+        testedRunnable = LogUploadRunnable(
+            mockHandler,
+            mockLogReader,
+            mockLogUploader,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+    }
+
+    @Test
+    fun `doesn't send batch when offline`(@Forgery batch: Batch) {
+        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockLogUploader, never()).uploadLogs(batch.logs)
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `doesn't send batch when battery is low and unplugged`(
+        @Forgery batch: Batch,
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            forge.anElementFrom(
+                SystemInfo.BatteryStatus.DISCHARGING,
+                SystemInfo.BatteryStatus.NOT_CHARGING
+            ),
+            forge.anInt(1, 10)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockLogUploader, never()).uploadLogs(anyOrNull())
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `doesn't send batch when power save mode is enabled`(
+        @Forgery batch: Batch,
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            batteryStatus = forge.anElementFrom(
+                SystemInfo.BatteryStatus.DISCHARGING,
+                SystemInfo.BatteryStatus.NOT_CHARGING
+            ),
+            batteryLevel = forge.anInt(50, 100),
+            powerSaveMode = true
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+
+        testedRunnable.run()
+
+        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockLogUploader, never()).uploadLogs(anyOrNull())
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
+    }
+
+    @Test
+    fun `batch sent when battery is low and charging`(
+        @Forgery batch: Batch,
+        forge: Forge
+    ) {
+        val systemInfo = SystemInfo(
+            SystemInfo.BatteryStatus.CHARGING,
+            forge.anInt(1, 10)
+        )
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
+        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogUploader).uploadLogs(batch.logs)
+        verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
@@ -100,17 +207,19 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on third Network Error`(@Forgery batch: Batch) {
+    fun `batch kept after n Network Error`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 3, max = 42) runCount: Int
+    ) {
         whenever(mockLogReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
-        testedRunnable.run()
-        testedRunnable.run()
-        testedRunnable.run()
-
-        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
-        verify(mockLogReader).dropBatch(batch.id)
-        verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
+        for (i in 0 until runCount) {
+            testedRunnable.run()
+        }
+        verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
@@ -150,17 +259,20 @@ internal class LogUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on third Server Error`(@Forgery batch: Batch) {
+    fun `batch kept after n Server Error`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 3, max = 42) runCount: Int
+    ) {
         whenever(mockLogReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
-        testedRunnable.run()
-        testedRunnable.run()
-        testedRunnable.run()
+        for (i in 0 until runCount) {
+            testedRunnable.run()
+        }
 
-        verify(mockLogUploader, times(3)).uploadLogs(batch.logs)
-        verify(mockLogReader).dropBatch(batch.id)
-        verify(mockHandler, times(3)).postDelayed(same(testedRunnable), any())
+        verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
+        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test

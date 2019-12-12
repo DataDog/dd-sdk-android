@@ -33,8 +33,8 @@ internal class BroadcastReceiverNetworkInfoProvider :
     override fun onReceive(context: Context, intent: Intent?) {
         sdkLogger.d("$TAG: received network update")
         val connectivityMgr =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetworkInfo = connectivityMgr.activeNetworkInfo
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
 
         networkInfo = buildNetworkInfo(context, activeNetworkInfo)
     }
@@ -43,7 +43,7 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
     // region NetworkInfoProvider
 
-    override fun getLatestNetworkInfos(): NetworkInfo {
+    override fun getLatestNetworkInfo(): NetworkInfo {
         return networkInfo
     }
 
@@ -77,9 +77,9 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val telephonyMgr =
-                context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            val carrierName = telephonyMgr.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
-            val carrierId = telephonyMgr.simCarrierId
+                context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
+            val carrierId = telephonyMgr?.simCarrierId ?: -1
             NetworkInfo(connectivity, carrierName.toString(), carrierId)
         } else {
             NetworkInfo(connectivity)

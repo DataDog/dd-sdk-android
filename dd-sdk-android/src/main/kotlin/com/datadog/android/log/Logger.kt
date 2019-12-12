@@ -389,7 +389,7 @@ private constructor(
             throwable = throwable,
             attributes = attributes.toMap(),
             tags = tags.toList(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfos(),
+            networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             loggerName = loggerName,
             threadName = Thread.currentThread().name
         )

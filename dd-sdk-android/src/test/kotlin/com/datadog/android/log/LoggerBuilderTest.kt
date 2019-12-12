@@ -7,8 +7,6 @@
 package com.datadog.android.log
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkInfo
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.nhaarman.mockitokotlin2.doReturn
@@ -46,15 +44,9 @@ internal class LoggerBuilderTest {
     fun `set up Datadog`(forge: Forge) {
         packageName = forge.anAlphabeticalString()
         val mockContext: Context = mock()
-        val mockConnectivityMgr: ConnectivityManager = mock()
-        val mockNetworkInfo: NetworkInfo = mock()
         whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockContext.packageName) doReturn packageName
-        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
-            .doReturn(mockConnectivityMgr)
-        whenever(mockConnectivityMgr.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockNetworkInfo.isConnected) doReturn true
-        whenever(mockNetworkInfo.type) doReturn ConnectivityManager.TYPE_WIFI
+
         Datadog.initialize(mockContext, forge.anHexadecimalString())
     }
 

@@ -8,13 +8,13 @@ package com.datadog.android.log.assertj
 
 import com.datadog.android.log.internal.net.NetworkInfo
 import org.assertj.core.api.AbstractObjectAssert
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 
 internal class NetworkInfoAssert(actual: NetworkInfo) :
     AbstractObjectAssert<NetworkInfoAssert, NetworkInfo>(actual, NetworkInfoAssert::class.java) {
 
     fun hasConnectivity(expected: NetworkInfo.Connectivity): NetworkInfoAssert {
-        Assertions.assertThat(actual.connectivity)
+        assertThat(actual.connectivity)
             .overridingErrorMessage(
                 "Expected networkInfo to have connectivity $expected but was ${actual.connectivity}"
             )
@@ -23,7 +23,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     }
 
     fun hasCarrierName(expected: String?): NetworkInfoAssert {
-        Assertions.assertThat(actual.carrierName)
+        assertThat(actual.carrierName)
             .overridingErrorMessage(
                 "Expected networkInfo to have carrierName $expected but was ${actual.carrierName}"
             )
@@ -32,7 +32,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     }
 
     fun hasCarrierId(expected: Int): NetworkInfoAssert {
-        Assertions.assertThat(actual.carrierId)
+        assertThat(actual.carrierId)
             .overridingErrorMessage(
                 "Expected networkInfo to have carrierId $expected but was ${actual.carrierId}"
             )
