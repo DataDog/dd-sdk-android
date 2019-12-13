@@ -71,7 +71,7 @@ class LogsListAssert(actual: List<JsonObject>) :
                     null -> assertThat(value).isEqualTo(JsonNull.INSTANCE)
                     is Int -> assertThat(value.asInt).isEqualTo(expectedValue)
                     is String -> assertThat(value.asString).isEqualTo(expectedValue)
-                    else -> throw IllegalStateException("Unable to process ${it.key}=$expectedValue")
+                    else -> assertThat(value.asString).isEqualTo(expectedValue.toString())
                 }
             }
         }

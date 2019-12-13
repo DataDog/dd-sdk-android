@@ -24,6 +24,10 @@
             android:name=".ActivityLifecycleLogs"
             android:windowSoftInputMode="adjustResize">
         </activity>
+        <activity
+            android:name=".ActivityLocalAttributesLogs"
+            android:windowSoftInputMode="adjustResize">
+        </activity>
     </application>
 
 </manifest>
