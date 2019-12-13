@@ -32,6 +32,7 @@ object Dependencies {
         const val Detekt = "1.2.1"
         const val KtLint = "8.2.0"
         const val DependencyVersion = "0.27.0"
+        const val Dokka = "0.10.0"
 
         // AndroidJunit
         const val AndroidJunitRunner = "1.2.0"
@@ -118,6 +119,7 @@ object Dependencies {
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
         const val AndroidBenchmark =
             "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
+        const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
     }
 
     object Repositories {

@@ -13,6 +13,7 @@ import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 
 fun Project.publishingConfig(localRepo: String) {
 
+    javadocConfig()
     val projectName = name
 
     extensionConfig<PublishingExtension> {
@@ -28,6 +29,7 @@ fun Project.publishingConfig(localRepo: String) {
                 artifactId = projectName
                 version = AndroidConfig.VERSION.name
                 artifact("$buildDir/outputs/aar/$projectName-release.aar")
+                artifact(tasks.findByName("generateJavadoc"))
 
                 // publishing AAR doesn't fill the pom.xml dependencies.
                 pom.withXml {

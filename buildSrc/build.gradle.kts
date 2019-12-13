@@ -38,9 +38,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.61")
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.1.1")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:9.1.0")
-    implementation("com.android.tools.build:gradle:3.5.2")
+    implementation("com.android.tools.build:gradle:3.5.3")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
 
     testImplementation("junit:junit:4.12")
 }
