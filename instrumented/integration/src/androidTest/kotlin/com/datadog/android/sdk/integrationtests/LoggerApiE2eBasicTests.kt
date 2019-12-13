@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class LoggerApiE2eBasicTests {
+internal class LoggerApiE2eBasicTests {
 
     @get:Rule
     var mockDatadogServerRule =

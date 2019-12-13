@@ -22,14 +22,14 @@ analysis:ktlint:
   image: $CI_IMAGE_DOCKER
   stage: analysis
   script:
-    - ./gradlew :dd-sdk-android:ktlintCheck
+    - ./gradlew :ktlintCheckAll
 
 analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   script:
-    - ./gradlew :dd-sdk-android:detekt
+    - ./gradlew :detektAll
 
 analysis:licenses:
   tags: [ "runner:docker", "size:large" ]

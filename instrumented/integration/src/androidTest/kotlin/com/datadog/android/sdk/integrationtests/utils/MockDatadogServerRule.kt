@@ -10,14 +10,15 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.LinkedList
 import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
-class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) : ActivityTestRule<T>(activityClass) {
+class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) :
+    ActivityTestRule<T>(activityClass) {
     private val mockWebServer: MockWebServer = MockWebServer()
     val requestObjects = LinkedList<JsonObject>()
     var requestHeaders: Headers? = null

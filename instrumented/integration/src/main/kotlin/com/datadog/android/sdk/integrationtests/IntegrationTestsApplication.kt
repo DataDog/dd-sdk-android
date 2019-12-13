@@ -3,7 +3,7 @@ package com.datadog.android.sdk.integrationtests
 import android.app.Application
 import com.datadog.android.Datadog
 
-class IntegrationTestsApplication : Application() {
+internal class IntegrationTestsApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
