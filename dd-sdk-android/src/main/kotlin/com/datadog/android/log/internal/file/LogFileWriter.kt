@@ -80,6 +80,8 @@ internal class LogFileWriter(
         jsonLog.addProperty(LogStrategy.TAG_MESSAGE, log.message)
         jsonLog.addProperty(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
         jsonLog.addProperty(LogStrategy.TAG_STATUS, logLevelStatusName(log.level))
+        jsonLog.addProperty(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
+        jsonLog.addProperty(LogStrategy.TAG_THREAD_NAME, log.threadName)
 
         // Timestamp
         val formattedDate = simpleDateFormat.format(Date(log.timestamp))
@@ -121,8 +123,6 @@ internal class LogFileWriter(
         jsonLog: JsonObject
     ) {
         log.throwable?.let {
-            jsonLog.addProperty(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
-            jsonLog.addProperty(LogStrategy.TAG_THREAD_NAME, log.threadName)
             val sw = StringWriter()
             it.printStackTrace(PrintWriter(sw))
             jsonLog.addProperty(LogStrategy.TAG_ERROR_KIND, it.javaClass.simpleName)
