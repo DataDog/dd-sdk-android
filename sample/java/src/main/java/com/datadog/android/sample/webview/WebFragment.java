@@ -29,6 +29,8 @@ import com.datadog.android.sample.SampleApplication;
 import com.datadog.android.sample.logs.LogsViewModel;
 
 import java.lang.annotation.Target;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WebFragment extends Fragment {
 
@@ -76,52 +78,87 @@ public class WebFragment extends Fragment {
     private WebViewClient mWebViewClient = new WebViewClient() {
 
         @Override
-        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        public void onPageStarted(WebView view, final String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
-            mLogger.addAttribute("webview_url", url);
-            mLogger.d("event: onPageStarted");
+            mLogger.d(
+                    "onPageStarted",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.url", url);
+                    }}
+            );
         }
 
         @Override
-        public void onPageFinished(WebView view, String url) {
+        public void onPageFinished(WebView view, final String url) {
             super.onPageFinished(view, url);
-            mLogger.d("event: onPageFinished");
+            mLogger.d(
+                    "onPageFinished",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.url", url);
+                    }}
+            );
         }
 
         @Override
-        public void onLoadResource(WebView view, String url) {
+        public void onLoadResource(WebView view, final String url) {
             super.onLoadResource(view, url);
-            mLogger.d("loading resource: " + url);
+            mLogger.d(
+                    "loading resource",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.url", url);
+                    }}
+            );
         }
 
         @Override
         @TargetApi(Build.VERSION_CODES.M)
-        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        public void onReceivedError(WebView view,
+                                    final WebResourceRequest request,
+                                    final WebResourceError error) {
             super.onReceivedError(view, request, error);
             mLogger.e(
-                    "received error " + error.getErrorCode() + ":"
-                            + error.getDescription() + " on: "
-                            + request.getMethod() + " / " + request.getUrl()
+                    "received error",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.request.method", request.getMethod());
+                        put("http.url", request.getUrl());
+                        put("http.error.code", error.getErrorCode());
+                        put("http.error.description", error.getDescription());
+                    }}
             );
         }
 
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
-        public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+        public void onReceivedHttpError(WebView view,
+                                        final WebResourceRequest request,
+                                        final WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
             mLogger.e(
-                    "received HTTP error " + errorResponse.getStatusCode() + ":"
-                            + errorResponse.getReasonPhrase() + " on: "
-                            + request.getMethod() + " / " + request.getUrl()
+                    "received HTTP error",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.request.method", request.getMethod());
+                        put("http.url", request.getUrl());
+                        put("http.error.code", errorResponse.getStatusCode());
+                        put("http.error.description", errorResponse.getReasonPhrase());
+                    }}
             );
         }
 
         @Override
-        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, final SslError error) {
             super.onReceivedSslError(view, handler, error);
             mLogger.e(
-                    "received SSL error " + error.getPrimaryError()
-                            + " on: " + error.getUrl()
+                    "received SSL error",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.url", error.getUrl());
+                        put("http.error.code", error.getPrimaryError());
+                    }}
             );
         }
     };
@@ -138,9 +175,14 @@ public class WebFragment extends Fragment {
         }
 
         @Override
-        public void onReceivedTitle(WebView view, String title) {
+        public void onReceivedTitle(WebView view, final String title) {
             super.onReceivedTitle(view, title);
-            mLogger.v("event: onReceivedTitle <" + title + ">");
+            mLogger.v(
+                    "onReceivedTitle",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("webview.title", title);
+                    }});
         }
 
         @Override
@@ -150,17 +192,36 @@ public class WebFragment extends Fragment {
         }
 
         @Override
-        public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-            mLogger.w("received JS alert : " + message + " on: " + url);
+        public boolean onJsAlert(
+                WebView view,
+                final String url,
+                final String message,
+                final JsResult result
+        ) {
+            mLogger.w(
+                    "onJsAlert",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("http.url", url);
+                        put("webview.alert.message", message);
+                        put("webview.alert.result", result);
+                    }});
             return super.onJsAlert(view, url, message, result);
         }
 
         @Override
-        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-            mLogger.d("received console message : " + consoleMessage.message());
+        public boolean onConsoleMessage(final ConsoleMessage consoleMessage) {
+            mLogger.w(
+                    "onConsoleMessage",
+                    null,
+                    new HashMap<String, Object>() {{
+                        put("webview.console.message", consoleMessage);
+                    }});
             return super.onConsoleMessage(consoleMessage);
         }
     };
 
     // region
+
+
 }

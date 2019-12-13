@@ -46,66 +46,102 @@ private constructor(
      * Sends a VERBOSE log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun v(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.VERBOSE, message, throwable)
+    fun v(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.VERBOSE, message, throwable, attributes)
     }
 
     /**
      * Sends a Debug log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun d(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.DEBUG, message, throwable)
+    fun d(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.DEBUG, message, throwable, attributes)
     }
 
     /**
      * Sends an Info log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun i(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.INFO, message, throwable)
+    fun i(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.INFO, message, throwable, attributes)
     }
 
     /**
      * Sends a Warning log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun w(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.WARN, message, throwable)
+    fun w(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.WARN, message, throwable, attributes)
     }
 
     /**
      * Sends an Error log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun e(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.ERROR, message, throwable)
+    fun e(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.ERROR, message, throwable, attributes)
     }
 
     /**
      * Sends an Assert log message.
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overriden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
-    fun wtf(message: String, throwable: Throwable? = null) {
-        internalLog(AndroidLog.ASSERT, message, throwable)
+    fun wtf(
+        message: String,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(AndroidLog.ASSERT, message, throwable, attributes)
     }
 
     // endregion
@@ -356,7 +392,8 @@ private constructor(
     private fun internalLog(
         level: Int,
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
+        attributes: Map<String, Any?>
     ) {
         if (logcatLogsEnabled) {
             if (Build.MODEL == null) {
@@ -375,19 +412,27 @@ private constructor(
         }
 
         if (datadogLogsEnabled) {
-            val log = createLog(level, message, throwable)
+            val log = createLog(level, message, throwable, attributes)
             logWriter.writeLog(log)
         }
     }
 
-    private fun createLog(level: Int, message: String, throwable: Throwable?): Log {
+    private fun createLog(
+        level: Int,
+        message: String,
+        throwable: Throwable?,
+        additionalAttributes: Map<String, Any?>
+    ): Log {
+        val combinedAttributes = mutableMapOf<String, Any?>()
+        combinedAttributes.putAll(attributes)
+        combinedAttributes.putAll(additionalAttributes)
         return Log(
             serviceName = serviceName,
             level = level,
             message = message,
             timestamp = timeProvider.getServerTimestamp(),
             throwable = throwable,
-            attributes = attributes.toMap(),
+            attributes = combinedAttributes,
             tags = tags.toList(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             loggerName = loggerName,

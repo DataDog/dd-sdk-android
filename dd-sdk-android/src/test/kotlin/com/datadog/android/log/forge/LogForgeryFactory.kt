@@ -10,7 +10,10 @@ import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.Log
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.io.File
 import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 internal class LogForgeryFactory : ForgeryFactory<Log> {
     override fun getForgery(forge: Forge): Log {
@@ -42,6 +45,9 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             aDouble(),
             anAsciiString(),
             getForgery<Date>(),
+            getForgery<Locale>(),
+            getForgery<TimeZone>(),
+            getForgery<File>(),
             null
         ).map { anAlphabeticalString() to it }
             .toMap().toMutableMap()

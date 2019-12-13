@@ -77,6 +77,7 @@ internal class DatadogTest {
         }
     }
 
+    @Test
     fun `it will initialize all dependencies at initialize`() {
         Datadog.initialize(mockContext, fakeToken)
 

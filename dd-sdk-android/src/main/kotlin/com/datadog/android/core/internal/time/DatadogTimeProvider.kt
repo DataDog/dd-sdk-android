@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.time
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
 import kotlin.math.abs
 
@@ -27,7 +26,6 @@ internal class DatadogTimeProvider(
         if (restoredOffset != 0L) {
             serverOffset = restoredOffset
             samples = 1
-            sdkLogger.d("$TAG: server offset restored to $restoredOffset")
         }
     }
 
@@ -40,7 +38,6 @@ internal class DatadogTimeProvider(
             serverOffset = offsetMs
             samples = 1
         } else if (abs(currentOffsetMs - offsetMs) > MAX_OFFSET_DEVIATION) {
-            sdkLogger.d("$TAG: server got offset $offsetMs outside of expected deviation")
             serverOffset = offsetMs
             samples = 1
         } else {

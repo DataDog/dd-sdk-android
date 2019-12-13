@@ -312,6 +312,79 @@ internal class LoggerContextTest {
 
     // endregion
 
+    // region Local Attributes
+
+    @Test
+    fun `log message with local attributes`(forge: Forge) {
+
+        val key = forge.anAlphabeticalString()
+        val value = forge.anInt()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.d(message, null, mapOf(key to value))
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasAttributes(mapOf(key to value))
+        }
+    }
+
+    @Test
+    fun `log message with local attributes (null value)`(forge: Forge) {
+
+        val key = forge.anAlphabeticalString()
+        val value: Any? = null
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.d(message, null, mapOf(key to value))
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasAttributes(mapOf(key to value))
+        }
+    }
+
+    @Test
+    fun `log message with local attributes override logger value`(forge: Forge) {
+
+        val key = forge.anAlphabeticalString()
+        val loggerValue = forge.aFloat()
+        val localValue = forge.anAlphabeticalString()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.addAttribute(key, loggerValue)
+        testedLogger.i(message, null, mapOf(key to localValue))
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).writeLog(capture())
+            assertThat(lastValue)
+                .hasAttributes(mapOf(key to localValue))
+        }
+    }
+
+    @Test
+    fun `log message without local attributes after message with local attributes`(forge: Forge) {
+
+        val key = forge.anAlphabeticalString()
+        val value = forge.anInt()
+        val message = forge.anAlphabeticalString()
+
+        testedLogger.w(message, null, mapOf(key to value))
+        testedLogger.e(message)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter, times(2)).writeLog(capture())
+            assertThat(firstValue)
+                .hasAttributes(mapOf(key to value))
+            assertThat(lastValue)
+                .hasAttributes(emptyMap())
+        }
+    }
+
+    // endregion
+
     // region Tags
 
     @Test
