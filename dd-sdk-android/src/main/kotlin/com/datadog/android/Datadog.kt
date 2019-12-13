@@ -50,7 +50,7 @@ object Datadog {
 
     private const val TAG = "Datadog"
 
-    private const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
+    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
 
     private var initialized: Boolean = false
     private lateinit var clientToken: String
@@ -99,16 +99,20 @@ object Datadog {
         }
 
         // Start handler to send logs
-        uploader = LogOkHttpUploader(
-            endpointUrl ?: DATADOG_US,
-            Datadog.clientToken,
-            OkHttpClient.Builder()
-                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-                .connectionSpecs(listOf(ConnectionSpec.RESTRICTED_TLS))
-                .addInterceptor(networkTimeInterceptor)
-                .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .build()
-        )
+        val endpoint = endpointUrl ?: DATADOG_US
+        val connectionSpec = if (endpoint.startsWith("http://")) {
+            ConnectionSpec.CLEARTEXT
+        } else {
+            ConnectionSpec.RESTRICTED_TLS
+        }
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(networkTimeInterceptor)
+            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+            .connectionSpecs(listOf(connectionSpec))
+            .build()
+
+        uploader = LogOkHttpUploader(endpoint, Datadog.clientToken, okHttpClient)
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
             uploader,

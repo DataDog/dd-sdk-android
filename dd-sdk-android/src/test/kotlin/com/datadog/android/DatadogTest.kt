@@ -14,8 +14,11 @@ import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
+import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.utils.getFieldValue
+import com.datadog.android.utils.getStaticValue
 import com.datadog.android.utils.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -28,6 +31,9 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.ConnectionSpec
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -142,5 +148,39 @@ internal class DatadogTest {
 
         verify(mockReader, never()).dropAllBatches()
         verify(mockUploader).setEndpoint(newEndpoint)
+    }
+
+    @Test
+    fun `add strict network policy for https endpoints`(forge: Forge) {
+        val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+
+        Datadog.initialize(mockContext, fakeToken, endpoint)
+
+        val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
+        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+
+        assertThat(okHttpClient.protocols)
+            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
+        assertThat(okHttpClient.callTimeoutMillis)
+            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
+        assertThat(okHttpClient.connectionSpecs)
+            .containsExactly(ConnectionSpec.RESTRICTED_TLS)
+    }
+
+    @Test
+    fun `no network policy for http endpoints`(forge: Forge) {
+        val endpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
+
+        Datadog.initialize(mockContext, fakeToken, endpoint)
+
+        val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
+        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+
+        assertThat(okHttpClient.protocols)
+            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
+        assertThat(okHttpClient.callTimeoutMillis)
+            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
+        assertThat(okHttpClient.connectionSpecs)
+            .containsExactly(ConnectionSpec.CLEARTEXT)
     }
 }
