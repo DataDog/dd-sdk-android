@@ -6,7 +6,6 @@
 
 package com.datadog.gradle.config
 
-import com.android.builder.model.AndroidLibrary
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
@@ -48,7 +47,7 @@ fun Project.publishingConfig(localRepo: String) {
         }
     }
 
-    tasks.register("sourcesJar", Jar::class.java){
+    tasks.register("sourcesJar", Jar::class.java) {
         archiveClassifier.convention("sources")
         from("${projectDir.canonicalPath}/src/main")
     }

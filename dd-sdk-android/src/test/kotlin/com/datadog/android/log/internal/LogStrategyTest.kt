@@ -6,9 +6,11 @@
 
 package com.datadog.android.log.internal
 
+import android.content.Context
 import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
+import com.datadog.android.Datadog
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.NetworkInfo
@@ -19,6 +21,9 @@ import com.datadog.android.utils.extension.TestTargetApi
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -29,6 +34,7 @@ import java.io.StringWriter
 import java.util.Date
 import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,13 +58,23 @@ internal abstract class LogStrategyTest {
     // region Setup
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        val mockContext: Context = mock()
+        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockContext.packageName) doReturn forge.anAlphabeticalString()
+
+        Datadog.initialize(mockContext, forge.anHexadecimalString())
         val persistingStrategy = getStrategy()
 
         testedLogWriter = persistingStrategy.getLogWriter()
         testedLogReader = persistingStrategy.getLogReader()
 
         setUp(testedLogWriter, testedLogReader)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.stop()
     }
 
     abstract fun getStrategy(): LogStrategy
@@ -339,6 +355,8 @@ internal abstract class LogStrategyTest {
             .hasField(LogStrategy.TAG_MESSAGE, log.message)
             .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
             .hasField(LogStrategy.TAG_STATUS, levels[log.level])
+            .hasField(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
+            .hasField(LogStrategy.TAG_THREAD_NAME, log.threadName)
 
         assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
 
@@ -415,15 +433,11 @@ internal abstract class LogStrategyTest {
             throwable.printStackTrace(PrintWriter(sw))
 
             assertThat(jsonObject)
-                .hasField(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
-                .hasField(LogStrategy.TAG_THREAD_NAME, log.threadName)
                 .hasField(LogStrategy.TAG_ERROR_KIND, throwable.javaClass.simpleName)
                 .hasField(LogStrategy.TAG_ERROR_MESSAGE, throwable.message)
                 .hasField(LogStrategy.TAG_ERROR_STACK, sw.toString())
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(LogStrategy.TAG_LOGGER_NAME)
-                .doesNotHaveField(LogStrategy.TAG_THREAD_NAME)
                 .doesNotHaveField(LogStrategy.TAG_ERROR_KIND)
                 .doesNotHaveField(LogStrategy.TAG_ERROR_MESSAGE)
                 .doesNotHaveField(LogStrategy.TAG_ERROR_STACK)
