@@ -6,13 +6,16 @@
 
 package com.datadog.gradle.config
 
+import com.android.builder.model.AndroidLibrary
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
+import org.gradle.jvm.tasks.Jar
 
 fun Project.publishingConfig(localRepo: String) {
 
+    javadocConfig()
     val projectName = name
 
     extensionConfig<PublishingExtension> {
@@ -28,6 +31,8 @@ fun Project.publishingConfig(localRepo: String) {
                 artifactId = projectName
                 version = AndroidConfig.VERSION.name
                 artifact("$buildDir/outputs/aar/$projectName-release.aar")
+                artifact(tasks.findByName("sourcesJar"))
+                artifact(tasks.findByName("generateJavadoc"))
 
                 // publishing AAR doesn't fill the pom.xml dependencies.
                 pom.withXml {
@@ -41,6 +46,11 @@ fun Project.publishingConfig(localRepo: String) {
                 }
             }
         }
+    }
+
+    tasks.register("sourcesJar", Jar::class.java){
+        archiveClassifier.convention("sources")
+        from("${projectDir.canonicalPath}/src/main")
     }
 
     tasks.withType(AbstractPublishToMaven::class.java) {

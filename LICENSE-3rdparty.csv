@@ -29,3 +29,4 @@ build,io.gitlab.arturbosch.detekt,Apache-2.0,Copyright 2016-2019 the original au
 build,com.android.tools.build,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 build,com.android.tools.lint,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 build,com.pinterest.ktlint,MIT,"Copyright 2019 Pinterest Inc, Copyright 2016-2019 Stanley Shyiko"
+build,org.jetbrains.dokka,Apache-2.0,"Copyright 2014-2019 JetBrains s.r.o. and Dokka project contributors."
