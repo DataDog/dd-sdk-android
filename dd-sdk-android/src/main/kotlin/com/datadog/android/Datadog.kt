@@ -23,7 +23,9 @@ import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvid
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -101,6 +103,8 @@ object Datadog {
             endpointUrl ?: DATADOG_US,
             Datadog.clientToken,
             OkHttpClient.Builder()
+                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                .connectionSpecs(listOf(ConnectionSpec.RESTRICTED_TLS))
                 .addInterceptor(networkTimeInterceptor)
                 .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .build()
