@@ -42,6 +42,7 @@ dependencies {
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
+    implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
 
     testImplementation("junit:junit:4.12")
 }

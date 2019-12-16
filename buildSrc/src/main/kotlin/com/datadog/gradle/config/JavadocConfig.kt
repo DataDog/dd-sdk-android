@@ -1,5 +1,6 @@
 package com.datadog.gradle.config
 
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import java.io.File
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
@@ -7,8 +8,9 @@ import org.jetbrains.dokka.gradle.DokkaTask
 
 fun Project.javadocConfig() {
 
-    tasks.register("generateJavadoc", Jar::class.java) {
-        dependsOn(":dd-sdk-android:dokka")
+    @Suppress("UnstableApiUsage")
+    val javadocTask = tasks.register("generateJavadoc", Jar::class.java) {
+        dependsOn("dokka")
         archiveClassifier.convention("javadoc")
         from("${buildDir.canonicalPath}/reports/javadoc")
     }
@@ -22,5 +24,7 @@ fun Project.javadocConfig() {
                 outputDir.mkdirs()
             }
         }
+
+        javadocTask.dependsOn(this)
     }
 }

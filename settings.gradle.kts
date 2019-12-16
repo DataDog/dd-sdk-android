@@ -17,6 +17,7 @@ pluginManagement {
                 Dependencies.PluginIds.Detetk -> Dependencies.Versions.Detekt
                 Dependencies.PluginIds.DependencyVersion -> Dependencies.Versions.DependencyVersion
                 Dependencies.PluginIds.KtLint -> Dependencies.Versions.KtLint
+                Dependencies.PluginIds.Bintray -> Dependencies.Versions.Bintray
 
                 else -> {
                     if (

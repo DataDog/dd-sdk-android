@@ -33,6 +33,7 @@ object Dependencies {
         const val KtLint = "8.2.0"
         const val DependencyVersion = "0.27.0"
         const val Dokka = "0.10.0"
+        const val Bintray = "1.8.4"
 
         // AndroidJunit
         const val AndroidJunitRunner = "1.2.0"
@@ -120,6 +121,7 @@ object Dependencies {
         const val AndroidBenchmark =
             "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
+        const val Bintray = "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.Bintray}"
     }
 
     object Repositories {
@@ -137,6 +139,7 @@ object Dependencies {
         const val KotlinJVM = "org.jetbrains.kotlin.jvm"
         const val KotlinAndroid = "org.jetbrains.kotlin.android"
         const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
+        const val Bintray = "com.jfrog.bintray"
     }
 
     object PluginNamespaces {
