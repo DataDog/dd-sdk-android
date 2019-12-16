@@ -1,10 +1,8 @@
 package com.datadog.android.sdk.integrationtests.utils
 
 import android.app.Activity
-import android.os.Build
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.google.gson.JsonObject
@@ -19,6 +17,7 @@ import okhttp3.mockwebserver.RecordedRequest
 
 class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) :
     ActivityTestRule<T>(activityClass) {
+
     private val mockWebServer: MockWebServer = MockWebServer()
     val requestObjects = LinkedList<JsonObject>()
     var requestHeaders: Headers? = null
@@ -57,15 +56,5 @@ class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) :
         return MockResponse()
             .setResponseCode(code)
             .setBody("{}")
-    }
-
-    val userAgent: String = System.getProperty("http.agent").let {
-        if (it.isNullOrBlank()) {
-            "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
-        } else {
-            it
-        }
     }
 }

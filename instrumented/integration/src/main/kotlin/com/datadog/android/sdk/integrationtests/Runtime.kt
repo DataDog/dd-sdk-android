@@ -1,6 +1,7 @@
 package com.datadog.android.sdk.integrationtests
 
 import android.content.Context
+import android.os.Build
 import com.datadog.android.log.Logger
 
 internal object Runtime {
@@ -10,39 +11,38 @@ internal object Runtime {
             .setNetworkInfoEnabled(true)
             .setServiceName(context.packageName)
             .build()
-        attributes.forEach {
-            logger.addAttribute(it.first, it.second)
-        }
-        keyValuePairsTags.forEach {
-            logger.addTag(it.first, it.second)
-        }
-        singleValueTags.forEach {
-            logger.addTag(it)
-        }
+
+        // Attributes
+        stringAttributes.forEach { logger.addAttribute(it.key, it.value) }
+        intAttribute.forEach { logger.addAttribute(it.key, it.value) }
+
+        // tags
+        keyValuePairsTags.forEach { logger.addTag(it.key, it.value) }
+        singleValueTags.forEach { logger.addTag(it) }
+
         return logger
     }
 
-    val keyValuePairsTags = arrayOf(
-        Pair<String, String>("flavor", BuildConfig.FLAVOR),
-        Pair<String, String>(
-            "build_type", BuildConfig
-                .BUILD_TYPE
-        )
+    val keyValuePairsTags = mapOf(
+        "flavor" to BuildConfig.FLAVOR,
+        "build_type" to BuildConfig.BUILD_TYPE,
+        "blank" to ""
     )
-    val singleValueTags = arrayOf(
+
+    val singleValueTags = listOf(
         "datadog",
         "mobile"
     )
 
-    val attributes = arrayOf(
-        Pair<String, String>(
-            "version_code", BuildConfig
-                .VERSION_CODE.toString()
-        ),
-        Pair<String, String>(
-            "version_name", BuildConfig
-                .VERSION_NAME
-        )
+    val stringAttributes = mapOf(
+        "version_name" to BuildConfig.VERSION_NAME,
+        "device" to Build.DEVICE,
+        "null_string" to null
+    )
+
+    val intAttribute = mapOf(
+        "version_code" to BuildConfig.VERSION_CODE,
+        "sdk_int" to Build.VERSION.SDK_INT
     )
 
     const val DD_TOKEN = "MYTESTAPPTOKEN"

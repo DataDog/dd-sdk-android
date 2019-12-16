@@ -19,15 +19,14 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Platform.MaterialComponents"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
         <activity
-            android:name=".MainActivity"
+            android:name=".ActivityLifecycleLogs"
             android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ActivityLocalAttributesLogs"
+            android:windowSoftInputMode="adjustResize">
         </activity>
     </application>
 
