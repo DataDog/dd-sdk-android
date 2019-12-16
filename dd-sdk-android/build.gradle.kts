@@ -9,9 +9,11 @@ import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
+import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
+import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
@@ -29,6 +31,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("org.jetbrains.dokka")
+    id("com.jfrog.bintray")
     jacoco
 }
 
@@ -116,5 +119,7 @@ detektConfig()
 ktLintConfig()
 junitConfig()
 jacocoConfig()
+javadocConfig()
 dependencyUpdateConfig()
 publishingConfig("${rootDir.canonicalPath}/repo")
+bintrayConfig()

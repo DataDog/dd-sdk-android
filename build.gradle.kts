@@ -20,6 +20,7 @@ buildscript {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Kotlin)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Dokka)
+        classpath(com.datadog.gradle.Dependencies.ClassPaths.Bintray)
     }
 }
 
