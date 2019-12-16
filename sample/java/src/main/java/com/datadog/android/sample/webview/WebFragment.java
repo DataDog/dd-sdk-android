@@ -39,6 +39,7 @@ public class WebFragment extends Fragment {
 
     private Logger mLogger = new Logger.Builder()
             .setServiceName("android-sample-java")
+            .setLoggerName("web_fragment")
             .setNetworkInfoEnabled(true)
             .setLogcatLogsEnabled(true)
             .build();
