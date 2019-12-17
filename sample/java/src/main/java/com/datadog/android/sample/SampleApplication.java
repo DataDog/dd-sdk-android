@@ -30,12 +30,13 @@ public class SampleApplication extends Application {
         logger = new Logger.Builder()
                 .setNetworkInfoEnabled(true)
                 .setServiceName("android-sample-java")
+                .setLoggerName("Application")
                 .build();
         logger.v("Created a logger");
 
         logger.addAttribute("git_commit", BuildConfig.GIT_COMMIT_H);
         logger.addAttribute("version_code", BuildConfig.VERSION_CODE);
-        logger.addAttribute("version_name", BuildConfig.VERSION_CODE);
+        logger.addAttribute("version_name", BuildConfig.VERSION_NAME);
         logger.v("Added custom attributes");
 
         logger.addTag("flavor", BuildConfig.FLAVOR);
