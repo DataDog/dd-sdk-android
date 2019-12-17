@@ -1,10 +1,13 @@
 package com.datadog.android.sdk.integrationtests
 
 import android.os.Bundle
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
+import java.io.IOException
 
-internal class ActivityLifecycleLogs : AppCompatActivity() {
+class ActivityLifecycleLogs : AppCompatActivity() {
 
     lateinit var logger: Logger
 
