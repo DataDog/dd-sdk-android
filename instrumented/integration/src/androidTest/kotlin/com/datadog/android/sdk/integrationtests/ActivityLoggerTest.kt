@@ -10,7 +10,7 @@ import android.app.Activity
 import android.os.Build
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.BuildConfig
-import com.datadog.android.sdk.integrationtests.utils.MockDatadogServerRule
+import com.datadog.android.sdk.integrationtests.utils.MockServerRule
 import com.datadog.android.sdk.integrationtests.utils.assertj.HeadersAssert
 import com.datadog.android.sdk.integrationtests.utils.assertj.LogsListAssert
 import java.util.concurrent.TimeUnit
@@ -22,7 +22,7 @@ internal abstract class ActivityLoggerTest<A : Activity>(
 ) {
 
     @get:Rule
-    var mockDatadogServerRule = MockDatadogServerRule(activityClass)
+    var mockDatadogServerRule = MockServerRule(activityClass)
 
     @Test
     fun verifyExpectedActivityLogs() {

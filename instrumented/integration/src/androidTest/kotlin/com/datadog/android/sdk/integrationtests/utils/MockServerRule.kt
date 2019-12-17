@@ -15,7 +15,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
-open class MockDatadogServerRule<T : Activity>(activityClass: Class<T>) :
+internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
     ActivityTestRule<T>(activityClass) {
 
     private val mockWebServer: MockWebServer = MockWebServer()
