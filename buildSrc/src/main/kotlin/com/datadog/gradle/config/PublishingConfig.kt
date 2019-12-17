@@ -82,7 +82,7 @@ fun Project.bintrayConfig() {
 
         setPublications(MAVEN_PUBLICATION)
 
-        dryRun = true
+        // dryRun = true
         override = true
         publish = true
 
