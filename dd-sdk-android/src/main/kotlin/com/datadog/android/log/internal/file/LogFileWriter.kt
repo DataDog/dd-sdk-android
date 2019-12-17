@@ -175,8 +175,10 @@ internal class LogFileWriter(
         var file: File? = null
         try {
             file = fileOrchestrator.getWritableFile(obfLog.size)
+            if(file.length()>0L){
+                file.appendBytes(logSeparator)
+            }
             file.appendBytes(obfLog)
-            file.appendBytes(logSeparator)
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
@@ -188,11 +190,12 @@ internal class LogFileWriter(
 
     private fun obfuscate(log: String): ByteArray {
         val input = log.toByteArray(Charsets.UTF_8)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            obfuscateApi26(input)
-        } else {
-            AndroidBase64.encode(input, AndroidBase64.NO_WRAP)
-        }
+//        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            obfuscateApi26(input)
+//        } else {
+//            AndroidBase64.encode(input, AndroidBase64.NO_WRAP)
+//        }
+        return input
     }
 
     @TargetApi(Build.VERSION_CODES.O)

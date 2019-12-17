@@ -12,10 +12,7 @@ import android.util.Base64 as AndroidBase64
 import com.datadog.android.log.internal.Batch
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.split
 import java.io.File
-import java.io.FileNotFoundException
-import java.io.IOException
 import java.util.Base64 as JavaBase64
 
 internal class LogFileReader(
@@ -28,27 +25,31 @@ internal class LogFileReader(
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        var file: File? = null
-        val logs = try {
-            file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-            val inputBytes = file.readBytes()
-            inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
-        } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
-            emptyList<ByteArray>()
-        } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
-            emptyList<ByteArray>()
-        } catch (e: SecurityException) {
-            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
-            emptyList<ByteArray>()
-        }
+        val nextLogFile = fileOrchestrator.getReadableFile(sentBatches) ?: return null
+        var inputBytes = nextLogFile.readBytes()
+//        var logs = inputBytes.toString(Charsets.UTF_8)
 
-        return if (file == null) {
-            null
-        } else {
-            Batch(file.name, logs.map { deobfuscate(it) })
+//        logs = "[" + logs + "]"
+
+        return Batch(nextLogFile.name, inputBytes)
+    }
+
+    fun File.readBytes(): ByteArray = inputStream().use { input ->
+        var offset = 1
+        val length = length()
+        if (length > Int.MAX_VALUE) throw OutOfMemoryError("File $this is too big ($length bytes) to fit in memory.")
+        var remaining =length.toInt()
+        val result = ByteArray(remaining + 2)
+        while (remaining > 0) {
+            val read = input.read(result, offset, remaining)
+            if (read < 0) break
+            remaining -= read
+            offset += read
         }
+        result[offset]=']'.toByte()
+        result[0]='['.toByte()
+        offset += 1
+        if (remaining == 0) result else result.copyOf(offset)
     }
 
     override fun dropBatch(batchId: String) {

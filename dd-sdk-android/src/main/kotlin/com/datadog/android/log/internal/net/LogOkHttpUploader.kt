@@ -16,7 +16,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 
 internal class LogOkHttpUploader(
-    endpoint: String,
+    private val endpoint: String,
     private val token: String,
     private val client: OkHttpClient
 ) : LogUploader {
@@ -40,16 +40,16 @@ internal class LogOkHttpUploader(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun uploadLogs(logs: List<String>): LogUploadStatus {
+    override fun uploadLogs(logs: ByteArray): LogUploadStatus {
 
         return try {
             val request = buildRequest(logs)
             val response = client.newCall(request).execute()
-            sdkLogger.i(
-                    "$TAG: Response code:${response.code} " +
-                            "body:${response.body?.string()} " +
-                            "headers:${response.headers}"
-            )
+//            sdkLogger.i(
+//                    "$TAG: Response code:${response.code} " +
+//                            "body:${response.body?.string()} " +
+//                            "headers:${response.headers}"
+//            )
             responseCodeToLogUploadStatus(response.code)
         } catch (e: IOException) {
             sdkLogger.e("$TAG: unable to upload logs", e)
@@ -70,12 +70,13 @@ internal class LogOkHttpUploader(
         return logs.joinToString(separator = ",", prefix = "[", postfix = "]")
     }
 
-    private fun buildRequest(logs: List<String>): Request {
-        val body = buildBody(logs)
-        sdkLogger.d("$TAG: Sending logs to $url")
+    private fun buildRequest(logs: ByteArray): Request {
+        val url = buildUrl(endpoint, token)
+//        sdkLogger.d("$TAG: Sending logs to $url")
+//        sdkLogger.d("$TAG: $logs")
         return Request.Builder()
             .url(url)
-            .post(RequestBody.create(null, body))
+            .post(RequestBody.create(null, logs))
             .addHeader(HEADER_UA, userAgent)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()
