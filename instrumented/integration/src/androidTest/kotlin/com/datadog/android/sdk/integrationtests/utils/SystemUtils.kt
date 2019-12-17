@@ -5,8 +5,7 @@ fun execShell(vararg command: String): String {
     var toReturn = ""
     process.inputStream.use {
         toReturn =
-            it.bufferedReader().readText()
+            it.bufferedReader().readLine()
     }
-    process.waitFor()
     return toReturn
 }

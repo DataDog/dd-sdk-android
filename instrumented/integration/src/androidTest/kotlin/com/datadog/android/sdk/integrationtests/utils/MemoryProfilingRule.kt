@@ -1,45 +1,38 @@
 package com.datadog.android.sdk.integrationtests.utils
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.rules.TestRule
-import org.junit.runner.Description
-import org.junit.runners.model.Statement
 
 internal class MemoryProfilingRule :
-    TestRule {
+    AbstractProfilingRule<Long>() {
 
-    private fun remainingRamInKb(): Long {
-        return Runtime.getRuntime().freeMemory() / 1024
+    override fun before() {
+        System.gc()
     }
 
-    override fun apply(base: Statement?, description: Description?): Statement {
-        return object : Statement() {
-            override fun evaluate() {
-                System.gc()
-                base?.evaluate()
-                System.gc()
-            }
-        }
+    override fun after() {
+        System.gc()
     }
 
-    fun profileForMemoryConsumption(
-        action: () -> Unit,
-        memoryAllowedThresholdInKb: Long = DEFAULT_MEMORY_ALLOWED_THRESHOLD_IN_KB
-    ) {
-        val before = remainingRamInKb()
-        action()
-        val after = remainingRamInKb()
+    override fun measureBeforeAction(): Long {
+        return remainingRamInKb()
+    }
+
+    override fun measureAfterAction(): Long {
+        return remainingRamInKb()
+    }
+
+    override fun compareWithThreshold(before: Long, after: Long, threshold: Long) {
         val memoryDifference = before - after
         assertThat(memoryDifference)
             .withFailMessage(
                 "We were expecting a difference in memory consumption " +
-                        "less than or equal to ${memoryAllowedThresholdInKb}KB." +
+                        "less than or equal to ${threshold}KB." +
                         " Instead we had ${memoryDifference}KB"
             )
-            .isLessThanOrEqualTo(memoryAllowedThresholdInKb)
+            .isLessThanOrEqualTo(threshold)
     }
 
-    companion object {
-        const val DEFAULT_MEMORY_ALLOWED_THRESHOLD_IN_KB = 100L // 50 KB
+    private fun remainingRamInKb(): Long {
+        return Runtime.getRuntime().freeMemory() / 1024
     }
 }

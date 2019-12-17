@@ -19,7 +19,7 @@ internal class CpuProfileForLogs {
     @get:Rule
     val mockServerRule = MockServerRule(ActivityProfiling::class.java)
     @get:Rule
-    val cpuProfilinigRule = CpuProfilingRule()
+    val cpuProfilingRule = CpuProfilingRule()
 
     @Test
     fun profileCrashLogWithLargeNumberOfAttributes() {
@@ -30,7 +30,7 @@ internal class CpuProfileForLogs {
         }
         val countDownLatch = CountDownLatch(120)
 
-        cpuProfilinigRule.profileForCpuConsumption({
+        cpuProfilingRule.profile({
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 // we are going to simulate 1000 logs per minute => ~ 8 logs every 500 ms
                 while (countDownLatch.count > 0) {
@@ -45,7 +45,7 @@ internal class CpuProfileForLogs {
                     countDownLatch.countDown()
                 }
             }
-        }, 1.0)
+        }, 13.0)
 
         countDownLatch.await()
     }

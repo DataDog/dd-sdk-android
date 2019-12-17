@@ -28,7 +28,7 @@ internal class MemoryProfileForLogs {
             attributes["key$i"] = "value$i"
         }
 
-        memoryProfilingRule.profileForMemoryConsumption({
+        memoryProfilingRule.profile({
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 repeat(50) {
                     mockServerRule.activity.logger.d(
