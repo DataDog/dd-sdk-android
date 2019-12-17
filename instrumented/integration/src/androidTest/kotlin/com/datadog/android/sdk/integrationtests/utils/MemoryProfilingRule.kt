@@ -8,10 +8,6 @@ import org.junit.runners.model.Statement
 internal class MemoryProfilingRule :
     TestRule {
 
-    companion object {
-        const val DEFAULT_MEMORY_ALLOWED_THRESHOLD_IN_KB = 100L // 50 KB
-    }
-
     private fun remainingRamInKb(): Long {
         return Runtime.getRuntime().freeMemory() / 1024
     }
@@ -41,5 +37,9 @@ internal class MemoryProfilingRule :
                         " Instead we had ${memoryDifference}KB"
             )
             .isLessThanOrEqualTo(memoryAllowedThresholdInKb)
+    }
+
+    companion object {
+        const val DEFAULT_MEMORY_ALLOWED_THRESHOLD_IN_KB = 100L // 50 KB
     }
 }

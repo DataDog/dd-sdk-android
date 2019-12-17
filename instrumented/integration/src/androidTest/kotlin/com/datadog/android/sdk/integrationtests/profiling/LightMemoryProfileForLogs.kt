@@ -13,31 +13,24 @@ import org.junit.runner.RunWith
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)
-internal class ProfilingLogsWithCustomAttributes {
+internal class LightMemoryProfileForLogs {
 
     @get:Rule
     val mockServerRule = MockServerRule(ActivityProfiling::class.java)
+
     @get:Rule
-    val memoryProfilingRule = MemoryProfilingRule()
+    val memoryProfilingRule =
+        MemoryProfilingRule()
 
     @Test
-    fun profileCrashLogWithLargeNumberOfAttributes() {
+    fun profileCrashLog() {
         val crash = IOException()
-        val attributes = mutableMapOf<String, String>()
-        for (i in 0..100) {
-            attributes["key$i"] = "value$i"
-        }
-
         memoryProfilingRule.profileForMemoryConsumption({
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 repeat(50) {
-                    mockServerRule.activity.logger.d(
-                        "Test Crash",
-                        crash,
-                        attributes = attributes
-                    )
+                    mockServerRule.activity.logger.d("Test Crash", crash)
                 }
             }
-        }, 500)
+        })
     }
 }
