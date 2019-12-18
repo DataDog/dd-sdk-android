@@ -28,6 +28,7 @@ import java.text.SimpleDateFormat
 import java.util.Base64 as JavaBase64
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 internal class LogFileWriter(
     private val fileOrchestrator: FileOrchestrator,
@@ -35,7 +36,9 @@ internal class LogFileWriter(
     rootDirectory: File
 ) : LazyHandlerThread(THREAD_NAME), LogWriter {
 
-    private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US)
+    private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     private val writeable: Boolean = if (!rootDirectory.exists()) {
         rootDirectory.mkdirs()
@@ -218,7 +221,7 @@ internal class LogFileWriter(
     companion object {
         private val logSeparator = ByteArray(1) { LogFileStrategy.SEPARATOR_BYTE }
 
-        private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSX"
         private const val THREAD_NAME = "ddog_w"
 
         private const val MAX_LOG_SIZE = 256 * 1024 // 256 Kb

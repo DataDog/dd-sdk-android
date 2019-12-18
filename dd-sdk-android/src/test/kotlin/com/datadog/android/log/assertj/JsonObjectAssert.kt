@@ -73,6 +73,33 @@ class JsonObjectAssert(actual: JsonObject) :
         }
     }
 
+    fun hasStringFieldMatching(name: String, regex: String): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat((element is JsonPrimitive && element.isString))
+            .overridingErrorMessage(
+                "Expected json object to have field $name with String value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asString
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with value matching \"%s\" " +
+                    "but was \"%s\"",
+                regex, value
+            )
+            .matches(regex)
+
+        return this
+    }
+
     fun hasStringField(name: String, nullable: Boolean = true): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
