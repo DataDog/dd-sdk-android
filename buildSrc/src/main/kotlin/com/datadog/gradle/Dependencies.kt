@@ -45,6 +45,9 @@ object Dependencies {
         const val AppCompatVersion = "1.1.0"
         const val ConstraintLayoutVersion = "2.0.0-beta3"
         const val GoogleMaterialVersion = "1.0.0"
+
+        // Integrations
+        const val Timber = "4.7.1"
     }
 
     object Libraries {
@@ -112,6 +115,8 @@ object Dependencies {
         const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
         const val DetektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.Detekt}"
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
+
+        const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
     }
 
     object ClassPaths {

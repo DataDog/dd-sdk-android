@@ -35,6 +35,8 @@ pluginManagement {
 }
 
 include(":dd-sdk-android")
+include(":dd-sdk-android-timber")
+
 include(":instrumented:benchmark")
 include(":instrumented:integration")
 
