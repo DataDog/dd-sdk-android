@@ -144,6 +144,18 @@ private constructor(
         internalLog(AndroidLog.ASSERT, message, throwable, attributes)
     }
 
+    /**
+     * Sends a log message.
+     *
+     * @param priority the priority level (must be one of the Android Log.* constants)
+     * @param message the message to be logged
+     * @param throwable a (nullable) throwable to be logged with the message
+     *
+     */
+    fun log(priority: Int, message: String, throwable: Throwable? = null) {
+        internalLog(priority, message, throwable, emptyMap())
+    }
+
     // endregion
 
     // region Builder
