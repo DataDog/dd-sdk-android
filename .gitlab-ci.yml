@@ -58,10 +58,7 @@ test:unit:
   image: $CI_IMAGE_DOCKER
   stage: test
   script:
-    - ./gradlew :dd-sdk-android:jacocoTestDebugUnitTestReport
-  artifacts:
-    reports:
-      junit: dd-sdk-android/build/test-results/test/**/TEST-*.xml
+    - ./gradlew unitTestAll
 
 publish:release:
   tags: [ "runner:docker", "size:large" ]

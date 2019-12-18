@@ -41,7 +41,9 @@ tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
-        ":instrumented:benchmark:ktlintCheck"
+        ":instrumented:benchmark:ktlintCheck",
+        ":tools:detekt:ktlintCheck",
+        ":tools:unit:ktlintCheck"
     )
 }
 
@@ -49,6 +51,27 @@ tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
         ":instrumented:integration:detekt",
-        ":instrumented:benchmark:detekt"
+        ":instrumented:benchmark:detekt",
+        ":tools:unit:detekt"
+    )
+}
+
+tasks.register("unitTestAll") {
+    dependsOn(
+        ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android:testReleaseUnitTest",
+        ":tools:detekt:test",
+        ":tools:unit:testDebugUnitTest",
+        ":tools:unit:testReleaseUnitTest"
+    )
+}
+
+tasks.register("jacocoReportAll") {
+    dependsOn(
+        ":dd-sdk-android:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
+        ":tools:detekt:jacocoTestReport",
+        ":tools:unit:jacocoTestDebugUnitTestReport",
+        ":tools:unit:jacocoTestReleaseUnitTestReport"
     )
 }

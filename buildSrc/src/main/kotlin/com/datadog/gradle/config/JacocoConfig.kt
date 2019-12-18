@@ -23,6 +23,14 @@ fun Project.jacocoConfig() {
         html.destination = file("${buildDir.path}/reports/jacoco/jacocoTestDebugUnitTestReport/html")
     }
 
+    val jacocoTestReleaseUnitTestReport = tasks.create("jacocoTestReleaseUnitTestReport", JacocoReport::class.java)
+    jacocoTestReleaseUnitTestReport.reports {
+        csv.isEnabled = false
+        xml.isEnabled = true
+        html.isEnabled = true
+        html.destination = file("${buildDir.path}/reports/jacoco/jacocoTestReleaseUnitTestReport/html")
+    }
+
     val jacocoTestCoverageVerification =
         tasks.create("jacocoTestCoverageVerification", JacocoCoverageVerification::class.java)
     jacocoTestCoverageVerification.violationRules {
@@ -33,7 +41,11 @@ fun Project.jacocoConfig() {
         }
     }
 
-    listOf(jacocoTestDebugUnitTestReport, jacocoTestCoverageVerification).forEach { task ->
+    listOf(
+        jacocoTestDebugUnitTestReport,
+        jacocoTestReleaseUnitTestReport,
+        jacocoTestCoverageVerification
+    ).forEach { task ->
         val excludeFilters = arrayOf(
             "**/R.class",
             "**/R$*.class",
@@ -57,6 +69,7 @@ fun Project.jacocoConfig() {
         task.sourceDirectories.setFrom(files(mainSrc))
     }
     jacocoTestDebugUnitTestReport.dependsOn("testDebugUnitTest")
+    jacocoTestReleaseUnitTestReport.dependsOn("testReleaseUnitTest")
     jacocoTestCoverageVerification.dependsOn(jacocoTestDebugUnitTestReport)
 
     extensionConfig<JacocoPluginExtension> {
@@ -66,6 +79,7 @@ fun Project.jacocoConfig() {
 
     tasks.named("check") {
         dependsOn(jacocoTestDebugUnitTestReport)
+        dependsOn(jacocoTestReleaseUnitTestReport)
         dependsOn(jacocoTestDebugUnitTestReport)
     }
 }
