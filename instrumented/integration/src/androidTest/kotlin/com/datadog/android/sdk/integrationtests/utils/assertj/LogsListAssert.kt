@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 
-class LogsListAssert(actual: List<JsonObject>) :
+internal class LogsListAssert(actual: List<JsonObject>) :
     AbstractAssert<LogsListAssert, List<JsonObject>>(actual, LogsListAssert::class.java) {
 
     fun containsOnlyLogsWithMessagesInOrder(vararg messages: String): LogsListAssert {
