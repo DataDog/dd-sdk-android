@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-2019 Datadog, Inc.
+  -->
+
+<resources>
+    <string name="app_name">Datadog SDK Sample</string>
+
+    <string name="title_logs">Logs</string>
+    <string name="title_webview">WebView</string>
+    <string name="title_unknown">"?"</string>
+
+
+    <string name="button_warning">⚠️</string>
+    <string name="button_error">🚨</string>
+    <string name="button_critical">💥</string>
+    <string name="title_sendLog">Send a log</string>
+
+</resources>
