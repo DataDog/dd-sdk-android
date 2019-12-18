@@ -40,6 +40,7 @@ task<Delete>("clean") {
 tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
+        ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -50,6 +51,7 @@ tasks.register("ktlintCheckAll") {
 tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
+        ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
@@ -60,6 +62,8 @@ tasks.register("unitTestAll") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:unit:testDebugUnitTest",
         ":tools:unit:testReleaseUnitTest"
@@ -70,6 +74,8 @@ tasks.register("jacocoReportAll") {
     dependsOn(
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"
