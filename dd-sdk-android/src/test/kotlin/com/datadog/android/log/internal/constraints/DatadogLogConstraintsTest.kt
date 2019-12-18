@@ -9,11 +9,11 @@ package com.datadog.android.log.internal.constraints
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.extension.SystemOutStream
-import com.datadog.android.utils.extension.SystemOutputExtension
-import com.datadog.android.utils.lastLine
 import com.datadog.android.utils.setStaticValue
 import com.datadog.android.utils.times
+import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.lastLine
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

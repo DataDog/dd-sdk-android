@@ -12,7 +12,7 @@ import android.os.BatteryManager
 import android.os.PowerManager
 import com.datadog.android.log.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.extension.ApiLevelExtension
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn

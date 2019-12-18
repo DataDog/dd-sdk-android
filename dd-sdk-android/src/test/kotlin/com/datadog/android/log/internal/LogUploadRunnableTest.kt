@@ -15,8 +15,8 @@ import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfo
 import com.datadog.android.log.internal.system.SystemInfoProvider
-import com.datadog.android.utils.extension.SystemOutStream
-import com.datadog.android.utils.extension.SystemOutputExtension
+import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
