@@ -59,21 +59,23 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasAttributes(attributes: Map<String, Any?>) {
+    fun hasAttributes(attributes: Map<String, Any?>): LogAssert {
         assertThat(actual.attributes)
             .containsAllEntriesOf(attributes)
+        return this
     }
 
-    fun hasTags(tags: List<String>) {
+    fun hasTags(tags: Collection<String>): LogAssert {
         assertThat(actual.tags)
             .containsExactlyInAnyOrder(*tags.toTypedArray())
+        return this
     }
 
     fun hasNetworkInfo(expected: NetworkInfo?): LogAssert {
         assertThat(actual.networkInfo)
             .overridingErrorMessage(
                 "Expected log to have networkInfo $expected " +
-                        "but was ${actual.networkInfo}"
+                    "but was ${actual.networkInfo}"
             )
             .isEqualTo(expected)
         return this
