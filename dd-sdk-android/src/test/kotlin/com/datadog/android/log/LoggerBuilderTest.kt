@@ -8,7 +8,13 @@ package com.datadog.android.log
 
 import android.content.Context
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.logger.CombinedLogHandler
+import com.datadog.android.log.internal.logger.DatadogLogHandler
+import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.logger.LogcatLogHandler
+import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -61,11 +67,12 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder()
             .build()
 
-        assertThat(logger.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
-        assertThat(logger.datadogLogsEnabled).isTrue()
-        assertThat(logger.logcatLogsEnabled).isFalse()
-        assertThat(logger.networkInfoProvider).isNull()
-        assertThat(logger.loggerName).isEqualTo(packageName)
+        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        assertThat(handler.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
+        assertThat(handler.loggerName).isEqualTo(packageName)
+        assertThat(handler.networkInfoProvider).isNull()
+        assertThat(handler.timeProvider).isNotNull()
+        assertThat(handler.logWriter).isNotNull()
     }
 
     @Test
@@ -76,45 +83,46 @@ internal class LoggerBuilderTest {
             .setServiceName(serviceName)
             .build()
 
-        assertThat(logger.serviceName).isEqualTo(serviceName)
+        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        assertThat(handler.serviceName).isEqualTo(serviceName)
     }
 
     @Test
-    fun `builder can enable or disable datadog logs`(@Forgery forge: Forge) {
-        val datadogLogsEnabled = forge.aBool()
+    fun `builder can disable datadog logs`(@Forgery forge: Forge) {
+        val datadogLogsEnabled = false
 
         val logger = Logger.Builder()
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
-        assertThat(logger.datadogLogsEnabled).isEqualTo(datadogLogsEnabled)
+        val handler = logger.getFieldValue("handler") as LogHandler
+        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
     @Test
-    fun `builder can enable or disable logcat logs`(@Forgery forge: Forge) {
-        val logcatLogsEnabled = forge.aBool()
+    fun `builder can enable logcat logs`(@Forgery forge: Forge) {
+        val logcatLogsEnabled = true
 
         val logger = Logger.Builder()
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
-        assertThat(logger.logcatLogsEnabled).isEqualTo(logcatLogsEnabled)
+        val handler = logger.getFieldValue("handler") as CombinedLogHandler
+        assertThat(handler.handlers)
+            .hasAtLeastOneElementOfType(DatadogLogHandler::class.java)
+            .hasAtLeastOneElementOfType(LogcatLogHandler::class.java)
     }
 
     @Test
     fun `builder can enable network info`(@Forgery forge: Forge) {
-        val networkInfoEnabled = forge.aBool()
+        val networkInfoEnabled = true
 
         val logger = Logger.Builder()
             .setNetworkInfoEnabled(networkInfoEnabled)
-            .withNetworkInfoProvider(mockNetworkInfoProvider)
             .build()
 
-        if (networkInfoEnabled) {
-            assertThat(logger.networkInfoProvider).isEqualTo(mockNetworkInfoProvider)
-        } else {
-            assertThat(logger.networkInfoProvider).isNull()
-        }
+        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        assertThat(handler.networkInfoProvider).isNotNull()
     }
 
     @Test
@@ -125,6 +133,7 @@ internal class LoggerBuilderTest {
             .setLoggerName(loggerName)
             .build()
 
-        assertThat(logger.loggerName).isEqualTo(loggerName)
+        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        assertThat(handler.loggerName).isEqualTo(loggerName)
     }
 }
