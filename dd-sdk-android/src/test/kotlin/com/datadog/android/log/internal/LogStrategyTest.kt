@@ -358,7 +358,10 @@ internal abstract class LogStrategyTest {
             .hasField(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
             .hasField(LogStrategy.TAG_THREAD_NAME, log.threadName)
 
-        assertThat(jsonObject).hasStringField(LogStrategy.TAG_DATE, nullable = false)
+        // yyyy-mm-ddThh:mm:ss.SSSZ
+        assertThat(jsonObject).hasStringFieldMatching(
+            LogStrategy.TAG_DATE,
+            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z")
 
         assertNetworkInfoMatches(log, jsonObject)
 
