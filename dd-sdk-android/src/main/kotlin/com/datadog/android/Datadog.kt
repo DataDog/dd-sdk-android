@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import android.content.Context
+import android.util.Log
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
@@ -61,6 +62,9 @@ object Datadog {
     private lateinit var uploader: LogUploader
     private lateinit var timeProvider: MutableTimeProvider
     internal var packageName: String = ""
+        private set
+    internal var libraryVerbosity = Int.MAX_VALUE
+        private set
 
     /**
      * Initializes the Datadog SDK.
@@ -132,6 +136,7 @@ object Datadog {
      * Because logs are sent asynchronously, some logs intended for the previous endpoint
      * might still be yet to sent.
      */
+    @JvmStatic
     fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
         when (strategy) {
             EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
@@ -159,6 +164,20 @@ object Datadog {
         contextRef.get()?.unregisterReceiver(networkInfoProvider)
         contextRef.clear()
         initialized = false
+    }
+
+    /**
+     * Sets the verbosity of the Datadog library.
+     *
+     * Messages with a priority level equal or above the given level will be sent to Android's
+     * Logcat.
+     *
+     * @param level one of the Android [Log] constants ([Log.VERBOSE], [Log.DEBUG], [Log.INFO],
+     * [Log.WARN], [Log.ERROR], [Log.ASSERT]).
+     */
+    @JvmStatic
+    fun setVerbosity(level: Int) {
+        libraryVerbosity = level
     }
 
     // region Internal Provider
