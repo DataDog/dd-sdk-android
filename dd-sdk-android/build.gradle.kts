@@ -35,18 +35,9 @@ plugins {
     jacoco
 }
 
-val isLogEnabledInRelease: String
-    get() {
-        return if (project.hasProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT)) {
-            project.property(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as String
-        } else {
-            "false"
-        }
-    }
-val isLogEnabledInDebug: String
-    get() {
-        return "true"
-    }
+fun isLogEnabledInRelease(): String {
+    return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
+}
 
 android {
     compileSdkVersion(AndroidConfig.TARGET_SDK)
@@ -89,15 +80,19 @@ android {
 
     buildTypes {
         getByName("release") {
-            buildConfigField("Boolean",
-                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
-                    isLogEnabledInRelease)
+            buildConfigField(
+                "Boolean",
+                BuildConfigPropertiesKeys.LOGCAT_ENABLED,
+                isLogEnabledInRelease()
+            )
         }
 
         getByName("debug") {
-            buildConfigField("Boolean",
-                    BuildConfigPropertiesKeys.LOGCAT_ENABLED,
-                    isLogEnabledInDebug)
+            buildConfigField(
+                "Boolean",
+                BuildConfigPropertiesKeys.LOGCAT_ENABLED,
+                "true"
+            )
         }
     }
 }
