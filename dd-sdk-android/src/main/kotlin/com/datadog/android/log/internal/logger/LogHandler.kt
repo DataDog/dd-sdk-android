@@ -13,7 +13,7 @@ internal interface LogHandler {
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overridden (just for this message)
+     * the same key already exists in this logger, it will be overridden (just for this message)
      */
     fun handleLog(
         level: Int,
