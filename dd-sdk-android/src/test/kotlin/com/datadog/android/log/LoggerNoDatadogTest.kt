@@ -10,7 +10,7 @@ import android.content.Context
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.file.DummyLogWriter
-import com.datadog.android.utils.getFieldValue
+import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream

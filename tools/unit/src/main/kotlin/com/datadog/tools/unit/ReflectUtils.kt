@@ -1,6 +1,7 @@
 package com.datadog.tools.unit
 
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Modifier
 
 /**
@@ -60,9 +61,13 @@ fun Any.invokeMethod(methodName: String, vararg params: Any) {
     }
     val method = this.javaClass.getDeclaredMethod(methodName, *declarationParams)
     method.isAccessible = true
-    if (params.isEmpty()) {
-        method.invoke(this)
-    } else {
-        method.invoke(this, params)
+    try {
+        if (params.isEmpty()) {
+            method.invoke(this)
+        } else {
+            method.invoke(this, params)
+        }
+    } catch (e: InvocationTargetException) {
+        throw e.cause ?: e
     }
 }

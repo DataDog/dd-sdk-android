@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.lastLine
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -71,7 +72,7 @@ internal class DatadogTreeTest {
 
     @AfterEach
     fun `set up`() {
-        Datadog.stop()
+        Datadog.invokeMethod("stop")
     }
 
     @Test

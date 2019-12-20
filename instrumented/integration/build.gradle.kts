@@ -42,6 +42,7 @@ android {
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8

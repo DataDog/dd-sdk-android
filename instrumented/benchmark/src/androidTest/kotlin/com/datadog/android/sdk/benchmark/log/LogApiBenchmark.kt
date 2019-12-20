@@ -11,6 +11,7 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -62,7 +63,7 @@ class LogApiBenchmark {
 
     @After
     fun tearDown() {
-        Datadog.stop()
+        Datadog.invokeMethod("stop")
         mockWebServer.shutdown()
     }
 

@@ -151,10 +151,9 @@ object Datadog {
         uploader.setEndpoint(endpointUrl)
     }
 
-    /**
-     * Stop all Datadog work.
-     */
-    fun stop() {
+    // Stop all Datadog work (for test purposes).
+    @Suppress("unused")
+    private fun stop() {
         checkInitialized()
         handlerThread.quitSafely()
         contextRef.get()?.unregisterReceiver(networkInfoProvider)
@@ -186,7 +185,7 @@ object Datadog {
         check(initialized) {
             "Datadog has not been initialized.\n" +
                 "Please add the following code in your application's onCreate() method:\n" +
-                "Datadog.initialized(context, \"CLIENT_TOKEN\");"
+                "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
         }
     }
 

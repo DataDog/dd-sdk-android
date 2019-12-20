@@ -17,9 +17,10 @@ import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.utils.getFieldValue
-import com.datadog.android.utils.getStaticValue
-import com.datadog.android.utils.setStaticValue
+import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.getStaticValue
+import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -77,7 +78,7 @@ internal class DatadogTest {
     @AfterEach
     fun `tear down`() {
         try {
-            Datadog.stop()
+            Datadog.invokeMethod("stop")
         } catch (e: IllegalStateException) {
             // nevermind
         }
@@ -114,7 +115,7 @@ internal class DatadogTest {
     @Test
     fun `fails if stop called without initialize`() {
         assertThrows<IllegalStateException> {
-            Datadog.stop()
+            Datadog.invokeMethod("stop")
         }
     }
 

@@ -37,7 +37,7 @@ task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
 
-tasks.register("checkAll"){
+tasks.register("checkAll") {
     dependsOn(
         "ktlintCheckAll",
         "detektAll",

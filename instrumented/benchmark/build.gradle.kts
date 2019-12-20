@@ -55,6 +55,17 @@ android {
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        exclude("META-INF/jvm.kotlin_module")
+        exclude("META-INF/LICENSE.md")
+        exclude("META-INF/LICENSE-notice.md")
+    }
 }
 
 repositories {
@@ -69,6 +80,8 @@ dependencies {
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
     implementation(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+
+    androidTestImplementation(project(":tools:unit"))
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
