@@ -4,7 +4,7 @@
 
 ## Getting Started 
 
-## Gradle Dependency
+### Gradle Dependency
 
 ```groovy
 dependencies {
@@ -12,7 +12,7 @@ dependencies {
 }
 ```
 
-## Usage
+### Migrating from earlier versions
 
 If you were a user of the SDK version `0.2.5` or lower, take a look at our 
 [Migration Guide](Migrating_To_1.0.0.md).
@@ -153,6 +153,14 @@ In Java you can do so as follow:
             }}
     );
 ```
+
+## Looking up your logs
+
+When you open your console in Datadog, navigate to the Logs section, and in the search bar, type 
+`source:mobile`. This will filter your logs to only show the ones coming from mobile applications 
+(Android and iOS).
+
+![Datadog Mobile Logs](screenshot.png)
 
 ## Contributing
 
