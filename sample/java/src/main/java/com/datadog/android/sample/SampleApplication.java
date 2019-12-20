@@ -8,6 +8,7 @@ package com.datadog.android.sample;
 
 import android.app.Application;
 import android.content.Context;
+import android.util.Log;
 import com.datadog.android.Datadog;
 import com.datadog.android.log.Logger;
 
@@ -25,6 +26,7 @@ public class SampleApplication extends Application {
                 BuildConfig.DD_CLIENT_TOKEN,
                 (BuildConfig.DD_OVERRIDE_URL == null) ? Datadog.DATADOG_US : BuildConfig.DD_OVERRIDE_URL
         );
+        Datadog.setVerbosity(Log.VERBOSE);
 
         // Initialise Logger
         logger = new Logger.Builder()

@@ -6,6 +6,7 @@
 package com.datadog.android.sample
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.timber.DatadogTree
@@ -22,6 +23,7 @@ class SampleApplication : Application() {
             BuildConfig.DD_CLIENT_TOKEN,
             if (BuildConfig.DD_OVERRIDE_URL.isEmpty()) Datadog.DATADOG_US else BuildConfig.DD_OVERRIDE_URL
         )
+        Datadog.setVerbosity(Log.VERBOSE)
 
         // Initialise Logger
         val logger = Logger.Builder()
