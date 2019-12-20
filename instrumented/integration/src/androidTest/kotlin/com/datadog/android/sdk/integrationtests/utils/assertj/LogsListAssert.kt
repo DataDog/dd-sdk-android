@@ -96,8 +96,8 @@ internal class LogsListAssert(actual: List<JsonObject>) :
         internal fun assertThat(actual: List<JsonObject>): LogsListAssert =
             LogsListAssert(actual)
 
-        const val SERVICE_NAME_KEY = "service"
-        const val MESSAGE_KEY = "message"
-        const val TAGS_KEY = "ddtags"
+        private const val SERVICE_NAME_KEY = "service"
+        private const val MESSAGE_KEY = "message"
+        private const val TAGS_KEY = "ddtags"
     }
 }

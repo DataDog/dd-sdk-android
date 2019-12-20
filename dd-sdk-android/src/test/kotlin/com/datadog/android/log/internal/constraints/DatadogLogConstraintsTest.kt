@@ -7,7 +7,9 @@
 package com.datadog.android.log.internal.constraints
 
 import android.os.Build
+import android.util.Log
 import com.datadog.android.BuildConfig
+import com.datadog.android.Datadog
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.utils.times
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -41,6 +43,7 @@ internal class DatadogLogConstraintsTest {
 
     @BeforeEach
     fun `set up`() {
+        Datadog.setVerbosity(Log.VERBOSE)
         // we need to set the Build.MODEL to null, to override the setup
         Build::class.java.setStaticValue("MODEL", null)
 
@@ -80,7 +83,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "E/DD_LOG: DatadogLogConstraints: \"$tag\" is an invalid tag, " +
+                    "E/Datadog: DatadogLogConstraints: \"$tag\" is an invalid tag, " +
                         "and was ignored."
                 )
         }
@@ -107,7 +110,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: tag \"$tag\" " +
+                    "W/Datadog: DatadogLogConstraints: tag \"$tag\" " +
                         "was modified to \"$expectedTag\" to match our constraints."
                 )
         }
@@ -130,7 +133,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: tag \"$tag\" " +
+                    "W/Datadog: DatadogLogConstraints: tag \"$tag\" " +
                         "was modified to \"$expectedTag\" to match our constraints."
                 )
         }
@@ -151,7 +154,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: tag \"$tag\" " +
+                    "W/Datadog: DatadogLogConstraints: tag \"$tag\" " +
                         "was modified to \"$expectedTag\" to match our constraints."
                 )
         }
@@ -171,7 +174,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: tag \"$tag:\" " +
+                    "W/Datadog: DatadogLogConstraints: tag \"$tag:\" " +
                         "was modified to \"$tag\" to match our constraints."
                 )
         }
@@ -193,7 +196,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "E/DD_LOG: DatadogLogConstraints: \"$tag\" is an invalid tag, " +
+                    "E/Datadog: DatadogLogConstraints: \"$tag\" is an invalid tag, " +
                         "and was ignored."
                 )
         }
@@ -215,7 +218,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "E/DD_LOG: DatadogLogConstraints: \"$tag\" is an invalid tag," +
+                    "E/Datadog: DatadogLogConstraints: \"$tag\" is an invalid tag," +
                         " and was ignored."
                 )
         }
@@ -237,7 +240,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: too many tags were added, " +
+                    "W/Datadog: DatadogLogConstraints: too many tags were added, " +
                         "$discardedCount had to be discarded."
                 )
         }
@@ -281,7 +284,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: attribute \"$key\" " +
+                    "W/Datadog: DatadogLogConstraints: attribute \"$key\" " +
                         "was modified to \"$expectedKey\" to match our constraints."
                 )
         }
@@ -304,7 +307,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/DD_LOG: DatadogLogConstraints: too many attributes were added, " +
+                    "W/Datadog: DatadogLogConstraints: too many attributes were added, " +
                         "$discardedCount had to be discarded."
                 )
         }

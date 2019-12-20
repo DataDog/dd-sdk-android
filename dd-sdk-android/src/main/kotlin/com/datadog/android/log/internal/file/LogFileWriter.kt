@@ -226,6 +226,6 @@ internal class LogFileWriter(
 
         private const val MAX_LOG_SIZE = 256 * 1024 // 256 Kb
 
-        private val TAG = "LogFileWriter"
+        private const val TAG = "LogFileWriter"
     }
 }

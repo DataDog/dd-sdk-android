@@ -21,7 +21,7 @@ import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.devLogger
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 import okhttp3.ConnectionSpec
@@ -141,13 +141,13 @@ object Datadog {
         when (strategy) {
             EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
                 logStrategy.getLogReader().dropAllBatches()
-                sdkLogger.w(
+                devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
                         "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
-                sdkLogger.w(
+                devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
                         "will now be sent to $endpointUrl"
                 )
