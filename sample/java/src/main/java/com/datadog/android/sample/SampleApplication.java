@@ -8,9 +8,11 @@ package com.datadog.android.sample;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Looper;
 import android.util.Log;
 import com.datadog.android.Datadog;
 import com.datadog.android.log.Logger;
+import com.datadog.android.monitoring.internal.LooperPrinter;
 
 public class SampleApplication extends Application {
 
@@ -31,6 +33,7 @@ public class SampleApplication extends Application {
         // Initialise Logger
         logger = new Logger.Builder()
                 .setNetworkInfoEnabled(true)
+                .setLogcatLogsEnabled(true)
                 .setServiceName("android-sample-java")
                 .setLoggerName("Application")
                 .build();
@@ -44,6 +47,8 @@ public class SampleApplication extends Application {
         logger.addTag("flavor", BuildConfig.FLAVOR);
         logger.addTag("build_type", BuildConfig.BUILD_TYPE);
         logger.v("Added tags");
+
+        Looper.getMainLooper().setMessageLogging(new LooperPrinter());
     }
 
     public Logger getLogger() {

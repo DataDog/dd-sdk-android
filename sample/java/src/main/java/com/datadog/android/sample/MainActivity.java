@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-           return switchToFragment(menuItem.getItemId());
+            return switchToFragment(menuItem.getItemId());
         }
     };
 
@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         switchToFragment(R.id.navigation_logs);
-        ((BottomNavigationView )findViewById(R.id.navigation))
+        ((BottomNavigationView) findViewById(R.id.navigation))
                 .setOnNavigationItemSelectedListener(navigationItemSelectedListener);
     }
 
@@ -65,6 +65,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         logger.d("MainActivity/onResume");
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            logger.e("Interrupted sleep", e);
+        }
     }
 
     @Override
@@ -89,16 +95,16 @@ public class MainActivity extends AppCompatActivity {
 
     // region Internal
 
-    private boolean switchToFragment(@IdRes int id){
+    private boolean switchToFragment(@IdRes int id) {
         Fragment fragmentToUse = null;
         switch (id) {
             case R.id.navigation_logs:
                 logger.i("Switching to fragment: Logs");
                 fragmentToUse = LogsFragment.newInstance();
                 break;
-            case R.id.navigation_webview :
+            case R.id.navigation_webview:
                 logger.i("Switching to fragment: Web");
-                fragmentToUse =  WebFragment.newInstance();
+                fragmentToUse = WebFragment.newInstance();
                 break;
         }
 

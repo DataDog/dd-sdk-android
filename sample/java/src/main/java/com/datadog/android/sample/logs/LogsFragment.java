@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.R;
 
+import java.util.Random;
+
 public class LogsFragment extends Fragment implements View.OnClickListener{
 
     private LogsViewModel mViewModel;
@@ -52,12 +54,32 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
         mLogger.addAttribute("interactions", interactionsCount);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        Random r = new Random();
+        try {
+            Thread.sleep((r.nextInt() % 200) + 2000L );
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     // endregion
 
     // region View.OnClickListener
 
     @Override
     public void onClick(View v) {
+
+        Random r = new Random();
+        try {
+            Thread.sleep((r.nextInt() % 200) + 300L );
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         interactionsCount++;
         mLogger.addAttribute("interactions", interactionsCount);
