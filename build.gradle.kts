@@ -37,6 +37,15 @@ task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
 
+tasks.register("checkAll"){
+    dependsOn(
+        "ktlintCheckAll",
+        "detektAll",
+        "unitTestAll",
+        "jacocoReportAll"
+    )
+}
+
 tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
