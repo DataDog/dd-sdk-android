@@ -48,13 +48,12 @@ class NavActivity : AppCompatActivity() {
             R.id.navigation_view_pager -> {
                 startActivity(Intent(this, ViewPagerActivity::class.java))
             }
-            R.id.show_snack_bar->{
+            R.id.show_snack_bar -> {
                 Snackbar.make(
                     this.window.decorView.rootView,
                     "Demo message",
                     Snackbar.LENGTH_LONG
                 ).show()
-
             }
             else -> result = super.onOptionsItemSelected(item)
         }

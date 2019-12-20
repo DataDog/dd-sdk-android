@@ -129,6 +129,9 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+class com.datadog.android.monitoring.internal.LooperPrinter : android.util.Printer
+  override fun println(String?)
+  companion object
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean

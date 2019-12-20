@@ -23,6 +23,8 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 
+import java.util.Random;
+
 public class LogsFragment extends Fragment implements View.OnClickListener{
 
     private LogsViewModel mViewModel;
@@ -67,6 +69,15 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
         mMainSpan = tracer
                 .buildSpan("LogsFragment").asChildOf(mainActivitySpan).start();
         mMainScope = tracer.activateSpan(mMainSpan);
+
+
+        Random r = new Random();
+        try {
+            Thread.sleep((r.nextInt() % 200) + 2000L );
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         super.onResume();
     }
 
@@ -83,6 +94,15 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
 
     @Override
     public void onClick(View v) {
+
+        mInteractionsCount++;
+        mLogger.addAttribute("interactions", mInteractionsCount);
+        Random r = new Random();
+        try {
+            Thread.sleep((r.nextInt() % 200) + 300L );
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         mInteractionsCount++;
         mLogger.addAttribute("interactions", mInteractionsCount);

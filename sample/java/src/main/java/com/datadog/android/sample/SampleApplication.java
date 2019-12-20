@@ -8,6 +8,7 @@ package com.datadog.android.sample;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Looper;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
@@ -28,6 +29,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.opentracing.util.GlobalTracer;
+import com.datadog.android.monitoring.internal.LooperPrinter;
 
 public class SampleApplication extends Application {
 
@@ -121,6 +123,7 @@ public class SampleApplication extends Application {
         // initialize the tracer here
         GlobalTracer.registerIfAbsent(new AndroidTracer.Builder().build());
         GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
+        Looper.getMainLooper().setMessageLogging(new LooperPrinter());
     }
 
     public Logger getLogger() {

@@ -89,6 +89,12 @@ public class MainActivity extends AppCompatActivity {
                 .start();
         super.onResume();
         mLogger.d("MainActivity/onResume");
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            mLogger.e("Interrupted sleep", e);
+        }
     }
 
     @Override
