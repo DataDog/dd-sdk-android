@@ -7,8 +7,7 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.extension.SystemOutputExtension
-import com.nhaarman.mockitokotlin2.times
+import com.datadog.tools.unit.extensions.SystemOutputExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

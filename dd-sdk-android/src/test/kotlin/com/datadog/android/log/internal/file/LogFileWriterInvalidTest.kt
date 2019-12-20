@@ -10,8 +10,8 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.constraints.NoOpLogConstraints
-import com.datadog.android.utils.extension.SystemOutStream
-import com.datadog.android.utils.extension.SystemOutputExtension
+import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.extensions.SystemOutputExtension
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -1,14 +1,14 @@
 package com.datadog.android.log.internal.utils
 
-import com.datadog.android.utils.extension.BuildConfigExtension
 import com.datadog.android.utils.extension.EnableLogcat
+import com.datadog.android.utils.extension.EnableLogcatExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 
-@Extensions(ExtendWith(MockitoExtension::class, BuildConfigExtension::class))
+@Extensions(ExtendWith(MockitoExtension::class, EnableLogcatExtension::class))
 class RuntimeUtilsTest {
 
     @Test

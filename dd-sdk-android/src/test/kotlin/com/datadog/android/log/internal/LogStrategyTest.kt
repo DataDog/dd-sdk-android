@@ -14,10 +14,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.NetworkInfo
-import com.datadog.android.utils.extension.ApiLevelExtension
-import com.datadog.android.utils.extension.SystemOutStream
-import com.datadog.android.utils.extension.SystemOutputExtension
-import com.datadog.android.utils.extension.TestTargetApi
+import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive

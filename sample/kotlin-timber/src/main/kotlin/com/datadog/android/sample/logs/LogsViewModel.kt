@@ -3,9 +3,8 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-2019 Datadog, Inc.
  */
+package com.datadog.android.sample.logs
 
-package com.datadog.android.utils.extension
+import androidx.lifecycle.ViewModel
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class SystemOutStream()
+class LogsViewModel : ViewModel()

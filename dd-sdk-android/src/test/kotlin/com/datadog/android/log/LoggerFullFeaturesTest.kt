@@ -151,6 +151,24 @@ internal class LoggerFullFeaturesTest {
     }
 
     @Test
+    fun `logger logs message with custom level`(
+        forge: Forge
+    ) {
+        val (level, prefix) = forge.anEntryFrom(mapOf(
+            AndroidLog.VERBOSE to "V",
+            AndroidLog.DEBUG to "D",
+            AndroidLog.INFO to "I",
+            AndroidLog.WARN to "W",
+            AndroidLog.ERROR to "E",
+            AndroidLog.ASSERT to "A"
+            ))
+
+        testedLogger.log(level, fakeMessage)
+
+        verifyLogSideEffects(level, prefix)
+    }
+
+    @Test
     fun `thread name will be the name of the thread from which the logger was built`(forge: Forge) {
         val loggerCreateThreadName = forge.anAlphabeticalString(size = 10)
         val logSendThreadName = loggerCreateThreadName + forge.anAlphaNumericalString(size = 5)

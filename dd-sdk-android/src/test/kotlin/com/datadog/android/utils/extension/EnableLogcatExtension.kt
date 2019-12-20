@@ -6,27 +6,27 @@
 
 package com.datadog.android.utils.extension
 
-import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.android.utils.setStaticValue
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
-class ApiLevelExtension :
-    BeforeTestExecutionCallback {
+class EnableLogcatExtension :
+        BeforeTestExecutionCallback {
 
     override fun beforeTestExecution(context: ExtensionContext) {
         val method = context.requiredTestMethod
-        val targetApi = method.getAnnotation(TestTargetApi::class.java)
+        val enableLogcat = method.getAnnotation(EnableLogcat::class.java)
 
-        val apiLevel = targetApi?.value ?: DEFAULT_TEST_API_LEVEL
-        setApiLevel(apiLevel)
+        val logCatEnabled = enableLogcat?.isEnabled ?: DEFAULT_LOGCAT
+        setLogcatEnabled(logCatEnabled)
     }
 
-    private fun setApiLevel(apiLevel: Int) {
-        Build.VERSION::class.java.setStaticValue("SDK_INT", apiLevel)
+    private fun setLogcatEnabled(logCatEnabled: Boolean) {
+        BuildConfig::class.java.setStaticValue("LOGCAT_ENABLED", logCatEnabled)
     }
 
     companion object {
-        const val DEFAULT_TEST_API_LEVEL = Build.VERSION_CODES.BASE
+        val DEFAULT_LOGCAT = BuildConfig.LOGCAT_ENABLED
     }
 }

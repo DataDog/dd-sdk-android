@@ -4,12 +4,17 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.utils
+package com.datadog.tools.unit
 
 import java.io.ByteArrayOutputStream
+import java.nio.charset.Charset
 
-fun ByteArrayOutputStream.lastLine(): String? {
-    return toString()
+/**
+ * Fetches the last line in the target [ByteArrayOutputStream].
+ * @param charsetName the name of a supported [Charset]
+ */
+fun ByteArrayOutputStream.lastLine(charsetName: String = Charsets.UTF_8.name()): String? {
+    return toString(charsetName)
         .split("\n")
         .lastOrNull { it.isNotBlank() }
 }

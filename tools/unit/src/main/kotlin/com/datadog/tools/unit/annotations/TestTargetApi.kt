@@ -4,10 +4,16 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.utils.extension
+package com.datadog.tools.unit.annotations
 
 import android.os.Build
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 
+/**
+ * Declares a test method as targeting a specific Android API level.
+ *
+ * @see [ApiLevelExtension]
+ */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class TestTargetApi(

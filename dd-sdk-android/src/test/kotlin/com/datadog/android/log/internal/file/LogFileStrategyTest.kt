@@ -14,7 +14,7 @@ import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.utils.extension.TestTargetApi
+import com.datadog.tools.unit.annotations.TestTargetApi
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
