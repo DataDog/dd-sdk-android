@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.constraints
 
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.devLogger
 import java.util.Locale
 
 typealias StringTransform = (String) -> String?
@@ -19,17 +19,15 @@ internal class DatadogLogConstraints : LogConstraints {
         val convertedTags = tags.mapNotNull {
             val tag = convertTag(it)
             if (tag == null) {
-                // TODO RUMM-98 use developper logger ?
-                sdkLogger.e("$TAG: \"$it\" is an invalid tag, and was ignored.")
+                devLogger.e("$TAG: \"$it\" is an invalid tag, and was ignored.")
             } else if (tag != it) {
-                // TODO RUMM-98 use developper logger ?
-                sdkLogger.w("$TAG: tag \"$it\" was modified to \"$tag\" to match our constraints.")
+                devLogger.w("$TAG: tag \"$it\" was modified to \"$tag\" to match our constraints.")
             }
             tag
         }
         val discardedCount = convertedTags.size - MAX_TAG_COUNT
         if (discardedCount > 0) {
-            sdkLogger.w("$TAG: too many tags were added, $discardedCount had to be discarded.")
+            devLogger.w("$TAG: too many tags were added, $discardedCount had to be discarded.")
         }
         return convertedTags.take(MAX_TAG_COUNT)
     }
@@ -38,13 +36,11 @@ internal class DatadogLogConstraints : LogConstraints {
         val convertedAttributes = attributes.mapNotNull {
             val key = convertAttributeKey(it.key)
             if (key == null) {
-                // TODO RUMM-98 use developper logger ?
-                sdkLogger.e("$TAG: \"$it\" is an invalid attribute, and was ignored.")
+                devLogger.e("$TAG: \"$it\" is an invalid attribute, and was ignored.")
                 null
             } else {
                 if (key != it.key) {
-                    // TODO RUMM-98 use developper logger ?
-                    sdkLogger.w(
+                    devLogger.w(
                         "$TAG: attribute \"${it.key}\" " +
                             "was modified to \"$key\" to match our constraints."
                     )
@@ -54,7 +50,7 @@ internal class DatadogLogConstraints : LogConstraints {
         }
         val discardedCount = convertedAttributes.size - MAX_ATTR_COUNT
         if (discardedCount > 0) {
-            sdkLogger.w(
+            devLogger.w(
                 "$TAG: too many attributes were added, " +
                     "$discardedCount had to be discarded."
             )

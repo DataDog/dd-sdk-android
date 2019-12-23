@@ -152,6 +152,18 @@ In Java you can do so as follow:
     );
 ```
 
+### Setting the Library's verbosity
+
+If you need to get information about the Library, you can set the verbosity
+level as follow: 
+
+```kotlin
+    Datadog.setVerbosity(Log.INFO)
+```
+
+All the internal messages in the library with a priority equal or higher than
+the provided level will be logged to Android's LogCat.
+
 ## Contributing
 
 Pull requests are welcome, but please open an issue first to discuss what you

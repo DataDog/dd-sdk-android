@@ -105,6 +105,6 @@ internal class LogFileReader(
     // endregion
 
     companion object {
-        val TAG = "LogFileReader"
+        private const val TAG = "LogFileReader"
     }
 }

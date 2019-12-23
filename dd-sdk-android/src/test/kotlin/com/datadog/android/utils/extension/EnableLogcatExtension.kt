@@ -8,11 +8,15 @@ package com.datadog.android.utils.extension
 
 import com.datadog.android.BuildConfig
 import com.datadog.tools.unit.setStaticValue
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
 class EnableLogcatExtension :
-        BeforeTestExecutionCallback {
+    BeforeTestExecutionCallback,
+    AfterTestExecutionCallback {
+
+    // region BeforeTestExecutionCallback
 
     override fun beforeTestExecution(context: ExtensionContext) {
         val method = context.requiredTestMethod
@@ -22,11 +26,21 @@ class EnableLogcatExtension :
         setLogcatEnabled(logCatEnabled)
     }
 
+    // endregion
+
+    // region AfterTestExecutionCallback
+
+    override fun afterTestExecution(context: ExtensionContext?) {
+        setLogcatEnabled(DEFAULT_LOGCAT)
+    }
+
+    // endregion
+
     private fun setLogcatEnabled(logCatEnabled: Boolean) {
         BuildConfig::class.java.setStaticValue("LOGCAT_ENABLED", logCatEnabled)
     }
 
     companion object {
-        val DEFAULT_LOGCAT = BuildConfig.LOGCAT_ENABLED
+        private val DEFAULT_LOGCAT = BuildConfig.LOGCAT_ENABLED
     }
 }

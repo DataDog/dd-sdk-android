@@ -40,6 +40,28 @@ inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R 
 }
 
 /**
+ * Sets the field value on the target instance.
+ * @param fieldName the name of the field
+ * @param fieldValue the value of the field
+ */
+inline fun <reified T> Any.setFieldValue(
+    fieldName: String,
+    fieldValue: T
+) {
+    val field = javaClass.getDeclaredField(fieldName)
+
+    // make it accessible
+    field.isAccessible = true
+
+    // Make it non final
+    val modifiersField = Field::class.java.getDeclaredField("modifiers")
+    modifiersField.isAccessible = true
+    modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+
+    field.set(this, fieldValue)
+}
+
+/**
  * Gets the field value from the target instance.
  * @param fieldName the name of the field
  */

@@ -6,15 +6,13 @@
 
 package com.datadog.android.log
 
-import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.Log
-import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.log.internal.file.DummyLogWriter
-import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.logger.CombinedLogHandler
+import com.datadog.android.log.internal.logger.DatadogLogHandler
+import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.logger.LogcatLogHandler
+import com.datadog.android.log.internal.logger.NoOpLogHandler
 import java.util.Date
 
 /**
@@ -27,15 +25,7 @@ import java.util.Date
  */
 @Suppress("TooManyFunctions", "MethodOverloading")
 class Logger
-private constructor(
-    val serviceName: String,
-    val datadogLogsEnabled: Boolean,
-    val logcatLogsEnabled: Boolean,
-    val loggerName: String,
-    private val logWriter: LogWriter,
-    internal val networkInfoProvider: NetworkInfoProvider?,
-    internal val timeProvider: TimeProvider
-) {
+internal constructor(private val handler: LogHandler) {
 
     private val attributes = mutableMapOf<String, Any?>()
     private val tags = mutableSetOf<String>()
@@ -47,7 +37,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -64,7 +54,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -81,7 +71,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -98,7 +88,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -115,7 +105,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -132,7 +122,7 @@ private constructor(
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
-     * the same key already exist in this logger, it will be overriden (just for this message)
+     * the same key already exist in this logger, it will be overridden (just for this message)
      */
     @Suppress("FunctionMinLength")
     @JvmOverloads
@@ -170,9 +160,6 @@ private constructor(
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
 
-        private var logStrategy: LogStrategy? = null
-        private var networkInfoProvider: NetworkInfoProvider? = null
-        private var timeProvider: TimeProvider? = null
         private var loggerName: String = Datadog.packageName
 
         /**
@@ -180,27 +167,17 @@ private constructor(
          */
         fun build(): Logger {
 
-            return Logger(
-                logWriter = logWriter,
-                serviceName = serviceName,
-                datadogLogsEnabled = datadogLogsEnabled,
-                logcatLogsEnabled = logcatLogsEnabled,
-                loggerName = loggerName,
-                networkInfoProvider = if (networkInfoEnabled && datadogLogsEnabled) {
-                    networkInfoProvider ?: Datadog.getNetworkInfoProvider()
-                } else null,
-                timeProvider = timeProvider ?: Datadog.getTimeProvider()
-            )
-        }
-
-        private val logWriter: LogWriter
-            get() {
-                return if (datadogLogsEnabled) {
-                    (logStrategy ?: Datadog.getLogStrategy()).getLogWriter()
-                } else {
-                    DummyLogWriter()
+            val handler = when {
+                datadogLogsEnabled && logcatLogsEnabled -> {
+                    CombinedLogHandler(buildDatadogHandler(), buildLogcatHandler())
                 }
+                datadogLogsEnabled -> buildDatadogHandler()
+                logcatLogsEnabled -> buildLogcatHandler()
+                else -> NoOpLogHandler
             }
+
+            return Logger(handler)
+        }
 
         /**
          * Sets the service name that will appear in your logs.
@@ -248,20 +225,24 @@ private constructor(
             return this
         }
 
-        private fun overrideLogStrategy(strategy: LogStrategy): Builder {
-            logStrategy = strategy
-            return this
+        // region Internal
+
+        private fun buildLogcatHandler(): LogcatLogHandler {
+            return LogcatLogHandler(serviceName)
         }
 
-        private fun overrideNetworkInfoProvider(provider: NetworkInfoProvider): Builder {
-            networkInfoProvider = provider
-            return this
+        private fun buildDatadogHandler(): DatadogLogHandler {
+            val netInfoProvider = if (networkInfoEnabled) Datadog.getNetworkInfoProvider() else null
+            return DatadogLogHandler(
+                logWriter = Datadog.getLogStrategy().getLogWriter(),
+                serviceName = serviceName,
+                loggerName = loggerName,
+                networkInfoProvider = netInfoProvider,
+                timeProvider = Datadog.getTimeProvider()
+            )
         }
 
-        private fun overrideTimeProvider(provider: TimeProvider): Builder {
-            timeProvider = provider
-            return this
-        }
+        // endregion
     }
 
     // endregion
@@ -399,62 +380,19 @@ private constructor(
 
     // endregion
 
-    // region Internal/Log
+    // region Internal
 
     private fun internalLog(
         level: Int,
         message: String,
         throwable: Throwable?,
-        attributes: Map<String, Any?>
+        localAttributes: Map<String, Any?>
     ) {
-        if (logcatLogsEnabled) {
-            if (Build.MODEL == null) {
-                println("${levelPrefixes[level]}/$serviceName: $message")
-                throwable?.printStackTrace()
-            } else {
-                AndroidLog.println(level, serviceName, message)
-                if (throwable != null) {
-                    AndroidLog.println(
-                        level,
-                        serviceName,
-                        AndroidLog.getStackTraceString(throwable)
-                    )
-                }
-            }
-        }
-
-        if (datadogLogsEnabled) {
-            val log = createLog(level, message, throwable, attributes)
-            logWriter.writeLog(log)
-        }
-    }
-
-    private fun createLog(
-        level: Int,
-        message: String,
-        throwable: Throwable?,
-        additionalAttributes: Map<String, Any?>
-    ): Log {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
-        combinedAttributes.putAll(additionalAttributes)
-        return Log(
-            serviceName = serviceName,
-            level = level,
-            message = message,
-            timestamp = timeProvider.getServerTimestamp(),
-            throwable = throwable,
-            attributes = combinedAttributes,
-            tags = tags.toList(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
-            loggerName = loggerName,
-            threadName = Thread.currentThread().name
-        )
+        combinedAttributes.putAll(localAttributes)
+        handler.handleLog(level, message, throwable, combinedAttributes, tags)
     }
-
-    // endregion
-
-    // region Internal/Tag
 
     private fun addTagInternal(tag: String) {
         tags.add(tag)
@@ -467,16 +405,6 @@ private constructor(
     // endregion
 
     companion object {
-
         internal const val DEFAULT_SERVICE_NAME = "android"
-
-        private val levelPrefixes = mapOf(
-            AndroidLog.VERBOSE to "V",
-            AndroidLog.DEBUG to "D",
-            AndroidLog.INFO to "I",
-            AndroidLog.WARN to "W",
-            AndroidLog.ERROR to "E",
-            AndroidLog.ASSERT to "A"
-        )
     }
 }

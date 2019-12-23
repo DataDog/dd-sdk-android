@@ -132,6 +132,6 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
         private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
 
-        private val TAG = "BroadcastReceiver"
+        private const val TAG = "BroadcastReceiver"
     }
 }

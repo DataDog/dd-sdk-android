@@ -100,6 +100,6 @@ internal class LogUploadRunnable(
         const val MIN_DELAY_MS = 1000L // 1 second
         const val MAX_DELAY = DEFAULT_DELAY * 4 // 20 seconds
         const val DELAY_PERCENT = 90 // as 90 percent of
-        val TAG = "LogUploadRunnable"
+        private const val TAG = "LogUploadRunnable"
     }
 }
