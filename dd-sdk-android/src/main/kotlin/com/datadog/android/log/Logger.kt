@@ -238,7 +238,8 @@ internal constructor(private val handler: LogHandler) {
                 serviceName = serviceName,
                 loggerName = loggerName,
                 networkInfoProvider = netInfoProvider,
-                timeProvider = Datadog.getTimeProvider()
+                timeProvider = Datadog.getTimeProvider(),
+                userInfoProvider = Datadog.getUserInfoProvider()
             )
         }
 
