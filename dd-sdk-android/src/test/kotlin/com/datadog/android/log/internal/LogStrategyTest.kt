@@ -18,6 +18,7 @@ import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -74,7 +75,7 @@ internal abstract class LogStrategyTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.stop()
+        Datadog.invokeMethod("stop")
     }
 
     abstract fun getStrategy(): LogStrategy

@@ -1,7 +1,7 @@
 package com.datadog.android.log.internal.thread
 
 import com.datadog.android.log.internal.file.AndroidDeferredHandler
-import com.datadog.android.utils.accessMethod
+import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -52,7 +52,7 @@ internal class LazyHandlerThreadTest {
         underTest.post(mockRunnable2)
 
         // when
-        underTest.accessMethod("onLooperPrepared")
+        underTest.invokeMethod("onLooperPrepared")
 
         // then
         val inOrder = inOrder(mockDeferredHandler)
@@ -63,7 +63,7 @@ internal class LazyHandlerThreadTest {
     @Test
     fun `when looper prepared the message will be executed on the handler`() {
         // given
-        underTest.accessMethod("onLooperPrepared")
+        underTest.invokeMethod("onLooperPrepared")
 
         // when
         underTest.post(mockRunnable1)
@@ -86,7 +86,7 @@ internal class LazyHandlerThreadTest {
             run {
                 underTest.post(mockRunnable1)
                 underTest.post(mockRunnable2)
-                underTest.accessMethod("onLooperPrepared")
+                underTest.invokeMethod("onLooperPrepared")
                 countDownLatch.countDown()
             }
         }
@@ -115,7 +115,7 @@ internal class LazyHandlerThreadTest {
             countDownLatch.countDown()
         }
         val thread2 = Thread {
-            underTest.accessMethod("onLooperPrepared")
+            underTest.invokeMethod("onLooperPrepared")
             underTest.post(mockRunnable3)
             countDownLatch.countDown()
         }

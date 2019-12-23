@@ -9,6 +9,7 @@ package com.datadog.android.log
 import android.content.Context
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -52,7 +53,7 @@ internal class LoggerBuilderTest {
 
     @AfterEach
     fun `tear down Datadog`() {
-        Datadog.stop()
+        Datadog.invokeMethod("stop")
     }
 
     @Test

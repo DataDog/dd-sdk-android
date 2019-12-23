@@ -76,6 +76,11 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
     // TODO when using Android Plugin 3.6.+
     // enableAdditionalTestOutput=true
     testOptions {
@@ -107,6 +112,7 @@ dependencies {
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
 
+    androidTestImplementation(project(":tools:unit"))
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)

@@ -7,7 +7,7 @@
 package com.datadog.android.utils.extension
 
 import com.datadog.android.BuildConfig
-import com.datadog.android.utils.setStaticValue
+import com.datadog.tools.unit.setStaticValue
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 

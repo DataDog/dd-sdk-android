@@ -14,6 +14,7 @@ import com.datadog.android.log.internal.file.AndroidDeferredHandler
 import com.datadog.android.log.internal.file.LogFileReader
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.file.LogFileWriter
+import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.After
 import org.junit.Before
@@ -51,7 +52,7 @@ internal class LogFileStrategyBenchmarking {
 
     @After
     fun tearDown() {
-        Datadog.stop()
+        Datadog.invokeMethod("stop")
         InstrumentationRegistry.getInstrumentation().context.filesDir.deleteRecursively()
     }
 

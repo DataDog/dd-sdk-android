@@ -9,9 +9,9 @@ package com.datadog.android.log.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.utils.setStaticValue
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
