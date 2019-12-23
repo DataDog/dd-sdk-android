@@ -15,6 +15,6 @@ internal class DatadogUserInfoProvider : MutableUserInfoProvider {
     }
 
     override fun getUserInfo(): UserInfo {
-       return internalUserInfo
+        return internalUserInfo
     }
 }
