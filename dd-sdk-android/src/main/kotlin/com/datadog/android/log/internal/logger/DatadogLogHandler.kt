@@ -53,6 +53,7 @@ internal class DatadogLogHandler(
             attributes = attributes,
             tags = tags.toList(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
+            userInfo = UserInfo(),
             loggerName = loggerName,
             threadName = Thread.currentThread().name
         )

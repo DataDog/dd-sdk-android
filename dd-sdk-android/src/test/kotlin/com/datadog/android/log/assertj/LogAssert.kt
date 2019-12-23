@@ -8,6 +8,7 @@ package com.datadog.android.log.assertj
 
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.user.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -76,6 +77,16 @@ internal class LogAssert(actual: Log) :
             .overridingErrorMessage(
                 "Expected log to have networkInfo $expected " +
                     "but was ${actual.networkInfo}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasUserInfo(expected: UserInfo?): LogAssert {
+        assertThat(actual.userInfo)
+            .overridingErrorMessage(
+                "Expected log to have userInfo $expected " +
+                    "but was ${actual.userInfo}"
             )
             .isEqualTo(expected)
         return this

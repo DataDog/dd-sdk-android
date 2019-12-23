@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.user.UserInfo
 
 /**
  * Represents a Log before it is persisted and sent to Datadog servers.
@@ -20,6 +21,7 @@ internal data class Log(
     val tags: List<String>,
     val throwable: Throwable?,
     val networkInfo: NetworkInfo?,
+    val userInfo: UserInfo,
     val loggerName: String,
     val threadName: String
 )

@@ -17,6 +17,7 @@ import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -214,6 +215,7 @@ internal abstract class LogStrategyTest {
                 carrierId = forge.aHugeInt(),
                 carrierName = forge.anAlphabeticalString(size = 256)
             ),
+            userInfo = UserInfo(),// TODO !!!
             throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
             timestamp = forge.aLong(),
             loggerName = forge.anAlphabeticalString(),
@@ -365,7 +367,8 @@ internal abstract class LogStrategyTest {
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(
             LogStrategy.TAG_DATE,
-            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z")
+            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
+        )
 
         assertNetworkInfoMatches(log, jsonObject)
 
