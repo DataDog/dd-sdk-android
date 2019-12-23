@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.utils.split
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.lang.IllegalArgumentException
 import java.util.Base64 as JavaBase64
 
 internal class LogFileReader(
@@ -47,7 +48,7 @@ internal class LogFileReader(
         return if (file == null) {
             null
         } else {
-            Batch(file.name, logs.map { deobfuscate(it) })
+            Batch(file.name, logs.mapNotNull { deobfuscate(it) })
         }
     }
 
@@ -68,11 +69,16 @@ internal class LogFileReader(
 
     // region Internal
 
-    private fun deobfuscate(input: ByteArray): String {
-        val output = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            deobfuscateApi26(input)
-        } else {
-            AndroidBase64.decode(input, AndroidBase64.DEFAULT)
+    private fun deobfuscate(input: ByteArray): String? {
+        val output = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                deobfuscateApi26(input)
+            } else {
+                AndroidBase64.decode(input, AndroidBase64.DEFAULT)
+            }
+        } catch (e: IllegalArgumentException) {
+            sdkLogger.e("Invalid log found, dropping it", e)
+            return null
         }
 
         return String(output, Charsets.UTF_8)
