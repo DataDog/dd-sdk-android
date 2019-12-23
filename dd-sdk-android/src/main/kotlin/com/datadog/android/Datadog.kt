@@ -25,6 +25,7 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.devLogger
 import java.lang.ref.WeakReference
@@ -184,6 +185,23 @@ object Datadog {
     @JvmStatic
     fun setVerbosity(level: Int) {
         libraryVerbosity = level
+    }
+
+    /**
+     * Sets the user information.
+     *
+     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param name (nullable) the user name or alias
+     * @param email (nullable) the user email
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setUserInfo(
+        id: String? = null,
+        name: String? = null,
+        email: String? = null
+    ) {
+        userInfoProvider.setUserInfo(UserInfo(id, name, email))
     }
 
     // region Internal Provider

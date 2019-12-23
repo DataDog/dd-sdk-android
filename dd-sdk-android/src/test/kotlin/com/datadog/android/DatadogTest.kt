@@ -208,4 +208,18 @@ internal class DatadogTest {
         assertThat(okHttpClient.connectionSpecs)
             .containsExactly(ConnectionSpec.CLEARTEXT)
     }
+
+    @Test
+    fun `update user infos`(forge: Forge) {
+        val id = forge.anHexadecimalString()
+        val name = forge.anAlphabeticalString()
+        val email = forge.aStringMatching("\\w+@\\w+")
+
+        Datadog.setUserInfo(id, name, email)
+        val userInfo = Datadog.getUserInfoProvider().getUserInfo()
+
+        assertThat(userInfo.id).isEqualTo(id)
+        assertThat(userInfo.name).isEqualTo(name)
+        assertThat(userInfo.email).isEqualTo(email)
+    }
 }
