@@ -26,6 +26,7 @@ internal class FileWriter<T : Any>(
 ) : LazyHandlerThread(THREAD_NAME),
     Writer<T> {
 
+    // TODO: RUMM-148 Clean this code from here and move it into the FileOrchestrator eventually
     private val writeable: Boolean = if (!rootDirectory.exists()) {
         rootDirectory.mkdirs()
     } else {

@@ -3,6 +3,7 @@ package com.datadog.android.core.internal.data.file
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.log.forge.Configurator
+import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -96,10 +97,12 @@ internal class FileReaderTest {
         val nextBatch = underTest.readNextBatch()
 
         // then
-        val logMessages = systemOutStream.toString().trim().split("\n")
-        assertThat(nextBatch).isNull()
+        if (BuildConfig.DEBUG) {
+            val logMessages = systemOutStream.toString().trim().split("\n")
+            assertThat(nextBatch).isNull()
 
-        assertThat(logMessages[0]).matches("E/DD_LOG: FileReader: Couldn't access file .+")
+            assertThat(logMessages[0]).matches("E/DD_LOG: FileReader: Couldn't access file .+")
+        }
     }
 
     @Test
@@ -118,9 +121,11 @@ internal class FileReaderTest {
         val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
-        val logMessages = systemOutStream.toString().trim().split("\n")
-        assertThat(logMessages[0])
-            .matches("I/DD_LOG: FileReader: dropBatch $fileName")
+        if (BuildConfig.DEBUG) {
+            val logMessages = systemOutStream.toString().trim().split("\n")
+            assertThat(logMessages[0])
+                .matches("I/DD_LOG: FileReader: dropBatch $fileName")
+        }
     }
 
     @Test
@@ -139,9 +144,11 @@ internal class FileReaderTest {
         val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
-        val logMessages = systemOutStream.toString().trim().split("\n")
-        assertThat(logMessages[1])
-            .matches("W/DD_LOG: FileReader: file ${notExistingFile.path} does not exist\\.*")
+        if (BuildConfig.DEBUG) {
+            val logMessages = systemOutStream.toString().trim().split("\n")
+            assertThat(logMessages[1])
+                .matches("W/DD_LOG: FileReader: file ${notExistingFile.path} does not exist.*")
+        }
     }
 
     @Test
@@ -163,9 +170,11 @@ internal class FileReaderTest {
         val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).isEmpty()
-        val logMessages = systemOutStream.toString().trim().split("\n")
-        assertThat(logMessages[0])
-            .matches("I/DD_LOG: FileReader: dropAllBatches\\.*")
+        if (BuildConfig.DEBUG) {
+            val logMessages = systemOutStream.toString().trim().split("\n")
+            assertThat(logMessages[0])
+                .matches("I/DD_LOG: FileReader: dropAllBatches.*")
+        }
     }
 
     private fun generateFile(fileName: String): File {
