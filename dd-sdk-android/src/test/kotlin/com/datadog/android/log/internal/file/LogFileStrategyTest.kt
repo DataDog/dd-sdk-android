@@ -8,9 +8,9 @@ package com.datadog.android.log.internal.file
 
 import android.content.Context
 import android.os.Build
-import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogStrategy
@@ -55,12 +55,12 @@ internal class LogFileStrategyTest :
         )
     }
 
-    override fun setUp(writer: Writer, reader: Reader) {
+    override fun setUp(writer: Writer<Log>, reader: Reader) {
         whenever(mockDeferredHandler.handle(any())) doAnswer {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        (writer as FileWriter).deferredHandler = mockDeferredHandler
+        (writer as FileWriter<Log>).deferredHandler = mockDeferredHandler
     }
 
     override fun waitForNextBatch() {
@@ -74,7 +74,7 @@ internal class LogFileStrategyTest :
     fun `read returns null when 1st batch is already sent but file still present`(
         @Forgery fakeLog: Log
     ) {
-        testedWriter.writeLog(fakeLog)
+        testedWriter.write(fakeLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
         checkNotNull(batch)

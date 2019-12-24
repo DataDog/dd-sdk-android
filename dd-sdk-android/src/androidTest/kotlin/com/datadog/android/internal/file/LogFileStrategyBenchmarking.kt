@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.internal.utils.fieldValue
 import com.datadog.android.internal.utils.randomLog
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -30,7 +31,7 @@ internal class LogFileStrategyBenchmarking {
     @get:Rule
     val forge = ForgeRule()
 
-    lateinit var logFileWriter: FileWriter
+    lateinit var logFileWriter: FileWriter<Log>
     lateinit var logFileReader: FileReader
 
     @Before
@@ -38,7 +39,7 @@ internal class LogFileStrategyBenchmarking {
         val context = InstrumentationRegistry.getInstrumentation().context
         Datadog.initialize(context, "NO_TOKEN", "")
         Datadog.fieldValue<HandlerThread>("handlerThread").quit()
-        logFileWriter = Datadog.getLogStrategy().getLogWriter() as FileWriter
+        logFileWriter = Datadog.getLogStrategy().getLogWriter() as FileWriter<Log>
         logFileWriter.quit() // we don't want this thread to run
         val dummyHandler = Handler(Looper.getMainLooper()) // this will never be used
         logFileWriter.deferredHandler =
@@ -64,7 +65,7 @@ internal class LogFileStrategyBenchmarking {
                 val log = runWithTimingDisabled {
                     randomLog(forge)
                 }
-                logFileWriter.writeLog(log)
+                logFileWriter.write(log)
                 counter++
             } while (counter < LogFileStrategy.MAX_LOG_PER_BATCH)
         }
@@ -95,7 +96,7 @@ internal class LogFileStrategyBenchmarking {
         var counter = 0
         do {
             val log = randomLog(forge)
-            logFileWriter.writeLog(log)
+            logFileWriter.write(log)
             counter++
         } while (counter < LogFileStrategy.MAX_LOG_PER_BATCH)
     }

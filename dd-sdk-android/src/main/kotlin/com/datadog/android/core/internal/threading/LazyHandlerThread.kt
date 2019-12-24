@@ -1,9 +1,7 @@
-package com.datadog.android.log.internal.thread
+package com.datadog.android.core.internal.threading
 
 import android.os.Handler
 import android.os.HandlerThread
-import com.datadog.android.core.internal.threading.AndroidDeferredHandler
-import com.datadog.android.core.internal.threading.DeferredHandler
 import java.util.LinkedList
 
 /**

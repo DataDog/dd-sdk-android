@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.domain
+package com.datadog.android.core.internal.domain
 
 /**
  * The Serializer<T> generic interface. Should be implemented by any custom serializer.

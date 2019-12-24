@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
 import com.google.gson.JsonNull

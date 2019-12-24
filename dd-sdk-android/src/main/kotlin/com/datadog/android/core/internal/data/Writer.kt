@@ -6,13 +6,11 @@
 
 package com.datadog.android.core.internal.data
 
-import com.datadog.android.log.internal.domain.Log
-
 /**
  * Writes a log to a persistent location, for them to be sent at a later time (undefined).
  * @see [Reader]
  */
-internal interface Writer {
+internal interface Writer<T : Any> {
 
-    fun writeLog(log: Log)
+    fun write(model: T)
 }
