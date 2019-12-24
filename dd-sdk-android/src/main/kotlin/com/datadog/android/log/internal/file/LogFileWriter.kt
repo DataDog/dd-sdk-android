@@ -10,10 +10,10 @@ import android.annotation.TargetApi
 import android.os.Build
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
-import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.constraints.LogConstraints
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.thread.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.google.gson.JsonNull

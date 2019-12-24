@@ -9,11 +9,11 @@ package com.datadog.android.log.internal.file
 import android.content.Context
 import android.os.Build
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer

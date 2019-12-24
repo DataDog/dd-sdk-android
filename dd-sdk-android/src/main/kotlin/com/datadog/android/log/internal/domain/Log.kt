@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.log.internal.domain
 
 import com.datadog.android.log.internal.net.NetworkInfo
 

@@ -7,8 +7,8 @@
 package com.datadog.android.log.internal.logger
 
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 internal class DatadogLogHandler(

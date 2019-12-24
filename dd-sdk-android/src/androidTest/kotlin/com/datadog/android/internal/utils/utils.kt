@@ -1,6 +1,6 @@
 package com.datadog.android.internal.utils
 
-import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException
