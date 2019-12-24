@@ -58,7 +58,7 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeNetworkInfo: NetworkInfo
 
     @Mock
-    lateinit var mockWriter: Writer
+    lateinit var mockWriter: Writer<Log>
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     @Mock
@@ -98,7 +98,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockWriter).writeLog(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -132,7 +132,7 @@ internal class DatadogLogHandlerTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         argumentCaptor<Log>().apply {
-            verify(mockWriter).writeLog(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -160,7 +160,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockWriter).writeLog(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -188,7 +188,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockWriter).writeLog(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)

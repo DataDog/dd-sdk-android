@@ -56,7 +56,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 @MockitoSettings()
 internal abstract class LogStrategyTest {
 
-    lateinit var testedWriter: Writer
+    lateinit var testedWriter: Writer<Log>
     lateinit var testedReader: Reader
 
     // region Setup
@@ -83,7 +83,7 @@ internal abstract class LogStrategyTest {
 
     abstract fun getStrategy(): LogStrategy
 
-    abstract fun setUp(writer: Writer, reader: Reader)
+    abstract fun setUp(writer: Writer<Log>, reader: Reader)
 
     abstract fun waitForNextBatch()
 
@@ -94,7 +94,7 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes full log as json`(@Forgery fakeLog: Log) {
-        testedWriter.writeLog(fakeLog)
+        testedWriter.write(fakeLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val log = batch.logs.first()
@@ -113,7 +113,7 @@ internal abstract class LogStrategyTest {
             tags = emptyList()
         )
 
-        testedWriter.writeLog(minimalLog)
+        testedWriter.write(minimalLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val log = batch.logs.first()
@@ -131,7 +131,7 @@ internal abstract class LogStrategyTest {
         }.toMap()
         val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
 
-        testedWriter.writeLog(logWithReservedAttributes)
+        testedWriter.write(logWithReservedAttributes)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val log = batch.logs.first()
@@ -148,7 +148,7 @@ internal abstract class LogStrategyTest {
         for (i in 0 until logCount) {
             val log = fakeLogs[i]
             val updatedLog = log.copy(level = i % 8)
-            testedWriter.writeLog(updatedLog)
+            testedWriter.write(updatedLog)
             sentLogs.add(updatedLog)
         }
         waitForNextBatch()
@@ -165,10 +165,10 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes in new batch if delay passed`(@Forgery fakeLog: Log, @Forgery nextLog: Log) {
-        testedWriter.writeLog(fakeLog)
+        testedWriter.write(fakeLog)
         waitForNextBatch()
 
-        testedWriter.writeLog(nextLog)
+        testedWriter.write(nextLog)
         val batch = testedReader.readNextBatch()!!
         val log = batch.logs.first()
 
@@ -180,7 +180,7 @@ internal abstract class LogStrategyTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes batch of logs from mutliple threads`(@Forgery fakeLogs: List<Log>) {
         val runnables = fakeLogs.map {
-            Runnable { testedWriter.writeLog(it) }
+            Runnable { testedWriter.write(it) }
         }
         runnables.forEach {
             Thread(it).start()
@@ -220,7 +220,7 @@ internal abstract class LogStrategyTest {
             threadName = forge.anAlphabeticalString()
         )
 
-        testedWriter.writeLog(bigLog)
+        testedWriter.write(bigLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
 
@@ -242,7 +242,7 @@ internal abstract class LogStrategyTest {
             )
         }
 
-        logs.forEach { testedWriter.writeLog(it) }
+        logs.forEach { testedWriter.write(it) }
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         testedReader.dropBatch(batch.id)
@@ -270,7 +270,7 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is already sent`(@Forgery fakeLog: Log) {
-        testedWriter.writeLog(fakeLog)
+        testedWriter.write(fakeLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
         checkNotNull(batch)
@@ -285,7 +285,7 @@ internal abstract class LogStrategyTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is too recent`(@Forgery fakeLog: Log) {
-        testedWriter.writeLog(fakeLog)
+        testedWriter.write(fakeLog)
         val batch = testedReader.readNextBatch()
 
         assertThat(batch)
@@ -307,9 +307,9 @@ internal abstract class LogStrategyTest {
         @Forgery firstLogs: List<Log>,
         @Forgery secondLogs: List<Log>
     ) {
-        firstLogs.forEach { testedWriter.writeLog(it) }
+        firstLogs.forEach { testedWriter.write(it) }
         waitForNextBatch()
-        secondLogs.forEach { testedWriter.writeLog(it) }
+        secondLogs.forEach { testedWriter.write(it) }
 
         testedReader.dropAllBatches()
         val batch = testedReader.readNextBatch()
@@ -328,7 +328,7 @@ internal abstract class LogStrategyTest {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[logMessages.size - 1].trim())
                 .withFailMessage("We were expecting a log message here")
-                .matches("W/DD_LOG: LogFileReader: .+")
+                .matches("W/DD_LOG: FileReader: .+")
         }
     }
 

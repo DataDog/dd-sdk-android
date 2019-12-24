@@ -8,9 +8,9 @@ package com.datadog.android.core.internal.data.file
 
 import android.annotation.TargetApi
 import android.os.Build
+import android.util.Base64 as AndroidBase64
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
-import android.util.Base64 as AndroidBase64
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.utils.sdkLogger
@@ -109,6 +109,6 @@ internal class FileReader(
     // endregion
 
     companion object {
-        private const val TAG = "LogFileReader"
+        private const val TAG = "FileReader"
     }
 }

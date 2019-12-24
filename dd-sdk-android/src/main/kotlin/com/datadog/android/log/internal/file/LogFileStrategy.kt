@@ -7,13 +7,14 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
 import com.datadog.android.core.internal.data.file.FileWriter
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.constraints.DatadogLogConstraints
+import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogSerializer
 import java.io.File
 
 internal class LogFileStrategy(
@@ -54,11 +55,11 @@ internal class LogFileStrategy(
 
     // region LogPersistingStrategy
 
-    override fun getLogWriter(): Writer {
+    override fun getLogWriter(): Writer<Log> {
         return FileWriter(
             fileOrchestrator,
-            DatadogLogConstraints(),
-            rootDir
+            rootDir,
+            LogSerializer()
         )
     }
 

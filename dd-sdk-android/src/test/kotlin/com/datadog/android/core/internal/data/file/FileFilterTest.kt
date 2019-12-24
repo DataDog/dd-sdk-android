@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -33,7 +33,7 @@ internal class FileFilterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFilter = com.datadog.android.core.internal.data.file.FileFilter()
+        testedFilter = FileFilter()
     }
 
     @Test

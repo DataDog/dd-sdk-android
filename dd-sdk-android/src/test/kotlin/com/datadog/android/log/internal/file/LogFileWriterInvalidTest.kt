@@ -7,11 +7,11 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.BuildConfig
-import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.core.internal.data.Orchestrator
+import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.constraints.NoOpLogConstraints
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -44,7 +44,7 @@ internal class LogFileWriterInvalidTest {
     @TempDir
     lateinit var tempDir: File
 
-    lateinit var testedFileWriter: FileWriter
+    lateinit var testedFileWriter: FileWriter<Log>
 
     lateinit var logsDir: File
 
@@ -56,19 +56,19 @@ internal class LogFileWriterInvalidTest {
         testedFileWriter =
             FileWriter(
                 mockFileOrchestrator,
-                NoOpLogConstraints(),
-                logsDir
+                logsDir,
+                LogSerializer()
             )
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())
                 .withFailMessage("We were expecting a log error message")
-                .matches("E/DD_LOG: LogFileWriter: .+")
+                .matches("E/DD_LOG: FileWriter: .+")
         }
     }
 
     @Test
     fun `write does nothing`(@Forgery fakeLog: Log) {
-        testedFileWriter.writeLog(fakeLog)
+        testedFileWriter.write(fakeLog)
 
         assertThat(logsDir.isFile)
         assertThat(logsDir.readText()).isEqualTo(I_LIED)
