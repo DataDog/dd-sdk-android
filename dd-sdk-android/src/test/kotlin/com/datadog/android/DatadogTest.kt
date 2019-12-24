@@ -8,10 +8,10 @@ package com.datadog.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
+import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
@@ -121,7 +121,7 @@ internal class DatadogTest {
 
     @Test
     fun `drop logs on setEndpointUrl with Discard strategy`(forge: Forge) {
-        val mockReader: LogReader = mock()
+        val mockReader: Reader = mock()
         val mockUploader: LogUploader = mock()
         whenever(mockLogStrategy.getLogReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
@@ -137,7 +137,7 @@ internal class DatadogTest {
 
     @Test
     fun `keep logs on setEndpointUrl with Update strategy`(forge: Forge) {
-        val mockReader: LogReader = mock()
+        val mockReader: Reader = mock()
         val mockUploader: LogUploader = mock()
         whenever(mockLogStrategy.getLogReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")

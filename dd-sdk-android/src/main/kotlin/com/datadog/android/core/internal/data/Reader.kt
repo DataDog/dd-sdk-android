@@ -4,13 +4,15 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.core.internal.data
+
+import com.datadog.android.core.internal.domain.Batch
 
 /**
  * Reads logs from a persistent location, when they can be sent.
- * @see [LogWriter]
+ * @see [Writer]
  */
-internal interface LogReader {
+internal interface Reader {
 
     fun readNextBatch(): Batch?
 

@@ -8,11 +8,13 @@ package com.datadog.android.log.internal.file
 
 import android.content.Context
 import android.os.Build
+import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
-import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.nhaarman.mockitokotlin2.any
@@ -53,12 +55,12 @@ internal class LogFileStrategyTest :
         )
     }
 
-    override fun setUp(writer: LogWriter, reader: LogReader) {
+    override fun setUp(writer: Writer, reader: Reader) {
         whenever(mockDeferredHandler.handle(any())) doAnswer {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        (writer as LogFileWriter).deferredHandler = mockDeferredHandler
+        (writer as FileWriter).deferredHandler = mockDeferredHandler
     }
 
     override fun waitForNextBatch() {
@@ -72,16 +74,16 @@ internal class LogFileStrategyTest :
     fun `read returns null when 1st batch is already sent but file still present`(
         @Forgery fakeLog: Log
     ) {
-        testedLogWriter.writeLog(fakeLog)
+        testedWriter.writeLog(fakeLog)
         waitForNextBatch()
-        val batch = testedLogReader.readNextBatch()
+        val batch = testedReader.readNextBatch()
         checkNotNull(batch)
 
-        testedLogReader.dropBatch(batch.id)
+        testedReader.dropBatch(batch.id)
         val logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         val file = File(logsDir, batch.id)
         file.writeText("I'm still there !")
-        val batch2 = testedLogReader.readNextBatch()
+        val batch2 = testedReader.readNextBatch()
 
         assertThat(batch2)
             .isNull()
@@ -100,7 +102,7 @@ internal class LogFileStrategyTest :
 
         fakeFile.writeText(invalidBase64, Charsets.UTF_8)
         waitForNextBatch()
-        val batch = testedLogReader.readNextBatch()
+        val batch = testedReader.readNextBatch()
         checkNotNull(batch)
 
         assertThat(batch.logs)
@@ -118,7 +120,7 @@ internal class LogFileStrategyTest :
 
         fakeFile.writeText(invalidBase64, Charsets.UTF_8)
         waitForNextBatch()
-        val batch = testedLogReader.readNextBatch()
+        val batch = testedReader.readNextBatch()
         checkNotNull(batch)
 
         assertThat(batch.logs)

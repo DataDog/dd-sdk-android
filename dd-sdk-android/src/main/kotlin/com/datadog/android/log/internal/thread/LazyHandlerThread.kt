@@ -2,8 +2,8 @@ package com.datadog.android.log.internal.thread
 
 import android.os.Handler
 import android.os.HandlerThread
-import com.datadog.android.log.internal.file.AndroidDeferredHandler
-import com.datadog.android.log.internal.file.DeferredHandler
+import com.datadog.android.core.internal.threading.AndroidDeferredHandler
+import com.datadog.android.core.internal.threading.DeferredHandler
 import java.util.LinkedList
 
 /**
@@ -13,7 +13,11 @@ import java.util.LinkedList
 internal open class LazyHandlerThread(
     name: String,
     private val handlerBuilder: (Handler) ->
-    DeferredHandler = { handler -> AndroidDeferredHandler(handler) }
+    DeferredHandler = { handler ->
+        AndroidDeferredHandler(
+            handler
+        )
+    }
 ) :
     HandlerThread(name) {
     private val messagesQueue: LinkedList<Runnable> = LinkedList()

@@ -1,9 +1,8 @@
 package com.datadog.android.log.internal.thread
 
-import com.datadog.android.log.internal.file.AndroidDeferredHandler
+import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import java.util.concurrent.CountDownLatch
 import org.junit.jupiter.api.BeforeEach

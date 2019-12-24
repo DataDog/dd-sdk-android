@@ -6,10 +6,10 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
@@ -58,7 +58,7 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeNetworkInfo: NetworkInfo
 
     @Mock
-    lateinit var mockLogWriter: LogWriter
+    lateinit var mockWriter: Writer
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     @Mock
@@ -80,7 +80,7 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             fakeServiceName,
             fakeLoggerName,
-            mockLogWriter,
+            mockWriter,
             mockNetworkInfoProvider,
             mockTimeProvider
         )
@@ -98,7 +98,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockWriter).writeLog(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -132,7 +132,7 @@ internal class DatadogLogHandlerTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         argumentCaptor<Log>().apply {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockWriter).writeLog(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -160,7 +160,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockWriter).writeLog(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
@@ -188,7 +188,7 @@ internal class DatadogLogHandlerTest {
         )
 
         argumentCaptor<Log>().apply {
-            verify(mockLogWriter).writeLog(capture())
+            verify(mockWriter).writeLog(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)

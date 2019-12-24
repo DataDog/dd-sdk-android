@@ -7,6 +7,8 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.constraints.NoOpLogConstraints
 import com.datadog.android.log.internal.domain.Log
@@ -37,12 +39,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 internal class LogFileWriterInvalidTest {
 
     @Mock
-    lateinit var mockFileOrchestrator: FileOrchestrator
+    lateinit var mockFileOrchestrator: Orchestrator
 
     @TempDir
     lateinit var tempDir: File
 
-    lateinit var testedFileWriter: LogFileWriter
+    lateinit var testedFileWriter: FileWriter
 
     lateinit var logsDir: File
 
@@ -51,7 +53,12 @@ internal class LogFileWriterInvalidTest {
         logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
         logsDir.writeText(I_LIED)
 
-        testedFileWriter = LogFileWriter(mockFileOrchestrator, NoOpLogConstraints(), logsDir)
+        testedFileWriter =
+            FileWriter(
+                mockFileOrchestrator,
+                NoOpLogConstraints(),
+                logsDir
+            )
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())
                 .withFailMessage("We were expecting a log error message")

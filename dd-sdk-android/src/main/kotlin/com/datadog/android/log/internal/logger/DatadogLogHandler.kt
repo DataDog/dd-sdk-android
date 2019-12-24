@@ -6,15 +6,15 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 
 internal class DatadogLogHandler(
     internal val serviceName: String,
     internal val loggerName: String,
-    internal val logWriter: LogWriter,
+    internal val writer: Writer,
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val timeProvider: TimeProvider
 ) : LogHandler {
@@ -29,7 +29,7 @@ internal class DatadogLogHandler(
         tags: Set<String>
     ) {
         val log = createLog(level, message, throwable, attributes, tags)
-        logWriter.writeLog(log)
+        writer.writeLog(log)
     }
 
     // endregion

@@ -6,6 +6,8 @@
 
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.log.forge.Configurator
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import fr.xgouchet.elmyr.Forge
@@ -30,12 +32,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
-internal class LogFileOrchestratorTest {
+internal class FileOrchestratorTest {
 
     @TempDir
     lateinit var tempDir: File
     lateinit var tempLogsDir: File
-    lateinit var testedOrchestrator: FileOrchestrator
+    lateinit var testedOrchestrator: Orchestrator
 
     @BeforeEach
     fun `set up`() {
@@ -43,14 +45,15 @@ internal class LogFileOrchestratorTest {
         tempLogsDir.mkdirs()
         assumeTrue(tempLogsDir.exists() && tempLogsDir.isDirectory && tempLogsDir.canWrite())
 
-        testedOrchestrator = LogFileOrchestrator(
-            tempLogsDir,
-            RECENT_DELAY_MS,
-            MAX_BATCH_SIZE,
-            MAX_LOGS_PER_BATCH,
-            OLD_FILE_THRESHOLD,
-            MAX_DISK_SPACE
-        )
+        testedOrchestrator =
+            FileOrchestrator(
+                tempLogsDir,
+                RECENT_DELAY_MS,
+                MAX_BATCH_SIZE,
+                MAX_LOGS_PER_BATCH,
+                OLD_FILE_THRESHOLD,
+                MAX_DISK_SPACE
+            )
     }
 
     @Test

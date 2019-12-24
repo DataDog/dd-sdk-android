@@ -24,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
-internal class LogFileFilterTest {
+internal class FileFilterTest {
 
     @TempDir
     lateinit var tempDir: File
@@ -33,7 +33,7 @@ internal class LogFileFilterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFilter = LogFileFilter()
+        testedFilter = com.datadog.android.core.internal.data.file.FileFilter()
     }
 
     @Test

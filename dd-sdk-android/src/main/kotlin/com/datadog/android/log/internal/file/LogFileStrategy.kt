@@ -7,9 +7,12 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
-import com.datadog.android.log.internal.LogReader
+import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import java.io.File
 
@@ -39,23 +42,31 @@ internal class LogFileStrategy(
             maxDiskSpace = maxDiskSpace
         )
 
-    private val fileOrchestrator = LogFileOrchestrator(
-        rootDirectory = rootDir,
-        recentDelayMs = recentDelayMs,
-        maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxLogPerBatch,
-        oldFileThreshold = oldFileThreshold,
-        maxDiskSpace = maxDiskSpace
-    )
+    private val fileOrchestrator =
+        FileOrchestrator(
+            rootDirectory = rootDir,
+            recentDelayMs = recentDelayMs,
+            maxBatchSize = maxBatchSize,
+            maxLogPerBatch = maxLogPerBatch,
+            oldFileThreshold = oldFileThreshold,
+            maxDiskSpace = maxDiskSpace
+        )
 
     // region LogPersistingStrategy
 
-    override fun getLogWriter(): LogWriter {
-        return LogFileWriter(fileOrchestrator, DatadogLogConstraints(), rootDir)
+    override fun getLogWriter(): Writer {
+        return FileWriter(
+            fileOrchestrator,
+            DatadogLogConstraints(),
+            rootDir
+        )
     }
 
-    override fun getLogReader(): LogReader {
-        return LogFileReader(fileOrchestrator, rootDir)
+    override fun getLogReader(): Reader {
+        return FileReader(
+            fileOrchestrator,
+            rootDir
+        )
     }
 
     // endregion

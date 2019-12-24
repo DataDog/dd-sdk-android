@@ -4,12 +4,12 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
 import java.io.File
 import java.io.FileFilter
 
-internal class LogFileFilter : FileFilter {
+internal class FileFilter : FileFilter {
 
     override fun accept(file: File?): Boolean {
         return file != null &&
