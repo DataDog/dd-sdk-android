@@ -4,11 +4,11 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data
 
 import java.io.File
 
-internal interface FileOrchestrator {
+internal interface Orchestrator {
 
     @Throws(SecurityException::class)
     fun getWritableFile(itemSize: Int): File

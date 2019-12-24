@@ -4,12 +4,8 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.core.internal.threading
 
-/**
- * Represent a batch of logs read from a persisted location.
- */
-internal data class Batch(
-    val id: String,
-    val logs: List<String>
-)
+internal interface DeferredHandler {
+    fun handle(r: Runnable)
+}

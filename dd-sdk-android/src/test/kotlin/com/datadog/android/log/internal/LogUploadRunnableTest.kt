@@ -8,6 +8,8 @@ package com.datadog.android.log.internal
 
 import android.os.Handler
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
@@ -55,7 +57,7 @@ internal class LogUploadRunnableTest {
     @Mock
     lateinit var mockHandler: Handler
     @Mock
-    lateinit var mockLogReader: LogReader
+    lateinit var mockReader: Reader
     @Mock
     lateinit var mockLogUploader: LogUploader
     @Mock
@@ -82,7 +84,7 @@ internal class LogUploadRunnableTest {
 
         testedRunnable = LogUploadRunnable(
             mockHandler,
-            mockLogReader,
+            mockReader,
             mockLogUploader,
             mockNetworkInfoProvider,
             mockSystemInfoProvider
@@ -96,7 +98,7 @@ internal class LogUploadRunnableTest {
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).dropBatch(batch.id)
         verify(mockLogUploader, never()).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -114,11 +116,11 @@ internal class LogUploadRunnableTest {
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).dropBatch(anyOrNull())
         verify(mockLogUploader, never()).uploadLogs(anyOrNull())
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -137,11 +139,11 @@ internal class LogUploadRunnableTest {
             powerSaveMode = true
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).dropBatch(anyOrNull())
         verify(mockLogUploader, never()).uploadLogs(anyOrNull())
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -156,23 +158,23 @@ internal class LogUploadRunnableTest {
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `no batch to send`(@SystemOutStream systemOutStream: ByteArrayOutputStream) {
-        whenever(mockLogReader.readNextBatch()) doReturn null
+        whenever(mockReader.readNextBatch()) doReturn null
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).dropBatch(anyOrNull())
         verifyZeroInteractions(mockLogUploader)
         verify(mockHandler).postDelayed(testedRunnable, LogUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
@@ -184,24 +186,24 @@ internal class LogUploadRunnableTest {
 
     @Test
     fun `batch sent successfully`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `batch kept on Network Error`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -211,49 +213,49 @@ internal class LogUploadRunnableTest {
         @Forgery batch: Batch,
         @IntForgery(min = 3, max = 42) runCount: Int
     ) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.NETWORK_ERROR
 
         for (i in 0 until runCount) {
             testedRunnable.run()
         }
         verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
-        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).dropBatch(batch.id)
         verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `batch dropped on Redirection`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_REDIRECTION
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `batch dropped on Client Error`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_CLIENT_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `batch kept on Server Error`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -263,7 +265,7 @@ internal class LogUploadRunnableTest {
         @Forgery batch: Batch,
         @IntForgery(min = 3, max = 42) runCount: Int
     ) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.HTTP_SERVER_ERROR
 
         for (i in 0 until runCount) {
@@ -271,25 +273,25 @@ internal class LogUploadRunnableTest {
         }
 
         verify(mockLogUploader, times(runCount)).uploadLogs(batch.logs)
-        verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).dropBatch(batch.id)
         verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `batch dropped on Unknown error`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()) doReturn batch
+        whenever(mockReader.readNextBatch()) doReturn batch
         whenever(mockLogUploader.uploadLogs(batch.logs)) doReturn LogUploadStatus.UNKNOWN_ERROR
 
         testedRunnable.run()
 
-        verify(mockLogReader).dropBatch(batch.id)
+        verify(mockReader).dropBatch(batch.id)
         verify(mockLogUploader).uploadLogs(batch.logs)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
 
     @Test
     fun `when has batches the upload frequency will increase`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()).doReturn(batch)
+        whenever(mockReader.readNextBatch()).doReturn(batch)
 
         repeat(5) {
             testedRunnable.run()
@@ -306,7 +308,7 @@ internal class LogUploadRunnableTest {
 
     @Test
     fun `when has batches will increase the frequency up to a specific max`(@Forgery batch: Batch) {
-        whenever(mockLogReader.readNextBatch()).doReturn(batch)
+        whenever(mockReader.readNextBatch()).doReturn(batch)
 
         repeat(30) {
             testedRunnable.run()
@@ -326,7 +328,7 @@ internal class LogUploadRunnableTest {
     fun `when no more batches available the scheduler delay will be increased`(
         @Forgery batch: Batch
     ) {
-        whenever(mockLogReader.readNextBatch())
+        whenever(mockReader.readNextBatch())
             .doReturn(batch)
             .doReturn(null)
 

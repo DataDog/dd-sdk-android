@@ -4,16 +4,18 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
 import android.annotation.TargetApi
 import android.os.Build
+import com.datadog.android.core.internal.data.Orchestrator
+import com.datadog.android.core.internal.data.Writer
 import android.util.Base64 as AndroidBase64
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.LogWriter
 import com.datadog.android.log.internal.constraints.LogConstraints
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.thread.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.google.gson.JsonNull
@@ -30,11 +32,12 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-internal class LogFileWriter(
-    private val fileOrchestrator: FileOrchestrator,
+internal class FileWriter(
+    private val fileOrchestrator: Orchestrator,
     private val logConstraints: LogConstraints,
     rootDirectory: File
-) : LazyHandlerThread(THREAD_NAME), LogWriter {
+) : LazyHandlerThread(THREAD_NAME),
+    Writer {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")

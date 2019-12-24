@@ -72,7 +72,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.loggerName).isEqualTo(packageName)
         assertThat(handler.networkInfoProvider).isNull()
         assertThat(handler.timeProvider).isNotNull()
-        assertThat(handler.logWriter).isNotNull()
+        assertThat(handler.writer).isNotNull()
     }
 
     @Test

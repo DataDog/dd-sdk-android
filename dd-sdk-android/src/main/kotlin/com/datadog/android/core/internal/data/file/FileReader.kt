@@ -4,13 +4,15 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
 import android.annotation.TargetApi
 import android.os.Build
+import com.datadog.android.core.internal.data.Orchestrator
+import com.datadog.android.core.internal.data.Reader
 import android.util.Base64 as AndroidBase64
-import com.datadog.android.log.internal.Batch
-import com.datadog.android.log.internal.LogReader
+import com.datadog.android.core.internal.domain.Batch
+import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.split
 import java.io.File
@@ -19,10 +21,10 @@ import java.io.IOException
 import java.lang.IllegalArgumentException
 import java.util.Base64 as JavaBase64
 
-internal class LogFileReader(
-    private val fileOrchestrator: FileOrchestrator,
+internal class FileReader(
+    private val fileOrchestrator: Orchestrator,
     private val rootDirectory: File
-) : LogReader {
+) : Reader {
 
     private val sentBatches: MutableSet<String> = mutableSetOf()
 
@@ -48,7 +50,9 @@ internal class LogFileReader(
         return if (file == null) {
             null
         } else {
-            Batch(file.name, logs.mapNotNull { deobfuscate(it) })
+            Batch(
+                file.name,
+                logs.mapNotNull { deobfuscate(it) })
         }
     }
 

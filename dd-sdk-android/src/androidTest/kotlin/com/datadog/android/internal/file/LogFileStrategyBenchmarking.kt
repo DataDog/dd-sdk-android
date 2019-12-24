@@ -8,12 +8,12 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.internal.utils.fieldValue
 import com.datadog.android.internal.utils.randomLog
-import com.datadog.android.log.internal.file.AndroidDeferredHandler
-import com.datadog.android.log.internal.file.LogFileReader
 import com.datadog.android.log.internal.file.LogFileStrategy
-import com.datadog.android.log.internal.file.LogFileWriter
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.After
@@ -30,15 +30,15 @@ internal class LogFileStrategyBenchmarking {
     @get:Rule
     val forge = ForgeRule()
 
-    lateinit var logFileWriter: LogFileWriter
-    lateinit var logFileReader: LogFileReader
+    lateinit var logFileWriter: FileWriter
+    lateinit var logFileReader: FileReader
 
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().context
         Datadog.initialize(context, "NO_TOKEN", "")
         Datadog.fieldValue<HandlerThread>("handlerThread").quit()
-        logFileWriter = Datadog.getLogStrategy().getLogWriter() as LogFileWriter
+        logFileWriter = Datadog.getLogStrategy().getLogWriter() as FileWriter
         logFileWriter.quit() // we don't want this thread to run
         val dummyHandler = Handler(Looper.getMainLooper()) // this will never be used
         logFileWriter.deferredHandler =
@@ -47,7 +47,7 @@ internal class LogFileStrategyBenchmarking {
                     r.run()
                 }
             }
-        logFileReader = Datadog.getLogStrategy().getLogReader() as LogFileReader
+        logFileReader = Datadog.getLogStrategy().getLogReader() as FileReader
     }
 
     @After

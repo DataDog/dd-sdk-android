@@ -7,6 +7,8 @@
 package com.datadog.android.log.internal
 
 import android.os.Handler
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfo
@@ -18,7 +20,7 @@ import kotlin.math.max
 
 internal class LogUploadRunnable(
     private val handler: Handler,
-    private val logReader: LogReader,
+    private val reader: Reader,
     private val logUploader: LogUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider
@@ -30,7 +32,7 @@ internal class LogUploadRunnable(
 
     override fun run() {
         val batch = if (isNetworkAvailable() && isSystemReady()) {
-            logReader.readNextBatch()
+            reader.readNextBatch()
         } else null
         if (batch != null) {
             consumeBatch(batch)
@@ -68,7 +70,7 @@ internal class LogUploadRunnable(
         sdkLogger.i("$TAG: Sending batch $batchId")
         val status = logUploader.uploadLogs(batch.logs)
         if (status in dropableBatchStatus) {
-            logReader.dropBatch(batchId)
+            reader.dropBatch(batchId)
         }
         currentDelayInterval = decreaseInterval()
         handler.postDelayed(this, currentDelayInterval)

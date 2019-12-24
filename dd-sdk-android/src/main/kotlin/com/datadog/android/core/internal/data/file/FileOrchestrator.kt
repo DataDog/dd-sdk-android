@@ -4,22 +4,24 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileFilter
 
-internal class LogFileOrchestrator(
+internal class FileOrchestrator(
     private val rootDirectory: File,
     recentDelayMs: Long,
     private val maxBatchSize: Long,
     private val maxLogPerBatch: Int,
     private val oldFileThreshold: Long,
     private val maxDiskSpace: Long
-) : FileOrchestrator {
+) : Orchestrator {
 
-    private val fileFilter: FileFilter = LogFileFilter()
+    private val fileFilter: FileFilter =
+        FileFilter()
 
     private var previousFile: File? = null
     private var previousFileLogCount: Int = 0
@@ -144,6 +146,6 @@ internal class LogFileOrchestrator(
     // endregion
 
     companion object {
-        private const val TAG = "LogFileOrchestrator"
+        private const val TAG = "FileOrchestrator"
     }
 }

@@ -8,12 +8,13 @@ package com.datadog.android.log.internal
 
 import android.os.Handler
 import android.os.HandlerThread
+import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfoProvider
 
 internal class LogHandlerThread(
-    private val logReader: LogReader,
+    private val reader: Reader,
     private val logUploader: LogUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider
@@ -26,7 +27,7 @@ internal class LogHandlerThread(
         handler = Handler(looper)
         val runnable = LogUploadRunnable(
             handler,
-            logReader,
+            reader,
             logUploader,
             networkInfoProvider,
             systemInfoProvider
