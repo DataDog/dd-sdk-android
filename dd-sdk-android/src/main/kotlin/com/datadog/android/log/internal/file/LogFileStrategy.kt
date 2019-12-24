@@ -80,7 +80,6 @@ internal class LogFileStrategy(
         private const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
 
         internal const val LOGS_FOLDER_NAME = "dd-logs"
-        internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
     }
 }

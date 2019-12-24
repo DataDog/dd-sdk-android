@@ -12,7 +12,6 @@ import android.util.Base64 as AndroidBase64
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
-import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.split
 import java.io.File
@@ -35,7 +34,7 @@ internal class FileReader(
         val logs = try {
             file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
             val inputBytes = file.readBytes()
-            inputBytes.split(LogFileStrategy.SEPARATOR_BYTE)
+            inputBytes.split(FileWriter.SEPARATOR_BYTE)
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
             emptyList<ByteArray>()
