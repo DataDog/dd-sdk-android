@@ -1,7 +1,7 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.domain.Log
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

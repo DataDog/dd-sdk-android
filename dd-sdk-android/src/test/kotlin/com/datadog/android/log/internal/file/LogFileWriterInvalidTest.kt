@@ -8,8 +8,8 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.constraints.NoOpLogConstraints
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import fr.xgouchet.elmyr.annotation.Forgery

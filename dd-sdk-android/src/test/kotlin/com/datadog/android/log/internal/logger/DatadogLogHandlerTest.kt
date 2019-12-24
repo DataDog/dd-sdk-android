@@ -9,8 +9,8 @@ package com.datadog.android.log.internal.logger
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
-import com.datadog.android.log.internal.Log
 import com.datadog.android.log.internal.LogWriter
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.tools.unit.setFieldValue

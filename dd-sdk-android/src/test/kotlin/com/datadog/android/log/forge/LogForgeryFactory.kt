@@ -7,7 +7,7 @@
 package com.datadog.android.log.forge
 
 import android.util.Log as AndroidLog
-import com.datadog.android.log.internal.Log
+import com.datadog.android.log.internal.domain.Log
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.io.File
