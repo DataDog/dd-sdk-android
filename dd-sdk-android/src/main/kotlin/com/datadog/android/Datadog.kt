@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
@@ -17,6 +18,7 @@ import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.file.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
+import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
@@ -56,7 +58,7 @@ object Datadog {
     private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: LogStrategy
-    private lateinit var networkInfoProvider: BroadcastReceiverNetworkInfoProvider
+    private lateinit var networkInfoProvider: NetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
@@ -93,11 +95,7 @@ object Datadog {
         val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
 
         // Register Broadcast Receivers
-        // TODO RUMM-44 implement a provider using ConnectivityManager.registerNetworkCallback
-        val networkBroadcastReceiver = BroadcastReceiverNetworkInfoProvider().apply {
-            register(appContext)
-        }
-        networkInfoProvider = networkBroadcastReceiver
+        initializeNetworkInfoProvider(appContext)
         val systemBroadcastReceiver = BroadcastReceiverSystemInfoProvider().apply {
             register(appContext)
         }
@@ -120,7 +118,7 @@ object Datadog {
         handlerThread = LogHandlerThread(
             logStrategy.getLogReader(),
             uploader,
-            networkBroadcastReceiver,
+            networkInfoProvider,
             systemBroadcastReceiver
         )
         handlerThread.start()
@@ -161,7 +159,7 @@ object Datadog {
     private fun stop() {
         checkInitialized()
         handlerThread.quitSafely()
-        contextRef.get()?.unregisterReceiver(networkInfoProvider)
+        contextRef.get()?.let { networkInfoProvider.unregister(it) }
         contextRef.clear()
         initialized = false
     }
@@ -197,7 +195,7 @@ object Datadog {
 
     // endregion
 
-    // region Internal
+    // region Internal Initialization
 
     @Suppress("CheckInternal")
     private fun checkInitialized() {
@@ -206,6 +204,16 @@ object Datadog {
                 "Please add the following code in your application's onCreate() method:\n" +
                 "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
         }
+    }
+
+    private fun initializeNetworkInfoProvider(context: Context) {
+        val provider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            CallbackNetworkInfoProvider()
+        } else {
+            BroadcastReceiverNetworkInfoProvider()
+        }
+        provider.register(context)
+        networkInfoProvider = provider
     }
 
     // endregion
