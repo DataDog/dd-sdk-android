@@ -63,6 +63,8 @@ internal class BroadcastReceiverNetworkInfoProvider :
             NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
         } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI) {
             NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI)
+        } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_ETHERNET) {
+            NetworkInfo(NetworkInfo.Connectivity.NETWORK_ETHERNET)
         } else if (activeNetworkInfo.type in knownMobileTypes) {
             buildMobileNetworkInfo(context, activeNetworkInfo.subtype)
         } else {

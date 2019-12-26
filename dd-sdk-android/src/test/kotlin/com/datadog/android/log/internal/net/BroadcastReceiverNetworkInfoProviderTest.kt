@@ -127,6 +127,18 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
+    fun `connected to ethernet`() {
+        broadcastNetworkChangeEvent(ConnectivityManager.TYPE_ETHERNET)
+
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+    }
+
+    @Test
     fun `connected to mobile 2G`(forge: Forge) {
         val subtype = forge.anElementFrom(known2GSubtypes)
         val carrierName = forge.anAlphabeticalString()
