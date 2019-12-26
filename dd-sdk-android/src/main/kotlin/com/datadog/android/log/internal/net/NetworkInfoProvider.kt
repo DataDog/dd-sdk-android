@@ -6,6 +6,10 @@
 
 package com.datadog.android.log.internal.net
 
+import android.content.Context
+
 internal interface NetworkInfoProvider {
+    fun register(context: Context)
+    fun unregister(context: Context)
     fun getLatestNetworkInfo(): NetworkInfo
 }
