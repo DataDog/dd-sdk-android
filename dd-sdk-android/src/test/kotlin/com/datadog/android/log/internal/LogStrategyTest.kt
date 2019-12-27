@@ -215,7 +215,7 @@ internal abstract class LogStrategyTest {
                 carrierId = forge.aHugeInt(),
                 carrierName = forge.anAlphabeticalString(size = 256)
             ),
-            userInfo = UserInfo(),// TODO !!!
+            userInfo = UserInfo(), // TODO !!!
             throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
             timestamp = forge.aLong(),
             loggerName = forge.anAlphabeticalString(),

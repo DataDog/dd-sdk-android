@@ -47,8 +47,11 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         val formattedDate = simpleDateFormat.format(Date(log.timestamp))
         jsonLog.addProperty(TAG_DATE, formattedDate)
 
-        // Network Infos
+        // Network Info
         addLogNetworkInfo(log, jsonLog)
+
+        // User Info
+        addLogUserInfo(log, jsonLog)
 
         // Custom Attributes
         addLogAttributes(log, jsonLog)
@@ -75,6 +78,19 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
             if (info.carrierId >= 0) {
                 jsonLog.addProperty(TAG_NETWORK_CARRIER_ID, info.carrierId)
             }
+        }
+    }
+
+    private fun addLogUserInfo(log: Log, jsonLog: JsonObject) {
+        val userInfo = log.userInfo
+        if (!userInfo.id.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_ID, userInfo.id)
+        }
+        if (!userInfo.name.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_NAME, userInfo.name)
+        }
+        if (!userInfo.email.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_EMAIL, userInfo.email)
         }
     }
 
@@ -146,10 +162,15 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_LOGGER_NAME = "logger.name"
         internal const val TAG_THREAD_NAME = "logger.thread_name"
 
-        // ANDROID SPECIFIC TAGS
+        // NETWORK TAGS
         internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
         internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
         internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
+
+        // USER TAGS
+        internal const val TAG_USER_ID = "usr.id"
+        internal const val TAG_USER_NAME = "usr.name"
+        internal const val TAG_USER_EMAIL = "usr.email"
 
         internal val reservedAttributes = arrayOf(
             TAG_HOST,
