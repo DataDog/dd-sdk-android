@@ -7,6 +7,8 @@
 package com.datadog.android.timber
 
 import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -52,8 +54,13 @@ internal class DatadogTreeTest {
         fakePackageName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
 
+        val mockPackageInfo = PackageInfo()
+        val mockPackageMgr = mock<PackageManager>()
         val mockContext: Context = mock()
+        mockPackageInfo.versionName = forge.anAlphabeticalString()
+        whenever(mockPackageMgr.getPackageInfo(fakePackageName, 0)) doReturn mockPackageInfo
         whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockContext.packageManager) doReturn mockPackageMgr
         whenever(mockContext.packageName) doReturn fakePackageName
 
         Datadog.initialize(mockContext, forge.anHexadecimalString())

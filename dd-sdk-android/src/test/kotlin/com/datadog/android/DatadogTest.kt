@@ -20,6 +20,7 @@ import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
@@ -62,26 +63,26 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogTest {
 
+    lateinit var mockContext: Context
     @Mock
     lateinit var mockLogStrategy: LogStrategy
-    @Mock
-    lateinit var mockContext: Context
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
     lateinit var fakeToken: String
 
-    lateinit var packageName: String
+    lateinit var fakePackageName: String
+    lateinit var fakePackageVersion: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeToken = forge.anHexadecimalString()
-        packageName = forge.anAlphabeticalString()
+        fakePackageName = forge.anAlphabeticalString()
+        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
-        whenever(mockContext.applicationContext) doReturn mockContext
+        mockContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
-        whenever(mockContext.packageName) doReturn packageName
     }
 
     @AfterEach
@@ -97,7 +98,8 @@ internal class DatadogTest {
     fun `initializes all dependencies at initialize`() {
         Datadog.initialize(mockContext, fakeToken)
 
-        assertThat(Datadog.packageName).isEqualTo(packageName)
+        assertThat(Datadog.packageName).isEqualTo(fakePackageName)
+        assertThat(Datadog.packageVersion).isEqualTo(fakePackageVersion)
     }
 
     @Test
