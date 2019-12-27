@@ -38,6 +38,6 @@ internal class MemoryProfileForLogs {
                     )
                 }
             }
-        }, 500)
+        }, 400)
     }
 }

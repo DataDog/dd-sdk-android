@@ -45,7 +45,7 @@ internal class CpuProfileForLogs {
                     countDownLatch.countDown()
                 }
             }
-        }, 13.0)
+        }, 7.0)
 
         countDownLatch.await()
     }
