@@ -22,12 +22,6 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
     private var networkInfo: NetworkInfo = NetworkInfo()
 
-    internal fun register(context: Context) {
-        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        val firstIntent = context.registerReceiver(this, filter)
-        onReceive(context, firstIntent)
-    }
-
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
@@ -42,6 +36,16 @@ internal class BroadcastReceiverNetworkInfoProvider :
     // endregion
 
     // region NetworkInfoProvider
+
+    override fun register(context: Context) {
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        val firstIntent = context.registerReceiver(this, filter)
+        onReceive(context, firstIntent)
+    }
+
+    override fun unregister(context: Context) {
+        context.unregisterReceiver(this)
+    }
 
     override fun getLatestNetworkInfo(): NetworkInfo {
         return networkInfo
@@ -59,6 +63,8 @@ internal class BroadcastReceiverNetworkInfoProvider :
             NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
         } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI) {
             NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI)
+        } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_ETHERNET) {
+            NetworkInfo(NetworkInfo.Connectivity.NETWORK_ETHERNET)
         } else if (activeNetworkInfo.type in knownMobileTypes) {
             buildMobileNetworkInfo(context, activeNetworkInfo.subtype)
         } else {

@@ -14,12 +14,14 @@ internal data class NetworkInfo(
 
     internal enum class Connectivity(val serialized: String) {
         NETWORK_NOT_CONNECTED("network_not_connected"),
+        NETWORK_ETHERNET("network_ethernet"),
         NETWORK_WIFI("network_wifi"),
         NETWORK_2G("network_2g"),
         NETWORK_3G("network_3g"),
         NETWORK_4G("network_4g"),
         NETWORK_5G("network_5g"),
         NETWORK_MOBILE_OTHER("network_mobile_other"),
+        NETWORK_CELLULAR("network_cellular"),
         NETWORK_OTHER("network_other")
     }
 }

@@ -8,15 +8,20 @@ package com.datadog.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.net.ConnectivityManager
+import android.os.Build
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogReader
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
+import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
@@ -24,6 +29,7 @@ import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
@@ -49,18 +55,19 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogTest {
 
-    // @Mock
-    // lateinit var clientToken: String
     @Mock
     lateinit var mockLogStrategy: LogStrategy
     @Mock
     lateinit var mockContext: Context
+    @Mock
+    lateinit var mockConnectivityMgr: ConnectivityManager
 
     lateinit var fakeToken: String
 
@@ -69,9 +76,11 @@ internal class DatadogTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeToken = forge.anHexadecimalString()
-        whenever(mockContext.applicationContext) doReturn mockContext
-
         packageName = forge.anAlphabeticalString()
+
+        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+            .doReturn(mockConnectivityMgr)
         whenever(mockContext.packageName) doReturn packageName
     }
 
@@ -85,14 +94,15 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `it will initialize all dependencies at initialize`() {
+    fun `initializes all dependencies at initialize`() {
         Datadog.initialize(mockContext, fakeToken)
 
         assertThat(Datadog.packageName).isEqualTo(packageName)
     }
 
     @Test
-    fun `registers broadcast receiver on initialize`() {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `registers broadcast receivers on initialize (Lollipop)`() {
         Datadog.initialize(mockContext, fakeToken)
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
@@ -101,6 +111,20 @@ internal class DatadogTest {
         assertThat(broadcastReceiverCaptor.allValues)
             .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
             .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.N)
+    fun `registers receivers and callbacks on initialize (Nougat)`() {
+        Datadog.initialize(mockContext, fakeToken)
+
+        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
+        verify(mockContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        assertThat(broadcastReceiverCaptor.allValues)
+            .allMatch { it is BroadcastReceiverSystemInfoProvider }
+
+        verify(mockConnectivityMgr)
+            .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
     }
 
     @Test
