@@ -23,6 +23,10 @@ import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.log.internal.user.DatadogUserInfoProvider
+import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.devLogger
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
@@ -63,6 +67,8 @@ object Datadog {
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
     private lateinit var timeProvider: MutableTimeProvider
+    private lateinit var userInfoProvider: MutableUserInfoProvider
+
     internal var packageName: String = ""
         private set
     internal var libraryVerbosity = Int.MAX_VALUE
@@ -93,6 +99,9 @@ object Datadog {
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
         val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
+
+        // Prepare user info management
+        userInfoProvider = DatadogUserInfoProvider()
 
         // Register Broadcast Receivers
         initializeNetworkInfoProvider(appContext)
@@ -178,6 +187,23 @@ object Datadog {
         libraryVerbosity = level
     }
 
+    /**
+     * Sets the user information.
+     *
+     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param name (nullable) the user name or alias
+     * @param email (nullable) the user email
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setUserInfo(
+        id: String? = null,
+        name: String? = null,
+        email: String? = null
+    ) {
+        userInfoProvider.setUserInfo(UserInfo(id, name, email))
+    }
+
     // region Internal Provider
 
     internal fun getLogStrategy(): LogStrategy {
@@ -191,6 +217,10 @@ object Datadog {
 
     internal fun getTimeProvider(): TimeProvider {
         return timeProvider
+    }
+
+    internal fun getUserInfoProvider(): UserInfoProvider {
+        return userInfoProvider
     }
 
     // endregion

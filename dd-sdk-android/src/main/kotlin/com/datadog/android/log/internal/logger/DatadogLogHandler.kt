@@ -10,13 +10,15 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 
 internal class DatadogLogHandler(
     internal val serviceName: String,
     internal val loggerName: String,
     internal val writer: Writer<Log>,
     internal val networkInfoProvider: NetworkInfoProvider?,
-    internal val timeProvider: TimeProvider
+    internal val timeProvider: TimeProvider,
+    internal val userInfoProvider: UserInfoProvider
 ) : LogHandler {
 
     // region LogHandler
@@ -53,6 +55,7 @@ internal class DatadogLogHandler(
             attributes = attributes,
             tags = tags.toList(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
+            userInfo = userInfoProvider.getUserInfo(),
             loggerName = loggerName,
             threadName = Thread.currentThread().name
         )

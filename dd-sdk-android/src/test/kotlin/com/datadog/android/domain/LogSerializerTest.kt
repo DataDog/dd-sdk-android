@@ -4,6 +4,7 @@ import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogSerializer
+import com.datadog.android.log.internal.user.UserInfo
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -42,6 +43,21 @@ internal class LogSerializerTest {
     fun `serializes full log as json`(@Forgery fakeLog: Log) {
         val serialized = underTest.serialize(fakeLog)
         assertLogMatches(serialized, fakeLog)
+    }
+
+    @Test
+    fun `serializes minimal log as json`(@Forgery fakeLog: Log) {
+        val minimalLog = fakeLog.copy(
+            throwable = null,
+            networkInfo = null,
+            userInfo = UserInfo(),
+            attributes = emptyMap(),
+            tags = emptyList()
+        )
+
+        val serialized = underTest.serialize(minimalLog)
+
+        assertLogMatches(serialized, minimalLog)
     }
 
     @Test
@@ -119,6 +135,7 @@ internal class LogSerializerTest {
         )
 
         assertNetworkInfoMatches(log, jsonObject)
+        assertUserInfoMatches(log, jsonObject)
 
         assertFieldsMatch(log, jsonObject)
         assertTagsMatch(jsonObject, log)
@@ -199,6 +216,27 @@ internal class LogSerializerTest {
                 .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
                 .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
                 .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)
+        }
+    }
+
+    private fun assertUserInfoMatches(log: Log, jsonObject: JsonObject) {
+        val info = log.userInfo
+        assertThat(jsonObject).apply {
+            if (info.id.isNullOrEmpty()) {
+                doesNotHaveField(LogSerializer.TAG_USER_ID)
+            } else {
+                hasField(LogSerializer.TAG_USER_ID, info.id)
+            }
+            if (info.name.isNullOrEmpty()) {
+                doesNotHaveField(LogSerializer.TAG_USER_NAME)
+            } else {
+                hasField(LogSerializer.TAG_USER_NAME, info.name)
+            }
+            if (info.email.isNullOrEmpty()) {
+                doesNotHaveField(LogSerializer.TAG_USER_EMAIL)
+            } else {
+                hasField(LogSerializer.TAG_USER_EMAIL, info.email)
+            }
         }
     }
 

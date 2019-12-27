@@ -31,6 +31,7 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             attributes = forge.exhaustiveAttributes(),
             tags = forge.exhaustiveTags(),
             networkInfo = forge.getForgery(),
+            userInfo = forge.getForgery(),
             loggerName = forge.anAlphabeticalString(),
             threadName = forge.anAlphabeticalString()
         )

@@ -13,6 +13,8 @@ import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -56,6 +58,8 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeThrowable: Throwable
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
 
     @Mock
     lateinit var mockWriter: Writer<Log>
@@ -63,6 +67,8 @@ internal class DatadogLogHandlerTest {
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -76,13 +82,15 @@ internal class DatadogLogHandlerTest {
 
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeServerDate
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
 
         testedHandler = DatadogLogHandler(
             fakeServiceName,
             fakeLoggerName,
             mockWriter,
             mockNetworkInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockUserInfoProvider
         )
     }
 
@@ -108,6 +116,7 @@ internal class DatadogLogHandlerTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
                 .hasTags(fakeTags)
         }
@@ -142,6 +151,7 @@ internal class DatadogLogHandlerTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
                 .hasTags(fakeTags)
         }
@@ -170,6 +180,7 @@ internal class DatadogLogHandlerTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(null)
+                .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
                 .hasTags(fakeTags)
         }
@@ -198,6 +209,7 @@ internal class DatadogLogHandlerTest {
                 .hasMessage(fakeMessage)
                 .hasTimestamp(fakeServerDate)
                 .hasNetworkInfo(null)
+                .hasUserInfo(fakeUserInfo)
                 .hasAttributes(emptyMap())
                 .hasTags(emptyList())
         }
