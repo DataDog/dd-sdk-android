@@ -40,10 +40,10 @@ internal class LogOkHttpUploader(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun uploadLogs(logs: List<String>): LogUploadStatus {
+    override fun upload(data: ByteArray): LogUploadStatus {
 
         return try {
-            val request = buildRequest(logs)
+            val request = buildRequest(data)
             val response = client.newCall(request).execute()
             sdkLogger.i(
                     "$TAG: Response code:${response.code} " +
@@ -66,16 +66,12 @@ internal class LogOkHttpUploader(
         return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
-    private fun buildBody(logs: List<String>): String {
-        return logs.joinToString(separator = ",", prefix = "[", postfix = "]")
-    }
 
-    private fun buildRequest(logs: List<String>): Request {
-        val body = buildBody(logs)
+    private fun buildRequest(data: ByteArray): Request {
         sdkLogger.d("$TAG: Sending logs to $url")
         return Request.Builder()
             .url(url)
-            .post(RequestBody.create(null, body))
+            .post(RequestBody.create(null, data))
             .addHeader(HEADER_UA, userAgent)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()

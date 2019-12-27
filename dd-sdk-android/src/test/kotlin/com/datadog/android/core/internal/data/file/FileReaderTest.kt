@@ -3,12 +3,14 @@ package com.datadog.android.core.internal.data.file
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.logs
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
+import com.google.gson.JsonArray
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -20,6 +22,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Base64
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.internal.ByteArrays
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -60,16 +63,15 @@ internal class FileReaderTest {
         val fileName = forge.anAlphabeticalString()
         val file = generateFile(fileName)
         val data = forge.anAlphabeticalString()
-        val encodedData = Base64.getEncoder().encodeToString(data.toByteArray())
-        file.writeText(encodedData)
+        file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
 
         // when
         val nextBatch = underTest.readNextBatch()
 
         // then
-        assertThat(nextBatch?.logs).isNotNull.isNotEmpty
-        assertThat((nextBatch?.logs ?: emptyList())[0]).isEqualTo(data)
+        val persistedData= String(nextBatch?.data ?: ByteArray(0))
+        assertThat(persistedData).isEqualTo("[$data]")
     }
 
     @Test

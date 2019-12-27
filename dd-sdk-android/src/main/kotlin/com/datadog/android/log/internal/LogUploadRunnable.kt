@@ -68,7 +68,7 @@ internal class LogUploadRunnable(
     private fun consumeBatch(batch: Batch) {
         val batchId = batch.id
         sdkLogger.i("$TAG: Sending batch $batchId")
-        val status = logUploader.uploadLogs(batch.logs)
+        val status = logUploader.upload(batch.data)
         if (status in dropableBatchStatus) {
             reader.dropBatch(batchId)
         }

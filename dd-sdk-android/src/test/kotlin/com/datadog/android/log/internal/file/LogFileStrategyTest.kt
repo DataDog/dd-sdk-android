@@ -105,7 +105,7 @@ internal class LogFileStrategyTest :
         val batch = testedReader.readNextBatch()
         checkNotNull(batch)
 
-        assertThat(batch.logs)
+        assertThat(batch.data)
             .isEmpty()
     }
 
@@ -123,7 +123,7 @@ internal class LogFileStrategyTest :
         val batch = testedReader.readNextBatch()
         checkNotNull(batch)
 
-        assertThat(batch.logs)
+        assertThat(batch.data)
             .isEmpty()
     }
 

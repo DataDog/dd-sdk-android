@@ -54,7 +54,7 @@ internal class FileWriter<T : Any>(
             if (data.length >= MAX_LOG_SIZE) {
                 // TODO RUMM-49 warn user that the log is too big !
             } else {
-                obfuscateAndWriteData(data)
+                writeData(data)
             }
         })
     }
@@ -64,6 +64,25 @@ internal class FileWriter<T : Any>(
 
         synchronized(this) {
             writeLogSafely(obfData)
+        }
+    }
+
+    private fun writeData(data: String) {
+        var file: File? = null
+        try {
+            val dataAsByteArray =data.toByteArray(Charsets.UTF_8)
+            file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
+            val fileSize = file.length()
+            if(fileSize>0){
+                file.appendBytes(separator)
+            }
+            file.appendBytes(dataAsByteArray)
+        } catch (e: FileNotFoundException) {
+            sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
+        } catch (e: IOException) {
+            sdkLogger.e("$TAG: Couldn't write data to file ${file?.path}", e)
+        } catch (e: SecurityException) {
+            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
         }
     }
 
@@ -102,7 +121,7 @@ internal class FileWriter<T : Any>(
     companion object {
 
         private val separator = ByteArray(1) { SEPARATOR_BYTE }
-        internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
+        internal const val SEPARATOR_BYTE: Byte = ','.toByte()
 
         private const val THREAD_NAME = "ddog_w"
 

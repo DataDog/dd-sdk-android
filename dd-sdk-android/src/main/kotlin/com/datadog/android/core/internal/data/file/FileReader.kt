@@ -31,19 +31,18 @@ internal class FileReader(
 
     override fun readNextBatch(): Batch? {
         var file: File? = null
-        val logs = try {
+        val data = try {
             file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-            val inputBytes = file.readBytes()
-            inputBytes.split(FileWriter.SEPARATOR_BYTE)
+            file.readBytes(withPrefix = '[', withSuffix = ']')
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         } catch (e: IOException) {
             sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         } catch (e: SecurityException) {
             sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         }
 
         return if (file == null) {
@@ -51,7 +50,7 @@ internal class FileReader(
         } else {
             Batch(
                 file.name,
-                logs.mapNotNull { deobfuscate(it) })
+                data)
         }
     }
 
