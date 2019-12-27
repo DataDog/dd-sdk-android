@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.data.file
 
 import android.annotation.TargetApi
 import android.os.Build
-import android.util.Base64 as AndroidBase64
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
@@ -16,7 +15,6 @@ import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.util.Base64 as JavaBase64
 
 internal class FileReader(
@@ -69,21 +67,6 @@ internal class FileReader(
     // endregion
 
     // region Internal
-
-    private fun deobfuscate(input: ByteArray): String? {
-        val output = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                deobfuscateApi26(input)
-            } else {
-                AndroidBase64.decode(input, AndroidBase64.DEFAULT)
-            }
-        } catch (e: IllegalArgumentException) {
-            sdkLogger.e("Invalid log found, dropping it", e)
-            return null
-        }
-
-        return String(output, Charsets.UTF_8)
-    }
 
     @TargetApi(Build.VERSION_CODES.O)
     private fun deobfuscateApi26(input: ByteArray): ByteArray {

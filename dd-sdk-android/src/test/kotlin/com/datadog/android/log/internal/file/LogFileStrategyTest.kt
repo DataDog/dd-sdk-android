@@ -21,8 +21,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Case
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
@@ -87,44 +85,6 @@ internal class LogFileStrategyTest :
 
         assertThat(batch2)
             .isNull()
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `read returns null when batch contains invalid base64 (size)`(
-        forge: Forge
-    ) {
-        val ddLogDir = File(tempDir, "dd-logs")
-        val fakeFile = File(ddLogDir, System.currentTimeMillis().toString())
-        val size = forge.aSmallInt() * 4
-        val validBase64 = forge.anAlphabeticalString(Case.ANY, size)
-        val invalidBase64 = "$validBase64==" // Invalid padding
-
-        fakeFile.writeText(invalidBase64, Charsets.UTF_8)
-        waitForNextBatch()
-        val batch = testedReader.readNextBatch()
-        checkNotNull(batch)
-
-        assertThat(batch.data)
-            .isEmpty()
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
-    fun `read returns null when batch contains invalid base64 (illegal chars)`(
-        forge: Forge
-    ) {
-        val ddLogDir = File(tempDir, "dd-logs")
-        val fakeFile = File(ddLogDir, System.currentTimeMillis().toString())
-        val invalidBase64 = forge.aStringMatching("[a-zA-Z0-9]{4}[&._!?%*]{4}[a-zA-Z0-9]{4}")
-
-        fakeFile.writeText(invalidBase64, Charsets.UTF_8)
-        waitForNextBatch()
-        val batch = testedReader.readNextBatch()
-        checkNotNull(batch)
-
-        assertThat(batch.data)
-            .isEmpty()
     }
 
     companion object {

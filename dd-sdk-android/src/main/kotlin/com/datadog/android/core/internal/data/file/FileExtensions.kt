@@ -8,7 +8,7 @@ internal fun File.readBytes(withPrefix: Char, withSuffix: Char): ByteArray =
         val length = this.length()
         if (length > Int.MAX_VALUE) {
             sdkLogger.i("We could not read the file $this because it was too big to fit in memory")
-            return@use ByteArray(0)
+            return ByteArray(0)
         }
         var offset = 1 // start from the prefix
         var remaining = length.toInt()
