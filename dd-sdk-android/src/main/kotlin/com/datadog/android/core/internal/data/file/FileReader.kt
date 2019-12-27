@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.log.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.split
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException

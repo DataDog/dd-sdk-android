@@ -70,10 +70,10 @@ internal class FileWriter<T : Any>(
     private fun writeData(data: String) {
         var file: File? = null
         try {
-            val dataAsByteArray =data.toByteArray(Charsets.UTF_8)
+            val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
             file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
             val fileSize = file.length()
-            if(fileSize>0){
+            if (fileSize> 0) {
                 file.appendBytes(separator)
             }
             file.appendBytes(dataAsByteArray)

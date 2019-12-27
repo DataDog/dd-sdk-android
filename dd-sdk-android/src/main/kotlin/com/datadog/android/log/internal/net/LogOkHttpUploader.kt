@@ -66,7 +66,6 @@ internal class LogOkHttpUploader(
         return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
-
     private fun buildRequest(data: ByteArray): Request {
         sdkLogger.d("$TAG: Sending logs to $url")
         return Request.Builder()
