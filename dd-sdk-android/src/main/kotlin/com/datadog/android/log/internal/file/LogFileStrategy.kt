@@ -34,14 +34,14 @@ internal class LogFileStrategy(
         oldFileThreshold: Long = OLD_FILE_THRESHOLD,
         maxDiskSpace: Long = MAX_DISK_SPACE
     ) :
-        this(
-            rootDir = File(context.filesDir, LOGS_FOLDER_NAME),
-            recentDelayMs = recentDelayMs,
-            maxBatchSize = maxBatchSize,
-            maxLogPerBatch = maxLogPerBatch,
-            oldFileThreshold = oldFileThreshold,
-            maxDiskSpace = maxDiskSpace
-        )
+            this(
+                rootDir = File(context.filesDir, LOGS_FOLDER_NAME),
+                recentDelayMs = recentDelayMs,
+                maxBatchSize = maxBatchSize,
+                maxLogPerBatch = maxLogPerBatch,
+                oldFileThreshold = oldFileThreshold,
+                maxDiskSpace = maxDiskSpace
+            )
 
     private val fileOrchestrator =
         FileOrchestrator(
@@ -79,7 +79,8 @@ internal class LogFileStrategy(
         private const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
         private const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
 
-        internal const val LOGS_FOLDER_NAME = "dd-logs"
+        internal const val LOGS_FORMAT_VERSION = 1
+        internal const val LOGS_FOLDER_NAME = "dd-logs-v$LOGS_FORMAT_VERSION"
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
     }
 }

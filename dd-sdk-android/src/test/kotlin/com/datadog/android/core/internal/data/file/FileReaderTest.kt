@@ -83,6 +83,18 @@ internal class FileReaderTest {
     }
 
     @Test
+    fun `returns a null batch if the data is corrupted`() {
+        // given
+        whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
+
+        // when
+        val nextBatch = underTest.readNextBatch()
+
+        // then
+        assertThat(nextBatch).isNull()
+    }
+
+    @Test
     fun `if when orchestrator throws SecurityException will a null Batch`(
         @SystemOutStream systemOutStream: ByteArrayOutputStream,
         forge: Forge
