@@ -77,7 +77,7 @@ internal class LogSerializerTest {
     }
 
     @Test
-    fun `asserts a log with no network info available`(@Forgery fakeLog: Log, forge: Forge) {
+    fun `serializes a log with no network info available`(@Forgery fakeLog: Log, forge: Forge) {
         // given
         val logWithoutNetworkInfo = fakeLog.copy(networkInfo = null)
 
@@ -89,7 +89,7 @@ internal class LogSerializerTest {
     }
 
     @Test
-    fun `asserts a log with no throwable available`(@Forgery fakeLog: Log, forge: Forge) {
+    fun `serializes a log with no throwable available`(@Forgery fakeLog: Log, forge: Forge) {
         // given
         val logWithoutThrowable = fakeLog.copy(throwable = null)
 

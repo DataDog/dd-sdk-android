@@ -8,9 +8,9 @@ package com.datadog.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.datadog.android.core.internal.data.Reader
 import android.net.ConnectivityManager
 import android.os.Build
+import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator

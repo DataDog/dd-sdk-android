@@ -36,7 +36,7 @@ internal class FileWriter<T : Any>(
     init {
         if (!writeable) {
             sdkLogger.e(
-                "$TAG: Can't write logs on disk: directory ${rootDirectory.path} is invalid."
+                "$TAG: Can't write data on disk: directory ${rootDirectory.path} is invalid."
             )
         } else {
             start()
@@ -49,41 +49,41 @@ internal class FileWriter<T : Any>(
         if (!writeable) return
 
         post(Runnable {
-            val strLog = serializer.serialize(model)
+            val data = serializer.serialize(model)
 
-            if (strLog.length >= MAX_LOG_SIZE) {
+            if (data.length >= MAX_LOG_SIZE) {
                 // TODO RUMM-49 warn user that the log is too big !
             } else {
-                obfuscateAndWriteLog(strLog)
+                obfuscateAndWriteData(data)
             }
         })
     }
 
-    private fun obfuscateAndWriteLog(strLog: String) {
-        val obfLog = obfuscate(strLog)
+    private fun obfuscateAndWriteData(data: String) {
+        val obfData = obfuscate(data)
 
         synchronized(this) {
-            writeLogSafely(obfLog)
+            writeLogSafely(obfData)
         }
     }
 
-    private fun writeLogSafely(obfLog: ByteArray) {
+    private fun writeLogSafely(obfData: ByteArray) {
         var file: File? = null
         try {
-            file = fileOrchestrator.getWritableFile(obfLog.size)
-            file.appendBytes(obfLog)
-            file.appendBytes(logSeparator)
+            file = fileOrchestrator.getWritableFile(obfData.size)
+            file.appendBytes(obfData)
+            file.appendBytes(separator)
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't write log to file ${file?.path}", e)
+            sdkLogger.e("$TAG: Couldn't write data to file ${file?.path}", e)
         } catch (e: SecurityException) {
             sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
         }
     }
 
-    private fun obfuscate(log: String): ByteArray {
-        val input = log.toByteArray(Charsets.UTF_8)
+    private fun obfuscate(model: String): ByteArray {
+        val input = model.toByteArray(Charsets.UTF_8)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             obfuscateApi26(input)
         } else {
@@ -101,7 +101,7 @@ internal class FileWriter<T : Any>(
 
     companion object {
 
-        private val logSeparator = ByteArray(1) { SEPARATOR_BYTE }
+        private val separator = ByteArray(1) { SEPARATOR_BYTE }
         internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
 
         private const val THREAD_NAME = "ddog_w"
