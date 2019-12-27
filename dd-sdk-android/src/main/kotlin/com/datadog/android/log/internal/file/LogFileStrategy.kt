@@ -7,10 +7,14 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
-import com.datadog.android.log.internal.LogReader
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.LogWriter
-import com.datadog.android.log.internal.constraints.DatadogLogConstraints
+import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogSerializer
 import java.io.File
 
 internal class LogFileStrategy(
@@ -39,23 +43,31 @@ internal class LogFileStrategy(
             maxDiskSpace = maxDiskSpace
         )
 
-    private val fileOrchestrator = LogFileOrchestrator(
-        rootDirectory = rootDir,
-        recentDelayMs = recentDelayMs,
-        maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxLogPerBatch,
-        oldFileThreshold = oldFileThreshold,
-        maxDiskSpace = maxDiskSpace
-    )
+    private val fileOrchestrator =
+        FileOrchestrator(
+            rootDirectory = rootDir,
+            recentDelayMs = recentDelayMs,
+            maxBatchSize = maxBatchSize,
+            maxLogPerBatch = maxLogPerBatch,
+            oldFileThreshold = oldFileThreshold,
+            maxDiskSpace = maxDiskSpace
+        )
 
     // region LogPersistingStrategy
 
-    override fun getLogWriter(): LogWriter {
-        return LogFileWriter(fileOrchestrator, DatadogLogConstraints(), rootDir)
+    override fun getLogWriter(): Writer<Log> {
+        return FileWriter(
+            fileOrchestrator,
+            rootDir,
+            LogSerializer()
+        )
     }
 
-    override fun getLogReader(): LogReader {
-        return LogFileReader(fileOrchestrator, rootDir)
+    override fun getLogReader(): Reader {
+        return FileReader(
+            fileOrchestrator,
+            rootDir
+        )
     }
 
     // endregion
@@ -68,7 +80,6 @@ internal class LogFileStrategy(
         private const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
 
         internal const val LOGS_FOLDER_NAME = "dd-logs"
-        internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
     }
 }

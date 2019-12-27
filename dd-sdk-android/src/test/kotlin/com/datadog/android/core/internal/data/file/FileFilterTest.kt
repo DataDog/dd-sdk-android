@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.core.internal.data.file
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -24,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
-internal class LogFileFilterTest {
+internal class FileFilterTest {
 
     @TempDir
     lateinit var tempDir: File
@@ -33,7 +33,7 @@ internal class LogFileFilterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFilter = LogFileFilter()
+        testedFilter = FileFilter()
     }
 
     @Test

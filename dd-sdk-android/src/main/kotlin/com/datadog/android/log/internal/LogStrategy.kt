@@ -6,11 +6,15 @@
 
 package com.datadog.android.log.internal
 
+import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.log.internal.domain.Log
+
 internal interface LogStrategy {
 
-    fun getLogWriter(): LogWriter
+    fun getLogWriter(): Writer<Log>
 
-    fun getLogReader(): LogReader
+    fun getLogReader(): Reader
 
     companion object {
 

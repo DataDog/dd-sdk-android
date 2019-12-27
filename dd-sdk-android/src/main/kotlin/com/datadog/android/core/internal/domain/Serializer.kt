@@ -4,17 +4,12 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.core.internal.domain
 
 /**
- * Reads logs from a persistent location, when they can be sent.
- * @see [LogWriter]
+ * The Serializer<T> generic interface. Should be implemented by any custom serializer.
  */
-internal interface LogReader {
+internal interface Serializer<T : Any> {
 
-    fun readNextBatch(): Batch?
-
-    fun dropBatch(batchId: String)
-
-    fun dropAllBatches()
+    fun serialize(model: T): String
 }

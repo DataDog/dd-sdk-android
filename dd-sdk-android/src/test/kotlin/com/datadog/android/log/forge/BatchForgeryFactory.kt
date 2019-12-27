@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.forge
 
-import com.datadog.android.log.internal.Batch
+import com.datadog.android.core.internal.domain.Batch
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

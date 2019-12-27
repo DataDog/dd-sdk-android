@@ -1,6 +1,5 @@
-package com.datadog.android.log.internal.thread
+package com.datadog.android.core.internal.threading
 
-import com.datadog.android.log.internal.file.AndroidDeferredHandler
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
@@ -32,7 +31,10 @@ internal class LazyHandlerThreadTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest = LazyHandlerThread("LazyHandlerThread", { _ -> mockDeferredHandler })
+        underTest =
+            LazyHandlerThread(
+                "LazyHandlerThread",
+                { _ -> mockDeferredHandler })
     }
 
     @Test
@@ -76,52 +78,46 @@ internal class LazyHandlerThreadTest {
     }
 
     @Test
-    fun `when multiple threads post messages in same time they will be executed in order`() {
-        val thread1 = Thread()
+    fun `when multiple threads post messages in same time they will be all handled`() {
         val countDownLatch = CountDownLatch(2)
-        val thread2 = Thread()
+        val thread2 = Thread {
+            underTest.post(mockRunnable3)
+            countDownLatch.countDown()
+        }
+        val thread1 = Thread {
+            underTest.post(mockRunnable1)
+            underTest.post(mockRunnable2)
+            underTest.invokeMethod("onLooperPrepared")
+            countDownLatch.countDown()
+        }
+
         // when
-        thread1.apply {
-            start()
-            run {
-                underTest.post(mockRunnable1)
-                underTest.post(mockRunnable2)
-                underTest.invokeMethod("onLooperPrepared")
-                countDownLatch.countDown()
-            }
-        }
-        thread2.apply {
-            start()
-            run {
-                underTest.post(mockRunnable3)
-                countDownLatch.countDown()
-            }
-        }
+        thread1.start()
+        thread2.start()
         countDownLatch.await()
 
         // then
-        val inOrder = inOrder(mockDeferredHandler)
-        inOrder.verify(mockDeferredHandler).handle(mockRunnable1)
-        inOrder.verify(mockDeferredHandler).handle(mockRunnable2)
-        inOrder.verify(mockDeferredHandler).handle(mockRunnable3)
+        verify(mockDeferredHandler).handle(mockRunnable1)
+        verify(mockDeferredHandler).handle(mockRunnable2)
+        verify(mockDeferredHandler).handle(mockRunnable3)
     }
 
     @Test
     fun `when looper ready in second thread the messages will be consumed in order`() {
         val countDownLatch = CountDownLatch(2)
-        val thread1 = Thread {
-            underTest.post(mockRunnable1)
-            underTest.post(mockRunnable2)
-            countDownLatch.countDown()
-        }
         val thread2 = Thread {
             underTest.invokeMethod("onLooperPrepared")
             underTest.post(mockRunnable3)
             countDownLatch.countDown()
         }
+        val thread1 = Thread {
+            underTest.post(mockRunnable1)
+            underTest.post(mockRunnable2)
+            countDownLatch.countDown()
+            thread2.start()
+        }
         // when
         thread1.start()
-        thread2.start()
         countDownLatch.await()
 
         // then
