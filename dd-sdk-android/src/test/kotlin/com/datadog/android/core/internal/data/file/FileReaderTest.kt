@@ -18,7 +18,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.Base64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -60,20 +59,31 @@ internal class FileReaderTest {
         val fileName = forge.anAlphabeticalString()
         val file = generateFile(fileName)
         val data = forge.anAlphabeticalString()
-        val encodedData = Base64.getEncoder().encodeToString(data.toByteArray())
-        file.writeText(encodedData)
+        file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
 
         // when
         val nextBatch = underTest.readNextBatch()
 
         // then
-        assertThat(nextBatch?.logs).isNotNull.isNotEmpty
-        assertThat((nextBatch?.logs ?: emptyList())[0]).isEqualTo(data)
+        val persistedData = String(nextBatch?.data ?: ByteArray(0))
+        assertThat(persistedData).isEqualTo("[$data]")
     }
 
     @Test
     fun `returns a null batch if the file was already sent`() {
+        // given
+        whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
+
+        // when
+        val nextBatch = underTest.readNextBatch()
+
+        // then
+        assertThat(nextBatch).isNull()
+    }
+
+    @Test
+    fun `returns a null batch if the data is corrupted`() {
         // given
         whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
 

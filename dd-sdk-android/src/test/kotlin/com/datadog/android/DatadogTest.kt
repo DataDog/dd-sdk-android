@@ -39,6 +39,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.File
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -74,6 +76,9 @@ internal class DatadogTest {
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
 
+    @TempDir
+    lateinit var rootDir: File
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeToken = forge.anHexadecimalString()
@@ -81,6 +86,8 @@ internal class DatadogTest {
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
         mockContext = mockContext(fakePackageName, fakePackageVersion)
+        whenever(mockContext.filesDir).thenReturn(rootDir)
+        whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }

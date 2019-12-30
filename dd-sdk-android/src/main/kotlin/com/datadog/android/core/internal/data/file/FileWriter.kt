@@ -6,9 +6,7 @@
 
 package com.datadog.android.core.internal.data.file
 
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Base64 as AndroidBase64
+import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Serializer
@@ -16,34 +14,38 @@ import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Base64 as JavaBase64
 
 internal class FileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
-    rootDirectory: File,
-    private val serializer: Serializer<T>
+    dataDirectory: File,
+    private val serializer: Serializer<T>,
+    private val dataMigrator: DataMigrator
 ) : LazyHandlerThread(THREAD_NAME),
     Writer<T> {
 
     // TODO: RUMM-148 Clean this code from here and move it into the FileOrchestrator eventually
-    private val writeable: Boolean = if (!rootDirectory.exists()) {
-        rootDirectory.mkdirs()
+    private val writeable: Boolean = if (!dataDirectory.exists()) {
+        dataDirectory.mkdirs()
     } else {
-        rootDirectory.isDirectory
+        dataDirectory.isDirectory
     }
 
     init {
         if (!writeable) {
             sdkLogger.e(
-                "$TAG: Can't write data on disk: directory ${rootDirectory.path} is invalid."
+                "$TAG: Can't write data on disk: directory ${dataDirectory.path} is invalid."
             )
         } else {
             start()
+            post(Runnable {
+                dataMigrator.migrateData()
+            })
         }
     }
 
-    // region LogWriter
+    // region File Writer
 
     override fun write(model: T) {
         if (!writeable) return
@@ -54,25 +56,19 @@ internal class FileWriter<T : Any>(
             if (data.length >= MAX_LOG_SIZE) {
                 // TODO RUMM-49 warn user that the log is too big !
             } else {
-                obfuscateAndWriteData(data)
+                synchronized(this) {
+                    writeData(data)
+                }
             }
         })
     }
 
-    private fun obfuscateAndWriteData(data: String) {
-        val obfData = obfuscate(data)
-
-        synchronized(this) {
-            writeLogSafely(obfData)
-        }
-    }
-
-    private fun writeLogSafely(obfData: ByteArray) {
+    private fun writeData(data: String) {
         var file: File? = null
         try {
-            file = fileOrchestrator.getWritableFile(obfData.size)
-            file.appendBytes(obfData)
-            file.appendBytes(separator)
+            val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
+            file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
+            writeDataToFile(file, dataAsByteArray)
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
@@ -82,19 +78,14 @@ internal class FileWriter<T : Any>(
         }
     }
 
-    private fun obfuscate(model: String): ByteArray {
-        val input = model.toByteArray(Charsets.UTF_8)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            obfuscateApi26(input)
-        } else {
-            AndroidBase64.encode(input, AndroidBase64.NO_WRAP)
+    private fun writeDataToFile(file: File, dataAsByteArray: ByteArray) {
+        val fileSize = file.length()
+        FileOutputStream(file, true).use {
+            if (fileSize > 0) {
+                it.write(separator)
+            }
+            it.write(dataAsByteArray)
         }
-    }
-
-    @TargetApi(Build.VERSION_CODES.O)
-    private fun obfuscateApi26(input: ByteArray): ByteArray {
-        val encoder = JavaBase64.getEncoder()
-        return encoder.encode(input)
     }
 
     // endregion
@@ -102,7 +93,7 @@ internal class FileWriter<T : Any>(
     companion object {
 
         private val separator = ByteArray(1) { SEPARATOR_BYTE }
-        internal const val SEPARATOR_BYTE: Byte = '\n'.toByte()
+        internal const val SEPARATOR_BYTE: Byte = ','.toByte()
 
         private const val THREAD_NAME = "ddog_w"
 

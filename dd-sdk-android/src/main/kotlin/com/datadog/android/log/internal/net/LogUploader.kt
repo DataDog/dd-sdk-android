@@ -10,5 +10,5 @@ internal interface LogUploader {
 
     fun setEndpoint(endpoint: String)
 
-    fun uploadLogs(logs: List<String>): LogUploadStatus
+    fun upload(data: ByteArray): LogUploadStatus
 }

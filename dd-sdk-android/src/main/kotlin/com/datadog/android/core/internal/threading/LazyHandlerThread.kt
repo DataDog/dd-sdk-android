@@ -47,7 +47,7 @@ internal open class LazyHandlerThread(
         val currentDeferred = deferredHandler
         if (currentDeferred == null) {
             synchronized(this) {
-                messagesQueue.add(runnable)
+                deferredHandler?.handle(runnable) ?: messagesQueue.add(runnable)
             }
         } else {
             currentDeferred.handle(runnable)

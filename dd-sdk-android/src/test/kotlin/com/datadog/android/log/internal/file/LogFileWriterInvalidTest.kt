@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.file
 
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.log.forge.Configurator
@@ -41,6 +42,9 @@ internal class LogFileWriterInvalidTest {
     @Mock
     lateinit var mockFileOrchestrator: Orchestrator
 
+    @Mock
+    lateinit var mockDataMigrator: DataMigrator
+
     @TempDir
     lateinit var tempDir: File
 
@@ -50,14 +54,15 @@ internal class LogFileWriterInvalidTest {
 
     @BeforeEach
     fun `set up`(@SystemOutStream outputStream: ByteArrayOutputStream) {
-        logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
+        logsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER)
         logsDir.writeText(I_LIED)
 
         testedFileWriter =
             FileWriter(
                 mockFileOrchestrator,
                 logsDir,
-                LogSerializer()
+                LogSerializer(),
+                mockDataMigrator
             )
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.toString().trim())

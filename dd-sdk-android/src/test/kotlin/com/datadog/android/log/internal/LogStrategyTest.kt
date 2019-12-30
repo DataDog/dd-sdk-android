@@ -6,17 +6,20 @@
 
 package com.datadog.android.log.internal
 
+import android.content.Context
 import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -24,13 +27,17 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
@@ -41,6 +48,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 
@@ -56,13 +65,23 @@ internal abstract class LogStrategyTest {
 
     lateinit var testedWriter: Writer<Log>
     lateinit var testedReader: Reader
+    @Mock(lenient = true)
+    lateinit var mockDeferredHandler: DeferredHandler
+    @TempDir
+    lateinit var tempDir: File
+
+    lateinit var mockContext: Context
 
     // region Setup
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val mockContext = mockContext()
-
+        mockContext = mockContext()
+        whenever(mockContext.filesDir) doReturn tempDir
+        whenever(mockDeferredHandler.handle(any())) doAnswer {
+            val runnable = it.arguments[0] as Runnable
+            runnable.run()
+        }
         Datadog.initialize(mockContext, forge.anHexadecimalString())
         val persistingStrategy = getStrategy()
 
@@ -88,19 +107,15 @@ internal abstract class LogStrategyTest {
     // region Writer Tests
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes full log as json`(@Forgery fakeLog: Log) {
         testedWriter.write(fakeLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs.first()
-
-        val jsonObject = JsonParser.parseString(log).asJsonObject
-        assertLogMatches(jsonObject, fakeLog)
+        val log = batch.asJsonArray[0].asJsonObject
+        assertLogMatches(log, fakeLog)
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
             throwable = null,
@@ -112,14 +127,11 @@ internal abstract class LogStrategyTest {
         testedWriter.write(minimalLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs.first()
-
-        val jsonObject = JsonParser.parseString(log).asJsonObject
-        assertLogMatches(jsonObject, minimalLog)
+        val log = batch.asJsonArray[0].asJsonObject
+        assertLogMatches(log, minimalLog)
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
         val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
         val attributes = forge.aMap {
@@ -130,14 +142,12 @@ internal abstract class LogStrategyTest {
         testedWriter.write(logWithReservedAttributes)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs.first()
+        val log = batch.asJsonArray[0].asJsonObject
 
-        val jsonObject = JsonParser.parseString(log).asJsonObject
-        assertLogMatches(jsonObject, logWithoutAttributes)
+        assertLogMatches(log, logWithoutAttributes)
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes batch of logs`(@Forgery fakeLogs: List<Log>) {
         val sentLogs = mutableListOf<Log>()
         val logCount = min(MAX_LOGS_PER_BATCH, fakeLogs.size)
@@ -150,30 +160,25 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
 
-        val batchLogCount = min(MAX_LOGS_PER_BATCH, batch.logs.size)
+        val batchLogCount = min(MAX_LOGS_PER_BATCH, batch.asJsonArray.size())
         for (i in 0 until batchLogCount) {
-            val log = batch.logs[i]
-            val jsonObject = JsonParser.parseString(log).asJsonObject
-            assertLogMatches(jsonObject, sentLogs[i])
+            val log = batch.asJsonArray[i].asJsonObject
+            assertLogMatches(log, sentLogs[i])
         }
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes in new batch if delay passed`(@Forgery fakeLog: Log, @Forgery nextLog: Log) {
         testedWriter.write(fakeLog)
         waitForNextBatch()
 
         testedWriter.write(nextLog)
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs.first()
-
-        val jsonObject = JsonParser.parseString(log).asJsonObject
-        assertLogMatches(jsonObject, fakeLog)
+        val log = batch.asJsonArray[0].asJsonObject
+        assertLogMatches(log, fakeLog)
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes batch of logs from mutliple threads`(@Forgery fakeLogs: List<Log>) {
         val runnables = fakeLogs.map {
             Runnable { testedWriter.write(it) }
@@ -185,15 +190,13 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-
-        batch.logs.forEachIndexed { i, log ->
-            val jsonObject = JsonParser.parseString(log).asJsonObject
+        batch.asJsonArray.forEachIndexed { i, log ->
+            val jsonObject = log.asJsonObject
             assertHasMatches(jsonObject, fakeLogs)
         }
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `don't write log if size is too big`(forge: Forge) {
         val bigLog = Log(
             level = AndroidLog.ASSERT,
@@ -226,7 +229,6 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `limit the number of logs per batch`(forge: Forge) {
         val logs = forge.aList(MAX_LOGS_PER_BATCH * 3) {
             forge.getForgery<Log>().copy(
@@ -246,16 +248,16 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         val batch2 = testedReader.readNextBatch()!!
 
-        assertThat(batch.logs.size)
+        assertThat(batch.asJsonArray.size())
             .isEqualTo(MAX_LOGS_PER_BATCH)
-        assertThat(batch2.logs.size)
+        assertThat(batch2.asJsonArray.size())
             .isEqualTo(MAX_LOGS_PER_BATCH)
-        batch.logs.forEachIndexed { i, log ->
-            val jsonObject = JsonParser.parseString(log).asJsonObject
+        batch.asJsonArray.forEachIndexed { i, log ->
+            val jsonObject = log.asJsonObject
             assertLogMatches(jsonObject, logs[i])
         }
-        batch2.logs.forEachIndexed { i, log ->
-            val jsonObject = JsonParser.parseString(log).asJsonObject
+        batch2.asJsonArray.forEachIndexed { i, log ->
+            val jsonObject = log.asJsonObject
             assertLogMatches(jsonObject, logs[i + MAX_LOGS_PER_BATCH])
         }
     }
@@ -265,7 +267,6 @@ internal abstract class LogStrategyTest {
     // region Reader Tests
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is already sent`(@Forgery fakeLog: Log) {
         testedWriter.write(fakeLog)
         waitForNextBatch()
@@ -280,7 +281,6 @@ internal abstract class LogStrategyTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `read returns null when first batch is too recent`(@Forgery fakeLog: Log) {
         testedWriter.write(fakeLog)
         val batch = testedReader.readNextBatch()

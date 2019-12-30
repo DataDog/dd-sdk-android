@@ -1,5 +1,6 @@
 package com.datadog.android.sdk.integrationtests.utils
 
+import java.text.DecimalFormat
 import kotlin.math.abs
 import org.assertj.core.api.Assertions.assertThat
 
@@ -39,11 +40,12 @@ internal class CpuProfilingRule
 
     override fun compareWithThreshold(before: Double, after: Double, threshold: Double) {
         val difference = after - before
+        val decimalFormat = DecimalFormat("#.##")
         assertThat(difference)
             .withFailMessage(
                 "We were expecting a difference in cpu consumption " +
                         "less than or equal to $threshold." +
-                        " Instead we had $difference"
+                        " Instead we had {${decimalFormat.format(difference)}"
             )
             .isLessThanOrEqualTo(threshold)
     }

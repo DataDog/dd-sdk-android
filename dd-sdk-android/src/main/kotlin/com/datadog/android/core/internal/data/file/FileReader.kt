@@ -6,23 +6,17 @@
 
 package com.datadog.android.core.internal.data.file
 
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Base64 as AndroidBase64
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.log.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.split
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.lang.IllegalArgumentException
-import java.util.Base64 as JavaBase64
 
 internal class FileReader(
     private val fileOrchestrator: Orchestrator,
-    private val rootDirectory: File
+    private val dataDirectory: File
 ) : Reader {
 
     private val sentBatches: MutableSet<String> = mutableSetOf()
@@ -31,19 +25,18 @@ internal class FileReader(
 
     override fun readNextBatch(): Batch? {
         var file: File? = null
-        val logs = try {
+        val data = try {
             file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-            val inputBytes = file.readBytes()
-            inputBytes.split(FileWriter.SEPARATOR_BYTE)
+            file.readBytes(withPrefix = '[', withSuffix = ']')
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         } catch (e: IOException) {
             sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         } catch (e: SecurityException) {
             sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
-            emptyList<ByteArray>()
+            ByteArray(0)
         }
 
         return if (file == null) {
@@ -51,14 +44,14 @@ internal class FileReader(
         } else {
             Batch(
                 file.name,
-                logs.mapNotNull { deobfuscate(it) })
+                data)
         }
     }
 
     override fun dropBatch(batchId: String) {
         sdkLogger.i("$TAG: dropBatch $batchId")
         sentBatches.add(batchId)
-        val fileToDelete = File(rootDirectory, batchId)
+        val fileToDelete = File(dataDirectory, batchId)
 
         deleteFile(fileToDelete)
     }
@@ -71,28 +64,6 @@ internal class FileReader(
     // endregion
 
     // region Internal
-
-    private fun deobfuscate(input: ByteArray): String? {
-        val output = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                deobfuscateApi26(input)
-            } else {
-                AndroidBase64.decode(input, AndroidBase64.DEFAULT)
-            }
-        } catch (e: IllegalArgumentException) {
-            sdkLogger.e("Invalid log found, dropping it", e)
-            return null
-        }
-
-        return String(output, Charsets.UTF_8)
-    }
-
-    @TargetApi(Build.VERSION_CODES.O)
-    private fun deobfuscateApi26(input: ByteArray): ByteArray {
-        val decoder = JavaBase64.getDecoder()
-        return decoder.decode(input)
-    }
-
     private fun deleteFile(fileToDelete: File) {
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {

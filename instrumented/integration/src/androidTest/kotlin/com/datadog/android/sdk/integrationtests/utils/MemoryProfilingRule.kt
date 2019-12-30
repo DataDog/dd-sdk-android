@@ -6,11 +6,9 @@ internal class MemoryProfilingRule :
     AbstractProfilingRule<Long>() {
 
     override fun before() {
-        System.gc()
     }
 
     override fun after() {
-        System.gc()
     }
 
     override fun measureBeforeAction(): Long {
