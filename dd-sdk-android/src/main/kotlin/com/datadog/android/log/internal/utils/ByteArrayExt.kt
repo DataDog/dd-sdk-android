@@ -10,7 +10,6 @@ package com.datadog.android.log.internal.utils
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].
  *
  * @param delimiter a byte to be used as delimiter.
- * TODO @param limit The maximum number of substrings to return. Zero by default means no limit is set.
 */
 internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
     val result = mutableListOf<ByteArray>()

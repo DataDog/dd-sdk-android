@@ -9,6 +9,7 @@ package com.datadog.tools.detekt
 import com.datadog.tools.detekt.rules.CheckInternal
 import com.datadog.tools.detekt.rules.RequireInternal
 import com.datadog.tools.detekt.rules.ThrowingInternalException
+import com.datadog.tools.detekt.rules.TodoWithoutTask
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.RuleSet
 import io.gitlab.arturbosch.detekt.api.RuleSetProvider
@@ -26,7 +27,8 @@ class DatadogProvider : RuleSetProvider {
             listOf(
                 ThrowingInternalException(),
                 CheckInternal(),
-                RequireInternal()
+                RequireInternal(),
+                TodoWithoutTask()
             )
         )
     }
