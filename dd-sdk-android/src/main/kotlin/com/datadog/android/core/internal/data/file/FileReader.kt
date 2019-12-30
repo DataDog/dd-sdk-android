@@ -19,7 +19,7 @@ import java.util.Base64 as JavaBase64
 
 internal class FileReader(
     private val fileOrchestrator: Orchestrator,
-    private val rootDirectory: File
+    private val dataDirectory: File
 ) : Reader {
 
     private val sentBatches: MutableSet<String> = mutableSetOf()
@@ -54,7 +54,7 @@ internal class FileReader(
     override fun dropBatch(batchId: String) {
         sdkLogger.i("$TAG: dropBatch $batchId")
         sentBatches.add(batchId)
-        val fileToDelete = File(rootDirectory, batchId)
+        val fileToDelete = File(dataDirectory, batchId)
 
         deleteFile(fileToDelete)
     }

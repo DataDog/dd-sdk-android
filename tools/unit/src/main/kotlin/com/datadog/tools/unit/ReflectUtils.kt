@@ -74,14 +74,20 @@ inline fun <reified T> Any.getFieldValue(fieldName: String): T {
 /**
  * Invokes a method on the target instance.
  * @param methodName the name of the method
- * @param params the parameters to provide the methoc
+ * @param methodEnclosingClass the class where the method could be found.
+ * By default is the current instance subclass.
+ * @param params the parameters to provide the method
  */
 @Suppress("SpreadOperator")
-fun Any.invokeMethod(methodName: String, vararg params: Any) {
+fun <T : Any> T.invokeMethod(
+    methodName: String,
+    methodEnclosingClass: Class<T> = this.javaClass,
+    vararg params: Any
+) {
     val declarationParams = Array<Class<*>>(params.size) {
         params[it].javaClass
     }
-    val method = this.javaClass.getDeclaredMethod(methodName, *declarationParams)
+    val method = methodEnclosingClass.getDeclaredMethod(methodName, *declarationParams)
     method.isAccessible = true
     try {
         if (params.isEmpty()) {

@@ -1,18 +1,22 @@
 package com.datadog.android.core.internal.data.file
 
 import android.os.Build
+import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
+import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.forge.Configurator
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +51,9 @@ internal class FileWriterTest {
     @Mock
     lateinit var mockDeferredHandler: AndroidDeferredHandler
 
+    @Mock
+    lateinit var mockDataMigrator: DataMigrator
+
     @TempDir
     lateinit var rootDir: File
 
@@ -59,8 +66,33 @@ internal class FileWriterTest {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        underTest = FileWriter(mockedOrchestrator, rootDir, mockedSerializer)
+        underTest = FileWriter(
+            mockedOrchestrator,
+            rootDir,
+            mockedSerializer,
+            mockDataMigrator
+        )
         underTest.deferredHandler = mockDeferredHandler
+        underTest.invokeMethod(
+            "consumeQueue",
+            methodEnclosingClass = LazyHandlerThread::class.java
+        ) // force the lazy handler thread to consume all the queued messages
+    }
+
+    @Test
+    fun `migrates the data before doing anything else`(forge: Forge) {
+        val modelValue = forge.anAlphabeticalString()
+        val fileNameToWriteTo = forge.anAlphaNumericalString()
+        val file = generateFile(fileNameToWriteTo)
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+
+        // when
+        underTest.write(modelValue)
+
+        // then
+        val inOrder = inOrder(mockDataMigrator, mockedSerializer)
+        inOrder.verify(mockDataMigrator).migrateData()
+        inOrder.verify(mockedSerializer).serialize(modelValue)
     }
 
     @Test

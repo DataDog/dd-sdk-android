@@ -41,7 +41,7 @@ internal class FileOrchestratorTest {
 
     @BeforeEach
     fun `set up`() {
-        tempLogsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER_NAME)
+        tempLogsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER)
         tempLogsDir.mkdirs()
         assumeTrue(tempLogsDir.exists() && tempLogsDir.isDirectory && tempLogsDir.canWrite())
 

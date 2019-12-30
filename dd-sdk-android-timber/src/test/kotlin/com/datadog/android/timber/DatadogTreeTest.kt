@@ -21,12 +21,14 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -46,6 +48,8 @@ internal class DatadogTreeTest {
     lateinit var fakeLoggerName: String
     lateinit var fakePackageName: String
     lateinit var fakeMessage: String
+    @TempDir
+    lateinit var tempDir: File
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -59,6 +63,7 @@ internal class DatadogTreeTest {
         val mockContext: Context = mock()
         mockPackageInfo.versionName = forge.anAlphabeticalString()
         whenever(mockPackageMgr.getPackageInfo(fakePackageName, 0)) doReturn mockPackageInfo
+        whenever(mockContext.filesDir).thenReturn(tempDir)
         whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockContext.packageManager) doReturn mockPackageMgr
         whenever(mockContext.packageName) doReturn fakePackageName

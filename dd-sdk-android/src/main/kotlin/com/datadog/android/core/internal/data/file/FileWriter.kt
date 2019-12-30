@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.file
 
+import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Serializer
@@ -18,25 +19,29 @@ import java.io.IOException
 
 internal class FileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
-    rootDirectory: File,
-    private val serializer: Serializer<T>
+    dataDirectory: File,
+    private val serializer: Serializer<T>,
+    private val dataMigrator: DataMigrator
 ) : LazyHandlerThread(THREAD_NAME),
     Writer<T> {
 
     // TODO: RUMM-148 Clean this code from here and move it into the FileOrchestrator eventually
-    private val writeable: Boolean = if (!rootDirectory.exists()) {
-        rootDirectory.mkdirs()
+    private val writeable: Boolean = if (!dataDirectory.exists()) {
+        dataDirectory.mkdirs()
     } else {
-        rootDirectory.isDirectory
+        dataDirectory.isDirectory
     }
 
     init {
         if (!writeable) {
             sdkLogger.e(
-                "$TAG: Can't write data on disk: directory ${rootDirectory.path} is invalid."
+                "$TAG: Can't write data on disk: directory ${dataDirectory.path} is invalid."
             )
         } else {
             start()
+            post(Runnable {
+                dataMigrator.migrateData()
+            })
         }
     }
 
