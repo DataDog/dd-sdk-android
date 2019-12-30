@@ -14,11 +14,9 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -42,7 +40,6 @@ internal class LoggerBuilderTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
-    @Mock
     lateinit var mockContext: Context
 
     lateinit var packageName: String
@@ -50,9 +47,7 @@ internal class LoggerBuilderTest {
     @BeforeEach
     fun `set up Datadog`(forge: Forge) {
         packageName = forge.anAlphabeticalString()
-        val mockContext: Context = mock()
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockContext.packageName) doReturn packageName
+        mockContext = mockContext(packageName, "")
 
         Datadog.initialize(mockContext, forge.anHexadecimalString())
     }

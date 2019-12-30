@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal
 
-import android.content.Context
 import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
@@ -18,6 +17,7 @@ import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -26,9 +26,6 @@ import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -64,9 +61,7 @@ internal abstract class LogStrategyTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val mockContext: Context = mock()
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockContext.packageName) doReturn forge.anAlphabeticalString()
+        val mockContext = mockContext()
 
         Datadog.initialize(mockContext, forge.anHexadecimalString())
         val persistingStrategy = getStrategy()

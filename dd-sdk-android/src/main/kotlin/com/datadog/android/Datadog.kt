@@ -71,6 +71,8 @@ object Datadog {
 
     internal var packageName: String = ""
         private set
+    internal var packageVersion: String = ""
+        private set
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
 
@@ -92,6 +94,7 @@ object Datadog {
 
         val appContext = context.applicationContext
         packageName = context.packageName
+        packageVersion = context.packageManager.getPackageInfo(packageName, 0).versionName
         contextRef = WeakReference(appContext)
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(appContext)
