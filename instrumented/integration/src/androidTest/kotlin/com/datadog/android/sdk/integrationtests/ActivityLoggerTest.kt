@@ -13,7 +13,9 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.sdk.integrationtests.utils.MockServerRule
 import com.datadog.android.sdk.integrationtests.utils.assertj.HeadersAssert
 import com.datadog.android.sdk.integrationtests.utils.assertj.LogsListAssert
+import java.io.File
 import java.util.concurrent.TimeUnit
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
@@ -46,6 +48,15 @@ internal abstract class ActivityLoggerTest<A : Activity>(
         HeadersAssert.assertThat(mockDatadogServerRule.requestHeaders)
             .hasHeader(HeadersAssert.HEADER_CT, Runtime.DD_CONTENT_TYPE)
             .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
+
+        // Check sent batches status
+        verifyWeClearedAllSentBatches()
+    }
+
+    private fun verifyWeClearedAllSentBatches() {
+        val logsFolder =
+            File(InstrumentationRegistry.getInstrumentation().context.filesDir, "dd-logs-v1")
+        assertThat(logsFolder.listFiles()).isNullOrEmpty()
     }
 
     // region Abstract

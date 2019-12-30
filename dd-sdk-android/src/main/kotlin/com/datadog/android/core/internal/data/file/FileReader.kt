@@ -6,8 +6,6 @@
 
 package com.datadog.android.core.internal.data.file
 
-import android.annotation.TargetApi
-import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
@@ -15,7 +13,6 @@ import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.Base64 as JavaBase64
 
 internal class FileReader(
     private val fileOrchestrator: Orchestrator,
@@ -67,13 +64,6 @@ internal class FileReader(
     // endregion
 
     // region Internal
-
-    @TargetApi(Build.VERSION_CODES.O)
-    private fun deobfuscateApi26(input: ByteArray): ByteArray {
-        val decoder = JavaBase64.getDecoder()
-        return decoder.decode(input)
-    }
-
     private fun deleteFile(fileToDelete: File) {
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {

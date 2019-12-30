@@ -47,7 +47,7 @@ internal class LogFileStrategy(
 
     private val fileOrchestrator =
         FileOrchestrator(
-            rootDirectory = rootDir,
+            rootDirectory = dataDir,
             recentDelayMs = recentDelayMs,
             maxBatchSize = maxBatchSize,
             maxLogPerBatch = maxLogPerBatch,
