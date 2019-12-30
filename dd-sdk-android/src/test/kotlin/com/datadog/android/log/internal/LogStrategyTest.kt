@@ -16,7 +16,7 @@ import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
-import com.datadog.android.utils.logs
+import com.datadog.android.utils.asJsonArray
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -93,7 +93,7 @@ internal abstract class LogStrategyTest {
         testedWriter.write(fakeLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs[0].asJsonObject
+        val log = batch.asJsonArray[0].asJsonObject
         assertLogMatches(log, fakeLog)
     }
 
@@ -110,7 +110,7 @@ internal abstract class LogStrategyTest {
         testedWriter.write(minimalLog)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs[0].asJsonObject
+        val log = batch.asJsonArray[0].asJsonObject
         assertLogMatches(log, minimalLog)
     }
 
@@ -126,7 +126,7 @@ internal abstract class LogStrategyTest {
         testedWriter.write(logWithReservedAttributes)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs[0].asJsonObject
+        val log = batch.asJsonArray[0].asJsonObject
 
         assertLogMatches(log, logWithoutAttributes)
     }
@@ -145,9 +145,9 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
 
-        val batchLogCount = min(MAX_LOGS_PER_BATCH, batch.logs.size())
+        val batchLogCount = min(MAX_LOGS_PER_BATCH, batch.asJsonArray.size())
         for (i in 0 until batchLogCount) {
-            val log = batch.logs[i].asJsonObject
+            val log = batch.asJsonArray[i].asJsonObject
             assertLogMatches(log, sentLogs[i])
         }
     }
@@ -160,7 +160,7 @@ internal abstract class LogStrategyTest {
 
         testedWriter.write(nextLog)
         val batch = testedReader.readNextBatch()!!
-        val log = batch.logs[0].asJsonObject
+        val log = batch.asJsonArray[0].asJsonObject
         assertLogMatches(log, fakeLog)
     }
 
@@ -177,7 +177,7 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        batch.logs.forEachIndexed { i, log ->
+        batch.asJsonArray.forEachIndexed { i, log ->
             val jsonObject = log.asJsonObject
             assertHasMatches(jsonObject, fakeLogs)
         }
@@ -237,15 +237,15 @@ internal abstract class LogStrategyTest {
         waitForNextBatch()
         val batch2 = testedReader.readNextBatch()!!
 
-        assertThat(batch.logs.size())
+        assertThat(batch.asJsonArray.size())
             .isEqualTo(MAX_LOGS_PER_BATCH)
-        assertThat(batch2.logs.size())
+        assertThat(batch2.asJsonArray.size())
             .isEqualTo(MAX_LOGS_PER_BATCH)
-        batch.logs.forEachIndexed { i, log ->
+        batch.asJsonArray.forEachIndexed { i, log ->
             val jsonObject = log.asJsonObject
             assertLogMatches(jsonObject, logs[i])
         }
-        batch2.logs.forEachIndexed { i, log ->
+        batch2.asJsonArray.forEachIndexed { i, log ->
             val jsonObject = log.asJsonObject
             assertLogMatches(jsonObject, logs[i + MAX_LOGS_PER_BATCH])
         }

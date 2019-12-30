@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.FileOutputStream
 import java.io.IOException
 
 internal class FileWriter<T : Any>(
@@ -62,17 +63,23 @@ internal class FileWriter<T : Any>(
         try {
             val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
             file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
-            val fileSize = file.length()
-            if (fileSize > 0) {
-                file.appendBytes(separator)
-            }
-            file.appendBytes(dataAsByteArray)
+            writeDataToFile(file, dataAsByteArray)
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
             sdkLogger.e("$TAG: Couldn't write data to file ${file?.path}", e)
         } catch (e: SecurityException) {
             sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
+        }
+    }
+
+    private fun writeDataToFile(file: File, dataAsByteArray: ByteArray) {
+        val fileSize = file.length()
+        FileOutputStream(file, true).use {
+            if (fileSize > 0) {
+                it.write(separator)
+            }
+            it.write(dataAsByteArray)
         }
     }
 
