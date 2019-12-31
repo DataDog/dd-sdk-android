@@ -12,11 +12,14 @@ internal class CpuProfilingRule
     private var totalCpuLoad = 0.0
 
     override fun before() {
-        totalCpuLoad = 0.0
-        totalCpuMeasurements = 0
+        reset()
     }
 
     override fun after() {
+        reset()
+    }
+
+    private fun reset() {
         totalCpuLoad = 0.0
         totalCpuMeasurements = 0
     }
