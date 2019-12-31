@@ -22,7 +22,6 @@ android {
     compileSdkVersion(AndroidConfig.TARGET_SDK)
     buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
 
-
     defaultConfig {
         minSdkVersion(24) // we need this for desugaring the assertJ
         targetSdkVersion(AndroidConfig.TARGET_SDK)

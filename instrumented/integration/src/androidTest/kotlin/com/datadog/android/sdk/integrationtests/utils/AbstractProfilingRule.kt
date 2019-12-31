@@ -24,7 +24,8 @@ internal abstract class AbstractProfilingRule<T> : TestRule {
     abstract fun measureAfterAction(): T
     abstract fun compareWithThreshold(before: T, after: T, threshold: T)
 
-    fun profile(action: () -> Unit, threshold: T) {
+    fun profile(action: () -> Unit, threshold: T, warmupAction: () -> Unit = {}) {
+        warmupAction()
         val before = measureBeforeAction()
         action()
         val after = measureAfterAction()

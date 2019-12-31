@@ -5,7 +5,7 @@ fun execShell(vararg command: String): String {
     var toReturn = ""
     process.errorStream.use {
         val errorOutput = it.bufferedReader().readText()
-        if(errorOutput.isNotEmpty()){
+        if (errorOutput.isNotEmpty()) {
             System.err.println(errorOutput)
         }
     }

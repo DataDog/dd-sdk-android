@@ -29,23 +29,29 @@ internal class CpuProfileForLogs {
             attributes["key$i"] = "value$i"
         }
         val countDownLatch = CountDownLatch(120)
-
+        val action = {
+            mockServerRule.activity.logger.d(
+                "Test Crash",
+                crash,
+                attributes = attributes
+            )
+        }
         cpuProfilingRule.profile({
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 // we are going to simulate 1000 logs per minute => ~ 8 logs every 500 ms
                 while (countDownLatch.count > 0) {
                     repeat(8) {
-                        mockServerRule.activity.logger.d(
-                            "Test Crash",
-                            crash,
-                            attributes = attributes
-                        )
+                        action()
                     }
                     Thread.sleep(500)
                     countDownLatch.countDown()
                 }
             }
-        }, 7.0)
+        }, 7.0, warmupAction = {
+            repeat(3) {
+                action()
+            }
+        })
 
         countDownLatch.await()
     }
