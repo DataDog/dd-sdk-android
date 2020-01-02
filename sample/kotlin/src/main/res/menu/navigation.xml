@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-2019 Datadog, Inc.
+  -->
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_logs"
+        android:icon="@drawable/ic_logs_black_24dp"
+        android:title="@string/title_logs"/>
+
+    <item
+        android:id="@+id/navigation_webview"
+        android:icon="@drawable/ic_webview_black_24dp"
+        android:title="@string/title_webview"/>
+
+    <item
+        android:id="@+id/navigation_unknown"
+        android:icon="@drawable/ic_unknown_black_24dp"
+        android:title="@string/title_webview"/>
+
+</menu>

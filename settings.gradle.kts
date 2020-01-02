@@ -41,6 +41,7 @@ include(":instrumented:benchmark")
 include(":instrumented:integration")
 
 include(":sample:java")
+include(":sample:kotlin")
 include(":sample:kotlin-timber")
 
 include(":tools:detekt")

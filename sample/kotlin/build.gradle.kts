@@ -84,7 +84,6 @@ android {
 dependencies {
 
     api(project(":dd-sdk-android"))
-    api(project(":dd-sdk-android-timber"))
 
     // Android dependencies
     implementation("androidx.appcompat:appcompat:1.1.0")
@@ -97,7 +96,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
     implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.Timber)
 }
 
 kotlinConfig()
