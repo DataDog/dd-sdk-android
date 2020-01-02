@@ -31,6 +31,6 @@ introduced in version `1.0.0`, namely:
 
 #### Attributes
 
-The attributes were created or removed with the `Logger.addField()` or `Logger.removeField()`
-methods. These methods were rename for consistency purposes, and are now  `Logger.addAttribute()`
- and`Logger.removeAttribute()`, but they will behave the same way as the old ones.
+In earlier versions, attributes were created or removed with the `Logger.addField()` or `Logger.removeField()`
+methods. These methods were renamed for consistency purposes, and are now `Logger.addAttribute()`
+ and `Logger.removeAttribute()`. Their behavior remains the same.

@@ -24,7 +24,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context and your Datadog Client token. A [Datadog client token][2] is used here for security reasons, [Datadog API keys][3] cannot be used to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client token documentation][2]:
+2. Initialize the library with your application context and your [Datadog client token][2]. For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
@@ -102,11 +102,11 @@ The following parameters can be used when initializing the logger to send logs t
 | Method                           | Description                                                                                                                                                                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `setNetworkInfoEnabled(true)`    | Add `network.client.connectivity` attribute to all log. The data logged by default is `connectivity` (`Wifi`, `3G`, `4G`...) and `carrier_name` (`AT&T - US`). `Carrier_name` is only available for Android API level 28 and above. |
-| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as value for the `service` [standard attribute][4] attached to all log sent to Datadog.                                                                                                                        |
+| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as value for the `service` [standard attribute][4] attached to all logs sent to Datadog.                                                                                                                        |
 | `setLogcatLogsEnabled(true)`     | Set to `true` to use Logcat as logger.                                                                                                                                                                                              |
 | `setDatadogLogsEnabled(true)`    | Set to `true` to send logs to Datadog.                                                                                                                                                                                              |
-| `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as value for the `logger.name` attribute attached to all log sent to Datadog.                                                                                                                                   |
-| `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's LogCat.                                                                   |
+| `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                   |
+| `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.                                                                   |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                   |
 
 ### Global configuration
@@ -144,7 +144,7 @@ logger.removeTagsWithKey("build_type")
 
 ##### Add attributes
 
-By default, the following attributes are added to all logs send by a logger:
+By default, the following attributes are added to all logs sent by a logger:
 
 * `http.useragent` and its extracted `device` and `OS` properties
 * `network.client.ip` and its extracted geographical properties (`country`, `city`)
