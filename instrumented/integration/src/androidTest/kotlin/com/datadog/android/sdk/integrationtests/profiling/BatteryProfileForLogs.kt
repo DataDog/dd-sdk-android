@@ -30,7 +30,7 @@ internal class BatteryProfileForLogs {
         }
         val countDownLatch = CountDownLatch(120)
 
-        batteryProfilingRule.profile({
+        batteryProfilingRule.profile(action = {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 // we are going to simulate 1000 logs per minute => ~ 8 logs every 500 ms
                 while (countDownLatch.count > 0) {
@@ -45,7 +45,7 @@ internal class BatteryProfileForLogs {
                     countDownLatch.countDown()
                 }
             }
-        }, 1)
+        }, threshold = 1)
 
         countDownLatch.await()
     }

@@ -25,12 +25,12 @@ internal class LightMemoryProfileForLogs {
     @Test
     fun profileCrashLog() {
         val crash = IOException()
-        memoryProfilingRule.profile({
+        memoryProfilingRule.profile(action = {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 repeat(50) {
                     mockServerRule.activity.logger.d("Test Crash", crash)
                 }
             }
-        }, 40)
+        }, threshold = 40)
     }
 }

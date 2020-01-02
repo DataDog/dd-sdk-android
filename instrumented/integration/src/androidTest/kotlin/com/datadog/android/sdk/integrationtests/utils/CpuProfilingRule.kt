@@ -30,11 +30,21 @@ internal class CpuProfilingRule
         totalCpuMeasurements = 0
     }
 
-    override fun measureBeforeAction(): Double {
-        val beforePercent = processorUsageInPercent()
+    override fun doAfterWarmUp() {
+        super.doAfterWarmUp()
+        reset()
         startMeasurementThread()
+        Thread.sleep(DEFAULT_CPU_MEASUREMENT_FREQUENCY * 5) // at least 5 measurements
+    }
 
-        return beforePercent
+    override fun measureBeforeAction(): Double {
+        return resolveCpuTime()
+    }
+
+    override fun doBeforeAction() {
+        super.doBeforeAction()
+        reset()
+        startMeasurementThread()
     }
 
     private fun startMeasurementThread() {
@@ -51,7 +61,10 @@ internal class CpuProfilingRule
     }
 
     override fun measureAfterAction(): Double {
-        // stop the measurement thread
+        return resolveCpuTime()
+    }
+
+    private fun resolveCpuTime(): Double {
         runMeasurement = false
         synchronized(locker) {
             if (totalCpuMeasurements == 0) {

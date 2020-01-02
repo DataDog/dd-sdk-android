@@ -28,7 +28,7 @@ internal class MemoryProfileForLogs {
             attributes["key$i"] = "value$i"
         }
 
-        memoryProfilingRule.profile({
+        memoryProfilingRule.profile(action = {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 repeat(50) {
                     mockServerRule.activity.logger.d(
@@ -38,6 +38,6 @@ internal class MemoryProfileForLogs {
                     )
                 }
             }
-        }, 400)
+        }, threshold = 400)
     }
 }
