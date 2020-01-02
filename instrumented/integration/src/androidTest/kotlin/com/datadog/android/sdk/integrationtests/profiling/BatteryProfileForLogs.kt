@@ -4,21 +4,22 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.integrationtests.ActivityProfiling
-import com.datadog.android.sdk.integrationtests.utils.MemoryProfilingRule
+import com.datadog.android.sdk.integrationtests.utils.BatteryProfilingRule
 import com.datadog.android.sdk.integrationtests.utils.MockServerRule
 import java.io.IOException
+import java.util.concurrent.CountDownLatch
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)
-internal class MemoryProfileForLogs {
+internal class BatteryProfileForLogs {
 
     @get:Rule
     val mockServerRule = MockServerRule(ActivityProfiling::class.java)
     @get:Rule
-    val memoryProfilingRule = MemoryProfilingRule()
+    val batteryProfilingRule = BatteryProfilingRule()
 
     @Test
     fun profileCrashLogWithLargeNumberOfAttributes() {
@@ -27,17 +28,25 @@ internal class MemoryProfileForLogs {
         for (i in 0..100) {
             attributes["key$i"] = "value$i"
         }
+        val countDownLatch = CountDownLatch(120)
 
-        memoryProfilingRule.profile(action = {
+        batteryProfilingRule.profile(action = {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                repeat(50) {
-                    mockServerRule.activity.logger.d(
-                        "Test Crash",
-                        crash,
-                        attributes = attributes
-                    )
+                // we are going to simulate 1000 logs per minute => ~ 8 logs every 500 ms
+                while (countDownLatch.count > 0) {
+                    repeat(8) {
+                        mockServerRule.activity.logger.d(
+                            "Test Crash",
+                            crash,
+                            attributes = attributes
+                        )
+                    }
+                    Thread.sleep(500)
+                    countDownLatch.countDown()
                 }
             }
-        }, threshold = 400)
+        }, threshold = 1)
+
+        countDownLatch.await()
     }
 }

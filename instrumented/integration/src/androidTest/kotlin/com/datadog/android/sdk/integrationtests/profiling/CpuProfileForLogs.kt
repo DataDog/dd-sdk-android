@@ -7,7 +7,7 @@ import com.datadog.android.sdk.integrationtests.ActivityProfiling
 import com.datadog.android.sdk.integrationtests.utils.CpuProfilingRule
 import com.datadog.android.sdk.integrationtests.utils.MockServerRule
 import java.io.IOException
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,25 +28,29 @@ internal class CpuProfileForLogs {
         for (i in 0..100) {
             attributes["key$i"] = "value$i"
         }
-        val countDownLatch = CountDownLatch(120)
-
-        cpuProfilingRule.profile({
-            InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                // we are going to simulate 1000 logs per minute => ~ 8 logs every 500 ms
-                while (countDownLatch.count > 0) {
-                    repeat(8) {
-                        mockServerRule.activity.logger.d(
-                            "Test Crash",
-                            crash,
-                            attributes = attributes
-                        )
+        val action = {
+            mockServerRule.activity.logger.d(
+                "Test Crash",
+                crash,
+                attributes = attributes
+            )
+        }
+        cpuProfilingRule.profile(
+            {
+                InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                    repeat(3) {
+                        action()
+                        Thread.sleep(20)
                     }
-                    Thread.sleep(500)
-                    countDownLatch.countDown()
                 }
-            }
-        }, 7.0)
-
-        countDownLatch.await()
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            }, cpuProfilingRule.repeatOnMainThread(
+                1000,
+                TimeUnit.MINUTES.toMillis(1),
+                TimeUnit.SECONDS.toMillis(1),
+                action
+            ),
+            7.0
+        )
     }
 }
