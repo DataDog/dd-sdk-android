@@ -1,11 +1,11 @@
 # Android Log Collection
 
-Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side Kotlin logging library][1] and leverage the following features:
+Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side logging library][1] and leverage the following features:
 
 * Log to Datadog in JSON format natively.
 * Add `context` and extra custom attributes to each log sent.
 * Forward Java/Kotlin caught exceptions automatically.
-* Record real client IP addresses and User Agent.
+* Record real client IP addresses and User-Agents.
 * Optimized network usage with automatic bulk posts.
 
 **Note**: The `dd-sdk-android` library supports all Android versions from API level 21 (Lollipop).
