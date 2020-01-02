@@ -12,7 +12,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 ## Setup
 
-1. Add the Gradle dependency by declaring the libbrary as a dependency in your `build.gradle` file:
+1. Add the Gradle dependency by declaring the library as a dependency in your `build.gradle` file:
 
     ```conf
     repositories {
@@ -24,7 +24,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context and your Datadog Client token. A [Datadog client token][2] is used here for security reasons, [Datadog API keys][3] cannot be used to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK bytecode. For more information about setting up a client token, see the [Client token documentation][2]:
+2. Initialize the library with your application context and your Datadog Client token. A [Datadog client token][2] is used here for security reasons, [Datadog API keys][3] cannot be used to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
@@ -63,7 +63,7 @@ class SampleApplication : Application() {
     logger.wtf("What a Terrible Failure!")
     ```
 
-    Exceptions caught can be sent with a message as follow:
+    Exceptions caught can be sent with a message:
 
     ```kotlin
     try {
