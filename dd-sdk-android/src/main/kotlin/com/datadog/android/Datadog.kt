@@ -94,7 +94,9 @@ object Datadog {
 
         val appContext = context.applicationContext
         packageName = context.packageName
-        packageVersion = context.packageManager.getPackageInfo(packageName, 0).versionName
+        packageVersion = context.packageManager.getPackageInfo(packageName, 0).let {
+            it.versionName ?: it.versionCode.toString()
+        }
         contextRef = WeakReference(appContext)
         this.clientToken = clientToken
         logStrategy = LogFileStrategy(appContext)

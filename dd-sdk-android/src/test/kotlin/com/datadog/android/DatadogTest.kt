@@ -37,6 +37,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -107,6 +108,22 @@ internal class DatadogTest {
 
         assertThat(Datadog.packageName).isEqualTo(fakePackageName)
         assertThat(Datadog.packageVersion).isEqualTo(fakePackageVersion)
+    }
+
+    @Test
+    fun `initializes all dependencies at initialize with null version name`(
+        @IntForgery(min = 0) versionCode: Int
+    ) {
+        mockContext = mockContext(fakePackageName, null, versionCode)
+        whenever(mockContext.filesDir).thenReturn(rootDir)
+        whenever(mockContext.applicationContext) doReturn mockContext
+        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+            .doReturn(mockConnectivityMgr)
+
+        Datadog.initialize(mockContext, fakeToken)
+
+        assertThat(Datadog.packageName).isEqualTo(fakePackageName)
+        assertThat(Datadog.packageVersion).isEqualTo(versionCode.toString())
     }
 
     @Test
