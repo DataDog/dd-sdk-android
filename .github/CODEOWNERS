@@ -1,2 +1,8 @@
 # Global code owners - RUM Mobile Team
+
 * @DataDog/rum-mobile
+
+## Docs
+
+docs/ @DataDog/baklava
+*.md @DataDog/baklava
