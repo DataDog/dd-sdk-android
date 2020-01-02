@@ -18,19 +18,21 @@ import com.nhaarman.mockitokotlin2.whenever
  * Mocks a context with the minimal behavior to initialize the Datadog library.
  */
 fun mockContext(
-    fakePackageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
-    fakePackageVersion: String = BuildConfig.VERSION_NAME
+    packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
+    versionName: String? = BuildConfig.VERSION_NAME,
+    versionCode: Int = BuildConfig.VERSION_CODE
 ): Context {
     val mockPackageInfo = PackageInfo()
     val mockPackageMgr = mock<PackageManager>()
     val mockContext = mock<Context>()
 
-    mockPackageInfo.versionName = fakePackageVersion
-    whenever(mockPackageMgr.getPackageInfo(fakePackageName, 0)) doReturn mockPackageInfo
+    mockPackageInfo.versionName = versionName
+    mockPackageInfo.versionCode = versionCode
+    whenever(mockPackageMgr.getPackageInfo(packageName, 0)) doReturn mockPackageInfo
 
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr
-    whenever(mockContext.packageName) doReturn fakePackageName
+    whenever(mockContext.packageName) doReturn packageName
 
     return mockContext
 }
