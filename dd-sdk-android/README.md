@@ -7,7 +7,7 @@ to your application's `build.gradle` file.
 
 ```
 repositories {
-    maven { url “https://dl.bintray.com/datadog/datadog-maven" }
+    maven { url "https://dl.bintray.com/datadog/datadog-maven" }
 }
 
 dependencies {
