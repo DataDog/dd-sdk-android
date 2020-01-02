@@ -75,10 +75,7 @@ tasks.register("unitTestAll") {
         ":dd-sdk-android-timber:testReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:unit:testDebugUnitTest",
-        ":tools:unit:testReleaseUnitTest",
-        ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug",
-        ":sample:kotlin-timber:assembleDebug"
+        ":tools:unit:testReleaseUnitTest"
     )
 }
 
