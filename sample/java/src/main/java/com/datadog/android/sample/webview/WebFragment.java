@@ -13,6 +13,7 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -212,7 +213,28 @@ public class WebFragment extends Fragment {
 
         @Override
         public boolean onConsoleMessage(final ConsoleMessage consoleMessage) {
-            mLogger.w(
+            int level;
+            switch (consoleMessage.messageLevel()) {
+                case TIP:
+                    level = Log.INFO;
+                    break;
+                case LOG:
+                    level = Log.VERBOSE;
+                    break;
+                case WARNING:
+                    level = Log.WARN;
+                    break;
+                case ERROR:
+                    level = Log.ERROR;
+                    break;
+                case DEBUG:
+                default:
+                    level = Log.DEBUG;
+                    break;
+            }
+
+            mLogger.log(
+                    level,
                     "onConsoleMessage",
                     null,
                     new HashMap<String, Object>() {{
