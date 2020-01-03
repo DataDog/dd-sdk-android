@@ -2,6 +2,7 @@ package com.datadog.android.internal.utils
 
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.log.internal.user.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException
 import java.io.FileNotFoundException
@@ -34,7 +35,12 @@ internal fun randomLog(forge: Forge): Log {
             carrierId = forge.anInt()
         ),
         loggerName = forge.anAlphabeticalString(),
-        threadName = forge.anAlphabeticalString()
+        threadName = forge.anAlphabeticalString(),
+        userInfo = UserInfo(
+            id = forge.anHexadecimalString(),
+            name = forge.anAlphabeticalString(),
+            email = forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.[a-z]{3}")
+        )
     )
 }
 
