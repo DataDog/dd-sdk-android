@@ -9,6 +9,7 @@ package com.datadog.android
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
@@ -104,6 +105,7 @@ object Datadog {
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
         val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
+        val gzipInterceptor = GzipRequestInterceptor()
 
         // Prepare user info management
         userInfoProvider = DatadogUserInfoProvider()
@@ -123,7 +125,9 @@ object Datadog {
         }
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(networkTimeInterceptor)
+            .addInterceptor(gzipInterceptor)
             .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .build()
