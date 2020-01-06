@@ -161,6 +161,21 @@ internal class LogSerializerTest {
                 } else {
                     doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
                 }
+                if (info.upKbps >= 0) {
+                    hasField(LogSerializer.TAG_NETWORK_UP_KBPS, info.upKbps)
+                } else {
+                    doesNotHaveField(LogSerializer.TAG_NETWORK_UP_KBPS)
+                }
+                if (info.downKbps >= 0) {
+                    hasField(LogSerializer.TAG_NETWORK_DOWN_KBPS, info.downKbps)
+                } else {
+                    doesNotHaveField(LogSerializer.TAG_NETWORK_DOWN_KBPS)
+                }
+                if (info.strength > Int.MIN_VALUE) {
+                    hasField(LogSerializer.TAG_NETWORK_SIGNAL_STRENGTH, info.strength)
+                } else {
+                    doesNotHaveField(LogSerializer.TAG_NETWORK_SIGNAL_STRENGTH)
+                }
             }
         } else {
             assertThat(jsonObject)

@@ -82,6 +82,15 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
             if (info.carrierId >= 0) {
                 jsonLog.addProperty(TAG_NETWORK_CARRIER_ID, info.carrierId)
             }
+            if (info.upKbps >= 0) {
+                jsonLog.addProperty(TAG_NETWORK_UP_KBPS, info.upKbps)
+            }
+            if (info.downKbps >= 0) {
+                jsonLog.addProperty(TAG_NETWORK_DOWN_KBPS, info.downKbps)
+            }
+            if (info.strength > Int.MIN_VALUE) {
+                jsonLog.addProperty(TAG_NETWORK_SIGNAL_STRENGTH, info.strength)
+            }
         }
     }
 
@@ -172,6 +181,9 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
         internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
         internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
+        internal const val TAG_NETWORK_UP_KBPS = "network.client.uplink_kbps"
+        internal const val TAG_NETWORK_DOWN_KBPS = "network.client.downlink_kbps"
+        internal const val TAG_NETWORK_SIGNAL_STRENGTH = "network.client.signal_strength"
 
         // USER TAGS
         internal const val TAG_USER_ID = "usr.id"
