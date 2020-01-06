@@ -9,7 +9,10 @@ package com.datadog.android.log.internal.net
 internal data class NetworkInfo(
     val connectivity: Connectivity = Connectivity.NETWORK_NOT_CONNECTED,
     val carrierName: String? = null,
-    val carrierId: Int = -1
+    val carrierId: Int = -1,
+    val upKbps: Int = -1,
+    val downKbps: Int = -1,
+    val strength: Int = Int.MIN_VALUE
 ) {
 
     internal enum class Connectivity(val serialized: String) {
