@@ -90,3 +90,8 @@ tasks.register("jacocoReportAll") {
         ":tools:unit:jacocoTestReleaseUnitTestReport"
     )
 }
+
+tasks.register("buildIntegrationTestsArtifacts"){
+    dependsOn(":instrumented:integration:assembleDebugAndroidTest")
+    dependsOn(":instrumented:integration:assembleDebug")
+}
