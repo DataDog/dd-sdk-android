@@ -1,3 +1,15 @@
+# 1.1.0 / 2020-01-06
+
+### Changes
+
+* [BUGFIX] Make the packageVersion field optional in the SDK initialisation
+* [BUGFIX] Fix timestamp formatting in logs
+* [FEATURE] Add a developer targeted logger 
+* [FEATURE] Add user info in logs
+* [FEATURE] Create automatic Tags / Attribute (app / sdk version)
+* [FEATURE] Integrate SDK with Timber
+* [IMPROVEMENT] Remove the obfuscation in the logs (faster local processing)
+* [IMPROVEMENT] Implement a modern NetworkInfoProvider
 
 # 1.0.0 / 2019-12-17
 
