@@ -7,19 +7,15 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import java.nio.charset.StandardCharsets
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.LinkedList
+import java.util.zip.GZIPInputStream
 import okhttp3.Headers
-import okhttp3.RequestBody
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import java.io.BufferedInputStream
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.util.zip.GZIPInputStream
 
 internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
     ActivityTestRule<T>(activityClass) {
