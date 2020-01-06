@@ -31,6 +31,6 @@ internal class LightMemoryProfileForLogs {
                     mockServerRule.activity.logger.d("Test Crash", crash)
                 }
             }
-        }, threshold = 40)
+        }, threshold = 300)
     }
 }

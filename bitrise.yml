@@ -16,8 +16,8 @@ workflows:
       - virtual-device-testing-for-android@1.1.1:
           inputs:
             - test_type: instrumentation
-            - app_path: "./instrumented/integration/build/outputs/apk/debug/integration-debug.apk"
-            - test_app_path: "./instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk"
+            - apk_path: "./instrumented/integration/build/outputs/apk/debug/integration-debug.apk"
+            - test_apk_path: "./instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk"
             - download_test_results: 'true'
             - test_devices: Pixel2,28,en,portrait
           title: Run App Instrumentation Tests

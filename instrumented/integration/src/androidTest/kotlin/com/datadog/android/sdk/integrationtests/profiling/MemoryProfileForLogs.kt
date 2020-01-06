@@ -38,6 +38,6 @@ internal class MemoryProfileForLogs {
                     )
                 }
             }
-        }, threshold = 400)
+        }, threshold = 800)
     }
 }
