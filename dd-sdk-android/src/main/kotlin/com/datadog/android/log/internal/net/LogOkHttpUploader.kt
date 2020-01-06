@@ -13,7 +13,7 @@ import java.io.IOException
 import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 internal class LogOkHttpUploader(
     endpoint: String,
@@ -70,7 +70,7 @@ internal class LogOkHttpUploader(
         sdkLogger.d("$TAG: Sending logs to $url")
         return Request.Builder()
             .url(url)
-            .post(RequestBody.create(null, data))
+            .post(data.toRequestBody())
             .addHeader(HEADER_UA, userAgent)
             .addHeader(HEADER_CT, CONTENT_TYPE)
             .build()

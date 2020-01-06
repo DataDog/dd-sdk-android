@@ -6,15 +6,12 @@
 
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.config.publishingConfig
 
 plugins {
     id("com.android.application")

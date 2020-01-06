@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -219,10 +220,19 @@ class WebFragment : Fragment() {
         }
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-            logger.w(
+            val level = when (consoleMessage.messageLevel()) {
+                ConsoleMessage.MessageLevel.TIP -> Log.INFO
+                ConsoleMessage.MessageLevel.LOG -> Log.VERBOSE
+                ConsoleMessage.MessageLevel.WARNING -> Log.WARN
+                ConsoleMessage.MessageLevel.ERROR -> Log.ERROR
+                ConsoleMessage.MessageLevel.DEBUG,
+                null -> Log.DEBUG
+            }
+            logger.log(
+                level,
                 "onConsoleMessage",
                 null,
-                mapOf("webview.console.message" to consoleMessage)
+                mapOf("webview.console.message" to consoleMessage.message())
             )
             return super.onConsoleMessage(consoleMessage)
         }
