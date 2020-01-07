@@ -19,37 +19,21 @@ import java.io.IOException
 
 internal class FileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
-    dataDirectory: File,
     private val serializer: Serializer<T>,
     private val dataMigrator: DataMigrator
 ) : LazyHandlerThread(THREAD_NAME),
     Writer<T> {
 
-    // TODO: RUMM-148 Clean this code from here and move it into the FileOrchestrator eventually
-    private val writeable: Boolean = if (!dataDirectory.exists()) {
-        dataDirectory.mkdirs()
-    } else {
-        dataDirectory.isDirectory
-    }
-
     init {
-        if (!writeable) {
-            sdkLogger.e(
-                "$TAG: Can't write data on disk: directory ${dataDirectory.path} is invalid."
-            )
-        } else {
-            start()
-            post(Runnable {
-                dataMigrator.migrateData()
-            })
-        }
+        start()
+        post(Runnable {
+            dataMigrator.migrateData()
+        })
     }
 
     // region File Writer
 
     override fun write(model: T) {
-        if (!writeable) return
-
         post(Runnable {
             val data = serializer.serialize(model)
 
@@ -68,7 +52,11 @@ internal class FileWriter<T : Any>(
         try {
             val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
             file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
-            writeDataToFile(file, dataAsByteArray)
+            if (file != null) {
+                writeDataToFile(file, dataAsByteArray)
+            } else {
+                sdkLogger.e("$TAG: Could not write on a null file")
+            }
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {

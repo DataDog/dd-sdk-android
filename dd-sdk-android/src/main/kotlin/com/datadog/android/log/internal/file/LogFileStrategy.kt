@@ -60,7 +60,6 @@ internal class LogFileStrategy(
     override fun getLogWriter(): Writer<Log> {
         return FileWriter(
             fileOrchestrator,
-            dataDir,
             LogSerializer(),
             LogFileDataMigrator(rootDir)
         )

@@ -20,6 +20,12 @@ internal class FileOrchestrator(
     private val maxDiskSpace: Long
 ) : Orchestrator {
 
+    private val isRootValid: Boolean = if (!rootDirectory.exists()) {
+        rootDirectory.mkdirs()
+    } else {
+        rootDirectory.isDirectory
+    }
+
     private val fileFilter: FileFilter =
         FileFilter()
 
@@ -34,7 +40,10 @@ internal class FileOrchestrator(
     // region FileOrchestrator
 
     @Throws(SecurityException::class)
-    override fun getWritableFile(itemSize: Int): File {
+    override fun getWritableFile(itemSize: Int): File? {
+        if (!isRootValid) {
+            return null
+        }
 
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
 
@@ -68,6 +77,10 @@ internal class FileOrchestrator(
 
     @Throws(SecurityException::class)
     override fun getReadableFile(excludeFileNames: Set<String>): File? {
+        if (!isRootValid) {
+            return null
+        }
+
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
 
         deleteObsoleteFiles(files)

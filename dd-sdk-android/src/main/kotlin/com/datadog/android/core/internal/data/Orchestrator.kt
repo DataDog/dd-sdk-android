@@ -11,7 +11,7 @@ import java.io.File
 internal interface Orchestrator {
 
     @Throws(SecurityException::class)
-    fun getWritableFile(itemSize: Int): File
+    fun getWritableFile(itemSize: Int): File?
 
     @Throws(SecurityException::class)
     fun getReadableFile(excludeFileNames: Set<String>): File?

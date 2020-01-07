@@ -1,6 +1,5 @@
 package com.datadog.android.core.internal.data.file
 
-import android.os.Build
 import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
@@ -9,7 +8,6 @@ import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.forge.Configurator
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.invokeMethod
@@ -68,7 +66,6 @@ internal class FileWriterTest {
         }
         underTest = FileWriter(
             mockedOrchestrator,
-            rootDir,
             mockedSerializer,
             mockDataMigrator
         )
@@ -96,7 +93,6 @@ internal class FileWriterTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes a valid mode`(forge: Forge) {
         val modelValue = forge.anAlphabeticalString()
         val fileNameToWriteTo = forge.anAlphaNumericalString()
@@ -113,7 +109,6 @@ internal class FileWriterTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `does nothing when SecurityException was thrown while providing a file`(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
@@ -130,6 +125,25 @@ internal class FileWriterTest {
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[0]).matches("E/DD_LOG: FileWriter: Couldn't access file.*")
+        }
+    }
+
+    @Test
+    fun `does nothing when FileOrchestrator returns a null file`(
+        forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
+        val modelValue = forge.anAlphabeticalString()
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(null)
+
+        // when
+        underTest.write(modelValue)
+
+        // then
+        if (BuildConfig.DEBUG) {
+            val logMessages = outputStream.toString().trim().split("\n")
+            assertThat(logMessages[0])
+                .matches("E/DD_LOG: FileWriter: Could not write on a null file.*")
         }
     }
 
