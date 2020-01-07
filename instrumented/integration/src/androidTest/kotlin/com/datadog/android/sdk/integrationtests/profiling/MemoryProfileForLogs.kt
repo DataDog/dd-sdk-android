@@ -7,6 +7,7 @@ import com.datadog.android.sdk.integrationtests.ActivityProfiling
 import com.datadog.android.sdk.integrationtests.utils.MemoryProfilingRule
 import com.datadog.android.sdk.integrationtests.utils.MockServerRule
 import java.io.IOException
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +22,7 @@ internal class MemoryProfileForLogs {
     val memoryProfilingRule = MemoryProfilingRule()
 
     @Test
+    @Ignore
     fun profileCrashLogWithLargeNumberOfAttributes() {
         val crash = IOException()
         val attributes = mutableMapOf<String, String>()
