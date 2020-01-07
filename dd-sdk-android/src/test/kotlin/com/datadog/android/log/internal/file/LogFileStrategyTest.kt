@@ -8,7 +8,7 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogStrategy
@@ -46,8 +46,8 @@ internal class LogFileStrategyTest :
         file1.createNewFile()
         file2.createNewFile()
         assertThat(oldDir).exists()
-        (testedWriter as FileWriter<Log>).deferredHandler = mockDeferredHandler
-        (testedWriter as FileWriter<Log>).invokeMethod("consumeQueue",
+        (testedWriter as DeferredWriter<Log>).deferredHandler = mockDeferredHandler
+        (testedWriter as DeferredWriter<Log>).invokeMethod("consumeQueue",
             methodEnclosingClass = LazyHandlerThread::class.java) // consume all the queued messages
     }
 

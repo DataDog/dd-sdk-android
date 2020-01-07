@@ -8,8 +8,8 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.FileReader
-import com.datadog.android.core.internal.data.file.FileWriter
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.internal.utils.fieldValue
 import com.datadog.android.internal.utils.randomLog
@@ -31,7 +31,7 @@ internal class LogFileStrategyBenchmarking {
     @get:Rule
     val forge = ForgeRule()
 
-    lateinit var logFileWriter: FileWriter<Log>
+    lateinit var logFileWriter: DeferredWriter<Log>
     lateinit var logFileReader: FileReader
 
     @Before
@@ -39,7 +39,7 @@ internal class LogFileStrategyBenchmarking {
         val context = InstrumentationRegistry.getInstrumentation().context
         Datadog.initialize(context, "NO_TOKEN", "")
         Datadog.fieldValue<HandlerThread>("handlerThread").quit()
-        logFileWriter = Datadog.getLogStrategy().getLogWriter() as FileWriter<Log>
+        logFileWriter = Datadog.getLogStrategy().getLogWriter() as DeferredWriter<Log>
         logFileWriter.quit() // we don't want this thread to run
         val dummyHandler = Handler(Looper.getMainLooper()) // this will never be used
         logFileWriter.deferredHandler =
