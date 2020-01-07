@@ -58,7 +58,7 @@ class SampleApplication : Application() {
     ```kotlin
     val logger = Logger.Builder()
         .setNetworkInfoEnabled(true)
-        .setServiceName("com.example.app.android")
+        .setServiceName("<SERVICE_NAME>")
         .setLogcatLogsEnabled(true)
         .setDatadogLogsEnabled(true)
         .setLoggerName("name")
