@@ -7,8 +7,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import java.nio.charset.StandardCharsets
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.LinkedList
+import java.util.zip.GZIPInputStream
 import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -27,8 +29,15 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
             start()
             dispatcher = object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
+
+                    val content =
+                        if (request.headers.contains("Content-Encoding" to "gzip")) {
+                            request.unzip()
+                        } else {
+                            String(request.body.readByteArray(), Charsets.UTF_8)
+                        }
                     val jsonArray =
-                        JsonParser.parseString(request.body.readString(StandardCharsets.UTF_8))
+                        JsonParser.parseString(content)
                             .asJsonArray
                     jsonArray.forEach {
                         requestObjects.add(it.asJsonObject)
@@ -56,5 +65,22 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
         return MockResponse()
             .setResponseCode(code)
             .setBody("{}")
+    }
+
+    private fun RecordedRequest.unzip(): String {
+        if (body.size <= 0) {
+            return ""
+        }
+        val gzipInputStream =
+            GZIPInputStream(ByteArrayInputStream(body.readByteArray()))
+        val byteOutputStream = ByteArrayOutputStream()
+        val buffer = ByteArray(1024)
+        var readBytes = gzipInputStream.read(buffer, 0, buffer.size)
+        while (readBytes > 0) {
+            byteOutputStream.write(buffer, 0, readBytes)
+            readBytes = gzipInputStream.read(buffer, 0, buffer.size)
+        }
+
+        return String(byteOutputStream.toByteArray(), Charsets.UTF_8)
     }
 }

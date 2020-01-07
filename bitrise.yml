@@ -1,0 +1,31 @@
+---
+format_version: '8'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: android
+workflows:
+  ci:
+    steps:
+      - script:
+          title: Provide Instrumentation Tests Artifacts
+          inputs:
+            - content: |-
+                #!/bin/bash
+                set -ex
+                ./gradlew buildIntegrationTestsArtifacts
+      - virtual-device-testing-for-android@1.1.1:
+          inputs:
+            - test_type: instrumentation
+            - app_path: $INST_APK_PATH
+            - test_apk_path: $INST_TEST_APK_PATH
+            - download_test_results: 'true'
+            - test_devices: Pixel2,28,en,portrait
+          title: Run App Instrumentation Tests
+
+app:
+  envs:
+    - opts:
+        is_expand: false
+      INST_APK_PATH: "./instrumented/integration/build/outputs/apk/debug/integration-debug.apk"
+    - opts:
+        is_expand: false
+      INST_TEST_APK_PATH: "./instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk"
