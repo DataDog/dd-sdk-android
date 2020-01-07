@@ -10,6 +10,8 @@ import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.log.forge.Configurator
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -57,14 +59,98 @@ internal class FileOrchestratorTest {
     }
 
     @Test
+    fun `writable file will returns null if the rootDirectory is a File`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
+    ) {
+        // given
+        val invalidRootDir = File("testPathName")
+        invalidRootDir.createNewFile()
+
+        testedOrchestrator =
+            FileOrchestrator(
+                invalidRootDir,
+                RECENT_DELAY_MS,
+                MAX_BATCH_SIZE,
+                MAX_LOGS_PER_BATCH,
+                OLD_FILE_THRESHOLD,
+                MAX_DISK_SPACE
+            )
+
+        // then
+        assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
+    }
+
+    @Test
+    fun `readable file will return null if the rootDirectory is a File`() {
+        // given
+        val invalidRootDir = File("testPathName")
+        invalidRootDir.createNewFile()
+
+        testedOrchestrator =
+            FileOrchestrator(
+                invalidRootDir,
+                RECENT_DELAY_MS,
+                MAX_BATCH_SIZE,
+                MAX_LOGS_PER_BATCH,
+                OLD_FILE_THRESHOLD,
+                MAX_DISK_SPACE
+            )
+
+        // then
+        assertThat(testedOrchestrator.getReadableFile(emptySet())).isNull()
+    }
+
+    @Test
+    fun `writable file returns null if the rootDirectory can't be created`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
+    ) {
+        // given
+        val corruptedRootDir = mock<File>()
+        whenever(corruptedRootDir.mkdirs()).thenReturn(false)
+
+        testedOrchestrator =
+            FileOrchestrator(
+                corruptedRootDir,
+                RECENT_DELAY_MS,
+                MAX_BATCH_SIZE,
+                MAX_LOGS_PER_BATCH,
+                OLD_FILE_THRESHOLD,
+                MAX_DISK_SPACE
+            )
+
+        // then
+        assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
+    }
+
+    @Test
+    fun `readable file returns null the rootDirectory can't be created`() {
+        // given
+        val corruptedRootDir = mock<File>()
+        whenever(corruptedRootDir.mkdirs()).thenReturn(false)
+
+        testedOrchestrator =
+            FileOrchestrator(
+                corruptedRootDir,
+                RECENT_DELAY_MS,
+                MAX_BATCH_SIZE,
+                MAX_LOGS_PER_BATCH,
+                OLD_FILE_THRESHOLD,
+                MAX_DISK_SPACE
+            )
+
+        // then
+        assertThat(testedOrchestrator.getReadableFile(emptySet())).isNull()
+    }
+
+    @Test
     fun `reuse writeable file if possible`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize1: Int,
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize2: Int,
         forge: Forge
     ) {
         val previousFile = testedOrchestrator.getWritableFile(logSize1)
-        previousFile.createNewFile()
-        previousFile.writeText(forge.anAsciiString(logSize1))
+        previousFile?.createNewFile()
+        previousFile?.writeText(forge.anAsciiString(logSize1))
 
         val writeableFile = testedOrchestrator.getWritableFile(logSize2)
 
@@ -120,7 +206,7 @@ internal class FileOrchestratorTest {
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
         val previousFile = testedOrchestrator.getWritableFile(logSize)
-        previousFile.createNewFile()
+        previousFile?.createNewFile()
         Thread.sleep(RECENT_DELAY_MS)
 
         val writeableFile = testedOrchestrator.getWritableFile(logSize)
@@ -137,8 +223,8 @@ internal class FileOrchestratorTest {
         forge: Forge
     ) {
         val previousFile = testedOrchestrator.getWritableFile(logSize)
-        previousFile.createNewFile()
-        previousFile.writeText(forge.anAsciiString(MAX_BATCH_SIZE.toInt()))
+        previousFile?.createNewFile()
+        previousFile?.writeText(forge.anAsciiString(MAX_BATCH_SIZE.toInt()))
 
         val writeableFile = testedOrchestrator.getWritableFile(logSize)
 
@@ -154,12 +240,12 @@ internal class FileOrchestratorTest {
         forge: Forge
     ) {
         val previousFile = testedOrchestrator.getWritableFile(logSize)
-        previousFile.createNewFile()
-        previousFile.writeText(forge.anAsciiString(logSize))
+        previousFile?.createNewFile()
+        previousFile?.writeText(forge.anAsciiString(logSize))
         for (i in 1 until MAX_LOGS_PER_BATCH) {
             val f = testedOrchestrator.getWritableFile(logSize)
             assumeTrue(f == previousFile)
-            f.writeText(forge.anAsciiString(logSize))
+            f?.writeText(forge.anAsciiString(logSize))
         }
 
         val writeableFile = testedOrchestrator.getWritableFile(logSize)

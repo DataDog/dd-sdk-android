@@ -95,7 +95,7 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `if when orchestrator throws SecurityException will a null Batch`(
+    fun `if when orchestrator throws SecurityException will return a null Batch`(
         @SystemOutStream systemOutStream: ByteArrayOutputStream,
         forge: Forge
     ) {
@@ -107,10 +107,9 @@ internal class FileReaderTest {
         val nextBatch = underTest.readNextBatch()
 
         // then
+        assertThat(nextBatch).isNull()
         if (BuildConfig.DEBUG) {
             val logMessages = systemOutStream.toString().trim().split("\n")
-            assertThat(nextBatch).isNull()
-
             assertThat(logMessages[0]).matches("E/DD_LOG: FileReader: Couldn't access file .+")
         }
     }
