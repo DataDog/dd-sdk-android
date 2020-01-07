@@ -21,8 +21,12 @@ internal class MemoryProfileForLogs {
     @get:Rule
     val memoryProfilingRule = MemoryProfilingRule()
 
+    // TODO: RUMM-164 Fix the MemoryProfilingRule
     @Test
-    @Ignore
+    @Ignore(
+        "This test is very flaky now and we need to find a better" +
+                " way to measure the memory"
+    )
     fun profileCrashLogWithLargeNumberOfAttributes() {
         val crash = IOException()
         val attributes = mutableMapOf<String, String>()

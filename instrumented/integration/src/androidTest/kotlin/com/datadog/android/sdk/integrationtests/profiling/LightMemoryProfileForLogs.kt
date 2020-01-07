@@ -23,8 +23,12 @@ internal class LightMemoryProfileForLogs {
     val memoryProfilingRule =
         MemoryProfilingRule()
 
+    // TODO: RUMM-164 Fix the MemoryProfilingRule
     @Test
-    @Ignore
+    @Ignore(
+        "This test is very flaky now and we need to find a better" +
+                " way to measure the memory"
+    )
     fun profileCrashLog() {
         val crash = IOException()
         memoryProfilingRule.profile(action = {
