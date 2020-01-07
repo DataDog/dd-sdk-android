@@ -1,3 +1,9 @@
+# 1.1.1 / 2020-01-07
+
+### Changes
+
+* [BUGFIX] Fix crash on Android Lollipop and Nougat
+
 # 1.1.0 / 2020-01-06
 
 ### Changes
