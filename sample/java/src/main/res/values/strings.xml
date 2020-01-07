@@ -17,5 +17,7 @@
     <string name="button_error">🚨</string>
     <string name="button_critical">💥</string>
     <string name="title_sendLog">Send a log</string>
+    <string name="title_crash">Crash the app</string>
+    <string name="button_crash">💣</string>
 
 </resources>
