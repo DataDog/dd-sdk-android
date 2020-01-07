@@ -13,6 +13,7 @@ import com.datadog.android.BuildConfig
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import java.io.File
 
 /**
  * Mocks a context with the minimal behavior to initialize the Datadog library.
@@ -33,6 +34,7 @@ fun mockContext(
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr
     whenever(mockContext.packageName) doReturn packageName
+    whenever(mockContext.filesDir) doReturn File("/dev/null")
 
     return mockContext
 }
