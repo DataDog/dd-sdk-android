@@ -11,6 +11,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.forge.Configurator
@@ -124,6 +125,16 @@ internal class DatadogTest {
 
         assertThat(Datadog.packageName).isEqualTo(fakePackageName)
         assertThat(Datadog.packageVersion).isEqualTo(versionCode.toString())
+    }
+
+    @Test
+    fun `initializes crash reporter`() {
+        Datadog.initialize(mockContext, fakeToken)
+
+        val handler = Thread.getDefaultUncaughtExceptionHandler()
+
+        assertThat(handler)
+            .isInstanceOf(DatadogExceptionHandler::class.java)
     }
 
     @Test

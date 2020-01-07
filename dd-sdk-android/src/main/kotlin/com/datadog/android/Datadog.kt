@@ -1,7 +1,7 @@
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-2019 Datadog, Inc.
+ * Copyright 2016-2020 Datadog, Inc.
  */
 
 package com.datadog.android
@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.LogStrategy
@@ -104,8 +105,6 @@ object Datadog {
 
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
-        val networkTimeInterceptor = NetworkTimeInterceptor(timeProvider)
-        val gzipInterceptor = GzipRequestInterceptor()
 
         // Prepare user info management
         userInfoProvider = DatadogUserInfoProvider()
@@ -118,19 +117,7 @@ object Datadog {
 
         // Start handler to send logs
         val endpoint = endpointUrl ?: DATADOG_US
-        val connectionSpec = if (endpoint.startsWith("http://")) {
-            ConnectionSpec.CLEARTEXT
-        } else {
-            ConnectionSpec.RESTRICTED_TLS
-        }
-        val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(networkTimeInterceptor)
-            .addInterceptor(gzipInterceptor)
-            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-            .connectionSpecs(listOf(connectionSpec))
-            .build()
+        val okHttpClient = buildOkHttpClient(endpoint)
 
         uploader = LogOkHttpUploader(endpoint, Datadog.clientToken, okHttpClient)
         handlerThread = LogHandlerThread(
@@ -142,6 +129,14 @@ object Datadog {
         handlerThread.start()
 
         initialized = true
+
+        // Error Management (set it up last. Until this is done, we don't know)
+        DatadogExceptionHandler(
+            networkInfoProvider,
+            timeProvider,
+            userInfoProvider,
+            logStrategy.getSynchronousLogWriter()
+        ).register()
     }
 
     /**
@@ -253,6 +248,22 @@ object Datadog {
         }
         provider.register(context)
         networkInfoProvider = provider
+    }
+
+    private fun buildOkHttpClient(endpoint: String): OkHttpClient {
+        val connectionSpec = if (endpoint.startsWith("http://")) {
+            ConnectionSpec.CLEARTEXT
+        } else {
+            ConnectionSpec.RESTRICTED_TLS
+        }
+        return OkHttpClient.Builder()
+            .addInterceptor(NetworkTimeInterceptor(timeProvider))
+            .addInterceptor(GzipRequestInterceptor())
+            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+            .connectionSpecs(listOf(connectionSpec))
+            .build()
     }
 
     // endregion
