@@ -32,5 +32,11 @@ internal class LightMemoryProfileForLogs {
                 }
             }
         }, threshold = 300)
+        /*
+           This threshold was determined heuristically for a Pixel 2 device
+           running 28 Android API level in Bitrise.
+           The idea is to keep the memory consumption under this limit from now on whenever
+           we will add more meat to the Log models.
+       */
     }
 }

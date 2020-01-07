@@ -12,7 +12,6 @@ workflows:
                 #!/bin/bash
                 set -ex
                 ./gradlew buildIntegrationTestsArtifacts
-      - cache-push@2.0.1: {}
       - virtual-device-testing-for-android@1.1.1:
           inputs:
             - test_type: instrumentation
