@@ -61,7 +61,7 @@ class SampleApplication : Application() {
         .setServiceName("<SERVICE_NAME>")
         .setLogcatLogsEnabled(true)
         .setDatadogLogsEnabled(true)
-        .setLoggerName("name")
+        .setLoggerName("<LOGGER_NAME>")
         .build();
     ```
 
