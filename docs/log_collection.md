@@ -55,7 +55,7 @@ class SampleApplication : Application() {
 
 3. Configure the Android Logger:
 
-```kotlin
+    ```kotlin
     val logger = Logger.Builder()
         .setNetworkInfoEnabled(true)
         .setServiceName("com.example.app.android")
@@ -63,7 +63,7 @@ class SampleApplication : Application() {
         .setDatadogLogsEnabled(true)
         .setLoggerName("name")
         .build();
-```
+    ```
 
 4. Send a custom log entry directly to Datadog with one of the following functions:
 
