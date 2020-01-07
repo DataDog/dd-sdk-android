@@ -40,6 +40,33 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
+    fun hasUpSpeed(expected: Int): NetworkInfoAssert {
+        assertThat(actual.upKbps)
+            .overridingErrorMessage(
+                "Expected networkInfo to have upKbps $expected but was ${actual.upKbps}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasDownSpeed(expected: Int): NetworkInfoAssert {
+        assertThat(actual.downKbps)
+            .overridingErrorMessage(
+                "Expected networkInfo to have downKbps $expected but was ${actual.downKbps}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasStrength(expected: Int): NetworkInfoAssert {
+        assertThat(actual.strength)
+            .overridingErrorMessage(
+                "Expected networkInfo to have strength $expected but was ${actual.strength}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: NetworkInfo): NetworkInfoAssert =

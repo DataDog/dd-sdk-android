@@ -14,13 +14,16 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
 
     override fun getForgery(forge: Forge): NetworkInfo {
         return NetworkInfo(
-            forge.aValueFrom(NetworkInfo.Connectivity::class.java),
-            forge.anElementFrom(
+            connectivity = forge.aValueFrom(NetworkInfo.Connectivity::class.java),
+            carrierName = forge.anElementFrom(
                 forge.anAlphabeticalString(),
                 forge.aWhitespaceString(),
                 null
             ),
-            if (forge.aBool()) forge.anInt(0, 10000) else -1
+            carrierId = if (forge.aBool()) forge.anInt(0, 10000) else -1,
+            upKbps = forge.anInt(0, Int.MAX_VALUE),
+            downKbps = forge.anInt(0, Int.MAX_VALUE),
+            strength = forge.anInt(-100, -30) // dBm for wifi signal
         )
     }
 }

@@ -27,17 +27,12 @@ internal class CallbackNetworkInfoProvider :
         super.onCapabilitiesChanged(network, networkCapabilities)
         sdkLogger.v("onCapabilitiesChanged $network $networkCapabilities")
 
-        val type = if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-            NetworkInfo.Connectivity.NETWORK_WIFI
-        } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
-            NetworkInfo.Connectivity.NETWORK_ETHERNET
-        } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            NetworkInfo.Connectivity.NETWORK_CELLULAR
-        } else {
-            NetworkInfo.Connectivity.NETWORK_OTHER
-        }
-
-        networkInfo = NetworkInfo(type)
+        networkInfo = NetworkInfo(
+            connectivity = getNetworkType(networkCapabilities),
+            upKbps = networkCapabilities.linkUpstreamBandwidthKbps,
+            downKbps = networkCapabilities.linkDownstreamBandwidthKbps,
+            strength = getStrength(networkCapabilities)
+        )
     }
 
     override fun onLost(network: Network) {
@@ -64,6 +59,30 @@ internal class CallbackNetworkInfoProvider :
 
     override fun getLatestNetworkInfo(): NetworkInfo {
         return networkInfo
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun getStrength(networkCapabilities: NetworkCapabilities): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            networkCapabilities.signalStrength
+        } else {
+            Int.MIN_VALUE
+        }
+    }
+
+    private fun getNetworkType(networkCapabilities: NetworkCapabilities): NetworkInfo.Connectivity {
+        return if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            NetworkInfo.Connectivity.NETWORK_WIFI
+        } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+            NetworkInfo.Connectivity.NETWORK_CELLULAR
+        } else {
+            NetworkInfo.Connectivity.NETWORK_OTHER
+        }
     }
 
     // endregion
