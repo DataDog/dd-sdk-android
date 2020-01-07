@@ -153,7 +153,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
     }
 
     companion object {
-        private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSX"
+        private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
         // MAIN TAGS
         internal const val TAG_HOST = "host"
