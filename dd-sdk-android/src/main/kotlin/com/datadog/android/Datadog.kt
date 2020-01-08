@@ -215,6 +215,11 @@ object Datadog {
         return logStrategy
     }
 
+    internal fun getLogUploader(): LogUploader {
+        checkInitialized()
+        return uploader
+    }
+
     internal fun getNetworkInfoProvider(): NetworkInfoProvider {
         return networkInfoProvider
     }

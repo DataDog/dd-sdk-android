@@ -18,6 +18,7 @@ class Configurator :
         forge.addFactory(ThrowableForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(WorkerParametersForgeryFactory())
         forge.useJvmFactories()
     }
 }
