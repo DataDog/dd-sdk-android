@@ -135,7 +135,8 @@ object Datadog {
             networkInfoProvider,
             timeProvider,
             userInfoProvider,
-            logStrategy.getSynchronousLogWriter()
+            logStrategy.getSynchronousLogWriter(),
+            appContext
         ).register()
     }
 

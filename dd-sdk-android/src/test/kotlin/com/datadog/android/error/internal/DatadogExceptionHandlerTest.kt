@@ -6,8 +6,6 @@
 
 package com.datadog.android.error.internal
 
-import androidx.work.Configuration
-import androidx.work.WorkManager
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
@@ -92,7 +90,8 @@ internal class DatadogExceptionHandlerTest {
             mockNetworkInfoProvider,
             mockTimeProvider,
             mockUserInfoProvider,
-            mockLogWriter
+            mockLogWriter,
+            null
         )
         testedHandler.register()
     }
