@@ -57,7 +57,7 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
         requestHeaders = null
         // clean all logs
         requestObjects.clear()
-        InstrumentationRegistry.getInstrumentation().context.filesDir.deleteRecursively()
+        InstrumentationRegistry.getInstrumentation().context.filesDir?.deleteRecursively()
         super.afterActivityFinished()
     }
 

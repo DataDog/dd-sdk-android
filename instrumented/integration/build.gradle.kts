@@ -23,10 +23,10 @@ android {
     buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
 
     defaultConfig {
-        minSdkVersion(24) // we need this for desugaring the assertJ
+        minSdkVersion(AndroidConfig.MIN_SDK)
         targetSdkVersion(AndroidConfig.TARGET_SDK)
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = AndroidConfig.VERSION.code
+        versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
