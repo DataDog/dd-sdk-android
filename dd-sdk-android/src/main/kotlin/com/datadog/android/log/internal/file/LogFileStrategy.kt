@@ -9,9 +9,10 @@ package com.datadog.android.log.internal.file
 import android.content.Context
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
-import com.datadog.android.core.internal.data.file.FileWriter
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogSerializer
@@ -35,19 +36,9 @@ internal class LogFileStrategy(
         oldFileThreshold: Long = OLD_FILE_THRESHOLD,
         maxDiskSpace: Long = MAX_DISK_SPACE
     ) :
-            this(
-                rootDir = context.filesDir,
-                dataDir = File(context.filesDir, LOGS_FOLDER),
-                recentDelayMs = recentDelayMs,
-                maxBatchSize = maxBatchSize,
-                maxLogPerBatch = maxLogPerBatch,
-                oldFileThreshold = oldFileThreshold,
-                maxDiskSpace = maxDiskSpace
-            )
-
-    private val fileOrchestrator =
-        FileOrchestrator(
-            rootDirectory = dataDir,
+        this(
+            rootDir = context.filesDir,
+            dataDir = File(context.filesDir, LOGS_FOLDER),
             recentDelayMs = recentDelayMs,
             maxBatchSize = maxBatchSize,
             maxLogPerBatch = maxLogPerBatch,
@@ -55,21 +46,40 @@ internal class LogFileStrategy(
             maxDiskSpace = maxDiskSpace
         )
 
+    private val fileOrchestrator = FileOrchestrator(
+        rootDirectory = dataDir,
+        recentDelayMs = recentDelayMs,
+        maxBatchSize = maxBatchSize,
+        maxLogPerBatch = maxLogPerBatch,
+        oldFileThreshold = oldFileThreshold,
+        maxDiskSpace = maxDiskSpace
+    )
+
+    private val fileWriter = ImmediateFileWriter(
+        fileOrchestrator,
+        LogSerializer()
+    )
+
+    private val fileReader = FileReader(
+        fileOrchestrator,
+        dataDir
+    )
+
     // region LogPersistingStrategy
 
+    override fun getSynchronousLogWriter(): Writer<Log> {
+        return fileWriter
+    }
+
     override fun getLogWriter(): Writer<Log> {
-        return FileWriter(
-            fileOrchestrator,
-            LogSerializer(),
-            LogFileDataMigrator(rootDir)
+        return DeferredWriter(
+            LogFileDataMigrator(rootDir),
+            fileWriter
         )
     }
 
     override fun getLogReader(): Reader {
-        return FileReader(
-            fileOrchestrator,
-            dataDir
-        )
+        return fileReader
     }
 
     // endregion

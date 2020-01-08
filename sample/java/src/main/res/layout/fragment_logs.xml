@@ -14,7 +14,7 @@
     tools:context=".logs.LogsFragment">
 
     <TextView
-        android:id="@+id/title"
+        android:id="@+id/title_logs"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.AppCompat.Title"
@@ -30,7 +30,7 @@
         android:id="@+id/log_warning"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title_logs"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/log_error"
         app:layout_constraintHorizontal_chainStyle="spread"
@@ -41,7 +41,7 @@
         android:id="@+id/log_error"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title_logs"
         app:layout_constraintStart_toEndOf="@id/log_warning"
         app:layout_constraintEnd_toStartOf="@id/log_critical"
         android:text="@string/button_error"
@@ -51,10 +51,34 @@
         android:id="@+id/log_critical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title_logs"
         app:layout_constraintStart_toEndOf="@id/log_error"
         app:layout_constraintEnd_toEndOf="parent"
         android:text="@string/button_critical"
+    />
+
+    <TextView
+        android:id="@+id/title_crash"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:text="@string/title_crash"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/log_error"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+    />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/crash"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/title_crash"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        android:text="@string/button_crash"
     />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

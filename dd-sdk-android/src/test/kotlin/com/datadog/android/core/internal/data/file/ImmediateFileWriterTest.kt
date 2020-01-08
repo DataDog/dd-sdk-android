@@ -1,20 +1,18 @@
 package com.datadog.android.core.internal.data.file
 
-import com.datadog.android.core.internal.data.DataMigrator
+import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
-import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.forge.Configurator
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
-import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -31,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -38,19 +37,17 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(SystemOutputExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
-@ForgeConfiguration(Configurator::class)
-@MockitoSettings()
-internal class FileWriterTest {
-    lateinit var underTest: FileWriter<String>
+@ForgeConfiguration(Configurator::class, seed = 0x146ba9a6L)
+@MockitoSettings(strictness = Strictness.LENIENT)
+internal class ImmediateFileWriterTest {
+
+    lateinit var underTest: ImmediateFileWriter<String>
     @Mock
     lateinit var mockedSerializer: Serializer<String>
     @Mock
     lateinit var mockedOrchestrator: Orchestrator
     @Mock
     lateinit var mockDeferredHandler: AndroidDeferredHandler
-
-    @Mock
-    lateinit var mockDataMigrator: DataMigrator
 
     @TempDir
     lateinit var rootDir: File
@@ -64,67 +61,62 @@ internal class FileWriterTest {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        underTest = FileWriter(
+        underTest = ImmediateFileWriter(
             mockedOrchestrator,
-            mockedSerializer,
-            mockDataMigrator
+            mockedSerializer
         )
-        underTest.deferredHandler = mockDeferredHandler
-        underTest.invokeMethod(
-            "consumeQueue",
-            methodEnclosingClass = LazyHandlerThread::class.java
-        ) // force the lazy handler thread to consume all the queued messages
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        rootDir.deleteRecursively()
     }
 
     @Test
-    fun `migrates the data before doing anything else`(forge: Forge) {
-        val modelValue = forge.anAlphabeticalString()
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes a valid model`(forge: Forge) {
+        val model = forge.anAlphabeticalString()
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = generateFile(fileNameToWriteTo)
+        val file = File(rootDir, fileNameToWriteTo)
         whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
 
-        // when
-        underTest.write(modelValue)
+        underTest.write(model)
 
-        // then
-        val inOrder = inOrder(mockDataMigrator, mockedSerializer)
-        inOrder.verify(mockDataMigrator).migrateData()
-        inOrder.verify(mockedSerializer).serialize(modelValue)
+        assertThat(file.readText())
+            .isEqualTo(model)
     }
 
     @Test
-    fun `writes a valid mode`(forge: Forge) {
-        val modelValue = forge.anAlphabeticalString()
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes several models`(forge: Forge) {
+        val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = generateFile(fileNameToWriteTo)
+        val file = File(rootDir, fileNameToWriteTo)
         whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
 
-        // when
-        underTest.write(modelValue)
+        models.forEach {
+            underTest.write(it)
+        }
 
-        // then
-        // TODO: RUMM-135 assert also the content of the file. We will not do it now because
-        //  we will remove the obfuscation anyway.
-        assertThat(file.readText()).isNotEmpty()
+        assertThat(file.readText())
+            .isEqualTo(models.joinToString(","))
     }
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `does nothing when SecurityException was thrown while providing a file`(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         val modelValue = forge.anAlphabeticalString()
-        val securityException = SecurityException(forge.anAlphabeticalString())
+        val exception = SecurityException(forge.anAlphabeticalString())
+        doThrow(exception).whenever(mockedOrchestrator).getWritableFile(any())
 
-        doThrow(securityException).whenever(mockedOrchestrator).getWritableFile(any())
-
-        // when
         underTest.write(modelValue)
 
-        // then
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/DD_LOG: FileWriter: Couldn't access file.*")
+            assertThat(logMessages[0]).matches("E/DD_LOG: ImmediateFileWriter: .*")
         }
     }
 
@@ -143,18 +135,7 @@ internal class FileWriterTest {
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("E/DD_LOG: FileWriter: Could not write on a null file.*")
+                .matches("E/DD_LOG: ImmediateFileWriter: Could not get a valid file")
         }
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        rootDir.deleteRecursively()
-    }
-
-    private fun generateFile(fileName: String): File {
-        val file = File(rootDir, fileName)
-        file.createNewFile()
-        return file
     }
 }

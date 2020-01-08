@@ -41,6 +41,7 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
         rootView.findViewById(R.id.log_warning).setOnClickListener(this);
         rootView.findViewById(R.id.log_error).setOnClickListener(this);
         rootView.findViewById(R.id.log_critical).setOnClickListener(this);
+        rootView.findViewById(R.id.crash).setOnClickListener(this);
         return rootView;
     }
 
@@ -60,6 +61,7 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
 
         interactionsCount++;
         mLogger.addAttribute("interactions", interactionsCount);
+        int i = v.getId() -  R.id.crash;
 
         switch (v.getId()) {
             case R.id.log_warning :
@@ -73,8 +75,18 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
             case R.id.log_critical :
                 mLogger.wtf("User triggered a critical event", new UnsupportedOperationException("Oops"));
                 break;
+
+            case R.id.crash:
+                // here i is always equal to 0
+                crashIfZero(i);
+                break;
         }
 
+    }
+
+    private void crashIfZero(int i) {
+        int d = 100 / i;
+        mLogger.i("Remaining = " + d);
     }
 
     //endregion

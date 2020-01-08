@@ -14,6 +14,8 @@ internal interface LogStrategy {
 
     fun getLogWriter(): Writer<Log>
 
+    fun getSynchronousLogWriter(): Writer<Log>
+
     fun getLogReader(): Reader
 
     companion object {
