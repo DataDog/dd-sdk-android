@@ -4,7 +4,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 * Log to Datadog in JSON format natively.
 * Add `context` and extra custom attributes to each log sent.
-* Forward Java/Kotlin caught exceptions automatically.
+* Forward Java/Kotlin caught exceptions.
 * Record real client IP addresses and User-Agents.
 * Optimized network usage with automatic bulk posts.
 
