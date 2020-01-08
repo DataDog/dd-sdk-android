@@ -20,6 +20,7 @@ workflows:
             - download_test_results: 'true'
             - test_devices: Nexus6,21,en,portrait
           title: Run App Instrumentation Tests (API 21)
+      - deploy-to-bitrise-io@1.9.5: {}
   instrumented_28:
     steps:
       - script:
@@ -37,7 +38,7 @@ workflows:
             - download_test_results: 'true'
             - test_devices: Pixel2,28,en,portrait
           title: Run App Instrumentation Tests (API 28)
-
+      - deploy-to-bitrise-io@1.9.5: {}
 app:
   envs:
     - opts:
