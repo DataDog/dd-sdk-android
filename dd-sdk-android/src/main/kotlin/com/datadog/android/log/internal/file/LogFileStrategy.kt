@@ -7,65 +7,37 @@
 package com.datadog.android.log.internal.file
 
 import android.content.Context
-import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
-import com.datadog.android.core.internal.data.file.FileOrchestrator
-import com.datadog.android.core.internal.data.file.FileReader
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
-import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.core.internal.domain.BasePersistenceStrategy
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogSerializer
 import java.io.File
 
 internal class LogFileStrategy(
-    private val rootDir: File,
-    private val dataDir: File,
-    recentDelayMs: Long,
-    maxBatchSize: Long,
-    maxLogPerBatch: Int,
-    oldFileThreshold: Long,
-    maxDiskSpace: Long
-) : LogStrategy {
-
-    constructor(
-        context: Context,
-        recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
-        maxBatchSize: Long = MAX_BATCH_SIZE,
-        maxLogPerBatch: Int = MAX_LOG_PER_BATCH,
-        oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-        maxDiskSpace: Long = MAX_DISK_SPACE
-    ) :
-        this(
-            rootDir = context.filesDir,
-            dataDir = File(context.filesDir, LOGS_FOLDER),
-            recentDelayMs = recentDelayMs,
-            maxBatchSize = maxBatchSize,
-            maxLogPerBatch = maxLogPerBatch,
-            oldFileThreshold = oldFileThreshold,
-            maxDiskSpace = maxDiskSpace
-        )
-
-    private val fileOrchestrator = FileOrchestrator(
-        rootDirectory = dataDir,
-        recentDelayMs = recentDelayMs,
-        maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxLogPerBatch,
-        oldFileThreshold = oldFileThreshold,
-        maxDiskSpace = maxDiskSpace
-    )
+    context: Context,
+    recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
+    maxBatchSize: Long = MAX_BATCH_SIZE,
+    maxLogPerBatch: Int = MAX_LOG_PER_BATCH,
+    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
+    maxDiskSpace: Long = MAX_DISK_SPACE
+) : BasePersistenceStrategy<Log>(
+    File(context.filesDir, LOGS_FOLDER),
+    recentDelayMs,
+    maxBatchSize,
+    maxLogPerBatch,
+    oldFileThreshold,
+    maxDiskSpace
+) {
+    private val rootDir: File = context.filesDir
 
     private val fileWriter = ImmediateFileWriter(
         fileOrchestrator,
         LogSerializer()
     )
 
-    private val fileReader = FileReader(
-        fileOrchestrator,
-        dataDir
-    )
-
-    // region LogPersistingStrategy
+    // region LogFileStrategy
 
     override fun getSynchronousWriter(): Writer<Log> {
         return fileWriter
@@ -76,10 +48,6 @@ internal class LogFileStrategy(
             LogFileDataMigrator(rootDir),
             fileWriter
         )
-    }
-
-    override fun getReader(): Reader {
-        return fileReader
     }
 
     // endregion

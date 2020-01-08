@@ -13,6 +13,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
@@ -97,7 +98,7 @@ internal abstract class LogStrategyTest {
         Datadog.invokeMethod("stop")
     }
 
-    abstract fun getStrategy(): LogStrategy
+    abstract fun getStrategy(): PersistenceStrategy<Log>
 
     abstract fun setUp(writer: Writer<Log>, reader: Reader)
 

@@ -11,10 +11,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
-import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
@@ -69,7 +70,7 @@ internal class DatadogTest {
 
     lateinit var mockContext: Context
     @Mock
-    lateinit var mockLogStrategy: LogStrategy
+    lateinit var mockLogStrategy: PersistenceStrategy<Log>
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 

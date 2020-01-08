@@ -9,8 +9,8 @@ package com.datadog.android.log.internal.file
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
+import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.LazyHandlerThread
-import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.utils.forge.Configurator
@@ -27,7 +27,7 @@ internal class LogFileStrategyTest :
 
     // region LogStrategyTest
 
-    override fun getStrategy(): LogStrategy {
+    override fun getStrategy(): PersistenceStrategy<Log> {
         return LogFileStrategy(
             context = mockContext,
             recentDelayMs = RECENT_DELAY_MS,

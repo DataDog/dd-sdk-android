@@ -23,7 +23,7 @@ internal class UploadWorker(
     // region Worker
 
     override fun doWork(): Result {
-        val reader = Datadog.getLogStrategy().getLogReader()
+        val reader = Datadog.getLogStrategy().getReader()
         val uploader = Datadog.getLogUploader()
 
         val failedBatches = mutableListOf<Batch>()
