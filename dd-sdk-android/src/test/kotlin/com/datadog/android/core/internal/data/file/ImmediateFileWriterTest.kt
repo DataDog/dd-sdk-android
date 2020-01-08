@@ -4,7 +4,7 @@ import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi

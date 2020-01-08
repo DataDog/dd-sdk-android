@@ -10,7 +10,7 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.times
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension

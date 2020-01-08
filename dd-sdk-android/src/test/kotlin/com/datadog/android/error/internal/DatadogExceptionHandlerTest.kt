@@ -6,17 +6,19 @@
 
 package com.datadog.android.error.internal
 
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod

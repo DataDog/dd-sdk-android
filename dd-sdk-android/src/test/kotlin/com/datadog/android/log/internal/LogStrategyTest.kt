@@ -15,11 +15,11 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.asJsonArray
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi

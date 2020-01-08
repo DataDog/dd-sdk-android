@@ -10,13 +10,13 @@ import android.os.Handler
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfo
 import com.datadog.android.log.internal.system.SystemInfoProvider
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any

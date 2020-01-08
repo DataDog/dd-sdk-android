@@ -8,7 +8,7 @@ package com.datadog.android.log.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.setStaticValue

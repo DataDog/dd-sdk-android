@@ -7,8 +7,8 @@
 package com.datadog.android.log
 
 import android.util.Log
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.isNull
