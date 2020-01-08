@@ -53,7 +53,19 @@ class SampleApplication : Application() {
     {{% /tab %}}
     {{< /tabs >}}
 
-3. Send a custom log entry directly to Datadog with one of the following functions:
+3. Configure the Android Logger:
+
+    ```kotlin
+    val logger = Logger.Builder()
+        .setNetworkInfoEnabled(true)
+        .setServiceName("<SERVICE_NAME>")
+        .setLogcatLogsEnabled(true)
+        .setDatadogLogsEnabled(true)
+        .setLoggerName("<LOGGER_NAME>")
+        .build();
+    ```
+
+4. Send a custom log entry directly to Datadog with one of the following functions:
 
     ```kotlin
     logger.d("A debug message.")
@@ -75,7 +87,7 @@ class SampleApplication : Application() {
 
     **Note**: All logging methods can have a throwable attached to them.
 
-4. (Optional) - Provide a map alongside your log message to add attributes to the emitted log. Each entry of the map is added as an attribute.
+5. (Optional) - Provide a map alongside your log message to add attributes to the emitted log. Each entry of the map is added as an attribute.
 
     ```kotlin
     logger.i("onPageStarted", attributes = mapOf("http.url", url))
