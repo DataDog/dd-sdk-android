@@ -121,7 +121,7 @@ object Datadog {
 
         uploader = LogOkHttpUploader(endpoint, Datadog.clientToken, okHttpClient)
         handlerThread = LogHandlerThread(
-            logStrategy.getLogReader(),
+            logStrategy.getReader(),
             uploader,
             networkInfoProvider,
             systemBroadcastReceiver
@@ -135,7 +135,7 @@ object Datadog {
             networkInfoProvider,
             timeProvider,
             userInfoProvider,
-            logStrategy.getSynchronousLogWriter(),
+            logStrategy.getSynchronousWriter(),
             appContext
         ).register()
     }
@@ -152,7 +152,7 @@ object Datadog {
     fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
         when (strategy) {
             EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
-                logStrategy.getLogReader().dropAllBatches()
+                logStrategy.getReader().dropAllBatches()
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
                         "will now be deleted"

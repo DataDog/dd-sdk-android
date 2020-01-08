@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.asJsonArray
@@ -85,8 +86,8 @@ internal abstract class LogStrategyTest {
         Datadog.initialize(mockContext, forge.anHexadecimalString())
         val persistingStrategy = getStrategy()
 
-        testedWriter = persistingStrategy.getLogWriter()
-        testedReader = persistingStrategy.getLogReader()
+        testedWriter = persistingStrategy.getWriter()
+        testedReader = persistingStrategy.getReader()
 
         setUp(testedWriter, testedReader)
     }
@@ -135,7 +136,7 @@ internal abstract class LogStrategyTest {
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
         val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
         val attributes = forge.aMap {
-            anElementFrom(*LogStrategy.reservedAttributes) to forge.anAsciiString()
+            anElementFrom(*LogSerializer.reservedAttributes) to forge.anAsciiString()
         }.toMap()
         val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
 
@@ -337,9 +338,9 @@ internal abstract class LogStrategyTest {
         jsonObject: JsonObject,
         logs: List<Log>
     ) {
-        val message = (jsonObject[LogStrategy.TAG_MESSAGE] as JsonPrimitive).asString
-        val serviceName = (jsonObject[LogStrategy.TAG_SERVICE_NAME] as JsonPrimitive).asString
-        val status = (jsonObject[LogStrategy.TAG_STATUS] as JsonPrimitive).asString
+        val message = (jsonObject[LogSerializer.TAG_MESSAGE] as JsonPrimitive).asString
+        val serviceName = (jsonObject[LogSerializer.TAG_SERVICE_NAME] as JsonPrimitive).asString
+        val status = (jsonObject[LogSerializer.TAG_STATUS] as JsonPrimitive).asString
 
         val roughMatches = logs.filter {
             message == it.message && serviceName == it.serviceName && status == levels[it.level]
@@ -353,15 +354,15 @@ internal abstract class LogStrategyTest {
         log: Log
     ) {
         assertThat(jsonObject)
-            .hasField(LogStrategy.TAG_MESSAGE, log.message)
-            .hasField(LogStrategy.TAG_SERVICE_NAME, log.serviceName)
-            .hasField(LogStrategy.TAG_STATUS, levels[log.level])
-            .hasField(LogStrategy.TAG_LOGGER_NAME, log.loggerName)
-            .hasField(LogStrategy.TAG_THREAD_NAME, log.threadName)
+            .hasField(LogSerializer.TAG_MESSAGE, log.message)
+            .hasField(LogSerializer.TAG_SERVICE_NAME, log.serviceName)
+            .hasField(LogSerializer.TAG_STATUS, levels[log.level])
+            .hasField(LogSerializer.TAG_LOGGER_NAME, log.loggerName)
+            .hasField(LogSerializer.TAG_THREAD_NAME, log.threadName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(
-            LogStrategy.TAG_DATE,
+            LogSerializer.TAG_DATE,
             "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
 
@@ -376,23 +377,23 @@ internal abstract class LogStrategyTest {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject).apply {
-                hasField(LogStrategy.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+                hasField(LogSerializer.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
                 if (!info.carrierName.isNullOrBlank()) {
-                    hasField(LogStrategy.TAG_NETWORK_CARRIER_NAME, info.carrierName)
+                    hasField(LogSerializer.TAG_NETWORK_CARRIER_NAME, info.carrierName)
                 } else {
-                    doesNotHaveField(LogStrategy.TAG_NETWORK_CARRIER_NAME)
+                    doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
                 }
                 if (info.carrierId >= 0) {
-                    hasField(LogStrategy.TAG_NETWORK_CARRIER_ID, info.carrierId)
+                    hasField(LogSerializer.TAG_NETWORK_CARRIER_ID, info.carrierId)
                 } else {
-                    doesNotHaveField(LogStrategy.TAG_NETWORK_CARRIER_ID)
+                    doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
                 }
             }
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(LogStrategy.TAG_NETWORK_CONNECTIVITY)
-                .doesNotHaveField(LogStrategy.TAG_NETWORK_CARRIER_NAME)
-                .doesNotHaveField(LogStrategy.TAG_NETWORK_CARRIER_ID)
+                .doesNotHaveField(LogSerializer.TAG_NETWORK_CONNECTIVITY)
+                .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
+                .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
         }
     }
 
@@ -416,7 +417,7 @@ internal abstract class LogStrategyTest {
     }
 
     private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
-        val jsonTagString = (jsonObject[LogStrategy.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
+        val jsonTagString = (jsonObject[LogSerializer.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
 
         if (jsonTagString.isNullOrBlank()) {
             assertThat(log.tags)
@@ -438,14 +439,14 @@ internal abstract class LogStrategyTest {
             throwable.printStackTrace(PrintWriter(sw))
 
             assertThat(jsonObject)
-                .hasField(LogStrategy.TAG_ERROR_KIND, throwable.javaClass.simpleName)
-                .hasField(LogStrategy.TAG_ERROR_MESSAGE, throwable.message)
-                .hasField(LogStrategy.TAG_ERROR_STACK, sw.toString())
+                .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
+                .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
+                .hasField(LogSerializer.TAG_ERROR_STACK, sw.toString())
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(LogStrategy.TAG_ERROR_KIND)
-                .doesNotHaveField(LogStrategy.TAG_ERROR_MESSAGE)
-                .doesNotHaveField(LogStrategy.TAG_ERROR_STACK)
+                .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
+                .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
+                .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)
         }
     }
 

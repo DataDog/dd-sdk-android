@@ -12,49 +12,10 @@ import com.datadog.android.log.internal.domain.Log
 
 internal interface LogStrategy {
 
-    fun getLogWriter(): Writer<Log>
+    fun getWriter(): Writer<Log>
 
-    fun getSynchronousLogWriter(): Writer<Log>
+    fun getSynchronousWriter(): Writer<Log>
 
-    fun getLogReader(): Reader
+    fun getReader(): Reader
 
-    companion object {
-
-        // MAIN TAGS
-        internal const val TAG_HOST = "host"
-        internal const val TAG_MESSAGE = "message"
-        internal const val TAG_STATUS = "status"
-        internal const val TAG_SERVICE_NAME = "service"
-        internal const val TAG_SOURCE = "source"
-        internal const val TAG_DATE = "date"
-
-        // COMMON TAGS
-        internal const val TAG_DATADOG_TAGS = "ddtags"
-
-        // ERROR TAGS
-        internal const val TAG_ERROR_KIND = "error.kind"
-        internal const val TAG_ERROR_MESSAGE = "error.message"
-        internal const val TAG_ERROR_STACK = "error.stack"
-
-        // THREAD RELATED TAGS
-        internal const val TAG_LOGGER_NAME = "logger.name"
-        internal const val TAG_THREAD_NAME = "logger.thread_name"
-
-        // ANDROID SPECIFIC TAGS
-        internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
-        internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
-        internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
-
-        internal val reservedAttributes = arrayOf(
-            TAG_HOST,
-            TAG_MESSAGE,
-            TAG_STATUS,
-            TAG_SERVICE_NAME,
-            TAG_SOURCE,
-            TAG_ERROR_KIND,
-            TAG_ERROR_MESSAGE,
-            TAG_ERROR_STACK,
-            TAG_DATADOG_TAGS
-        )
-    }
 }

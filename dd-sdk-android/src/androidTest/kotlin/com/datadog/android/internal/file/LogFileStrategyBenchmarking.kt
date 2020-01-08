@@ -39,7 +39,7 @@ internal class LogFileStrategyBenchmarking {
         val context = InstrumentationRegistry.getInstrumentation().context
         Datadog.initialize(context, "NO_TOKEN", "")
         Datadog.fieldValue<HandlerThread>("handlerThread").quit()
-        logFileWriter = Datadog.getLogStrategy().getLogWriter() as DeferredWriter<Log>
+        logFileWriter = Datadog.getLogStrategy().getWriter() as DeferredWriter<Log>
         logFileWriter.quit() // we don't want this thread to run
         val dummyHandler = Handler(Looper.getMainLooper()) // this will never be used
         logFileWriter.deferredHandler =
@@ -48,7 +48,7 @@ internal class LogFileStrategyBenchmarking {
                     r.run()
                 }
             }
-        logFileReader = Datadog.getLogStrategy().getLogReader() as FileReader
+        logFileReader = Datadog.getLogStrategy().getReader() as FileReader
     }
 
     @After

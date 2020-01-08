@@ -184,7 +184,7 @@ internal class DatadogTest {
     fun `drop logs on setEndpointUrl with Discard strategy`(forge: Forge) {
         val mockReader: Reader = mock()
         val mockUploader: LogUploader = mock()
-        whenever(mockLogStrategy.getLogReader()) doReturn mockReader
+        whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
@@ -200,7 +200,7 @@ internal class DatadogTest {
     fun `keep logs on setEndpointUrl with Update strategy`(forge: Forge) {
         val mockReader: Reader = mock()
         val mockUploader: LogUploader = mock()
-        whenever(mockLogStrategy.getLogReader()) doReturn mockReader
+        whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)

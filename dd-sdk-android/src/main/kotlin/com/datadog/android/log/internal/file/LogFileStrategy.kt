@@ -67,18 +67,18 @@ internal class LogFileStrategy(
 
     // region LogPersistingStrategy
 
-    override fun getSynchronousLogWriter(): Writer<Log> {
+    override fun getSynchronousWriter(): Writer<Log> {
         return fileWriter
     }
 
-    override fun getLogWriter(): Writer<Log> {
+    override fun getWriter(): Writer<Log> {
         return DeferredWriter(
             LogFileDataMigrator(rootDir),
             fileWriter
         )
     }
 
-    override fun getLogReader(): Reader {
+    override fun getReader(): Reader {
         return fileReader
     }
 
