@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

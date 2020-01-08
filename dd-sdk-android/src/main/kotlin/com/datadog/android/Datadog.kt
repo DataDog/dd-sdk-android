@@ -18,7 +18,7 @@ import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.file.LogFileStrategy
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
@@ -101,7 +101,8 @@ object Datadog {
         }
         contextRef = WeakReference(appContext)
         this.clientToken = clientToken
-        logStrategy = LogFileStrategy(appContext)
+        logStrategy =
+            LogFileStrategy(appContext)
 
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)

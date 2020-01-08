@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.internal.utils.fieldValue
 import com.datadog.android.internal.utils.randomLog
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.file.LogFileStrategy
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.After

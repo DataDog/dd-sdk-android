@@ -4,15 +4,13 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.file
+package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.BasePersistenceStrategy
-import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogSerializer
 import java.io.File
 
 internal class LogFileStrategy(
@@ -23,7 +21,9 @@ internal class LogFileStrategy(
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE
 ) : BasePersistenceStrategy<Log>(
-    File(context.filesDir, LOGS_FOLDER),
+    File(context.filesDir,
+        LOGS_FOLDER
+    ),
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,
