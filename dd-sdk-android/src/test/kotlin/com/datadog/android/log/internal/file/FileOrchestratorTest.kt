@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.mock

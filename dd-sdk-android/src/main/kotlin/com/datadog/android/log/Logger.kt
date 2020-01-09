@@ -242,7 +242,7 @@ internal constructor(private val handler: LogHandler) {
         private fun buildDatadogHandler(): DatadogLogHandler {
             val netInfoProvider = if (networkInfoEnabled) Datadog.getNetworkInfoProvider() else null
             return DatadogLogHandler(
-                writer = Datadog.getLogStrategy().getLogWriter(),
+                writer = Datadog.getLogStrategy().getWriter(),
                 serviceName = serviceName,
                 loggerName = loggerName,
                 networkInfoProvider = netInfoProvider,

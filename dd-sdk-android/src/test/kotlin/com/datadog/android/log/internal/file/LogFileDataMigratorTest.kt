@@ -1,5 +1,7 @@
 package com.datadog.android.log.internal.file
 
+import com.datadog.android.log.internal.domain.LogFileDataMigrator
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

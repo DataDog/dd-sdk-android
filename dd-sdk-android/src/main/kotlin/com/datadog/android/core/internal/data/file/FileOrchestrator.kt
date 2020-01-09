@@ -68,10 +68,10 @@ internal class FileOrchestrator(
                 previousFileLogCount = lastKnownFileCount + 1
                 lastFile
             } else {
-                newLogFile()
+                newFile()
             }
         } else {
-            newLogFile()
+            newFile()
         }
     }
 
@@ -108,7 +108,7 @@ internal class FileOrchestrator(
 
     // region Internal
 
-    private fun newLogFile(): File {
+    private fun newFile(): File {
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDirectory, newFileName)
         previousFile = newFile

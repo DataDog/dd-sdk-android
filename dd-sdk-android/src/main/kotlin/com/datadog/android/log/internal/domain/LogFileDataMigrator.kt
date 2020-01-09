@@ -1,4 +1,4 @@
-package com.datadog.android.log.internal.file
+package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.internal.data.DataMigrator
 import java.io.File

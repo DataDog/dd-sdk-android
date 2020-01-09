@@ -12,7 +12,8 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Batch
-import com.datadog.android.log.internal.LogStrategy
+import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.utils.forge.Configurator
@@ -52,7 +53,7 @@ internal class UploadWorkerTest {
     @Mock
     lateinit var mockContext: Context
     @Mock
-    lateinit var mockLogStrategy: LogStrategy
+    lateinit var mockLogStrategy: PersistenceStrategy<Log>
     @Mock
     lateinit var mockLogReader: Reader
     @Mock
@@ -63,7 +64,7 @@ internal class UploadWorkerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockLogStrategy.getLogReader()) doReturn mockLogReader
+        whenever(mockLogStrategy.getReader()) doReturn mockLogReader
 
         mockContext = mockContext()
         Datadog.initialize(mockContext, "<CLIENT_TOKEN>")

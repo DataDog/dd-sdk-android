@@ -8,7 +8,7 @@ package com.datadog.android
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
+import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
@@ -17,8 +17,8 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogHandlerThread
-import com.datadog.android.log.internal.LogStrategy
-import com.datadog.android.log.internal.file.LogFileStrategy
+import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.net.LogOkHttpUploader
@@ -63,7 +63,7 @@ object Datadog {
 
     private var initialized: Boolean = false
     private lateinit var clientToken: String
-    private lateinit var logStrategy: LogStrategy
+    private lateinit var logStrategy: PersistenceStrategy<Log>
     private lateinit var networkInfoProvider: NetworkInfoProvider
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
@@ -101,7 +101,8 @@ object Datadog {
         }
         contextRef = WeakReference(appContext)
         this.clientToken = clientToken
-        logStrategy = LogFileStrategy(appContext)
+        logStrategy =
+            LogFileStrategy(appContext)
 
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
@@ -121,7 +122,7 @@ object Datadog {
 
         uploader = LogOkHttpUploader(endpoint, Datadog.clientToken, okHttpClient)
         handlerThread = LogHandlerThread(
-            logStrategy.getLogReader(),
+            logStrategy.getReader(),
             uploader,
             networkInfoProvider,
             systemBroadcastReceiver
@@ -135,7 +136,7 @@ object Datadog {
             networkInfoProvider,
             timeProvider,
             userInfoProvider,
-            logStrategy.getSynchronousLogWriter(),
+            logStrategy.getSynchronousWriter(),
             appContext
         ).register()
     }
@@ -152,7 +153,7 @@ object Datadog {
     fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
         when (strategy) {
             EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
-                logStrategy.getLogReader().dropAllBatches()
+                logStrategy.getReader().dropAllBatches()
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
                         "will now be deleted"
@@ -211,7 +212,7 @@ object Datadog {
 
     // region Internal Provider
 
-    internal fun getLogStrategy(): LogStrategy {
+    internal fun getLogStrategy(): PersistenceStrategy<Log> {
         checkInitialized()
         return logStrategy
     }
