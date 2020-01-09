@@ -16,7 +16,7 @@ internal abstract class BasePersistenceStrategy<T : Any>(
     dataDirectory: File,
     recentDelayMs: Long,
     maxBatchSize: Long,
-    maxLogPerBatch: Int,
+    maxItemsPerBatch: Int,
     oldFileThreshold: Long,
     maxDiskSpace: Long
 ) : PersistenceStrategy<T> {
@@ -25,7 +25,7 @@ internal abstract class BasePersistenceStrategy<T : Any>(
         rootDirectory = dataDirectory,
         recentDelayMs = recentDelayMs,
         maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxLogPerBatch,
+        maxLogPerBatch = maxItemsPerBatch,
         oldFileThreshold = oldFileThreshold,
         maxDiskSpace = maxDiskSpace
     )

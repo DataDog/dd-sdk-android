@@ -78,7 +78,7 @@ internal class FileReader(
             sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
             ByteArray(0)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
+            sdkLogger.e("$TAG: Couldn't read messages from file ${file?.path}", e)
             ByteArray(0)
         } catch (e: SecurityException) {
             sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
