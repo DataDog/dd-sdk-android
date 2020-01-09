@@ -30,6 +30,7 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.devLogger
+import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 import okhttp3.ConnectionSpec
@@ -92,7 +93,13 @@ object Datadog {
         clientToken: String,
         endpointUrl: String? = null
     ) {
-        check(!initialized) { "Datadog has already been initialized." }
+        if (initialized) {
+            devLogger.w(
+                "The Datadog library has already been initialized.",
+                IllegalStateException("The Datadog library has already been initialized.")
+            )
+            return
+        }
 
         val appContext = context.applicationContext
         packageName = context.packageName
