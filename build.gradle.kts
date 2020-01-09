@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
+import com.datadog.gradle.plugin.gitdiff.gitDiffTask
 
 buildscript {
     repositories {
@@ -24,6 +24,10 @@ buildscript {
     }
 }
 
+plugins {
+    id("gitDiffConditionalPlugin")
+}
+
 allprojects {
     repositories {
         google()
@@ -35,6 +39,34 @@ allprojects {
 
 task<Delete>("clean") {
     delete(rootProject.buildDir)
+}
+
+gitDiffTask("unitTestAll") {
+    dependsOnDiff(
+        "dd-sdk-android/.*",
+        ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android:testReleaseUnitTest",
+        ":sample:java:assembleDebug",
+        ":sample:kotlin:assembleDebug"
+    )
+    dependsOnDiff(
+        "dd-sdk-android-timber/.*",
+        ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest",
+        ":sample:kotlin-timber:assembleDebug"
+    )
+    dependsOnDiff(
+        "tools/.*",
+        ":tools:detekt:test",
+        ":tools:unit:testDebugUnitTest",
+        ":tools:unit:testReleaseUnitTest"
+    )
+    dependsOnDiff(
+        "sample/.*",
+        ":sample:java:assembleDebug",
+        ":sample:kotlin:assembleDebug",
+        ":sample:kotlin-timber:assembleDebug"
+    )
 }
 
 tasks.register("checkAll") {
@@ -64,18 +96,6 @@ tasks.register("detektAll") {
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
-    )
-}
-
-tasks.register("unitTestAll") {
-    dependsOn(
-        ":dd-sdk-android:testDebugUnitTest",
-        ":dd-sdk-android:testReleaseUnitTest",
-        ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":tools:detekt:test",
-        ":tools:unit:testDebugUnitTest",
-        ":tools:unit:testReleaseUnitTest"
     )
 }
 
