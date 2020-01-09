@@ -15,7 +15,7 @@ import com.datadog.android.core.internal.data.file.FileReader
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import java.io.File
 
-internal abstract class BasePersistenceStrategy<T : Any>(
+internal abstract class FilePersistenceStrategy<T : Any>(
     dataDirectory: File,
     recentDelayMs: Long,
     maxBatchSize: Long,

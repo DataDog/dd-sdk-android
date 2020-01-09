@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.BasePersistenceStrategy
+import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import java.io.File
 
 internal class LogFileStrategy(
@@ -17,7 +17,7 @@ internal class LogFileStrategy(
     maxLogPerBatch: Int = MAX_LOG_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE
-) : BasePersistenceStrategy<Log>(
+) : FilePersistenceStrategy<Log>(
     File(
         context.filesDir,
         LOGS_FOLDER
