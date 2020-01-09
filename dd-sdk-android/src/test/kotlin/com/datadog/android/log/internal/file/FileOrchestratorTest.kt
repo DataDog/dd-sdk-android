@@ -59,11 +59,11 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `writable file will returns null if the rootDirectory is a File`(
+    fun `getWritableFile will returns null if the rootDirectory is a File`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
         // given
-        val invalidRootDir = File("testPathName")
+        val invalidRootDir = File(tempDir, "testPathName")
         invalidRootDir.createNewFile()
 
         testedOrchestrator =
@@ -81,9 +81,9 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `readable file will return null if the rootDirectory is a File`() {
+    fun `getReadableFile will return null if the rootDirectory is a File`() {
         // given
-        val invalidRootDir = File("testPathName")
+        val invalidRootDir = File(tempDir, "testPathName")
         invalidRootDir.createNewFile()
 
         testedOrchestrator =
@@ -101,7 +101,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `writable file returns null if the rootDirectory can't be created`(
+    fun `getWritableFile returns null if the rootDirectory can't be created`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
         // given
@@ -123,7 +123,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `readable file returns null the rootDirectory can't be created`() {
+    fun `getReadableFile returns null the rootDirectory can't be created`() {
         // given
         val corruptedRootDir = mock<File>()
         whenever(corruptedRootDir.mkdirs()).thenReturn(false)
@@ -257,7 +257,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `write discards oldest files if too many space is taken on disk`(
+    fun `getWritableFile discards oldest files if too many space is taken on disk`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int,
         forge: Forge
     ) {
@@ -281,7 +281,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `read writeable file`() {
+    fun `getReadableFile file`() {
         val earlier = System.currentTimeMillis() - RECENT_DELAY_MS - RECENT_DELAY_MS
         val writtenFile = File(tempLogsDir, earlier.toString())
         writtenFile.createNewFile()
@@ -293,7 +293,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `read writeable file with excludes`() {
+    fun `getReadableFile with excludes returns null`() {
         val earlier = System.currentTimeMillis() - RECENT_DELAY_MS - RECENT_DELAY_MS
         val writtenFile = File(tempLogsDir, earlier.toString())
         writtenFile.createNewFile()
@@ -305,7 +305,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `read writeable file ignores recent`(forge: Forge) {
+    fun `getReadableFile ignores recent`(forge: Forge) {
         val earlier = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
         val writtenFile = File(tempLogsDir, earlier.toString())
         writtenFile.createNewFile()
@@ -318,7 +318,7 @@ internal class FileOrchestratorTest {
     }
 
     @Test
-    fun `read discards obsolete files`(forge: Forge) {
+    fun `getReadableFile discards obsolete files`(forge: Forge) {
         val earlier = System.currentTimeMillis() - OLD_FILE_THRESHOLD - RECENT_DELAY_MS
         val writtenFile = File(tempLogsDir, earlier.toString())
         writtenFile.createNewFile()

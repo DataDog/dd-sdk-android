@@ -16,6 +16,11 @@ internal interface Reader {
 
     fun readNextBatch(): Batch?
 
+    /**
+     * Marks that a batch couldn't be set and should be retried later.
+     */
+    fun releaseBatch(batchId: String)
+
     fun dropBatch(batchId: String)
 
     fun dropAllBatches()

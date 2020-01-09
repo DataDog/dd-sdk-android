@@ -89,6 +89,7 @@ internal class UploadWorkerTest {
         val result = testedWorker.doWork()
 
         verify(mockLogReader).dropBatch(batch.id)
+        verify(mockLogReader, never()).releaseBatch(batch.id)
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -108,8 +109,9 @@ internal class UploadWorkerTest {
         val result = testedWorker.doWork()
 
         verify(mockLogReader, never()).dropBatch(batch.id)
+        verify(mockLogReader).releaseBatch(batch.id)
         assertThat(result)
-            .isEqualTo(ListenableWorker.Result.failure())
+            .isEqualTo(ListenableWorker.Result.success())
     }
 
     @Test
@@ -129,6 +131,7 @@ internal class UploadWorkerTest {
 
         batches.forEach {
             verify(mockLogReader).dropBatch(it.id)
+            verify(mockLogReader, never()).releaseBatch(it.id)
         }
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -153,8 +156,16 @@ internal class UploadWorkerTest {
 
         val result = testedWorker.doWork()
 
-        verify(mockLogReader, never()).dropBatch(any())
+        batches.forEach {
+            if (it == firstBatch) {
+                verify(mockLogReader, never()).dropBatch(it.id)
+                verify(mockLogReader).releaseBatch(it.id)
+            } else {
+                verify(mockLogReader).dropBatch(it.id)
+                verify(mockLogReader, never()).releaseBatch(it.id)
+            }
+        }
         assertThat(result)
-            .isEqualTo(ListenableWorker.Result.failure())
+            .isEqualTo(ListenableWorker.Result.success())
     }
 }

@@ -19,24 +19,14 @@ internal class FileReader(
     private val dataDirectory: File
 ) : Reader {
 
+    private val readFiles: MutableSet<String> = mutableSetOf()
     private val sentBatches: MutableSet<String> = mutableSetOf()
 
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        var file: File? = null
-        val data = try {
-            file = fileOrchestrator.getReadableFile(sentBatches) ?: return null
-            file.readBytes(withPrefix = '[', withSuffix = ']')
-        } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
-            ByteArray(0)
-        } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
-            ByteArray(0)
-        } catch (e: SecurityException) {
-            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
-            ByteArray(0)
+        val (file, data) = synchronized(readFiles) {
+            readNextFile()
         }
 
         return if (file == null) {
@@ -44,13 +34,22 @@ internal class FileReader(
         } else {
             Batch(
                 file.name,
-                data)
+                data
+            )
+        }
+    }
+
+    override fun releaseBatch(batchId: String) {
+        sdkLogger.i("$TAG: releaseBatch $batchId")
+        synchronized(readFiles) {
+            readFiles.remove(batchId)
         }
     }
 
     override fun dropBatch(batchId: String) {
         sdkLogger.i("$TAG: dropBatch $batchId")
         sentBatches.add(batchId)
+        readFiles.remove(batchId)
         val fileToDelete = File(dataDirectory, batchId)
 
         deleteFile(fileToDelete)
@@ -64,6 +63,31 @@ internal class FileReader(
     // endregion
 
     // region Internal
+
+    private fun readNextFile(): Pair<File?, ByteArray> {
+        var file: File? = null
+        val data = try {
+            file = fileOrchestrator.getReadableFile(sentBatches.union(readFiles))
+            if (file == null) {
+                ByteArray(0)
+            } else {
+                readFiles.add(file.name)
+                file.readBytes(withPrefix = '[', withSuffix = ']')
+            }
+        } catch (e: FileNotFoundException) {
+            sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
+            ByteArray(0)
+        } catch (e: IOException) {
+            sdkLogger.e("$TAG: Couldn't read logs from file ${file?.path}", e)
+            ByteArray(0)
+        } catch (e: SecurityException) {
+            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
+            ByteArray(0)
+        }
+
+        return file to data
+    }
+
     private fun deleteFile(fileToDelete: File) {
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {

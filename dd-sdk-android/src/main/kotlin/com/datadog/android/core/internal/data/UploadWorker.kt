@@ -26,17 +26,24 @@ internal class UploadWorker(
         val reader = Datadog.getLogStrategy().getLogReader()
         val uploader = Datadog.getLogUploader()
 
-        var failed = false
+        val failedBatches = mutableListOf<Batch>()
         var batch: Batch?
         do {
             batch = reader.readNextBatch()
             if (batch != null) {
-                val success = consumeBatch(batch, uploader)
-                if (success) reader.dropBatch(batch.id) else failed = true
+                if (consumeBatch(batch, uploader)) {
+                    reader.dropBatch(batch.id)
+                } else {
+                    failedBatches.add(batch)
+                }
             }
-        } while (batch != null && !failed)
+        } while (batch != null)
 
-        return if (failed) Result.failure() else Result.success()
+        failedBatches.forEach {
+            reader.releaseBatch(it.id)
+        }
+
+        return Result.success()
     }
 
     // endregion
