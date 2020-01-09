@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge

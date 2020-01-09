@@ -2,7 +2,7 @@ package com.datadog.android.core.internal.data.file
 
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -12,6 +12,8 @@ import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -38,7 +40,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 @MockitoSettings()
 internal class FileReaderTest {
 
-    lateinit var underTest: FileReader
+    lateinit var testedReader: FileReader
+
     @TempDir
     lateinit var rootDir: File
 
@@ -47,7 +50,60 @@ internal class FileReaderTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest = FileReader(mockOrchestrator, rootDir)
+        testedReader = FileReader(mockOrchestrator, rootDir)
+    }
+
+    @Test
+    fun `doesn't ask for the same batch twice in a row`(
+        forge: Forge
+    ) {
+        val fileName = forge.anAlphabeticalString()
+        val file = generateFile(fileName)
+        val data = forge.anAlphabeticalString()
+        file.writeText(data)
+        whenever(mockOrchestrator.getReadableFile(any())) doReturn null
+        whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
+
+        val firstBatch = testedReader.readNextBatch()
+        val secondBatch = testedReader.readNextBatch()
+        checkNotNull(firstBatch)
+
+        assertThat(String(firstBatch.data)).isEqualTo("[$data]")
+        assertThat(secondBatch).isNull()
+        inOrder(mockOrchestrator) {
+            verify(mockOrchestrator).getReadableFile(emptySet())
+            verify(mockOrchestrator).getReadableFile(setOf(firstBatch.id))
+            verifyNoMoreInteractions(mockOrchestrator)
+        }
+    }
+
+    @Test
+    fun `reads a batch that was previously read then released`(
+        forge: Forge
+    ) {
+        val fileName = forge.anAlphabeticalString()
+        val file = generateFile(fileName)
+        val data = forge.anAlphabeticalString()
+        file.writeText(data)
+        whenever(mockOrchestrator.getReadableFile(any())) doReturn null
+        whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
+
+        val firstBatch = testedReader.readNextBatch()
+        val secondBatch = testedReader.readNextBatch()
+        checkNotNull(firstBatch)
+        testedReader.releaseBatch(firstBatch.id)
+        val thirdBatch = testedReader.readNextBatch()
+        checkNotNull(thirdBatch)
+
+        assertThat(String(firstBatch.data)).isEqualTo("[$data]")
+        assertThat(secondBatch).isNull()
+        assertThat(String(thirdBatch.data)).isEqualTo("[$data]")
+        inOrder(mockOrchestrator) {
+            verify(mockOrchestrator).getReadableFile(emptySet())
+            verify(mockOrchestrator).getReadableFile(setOf(firstBatch.id))
+            verify(mockOrchestrator).getReadableFile(emptySet())
+            verifyNoMoreInteractions(mockOrchestrator)
+        }
     }
 
     @Test
@@ -63,10 +119,11 @@ internal class FileReaderTest {
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
 
         // when
-        val nextBatch = underTest.readNextBatch()
+        val nextBatch = testedReader.readNextBatch()
+        checkNotNull(nextBatch)
 
         // then
-        val persistedData = String(nextBatch?.data ?: ByteArray(0))
+        val persistedData = String(nextBatch.data)
         assertThat(persistedData).isEqualTo("[$data]")
     }
 
@@ -76,7 +133,7 @@ internal class FileReaderTest {
         whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
 
         // when
-        val nextBatch = underTest.readNextBatch()
+        val nextBatch = testedReader.readNextBatch()
 
         // then
         assertThat(nextBatch).isNull()
@@ -88,14 +145,14 @@ internal class FileReaderTest {
         whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
 
         // when
-        val nextBatch = underTest.readNextBatch()
+        val nextBatch = testedReader.readNextBatch()
 
         // then
         assertThat(nextBatch).isNull()
     }
 
     @Test
-    fun `if when orchestrator throws SecurityException will return a null Batch`(
+    fun `returns null when orchestrator throws SecurityException`(
         @SystemOutStream systemOutStream: ByteArrayOutputStream,
         forge: Forge
     ) {
@@ -104,7 +161,7 @@ internal class FileReaderTest {
         doThrow(exception).whenever(mockOrchestrator).getReadableFile(any())
 
         // when
-        val nextBatch = underTest.readNextBatch()
+        val nextBatch = testedReader.readNextBatch()
 
         // then
         assertThat(nextBatch).isNull()
@@ -124,10 +181,10 @@ internal class FileReaderTest {
         generateFile(fileName)
 
         // when
-        underTest.dropBatch(fileName)
+        testedReader.dropBatch(fileName)
 
         // then
-        val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
@@ -147,10 +204,10 @@ internal class FileReaderTest {
         val notExistingFile = File(rootDir, fileName)
 
         // when
-        underTest.dropBatch(fileName)
+        testedReader.dropBatch(fileName)
 
         // then
-        val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
@@ -173,10 +230,10 @@ internal class FileReaderTest {
         whenever(mockOrchestrator.getAllFiles()).thenReturn(arrayOf(file1, file2))
 
         // when
-        underTest.dropAllBatches()
+        testedReader.dropAllBatches()
 
         // then
-        val sentBatches = underTest.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).isEmpty()
         if (BuildConfig.DEBUG) {

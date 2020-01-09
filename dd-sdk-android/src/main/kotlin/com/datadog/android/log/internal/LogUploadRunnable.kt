@@ -71,6 +71,8 @@ internal class LogUploadRunnable(
         val status = logUploader.upload(batch.data)
         if (status in dropableBatchStatus) {
             reader.dropBatch(batchId)
+        } else {
+            reader.releaseBatch(batchId)
         }
         currentDelayInterval = decreaseInterval()
         handler.postDelayed(this, currentDelayInterval)

@@ -10,13 +10,13 @@ import android.os.Handler
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfo
 import com.datadog.android.log.internal.system.SystemInfoProvider
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
@@ -99,6 +99,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader, never()).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -121,6 +122,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader, never()).upload(anyOrNull())
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -144,6 +146,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader, never()).upload(anyOrNull())
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -164,6 +167,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -175,6 +179,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(anyOrNull())
+        verify(mockReader, never()).releaseBatch(anyOrNull())
         verifyZeroInteractions(mockLogUploader)
         verify(mockHandler).postDelayed(testedRunnable, LogUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
@@ -192,6 +197,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -204,6 +210,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(batch.id)
+        verify(mockReader).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -221,6 +228,7 @@ internal class LogUploadRunnableTest {
         }
         verify(mockLogUploader, times(runCount)).upload(batch.data)
         verify(mockReader, never()).dropBatch(batch.id)
+        verify(mockReader, times(runCount)).releaseBatch(batch.id)
         verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
@@ -232,6 +240,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -244,6 +253,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -256,6 +266,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader, never()).dropBatch(batch.id)
+        verify(mockReader).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }
@@ -274,6 +285,7 @@ internal class LogUploadRunnableTest {
 
         verify(mockLogUploader, times(runCount)).upload(batch.data)
         verify(mockReader, never()).dropBatch(batch.id)
+        verify(mockReader, times(runCount)).releaseBatch(batch.id)
         verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
     }
 
@@ -285,6 +297,7 @@ internal class LogUploadRunnableTest {
         testedRunnable.run()
 
         verify(mockReader).dropBatch(batch.id)
+        verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockLogUploader).upload(batch.data)
         verify(mockHandler).postDelayed(same(testedRunnable), any())
     }

@@ -14,6 +14,7 @@ object Dependencies {
         const val AndroidToolsPlugin = "3.5.3"
         const val Gson = "2.8.6"
         const val OkHttp = "4.2.2"
+        const val JetpackWorkManager = "2.2.0"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
@@ -26,7 +27,7 @@ object Dependencies {
         const val Elmyr = "1.0.0-beta3"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.2.0"
-        const val AndroidBenchmark = "1.0.0"
+        const val JetpackBenchmark = "1.0.0"
 
         // Tools
         const val Detekt = "1.2.1"
@@ -59,9 +60,11 @@ object Dependencies {
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
 
         val JetpackBenchmark = arrayOf(
-            "androidx.benchmark:benchmark-junit4:${Versions.AndroidBenchmark}",
+            "androidx.benchmark:benchmark-junit4:${Versions.JetpackBenchmark}",
             "androidx.test.ext:junit:1.1.1"
         )
+
+        val JetpackWorkManager = "androidx.work:work-runtime:${Versions.JetpackWorkManager}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -124,7 +127,7 @@ object Dependencies {
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
         const val AndroidBenchmark =
-            "androidx.benchmark:benchmark-gradle-plugin:${Versions.AndroidBenchmark}"
+            "androidx.benchmark:benchmark-gradle-plugin:${Versions.JetpackBenchmark}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
         const val Bintray = "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.Bintray}"
     }

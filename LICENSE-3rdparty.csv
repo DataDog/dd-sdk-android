@@ -1,5 +1,13 @@
 Component,Origin,License,Copyright
+import,androidx.arch.core,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.collection,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.core,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.room,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.sqlite,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
+import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
 import,com.squareup.okhttp3,Apache-2.0,"Copyright 2019 Square, Inc"
 import,com.squareup.okio,Apache-2.0,"Copyright 2013 Square, Inc"
 import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors

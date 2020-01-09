@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.forge
+package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.domain.Batch
 import fr.xgouchet.elmyr.Forge

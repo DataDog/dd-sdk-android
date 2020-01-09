@@ -10,10 +10,10 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.threading.LazyHandlerThread
-import com.datadog.android.log.forge.Configurator
 import com.datadog.android.log.internal.LogStrategy
 import com.datadog.android.log.internal.LogStrategyTest
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

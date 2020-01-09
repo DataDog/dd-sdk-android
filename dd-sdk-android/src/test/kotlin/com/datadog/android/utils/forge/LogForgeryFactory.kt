@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.forge
+package com.datadog.android.utils.forge
 
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.domain.Log

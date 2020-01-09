@@ -6,43 +6,43 @@
 
 package com.datadog.android.error.internal
 
+import android.content.Context
 import android.util.Log as AndroidLog
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
+import com.datadog.android.core.internal.data.UploadWorker
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
     private val networkInfoProvider: NetworkInfoProvider?,
     private val timeProvider: TimeProvider,
     private val userInfoProvider: UserInfoProvider,
-    private val writer: Writer<Log>
+    private val writer: Writer<Log>,
+    appContext: Context?
 ) :
     Thread.UncaughtExceptionHandler {
 
+    private val contextRef = WeakReference(appContext)
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
 
     // region Thread.UncaughtExceptionHandler
 
     override fun uncaughtException(t: Thread, e: Throwable) {
+        // write the log immediately
+        writer.write(createLog(t, e))
 
-        val log = Log(
-            serviceName = Logger.DEFAULT_SERVICE_NAME,
-            level = AndroidLog.ERROR,
-            loggerName = LOGGER_NAME,
-            message = MESSAGE,
-            threadName = t.name,
-            throwable = e,
-            userInfo = userInfoProvider.getUserInfo(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
-            timestamp = timeProvider.getServerTimestamp(),
-            attributes = emptyMap(),
-            tags = emptyList()
-        )
-        writer.write(log)
+        // trigger a task to send the logs ASAP
+        contextRef.get()?.let { triggerWorkManagerTask(it) }
 
+        // Always do this one last; this will shut down the VM
         previousHandler?.uncaughtException(t, e)
     }
 
@@ -53,6 +53,37 @@ internal class DatadogExceptionHandler(
     fun register() {
         previousHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(this)
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun createLog(thread: Thread, throwable: Throwable): Log {
+        return Log(
+            serviceName = Logger.DEFAULT_SERVICE_NAME,
+            level = AndroidLog.ERROR,
+            loggerName = LOGGER_NAME,
+            message = MESSAGE,
+            threadName = thread.name,
+            throwable = throwable,
+            userInfo = userInfoProvider.getUserInfo(),
+            networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
+            timestamp = timeProvider.getServerTimestamp(),
+            attributes = emptyMap(),
+            tags = emptyList()
+        )
+    }
+
+    private fun triggerWorkManagerTask(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueue(uploadWorkRequest)
     }
 
     // endregion

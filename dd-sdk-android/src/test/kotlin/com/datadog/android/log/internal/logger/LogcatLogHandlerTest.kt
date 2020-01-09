@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.log.forge.Configurator
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.SystemErrorStream
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension

@@ -135,7 +135,8 @@ object Datadog {
             networkInfoProvider,
             timeProvider,
             userInfoProvider,
-            logStrategy.getSynchronousLogWriter()
+            logStrategy.getSynchronousLogWriter(),
+            appContext
         ).register()
     }
 
@@ -213,6 +214,11 @@ object Datadog {
     internal fun getLogStrategy(): LogStrategy {
         checkInitialized()
         return logStrategy
+    }
+
+    internal fun getLogUploader(): LogUploader {
+        checkInitialized()
+        return uploader
     }
 
     internal fun getNetworkInfoProvider(): NetworkInfoProvider {
