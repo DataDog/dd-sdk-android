@@ -45,6 +45,8 @@ dependencies {
     implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
 
     testImplementation("junit:junit:4.12")
+    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
+    testImplementation("net.wuerl.kotlin:assertj-core-kotlin:0.2.1")
 }
 
 gradlePlugin {
@@ -52,6 +54,10 @@ gradlePlugin {
         register("thirdPartyLicences") {
             id = "thirdPartyLicences" // the alias
             implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
+        }
+        register("gitDiffConditionalPlugin") {
+            id = "gitDiffConditionalPlugin" // the alias
+            implementationClass = "com.datadog.gradle.plugin.gitdiff.GitConditionalDependencyPlugin"
         }
     }
 }
