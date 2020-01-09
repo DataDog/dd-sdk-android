@@ -6,10 +6,13 @@
 
 package com.datadog.android.core.internal.domain
 
+import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import java.io.File
 
 internal abstract class BasePersistenceStrategy<T : Any>(
@@ -18,7 +21,9 @@ internal abstract class BasePersistenceStrategy<T : Any>(
     maxBatchSize: Long,
     maxItemsPerBatch: Int,
     oldFileThreshold: Long,
-    maxDiskSpace: Long
+    maxDiskSpace: Long,
+    private val dataMigrator: DataMigrator,
+    serializer: Serializer<T>
 ) : PersistenceStrategy<T> {
 
     val fileOrchestrator = FileOrchestrator(
@@ -37,9 +42,21 @@ internal abstract class BasePersistenceStrategy<T : Any>(
 
     // region Strategy methods
 
-    abstract override fun getWriter(): Writer<T>
+    private val fileWriter = ImmediateFileWriter(
+        fileOrchestrator,
+        serializer
+    )
 
-    abstract override fun getSynchronousWriter(): Writer<T>
+    override fun getSynchronousWriter(): Writer<T> {
+        return fileWriter
+    }
+
+    override fun getWriter(): Writer<T> {
+        return DeferredWriter(
+            dataMigrator,
+            fileWriter
+        )
+    }
 
     override fun getReader(): Reader {
         return fileReader
