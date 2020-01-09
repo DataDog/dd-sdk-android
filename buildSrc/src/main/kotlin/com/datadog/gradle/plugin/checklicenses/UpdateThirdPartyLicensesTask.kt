@@ -4,15 +4,17 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 
 open class UpdateThirdPartyLicensesTask : DefaultTask() {
 
-    internal var extension: ThirdPartyLicensesExtension = ThirdPartyLicensesExtension()
-    private val provider: DependenciesLicenseProvider = DependenciesLicenseProvider()
+    internal var extension: ThirdPartyLicensesExtension =
+        ThirdPartyLicensesExtension()
+    private val provider: DependenciesLicenseProvider =
+        DependenciesLicenseProvider()
 
     init {
         group = "datadog"

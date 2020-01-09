@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 import java.io.File
 import org.gradle.api.DefaultTask
@@ -13,8 +13,10 @@ import org.gradle.api.tasks.TaskAction
 
 open class CheckThirdPartyLicensesTask : DefaultTask() {
 
-    internal var extension: ThirdPartyLicensesExtension = ThirdPartyLicensesExtension()
-    private val provider: DependenciesLicenseProvider = DependenciesLicenseProvider()
+    internal var extension: ThirdPartyLicensesExtension =
+        ThirdPartyLicensesExtension()
+    private val provider: DependenciesLicenseProvider =
+        DependenciesLicenseProvider()
 
     init {
         group = "datadog"
@@ -99,9 +101,12 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
                 val (component, origin, license, copyright) = it.split(",")
                 result.add(
                     ThirdPartyDependency(
-                        component = componentMap[component] ?: ThirdPartyDependency.Component.UNKNOWN,
+                        component = componentMap[component]
+                            ?: ThirdPartyDependency.Component.UNKNOWN,
                         origin = origin,
-                        license = License.from(license),
+                        license = License.from(
+                            license
+                        ),
                         copyright = copyright
                     )
                 )

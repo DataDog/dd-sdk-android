@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 import com.datadog.gradle.utils.asSequence
 import javax.xml.parsers.DocumentBuilderFactory
@@ -127,7 +127,9 @@ class DependenciesLicenseProvider {
             return ThirdPartyDependency(
                 component = configurationToComponent(configuration),
                 origin = groupId,
-                license = License.from(licenseString),
+                license = License.from(
+                    licenseString
+                ),
                 copyright = "__"
             )
         } else {

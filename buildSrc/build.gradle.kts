@@ -51,7 +51,7 @@ gradlePlugin {
     plugins {
         register("thirdPartyLicences") {
             id = "thirdPartyLicences" // the alias
-            implementationClass = "com.datadog.gradle.plugin.ThirdPartyLicensesPlugin"
+            implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
         }
     }
 }
