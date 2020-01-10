@@ -21,6 +21,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlin.math.abs
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -37,7 +38,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(Configurator::class, seed = 0x3e441e32L)
 internal class DatadogTimeProviderTest {
 
     @Mock
@@ -112,14 +113,16 @@ internal class DatadogTimeProviderTest {
     fun `server timestamp is offset with many offset samples`(
         @LongForgery(min = ONE_DAY, max = ONE_MONTH) averageOffset: Long,
         @LongForgery(min = ONE_SECOND, max = HALF_MINUTE) deviation: Long,
-        @IntForgery(min = 10, max = 100) count: Int,
+        @IntForgery(min = 50, max = 500) count: Int,
         forge: Forge
     ) {
         for (i in 0 until count) {
             val offset = forge.aGaussianLong(averageOffset, deviation)
-            testedProvider.updateOffset(offset)
+            if (abs(offset - averageOffset) < deviation) {
+                testedProvider.updateOffset(offset)
+            }
         }
-        testedProvider.updateOffset(averageOffset + HALF_MINUTE)
+        testedProvider.updateOffset(averageOffset + ONE_SECOND)
         val start = System.currentTimeMillis()
 
         val timestamp = testedProvider.getServerTimestamp()
