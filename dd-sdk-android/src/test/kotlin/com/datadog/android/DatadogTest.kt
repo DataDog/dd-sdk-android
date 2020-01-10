@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
+import android.util.Log
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.error.internal.DatadogExceptionHandler
@@ -23,11 +24,14 @@ import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -42,6 +46,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
 import java.io.File
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
@@ -62,7 +67,8 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -166,12 +172,23 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `fails if initialize called twice`() {
+    fun `ignores if initialize called more than once`(
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
         Datadog.initialize(mockContext, fakeToken)
+        Datadog.setVerbosity(Log.VERBOSE)
+        val strategy = Datadog.getLogStrategy()
+        val networkInfoProvider = Datadog.getNetworkInfoProvider()
+        val userInfoProvider = Datadog.getUserInfoProvider()
+        val timeProvider = Datadog.getTimeProvider()
 
-        assertThrows<IllegalStateException> {
-            Datadog.initialize(mockContext, fakeToken)
-        }
+        Datadog.initialize(mockContext, fakeToken)
+        assertThat(strategy).isSameAs(Datadog.getLogStrategy())
+        assertThat(networkInfoProvider).isSameAs(Datadog.getNetworkInfoProvider())
+        assertThat(userInfoProvider).isSameAs(Datadog.getUserInfoProvider())
+        assertThat(timeProvider).isSameAs(Datadog.getTimeProvider())
+        assertThat(outputStream.lastLine())
+            .isEqualTo("W/Datadog: The Datadog library has already been initialized.")
     }
 
     @Test
