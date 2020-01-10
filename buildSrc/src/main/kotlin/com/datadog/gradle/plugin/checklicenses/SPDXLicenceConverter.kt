@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 import me.xdrop.fuzzywuzzy.FuzzySearch
 
@@ -12,7 +12,11 @@ object SPDXLicenceConverter {
 
     fun convert(licenses: String): List<SPDXLicense>? {
         val result = licenses.split('/')
-            .map { convertLicense(it) }
+            .map {
+                convertLicense(
+                    it
+                )
+            }
 
         return if (result.isEmpty() || result.contains(null)) {
             null
@@ -24,13 +28,17 @@ object SPDXLicenceConverter {
     private fun convertLicense(license: String): SPDXLicense? {
         if (license.isBlank()) return null
 
-        val nameMatch = FuzzySearch.extractOne(license.trim(), nameList)
+        val nameMatch = FuzzySearch.extractOne(license.trim(),
+            nameList
+        )
         if (nameMatch.score > 90) {
             // println("matched name ${nameMatch.score}% [$license] to [${nameMatch.string}]")
             return nameMap[nameMatch.string]
         }
 
-        val identifierMatch = FuzzySearch.extractOne(license.trim(), identifierList)
+        val identifierMatch = FuzzySearch.extractOne(license.trim(),
+            identifierList
+        )
         if (identifierMatch.score > 90) {
             // println("matched identifier ${identifierMatch.score}% [$license] to [${identifierMatch.string}]")
             return identifierMap[identifierMatch.string]

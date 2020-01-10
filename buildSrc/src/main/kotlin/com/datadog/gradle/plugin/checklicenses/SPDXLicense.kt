@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 enum class SPDXLicense(val csvName: String) {
     _0BSD("0BSD"),

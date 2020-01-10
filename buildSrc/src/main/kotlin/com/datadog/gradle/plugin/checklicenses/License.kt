@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.checklicenses
 
 sealed class License {
 
@@ -29,11 +29,18 @@ sealed class License {
     companion object {
         fun from(license: String?): License {
             val licenseOrEmpty = license.orEmpty()
-            val matches = SPDXLicenceConverter.convert(licenseOrEmpty)
+            val matches =
+                SPDXLicenceConverter.convert(
+                    licenseOrEmpty
+                )
             return when {
                 licenseOrEmpty.isEmpty() -> Empty
-                matches.isNullOrEmpty() -> Raw(licenseOrEmpty)
-                else -> SPDX(matches)
+                matches.isNullOrEmpty() -> Raw(
+                    licenseOrEmpty
+                )
+                else -> SPDX(
+                    matches
+                )
             }
         }
     }
