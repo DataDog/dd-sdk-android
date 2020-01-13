@@ -7,8 +7,12 @@
 package com.datadog.android.error.internal
 
 import android.util.Log as AndroidLog
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
@@ -20,8 +24,11 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockAppContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -65,7 +72,8 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
     @Mock
     lateinit var mockLogWriter: Writer<Log>
-
+    @Mock
+    lateinit var mockWorkManager: WorkManagerImpl
     @Forgery
     lateinit var fakeThrowable: Throwable
     @Forgery
@@ -91,7 +99,7 @@ internal class DatadogExceptionHandlerTest {
             mockTimeProvider,
             mockUserInfoProvider,
             mockLogWriter,
-            null
+            mockContext
         )
         testedHandler.register()
     }
@@ -122,6 +130,23 @@ internal class DatadogExceptionHandlerTest {
                 .hasTimestamp(fakeTime.time)
         }
         verifyZeroInteractions(mockPreviousHandler)
+    }
+
+    @Test
+    fun `schedules the worker when logging an exception`(forge: Forge) {
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        verify(mockWorkManager)
+            .enqueueUniqueWork(
+                eq(ProcessLifecycleCallback.UPLOAD_WORKER_TAG),
+                eq(ExistingWorkPolicy.REPLACE),
+                any<OneTimeWorkRequest>()
+            )
     }
 
     @Test

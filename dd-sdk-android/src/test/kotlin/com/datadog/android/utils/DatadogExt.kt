@@ -50,7 +50,7 @@ fun mockContext(
 ): Context {
     val mockPackageInfo = PackageInfo()
     val mockPackageMgr = mock<PackageManager>()
-    val mockContext = mock<Application>()
+    val mockContext = mock<Context>()
 
     mockPackageInfo.versionName = versionName
     mockPackageInfo.versionCode = versionCode

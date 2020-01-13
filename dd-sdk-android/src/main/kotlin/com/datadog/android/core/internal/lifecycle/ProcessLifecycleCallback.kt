@@ -32,8 +32,7 @@ internal class ProcessLifecycleCallback(
     override fun onStopped() {
         val isOffline = (networkInfoProvider.getLatestNetworkInfo().connectivity
                 == NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
-        if (isOffline
-        ) {
+        if (isOffline) {
             contextWeakRef.get()?.let {
                 triggerWorkManagerTask(it)
             }

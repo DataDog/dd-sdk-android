@@ -21,6 +21,8 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.internal.utils.sdkLogger
+import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
@@ -42,7 +44,9 @@ internal class DatadogExceptionHandler(
         writer.write(createLog(t, e))
 
         // trigger a task to send the logs ASAP
-        contextRef.get()?.let { triggerWorkManagerTask(it) }
+        contextRef.get()?.let {
+            triggerWorkManagerTask(it)
+        }
 
         // Always do this one last; this will shut down the VM
         previousHandler?.uncaughtException(t, e)
@@ -78,22 +82,29 @@ internal class DatadogExceptionHandler(
     }
 
     private fun triggerWorkManagerTask(context: Context) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(context)
-            .enqueueUniqueWork(
-                ProcessLifecycleCallback.UPLOAD_WORKER_TAG,
-                ExistingWorkPolicy.REPLACE,
-                uploadWorkRequest)
+        try {
+            val workManager = WorkManager.getInstance(context)
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
+                .setConstraints(constraints)
+                .build()
+            workManager
+                .enqueueUniqueWork(
+                    ProcessLifecycleCallback.UPLOAD_WORKER_TAG,
+                    ExistingWorkPolicy.REPLACE,
+                    uploadWorkRequest
+                )
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(TAG, e)
+        }
     }
 
     // endregion
 
     companion object {
+        private const val TAG = "DatadogExceptionHandler"
         private const val LOGGER_NAME = "crash"
         private const val MESSAGE = "Application crash detected"
     }
