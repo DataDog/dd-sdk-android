@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils
 
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -16,7 +17,31 @@ import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
 
 /**
- * Mocks a context with the minimal behavior to initialize the Datadog library.
+ * Mocks an AppContext with the minimal behavior to initialize the Datadog library.
+ */
+fun mockAppContext(
+    packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
+    versionName: String? = BuildConfig.VERSION_NAME,
+    versionCode: Int = BuildConfig.VERSION_CODE
+): Application {
+    val mockPackageInfo = PackageInfo()
+    val mockPackageMgr = mock<PackageManager>()
+    val mockContext = mock<Application>()
+
+    mockPackageInfo.versionName = versionName
+    mockPackageInfo.versionCode = versionCode
+    whenever(mockPackageMgr.getPackageInfo(packageName, 0)) doReturn mockPackageInfo
+
+    whenever(mockContext.applicationContext) doReturn mockContext
+    whenever(mockContext.packageManager) doReturn mockPackageMgr
+    whenever(mockContext.packageName) doReturn packageName
+    whenever(mockContext.filesDir) doReturn File("/dev/null")
+
+    return mockContext
+}
+
+/**
+ * Mocks a non - application context with the minimal behavior to initialize the Datadog library.
  */
 fun mockContext(
     packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
@@ -25,7 +50,7 @@ fun mockContext(
 ): Context {
     val mockPackageInfo = PackageInfo()
     val mockPackageMgr = mock<PackageManager>()
-    val mockContext = mock<Context>()
+    val mockContext = mock<Application>()
 
     mockPackageInfo.versionName = versionName
     mockPackageInfo.versionCode = versionCode

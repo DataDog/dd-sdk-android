@@ -59,7 +59,7 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
         }
     }
 
-    interface Callback {
+    internal interface Callback {
         fun onStarted()
 
         fun onResumed()

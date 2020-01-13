@@ -17,7 +17,7 @@ import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogUploadStatus
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockAppContext
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
@@ -66,7 +66,7 @@ internal class UploadWorkerTest {
     fun `set up`() {
         whenever(mockLogStrategy.getReader()) doReturn mockLogReader
 
-        mockContext = mockContext()
+        mockContext = mockAppContext()
         Datadog.initialize(mockContext, "<CLIENT_TOKEN>")
 
         Datadog.setFieldValue("logStrategy", mockLogStrategy)

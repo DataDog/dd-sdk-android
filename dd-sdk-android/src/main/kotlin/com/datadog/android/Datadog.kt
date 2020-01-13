@@ -6,9 +6,12 @@
 
 package com.datadog.android
 
+import android.app.Application
 import android.content.Context
 import android.os.Build
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
@@ -71,6 +74,7 @@ object Datadog {
     private lateinit var uploader: LogUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
+    private lateinit var processLifecycleMonitor: ProcessLifecycleMonitor
 
     internal var packageName: String = ""
         private set
@@ -102,12 +106,9 @@ object Datadog {
         }
 
         val appContext = context.applicationContext
-        packageName = context.packageName
-        packageVersion = context.packageManager.getPackageInfo(packageName, 0).let {
-            it.versionName ?: it.versionCode.toString()
-        }
-        contextRef = WeakReference(appContext)
-        this.clientToken = clientToken
+
+        initSdkCredentials(appContext, clientToken)
+
         logStrategy =
             LogFileStrategy(appContext)
 
@@ -116,25 +117,13 @@ object Datadog {
 
         // Prepare user info management
         userInfoProvider = DatadogUserInfoProvider()
+        val systemBroadcastReceiver = setupTheNetworkInfoProvider(appContext)
 
-        // Register Broadcast Receivers
-        initializeNetworkInfoProvider(appContext)
-        val systemBroadcastReceiver = BroadcastReceiverSystemInfoProvider().apply {
-            register(appContext)
-        }
+        // setup the logs uploader
+        setupLogsUploader(endpointUrl, systemBroadcastReceiver)
 
-        // Start handler to send logs
-        val endpoint = endpointUrl ?: DATADOG_US
-        val okHttpClient = buildOkHttpClient(endpoint)
-
-        uploader = LogOkHttpUploader(endpoint, Datadog.clientToken, okHttpClient)
-        handlerThread = LogHandlerThread(
-            logStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemBroadcastReceiver
-        )
-        handlerThread.start()
+        // setup the process lifecycle monitor
+        setupLifecycleMonitorCallback(context, networkInfoProvider)
 
         initialized = true
 
@@ -146,6 +135,56 @@ object Datadog {
             logStrategy.getSynchronousWriter(),
             appContext
         ).register()
+    }
+
+    private fun setupTheNetworkInfoProvider(appContext: Context):
+            BroadcastReceiverSystemInfoProvider {
+        // Register Broadcast Receivers
+        initializeNetworkInfoProvider(appContext)
+        val systemBroadcastReceiver = BroadcastReceiverSystemInfoProvider().apply {
+            register(appContext)
+        }
+        return systemBroadcastReceiver
+    }
+
+    private fun setupLogsUploader(
+        endpointUrl: String?,
+        systemBroadcastReceiver: BroadcastReceiverSystemInfoProvider
+    ) {
+        // Start handler to send logs
+        val endpoint = endpointUrl ?: DATADOG_US
+        val okHttpClient = buildOkHttpClient(endpoint)
+
+        uploader = LogOkHttpUploader(endpoint, clientToken, okHttpClient)
+        handlerThread = LogHandlerThread(
+            logStrategy.getReader(),
+            uploader,
+            networkInfoProvider,
+            systemBroadcastReceiver
+        )
+        handlerThread.start()
+    }
+
+    private fun initSdkCredentials(
+        appContext: Context,
+        clientToken: String
+    ) {
+        packageName = appContext.packageName
+        packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
+            it.versionName ?: it.versionCode.toString()
+        }
+        contextRef = WeakReference(appContext)
+        this.clientToken = clientToken
+    }
+
+    private fun setupLifecycleMonitorCallback(
+        appContext: Context,
+        networkInfoProvider: NetworkInfoProvider
+    ) {
+        if (appContext is Application) {
+            val callback = ProcessLifecycleCallback(networkInfoProvider, appContext)
+            appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
+        }
     }
 
     /**
@@ -163,13 +202,13 @@ object Datadog {
                 logStrategy.getReader().dropAllBatches()
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be deleted"
+                            "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be sent to $endpointUrl"
+                            "will now be sent to $endpointUrl"
                 )
             }
         }
@@ -249,8 +288,8 @@ object Datadog {
     private fun checkInitialized() {
         check(initialized) {
             "Datadog has not been initialized.\n" +
-                "Please add the following code in your application's onCreate() method:\n" +
-                "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+                    "Please add the following code in your application's onCreate() method:\n" +
+                    "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
         }
     }
 

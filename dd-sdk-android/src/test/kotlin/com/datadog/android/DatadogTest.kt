@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
@@ -13,6 +14,7 @@ import android.os.Build
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
@@ -23,6 +25,7 @@ import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockAppContext
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -74,7 +77,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogTest {
 
-    lateinit var mockContext: Context
+    lateinit var mockAppContext: Application
     @Mock
     lateinit var mockLogStrategy: PersistenceStrategy<Log>
     @Mock
@@ -94,10 +97,10 @@ internal class DatadogTest {
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
-        mockContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockContext.filesDir).thenReturn(rootDir)
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+        mockAppContext = mockAppContext(fakePackageName, fakePackageVersion)
+        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.applicationContext) doReturn mockAppContext
+        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }
 
@@ -112,7 +115,7 @@ internal class DatadogTest {
 
     @Test
     fun `initializes all dependencies at initialize`() {
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
 
         assertThat(Datadog.packageName).isEqualTo(fakePackageName)
         assertThat(Datadog.packageVersion).isEqualTo(fakePackageVersion)
@@ -122,13 +125,13 @@ internal class DatadogTest {
     fun `initializes all dependencies at initialize with null version name`(
         @IntForgery(min = 0) versionCode: Int
     ) {
-        mockContext = mockContext(fakePackageName, null, versionCode)
-        whenever(mockContext.filesDir).thenReturn(rootDir)
-        whenever(mockContext.applicationContext) doReturn mockContext
-        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+        mockAppContext = mockAppContext(fakePackageName, null, versionCode)
+        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.applicationContext) doReturn mockAppContext
+        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
 
         assertThat(Datadog.packageName).isEqualTo(fakePackageName)
         assertThat(Datadog.packageVersion).isEqualTo(versionCode.toString())
@@ -136,7 +139,7 @@ internal class DatadogTest {
 
     @Test
     fun `initializes crash reporter`() {
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
 
         val handler = Thread.getDefaultUncaughtExceptionHandler()
 
@@ -147,10 +150,10 @@ internal class DatadogTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `registers broadcast receivers on initialize (Lollipop)`() {
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
 
         assertThat(broadcastReceiverCaptor.allValues)
             .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
@@ -160,10 +163,10 @@ internal class DatadogTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
     fun `registers receivers and callbacks on initialize (Nougat)`() {
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
         assertThat(broadcastReceiverCaptor.allValues)
             .allMatch { it is BroadcastReceiverSystemInfoProvider }
 
@@ -175,14 +178,14 @@ internal class DatadogTest {
     fun `ignores if initialize called more than once`(
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
         val strategy = Datadog.getLogStrategy()
         val networkInfoProvider = Datadog.getNetworkInfoProvider()
         val userInfoProvider = Datadog.getUserInfoProvider()
         val timeProvider = Datadog.getTimeProvider()
 
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
         assertThat(strategy).isSameAs(Datadog.getLogStrategy())
         assertThat(networkInfoProvider).isSameAs(Datadog.getNetworkInfoProvider())
         assertThat(userInfoProvider).isSameAs(Datadog.getUserInfoProvider())
@@ -204,7 +207,7 @@ internal class DatadogTest {
         val mockUploader: LogUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
 
@@ -220,7 +223,7 @@ internal class DatadogTest {
         val mockUploader: LogUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
 
@@ -234,7 +237,7 @@ internal class DatadogTest {
     fun `add strict network policy for https endpoints`(forge: Forge) {
         val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
 
-        Datadog.initialize(mockContext, fakeToken, endpoint)
+        Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
         val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
@@ -251,7 +254,7 @@ internal class DatadogTest {
     fun `no network policy for http endpoints`(forge: Forge) {
         val endpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
 
-        Datadog.initialize(mockContext, fakeToken, endpoint)
+        Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
         val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
@@ -276,5 +279,23 @@ internal class DatadogTest {
         assertThat(userInfo.id).isEqualTo(id)
         assertThat(userInfo.name).isEqualTo(name)
         assertThat(userInfo.email).isEqualTo(email)
+    }
+
+    @Test
+    fun `it will initialize the LifecycleMonitor`() {
+        // when
+        val application = mockAppContext
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        // then
+        val argumentCaptor = argumentCaptor<Application.ActivityLifecycleCallbacks>()
+        verify(application).registerActivityLifecycleCallbacks(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+    }
+
+    @Test
+    fun `it will not initialize the LifecycleMonitor if provided context is not App Context`() {
+        val mockContext = mockContext()
+        Datadog.initialize(mockContext, fakeToken)
     }
 }

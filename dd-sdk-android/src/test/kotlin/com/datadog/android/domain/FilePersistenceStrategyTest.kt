@@ -16,7 +16,7 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockAppContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -71,7 +71,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockContext = mockContext()
+        mockContext = mockAppContext()
         whenever(mockContext.filesDir) doReturn tempDir
         whenever(mockDeferredHandler.handle(any())) doAnswer {
             val runnable = it.arguments[0] as Runnable

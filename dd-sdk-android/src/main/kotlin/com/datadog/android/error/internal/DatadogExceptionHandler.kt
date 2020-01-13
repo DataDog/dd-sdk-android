@@ -9,11 +9,13 @@ package com.datadog.android.error.internal
 import android.content.Context
 import android.util.Log as AndroidLog
 import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.datadog.android.core.internal.data.UploadWorker
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
@@ -83,7 +85,10 @@ internal class DatadogExceptionHandler(
             .setConstraints(constraints)
             .build()
         WorkManager.getInstance(context)
-            .enqueue(uploadWorkRequest)
+            .enqueueUniqueWork(
+                ProcessLifecycleCallback.UPLOAD_WORKER_TAG,
+                ExistingWorkPolicy.REPLACE,
+                uploadWorkRequest)
     }
 
     // endregion

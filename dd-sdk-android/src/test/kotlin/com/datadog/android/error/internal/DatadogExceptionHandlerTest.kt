@@ -17,7 +17,7 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockAppContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -81,7 +81,7 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeTime.time
 
-        val mockContext = mockContext()
+        val mockContext = mockAppContext()
         Datadog.initialize(mockContext, forge.anHexadecimalString())
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
