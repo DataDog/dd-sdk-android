@@ -6,7 +6,8 @@ import android.os.Bundle
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-class ProcessLifecycleMonitor(val callback: Callback) : Application.ActivityLifecycleCallbacks {
+internal class ProcessLifecycleMonitor(val callback: Callback) :
+    Application.ActivityLifecycleCallbacks {
 
     val activitiesResumedCounter = AtomicInteger(0)
     val activitiesStartedCounter = AtomicInteger(0)

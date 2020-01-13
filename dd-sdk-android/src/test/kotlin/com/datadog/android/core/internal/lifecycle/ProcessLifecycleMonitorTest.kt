@@ -20,7 +20,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
-class ProcessLifecycleMonitorTest {
+internal class ProcessLifecycleMonitorTest {
 
     lateinit var underTest: ProcessLifecycleMonitor
     @Mock
