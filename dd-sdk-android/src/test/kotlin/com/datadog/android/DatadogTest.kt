@@ -10,7 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
-import android.util.Log
+import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.error.internal.DatadogExceptionHandler
@@ -176,7 +176,7 @@ internal class DatadogTest {
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         Datadog.initialize(mockContext, fakeToken)
-        Datadog.setVerbosity(Log.VERBOSE)
+        Datadog.setVerbosity(AndroidLog.VERBOSE)
         val strategy = Datadog.getLogStrategy()
         val networkInfoProvider = Datadog.getNetworkInfoProvider()
         val userInfoProvider = Datadog.getUserInfoProvider()
