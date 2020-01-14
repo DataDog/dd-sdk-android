@@ -49,10 +49,15 @@ object Dependencies {
 
         // Integrations
         const val Timber = "4.7.1"
+
+        // Internal APIs
+
+        const val TracingOt = "0.40.0"
     }
 
     object Libraries {
 
+        const val TracingOt = "com.datadoghq:dd-trace-ot:${Versions.TracingOt}"
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
