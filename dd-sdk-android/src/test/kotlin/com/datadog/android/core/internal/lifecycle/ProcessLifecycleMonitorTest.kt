@@ -5,6 +5,7 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import java.util.concurrent.CountDownLatch
 import org.junit.jupiter.api.BeforeEach
@@ -44,6 +45,7 @@ internal class ProcessLifecycleMonitorTest {
 
         // then
         verify(mockCallback).onStarted()
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
@@ -67,6 +69,7 @@ internal class ProcessLifecycleMonitorTest {
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onStarted()
         inOrder.verify(mockCallback).onResumed()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
@@ -95,7 +98,10 @@ internal class ProcessLifecycleMonitorTest {
         underTest.onActivityPaused(mockActivity1)
 
         // then
+        verify(mockCallback).onResumed()
+        verify(mockCallback).onStarted()
         verify(mockCallback).onPaused()
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
@@ -112,6 +118,7 @@ internal class ProcessLifecycleMonitorTest {
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onPaused()
         inOrder.verify(mockCallback).onStopped()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
@@ -184,6 +191,7 @@ internal class ProcessLifecycleMonitorTest {
         // then
         verify(mockCallback).onStarted()
         verify(mockCallback).onResumed()
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
@@ -211,7 +219,10 @@ internal class ProcessLifecycleMonitorTest {
         countDownLatch.await()
 
         // then
+        verify(mockCallback).onStarted()
+        verify(mockCallback).onResumed()
         verify(mockCallback).onPaused()
         verify(mockCallback).onStopped()
+        verifyNoMoreInteractions(mockCallback)
     }
 }
