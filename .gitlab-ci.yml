@@ -44,7 +44,15 @@ analysis:licenses:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:checkThirdPartyLicences
+    - ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences
+
+analysis:api-surface:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - git fetch --depth=1 origin master
+    - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges
 
 test:benchmark:
   tags: [ "runner:docker", "size:large" ]
