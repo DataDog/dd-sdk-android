@@ -12,8 +12,8 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfo
@@ -143,7 +143,7 @@ internal class DatadogExceptionHandlerTest {
 
         verify(mockWorkManager)
             .enqueueUniqueWork(
-                eq(ProcessLifecycleCallback.UPLOAD_WORKER_TAG),
+                eq(UPLOAD_WORKER_TAG),
                 eq(ExistingWorkPolicy.REPLACE),
                 any<OneTimeWorkRequest>()
             )

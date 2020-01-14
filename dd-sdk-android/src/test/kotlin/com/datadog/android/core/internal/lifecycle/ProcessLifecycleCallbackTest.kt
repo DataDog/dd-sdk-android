@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
+import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.utils.mockAppContext
@@ -59,7 +60,7 @@ internal class ProcessLifecycleCallbackTest {
         // then
         verify(mockWorkManager)
             .enqueueUniqueWork(
-                eq(ProcessLifecycleCallback.UPLOAD_WORKER_TAG),
+                eq(UPLOAD_WORKER_TAG),
                 eq(ExistingWorkPolicy.REPLACE),
                 any<OneTimeWorkRequest>())
     }

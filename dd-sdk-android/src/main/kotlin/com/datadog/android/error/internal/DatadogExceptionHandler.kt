@@ -8,21 +8,13 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import android.util.Log as AndroidLog
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
-import com.datadog.android.core.internal.data.UploadWorker
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.log.internal.utils.sdkLogger
-import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
@@ -45,7 +37,7 @@ internal class DatadogExceptionHandler(
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
-            triggerWorkManagerTask(it)
+            triggerUploadWorker(it)
         }
 
         // Always do this one last; this will shut down the VM
@@ -81,30 +73,9 @@ internal class DatadogExceptionHandler(
         )
     }
 
-    private fun triggerWorkManagerTask(context: Context) {
-        try {
-            val workManager = WorkManager.getInstance(context)
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-            val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
-                .setConstraints(constraints)
-                .build()
-            workManager
-                .enqueueUniqueWork(
-                    ProcessLifecycleCallback.UPLOAD_WORKER_TAG,
-                    ExistingWorkPolicy.REPLACE,
-                    uploadWorkRequest
-                )
-        } catch (e: IllegalStateException) {
-            sdkLogger.e(TAG, e)
-        }
-    }
-
     // endregion
 
     companion object {
-        private const val TAG = "DatadogExceptionHandler"
         private const val LOGGER_NAME = "crash"
         private const val MESSAGE = "Application crash detected"
     }
