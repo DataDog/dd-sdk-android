@@ -69,12 +69,12 @@ object Datadog {
     private lateinit var clientToken: String
     private lateinit var logStrategy: PersistenceStrategy<Log>
     private lateinit var networkInfoProvider: NetworkInfoProvider
+    private lateinit var systemInfoProvider: BroadcastReceiverSystemInfoProvider
     private lateinit var handlerThread: LogHandlerThread
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var uploader: LogUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
-    private lateinit var processLifecycleMonitor: ProcessLifecycleMonitor
 
     internal var packageName: String = ""
         private set
@@ -109,6 +109,8 @@ object Datadog {
 
         initSdkCredentials(appContext, clientToken)
 
+        initNetworkInfoProvider(appContext)
+
         logStrategy =
             LogFileStrategy(appContext)
 
@@ -117,10 +119,15 @@ object Datadog {
 
         // Prepare user info management
         userInfoProvider = DatadogUserInfoProvider()
-        val systemBroadcastReceiver = setupTheNetworkInfoProvider(appContext)
+
+        // init the SystemInfoProvider
+        systemInfoProvider = BroadcastReceiverSystemInfoProvider()
+
+        // setup the system info provider
+        setupTheSystemInfoProvider(appContext)
 
         // setup the logs uploader
-        setupLogsUploader(endpointUrl, systemBroadcastReceiver)
+        setupLogsUploader(endpointUrl, systemInfoProvider)
 
         // setup the process lifecycle monitor
         setupLifecycleMonitorCallback(context, networkInfoProvider)
@@ -137,14 +144,11 @@ object Datadog {
         ).register()
     }
 
-    private fun setupTheNetworkInfoProvider(appContext: Context):
-            BroadcastReceiverSystemInfoProvider {
+    private fun setupTheSystemInfoProvider(appContext: Context) {
         // Register Broadcast Receivers
-        initializeNetworkInfoProvider(appContext)
-        val systemBroadcastReceiver = BroadcastReceiverSystemInfoProvider().apply {
+        systemInfoProvider.apply {
             register(appContext)
         }
-        return systemBroadcastReceiver
     }
 
     private fun setupLogsUploader(
@@ -293,7 +297,7 @@ object Datadog {
         }
     }
 
-    private fun initializeNetworkInfoProvider(context: Context) {
+    private fun initNetworkInfoProvider(context: Context) {
         val provider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             CallbackNetworkInfoProvider()
         } else {
