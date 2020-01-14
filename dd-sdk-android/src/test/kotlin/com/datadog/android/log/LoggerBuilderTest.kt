@@ -14,7 +14,7 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.NetworkInfoProvider
-import com.datadog.android.utils.mockAppContext
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
@@ -54,7 +54,7 @@ internal class LoggerBuilderTest {
     @BeforeEach
     fun `set up Datadog`(forge: Forge) {
         packageName = forge.anAlphabeticalString()
-        mockContext = mockAppContext(packageName, "")
+        mockContext = mockContext(packageName, "")
         whenever(mockContext.filesDir) doReturn rootDir
 
         Datadog.initialize(mockContext, forge.anHexadecimalString())

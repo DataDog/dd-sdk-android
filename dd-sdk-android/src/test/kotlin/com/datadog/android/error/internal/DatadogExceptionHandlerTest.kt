@@ -6,6 +6,7 @@
 
 package com.datadog.android.error.internal
 
+import android.app.Application
 import android.util.Log as AndroidLog
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
@@ -21,7 +22,7 @@ import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockAppContext
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
@@ -89,7 +90,7 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeTime.time
 
-        val mockContext = mockAppContext()
+        val mockContext: Application = mockContext()
         Datadog.initialize(mockContext, forge.anHexadecimalString())
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -107,6 +108,7 @@ internal class DatadogExceptionHandlerTest {
     @AfterEach
     fun `tear down`() {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.invokeMethod("stop")
     }
 

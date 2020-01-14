@@ -7,7 +7,7 @@ import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
 import com.datadog.android.log.internal.net.NetworkInfo
 import com.datadog.android.log.internal.net.NetworkInfoProvider
-import com.datadog.android.utils.mockAppContext
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -16,6 +16,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import java.lang.ref.WeakReference
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -43,8 +44,13 @@ internal class ProcessLifecycleCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        mockContext = mockAppContext()
+        mockContext = mockContext()
         underTest = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 
     @Test
@@ -62,7 +68,8 @@ internal class ProcessLifecycleCallbackTest {
             .enqueueUniqueWork(
                 eq(UPLOAD_WORKER_TAG),
                 eq(ExistingWorkPolicy.REPLACE),
-                any<OneTimeWorkRequest>())
+                any<OneTimeWorkRequest>()
+            )
     }
 
     @Test

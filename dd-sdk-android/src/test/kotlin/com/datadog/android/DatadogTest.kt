@@ -25,7 +25,6 @@ import com.datadog.android.log.internal.net.LogOkHttpUploader
 import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockAppContext
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -97,7 +96,7 @@ internal class DatadogTest {
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
-        mockAppContext = mockAppContext(fakePackageName, fakePackageVersion)
+        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(rootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -125,7 +124,7 @@ internal class DatadogTest {
     fun `initializes all dependencies at initialize with null version name`(
         @IntForgery(min = 0) versionCode: Int
     ) {
-        mockAppContext = mockAppContext(fakePackageName, null, versionCode)
+        mockAppContext = mockContext(fakePackageName, null, versionCode)
         whenever(mockAppContext.filesDir).thenReturn(rootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -295,7 +294,7 @@ internal class DatadogTest {
 
     @Test
     fun `it will not initialize the LifecycleMonitor if provided context is not App Context`() {
-        val mockContext = mockContext()
+        val mockContext = mockContext<Context>()
         Datadog.initialize(mockContext, fakeToken)
     }
 }

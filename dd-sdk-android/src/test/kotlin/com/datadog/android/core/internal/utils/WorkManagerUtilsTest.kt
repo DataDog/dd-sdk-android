@@ -8,7 +8,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.UploadWorker
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockAppContext
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.invokeMethod
@@ -50,13 +50,14 @@ internal class WorkManagerUtilsTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockAppContext = mockAppContext()
+        mockAppContext = mockContext()
         Datadog.initialize(mockAppContext, forge.anHexadecimalString())
     }
 
     @AfterEach
     fun `tear down`() {
         Datadog.invokeMethod("stop")
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 
     @Test
@@ -65,7 +66,7 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
 
         // when
-        triggerUploadWorker(mockAppContext())
+        triggerUploadWorker(mockContext())
 
         // then
         verify(mockedWorkManager).enqueueUniqueWork(
@@ -81,7 +82,7 @@ internal class WorkManagerUtilsTest {
         @SystemOutStream outStream: ByteArrayOutputStream
     ) {
         // when
-        triggerUploadWorker(mockAppContext())
+        triggerUploadWorker(mockContext())
 
         // then
         verifyZeroInteractions(mockedWorkManager)
