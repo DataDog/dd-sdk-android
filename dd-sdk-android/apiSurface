@@ -1,0 +1,38 @@
+object com.datadog.android.Datadog
+  const val DATADOG_US: String
+  const val DATADOG_EU: String
+  fun initialize(android.content.Context, String, String? = null)
+  fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
+  fun setVerbosity(Int)
+  fun setUserInfo(String? = null, String? = null, String? = null)
+enum com.datadog.android.log.EndpointUpdateStrategy
+  - DISCARD_OLD_LOGS
+  - SEND_OLD_LOGS_TO_NEW_ENDPOINT
+class com.datadog.android.log.Logger
+  fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
+  fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
+  class Builder
+    fun build(): Logger
+    fun setServiceName(String): Builder
+    fun setDatadogLogsEnabled(Boolean): Builder
+    fun setLogcatLogsEnabled(Boolean): Builder
+    fun setNetworkInfoEnabled(Boolean): Builder
+    fun setLoggerName(String): Builder
+  fun addAttribute(String, Boolean)
+  fun addAttribute(String, Int)
+  fun addAttribute(String, Long)
+  fun addAttribute(String, Float)
+  fun addAttribute(String, Double)
+  fun addAttribute(String, String?)
+  fun addAttribute(String, java.util.Date?)
+  fun removeAttribute(String)
+  fun addTag(String, String)
+  fun addTag(String)
+  fun removeTag(String)
+  fun removeTagsWithKey(String)
+  companion object
