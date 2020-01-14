@@ -6,9 +6,9 @@
 
 package com.datadog.gradle.plugin.gitdiff
 
-class GitConditionalDependencyLinker (
-    private val gitModifiedPathsProvider : GitModifiedPathsProvider
-){
+class GitConditionalDependencyLinker(
+    private val gitModifiedPathsProvider: GitModifiedPathsProvider
+) {
 
     fun linkConditionalDependencies(
         dependencies: Map<Regex, List<Dependency>>

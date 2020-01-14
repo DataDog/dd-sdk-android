@@ -8,13 +8,9 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import android.util.Log as AndroidLog
-import androidx.work.Constraints
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
-import com.datadog.android.core.internal.data.UploadWorker
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.NetworkInfoProvider
@@ -40,7 +36,9 @@ internal class DatadogExceptionHandler(
         writer.write(createLog(t, e))
 
         // trigger a task to send the logs ASAP
-        contextRef.get()?.let { triggerWorkManagerTask(it) }
+        contextRef.get()?.let {
+            triggerUploadWorker(it)
+        }
 
         // Always do this one last; this will shut down the VM
         previousHandler?.uncaughtException(t, e)
@@ -73,17 +71,6 @@ internal class DatadogExceptionHandler(
             attributes = emptyMap(),
             tags = emptyList()
         )
-    }
-
-    private fun triggerWorkManagerTask(context: Context) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(context)
-            .enqueue(uploadWorkRequest)
     }
 
     // endregion

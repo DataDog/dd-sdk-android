@@ -16,16 +16,16 @@ import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
 
 /**
- * Mocks a context with the minimal behavior to initialize the Datadog library.
+ * Mocks T:Context with the minimal behavior to initialize the Datadog library.
  */
-fun mockContext(
+inline fun <reified T : Context> mockContext(
     packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
     versionName: String? = BuildConfig.VERSION_NAME,
     versionCode: Int = BuildConfig.VERSION_CODE
-): Context {
+): T {
     val mockPackageInfo = PackageInfo()
     val mockPackageMgr = mock<PackageManager>()
-    val mockContext = mock<Context>()
+    val mockContext = mock<T>()
 
     mockPackageInfo.versionName = versionName
     mockPackageInfo.versionCode = versionCode

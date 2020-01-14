@@ -6,9 +6,6 @@
 
 package com.datadog.gradle.plugin.gitdiff
 
-import com.datadog.gradle.utils.execShell
-import org.gradle.api.Project
-
 interface ModifiedPathsProvider {
 
     fun getModifiedPaths(): List<String>
