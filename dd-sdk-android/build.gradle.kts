@@ -102,6 +102,9 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.JetpackWorkManager)
+    api(Dependencies.Libraries.TracingOt){
+        exclude("com.lmax")
+    }
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
