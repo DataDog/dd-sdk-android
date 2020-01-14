@@ -25,7 +25,7 @@ buildscript {
 }
 
 plugins {
-    id("gitDiffConditionalPlugin")
+    id("gitDiffConditional")
 }
 
 allprojects {
