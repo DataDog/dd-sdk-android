@@ -1,0 +1,7 @@
+# This file configures the labels to apply automatically based on changed path on pull requests.
+# CF the labeler GitHub action https://github.com/marketplace/actions/github-labeler
+
+# Add 'api-surface-change' to any changes on the 'apiSurface' file in one of the library modules
+api-surface-change:
+  - dd-sdk-android/apiSurface
+  - dd-sdk-android-timber/apiSurface
