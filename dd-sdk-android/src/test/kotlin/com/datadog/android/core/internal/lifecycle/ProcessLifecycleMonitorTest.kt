@@ -57,6 +57,7 @@ internal class ProcessLifecycleMonitorTest {
 
         // then
         verify(mockCallback, times(1)).onStarted()
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
@@ -86,6 +87,7 @@ internal class ProcessLifecycleMonitorTest {
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onStarted()
         inOrder.verify(mockCallback).onResumed()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
@@ -143,6 +145,7 @@ internal class ProcessLifecycleMonitorTest {
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onPaused()
         inOrder.verify(mockCallback).onStopped()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
@@ -165,7 +168,10 @@ internal class ProcessLifecycleMonitorTest {
         underTest.onActivityStopped(mockActivity1)
 
         // then
+        verify(mockCallback).onStarted()
+        verify(mockCallback).onResumed()
         verify(mockCallback, never()).onStopped()
+        verifyNoMoreInteractions(mockCallback)
     }
 
     @Test

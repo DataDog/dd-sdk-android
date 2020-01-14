@@ -127,68 +127,17 @@ object Datadog {
         setupTheSystemInfoProvider(appContext)
 
         // setup the logs uploader
-        setupLogsUploader(endpointUrl, systemInfoProvider)
+        setupLogsUploader(endpointUrl)
 
         // setup the process lifecycle monitor
-        setupLifecycleMonitorCallback(context, networkInfoProvider)
+        setupLifecycleMonitorCallback(appContext)
 
         initialized = true
 
-        // Error Management (set it up last. Until this is done, we don't know)
-        DatadogExceptionHandler(
-            networkInfoProvider,
-            timeProvider,
-            userInfoProvider,
-            logStrategy.getSynchronousWriter(),
-            appContext
-        ).register()
-    }
-
-    private fun setupTheSystemInfoProvider(appContext: Context) {
-        // Register Broadcast Receivers
-        systemInfoProvider.apply {
-            register(appContext)
-        }
-    }
-
-    private fun setupLogsUploader(
-        endpointUrl: String?,
-        systemBroadcastReceiver: BroadcastReceiverSystemInfoProvider
-    ) {
-        // Start handler to send logs
-        val endpoint = endpointUrl ?: DATADOG_US
-        val okHttpClient = buildOkHttpClient(endpoint)
-
-        uploader = LogOkHttpUploader(endpoint, clientToken, okHttpClient)
-        handlerThread = LogHandlerThread(
-            logStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemBroadcastReceiver
-        )
-        handlerThread.start()
-    }
-
-    private fun initSdkCredentials(
-        appContext: Context,
-        clientToken: String
-    ) {
-        packageName = appContext.packageName
-        packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
-            it.versionName ?: it.versionCode.toString()
-        }
-        contextRef = WeakReference(appContext)
-        this.clientToken = clientToken
-    }
-
-    private fun setupLifecycleMonitorCallback(
-        appContext: Context,
-        networkInfoProvider: NetworkInfoProvider
-    ) {
-        if (appContext is Application) {
-            val callback = ProcessLifecycleCallback(networkInfoProvider, appContext)
-            appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
-        }
+        // setup the exception handler
+        // We set this up last.
+        // We don't want to catch any exception that might throw during the initialisation)
+        setupTheExceptionHandler(appContext)
     }
 
     /**
@@ -321,6 +270,57 @@ object Datadog {
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .build()
+    }
+
+    private fun setupTheExceptionHandler(appContext: Context?) {
+        DatadogExceptionHandler(
+            networkInfoProvider,
+            timeProvider,
+            userInfoProvider,
+            logStrategy.getSynchronousWriter(),
+            appContext
+        ).register()
+    }
+
+    private fun setupTheSystemInfoProvider(appContext: Context) {
+        // Register Broadcast Receivers
+        systemInfoProvider.register(appContext)
+    }
+
+    private fun setupLogsUploader(
+        endpointUrl: String?
+    ) {
+        // Start handler to send logs
+        val endpoint = endpointUrl ?: DATADOG_US
+        val okHttpClient = buildOkHttpClient(endpoint)
+
+        uploader = LogOkHttpUploader(endpoint, clientToken, okHttpClient)
+        handlerThread = LogHandlerThread(
+            logStrategy.getReader(),
+            uploader,
+            networkInfoProvider,
+            systemInfoProvider
+        )
+        handlerThread.start()
+    }
+
+    private fun initSdkCredentials(
+        appContext: Context,
+        clientToken: String
+    ) {
+        packageName = appContext.packageName
+        packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
+            it.versionName ?: it.versionCode.toString()
+        }
+        contextRef = WeakReference(appContext)
+        this.clientToken = clientToken
+    }
+
+    private fun setupLifecycleMonitorCallback(appContext: Context) {
+        if (appContext is Application) {
+            val callback = ProcessLifecycleCallback(networkInfoProvider, appContext)
+            appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
+        }
     }
 
     // endregion
