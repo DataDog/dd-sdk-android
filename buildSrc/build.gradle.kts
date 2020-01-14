@@ -44,6 +44,11 @@ dependencies {
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
     implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
 
+    // check api surface
+    implementation("net.java.dev.jna:jna:4.2.2")
+    implementation("com.github.cretz.kastree:kastree-ast-jvm:0.4.0")
+    implementation("com.github.cretz.kastree:kastree-ast-psi:0.4.0")
+
     testImplementation("junit:junit:4.12")
     testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
     testImplementation("net.wuerl.kotlin:assertj-core-kotlin:0.2.1")
@@ -55,9 +60,13 @@ gradlePlugin {
             id = "thirdPartyLicences" // the alias
             implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
         }
-        register("gitDiffConditionalPlugin") {
-            id = "gitDiffConditionalPlugin" // the alias
+        register("gitDiffConditional") {
+            id = "gitDiffConditional" // the alias
             implementationClass = "com.datadog.gradle.plugin.gitdiff.GitConditionalDependencyPlugin"
+        }
+        register("apiSurface") {
+            id = "apiSurface" // the alias
+            implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
         }
     }
 }

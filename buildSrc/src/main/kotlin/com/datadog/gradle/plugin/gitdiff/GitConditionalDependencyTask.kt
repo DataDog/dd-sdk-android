@@ -20,10 +20,15 @@ open class GitDiffConditionalDependencyTask : DefaultTask() {
 
     private val dependencies: MutableMap<String, MutableList<String>> = mutableMapOf()
 
+    init {
+        group = "datadog"
+        description = "Describe dependencies based on modified paths"
+    }
+
     // region Task
 
     @Input
-    fun getConditionalDependenciesInput() : Map<String, List<String>> {
+    fun getConditionalDependenciesInput(): Map<String, List<String>> {
         return dependencies
     }
 
@@ -37,7 +42,7 @@ open class GitDiffConditionalDependencyTask : DefaultTask() {
         }
     }
 
-    fun getConditionalDependenciesMap() : List<Pair<Regex, Dependency>> {
+    fun getConditionalDependenciesMap(): List<Pair<Regex, Dependency>> {
         return dependencies.map {
             Regex(it.key) to Dependency(this, it.value)
         }
