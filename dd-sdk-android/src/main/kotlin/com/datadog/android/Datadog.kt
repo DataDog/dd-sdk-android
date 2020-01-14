@@ -47,7 +47,7 @@ object Datadog {
      * @see [initialize]
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_US = "https://mobile-http-intake.logs.datadoghq.com"
+    const val DATADOG_US: String = "https://mobile-http-intake.logs.datadoghq.com"
 
     /**
      * The endpoint for our Europe based servers.
@@ -56,7 +56,7 @@ object Datadog {
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_EU = "https://mobile-http-intake.logs.datadoghq.eu"
+    const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     private const val TAG = "Datadog"
 

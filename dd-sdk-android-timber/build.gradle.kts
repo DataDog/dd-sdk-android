@@ -28,6 +28,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
+    id("apiSurface")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     jacoco
