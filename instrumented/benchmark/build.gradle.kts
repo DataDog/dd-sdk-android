@@ -78,7 +78,9 @@ dependencies {
     // if you want to test the library in production you should change this dependency with the
     // latest release maven artifact either local or live
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
-    implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android")) {
+        exclude("com.google.guava")
+    }
     implementation(Dependencies.Libraries.Kotlin)
 
     androidTestImplementation(project(":tools:unit"))
