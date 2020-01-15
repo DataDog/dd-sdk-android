@@ -80,7 +80,9 @@ android {
 
 dependencies {
 
-    api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android")) {
+        exclude("com.google.guava")
+    }
 
     // Android dependencies
     implementation("androidx.appcompat:appcompat:1.1.0")
