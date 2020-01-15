@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.log.internal.net.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 
 /**

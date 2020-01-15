@@ -4,12 +4,13 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net
 
-import android.content.Context
-
-internal interface NetworkInfoProvider {
-    fun register(context: Context)
-    fun unregister(context: Context)
-    fun getLatestNetworkInfo(): NetworkInfo
+internal enum class UploadStatus {
+    SUCCESS,
+    NETWORK_ERROR,
+    HTTP_REDIRECTION,
+    HTTP_CLIENT_ERROR,
+    HTTP_SERVER_ERROR,
+    UNKNOWN_ERROR
 }

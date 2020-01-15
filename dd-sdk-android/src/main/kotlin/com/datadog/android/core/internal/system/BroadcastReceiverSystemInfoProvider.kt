@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.system
+package com.datadog.android.core.internal.system
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,7 +12,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class BroadcastReceiverSystemInfoProvider :
     BroadcastReceiver(), SystemInfoProvider {

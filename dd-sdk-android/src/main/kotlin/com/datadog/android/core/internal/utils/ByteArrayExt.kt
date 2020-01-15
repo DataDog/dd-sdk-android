@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.utils
+package com.datadog.android.core.internal.utils
 
 /**
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].

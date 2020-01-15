@@ -9,11 +9,11 @@ package com.datadog.android.error.internal
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import java.lang.ref.WeakReference
 

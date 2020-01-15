@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.assertj
 
-import com.datadog.android.log.internal.system.SystemInfo
+import com.datadog.android.core.internal.system.SystemInfo
 import kotlin.math.max
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat

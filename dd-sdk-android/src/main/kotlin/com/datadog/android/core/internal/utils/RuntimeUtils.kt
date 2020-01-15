@@ -1,4 +1,4 @@
-package com.datadog.android.log.internal.utils
+package com.datadog.android.core.internal.utils
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog

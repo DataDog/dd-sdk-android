@@ -4,11 +4,12 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net.info
 
-internal interface LogUploader {
+import android.content.Context
 
-    fun setEndpoint(endpoint: String)
-
-    fun upload(data: ByteArray): LogUploadStatus
+internal interface NetworkInfoProvider {
+    fun register(context: Context)
+    fun unregister(context: Context)
+    fun getLatestNetworkInfo(): NetworkInfo
 }

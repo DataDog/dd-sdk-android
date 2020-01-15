@@ -1,9 +1,9 @@
 package com.datadog.android.core.internal.lifecycle
 
 import android.content.Context
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.internal.net.NetworkInfo
-import com.datadog.android.log.internal.net.NetworkInfoProvider
 import java.lang.ref.WeakReference
 
 internal class ProcessLifecycleCallback(

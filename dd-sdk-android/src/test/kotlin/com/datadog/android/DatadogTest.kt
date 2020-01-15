@@ -15,15 +15,15 @@ import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.net.DataOkHttpUploader
+import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
+import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
+import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
-import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
-import com.datadog.android.log.internal.net.LogOkHttpUploader
-import com.datadog.android.log.internal.net.LogUploader
-import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -203,7 +203,7 @@ internal class DatadogTest {
     @Test
     fun `drop logs on setEndpointUrl with Discard strategy`(forge: Forge) {
         val mockReader: Reader = mock()
-        val mockUploader: LogUploader = mock()
+        val mockUploader: DataUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -219,7 +219,7 @@ internal class DatadogTest {
     @Test
     fun `keep logs on setEndpointUrl with Update strategy`(forge: Forge) {
         val mockReader: Reader = mock()
-        val mockUploader: LogUploader = mock()
+        val mockUploader: DataUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -238,7 +238,7 @@ internal class DatadogTest {
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
-        val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
+        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
 
         assertThat(okHttpClient.protocols)
@@ -255,7 +255,7 @@ internal class DatadogTest {
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
-        val uploader: LogOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
+        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
 
         assertThat(okHttpClient.protocols)

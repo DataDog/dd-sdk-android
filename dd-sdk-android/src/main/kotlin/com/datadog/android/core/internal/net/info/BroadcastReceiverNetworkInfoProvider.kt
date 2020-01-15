@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net.info
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,13 +14,15 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
 internal class BroadcastReceiverNetworkInfoProvider :
-    BroadcastReceiver(), NetworkInfoProvider {
+    BroadcastReceiver(),
+    NetworkInfoProvider {
 
-    private var networkInfo: NetworkInfo = NetworkInfo()
+    private var networkInfo: NetworkInfo =
+        NetworkInfo()
 
     // region BroadcastReceiver
 
@@ -60,15 +62,23 @@ internal class BroadcastReceiverNetworkInfoProvider :
         activeNetworkInfo: AndroidNetworkInfo?
     ): NetworkInfo {
         return if (activeNetworkInfo == null || !activeNetworkInfo.isConnected) {
-            NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            )
         } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI) {
-            NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI)
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_WIFI
+            )
         } else if (activeNetworkInfo.type == ConnectivityManager.TYPE_ETHERNET) {
-            NetworkInfo(NetworkInfo.Connectivity.NETWORK_ETHERNET)
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_ETHERNET
+            )
         } else if (activeNetworkInfo.type in knownMobileTypes) {
             buildMobileNetworkInfo(context, activeNetworkInfo.subtype)
         } else {
-            NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_OTHER
+            )
         }
     }
 
@@ -86,7 +96,11 @@ internal class BroadcastReceiverNetworkInfoProvider :
                 context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
             val carrierId = telephonyMgr?.simCarrierId ?: -1
-            NetworkInfo(connectivity, carrierName.toString(), carrierId)
+            NetworkInfo(
+                connectivity,
+                carrierName.toString(),
+                carrierId
+            )
         } else {
             NetworkInfo(connectivity)
         }

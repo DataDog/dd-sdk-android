@@ -4,16 +4,16 @@
  * Copyright 2016-2020 Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data
+package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Batch
-import com.datadog.android.log.internal.net.LogUploadStatus
-import com.datadog.android.log.internal.net.LogUploader
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.net.UploadStatus
+import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class UploadWorker(
     appContext: Context,
@@ -52,12 +52,12 @@ internal class UploadWorker(
 
     private fun consumeBatch(
         batch: Batch,
-        uploader: LogUploader
+        uploader: DataUploader
     ): Boolean {
         val batchId = batch.id
         sdkLogger.i("$TAG: Sending batch $batchId")
         val status = uploader.upload(batch.data)
-        return status == LogUploadStatus.SUCCESS
+        return status == UploadStatus.SUCCESS
     }
 
     // endregion
