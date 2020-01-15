@@ -20,7 +20,7 @@ import okio.buffer
  *
  * This class uses the [GzipSink] to compress the body content.
  */
-class GzipRequestInterceptor : Interceptor {
+internal class GzipRequestInterceptor : Interceptor {
 
     // region Interceptor
 

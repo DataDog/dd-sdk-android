@@ -9,7 +9,7 @@ package com.datadog.android.log.internal.constraints
 import com.datadog.android.log.internal.utils.devLogger
 import java.util.Locale
 
-typealias StringTransform = (String) -> String?
+internal typealias StringTransform = (String) -> String?
 
 internal class DatadogLogConstraints : LogConstraints {
 

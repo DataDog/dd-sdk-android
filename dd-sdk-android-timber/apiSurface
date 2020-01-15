@@ -1,0 +1,3 @@
+class com.datadog.android.timber.DatadogTree : timber.log.Timber, Tree
+  constructor(com.datadog.android.log.Logger)
+  override fun log(Int, String?, String, Throwable?)
