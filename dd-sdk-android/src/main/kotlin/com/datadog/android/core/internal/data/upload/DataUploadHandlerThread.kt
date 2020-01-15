@@ -11,7 +11,7 @@ import android.os.HandlerThread
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.log.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.system.SystemInfoProvider
 
 internal class DataUploadHandlerThread(
     threadName: String,

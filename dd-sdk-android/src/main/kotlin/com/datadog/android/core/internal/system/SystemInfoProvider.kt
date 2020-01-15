@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.system
+package com.datadog.android.core.internal.system
 
 internal interface SystemInfoProvider {
     fun getLatestSystemInfo(): SystemInfo

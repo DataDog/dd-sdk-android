@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -27,7 +28,6 @@ import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
-import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo

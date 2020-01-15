@@ -13,8 +13,8 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.log.internal.system.SystemInfo
-import com.datadog.android.log.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.system.SystemInfo
+import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.utils.sdkLogger
 import kotlin.math.max
 
