@@ -18,7 +18,7 @@ import,org.slf4j,MIT,Copyright (c) 2004-2017 QOS.ch
 import,com.fasterxml.jackson,Apache-2.0,Copyright 2020 Datadog, Inc.
 import,com.datadoghq,Apache-2.0,Copyright 2017 Datadog, Inc
 import,org.msgpack,Boost Software License-1.0,Copyright 2019 the original author or authors
-import,org.ow2,BSD Zero Clause License,2000-2011 INRIA, France Telecom
+import,org.ow2,BSD 3-Clause Clear License,2000-2011 INRIA, France Telecom
 import,org.sonatype.oss,Apache-2.0,Copyright (c) 2007-2020 Sonatype, Inc. All rights reserved.
 import(test),androidx.annotation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import(test),androidx.benchmark,Apache-2.0,Copyright 2019 The Android Open Source Project
