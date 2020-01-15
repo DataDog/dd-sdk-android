@@ -56,6 +56,10 @@ dependencies {
 
 gradlePlugin {
     plugins {
+        register("reviewBenchmark") {
+            id = "reviewBenchmark" // the alias
+            implementationClass = "com.datadog.gradle.plugin.benchmark.ReviewBenchmarkPlugin"
+        }
         register("thirdPartyLicences") {
             id = "thirdPartyLicences" // the alias
             implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
