@@ -31,13 +31,12 @@ android {
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArgument(
             "androidx.benchmark.suppressErrors",
-            "EMULATOR,UNLOCKED"
+            "EMULATOR,DEBUGGABLE,UNLOCKED"
         )
         testInstrumentationRunnerArgument(
-            "androidx.benchmark.suppressErrors",
-            "EMULATOR,DEBUGGABLE"
+            "androidx.benchmark.output.enable",
+            "true"
         )
-        testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
     // TODO when using Android Plugin 3.6.+
