@@ -58,7 +58,9 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android")) {
+        exclude("com.google.guava")
+    }
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidxSupportBase)

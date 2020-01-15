@@ -103,7 +103,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.JetpackWorkManager)
-    api(Dependencies.Libraries.TracingOt){
+    api(Dependencies.Libraries.TracingOt) {
         exclude("com.lmax")
     }
 
