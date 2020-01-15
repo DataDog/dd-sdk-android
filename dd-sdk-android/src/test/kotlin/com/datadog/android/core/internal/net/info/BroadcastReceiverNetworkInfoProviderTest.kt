@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net.info
 
 // import org.assertj.core.api.Assertions.assertThat
 import android.content.Context
@@ -61,7 +61,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider()
+        testedProvider =
+            BroadcastReceiverNetworkInfoProvider()
     }
 
     @Test

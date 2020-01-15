@@ -17,12 +17,12 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
+import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
-import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext

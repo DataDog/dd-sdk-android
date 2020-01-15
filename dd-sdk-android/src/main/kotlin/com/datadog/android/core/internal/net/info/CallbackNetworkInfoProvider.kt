@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net.info
 
 import android.annotation.TargetApi
 import android.content.Context
@@ -19,7 +19,8 @@ internal class CallbackNetworkInfoProvider :
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
-    private var networkInfo: NetworkInfo = NetworkInfo()
+    private var networkInfo: NetworkInfo =
+        NetworkInfo()
 
     // region NetworkCallback
 
@@ -38,7 +39,10 @@ internal class CallbackNetworkInfoProvider :
     override fun onLost(network: Network) {
         super.onLost(network)
         sdkLogger.i("onLost $network")
-        networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        networkInfo =
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            )
     }
 
     // endregion

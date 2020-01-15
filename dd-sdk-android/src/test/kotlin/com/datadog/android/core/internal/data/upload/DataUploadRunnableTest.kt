@@ -12,8 +12,8 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.log.internal.net.NetworkInfo
-import com.datadog.android.log.internal.net.NetworkInfoProvider
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfo
 import com.datadog.android.log.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
@@ -69,12 +69,13 @@ internal class DataUploadRunnableTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val fakeNetworkInfo = NetworkInfo(
-            forge.aValueFrom(
-                enumClass = NetworkInfo.Connectivity::class.java,
-                exclude = listOf(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        val fakeNetworkInfo =
+            NetworkInfo(
+                forge.aValueFrom(
+                    enumClass = NetworkInfo.Connectivity::class.java,
+                    exclude = listOf(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+                )
             )
-        )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         val fakeSystemInfo = SystemInfo(
             batteryStatus = forge.aValueFrom(SystemInfo.BatteryStatus::class.java),
@@ -94,7 +95,10 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `doesn't send batch when offline`(@Forgery batch: Batch) {
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        val networkInfo =
+            NetworkInfo(
+                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
 
         testedRunnable.run()

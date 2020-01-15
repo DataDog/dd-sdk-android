@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net.info
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -52,7 +52,8 @@ internal class CallbackNetworkInfoProviderTest {
     fun `set up`() {
         whenever(mockCapabilities.hasTransport(any())) doReturn false
 
-        testedProvider = CallbackNetworkInfoProvider()
+        testedProvider =
+            CallbackNetworkInfoProvider()
     }
 
     @Test

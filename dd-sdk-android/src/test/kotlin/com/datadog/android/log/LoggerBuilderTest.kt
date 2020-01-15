@@ -8,12 +8,12 @@ package com.datadog.android.log
 
 import android.content.Context
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod

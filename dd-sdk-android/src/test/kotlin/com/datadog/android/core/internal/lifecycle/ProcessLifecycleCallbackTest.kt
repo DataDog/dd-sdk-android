@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
-import com.datadog.android.log.internal.net.NetworkInfo
-import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
@@ -58,7 +58,11 @@ internal class ProcessLifecycleCallbackTest {
         // given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED))
+            .thenReturn(
+                NetworkInfo(
+                    NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+                )
+            )
 
         // when
         underTest.onStopped()
@@ -76,7 +80,11 @@ internal class ProcessLifecycleCallbackTest {
     fun `when process stopped and work manager is not present will not throw exception`() {
         // given
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED))
+            .thenReturn(
+                NetworkInfo(
+                    NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+                )
+            )
 
         // when
         underTest.onStopped()
@@ -87,7 +95,11 @@ internal class ProcessLifecycleCallbackTest {
         // given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI))
+            .thenReturn(
+                NetworkInfo(
+                    NetworkInfo.Connectivity.NETWORK_WIFI
+                )
+            )
 
         // when
         underTest.onStopped()
@@ -101,7 +113,11 @@ internal class ProcessLifecycleCallbackTest {
         underTest.setFieldValue("contextWeakRef", WeakReference<Context>(null))
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI))
+            .thenReturn(
+                NetworkInfo(
+                    NetworkInfo.Connectivity.NETWORK_WIFI
+                )
+            )
 
         // when
         underTest.onStopped()
