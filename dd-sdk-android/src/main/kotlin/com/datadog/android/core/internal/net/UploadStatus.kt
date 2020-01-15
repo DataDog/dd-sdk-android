@@ -4,11 +4,13 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net
 
-internal interface LogUploader {
-
-    fun setEndpoint(endpoint: String)
-
-    fun upload(data: ByteArray): LogUploadStatus
+internal enum class UploadStatus {
+    SUCCESS,
+    NETWORK_ERROR,
+    HTTP_REDIRECTION,
+    HTTP_CLIENT_ERROR,
+    HTTP_SERVER_ERROR,
+    UNKNOWN_ERROR
 }

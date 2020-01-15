@@ -4,38 +4,36 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.core.internal.data.upload
 
 import android.os.Handler
 import android.os.HandlerThread
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.log.internal.net.LogUploader
+import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.SystemInfoProvider
 
-internal class LogHandlerThread(
+internal class DataUploadHandlerThread(
+    threadName: String,
     private val reader: Reader,
-    private val logUploader: LogUploader,
+    private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider
-) : HandlerThread(THREAD_NAME) {
+) : HandlerThread(threadName) {
 
     private lateinit var handler: Handler
 
     override fun onLooperPrepared() {
         super.onLooperPrepared()
         handler = Handler(looper)
-        val runnable = LogUploadRunnable(
-            handler,
-            reader,
-            logUploader,
-            networkInfoProvider,
-            systemInfoProvider
-        )
-        handler.postDelayed(runnable, LogUploadRunnable.DEFAULT_DELAY)
-    }
-
-    companion object {
-        private const val THREAD_NAME = "ddog"
+        val runnable =
+            DataUploadRunnable(
+                handler,
+                reader,
+                dataUploader,
+                networkInfoProvider,
+                systemInfoProvider
+            )
+        handler.postDelayed(runnable, DataUploadRunnable.DEFAULT_DELAY)
     }
 }

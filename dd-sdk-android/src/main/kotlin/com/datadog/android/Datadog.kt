@@ -9,9 +9,12 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.net.DataOkHttpUploader
+import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.time.DatadogTimeProvider
@@ -19,13 +22,10 @@ import com.datadog.android.core.internal.time.MutableTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
-import com.datadog.android.log.internal.LogHandlerThread
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.log.internal.net.CallbackNetworkInfoProvider
-import com.datadog.android.log.internal.net.LogOkHttpUploader
-import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.log.internal.net.NetworkInfoProvider
 import com.datadog.android.log.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
@@ -64,15 +64,16 @@ object Datadog {
     private const val TAG = "Datadog"
 
     internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
+    internal const val LOG_UPLOAD_THREAD_NAME = "ddog-logs-upload"
 
     private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: PersistenceStrategy<Log>
     private lateinit var networkInfoProvider: NetworkInfoProvider
     private lateinit var systemInfoProvider: BroadcastReceiverSystemInfoProvider
-    private lateinit var handlerThread: LogHandlerThread
+    private lateinit var handlerThread: DataUploadHandlerThread
     private lateinit var contextRef: WeakReference<Context>
-    private lateinit var uploader: LogUploader
+    private lateinit var uploader: DataUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
 
@@ -216,7 +217,7 @@ object Datadog {
         return logStrategy
     }
 
-    internal fun getLogUploader(): LogUploader {
+    internal fun getLogUploader(): DataUploader {
         checkInitialized()
         return uploader
     }
@@ -294,13 +295,19 @@ object Datadog {
         val endpoint = endpointUrl ?: DATADOG_US
         val okHttpClient = buildOkHttpClient(endpoint)
 
-        uploader = LogOkHttpUploader(endpoint, clientToken, okHttpClient)
-        handlerThread = LogHandlerThread(
-            logStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemInfoProvider
+        uploader = DataOkHttpUploader(
+            endpoint,
+            clientToken,
+            okHttpClient
         )
+        handlerThread =
+            DataUploadHandlerThread(
+                LOG_UPLOAD_THREAD_NAME,
+                logStrategy.getReader(),
+                uploader,
+                networkInfoProvider,
+                systemInfoProvider
+            )
         handlerThread.start()
     }
 

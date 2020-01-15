@@ -6,7 +6,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.data.UploadWorker
+import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream

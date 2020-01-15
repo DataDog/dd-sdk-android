@@ -4,13 +4,11 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net
 
-internal enum class LogUploadStatus {
-    SUCCESS,
-    NETWORK_ERROR,
-    HTTP_REDIRECTION,
-    HTTP_CLIENT_ERROR,
-    HTTP_SERVER_ERROR,
-    UNKNOWN_ERROR
+internal interface DataUploader {
+
+    fun setEndpoint(endpoint: String)
+
+    fun upload(data: ByteArray): UploadStatus
 }

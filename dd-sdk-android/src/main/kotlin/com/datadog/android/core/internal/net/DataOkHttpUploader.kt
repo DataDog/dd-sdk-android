@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.net
+package com.datadog.android.core.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
@@ -15,11 +15,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-internal class LogOkHttpUploader(
+internal class DataOkHttpUploader(
     endpoint: String,
     private val token: String,
     private val client: OkHttpClient
-) : LogUploader {
+) : DataUploader {
 
     private var url: String = buildUrl(endpoint, token)
 
@@ -40,7 +40,7 @@ internal class LogOkHttpUploader(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun upload(data: ByteArray): LogUploadStatus {
+    override fun upload(data: ByteArray): UploadStatus {
 
         return try {
             val request = buildRequest(data)
@@ -50,10 +50,10 @@ internal class LogOkHttpUploader(
                             "body:${response.body?.string()} " +
                             "headers:${response.headers}"
             )
-            responseCodeToLogUploadStatus(response.code)
+            responseCodeToUploadStatus(response.code)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: unable to upload logs", e)
-            LogUploadStatus.NETWORK_ERROR
+            sdkLogger.e("$TAG: unable to upload data", e)
+            UploadStatus.NETWORK_ERROR
         }
     }
 
@@ -63,26 +63,30 @@ internal class LogOkHttpUploader(
 
     private fun buildUrl(endpoint: String, token: String): String {
         sdkLogger.i("$TAG: using endpoint $endpoint")
-        return String.format(Locale.US, UPLOAD_URL, endpoint, token)
+        return String.format(Locale.US,
+            UPLOAD_URL, endpoint, token)
     }
 
     private fun buildRequest(data: ByteArray): Request {
-        sdkLogger.d("$TAG: Sending logs to $url")
+        sdkLogger.d("$TAG: Sending data to $url")
         return Request.Builder()
             .url(url)
             .post(data.toRequestBody())
             .addHeader(HEADER_UA, userAgent)
-            .addHeader(HEADER_CT, CONTENT_TYPE)
+            .addHeader(
+                HEADER_CT,
+                CONTENT_TYPE
+            )
             .build()
     }
 
-    private fun responseCodeToLogUploadStatus(code: Int): LogUploadStatus {
+    private fun responseCodeToUploadStatus(code: Int): UploadStatus {
         return when (code) {
-            in 200..299 -> LogUploadStatus.SUCCESS
-            in 300..399 -> LogUploadStatus.HTTP_REDIRECTION
-            in 400..499 -> LogUploadStatus.HTTP_CLIENT_ERROR
-            in 500..599 -> LogUploadStatus.HTTP_SERVER_ERROR
-            else -> LogUploadStatus.UNKNOWN_ERROR
+            in 200..299 -> UploadStatus.SUCCESS
+            in 300..399 -> UploadStatus.HTTP_REDIRECTION
+            in 400..499 -> UploadStatus.HTTP_CLIENT_ERROR
+            in 500..599 -> UploadStatus.HTTP_SERVER_ERROR
+            else -> UploadStatus.UNKNOWN_ERROR
         }
     }
 
@@ -101,6 +105,6 @@ internal class LogOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
 
         const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
-        private const val TAG = "LogOkHttpUploader"
+        private const val TAG = "DataOkHttpUploader"
     }
 }

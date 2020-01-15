@@ -4,18 +4,19 @@
  * Copyright 2016-2020 Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data
+package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.net.LogUploadStatus
-import com.datadog.android.log.internal.net.LogUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.invokeMethod
@@ -57,7 +58,7 @@ internal class UploadWorkerTest {
     @Mock
     lateinit var mockLogReader: Reader
     @Mock
-    lateinit var mockLogUploader: LogUploader
+    lateinit var mockDataUploader: DataUploader
 
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
@@ -70,9 +71,13 @@ internal class UploadWorkerTest {
         Datadog.initialize(mockContext, "<CLIENT_TOKEN>")
 
         Datadog.setFieldValue("logStrategy", mockLogStrategy)
-        Datadog.setFieldValue("uploader", mockLogUploader)
+        Datadog.setFieldValue("uploader", mockDataUploader)
 
-        testedWorker = UploadWorker(mockContext, fakeWorkerParameters)
+        testedWorker =
+            UploadWorker(
+                mockContext,
+                fakeWorkerParameters
+            )
     }
 
     @AfterEach
@@ -85,7 +90,7 @@ internal class UploadWorkerTest {
         @Forgery batch: Batch
     ) {
         whenever(mockLogReader.readNextBatch()).doReturn(batch, null)
-        whenever(mockLogUploader.upload(batch.data)) doReturn LogUploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         val result = testedWorker.doWork()
 
@@ -101,11 +106,11 @@ internal class UploadWorkerTest {
         forge: Forge
     ) {
         val status = forge.aValueFrom(
-            LogUploadStatus::class.java,
-            exclude = listOf(LogUploadStatus.SUCCESS)
+            UploadStatus::class.java,
+            exclude = listOf(UploadStatus.SUCCESS)
         )
         whenever(mockLogReader.readNextBatch()).doReturn(batch, null)
-        whenever(mockLogUploader.upload(batch.data)) doReturn status
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         val result = testedWorker.doWork()
 
@@ -125,7 +130,7 @@ internal class UploadWorkerTest {
         }
         whenever(mockLogReader.readNextBatch()).doReturn(firstBatch, *otherBatchesThenNull)
         batches.forEach {
-            whenever(mockLogUploader.upload(it.data)) doReturn LogUploadStatus.SUCCESS
+            whenever(mockDataUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
         }
 
         val result = testedWorker.doWork()
@@ -144,16 +149,16 @@ internal class UploadWorkerTest {
         forge: Forge
     ) {
         val status = forge.aValueFrom(
-            LogUploadStatus::class.java,
-            exclude = listOf(LogUploadStatus.SUCCESS)
+            UploadStatus::class.java,
+            exclude = listOf(UploadStatus.SUCCESS)
         )
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
         }
         whenever(mockLogReader.readNextBatch()).doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockLogUploader.upload(any())) doReturn LogUploadStatus.SUCCESS
-        whenever(mockLogUploader.upload(firstBatch.data)) doReturn status
+        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(firstBatch.data)) doReturn status
 
         val result = testedWorker.doWork()
 

@@ -6,7 +6,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
-import com.datadog.android.core.internal.data.UploadWorker
+import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.log.internal.utils.sdkLogger
 import java.lang.IllegalStateException
 
