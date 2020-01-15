@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.IOException
 import java.util.Locale
 import okhttp3.OkHttpClient

@@ -1,6 +1,6 @@
 package com.datadog.android.core.internal.data.file
 
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 
 internal fun File.readBytes(withPrefix: Char, withSuffix: Char): ByteArray =

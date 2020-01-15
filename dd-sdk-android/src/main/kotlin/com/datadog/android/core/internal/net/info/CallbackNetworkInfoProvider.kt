@@ -12,7 +12,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider :

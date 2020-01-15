@@ -13,7 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class UploadWorker(
     appContext: Context,

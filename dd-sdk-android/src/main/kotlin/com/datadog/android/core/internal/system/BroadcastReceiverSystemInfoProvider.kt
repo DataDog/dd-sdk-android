@@ -12,7 +12,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class BroadcastReceiverSystemInfoProvider :
     BroadcastReceiver(), SystemInfoProvider {

@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.constraints
 
-import com.datadog.android.log.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.devLogger
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?

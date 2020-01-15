@@ -14,7 +14,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
 internal class BroadcastReceiverNetworkInfoProvider :

@@ -24,6 +24,7 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.domain.Log
@@ -32,7 +33,6 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.log.internal.utils.devLogger
 import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit

@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.core.internal.time.MutableTimeProvider
-import com.datadog.android.log.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
