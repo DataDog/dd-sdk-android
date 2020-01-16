@@ -14,6 +14,7 @@ plugins {
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
+    id("reviewBenchmark")
     jacoco
 }
 
@@ -31,13 +32,12 @@ android {
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArgument(
             "androidx.benchmark.suppressErrors",
-            "EMULATOR,UNLOCKED"
+            "EMULATOR,DEBUGGABLE,UNLOCKED"
         )
         testInstrumentationRunnerArgument(
-            "androidx.benchmark.suppressErrors",
-            "EMULATOR,DEBUGGABLE"
+            "androidx.benchmark.output.enable",
+            "true"
         )
-        testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
     // TODO when using Android Plugin 3.6.+
@@ -93,3 +93,13 @@ dependencies {
 kotlinConfig()
 detektConfig()
 ktLintConfig()
+
+reviewBenchmark {
+    addThreshold("benchmark_writing_logs", TimeUnit.MICROSECONDS.toNanos(350))
+    addThreshold("benchmark_writing_logs_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold("benchmark_writing_logs_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold("benchmark_writing_logs_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
+
+    addThreshold("benchmark_sending_medium_load_of_logs", TimeUnit.MILLISECONDS.toNanos(100))
+    addThreshold("benchmark_sending_heavy_load_of_logs", TimeUnit.MILLISECONDS.toNanos(300))
+}

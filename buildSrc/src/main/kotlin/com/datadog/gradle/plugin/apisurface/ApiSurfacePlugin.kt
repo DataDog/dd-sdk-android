@@ -7,7 +7,6 @@
 package com.datadog.gradle.plugin.apisurface
 
 import com.datadog.gradle.config.taskConfig
-import org.gradle.api.JavaVersion
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project

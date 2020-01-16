@@ -7,10 +7,10 @@
 package com.datadog.gradle.plugin.apisurface
 
 import com.datadog.gradle.utils.execShell
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 open class CheckApiSurfaceTask : DefaultTask() {
 
