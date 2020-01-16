@@ -33,8 +33,12 @@ open class CheckApiSurfaceTask : DefaultTask() {
         val removals = lines.count { it.matches(Regex("^-[^-].*$")) }
 
         if (additions > 0 || removals > 0) {
+
             throw IllegalStateException(
-                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task before you push your PR."
+                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task before you push your PR.\n" +
+                    "---------\n" +
+                    lines.joinToString("\n") +
+                    "\n---------\n"
             )
         }
     }
