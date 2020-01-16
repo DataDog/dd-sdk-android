@@ -1,6 +1,6 @@
 package com.datadog.android.tracing.internal.domain
 
-import com.datadog.android.log.assertj.JsonObjectAssert
+import com.datadog.android.utils.extension.assertMatches
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonParser
 import datadog.opentracing.DDSpan
@@ -22,7 +22,7 @@ import org.mockito.quality.Strictness
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
-class SpanSerializerTest {
+internal class SpanSerializerTest {
 
     lateinit var underTest: SpanSerializer
 
@@ -31,33 +31,13 @@ class SpanSerializerTest {
         underTest = SpanSerializer()
     }
 
-
     @Test
-    fun `it will serialize a span to it Json string representation`(@Forgery span:DDSpan){
+    fun `it will serialize a span to it Json string representation`(@Forgery span: DDSpan) {
         // when
         val serialized = underTest.serialize(span)
 
         // then
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        JsonObjectAssert.assertThat(jsonObject)
-            .hasField(START_TIMESTAMP_KEY, span.startTime)
-            .hasField(DURATION_KEY, span.durationNano)
-            .hasField(SERVICE_NAME_KEY, span.serviceName)
-            .hasField(TRACE_ID_KEY, span.traceId)
-            .hasField(SPAN_ID_KEY, span.spanId)
-            .hasField(PARENT_ID_KEY, span.parentId)
-            .hasField(RESOURCE_KEY, span.resourceName)
-            .hasField(OPERATION_NAME_KEY, span.operationName)
-    }
-
-    companion object {
-        const val START_TIMESTAMP_KEY="start"
-        const val DURATION_KEY="duration"
-        const val SERVICE_NAME_KEY="service"
-        const val TRACE_ID_KEY="trace_id"
-        const val SPAN_ID_KEY="span_id"
-        const val PARENT_ID_KEY="parent_id"
-        const val RESOURCE_KEY="resource"
-        const val OPERATION_NAME_KEY="name"
+        jsonObject.assertMatches(span)
     }
 }
