@@ -28,12 +28,12 @@ internal class LogFileStrategy(
     oldFileThreshold,
     maxDiskSpace,
     LogFileDataMigrator(context.filesDir),
-    LogSerializer()
+    LogSerializer(),
+    WRITER_THREAD_NAME
 ) {
     // endregion
 
     companion object {
-
         private const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
         internal const val MAX_LOG_PER_BATCH: Int = 500
         private const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
@@ -43,5 +43,6 @@ internal class LogFileStrategy(
         internal const val DATA_FOLDER_ROOT = "dd-logs"
         internal const val LOGS_FOLDER = "$DATA_FOLDER_ROOT-v$LOGS_DATA_VERSION"
         internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
+        internal const val WRITER_THREAD_NAME = "ddog_logs_writer"
     }
 }
