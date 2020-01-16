@@ -22,6 +22,7 @@ class Configurator :
         forge.addFactory(JsonObjectForgeryFactory())
         forge.addFactory(JsonPrimitiveForgeryFactory())
         forge.addFactory(JsonArrayForgeryFactory())
+        forge.addFactory(SpanForgeryFactory())
         forge.useJvmFactories()
     }
 }
