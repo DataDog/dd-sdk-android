@@ -22,9 +22,9 @@ internal abstract class FilePersistenceStrategy<T : Any>(
     maxItemsPerBatch: Int,
     oldFileThreshold: Long,
     maxDiskSpace: Long,
-    private val dataMigrator: DataMigrator,
     serializer: Serializer<T>,
-    private val writerThreadName: String
+    private val writerThreadName: String,
+    private val dataMigrator: DataMigrator? = null
 ) : PersistenceStrategy<T> {
 
     val fileOrchestrator = FileOrchestrator(
