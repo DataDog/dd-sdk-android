@@ -1,9 +1,7 @@
-package com.datadog.android.domain
+package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
