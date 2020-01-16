@@ -57,7 +57,7 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
         return map
     }
 
-    private fun Forge.exhaustiveTags(): List<String> {
+    fun Forge.exhaustiveTags(): List<String> {
         return aList { aStringMatching("[a-z]([a-z0-9_:./-]{0,198}[a-z0-9_./-])?") }
     }
 }
