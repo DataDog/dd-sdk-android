@@ -178,7 +178,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     fun `don't write model if size is too big`(forge: Forge) {
         val bigModel = bigModel(forge)
         testedWriter.write(bigModel)
-        waitForNextBatch()
+            waitForNextBatch()
         val batch = testedReader.readNextBatch()
 
         assertThat(batch)
