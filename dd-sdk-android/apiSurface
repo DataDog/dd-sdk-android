@@ -1,3 +1,5 @@
+interface com.datadog.android.tracing.TracerBuilder
+  fun build(): datadog.opentracing.DDTracer
 object com.datadog.android.Datadog
   const val DATADOG_US: String
   const val DATADOG_EU: String
@@ -6,6 +8,8 @@ object com.datadog.android.Datadog
   fun isInitialized(): Boolean
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
+  fun tracerBuilder(String): com.datadog.android.tracing.TracerBuilder
+enum com.datadog.android.log.EndpointUpdateStrategy
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_LOGS
   - SEND_OLD_LOGS_TO_NEW_ENDPOINT

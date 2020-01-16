@@ -199,13 +199,15 @@ internal class DatadogTest {
     ) {
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
-        val strategy = Datadog.getLogStrategy()
+        val logStrategy = Datadog.getLogStrategy()
+        val tracingStrategy = Datadog.getTracingStrategy()
         val networkInfoProvider = Datadog.getNetworkInfoProvider()
         val userInfoProvider = Datadog.getUserInfoProvider()
         val timeProvider = Datadog.getTimeProvider()
 
         Datadog.initialize(mockAppContext, fakeToken)
-        assertThat(strategy).isSameAs(Datadog.getLogStrategy())
+        assertThat(logStrategy).isSameAs(Datadog.getLogStrategy())
+        assertThat(tracingStrategy).isSameAs(Datadog.getTracingStrategy())
         assertThat(networkInfoProvider).isSameAs(Datadog.getNetworkInfoProvider())
         assertThat(userInfoProvider).isSameAs(Datadog.getUserInfoProvider())
         assertThat(timeProvider).isSameAs(Datadog.getTimeProvider())
