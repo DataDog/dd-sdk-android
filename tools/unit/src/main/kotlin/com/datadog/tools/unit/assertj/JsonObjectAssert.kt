@@ -12,6 +12,7 @@ import com.google.gson.JsonPrimitive
 import java.math.BigInteger
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import java.math.BigInteger
 
 /**
  * Assertion methods for [JsonObject].
@@ -268,6 +269,31 @@ class JsonObjectAssert(actual: JsonObject) :
             .overridingErrorMessage(
                 "Expected json object to have field $name value $expectedValue " +
                     "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    fun hasField(name: String, expectedValue: BigInteger): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with BigInteger value " +
+                        "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asBigInteger
+        assertThat(value)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                        "but was $value"
             )
             .isEqualTo(expectedValue)
         return this
