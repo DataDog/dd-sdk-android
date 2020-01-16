@@ -11,7 +11,9 @@ import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -43,15 +45,19 @@ internal class DeferredWriterTest {
     @Mock
     lateinit var mockDataMigrator: DataMigrator
 
+    lateinit var threadName: String
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        threadName = forge.anAlphabeticalString()
         whenever(mockDeferredHandler.handle(any())) doAnswer {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
         underTest = DeferredWriter(
-            mockDataMigrator,
-            mockDelegate
+            threadName,
+            mockDelegate,
+            mockDataMigrator
         )
         underTest.deferredHandler = mockDeferredHandler
         // force the lazy handler thread to consume all the queued messages
@@ -69,6 +75,21 @@ internal class DeferredWriterTest {
         val inOrder = inOrder(mockDataMigrator, mockDelegate)
         inOrder.verify(mockDataMigrator).migrateData()
         inOrder.verify(mockDelegate).write(model)
+    }
+
+    @Test
+    fun `if no data migrator provided will not perform the migration step`(forge: Forge) {
+        val model = forge.anAlphabeticalString()
+        underTest = DeferredWriter(
+            threadName,
+            mockDelegate
+        )
+        // when
+        underTest.write(model)
+
+        // then
+        verify(mockDeferredHandler, times(1)).handle(any())
+        verifyNoMoreInteractions(mockDeferredHandler)
     }
 
     @Test
