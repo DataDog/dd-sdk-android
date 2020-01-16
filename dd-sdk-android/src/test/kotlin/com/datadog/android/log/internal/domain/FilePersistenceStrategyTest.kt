@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.domain
+package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import android.os.Build
