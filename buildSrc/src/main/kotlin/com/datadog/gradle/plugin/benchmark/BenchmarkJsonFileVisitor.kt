@@ -66,7 +66,7 @@ class BenchmarkJsonFileVisitor {
 
     companion object {
         private val devicePrefixes = listOf(
-            "EMULATOR", "UNLOCKED", "DEBUGGABLE"
+            "EMULATOR", "UNLOCKED", "DEBUGGABLE", "ENG-BUILD"
         )
     }
 }

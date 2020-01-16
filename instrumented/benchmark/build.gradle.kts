@@ -32,7 +32,7 @@ android {
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArgument(
             "androidx.benchmark.suppressErrors",
-            "EMULATOR,DEBUGGABLE,UNLOCKED"
+            "EMULATOR,DEBUGGABLE,UNLOCKED,ENG-BUILD"
         )
         testInstrumentationRunnerArgument(
             "androidx.benchmark.output.enable",
@@ -95,11 +95,11 @@ detektConfig()
 ktLintConfig()
 
 reviewBenchmark {
-    addThreshold("benchmark_writing_logs", TimeUnit.MICROSECONDS.toNanos(350))
+    addThreshold("benchmark_writing_logs", TimeUnit.MICROSECONDS.toNanos(500))
     addThreshold("benchmark_writing_logs_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
     addThreshold("benchmark_writing_logs_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
     addThreshold("benchmark_writing_logs_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
 
-    addThreshold("benchmark_sending_medium_load_of_logs", TimeUnit.MILLISECONDS.toNanos(100))
+    addThreshold("benchmark_sending_medium_load_of_logs", TimeUnit.MILLISECONDS.toNanos(200))
     addThreshold("benchmark_sending_heavy_load_of_logs", TimeUnit.MILLISECONDS.toNanos(300))
 }
