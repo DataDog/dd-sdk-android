@@ -45,7 +45,9 @@ open class GenerateApiSurfaceTask : DefaultTask() {
 
     private fun visitDirectoryRecursively(file: File) {
         when {
-            file.isDirectory -> file.listFiles()?.forEach { visitDirectoryRecursively(it) }
+            file.isDirectory -> file.listFiles().orEmpty()
+                .sortedBy { it.absolutePath }
+                .forEach { visitDirectoryRecursively(it) }
             file.isFile -> visitFile(file)
             else -> System.err.println("${file.path} is neither file nor directory")
         }
