@@ -25,8 +25,11 @@ import io.opentracing.Tracer
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @ForgeConfiguration(Configurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class TracingFileStrategyTest :
     FilePersistenceStrategyTest<DDSpan>(
         TracingFileStrategy.TRACES_FOLDER,
