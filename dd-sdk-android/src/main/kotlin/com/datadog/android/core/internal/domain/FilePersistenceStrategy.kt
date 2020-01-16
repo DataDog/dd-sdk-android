@@ -23,7 +23,8 @@ internal abstract class FilePersistenceStrategy<T : Any>(
     oldFileThreshold: Long,
     maxDiskSpace: Long,
     private val dataMigrator: DataMigrator,
-    serializer: Serializer<T>
+    serializer: Serializer<T>,
+    private val writerThreadName: String
 ) : PersistenceStrategy<T> {
 
     val fileOrchestrator = FileOrchestrator(
@@ -53,14 +54,14 @@ internal abstract class FilePersistenceStrategy<T : Any>(
 
     override fun getWriter(): Writer<T> {
         return DeferredWriter(
-            dataMigrator,
-            fileWriter
+            writerThreadName,
+            fileWriter,
+            dataMigrator
         )
     }
 
     override fun getReader(): Reader {
         return fileReader
     }
-
     // endregion
 }
