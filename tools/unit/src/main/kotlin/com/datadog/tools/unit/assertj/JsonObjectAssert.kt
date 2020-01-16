@@ -11,9 +11,9 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import java.math.BigInteger
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
-import java.math.BigInteger
 
 /**
  * Assertion methods for [JsonObject].
