@@ -27,9 +27,9 @@ internal class LogFileStrategy(
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    LogFileDataMigrator(context.filesDir),
     LogSerializer(),
-    WRITER_THREAD_NAME
+    WRITER_THREAD_NAME,
+    LogFileDataMigrator(context.filesDir)
 ) {
     // endregion
 
