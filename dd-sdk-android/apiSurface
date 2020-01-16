@@ -1,5 +1,3 @@
-interface com.datadog.android.tracing.TracerBuilder
-  fun build(): datadog.opentracing.DDTracer
 object com.datadog.android.Datadog
   const val DATADOG_US: String
   const val DATADOG_EU: String
@@ -42,3 +40,5 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
   companion object
+interface com.datadog.android.tracing.TracerBuilder
+  fun build(): datadog.opentracing.DDTracer
