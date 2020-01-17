@@ -3,7 +3,7 @@ package com.datadog.android.tracing.internal.data
 import datadog.opentracing.DDSpan
 import datadog.trace.common.writer.Writer
 
-internal class TracesWriter(
+internal class TraceWriter(
     val writer: com.datadog.android.core.internal.data.Writer<DDSpan>
 ) : Writer {
 

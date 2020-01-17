@@ -27,16 +27,16 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TracesWriterTest {
+internal class TraceWriterTest {
 
-    lateinit var underTest: TracesWriter
+    lateinit var underTest: TraceWriter
 
     @Mock
     lateinit var mockedFilesWriter: Writer<DDSpan>
 
     @BeforeEach
     fun `set up`() {
-        underTest = TracesWriter(mockedFilesWriter)
+        underTest = TraceWriter(mockedFilesWriter)
     }
 
     @Test
