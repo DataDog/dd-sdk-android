@@ -6,13 +6,8 @@ import datadog.opentracing.DDTracer
 import datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import io.opentracing.Tracer
 
 internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
-
-    companion object {
-        val TEST_TRACER = DDTracer(Config.get(), mock())
-    }
 
     override fun getForgery(forge: Forge): DDSpan {
         val operationName = forge.anAlphabeticalString()
@@ -21,26 +16,14 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
         val spanType = forge.anAlphabeticalString()
         val isWithErrorFlag = forge.aBool()
         val tags = forge.exhaustiveTraceTags()
-        val spanBuilder = TEST_TRACER
-            .buildSpan(operationName)
-            .withSpanType(spanType)
-            .withResourceName(resourceName)
-            .withServiceName(serviceName)
-
-        if (isWithErrorFlag) {
-            spanBuilder.withErrorFlag()
-        }
-        (spanBuilder as Tracer.SpanBuilder).apply {
-            tags.forEach {
-                val mapValue = it.value
-                when (mapValue) {
-                    is String -> this.withTag(it.key, mapValue)
-                    is Number -> this.withTag(it.key, mapValue)
-                    is Boolean -> this.withTag(it.key, mapValue)
-                }
-            }
-        }
-        return spanBuilder.start()
+        return generateSpanBuilder(
+            operationName,
+            spanType,
+            resourceName,
+            serviceName,
+            isWithErrorFlag,
+            tags
+        ).start()
     }
 
     fun Forge.exhaustiveTraceTags(): Map<String, Any> {
@@ -53,5 +36,39 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             anAsciiString()
         ).map { anAlphabeticalString() to it }
             .toMap()
+    }
+
+    companion object {
+        val TEST_TRACER = DDTracer(Config.get(), mock())
+
+        fun generateSpanBuilder(
+            operationName: String,
+            spanType: String,
+            resourceName: String,
+            serviceName: String,
+            isWithErrorFlag: Boolean,
+            tags: Map<String, Any>
+        ): DDTracer.DDSpanBuilder {
+            val spanBuilder = TEST_TRACER
+                .buildSpan(operationName)
+                .withSpanType(spanType)
+                .withResourceName(resourceName)
+                .withServiceName(serviceName)
+
+            if (isWithErrorFlag) {
+                spanBuilder.withErrorFlag()
+            }
+
+            tags.forEach {
+                val mapValue = it.value
+                when (mapValue) {
+                    is String -> spanBuilder.withTag(it.key, mapValue)
+                    is Number -> spanBuilder.withTag(it.key, mapValue)
+                    is Boolean -> spanBuilder.withTag(it.key, mapValue)
+                }
+            }
+
+            return spanBuilder
+        }
     }
 }
