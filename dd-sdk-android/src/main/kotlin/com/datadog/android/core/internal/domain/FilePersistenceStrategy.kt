@@ -17,13 +17,13 @@ import java.io.File
 
 internal abstract class FilePersistenceStrategy<T : Any>(
     dataDirectory: File,
-    recentDelayMs: Long,
-    maxBatchSize: Long,
-    maxItemsPerBatch: Int,
-    oldFileThreshold: Long,
-    maxDiskSpace: Long,
     serializer: Serializer<T>,
     private val writerThreadName: String,
+    recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
+    maxBatchSize: Long = MAX_BATCH_SIZE,
+    maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
+    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
+    maxDiskSpace: Long = MAX_DISK_SPACE,
     private val dataMigrator: DataMigrator? = null
 ) : PersistenceStrategy<T> {
 
@@ -64,4 +64,12 @@ internal abstract class FilePersistenceStrategy<T : Any>(
         return fileReader
     }
     // endregion
+
+    companion object {
+        internal const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
+        internal const val MAX_ITEMS_PER_BATCH: Int = 500
+        internal const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
+        internal const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
+        internal const val MAX_DELAY_BETWEEN_MESSAGES_MS = 5000L
+    }
 }
