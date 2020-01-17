@@ -27,15 +27,14 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
     override fun beforeActivityLaunched() {
         mockWebServer.apply {
             start()
-            dispatcher = object : Dispatcher() {
+            setDispatcher(object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-
-                    val content =
-                        if (request.headers.contains("Content-Encoding" to "gzip")) {
-                            request.unzip()
-                        } else {
-                            String(request.body.readByteArray(), Charsets.UTF_8)
-                        }
+                    val encoding = request.headers.get("Content-Encoding")
+                    val content = if (encoding == "gzip") {
+                        request.unzip()
+                    } else {
+                        String(request.body.readByteArray(), Charsets.UTF_8)
+                    }
                     val jsonArray =
                         JsonParser.parseString(content)
                             .asJsonArray
@@ -45,7 +44,7 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
                     requestHeaders = request.headers
                     return mockResponse(200)
                 }
-            }
+            })
         }
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
         Datadog.setEndpointUrl(fakeEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
@@ -68,7 +67,7 @@ internal class MockServerRule<T : Activity>(activityClass: Class<T>) :
     }
 
     private fun RecordedRequest.unzip(): String {
-        if (body.size <= 0) {
+        if (body.size() <= 0) {
             return ""
         }
         val gzipInputStream =

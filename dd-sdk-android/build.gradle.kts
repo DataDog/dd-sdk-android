@@ -96,6 +96,12 @@ android {
             )
         }
     }
+
+    packagingOptions {
+        exclude("META-INF/jvm.kotlin_module")
+        exclude("META-INF/LICENSE.md")
+        exclude("META-INF/LICENSE-notice.md")
+    }
 }
 
 dependencies {

@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody
 import okhttp3.Response
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
@@ -54,7 +54,7 @@ internal class GzipRequestInterceptorTest {
         fakeBody = forge.anAlphabeticalString()
         fakeRequest = Request.Builder()
             .url(fakeUrl)
-            .post(fakeBody.toByteArray().toRequestBody())
+            .post(RequestBody.create(null, fakeBody.toByteArray()))
             .build()
         testedInterceptor = GzipRequestInterceptor()
     }
@@ -69,7 +69,7 @@ internal class GzipRequestInterceptorTest {
             verify(mockChain).proceed(capture())
             val buffer = Buffer()
             val stream = ByteArrayOutputStream()
-            lastValue.body!!.writeTo(buffer)
+            lastValue.body()!!.writeTo(buffer)
             buffer.copyTo(stream)
 
             assertThat(stream.toString())
@@ -95,7 +95,7 @@ internal class GzipRequestInterceptorTest {
             verify(mockChain).proceed(capture())
             val buffer = Buffer()
             val stream = ByteArrayOutputStream()
-            lastValue.body!!.writeTo(buffer)
+            lastValue.body()!!.writeTo(buffer)
             buffer.copyTo(stream)
 
             assertThat(stream.toString())
@@ -118,7 +118,7 @@ internal class GzipRequestInterceptorTest {
 
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.body)
+            assertThat(lastValue.body())
                 .isNull()
             assertThat(lastValue.header("Content-Encoding"))
                 .isNull()
