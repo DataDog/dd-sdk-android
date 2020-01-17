@@ -81,8 +81,9 @@ dependencies {
     // latest release maven artifact either local or live
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
     implementation(project(":dd-sdk-android")) {
-        exclude("com.google.guava")
+        exclude("com.google.guava", "listenablefuture")
     }
+
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.KotlinReflect)
     implementation(Dependencies.Libraries.AndroidXMultidex)
