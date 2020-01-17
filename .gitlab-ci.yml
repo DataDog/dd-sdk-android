@@ -54,14 +54,6 @@ analysis:api-surface:
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges
 
-test:benchmark:
-  tags: [ "runner:docker", "size:large" ]
-  image: $CI_IMAGE_DOCKER
-  stage: test
-  script:
-    - git fetch --depth=1 origin master
-    - ./gradlew :instrumented:benchmark:packageDebugAndroidTest
-
 test:unit:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER

@@ -13,7 +13,7 @@ import java.io.IOException
 import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody
 
 internal class DataOkHttpUploader(
     endpoint: String,
@@ -46,11 +46,11 @@ internal class DataOkHttpUploader(
             val request = buildRequest(data)
             val response = client.newCall(request).execute()
             sdkLogger.i(
-                    "$TAG: Response code:${response.code} " +
-                            "body:${response.body?.string()} " +
-                            "headers:${response.headers}"
+                    "$TAG: Response code:${response.code()} " +
+                            "body:${response.body()?.string()} " +
+                            "headers:${response.headers()}"
             )
-            responseCodeToUploadStatus(response.code)
+            responseCodeToUploadStatus(response.code())
         } catch (e: IOException) {
             sdkLogger.e("$TAG: unable to upload data", e)
             UploadStatus.NETWORK_ERROR
@@ -71,7 +71,7 @@ internal class DataOkHttpUploader(
         sdkLogger.d("$TAG: Sending data to $url")
         return Request.Builder()
             .url(url)
-            .post(data.toRequestBody())
+            .post(RequestBody.create(null, data))
             .addHeader(HEADER_UA, userAgent)
             .addHeader(
                 HEADER_CT,

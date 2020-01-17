@@ -35,7 +35,12 @@ internal abstract class AbstractProfilingRule<T> : TestRule {
     abstract fun measureAfterAction(): T
     abstract fun compareWithThreshold(before: T, after: T, threshold: T)
 
-    fun profile(warmupAction: () -> Unit = noOpWarmUpFunction, action: () -> Unit, threshold: T) {
+    fun profile(
+        warmupAction: () -> Unit = noOpWarmUpFunction,
+        action: () -> Unit,
+        threshold: T,
+        repeatCount: Int = 64
+    ) {
         doBeforeWarmUp()
         warmupAction()
         doAfterWarmUp()

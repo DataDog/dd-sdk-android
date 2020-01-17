@@ -13,7 +13,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okio.BufferedSink
 import okio.GzipSink
-import okio.buffer
+import okio.Okio
 
 /**
  * This interceptor compresses the HTTP request body.
@@ -29,14 +29,14 @@ internal class GzipRequestInterceptor : Interceptor {
      */
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest: Request = chain.request()
-        val body = originalRequest.body
+        val body = originalRequest.body()
 
         return if (body == null || originalRequest.header(HEADER_ENCODING) != null) {
             chain.proceed(originalRequest)
         } else {
             val compressedRequest = originalRequest.newBuilder()
                 .header(HEADER_ENCODING, ENCODING_GZIP)
-                .method(originalRequest.method, gzip(body))
+                .method(originalRequest.method(), gzip(body))
                 .build()
             chain.proceed(compressedRequest)
         }
@@ -57,7 +57,7 @@ internal class GzipRequestInterceptor : Interceptor {
             }
 
             override fun writeTo(sink: BufferedSink) {
-                val gzipSink: BufferedSink = GzipSink(sink).buffer()
+                val gzipSink: BufferedSink = Okio.buffer(GzipSink(sink))
                 body.writeTo(gzipSink)
                 gzipSink.close()
             }
@@ -65,6 +65,7 @@ internal class GzipRequestInterceptor : Interceptor {
     }
 
     // endregion
+
     companion object {
         private const val HEADER_ENCODING = "Content-Encoding"
         private const val ENCODING_GZIP = "gzip"

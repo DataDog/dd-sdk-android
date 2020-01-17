@@ -13,7 +13,7 @@ object Dependencies {
         const val Kotlin = "1.3.61"
         const val AndroidToolsPlugin = "3.5.3"
         const val Gson = "2.8.6"
-        const val OkHttp = "4.2.2"
+        const val OkHttp = "3.12.6"
         const val JetpackWorkManager = "2.2.0"
 
         // JUnit

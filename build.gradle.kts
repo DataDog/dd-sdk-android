@@ -74,7 +74,8 @@ tasks.register("checkAll") {
         "ktlintCheckAll",
         "detektAll",
         "unitTestAll",
-        "jacocoReportAll"
+        "jacocoReportAll",
+        "instrumentTestAll"
     )
 }
 
@@ -109,6 +110,12 @@ tasks.register("jacocoReportAll") {
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"
     )
+}
+
+tasks.register("instrumentTestAll") {
+    dependsOn(":instrumented:integration:connectedCheck")
+    dependsOn(":instrumented:benchmark:connectedCheck")
+    dependsOn(":dd-sdk-android:connectedCheck")
 }
 
 tasks.register("buildIntegrationTestsArtifacts") {
