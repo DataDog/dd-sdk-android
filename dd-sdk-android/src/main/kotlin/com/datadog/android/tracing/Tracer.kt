@@ -39,8 +39,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
          * Builds a [Tracer] based on the current state of this Builder.
          */
         fun build(): Tracer {
-            properties()
-            return Tracer(Config.get(), TraceWriter(writer))
+            return Tracer(config(), TraceWriter(writer))
         }
 
         /**
@@ -62,10 +61,9 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
             return properties
         }
 
+        private fun config() = Config.get(properties())
+
         // endregion
-
-        internal fun config() = Config.get(properties())
-
         companion object {
             private const val SERVICE_NAME_KEY = "service.name"
             internal const val DEFAULT_SERVICE_NAME = "android"
