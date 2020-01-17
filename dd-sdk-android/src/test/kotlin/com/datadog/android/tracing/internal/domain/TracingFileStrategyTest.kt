@@ -12,6 +12,8 @@ import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.log.internal.domain.FilePersistenceStrategyTest
+import com.datadog.android.utils.copy
+import com.datadog.android.utils.extension.SpanKeys
 import com.datadog.android.utils.extension.assertMatches
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
@@ -24,7 +26,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import io.opentracing.Tracer
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
@@ -63,11 +64,6 @@ internal class TracingFileStrategyTest :
             methodEnclosingClass = LazyHandlerThread::class.java
         ) // consume all the queued messages
     }
-
-    @Test
-    fun `migrates the data from v0 to v1`() {
-    }
-
     // endregion
 
     // region utils
@@ -77,7 +73,7 @@ internal class TracingFileStrategyTest :
     }
 
     override fun minimalCopy(of: DDSpan): DDSpan {
-        return of
+        return of.copy()
     }
 
     override fun lightModel(forge: Forge): DDSpan {
@@ -114,10 +110,16 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = (jsonObject[SpanSerializer.SERVICE_NAME_KEY] as JsonPrimitive).asString
+        val serviceName = (jsonObject[SpanKeys.SERVICE_NAME_KEY] as JsonPrimitive).asString
+        val traceId = (jsonObject[SpanKeys.TRACE_ID_KEY] as JsonPrimitive).asBigInteger
+        val parentId = (jsonObject[SpanKeys.PARENT_ID_KEY] as JsonPrimitive).asBigInteger
+        val resourceName = (jsonObject[SpanKeys.RESOURCE_KEY] as JsonPrimitive).asString
 
         val roughMatches = models.filter {
-            serviceName == it.serviceName
+            serviceName == it.serviceName &&
+                    traceId == it.traceId &&
+                    parentId == it.parentId &&
+                    resourceName == it.resourceName
         }
 
         assertThat(roughMatches).isNotEmpty()
