@@ -30,6 +30,14 @@ analysis:ktlint:
     - git fetch --depth=1 origin master
     - ./gradlew :ktlintCheckAll
 
+analysis:android-lint:
+  tags: [ "runner:docker", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  script:
+    - git fetch --depth=1 origin master
+    - ./gradlew :lintCheckAll
+
 analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER

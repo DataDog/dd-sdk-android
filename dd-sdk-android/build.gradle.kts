@@ -51,10 +51,14 @@ android {
         versionName = AndroidConfig.VERSION.name
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
-            "EMULATOR,UNLOCKED")
-        testInstrumentationRunnerArgument("androidx.benchmark.suppressErrors",
-            "EMULATOR,DEBUGGABLE")
+        testInstrumentationRunnerArgument(
+            "androidx.benchmark.suppressErrors",
+            "EMULATOR,UNLOCKED"
+        )
+        testInstrumentationRunnerArgument(
+            "androidx.benchmark.suppressErrors",
+            "EMULATOR,DEBUGGABLE"
+        )
         testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
@@ -101,6 +105,13 @@ android {
         exclude("META-INF/jvm.kotlin_module")
         exclude("META-INF/LICENSE.md")
         exclude("META-INF/LICENSE-notice.md")
+    }
+
+    lintOptions {
+        isWarningsAsErrors = true
+        isAbortOnError = true
+        isCheckReleaseBuilds = false
+        isCheckGeneratedSources = true
     }
 }
 

@@ -58,6 +58,13 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    lintOptions {
+        isWarningsAsErrors = true
+        isAbortOnError = true
+        isCheckReleaseBuilds = false
+        isCheckGeneratedSources = true
+    }
 }
 
 dependencies {
