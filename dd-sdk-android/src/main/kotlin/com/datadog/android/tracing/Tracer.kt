@@ -15,35 +15,23 @@ import datadog.trace.api.Config
 import java.util.Properties
 
 /**
- * Used to provide a [TracerBuilder] which will produce a [Tracer].
-
- * The [Tracer] instance will be used to use the Datadog
- * tracing features throughout your application.
+ *  A class enabling Datadog tracing features.
+ *
+ * It allows you to create [ DDSpan ] and send them to Datadog servers.
  *
  * You can have multiple tracers configured in your application, each with their own settings.
+ *
  */
 class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTracer(config, writer) {
 
-    companion object {
-        internal const val DEFAULT_SERVICE_NAME = "android"
-    }
-
     /**
-     * Used to provide a [TracerBuilder] which will produce a [DDTracer].
-
-     * The [DDTracer] instance will be used to use the Datadog
-     * tracing features throughout your application.
+     * Builds a [Tracer] instance.
      *
-     * You can have multiple tracers configured in your application, each with their own settings.
      */
-    class TracerBuilder {
-        companion object {
-            private const val SERVICE_NAME_KEY = "service.name"
-        }
+    class Builder {
 
         private var serviceName: String = DEFAULT_SERVICE_NAME
         private val writer: Writer<DDSpan> = Datadog.getTracingStrategy().getWriter()
-        private val properties: Properties = Properties()
 
         // region Public API
 
@@ -51,7 +39,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
          * Builds a [Tracer] based on the current state of this Builder.
          */
         fun build(): Tracer {
-            updateProperties()
+            properties()
             return Tracer(Config.get(), TraceWriter(writer))
         }
 
@@ -59,7 +47,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
          * Sets the service name that will appear in your traces.
          * @param serviceName the service name (default = "android")
          */
-        fun setServiceName(serviceName: String): TracerBuilder {
+        fun setServiceName(serviceName: String): Builder {
             this.serviceName = serviceName
             return this
         }
@@ -68,12 +56,19 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
 
         // region Internal
 
-        private fun updateProperties() {
+        private fun properties(): Properties {
+            val properties = Properties()
             properties.setProperty(SERVICE_NAME_KEY, serviceName)
+            return properties
         }
 
         // endregion
 
-        internal fun config() = Config.get(properties)
+        internal fun config() = Config.get(properties())
+
+        companion object {
+            private const val SERVICE_NAME_KEY = "service.name"
+            internal const val DEFAULT_SERVICE_NAME = "android"
+        }
     }
 }

@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TracerTest {
 
-    lateinit var underTest: Tracer.TracerBuilder
+    lateinit var underTest: Tracer.Builder
     lateinit var mockAppContext: Application
     lateinit var fakeToken: String
     lateinit var fakeServiceName: String
@@ -50,7 +50,7 @@ internal class TracerTest {
     @Test
     fun `it will build a valid Tracer`(forge: Forge) {
         // given
-        underTest = Tracer.TracerBuilder()
+        underTest = Tracer.Builder()
 
         // when
         val tracer = underTest.setServiceName(fakeServiceName).build()
@@ -64,7 +64,7 @@ internal class TracerTest {
     @Test
     fun `it will build a valid Tracer with a default service name if not provided`(forge: Forge) {
         // given
-        underTest = Tracer.TracerBuilder()
+        underTest = Tracer.Builder()
 
         // when
         val tracer = underTest.build()
@@ -72,6 +72,6 @@ internal class TracerTest {
 
         // then
         assertThat(tracer).isNotNull()
-        assertThat(config).hasServiceName(Tracer.DEFAULT_SERVICE_NAME)
+        assertThat(config).hasServiceName(Tracer.Builder.DEFAULT_SERVICE_NAME)
     }
 }
