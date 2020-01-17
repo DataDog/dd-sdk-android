@@ -14,7 +14,7 @@ internal class LogFileStrategy(
     context: Context,
     recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
     maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxLogPerBatch: Int = MAX_LOG_PER_BATCH,
+    maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE
 ) : FilePersistenceStrategy<Log>(
@@ -22,23 +22,18 @@ internal class LogFileStrategy(
         context.filesDir,
         LOGS_FOLDER
     ),
+    LogSerializer(),
+    WRITER_THREAD_NAME,
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    LogSerializer(),
-    WRITER_THREAD_NAME,
     LogFileDataMigrator(context.filesDir)
 ) {
     // endregion
 
     companion object {
-        private const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
-        internal const val MAX_LOG_PER_BATCH: Int = 500
-        private const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
-        private const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
-
         internal const val LOGS_DATA_VERSION = 1
         internal const val DATA_FOLDER_ROOT = "dd-logs"
         internal const val LOGS_FOLDER = "$DATA_FOLDER_ROOT-v$LOGS_DATA_VERSION"
