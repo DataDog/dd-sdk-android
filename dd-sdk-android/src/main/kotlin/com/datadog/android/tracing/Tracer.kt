@@ -8,7 +8,7 @@ package com.datadog.android.tracing
 
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.tracing.internal.data.TracesWriter
+import com.datadog.android.tracing.internal.data.TraceWriter
 import datadog.opentracing.DDSpan
 import datadog.opentracing.DDTracer
 import datadog.trace.api.Config
@@ -22,7 +22,7 @@ import java.util.Properties
  *
  * You can have multiple tracers configured in your application, each with their own settings.
  */
-class Tracer internal constructor(config: Config, writer: TracesWriter) : DDTracer(config, writer) {
+class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTracer(config, writer) {
 
     companion object {
         internal const val DEFAULT_SERVICE_NAME = "android"
@@ -52,7 +52,7 @@ class Tracer internal constructor(config: Config, writer: TracesWriter) : DDTrac
          */
         fun build(): Tracer {
             updateProperties()
-            return Tracer(Config.get(), TracesWriter(writer))
+            return Tracer(Config.get(), TraceWriter(writer))
         }
 
         /**
@@ -73,7 +73,6 @@ class Tracer internal constructor(config: Config, writer: TracesWriter) : DDTrac
         }
 
         // endregion
-
 
         internal fun config() = Config.get(properties)
     }
