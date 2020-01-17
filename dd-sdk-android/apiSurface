@@ -41,8 +41,7 @@ class com.datadog.android.log.Logger
   fun removeTagsWithKey(String)
   companion object
 class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
-  companion object
-  class TracerBuilder
-    companion object
+  class Builder
     fun build(): Tracer
-    fun setServiceName(String): TracerBuilder
+    fun setServiceName(String): Builder
+    companion object
