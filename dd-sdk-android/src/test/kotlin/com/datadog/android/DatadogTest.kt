@@ -241,11 +241,11 @@ internal class DatadogTest {
         val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
 
-        assertThat(okHttpClient.protocols)
+        assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis)
+        assertThat(okHttpClient.callTimeoutMillis())
             .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs)
+        assertThat(okHttpClient.connectionSpecs())
             .containsExactly(ConnectionSpec.RESTRICTED_TLS)
     }
 
@@ -258,11 +258,11 @@ internal class DatadogTest {
         val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
         val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
 
-        assertThat(okHttpClient.protocols)
+        assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis)
+        assertThat(okHttpClient.callTimeoutMillis())
             .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs)
+        assertThat(okHttpClient.connectionSpecs())
             .containsExactly(ConnectionSpec.CLEARTEXT)
     }
 

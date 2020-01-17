@@ -45,11 +45,11 @@ class LogApiBenchmark {
             .apply {
                 start()
             }
-        mockWebServer.dispatcher = object : Dispatcher() {
+        mockWebServer.setDispatcher(object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 return mockResponse(200)
             }
-        }
+        })
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
