@@ -33,8 +33,6 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.tracing.TracerBuilder
-import com.datadog.android.tracing.internal.AndroidTracerBuilder
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import datadog.opentracing.DDSpan
 import java.lang.IllegalStateException
@@ -204,16 +202,6 @@ object Datadog {
         email: String? = null
     ) {
         userInfoProvider.setUserInfo(UserInfo(id, name, email))
-    }
-
-    /**
-     * Creates a tracer builder instance.
-     * @param serviceName as the name of a set of processes that do the same job.
-     * Used for grouping stats for your application.
-     */
-    @JvmStatic
-    fun tracerBuilder(serviceName: String): TracerBuilder {
-        return AndroidTracerBuilder(serviceName, getTracingStrategy().getWriter())
     }
 
     // region Internal Provider
