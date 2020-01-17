@@ -233,7 +233,8 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `add strict network policy for https endpoints`(forge: Forge) {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `add strict network policy for https endpoints on 21+`(forge: Forge) {
         val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
@@ -247,6 +248,24 @@ internal class DatadogTest {
             .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
         assertThat(okHttpClient.connectionSpecs())
             .containsExactly(ConnectionSpec.RESTRICTED_TLS)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.KITKAT)
+    fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
+        val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+
+        Datadog.initialize(mockAppContext, fakeToken, endpoint)
+
+        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
+        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+
+        assertThat(okHttpClient.protocols())
+            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
+        assertThat(okHttpClient.callTimeoutMillis())
+            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
+        assertThat(okHttpClient.connectionSpecs())
+            .containsExactly(ConnectionSpec.COMPATIBLE_TLS)
     }
 
     @Test
