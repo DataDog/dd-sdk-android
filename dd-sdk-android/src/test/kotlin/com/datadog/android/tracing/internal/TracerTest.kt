@@ -3,7 +3,6 @@ package com.datadog.android.tracing.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.tracing.Tracer
-import com.datadog.android.tracing.assertj.TracerConfigAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.invokeMethod
@@ -54,11 +53,11 @@ internal class TracerTest {
 
         // when
         val tracer = underTest.setServiceName(fakeServiceName).build()
-        val config = underTest.config()
 
         // then
         assertThat(tracer).isNotNull()
-        assertThat(config).hasServiceName(fakeServiceName)
+        val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
+        assertThat(span.serviceName).isEqualTo(fakeServiceName)
     }
 
     @Test
@@ -68,10 +67,10 @@ internal class TracerTest {
 
         // when
         val tracer = underTest.build()
-        val config = underTest.config()
 
         // then
         assertThat(tracer).isNotNull()
-        assertThat(config).hasServiceName(Tracer.Builder.DEFAULT_SERVICE_NAME)
+        val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
+        assertThat(span.serviceName).isEqualTo(Tracer.Builder.DEFAULT_SERVICE_NAME)
     }
 }
