@@ -10,11 +10,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.internal.utils.fieldValue
 import com.datadog.android.internal.utils.randomLog
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.After
@@ -67,7 +67,7 @@ internal class LogFileStrategyBenchmarking {
                 }
                 logFileWriter.write(log)
                 counter++
-            } while (counter < LogFileStrategy.MAX_LOG_PER_BATCH)
+            } while (counter < FilePersistenceStrategy.MAX_ITEMS_PER_BATCH)
         }
     }
 
@@ -98,6 +98,6 @@ internal class LogFileStrategyBenchmarking {
             val log = randomLog(forge)
             logFileWriter.write(log)
             counter++
-        } while (counter < LogFileStrategy.MAX_LOG_PER_BATCH)
+        } while (counter < FilePersistenceStrategy.MAX_ITEMS_PER_BATCH)
     }
 }

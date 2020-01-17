@@ -7,12 +7,6 @@ import org.assertj.core.api.Assertions.assertThat
 internal class TracerConfigAssert(actual: Config) : AbstractObjectAssert<TracerConfigAssert, Config>
     (actual, TracerConfigAssert::class.java) {
 
-    companion object {
-        fun assertThat(actual: Config): TracerConfigAssert {
-            return TracerConfigAssert(actual)
-        }
-    }
-
     fun hasServiceName(expected: String): TracerConfigAssert {
         assertThat(actual.serviceName)
             .overridingErrorMessage(
@@ -21,5 +15,11 @@ internal class TracerConfigAssert(actual: Config) : AbstractObjectAssert<TracerC
             .isEqualTo(expected)
 
         return this
+    }
+
+    companion object {
+        fun assertThat(actual: Config): TracerConfigAssert {
+            return TracerConfigAssert(actual)
+        }
     }
 }
