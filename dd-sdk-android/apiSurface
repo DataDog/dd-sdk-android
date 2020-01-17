@@ -5,7 +5,6 @@ object com.datadog.android.Datadog
   fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
-  fun tracerBuilder(String): com.datadog.android.tracing.TracerBuilder
 enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_LOGS
   - SEND_OLD_LOGS_TO_NEW_ENDPOINT
@@ -37,5 +36,9 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
   companion object
-interface com.datadog.android.tracing.TracerBuilder
-  fun build(): datadog.opentracing.DDTracer
+class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
+  companion object
+  class TracerBuilder
+    companion object
+    fun build(): Tracer
+    fun setServiceName(String): TracerBuilder
