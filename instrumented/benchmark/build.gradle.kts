@@ -29,6 +29,8 @@ android {
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
 
+        multiDexEnabled = true
+
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArgument(
             "androidx.benchmark.suppressErrors",
@@ -80,6 +82,7 @@ dependencies {
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
     implementation(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.AndroidXMultidex)
 
     androidTestImplementation(project(":tools:unit"))
     androidTestImplementation(Dependencies.Libraries.AndroidTestTools)

@@ -4,13 +4,14 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log
+package com.datadog.android.sdk.benchmark.log
 
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.log.Logger
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException

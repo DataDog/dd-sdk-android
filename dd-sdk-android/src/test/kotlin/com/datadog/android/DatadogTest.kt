@@ -265,7 +265,7 @@ internal class DatadogTest {
         assertThat(okHttpClient.callTimeoutMillis())
             .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
         assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.COMPATIBLE_TLS)
+            .containsExactly(ConnectionSpec.MODERN_TLS)
     }
 
     @Test

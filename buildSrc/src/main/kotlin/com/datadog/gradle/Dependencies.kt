@@ -15,6 +15,7 @@ object Dependencies {
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
         const val JetpackWorkManager = "2.2.0"
+        const val AndroidXMultidex = "2.0.1"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
@@ -58,6 +59,8 @@ object Dependencies {
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
 
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
+
+        const val AndroidXMultidex = "androidx.multidex:multidex:${Versions.AndroidXMultidex}"
 
         val JetpackBenchmark = arrayOf(
             "androidx.benchmark:benchmark-junit4:${Versions.JetpackBenchmark}",

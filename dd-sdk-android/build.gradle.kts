@@ -5,7 +5,6 @@
  */
 
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
@@ -49,17 +48,6 @@ android {
         targetSdkVersion(AndroidConfig.TARGET_SDK)
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-
-        testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        testInstrumentationRunnerArgument(
-            "androidx.benchmark.suppressErrors",
-            "EMULATOR,UNLOCKED"
-        )
-        testInstrumentationRunnerArgument(
-            "androidx.benchmark.suppressErrors",
-            "EMULATOR,DEBUGGABLE"
-        )
-        testInstrumentationRunnerArgument("androidx.benchmark.output.enable", "true")
     }
 
     sourceSets.named("main") {
@@ -77,8 +65,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    // TODO when using Android Plugin 3.6.+
-    // enableAdditionalTestOutput=true
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -125,11 +111,6 @@ dependencies {
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
-
-    androidTestImplementation(project(":tools:unit"))
-    androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
-    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
-    androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)

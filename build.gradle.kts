@@ -125,7 +125,6 @@ tasks.register("jacocoReportAll") {
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
     dependsOn(":instrumented:benchmark:connectedCheck")
-    dependsOn(":dd-sdk-android:connectedCheck")
 }
 
 tasks.register("buildIntegrationTestsArtifacts") {
