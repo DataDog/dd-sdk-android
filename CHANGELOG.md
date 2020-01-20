@@ -1,3 +1,19 @@
+# 1.2.0 / 2020-01-20
+
+### Changes
+
+* [BUGFIX] Fail silently when trying to initialize the SDK twice. See #86 (Thanks @Vavassor)
+* [BUGFIX] Publish the Timber artifact automatically. See #90 (Thanks @Macarse)
+* [FEATURE] Create a Crash Handler : App crashes will be automatically logged.
+* [FEATURE] Downgrade OkHttp4 to OkHttp3
+* [FEATURE] Make Library compatible with API 19+
+* [FEATURE] Trigger background upload when the app is used offline
+* [FEATURE] Use DownloadSpeed and signal strength to add info on connectivity
+* [FEATURE] Use Gzip for log upload requests
+* [OTHER] Analyse Benchmark reports in the CI
+* [OTHER] Fix the flaky test in DataDogTimeProviderTest
+* [OTHER] Generate a report on the SDK API changes ([dd-sdk-android/apiSurface](dd-sdk-android/apiSurface))
+
 # 1.1.1 / 2020-01-07
 
 ### Changes
