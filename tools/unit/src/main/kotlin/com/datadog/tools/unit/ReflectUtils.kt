@@ -85,8 +85,11 @@ inline fun <reified T> Any.setFieldValue(
  * Gets the field value from the target instance.
  * @param fieldName the name of the field
  */
-inline fun <reified T> Any.getFieldValue(fieldName: String): T {
-    val field = this.javaClass.getDeclaredField(fieldName)
+inline fun <reified T, R : Any> R.getFieldValue(
+    fieldName: String,
+    enclosingClass: Class<R> = this.javaClass
+): T {
+    val field = enclosingClass.getDeclaredField(fieldName)
     field.isAccessible = true
     return field.get(this) as T
 }

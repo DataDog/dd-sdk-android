@@ -184,7 +184,7 @@ internal class FileReaderTest {
         testedReader.dropBatch(fileName)
 
         // then
-        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
@@ -207,7 +207,7 @@ internal class FileReaderTest {
         testedReader.dropBatch(fileName)
 
         // then
-        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
@@ -233,7 +233,7 @@ internal class FileReaderTest {
         testedReader.dropAllBatches()
 
         // then
-        val sentBatches = testedReader.getFieldValue<MutableSet<String>>("sentBatches")
+        val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).isEmpty()
         if (BuildConfig.DEBUG) {
