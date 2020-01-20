@@ -99,8 +99,8 @@ notify:release:
   only:
     - tags
   script:
-    - BINTRAY_URL="https://bintray.com/datadog/datadog-maven/dd-sdk-android"
-    - 'MESSAGE_TEXT=":package: `$CI_PROJECT_NAME` $CI_COMMIT_TAG published on :bintray: ($BINTRAY_URL)."'
+    - 'RELEASE_NOTE="https://github.com/DataDog/$CI_PROJECT_NAME/releases/tag/$CI_COMMIT_TAG"'
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray: ($BINTRAY_URL)."'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:
