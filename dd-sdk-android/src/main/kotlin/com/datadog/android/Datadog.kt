@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
-import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
@@ -29,6 +28,7 @@ import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
+import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
@@ -76,17 +76,18 @@ object Datadog {
     private lateinit var systemInfoProvider: BroadcastReceiverSystemInfoProvider
     private lateinit var handlerThread: DataUploadHandlerThread
     private lateinit var contextRef: WeakReference<Context>
-    private lateinit var uploader: DataUploader
+    private lateinit var logsUploader: LogsOkHttpUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
     private lateinit var tracingStrategy: PersistenceStrategy<DDSpan>
-
     internal var packageName: String = ""
         private set
+
     internal var packageVersion: String = ""
         private set
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
+    private var okHttpClient: OkHttpClient? = null
 
     /**
      * Initializes the Datadog SDK.
@@ -172,7 +173,7 @@ object Datadog {
                 )
             }
         }
-        uploader.setEndpoint(endpointUrl)
+        logsUploader.setEndpoint(endpointUrl)
     }
 
     // Stop all Datadog work (for test purposes).
@@ -182,6 +183,7 @@ object Datadog {
         handlerThread.quitSafely()
         contextRef.get()?.let { networkInfoProvider.unregister(it) }
         contextRef.clear()
+        okHttpClient = null
         initialized = false
     }
 
@@ -225,7 +227,7 @@ object Datadog {
 
     internal fun getLogUploader(): DataUploader {
         checkInitialized()
-        return uploader
+        return logsUploader
     }
 
     internal fun getNetworkInfoProvider(): NetworkInfoProvider {
@@ -268,12 +270,15 @@ object Datadog {
     }
 
     private fun buildOkHttpClient(endpoint: String): OkHttpClient {
+        var currentOkHttpClient = okHttpClient
+        if (currentOkHttpClient != null) return currentOkHttpClient
+
         val connectionSpec = if (endpoint.startsWith("http://")) {
             ConnectionSpec.CLEARTEXT
         } else {
             ConnectionSpec.RESTRICTED_TLS
         }
-        return OkHttpClient.Builder()
+        currentOkHttpClient = OkHttpClient.Builder()
             .addInterceptor(NetworkTimeInterceptor(timeProvider))
             .addInterceptor(GzipRequestInterceptor())
             .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -281,6 +286,9 @@ object Datadog {
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .build()
+
+        okHttpClient = currentOkHttpClient
+        return currentOkHttpClient
     }
 
     private fun setupTheExceptionHandler(appContext: Context?) {
@@ -305,7 +313,7 @@ object Datadog {
         val endpoint = endpointUrl ?: DATADOG_US
         val okHttpClient = buildOkHttpClient(endpoint)
 
-        uploader = DataOkHttpUploader(
+        logsUploader = LogsOkHttpUploader(
             endpoint,
             clientToken,
             okHttpClient
@@ -314,7 +322,7 @@ object Datadog {
             DataUploadHandlerThread(
                 LOG_UPLOAD_THREAD_NAME,
                 logStrategy.getReader(),
-                uploader,
+                logsUploader,
                 networkInfoProvider,
                 systemInfoProvider
             )

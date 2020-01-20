@@ -50,7 +50,7 @@ class RuntimeUtilsTest {
     @Test
     fun `the sdk logger should always be disabled for remote logs`() {
         if (BuildConfig.LOGCAT_ENABLED) {
-            val handler = sdkLogger.getFieldValue<LogHandler>("handler") as LogcatLogHandler
+            val handler: LogcatLogHandler = sdkLogger.getFieldValue("handler")
             assertThat(handler.serviceName).isEqualTo(SDK_LOG_PREFIX)
         }
     }
@@ -59,7 +59,7 @@ class RuntimeUtilsTest {
     @EnableLogcat(isEnabled = false)
     fun `the sdk logger should disable the logcat logs if the BuildConfig flag is false`() {
         val logger = buildSdkLogger()
-        val handler = logger.getFieldValue<LogHandler>("handler")
+        val handler: LogHandler = logger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
@@ -67,7 +67,7 @@ class RuntimeUtilsTest {
     @EnableLogcat(isEnabled = true)
     fun `the sdk logger should enable the logcat logs if the BuildConfig flag is true`() {
         val logger = buildSdkLogger()
-        val handler = logger.getFieldValue<LogHandler>("handler") as LogcatLogHandler
+        val handler: LogcatLogHandler = logger.getFieldValue("handler")
         assertThat(handler.serviceName).isEqualTo(SDK_LOG_PREFIX)
     }
 
