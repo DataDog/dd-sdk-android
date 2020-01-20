@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.net.info
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,7 @@ import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
+@SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider :
     BroadcastReceiver(),
     NetworkInfoProvider {

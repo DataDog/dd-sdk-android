@@ -156,13 +156,13 @@ object Datadog {
                 logStrategy.getReader().dropAllBatches()
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                            "will now be deleted"
+                        "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
                 devLogger.w(
                     "$TAG: old logs targeted at $endpointUrl " +
-                            "will now be sent to $endpointUrl"
+                        "will now be sent to $endpointUrl"
                 )
             }
         }
@@ -242,8 +242,8 @@ object Datadog {
     private fun checkInitialized() {
         check(initialized) {
             "Datadog has not been initialized.\n" +
-                    "Please add the following code in your application's onCreate() method:\n" +
-                    "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+                "Please add the following code in your application's onCreate() method:\n" +
+                "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
         }
     }
 
@@ -258,10 +258,10 @@ object Datadog {
     }
 
     private fun buildOkHttpClient(endpoint: String): OkHttpClient {
-        val connectionSpec = if (endpoint.startsWith("http://")) {
-            ConnectionSpec.CLEARTEXT
-        } else {
-            ConnectionSpec.RESTRICTED_TLS
+        val connectionSpec = when {
+            endpoint.startsWith("http://") -> ConnectionSpec.CLEARTEXT
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> ConnectionSpec.RESTRICTED_TLS
+            else -> ConnectionSpec.MODERN_TLS
         }
         return OkHttpClient.Builder()
             .addInterceptor(NetworkTimeInterceptor(timeProvider))

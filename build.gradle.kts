@@ -73,6 +73,7 @@ tasks.register("checkAll") {
     dependsOn(
         "ktlintCheckAll",
         "detektAll",
+        "lintCheckAll",
         "unitTestAll",
         "jacocoReportAll",
         "instrumentTestAll"
@@ -87,6 +88,15 @@ tasks.register("ktlintCheckAll") {
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
         ":tools:unit:ktlintCheck"
+    )
+}
+
+tasks.register("lintCheckAll") {
+    dependsOn(
+        ":dd-sdk-android:lintDebug",
+        ":dd-sdk-android:lintRelease",
+        ":dd-sdk-android-timber:lintDebug",
+        ":dd-sdk-android-timber:lintRelease"
     )
 }
 
@@ -115,7 +125,6 @@ tasks.register("jacocoReportAll") {
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
     dependsOn(":instrumented:benchmark:connectedCheck")
-    dependsOn(":dd-sdk-android:connectedCheck")
 }
 
 tasks.register("buildIntegrationTestsArtifacts") {

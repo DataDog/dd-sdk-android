@@ -28,6 +28,8 @@ android {
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
 
+        multiDexEnabled = true
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -62,6 +64,7 @@ dependencies {
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidxSupportBase)
+    implementation(Dependencies.Libraries.AndroidXMultidex)
 
     androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)

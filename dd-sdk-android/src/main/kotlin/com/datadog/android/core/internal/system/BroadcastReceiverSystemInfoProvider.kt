@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.utils.sdkLogger
 
@@ -21,7 +22,9 @@ internal class BroadcastReceiverSystemInfoProvider :
 
     internal fun register(context: Context) {
         registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
-        registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        }
     }
 
     // region BroadcastReceiver
@@ -75,11 +78,13 @@ internal class BroadcastReceiverSystemInfoProvider :
     }
 
     private fun handlePowerSaveIntent(context: Context) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        val powerSaveMode = powerManager?.isPowerSaveMode ?: false
-        systemInfo = systemInfo.copy(
-            powerSaveMode = powerSaveMode
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            val powerSaveMode = powerManager?.isPowerSaveMode ?: false
+            systemInfo = systemInfo.copy(
+                powerSaveMode = powerSaveMode
+            )
+        }
     }
 
     // endregion

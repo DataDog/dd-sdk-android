@@ -9,9 +9,11 @@ package com.datadog.android.core.internal.system
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
+import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.log.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -69,7 +71,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    fun `read system info on register`(
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `read system info on register Lollipop`(
         @Forgery status: SystemInfo.BatteryStatus,
         @IntForgery(min = 0, max = 100) level: Int,
         @IntForgery(min = 50, max = 10000) scale: Int,
@@ -98,6 +101,39 @@ internal class BroadcastReceiverSystemInfoProviderTest {
             .hasBatteryLevel(level, scale)
             .hasBatteryStatus(status)
             .hasPowerSaveMode(powerSaveMode)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.KITKAT)
+    fun `read system info on register KitKat`(
+        @Forgery status: SystemInfo.BatteryStatus,
+        @IntForgery(min = 0, max = 100) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int,
+        @BoolForgery powerSaveMode: Boolean
+    ) {
+        val batteryIntent: Intent = mock()
+        val scaledLevel = (level * scale) / 100
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
+            .doReturn(status.androidStatus())
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any()))
+            .doReturn(scaledLevel)
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        val powerSaveModeIntent: Intent = mock()
+        whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
+        whenever(powerSaveModeIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
+
+        whenever(mockContext.registerReceiver(same(testedProvider), any()))
+            .doReturn(batteryIntent, powerSaveModeIntent)
+
+        testedProvider.register(mockContext)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        assertThat(systemInfo)
+            .hasBatteryLevel(level, scale)
+            .hasBatteryStatus(status)
+            .hasPowerSaveMode(false)
     }
 
     @Test
@@ -137,7 +173,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    fun `power save mode changed`(
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `power save mode changed Lollipop`(
         @BoolForgery powerSaveMode: Boolean
     ) {
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
