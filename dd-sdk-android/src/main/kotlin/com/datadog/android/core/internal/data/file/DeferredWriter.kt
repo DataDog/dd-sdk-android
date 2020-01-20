@@ -11,14 +11,17 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 
 internal class DeferredWriter<T : Any>(
-    private val dataMigrator: DataMigrator,
-    private val writer: Writer<T>
-) : LazyHandlerThread(THREAD_NAME),
+    threadName: String,
+    private val writer: Writer<T>,
+    dataMigrator: DataMigrator? = null
+) : LazyHandlerThread(threadName),
     Writer<T> {
 
     init {
         start()
-        post(Runnable { dataMigrator.migrateData() })
+        dataMigrator?.let {
+            post(Runnable { it.migrateData() })
+        }
     }
 
     // region Writer
@@ -30,8 +33,4 @@ internal class DeferredWriter<T : Any>(
     }
 
     // endregion
-
-    companion object {
-        private const val THREAD_NAME = "ddog_w"
-    }
 }

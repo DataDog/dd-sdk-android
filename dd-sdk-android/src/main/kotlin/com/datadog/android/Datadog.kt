@@ -33,6 +33,8 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.tracing.internal.domain.TracingFileStrategy
+import datadog.opentracing.DDSpan
 import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
@@ -43,6 +45,7 @@ import okhttp3.Protocol
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
+@Suppress("TooManyFunctions")
 object Datadog {
 
     /**
@@ -76,6 +79,7 @@ object Datadog {
     private lateinit var uploader: DataUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
+    private lateinit var tracingStrategy: PersistenceStrategy<DDSpan>
 
     internal var packageName: String = ""
         private set
@@ -114,6 +118,8 @@ object Datadog {
 
         logStrategy =
             LogFileStrategy(appContext)
+
+        tracingStrategy = TracingFileStrategy(appContext)
 
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
@@ -234,6 +240,10 @@ object Datadog {
         return userInfoProvider
     }
 
+    internal fun getTracingStrategy(): PersistenceStrategy<DDSpan> {
+        checkInitialized()
+        return tracingStrategy
+    }
     // endregion
 
     // region Internal Initialization

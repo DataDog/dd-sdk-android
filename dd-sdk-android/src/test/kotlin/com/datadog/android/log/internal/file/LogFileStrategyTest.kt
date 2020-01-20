@@ -12,8 +12,8 @@ import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.threading.LazyHandlerThread
-import com.datadog.android.domain.FilePersistenceStrategyTest
 import com.datadog.android.log.assertj.JsonObjectAssert
+import com.datadog.android.log.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
