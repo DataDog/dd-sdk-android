@@ -16,7 +16,6 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DataOkHttpUploader
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
@@ -24,6 +23,7 @@ import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -228,7 +228,7 @@ internal class DatadogTest {
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         val mockReader: Reader = mock()
-        val mockUploader: DataUploader = mock()
+        val mockUploader: LogsOkHttpUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -252,7 +252,7 @@ internal class DatadogTest {
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         val mockReader: Reader = mock()
-        val mockUploader: DataUploader = mock()
+        val mockUploader: LogsOkHttpUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -277,8 +277,10 @@ internal class DatadogTest {
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
-        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
-        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+        val uploader: DataOkHttpUploader =
+            Datadog.javaClass.getStaticValue("logsUploader")
+        val okHttpClient: OkHttpClient =
+            uploader.getFieldValue("client", DataOkHttpUploader::class.java)
 
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
@@ -295,8 +297,9 @@ internal class DatadogTest {
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
-        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
-        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+        val uploader: LogsOkHttpUploader = Datadog.javaClass.getStaticValue("logsUploader")
+        val okHttpClient: OkHttpClient =
+            uploader.getFieldValue("client", DataOkHttpUploader::class.java)
 
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
@@ -312,8 +315,9 @@ internal class DatadogTest {
 
         Datadog.initialize(mockAppContext, fakeToken, endpoint)
 
-        val uploader: DataOkHttpUploader = Datadog.javaClass.getStaticValue("uploader")
-        val okHttpClient: OkHttpClient = uploader.getFieldValue("client")
+        val uploader: LogsOkHttpUploader = Datadog.javaClass.getStaticValue("logsUploader")
+        val okHttpClient: OkHttpClient = uploader.getFieldValue("client",
+            DataOkHttpUploader::class.java)
 
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)

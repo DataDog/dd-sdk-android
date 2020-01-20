@@ -14,10 +14,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 
-internal class DataOkHttpUploader(
+internal abstract class DataOkHttpUploader(
     endpoint: String,
     private val token: String,
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
+    private val uploadUrlFormat: String,
+    private val tag: String
 ) : DataUploader {
 
     private var url: String = buildUrl(endpoint, token)
@@ -25,8 +27,8 @@ internal class DataOkHttpUploader(
     private val userAgent = System.getProperty(SYSTEM_UA).let {
         if (it.isNullOrBlank()) {
             "Datadog/${BuildConfig.VERSION_NAME} " +
-                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                    "${Build.MODEL} Build/${Build.ID})"
         } else {
             it
         }
@@ -62,7 +64,10 @@ internal class DataOkHttpUploader(
 
     private fun buildUrl(endpoint: String, token: String): String {
         sdkLogger.i("using endpoint $endpoint")
-        return String.format(Locale.US, UPLOAD_URL, endpoint, token)
+        return String.format(
+            Locale.US,
+            uploadUrlFormat, endpoint, token
+        )
     }
 
     private fun buildRequest(data: ByteArray): Request {
@@ -99,9 +104,7 @@ internal class DataOkHttpUploader(
 
         const val SYSTEM_UA = "http.agent"
 
-        private const val QP_SOURCE = "ddsource"
-        private const val DD_SOURCE_MOBILE = "mobile"
-
-        const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
+        internal const val QP_SOURCE = "ddsource"
+        internal const val DD_SOURCE_MOBILE = "mobile"
     }
 }

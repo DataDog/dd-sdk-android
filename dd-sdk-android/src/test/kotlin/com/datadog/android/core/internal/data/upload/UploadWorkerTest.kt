@@ -14,9 +14,9 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.invokeMethod
@@ -58,7 +58,7 @@ internal class UploadWorkerTest {
     @Mock
     lateinit var mockLogReader: Reader
     @Mock
-    lateinit var mockDataUploader: DataUploader
+    lateinit var mockDataUploader: LogsOkHttpUploader
 
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
@@ -71,7 +71,7 @@ internal class UploadWorkerTest {
         Datadog.initialize(mockContext, "<CLIENT_TOKEN>")
 
         Datadog.setFieldValue("logStrategy", mockLogStrategy)
-        Datadog.setFieldValue("uploader", mockDataUploader)
+        Datadog.setFieldValue("logsUploader", mockDataUploader)
 
         testedWorker =
             UploadWorker(

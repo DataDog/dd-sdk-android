@@ -19,8 +19,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -41,11 +41,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
-internal class DataOkHttpUploaderTest {
+internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
     lateinit var mockWebServer: MockWebServer
 
-    lateinit var testedUploader: DataUploader
+    lateinit var testedUploader: T
 
     lateinit var fakeEndpoint: String
     lateinit var fakeToken: String
@@ -65,17 +65,14 @@ internal class DataOkHttpUploaderTest {
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
         System.setProperty("http.agent", fakeUserAgent)
 
-        testedUploader =
-            DataOkHttpUploader(
-                fakeEndpoint,
-                fakeToken,
-                OkHttpClient.Builder()
-                    .connectTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                    .readTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                    .writeTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                    .build()
-            )
+        testedUploader = uploader()
     }
+
+    abstract fun uploader(): T
+
+    abstract fun tag(): String
+
+    abstract fun urlFormat(): String
 
     @AfterEach
     fun `tear down`() {
@@ -291,9 +288,9 @@ internal class DataOkHttpUploaderTest {
                     THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS
                 )
                 .setBody(
-                    "{ 'success': 'ok', " +
-                        "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
+                    "{ 'success': 'ok', 'message': 'Lorem ipsum dolor sit amet, " +
+                            "consectetur adipiscing elit, " +
+                            "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
                 )
         )
 
@@ -389,14 +386,16 @@ internal class DataOkHttpUploaderTest {
     ) {
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
             "Datadog/${BuildConfig.VERSION_NAME} " +
-                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                    "${Build.MODEL} Build/${Build.ID})"
         } else {
             fakeUserAgent
         }
 
+        val fullPath = String.format(Locale.US, urlFormat(), fakeEndpoint, fakeToken)
+        val expectedPath = fullPath.substring(fakeEndpoint.length)
         assertThat(request.path)
-            .isEqualTo("/v1/input/$fakeToken?ddsource=mobile")
+            .isEqualTo(expectedPath)
         assertThat(request.getHeader("User-Agent"))
             .isEqualTo(expectedUserAgent)
         assertThat(request.getHeader("Content-Type"))

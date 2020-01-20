@@ -91,7 +91,7 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder()
             .build()
 
-        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
         assertThat(handler.loggerName).isEqualTo(packageName)
         assertThat(handler.networkInfoProvider).isNull()
@@ -107,7 +107,7 @@ internal class LoggerBuilderTest {
             .setServiceName(serviceName)
             .build()
 
-        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.serviceName).isEqualTo(serviceName)
     }
 
@@ -115,11 +115,11 @@ internal class LoggerBuilderTest {
     fun `builder can disable datadog logs`(@Forgery forge: Forge) {
         val datadogLogsEnabled = false
 
-        val logger = Logger.Builder()
+        val logger: Logger = Logger.Builder()
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
-        val handler = logger.getFieldValue("handler") as LogHandler
+        val handler: LogHandler = logger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
@@ -172,7 +172,7 @@ internal class LoggerBuilderTest {
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
 
-        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.networkInfoProvider).isNotNull()
     }
 
@@ -184,7 +184,7 @@ internal class LoggerBuilderTest {
             .setLoggerName(loggerName)
             .build()
 
-        val handler = logger.getFieldValue("handler") as DatadogLogHandler
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.loggerName).isEqualTo(loggerName)
     }
 }
