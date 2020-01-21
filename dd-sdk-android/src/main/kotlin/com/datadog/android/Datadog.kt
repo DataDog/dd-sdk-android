@@ -35,6 +35,7 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
+import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
 import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
@@ -66,19 +67,38 @@ object Datadog {
     @Suppress("MemberVisibilityCanBePrivate")
     const val DATADOG_EU_LOGS: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
+    /**
+     * The endpoint for our Traces US based servers, used by default by the SDK.
+     * @see [initialize]
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_US_TRACES: String = "https://public-trace-http-intake.logs.datadoghq.com"
+
+    /**
+     * The endpoint for our Europe Traces based servers.
+     * Use this in your call to [initialize] if you log on
+     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    const val DATADOG_EU_TRACES: String = "https://public-trace-http-intake.logs.datadoghq.eu"
+
     private const val TAG = "Datadog"
 
     internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
     internal const val LOG_UPLOAD_THREAD_NAME = "ddog-logs-upload"
+    internal const val TRACES_UPLOAD_THREAD_NAME = "ddog-traces-upload"
 
     private var initialized: Boolean = false
     private lateinit var clientToken: String
     private lateinit var logStrategy: PersistenceStrategy<Log>
     private lateinit var networkInfoProvider: NetworkInfoProvider
     private lateinit var systemInfoProvider: BroadcastReceiverSystemInfoProvider
-    private lateinit var handlerThread: DataUploadHandlerThread
+    private lateinit var logsHandlerThread: DataUploadHandlerThread
+    private lateinit var tracesHandlerThread: DataUploadHandlerThread
     private lateinit var contextRef: WeakReference<Context>
     private lateinit var logsUploader: LogsOkHttpUploader
+    private lateinit var tracesUploader: TracesOkHttpUploader
     private lateinit var timeProvider: MutableTimeProvider
     private lateinit var userInfoProvider: MutableUserInfoProvider
     private lateinit var tracingStrategy: PersistenceStrategy<DDSpan>
@@ -92,19 +112,25 @@ object Datadog {
     internal var isDebug = false
     private var okHttpClient: OkHttpClient? = null
 
+    // TODO: RUMM-193 Switch to the new way of initializing the SDK through using the DatadogConfig
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
-     * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
-     * [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
+     * @param logsEndpointUrl (optional) the logs endpoint url to target,
+     * or null to use the default.
+     * Possible values are [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
+     * @param tracesEndpointUrl (optional) the traces endpoint url to target,
+     * or null to use the default.
+     * Possible values are [DATADOG_US_TRACES], [DATADOG_EU_TRACES] or a custom endpoint.
      */
     @JvmStatic
     @JvmOverloads
     fun initialize(
         context: Context,
         clientToken: String,
-        endpointUrl: String? = null
+        logsEndpointUrl: String? = null,
+        tracesEndpointUrl: String? = null
     ) {
         if (initialized) {
             devLogger.w(
@@ -138,7 +164,10 @@ object Datadog {
         setupTheSystemInfoProvider(appContext)
 
         // setup the logs uploader
-        setupLogsUploader(endpointUrl)
+        setupLogsUploader(logsEndpointUrl)
+
+        // setup the traces uploader
+        setupTracesUploader(tracesEndpointUrl)
 
         // setup the process lifecycle monitor
         setupLifecycleMonitorCallback(appContext)
@@ -183,11 +212,40 @@ object Datadog {
         return initialized
     }
 
+    /**
+     * Changes the endpoint to which tracing data is sent.
+     * @param endpointUrl the endpoint url to target, or null to use the default.
+     * Possible values are [DATADOG_US_TRACES], [DATADOG_EU_TRACES] or a custom endpoint.
+     * @param strategy the strategy defining how to handle traces created previously.
+     * Because traces are sent asynchronously, some traces intended for the previous endpoint
+     * might still be yet to sent.
+     */
+    @JvmStatic
+    fun setTracesEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
+        when (strategy) {
+            EndpointUpdateStrategy.DISCARD_OLD_DATA -> {
+                tracingStrategy.getReader().dropAllBatches()
+                devLogger.w(
+                    "$TAG: old traces targeted at $endpointUrl " +
+                            "will now be deleted"
+                )
+            }
+            EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT -> {
+                devLogger.w(
+                    "$TAG: old traces targeted at $endpointUrl " +
+                            "will now be sent to $endpointUrl"
+                )
+            }
+        }
+        tracesUploader.setEndpoint(endpointUrl)
+    }
+
     // Stop all Datadog work (for test purposes).
     @Suppress("unused")
     private fun stop() {
         checkInitialized()
-        handlerThread.quitSafely()
+        logsHandlerThread.quitSafely()
+        tracesHandlerThread.quitSafely()
         contextRef.get()?.let { networkInfoProvider.unregister(it) }
         contextRef.clear()
         okHttpClient = null
@@ -313,7 +371,6 @@ object Datadog {
     private fun setupLogsUploader(
         endpointUrl: String?
     ) {
-        // Start handler to send logs
         val endpoint = endpointUrl ?: DATADOG_US_LOGS
         val okHttpClient = buildOkHttpClient(endpoint)
 
@@ -322,7 +379,7 @@ object Datadog {
             clientToken,
             okHttpClient
         )
-        handlerThread =
+        logsHandlerThread =
             DataUploadHandlerThread(
                 LOG_UPLOAD_THREAD_NAME,
                 logStrategy.getReader(),
@@ -330,7 +387,29 @@ object Datadog {
                 networkInfoProvider,
                 systemInfoProvider
             )
-        handlerThread.start()
+        logsHandlerThread.start()
+    }
+
+    private fun setupTracesUploader(
+        endpointUrl: String?
+    ) {
+        val endpoint = endpointUrl ?: DATADOG_US_TRACES
+        val okHttpClient = buildOkHttpClient(endpoint)
+
+        tracesUploader = TracesOkHttpUploader(
+            endpoint,
+            clientToken,
+            okHttpClient
+        )
+        tracesHandlerThread =
+            DataUploadHandlerThread(
+                TRACES_UPLOAD_THREAD_NAME,
+                tracingStrategy.getReader(),
+                tracesUploader,
+                networkInfoProvider,
+                systemInfoProvider
+            )
+        tracesHandlerThread.start()
     }
 
     private fun initSdkCredentials(

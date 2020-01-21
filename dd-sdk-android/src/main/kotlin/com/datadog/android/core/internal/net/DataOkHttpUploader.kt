@@ -101,10 +101,6 @@ internal abstract class DataOkHttpUploader(
         private const val HEADER_CT = "Content-Type"
 
         private const val CONTENT_TYPE = "application/json"
-
         const val SYSTEM_UA = "http.agent"
-
-        internal const val QP_SOURCE = "ddsource"
-        internal const val DD_SOURCE_MOBILE = "mobile"
     }
 }
