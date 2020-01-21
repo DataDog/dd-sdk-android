@@ -11,8 +11,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
+import android.os.Trace
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Reader
+import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DataOkHttpUploader
@@ -24,6 +26,7 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -80,6 +83,8 @@ internal class DatadogTest {
     @Mock
     lateinit var mockLogStrategy: PersistenceStrategy<Log>
     @Mock
+    lateinit var mockTracesStrategy: PersistenceStrategy<Trace>
+    @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
     lateinit var fakeToken: String
@@ -116,6 +121,21 @@ internal class DatadogTest {
     fun `initializes all dependencies at initialize`() {
         Datadog.initialize(mockAppContext, fakeToken)
 
+        val logsHandlerThread: DataUploadHandlerThread =
+            Datadog::class.java.getStaticValue("logsHandlerThread")
+        val tracesHandlerThread: DataUploadHandlerThread =
+            Datadog::class.java.getStaticValue("tracesHandlerThread")
+        val logStrategy = Datadog.getLogStrategy()
+        val tracingStrategy = Datadog.getTracingStrategy()
+        val networkInfoProvider = Datadog.getNetworkInfoProvider()
+        val userInfoProvider = Datadog.getUserInfoProvider()
+        val timeProvider = Datadog.getTimeProvider()
+
+        assertThat(logStrategy).isNotNull()
+        assertThat(tracingStrategy).isNotNull()
+        assertThat(networkInfoProvider).isNotNull()
+        assertThat(userInfoProvider).isNotNull()
+        assertThat(timeProvider).isNotNull()
         assertThat(Datadog.packageName).isEqualTo(fakePackageName)
         assertThat(Datadog.packageVersion).isEqualTo(fakePackageVersion)
     }
@@ -216,7 +236,7 @@ internal class DatadogTest {
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
+        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
 
         verifyZeroInteractions(mockUploader, mockReader)
         assertThat(outputStream.lastLine())
@@ -241,7 +261,7 @@ internal class DatadogTest {
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT)
+        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
 
         verifyZeroInteractions(mockUploader, mockReader)
         assertThat(outputStream.lastLine())
@@ -273,11 +293,35 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `uploaders share the same okhttp client`(forge: Forge) {
+        val logsEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+        val tracesEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+
+        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
+
+        val logsUploader: LogsOkHttpUploader =
+            Datadog.javaClass.getStaticValue("logsUploader")
+        val tracesUploader: TracesOkHttpUploader =
+            Datadog.javaClass.getStaticValue("tracesUploader")
+        val logsOkHttpClient: OkHttpClient = logsUploader.getFieldValue(
+            "client",
+            DataOkHttpUploader::class.java
+        )
+        val tracesOkHttpClient: OkHttpClient = tracesUploader.getFieldValue(
+            "client",
+            DataOkHttpUploader::class.java
+        )
+
+        assertThat(logsOkHttpClient).isEqualTo(tracesOkHttpClient)
+    }
+
+    @Test
     @TestTargetApi(Build.VERSION_CODES.KITKAT)
     fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
-        val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+        val logsEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+        val tracesEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
 
-        Datadog.initialize(mockAppContext, fakeToken, endpoint)
+        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
 
         val uploader: LogsOkHttpUploader = Datadog.javaClass.getStaticValue("logsUploader")
         val okHttpClient: OkHttpClient =
@@ -293,13 +337,17 @@ internal class DatadogTest {
 
     @Test
     fun `no network policy for http endpoints`(forge: Forge) {
-        val endpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
+        val logsEndpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
+        val tracesEndpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
 
-        Datadog.initialize(mockAppContext, fakeToken, endpoint)
+        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
 
-        val uploader: LogsOkHttpUploader = Datadog.javaClass.getStaticValue("logsUploader")
-        val okHttpClient: OkHttpClient = uploader.getFieldValue("client",
-            DataOkHttpUploader::class.java)
+        val logsUploader: LogsOkHttpUploader =
+            Datadog.javaClass.getStaticValue("logsUploader")
+        val okHttpClient: OkHttpClient = logsUploader.getFieldValue(
+            "client",
+            DataOkHttpUploader::class.java
+        )
 
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
