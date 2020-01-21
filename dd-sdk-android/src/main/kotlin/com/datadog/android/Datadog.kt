@@ -49,20 +49,20 @@ import okhttp3.Protocol
 object Datadog {
 
     /**
-     * The endpoint for our US based servers, used by default by the SDK.
+     * The endpoint for our Logs US based servers, used by default by the SDK.
      * @see [initialize]
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_US: String = "https://mobile-http-intake.logs.datadoghq.com"
+    const val DATADOG_US_LOGS: String = "https://mobile-http-intake.logs.datadoghq.com"
 
     /**
-     * The endpoint for our Europe based servers.
+     * The endpoint for our Europe Logs based servers.
      * Use this in your call to [initialize] if you log on
      * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
+    const val DATADOG_EU_LOGS: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     private const val TAG = "Datadog"
 
@@ -94,7 +94,7 @@ object Datadog {
      * @param context your application context
      * @param clientToken your API key of type Client Token
      * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
-     * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
+     * [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
      */
     @JvmStatic
     @JvmOverloads
@@ -149,9 +149,9 @@ object Datadog {
     }
 
     /**
-     * Changes the endpoint to which data is sent.
+     * Changes the endpoint to which logging data is sent.
      * @param endpointUrl the endpoint url to target, or null to use the default.
-     * Possible values are [DATADOG_US], [DATADOG_EU] or a custom endpoint.
+     * Possible values are [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
      * @param strategy the strategy defining how to handle logs created previously.
      * Because logs are sent asynchronously, some logs intended for the previous endpoint
      * might still be yet to sent.
@@ -310,7 +310,7 @@ object Datadog {
         endpointUrl: String?
     ) {
         // Start handler to send logs
-        val endpoint = endpointUrl ?: DATADOG_US
+        val endpoint = endpointUrl ?: DATADOG_US_LOGS
         val okHttpClient = buildOkHttpClient(endpoint)
 
         logsUploader = LogsOkHttpUploader(

@@ -1,6 +1,6 @@
 object com.datadog.android.Datadog
-  const val DATADOG_US: String
-  const val DATADOG_EU: String
+  const val DATADOG_US_LOGS: String
+  const val DATADOG_EU_LOGS: String
   fun initialize(android.content.Context, String, String? = null)
   fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun setVerbosity(Int)
