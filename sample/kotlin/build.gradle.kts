@@ -44,6 +44,8 @@ android {
             "\"${project.findProperty("DD_CLIENT_TOKEN") ?: ""}\""
         )
 
+        multiDexEnabled = true
+
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -83,6 +85,7 @@ dependencies {
     api(project(":dd-sdk-android"))
 
     // Android dependencies
+    implementation(Dependencies.Libraries.AndroidXMultidex)
     implementation("androidx.appcompat:appcompat:1.1.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta4")
     implementation("com.google.android.material:material:1.0.0")
