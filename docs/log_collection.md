@@ -118,7 +118,7 @@ The following parameters can be used when initializing the logger to send logs t
 | `setLogcatLogsEnabled(true)`     | Set to `true` to use Logcat as logger.                                                                                                                                                                                              |
 | `setDatadogLogsEnabled(true)`    | Set to `true` to send logs to Datadog.                                                                                                                                                                                              |
 | `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                   |
-| `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.                                                                   |
+| `setVerbosity(Log.INFO)`         | Set the verbosity of the library. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.                                                                   |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                   |
 
 ### Global configuration
