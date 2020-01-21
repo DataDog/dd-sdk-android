@@ -28,7 +28,7 @@ public class SampleApplication extends Application {
         Datadog.initialize(
                 this,
                 BuildConfig.DD_CLIENT_TOKEN,
-                (BuildConfig.DD_OVERRIDE_URL == null) ? Datadog.DATADOG_US : BuildConfig.DD_OVERRIDE_URL
+                (BuildConfig.DD_OVERRIDE_URL == null) ? Datadog.DATADOG_US_LOGS : BuildConfig.DD_OVERRIDE_URL
         );
         Datadog.setVerbosity(Log.VERBOSE);
 
