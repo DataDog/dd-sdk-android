@@ -18,7 +18,7 @@ class SampleApplication : Application() {
         Datadog.initialize(
             this,
             BuildConfig.DD_CLIENT_TOKEN,
-            if (BuildConfig.DD_OVERRIDE_URL.isEmpty()) Datadog.DATADOG_US else BuildConfig.DD_OVERRIDE_URL
+            if (BuildConfig.DD_OVERRIDE_URL.isEmpty()) Datadog.DATADOG_US_LOGS else BuildConfig.DD_OVERRIDE_URL
         )
         Datadog.setVerbosity(Log.VERBOSE)
     }
