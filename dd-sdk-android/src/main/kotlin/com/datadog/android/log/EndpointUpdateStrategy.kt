@@ -7,17 +7,17 @@
 package com.datadog.android.log
 
 /**
- * The strategy on how to deal with older logs when the
+ * The strategy on how to deal with older data when the
  * endpoint needs to be changed.
  */
 enum class EndpointUpdateStrategy {
 
     /**
-     * All previous unsent log will be deleted and lost forever.
+     * All previous unsent data will be deleted and lost forever.
      */
-    DISCARD_OLD_LOGS,
+    DISCARD_OLD_DATA,
     /**
-     * All previous unsent log will be sent to the new endpoint.
+     * All previous unsent data will be sent to the new endpoint.
      */
-    SEND_OLD_LOGS_TO_NEW_ENDPOINT
+    SEND_OLD_DATA_TO_NEW_ENDPOINT
 }
