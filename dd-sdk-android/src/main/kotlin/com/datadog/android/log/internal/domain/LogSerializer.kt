@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Serializer
@@ -204,12 +205,13 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
 
         internal fun resolveLogLevelStatus(level: Int): String {
             return when (level) {
-                android.util.Log.ASSERT -> "CRITICAL"
-                android.util.Log.ERROR -> "ERROR"
-                android.util.Log.WARN -> "WARN"
-                android.util.Log.INFO -> "INFO"
-                android.util.Log.DEBUG -> "DEBUG"
-                android.util.Log.VERBOSE -> "TRACE"
+                AndroidLog.ASSERT -> "CRITICAL"
+                AndroidLog.ERROR -> "ERROR"
+                AndroidLog.WARN -> "WARN"
+                AndroidLog.INFO -> "INFO"
+                AndroidLog.DEBUG -> "DEBUG"
+                AndroidLog.VERBOSE -> "TRACE"
+                Log.CRASH -> "EMERGENCY"
                 else -> "DEBUG"
             }
         }

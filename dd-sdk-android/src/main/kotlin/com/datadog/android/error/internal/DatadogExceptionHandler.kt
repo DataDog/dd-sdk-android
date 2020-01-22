@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -60,7 +59,7 @@ internal class DatadogExceptionHandler(
     private fun createLog(thread: Thread, throwable: Throwable): Log {
         return Log(
             serviceName = Logger.DEFAULT_SERVICE_NAME,
-            level = AndroidLog.ERROR,
+            level = Log.CRASH,
             loggerName = LOGGER_NAME,
             message = MESSAGE,
             threadName = thread.name,

@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.app.Application
-import android.util.Log as AndroidLog
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -125,7 +124,7 @@ internal class DatadogExceptionHandlerTest {
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
                 .hasMessage("Application crash detected")
-                .hasLevel(AndroidLog.ERROR)
+                .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
@@ -162,7 +161,7 @@ internal class DatadogExceptionHandlerTest {
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
                 .hasMessage("Application crash detected")
-                .hasLevel(AndroidLog.ERROR)
+                .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
@@ -188,7 +187,7 @@ internal class DatadogExceptionHandlerTest {
             assertThat(lastValue)
                 .hasThreadName(threadName)
                 .hasMessage("Application crash detected")
-                .hasLevel(AndroidLog.ERROR)
+                .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)

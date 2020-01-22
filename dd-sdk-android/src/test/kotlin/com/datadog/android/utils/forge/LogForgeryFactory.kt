@@ -23,7 +23,8 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
                 0, 1,
                 AndroidLog.VERBOSE, AndroidLog.DEBUG,
                 AndroidLog.INFO, AndroidLog.WARN,
-                AndroidLog.ERROR, AndroidLog.ASSERT
+                AndroidLog.ERROR, AndroidLog.ASSERT,
+                Log.CRASH
             ),
             message = forge.anAlphabeticalString(),
             timestamp = forge.aLong(),
