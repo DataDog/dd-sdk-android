@@ -25,10 +25,11 @@ android {
     defaultConfig {
         minSdkVersion(AndroidConfig.MIN_SDK)
         targetSdkVersion(AndroidConfig.TARGET_SDK)
-        versionCode = AndroidConfig.VERSION.code
-        versionName = AndroidConfig.VERSION.name
+        versionCode = 42
+        versionName = "4.2.13"
 
         multiDexEnabled = true
+        vectorDrawables.useSupportLibrary = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,6 +52,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
+    packagingOptions {
+        exclude("META-INF/jvm.kotlin_module")
+        exclude("META-INF/LICENSE.md")
+        exclude("META-INF/LICENSE-notice.md")
+    }
 }
 
 repositories {
@@ -65,7 +72,9 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidxSupportBase)
     implementation(Dependencies.Libraries.AndroidXMultidex)
+    implementation(Dependencies.Libraries.Elmyr)
 
+    androidTestImplementation(project(":tools:unit"))
     androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)

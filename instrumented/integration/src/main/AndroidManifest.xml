@@ -7,7 +7,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.datadog.android.sdk.integrationtests">
+    package="com.datadog.android.sdk.integration">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -21,15 +21,13 @@
         android:theme="@style/Platform.MaterialComponents"
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
         <activity
-            android:name=".ActivityLifecycleLogs"
+            android:name=".log.ActivityLifecycleLogs"
+            android:label="@string/activity_logs_end_to_end"
             android:windowSoftInputMode="adjustResize">
         </activity>
         <activity
-            android:name=".ActivityLocalAttributesLogs"
-            android:windowSoftInputMode="adjustResize">
-        </activity>
-        <activity
-            android:name=".ActivityProfiling"
+            android:name="com.datadog.android.sdk.integrationtests.ActivityProfiling"
+            android:label="@string/activity_logs_profiling"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

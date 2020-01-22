@@ -87,12 +87,7 @@ object Dependencies {
             "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MockitoKotlin}"
         )
 
-        @JvmField
-        val AndroidTestTools = arrayOf(
-            "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
-            "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
-            "com.github.xgouchet.Elmyr:junit4:${Versions.Elmyr}"
-        )
+        const val Elmyr = "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}"
 
         @JvmField
         val IntegrationTests = arrayOf(
@@ -106,7 +101,11 @@ object Dependencies {
             // Espresso
             "androidx.test.espresso:espresso-core:${Versions.Espresso}",
             "androidx.test.espresso:espresso-contrib:${Versions.Espresso}",
-            "androidx.test.espresso:espresso-intents:${Versions.Espresso}"
+            "androidx.test.espresso:espresso-intents:${Versions.Espresso}",
+            // Elmyr
+            "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
+            "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
+            "com.github.xgouchet.Elmyr:junit4:${Versions.Elmyr}"
         )
 
         @JvmField
