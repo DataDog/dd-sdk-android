@@ -24,4 +24,9 @@ internal data class Log(
     val userInfo: UserInfo,
     val loggerName: String,
     val threadName: String
-)
+) {
+
+    companion object {
+        internal const val CRASH: Int = 9
+    }
+}

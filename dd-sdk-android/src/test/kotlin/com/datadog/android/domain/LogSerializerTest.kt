@@ -261,7 +261,8 @@ internal class LogSerializerTest {
 
     companion object {
         internal val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
+            "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
         )
     }
 }

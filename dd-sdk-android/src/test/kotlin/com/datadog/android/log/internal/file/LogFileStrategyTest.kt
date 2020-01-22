@@ -240,7 +240,8 @@ internal class LogFileStrategyTest :
         private const val RECENT_DELAY_MS = 150L
         private const val MAX_DISK_SPACE = 16 * 32 * 1024L
         private val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
+            "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
         )
     }
 }
