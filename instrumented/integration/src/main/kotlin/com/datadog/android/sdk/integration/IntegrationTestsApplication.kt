@@ -1,4 +1,4 @@
-package com.datadog.android.sdk.integrationtests
+package com.datadog.android.sdk.integration
 
 import android.app.Application
 import com.datadog.android.Datadog

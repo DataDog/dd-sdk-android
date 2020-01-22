@@ -5,7 +5,6 @@
  */
 
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -76,10 +75,6 @@ dependencies {
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
-
-    androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
-    androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
-    androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)

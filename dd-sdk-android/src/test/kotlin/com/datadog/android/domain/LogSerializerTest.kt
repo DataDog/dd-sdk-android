@@ -2,11 +2,11 @@ package com.datadog.android.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.log.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive

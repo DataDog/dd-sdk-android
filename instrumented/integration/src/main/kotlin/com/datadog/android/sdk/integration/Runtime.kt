@@ -1,15 +1,20 @@
-package com.datadog.android.sdk.integrationtests
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-2020 Datadog, Inc.
+ */
 
-import android.content.Context
+package com.datadog.android.sdk.integration
+
 import android.os.Build
 import com.datadog.android.log.Logger
 
 internal object Runtime {
-    fun logger(context: Context): Logger {
+
+    fun logger(): Logger {
         // Initialise Logger
         val logger = Logger.Builder()
             .setNetworkInfoEnabled(true)
-            .setServiceName(context.packageName)
             .build()
 
         // Attributes
@@ -34,6 +39,11 @@ internal object Runtime {
         "mobile"
     )
 
+    val allTags = keyValuePairsTags
+        .map { (k, v) -> if (v.isNotBlank()) "$k:$v" else k }
+        .union(singleValueTags)
+        .toList()
+
     val stringAttributes = mapOf(
         "version_name" to BuildConfig.VERSION_NAME,
         "device" to Build.DEVICE,
@@ -44,6 +54,11 @@ internal object Runtime {
         "version_code" to BuildConfig.VERSION_CODE,
         "sdk_int" to Build.VERSION.SDK_INT
     )
+
+    val allAttributes = mutableMapOf<String, Any?>().apply {
+        putAll(stringAttributes)
+        putAll(intAttribute)
+    }
 
     const val DD_TOKEN = "MYTESTAPPTOKEN"
     const val DD_CONTENT_TYPE = "application/json"

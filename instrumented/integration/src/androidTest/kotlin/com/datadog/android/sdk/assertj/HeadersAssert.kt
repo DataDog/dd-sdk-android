@@ -1,4 +1,4 @@
-package com.datadog.android.sdk.integrationtests.utils.assertj
+package com.datadog.android.sdk.assertj
 
 import okhttp3.Headers
 import org.assertj.core.api.AbstractAssert
@@ -14,7 +14,7 @@ internal class HeadersAssert(actual: Headers?) : AbstractAssert<HeadersAssert, H
         if (headerValue != name) {
             failWithMessage(
                 "We were expecting [ $name ] for the key [ $key ]" +
-                        " instead we found [ $headerValue ] "
+                    " instead we found [ $headerValue ] "
             )
         }
         return this

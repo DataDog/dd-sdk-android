@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.assertj
+package com.datadog.tools.unit.assertj
 
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -12,9 +12,17 @@ import com.google.gson.JsonPrimitive
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
+/**
+ * Assertion methods for [JsonObject].
+ */
+@Suppress("StringLiteralDuplication", "MethodOverloading")
 class JsonObjectAssert(actual: JsonObject) :
     AbstractObjectAssert<JsonObjectAssert, JsonObject>(actual, JsonObjectAssert::class.java) {
 
+    /**
+     *  Verifies that the actual jsonObject does not contain any field with the given name.
+     *  @param name the field name
+     */
     fun doesNotHaveField(name: String): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -25,6 +33,10 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and `null` value.
+     *  @param name the field name
+     */
     fun hasNullField(name: String): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -43,6 +55,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and nullable String value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: String?): JsonObjectAssert {
         if (expectedValue == null) {
             return hasNullField(name)
@@ -73,6 +90,11 @@ class JsonObjectAssert(actual: JsonObject) :
         }
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and value matching the given pattern.
+     *  @param name the field name
+     *  @param regex the pattern to match the value
+     */
     fun hasStringFieldMatching(name: String, regex: String): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -100,38 +122,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
-    fun hasStringField(name: String, nullable: Boolean = true): JsonObjectAssert {
-        assertThat(actual.has(name))
-            .overridingErrorMessage(
-                "Expected json object to have field named $name but couldn't find one"
-            )
-            .isTrue()
-
-        val element = actual.get(name)
-        assertThat(
-            (element is JsonPrimitive && element.isString) ||
-                (element is JsonNull && nullable)
-        )
-            .overridingErrorMessage(
-                "Expected json object to have field $name with String value " +
-                    "but was ${element.javaClass.simpleName}"
-            )
-            .isTrue()
-
-        return this
-    }
-
-    fun hasNoField(name: String): JsonObjectAssert {
-        assertThat(actual.has(name))
-            .overridingErrorMessage(
-                "Expected json object to not have a field named $name " +
-                    "but found one ($name:${actual.get(name)})"
-            )
-            .isFalse()
-
-        return this
-    }
-
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Boolean value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: Boolean): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -157,6 +152,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Int value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: Int): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -182,6 +182,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Long value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: Long): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -207,6 +212,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Float value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: Float): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -232,6 +242,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Double value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: Double): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -257,6 +272,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and JsonObject value.
+     *  @param name the field name
+     *  @param withAssertions a lambda verifying the value of the JsonObject
+     */
     fun hasField(
         name: String,
         withAssertions: JsonObjectAssert.() -> Unit
@@ -281,7 +301,13 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     companion object {
-        internal fun assertThat(actual: JsonObject): JsonObjectAssert =
+
+        /**
+         * Create assertion for [JsonObject].
+         *
+         * @return the created assertion object.
+         */
+        fun assertThat(actual: JsonObject): JsonObjectAssert =
             JsonObjectAssert(actual)
     }
 }

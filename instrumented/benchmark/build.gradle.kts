@@ -85,7 +85,7 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidXMultidex)
 
     androidTestImplementation(project(":tools:unit"))
-    androidTestImplementation(Dependencies.Libraries.AndroidTestTools)
+    androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.JetpackBenchmark)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 

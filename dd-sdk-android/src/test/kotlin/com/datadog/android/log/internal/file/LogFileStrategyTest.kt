@@ -13,12 +13,12 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.domain.FilePersistenceStrategyTest
-import com.datadog.android.log.assertj.JsonObjectAssert
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
