@@ -240,11 +240,11 @@ object Datadog {
 
     @Suppress("CheckInternal")
     private fun checkInitialized() {
-        check(initialized) {
-            "Datadog has not been initialized.\n" +
-                "Please add the following code in your application's onCreate() method:\n" +
-                "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
-        }
+        check(initialized) { MESSAGE_NOT_INITIALIZED }
+    }
+
+    internal fun isInitialized(): Boolean {
+        return initialized
     }
 
     private fun initNetworkInfoProvider(context: Context) {
@@ -329,6 +329,10 @@ object Datadog {
             appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
         }
     }
+
+    internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
+        "Please add the following code in your application's onCreate() method:\n" +
+        "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
 
     // endregion
 }
