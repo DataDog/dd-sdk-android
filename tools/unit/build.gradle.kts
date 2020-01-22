@@ -52,6 +52,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.JUnit5)
     implementation(Dependencies.Libraries.TestTools)
+    implementation(Dependencies.Libraries.Gson)
 
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
