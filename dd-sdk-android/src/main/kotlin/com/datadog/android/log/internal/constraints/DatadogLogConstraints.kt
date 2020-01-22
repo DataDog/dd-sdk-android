@@ -125,7 +125,6 @@ internal class DatadogLogConstraints : LogConstraints {
         private const val MAX_TAG_LENGTH = 200
         private const val MAX_TAG_COUNT = 100
 
-        private const val MAX_ATTR_KEY_LENGTH = 50
         private const val MAX_ATTR_COUNT = 256
 
         private val reservedTagKeys = setOf(
