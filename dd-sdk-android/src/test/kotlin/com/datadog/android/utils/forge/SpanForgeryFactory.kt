@@ -16,7 +16,9 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
         val spanType = forge.anAlphabeticalString()
         val isWithErrorFlag = forge.aBool()
         val tags = forge.exhaustiveTraceTags()
-        return generateSpanBuilder(
+        val metrics = forge.exhaustiveMetrics()
+        val meta = forge.exhaustiveMeta()
+        val span = generateSpanBuilder(
             operationName,
             spanType,
             resourceName,
@@ -24,6 +26,13 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             isWithErrorFlag,
             tags
         ).start()
+        metrics.forEach {
+            span.context().setMetric(it.key, it.value)
+        }
+        meta.forEach {
+            span.context().baggageItems.putIfAbsent(it.key, it.value)
+        }
+        return span
     }
 
     fun Forge.exhaustiveTraceTags(): Map<String, Any> {
@@ -34,6 +43,23 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             aFloat(),
             aDouble(),
             anAsciiString()
+        ).map { anAlphabeticalString() to it }
+            .toMap()
+    }
+
+    fun Forge.exhaustiveMetrics(): Map<String, Number> {
+        return listOf(
+            aLong(),
+            anInt(),
+            aFloat(),
+            aDouble()
+        ).map { anAlphabeticalString() to it as Number }
+            .toMap()
+    }
+
+    fun Forge.exhaustiveMeta(): Map<String, String> {
+        return listOf(
+            aString()
         ).map { anAlphabeticalString() to it }
             .toMap()
     }

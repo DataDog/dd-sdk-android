@@ -7,6 +7,7 @@ import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -39,5 +40,11 @@ internal class SpanSerializerTest {
         // then
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         jsonObject.assertMatches(span)
+        // check special metrics
+        val metricsObject = jsonObject.get(SpanSerializer.METRICS_KEY).asJsonObject
+        assertThat(metricsObject.getAsJsonPrimitive(SpanSerializer.METRICS_KEY_TOP_LEVEL).asInt)
+            .isEqualTo(1)
+        assertThat(metricsObject.getAsJsonPrimitive(SpanSerializer.METRICS_KEY_SAMPLING).asInt)
+            .isEqualTo(1)
     }
 }
