@@ -3,24 +3,28 @@ package com.datadog.android.core.internal.data.file
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 
-internal fun File.readBytes(withPrefix: Char, withSuffix: Char): ByteArray =
+internal fun File.readBytes(withPrefix: CharSequence, withSuffix: CharSequence): ByteArray =
     inputStream().use { input ->
         val length = this.length()
         if (length > Int.MAX_VALUE) {
             sdkLogger.i("We could not read the file $this because it was too big to fit in memory")
             return ByteArray(0)
         }
-        var offset = 1 // start from the prefix
+        var offset = withPrefix.length // start from the prefix
         var remaining = length.toInt()
-        val result = ByteArray(remaining + 2)
-        result[0] = withPrefix.toByte()
+        val result = ByteArray(remaining + withPrefix.length + withSuffix.length)
+        for (i in 0 until offset) {
+            result[i] = withPrefix[i].toByte()
+        }
         while (remaining > 0) {
             val read = input.read(result, offset, remaining)
             if (read < 0) break
             remaining -= read
             offset += read
         }
-        result[offset] = withSuffix.toByte()
-        offset += 1 // adding the last character (suffix)
-        if (remaining == 1) result else result.copyOf(offset)
+        for (j in 0 until withSuffix.length) {
+            result[j + offset] = withSuffix[j].toByte()
+        }
+        offset += withSuffix.length // adding the last character (suffix)
+        if (remaining == 0) result else result.copyOf(offset)
     }
