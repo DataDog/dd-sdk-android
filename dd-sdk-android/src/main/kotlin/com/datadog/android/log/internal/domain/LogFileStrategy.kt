@@ -22,13 +22,15 @@ internal class LogFileStrategy(
         context.filesDir,
         LOGS_FOLDER
     ),
+    LogSerializer(),
+    WRITER_THREAD_NAME,
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    LogSerializer(),
-    WRITER_THREAD_NAME,
+    "[",
+    "]",
     LogFileDataMigrator(context.filesDir)
 ) {
     // endregion

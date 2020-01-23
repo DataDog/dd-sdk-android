@@ -16,7 +16,9 @@ import java.io.IOException
 
 internal class FileReader(
     private val fileOrchestrator: Orchestrator,
-    private val dataDirectory: File
+    private val dataDirectory: File,
+    private val prefix: CharSequence = "",
+    private val suffix: CharSequence = ""
 ) : Reader {
 
     private val readFiles: MutableSet<String> = mutableSetOf()
@@ -72,7 +74,7 @@ internal class FileReader(
                 ByteArray(0)
             } else {
                 readFiles.add(file.name)
-                file.readBytes(withPrefix = '[', withSuffix = ']')
+                file.readBytes(withPrefix = prefix, withSuffix = suffix)
             }
         } catch (e: FileNotFoundException) {
             sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)

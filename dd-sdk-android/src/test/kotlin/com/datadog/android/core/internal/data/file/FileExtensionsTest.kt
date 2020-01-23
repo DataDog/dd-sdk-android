@@ -9,6 +9,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -27,6 +28,15 @@ class FileExtensionsTest {
     @TempDir
     lateinit var tempDir: File
 
+    lateinit var prefix: String
+    lateinit var suffix: String
+
+    @BeforeEach
+    fun `set up`(forge: Forge) {
+        prefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        suffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+    }
+
     @Test
     fun `adds the suffix and prefix to the file ByteArray`(forge: Forge) {
         val file = File(tempDir, "testFile")
@@ -34,8 +44,8 @@ class FileExtensionsTest {
         val dataToWrite = forge.anAlphaNumericalString()
         file.writeText(dataToWrite)
 
-        val readData = file.readBytes('[', ']')
-        assertThat(String(readData)).isEqualTo("[$dataToWrite]")
+        val readData = file.readBytes(prefix, suffix)
+        assertThat(String(readData)).isEqualTo("$prefix$dataToWrite$suffix")
     }
 
     @Test
@@ -43,8 +53,8 @@ class FileExtensionsTest {
         val file = File(tempDir, "testFile")
         file.createNewFile()
 
-        val readData = file.readBytes('[', ']')
-        assertThat(String(readData)).isEqualTo("[]")
+        val readData = file.readBytes(prefix, suffix)
+        assertThat(String(readData)).isEqualTo("$prefix$suffix")
     }
 
     @Test
@@ -54,7 +64,7 @@ class FileExtensionsTest {
         val spiedFile = spy(file)
         doReturn(Long.MAX_VALUE).whenever(spiedFile).length()
 
-        val readData = spiedFile.readBytes('[', ']')
+        val readData = spiedFile.readBytes(prefix, suffix)
         assertThat(readData).isEmpty()
     }
 }

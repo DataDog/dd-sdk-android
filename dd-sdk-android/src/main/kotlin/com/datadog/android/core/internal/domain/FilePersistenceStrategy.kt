@@ -17,13 +17,15 @@ import java.io.File
 
 internal abstract class FilePersistenceStrategy<T : Any>(
     dataDirectory: File,
-    recentDelayMs: Long,
-    maxBatchSize: Long,
-    maxItemsPerBatch: Int,
-    oldFileThreshold: Long,
-    maxDiskSpace: Long,
     serializer: Serializer<T>,
     private val writerThreadName: String,
+    recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
+    maxBatchSize: Long = MAX_BATCH_SIZE,
+    maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
+    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
+    maxDiskSpace: Long = MAX_DISK_SPACE,
+    payloadPrefix: CharSequence = "",
+    payloadSuffix: CharSequence = "",
     private val dataMigrator: DataMigrator? = null
 ) : PersistenceStrategy<T> {
 
@@ -38,7 +40,9 @@ internal abstract class FilePersistenceStrategy<T : Any>(
 
     private val fileReader = FileReader(
         fileOrchestrator,
-        dataDirectory
+        dataDirectory,
+        payloadPrefix,
+        payloadSuffix
     )
 
     // region Strategy methods
