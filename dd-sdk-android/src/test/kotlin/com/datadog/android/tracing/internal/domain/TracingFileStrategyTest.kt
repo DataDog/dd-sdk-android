@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.utils.copy
-import com.datadog.android.utils.extension.SpanKeys
 import com.datadog.android.utils.extension.assertMatches
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
@@ -109,10 +108,10 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = (jsonObject[SpanKeys.SERVICE_NAME_KEY] as JsonPrimitive).asString
-        val traceId = (jsonObject[SpanKeys.TRACE_ID_KEY] as JsonPrimitive).asBigInteger
-        val parentId = (jsonObject[SpanKeys.PARENT_ID_KEY] as JsonPrimitive).asBigInteger
-        val resourceName = (jsonObject[SpanKeys.RESOURCE_KEY] as JsonPrimitive).asString
+        val serviceName = (jsonObject[SpanSerializer.SERVICE_NAME_KEY] as JsonPrimitive).asString
+        val traceId = (jsonObject[SpanSerializer.TRACE_ID_KEY] as JsonPrimitive).asBigInteger
+        val parentId = (jsonObject[SpanSerializer.PARENT_ID_KEY] as JsonPrimitive).asBigInteger
+        val resourceName = (jsonObject[SpanSerializer.RESOURCE_KEY] as JsonPrimitive).asString
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
