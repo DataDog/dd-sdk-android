@@ -48,9 +48,14 @@ internal class FileReaderTest {
     @Mock
     lateinit var mockOrchestrator: Orchestrator
 
+    lateinit var prefix: String
+    lateinit var suffix: String
+
     @BeforeEach
-    fun `set up`() {
-        testedReader = FileReader(mockOrchestrator, rootDir)
+    fun `set up`(forge: Forge) {
+        prefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        suffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        testedReader = FileReader(mockOrchestrator, rootDir, prefix, suffix)
     }
 
     @Test
@@ -68,7 +73,7 @@ internal class FileReaderTest {
         val secondBatch = testedReader.readNextBatch()
         checkNotNull(firstBatch)
 
-        assertThat(String(firstBatch.data)).isEqualTo("[$data]")
+        assertThat(String(firstBatch.data)).isEqualTo("$prefix$data$suffix")
         assertThat(secondBatch).isNull()
         inOrder(mockOrchestrator) {
             verify(mockOrchestrator).getReadableFile(emptySet())
@@ -95,9 +100,9 @@ internal class FileReaderTest {
         val thirdBatch = testedReader.readNextBatch()
         checkNotNull(thirdBatch)
 
-        assertThat(String(firstBatch.data)).isEqualTo("[$data]")
+        assertThat(String(firstBatch.data)).isEqualTo("$prefix$data$suffix")
         assertThat(secondBatch).isNull()
-        assertThat(String(thirdBatch.data)).isEqualTo("[$data]")
+        assertThat(String(thirdBatch.data)).isEqualTo("$prefix$data$suffix")
         inOrder(mockOrchestrator) {
             verify(mockOrchestrator).getReadableFile(emptySet())
             verify(mockOrchestrator).getReadableFile(setOf(firstBatch.id))
@@ -124,7 +129,7 @@ internal class FileReaderTest {
 
         // then
         val persistedData = String(nextBatch.data)
-        assertThat(persistedData).isEqualTo("[$data]")
+        assertThat(persistedData).isEqualTo("$prefix$data$suffix")
     }
 
     @Test

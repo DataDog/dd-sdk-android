@@ -109,14 +109,19 @@ internal class TracingFileStrategyTest :
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
         val serviceName = (jsonObject[SpanSerializer.SERVICE_NAME_KEY] as JsonPrimitive).asString
-        val traceId = (jsonObject[SpanSerializer.TRACE_ID_KEY] as JsonPrimitive).asBigInteger
-        val parentId = (jsonObject[SpanSerializer.PARENT_ID_KEY] as JsonPrimitive).asBigInteger
+        val spanIdHexa = (jsonObject[SpanSerializer.SPAN_ID_KEY] as JsonPrimitive).asString
+        val traceIdHexa = (jsonObject[SpanSerializer.TRACE_ID_KEY] as JsonPrimitive).asString
+        val parentIdHexa = (jsonObject[SpanSerializer.PARENT_ID_KEY] as JsonPrimitive).asString
         val resourceName = (jsonObject[SpanSerializer.RESOURCE_KEY] as JsonPrimitive).asString
+        val traceId = java.lang.Long.parseLong(traceIdHexa, 16)
+        val spanId = java.lang.Long.parseLong(spanIdHexa, 16)
+        val parentId = java.lang.Long.parseLong(parentIdHexa, 16)
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
-                    traceId == it.traceId &&
-                    parentId == it.parentId &&
+                    traceId == it.traceId.toLong() &&
+                    parentId == it.parentId.toLong() &&
+                    spanId == it.spanId.toLong() &&
                     resourceName == it.resourceName
         }
 
