@@ -11,7 +11,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
-import android.os.Trace
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
@@ -83,8 +82,6 @@ internal class DatadogTest {
     lateinit var mockAppContext: Application
     @Mock
     lateinit var mockLogStrategy: PersistenceStrategy<Log>
-    @Mock
-    lateinit var mockTracesStrategy: PersistenceStrategy<Trace>
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
@@ -253,7 +250,7 @@ internal class DatadogTest {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
-        Datadog.javaClass.setStaticValue("uploader", mockUploader)
+        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
@@ -264,6 +261,12 @@ internal class DatadogTest {
                 AndroidLog.WARN, "Datadog",
                 startsWith("setEndpointUrl() has been deprecated.")
             )
+        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
+
+        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
+
+        verify(mockReader).dropAllBatches()
+        verify(mockUploader).setEndpoint(newEndpoint)
     }
 
     @Test
@@ -277,7 +280,7 @@ internal class DatadogTest {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
-        Datadog.javaClass.setStaticValue("uploader", mockUploader)
+        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)

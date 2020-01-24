@@ -59,17 +59,6 @@ internal class SpanSerializer : Serializer<DDSpan> {
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
         const val METRICS_KEY_TOP_LEVEL = "_top_level"
-        const val METRICS_KEY_SAMPLING = "_sampling_priority"
-    }
-
-    companion object {
-        const val START_TIMESTAMP_KEY = "start"
-        const val DURATION_KEY = "duration"
-        const val SERVICE_NAME_KEY = "service"
-        const val TRACE_ID_KEY = "trace_id"
-        const val SPAN_ID_KEY = "span_id"
-        const val PARENT_ID_KEY = "parent_id"
-        const val RESOURCE_KEY = "resource"
-        const val OPERATION_NAME_KEY = "name"
+        const val METRICS_KEY_SAMPLING = "_sampling_priority_v1"
     }
 }

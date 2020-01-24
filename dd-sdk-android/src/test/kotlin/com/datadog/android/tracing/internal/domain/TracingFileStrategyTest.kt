@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.utils.copy
 import com.datadog.android.utils.extension.assertMatches
 import com.datadog.android.utils.forge.Configurator

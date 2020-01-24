@@ -33,7 +33,8 @@ internal abstract class DataOkHttpUploader(
 
         return try {
             val request = buildRequest(data)
-            val response = client.newCall(request).execute()
+            val call = client.newCall(request)
+            val response = call.execute()
             sdkLogger.i(
                     "Response code:${response.code()} " +
                             "body:${response.body()?.string()} " +
