@@ -57,7 +57,7 @@ internal class MockServerActivityTestRule<T : Activity>(
         })
 
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        Datadog.setEndpointUrl(fakeEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
+        Datadog.setEndpointUrl(fakeEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
         super.beforeActivityLaunched()
     }
 
