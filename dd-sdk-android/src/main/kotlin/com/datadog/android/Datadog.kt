@@ -186,7 +186,7 @@ object Datadog {
      * might still be yet to sent.
      */
     @JvmStatic
-    fun setLogsEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
+    fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
         when (strategy) {
             EndpointUpdateStrategy.DISCARD_OLD_DATA -> {
                 logStrategy.getReader().dropAllBatches()
@@ -203,34 +203,6 @@ object Datadog {
             }
         }
         logsUploader.setEndpoint(endpointUrl)
-    }
-
-    /**
-     * Changes the endpoint to which tracing data is sent.
-     * @param endpointUrl the endpoint url to target, or null to use the default.
-     * Possible values are [DATADOG_US_TRACES], [DATADOG_EU_TRACES] or a custom endpoint.
-     * @param strategy the strategy defining how to handle traces created previously.
-     * Because traces are sent asynchronously, some traces intended for the previous endpoint
-     * might still be yet to sent.
-     */
-    @JvmStatic
-    fun setTracesEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
-        when (strategy) {
-            EndpointUpdateStrategy.DISCARD_OLD_DATA -> {
-                tracingStrategy.getReader().dropAllBatches()
-                devLogger.w(
-                    "$TAG: old traces targeted at $endpointUrl " +
-                            "will now be deleted"
-                )
-            }
-            EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT -> {
-                devLogger.w(
-                    "$TAG: old traces targeted at $endpointUrl " +
-                            "will now be sent to $endpointUrl"
-                )
-            }
-        }
-        tracesUploader.setEndpoint(endpointUrl)
     }
 
     // Stop all Datadog work (for test purposes).

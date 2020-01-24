@@ -4,8 +4,7 @@ object com.datadog.android.Datadog
   const val DATADOG_US_TRACES: String
   const val DATADOG_EU_TRACES: String
   fun initialize(android.content.Context, String, String? = null, String? = null)
-  fun setLogsEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
-  fun setTracesEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
+  fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
 enum com.datadog.android.log.EndpointUpdateStrategy
