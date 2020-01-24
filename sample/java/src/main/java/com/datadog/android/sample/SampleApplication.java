@@ -8,9 +8,13 @@ package com.datadog.android.sample;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 import com.datadog.android.Datadog;
 import com.datadog.android.log.Logger;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.json.JSONObject;
 
 public class SampleApplication extends Application {
 
@@ -36,9 +40,27 @@ public class SampleApplication extends Application {
                 .build();
         logger.v("Created a logger");
 
+        JsonObject device = new JsonObject();
+        JsonArray abis = new JsonArray();
+        try {
+            device.addProperty("api", Build.VERSION.SDK_INT);
+            device.addProperty("brand", Build.BRAND);
+            device.addProperty("manufacturer", Build.MANUFACTURER);
+            device.addProperty("model", Build.MODEL);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                for (String abi : Build.SUPPORTED_ABIS) {
+                    abis.add(abi);
+                }
+            }
+        } catch (Throwable t) {
+            // ignore
+        }
+
         logger.addAttribute("git_commit", BuildConfig.GIT_COMMIT_H);
         logger.addAttribute("version_code", BuildConfig.VERSION_CODE);
         logger.addAttribute("version_name", BuildConfig.VERSION_NAME);
+        logger.addAttribute("device", device);
+        logger.addAttribute("supported_abis", abis);
         logger.v("Added custom attributes");
 
         logger.addTag("flavor", BuildConfig.FLAVOR);

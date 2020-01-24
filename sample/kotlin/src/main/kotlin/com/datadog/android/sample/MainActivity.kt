@@ -5,6 +5,7 @@
  */
 package com.datadog.android.sample
 
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -15,6 +16,8 @@ import com.datadog.android.log.Logger
 import com.datadog.android.sample.logs.LogsFragment
 import com.datadog.android.sample.webview.WebFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,6 +30,24 @@ class MainActivity : AppCompatActivity() {
             .apply {
                 addTag("flavor", BuildConfig.FLAVOR)
                 addTag("build_type", BuildConfig.BUILD_TYPE)
+
+                val device = JsonObject()
+                val abis = JsonArray()
+                try {
+                    device.addProperty("api", Build.VERSION.SDK_INT)
+                    device.addProperty("brand", Build.BRAND)
+                    device.addProperty("manufacturer", Build.MANUFACTURER)
+                    device.addProperty("model", Build.MODEL)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        for (abi in Build.SUPPORTED_ABIS) {
+                            abis.add(abi)
+                        }
+                    }
+                } catch (t: Throwable) {
+                    // ignore
+                }
+                addAttribute("device", device)
+                addAttribute("supported_abis", abis)
             }
     }
 

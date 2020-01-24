@@ -96,6 +96,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.Gson)
 }
 
 kotlinConfig()

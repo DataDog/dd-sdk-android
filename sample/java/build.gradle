@@ -74,6 +74,8 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
 
+    implementation "com.google.code.gson:gson:2.8.6"
+
     // if you want to test the library in production you should change this dependency with the
     // latest release maven artifact either local or live
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
