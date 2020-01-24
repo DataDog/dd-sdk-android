@@ -323,7 +323,7 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Remove a custom attribute from all future logs sent by this logger.
-     * Previous log won't lose the attribute value associated with this key if they were created
+     * Previous logs won't lose the attribute value associated with this key if they were created
      * prior to this call.
      * @param key the key of the attribute to remove
      */
@@ -333,14 +333,13 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a tag to all future logs sent by this logger.
-     * The tag will take the form "key:value"
+     * The tag will take the form "key:value".
      *
      * Tags must start with a letter and after that may contain the following characters:
-     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * Alphanumerics, Underscores, Minuses, Colons, Periods, Slashes. Other special characters
      * are converted to underscores.
      * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
      * longer, only the first 200 characters will be used.
-     *
      *
      * @param key the key for this tag
      * @param value the (non null) value of this tag
@@ -354,7 +353,7 @@ internal constructor(private val handler: LogHandler) {
      * Add a tag to all future logs sent by this logger.
      *
      * Tags must start with a letter and after that may contain the following characters:
-     * Alphanumerics, Underscores, Minuses, Colons, Periods,Slashes. Other special characters
+     * Alphanumerics, Underscores, Minuses, Colons, Periods, Slashes. Other special characters
      * are converted to underscores.
      * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
      * longer, only the first 200 characters will be used.
@@ -368,7 +367,7 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Remove a tag from all future logs sent by this logger.
-     * Previous log won't lose the this tag if they were created prior to this call.
+     * Previous logs won't lose the this tag if they were created prior to this call.
      * @param tag the tag to remove
      */
     fun removeTag(tag: String) {
@@ -377,7 +376,7 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Remove all tags with the given key from all future logs sent by this logger.
-     * Previous log won't lose the this tag if they were created prior to this call.
+     * Previous logs won't lose the this tag if they were created prior to this call.
      * @param key the key of the tags to remove
      */
     fun removeTagsWithKey(key: String) {
