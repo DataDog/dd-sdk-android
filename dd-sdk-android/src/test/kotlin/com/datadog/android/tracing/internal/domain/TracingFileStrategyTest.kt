@@ -22,7 +22,6 @@ import com.google.gson.JsonPrimitive
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
-import io.opentracing.Tracer
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.junit.jupiter.MockitoSettings
@@ -80,12 +79,14 @@ internal class TracingFileStrategyTest :
 
     override fun bigModel(forge: Forge): DDSpan {
 
-        val operationName = forge.anAlphabeticalString(size = 65536)
-        val resourceName = forge.anAlphabeticalString(size = 65536)
-        val serviceName = forge.anAlphabeticalString(size = 65536)
-        val spanType = forge.anAlphabeticalString(size = 65536)
+        val maxBytesInSize = 256 * 1024
+        val maxBytesInSizeForKeyValye = maxBytesInSize / 3
+        val operationName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
+        val resourceName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
+        val serviceName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
+        val spanType = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
         val isWithErrorFlag = forge.aBool()
-        val tags = forge.aMap(size = 256) {
+        val meta = forge.aMap(size = 256) {
             forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
                 size = 128
             )
@@ -99,12 +100,12 @@ internal class TracingFileStrategyTest :
         if (isWithErrorFlag) {
             spanBuilder.withErrorFlag()
         }
-        (spanBuilder as Tracer.SpanBuilder).apply {
-            tags.forEach {
-                this.withTag(it.key, it.value)
-            }
+        val span = spanBuilder.start()
+        meta.forEach {
+            span.context().setBaggageItem(it.key, it.value)
         }
-        return spanBuilder.start()
+
+        return span
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
