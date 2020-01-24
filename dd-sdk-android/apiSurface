@@ -4,12 +4,13 @@ object com.datadog.android.Datadog
   const val DATADOG_US_TRACES: String
   const val DATADOG_EU_TRACES: String
   fun initialize(android.content.Context, String, String? = null, String? = null)
-  fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
+  DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
+  fun setTracesEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
-  - DISCARD_OLD_LOGS
-  - SEND_OLD_LOGS_TO_NEW_ENDPOINT
+  - DISCARD_OLD_DATA
+  - SEND_OLD_DATA_TO_NEW_ENDPOINT
 class com.datadog.android.log.Logger
   fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
   fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())

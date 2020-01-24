@@ -243,11 +243,6 @@ internal class DatadogTest {
                     "https://github.com/DataDog/dd-sdk-android/issues/"
             )
         Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
-
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
-
-        verify(mockReader).dropAllBatches()
-        verify(mockUploader).setEndpoint(newEndpoint)
     }
 
     @Test
