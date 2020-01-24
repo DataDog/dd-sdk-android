@@ -59,7 +59,7 @@ internal class SpanSerializer : Serializer<DDSpan> {
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
         const val METRICS_KEY_TOP_LEVEL = "_top_level"
-        const val METRICS_KEY_SAMPLING = "_sampling_priority"
+        const val METRICS_KEY_SAMPLING = "_sampling_priority_v1"
     }
 
     companion object {
