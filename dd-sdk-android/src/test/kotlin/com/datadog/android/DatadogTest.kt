@@ -262,11 +262,6 @@ internal class DatadogTest {
                 startsWith("setEndpointUrl() has been deprecated.")
             )
         Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
-
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
-
-        verify(mockReader).dropAllBatches()
-        verify(mockUploader).setEndpoint(newEndpoint)
     }
 
     @Test
