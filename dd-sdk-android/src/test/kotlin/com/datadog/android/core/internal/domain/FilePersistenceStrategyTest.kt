@@ -4,7 +4,7 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.domain
+package com.datadog.android.core.internal.domain
 
 import android.content.Context
 import android.os.Build
@@ -12,7 +12,6 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
