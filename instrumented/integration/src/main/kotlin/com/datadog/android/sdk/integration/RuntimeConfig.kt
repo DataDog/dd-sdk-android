@@ -9,7 +9,9 @@ package com.datadog.android.sdk.integration
 import android.os.Build
 import com.datadog.android.log.Logger
 
-internal object Runtime {
+internal object RuntimeConfig {
+
+    var endpointUrl: String = "http://localhost"
 
     fun logger(): Logger {
         // Initialise Logger

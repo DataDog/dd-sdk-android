@@ -14,7 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.BuildConfig
-import com.datadog.android.sdk.integration.Runtime
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
@@ -48,7 +48,7 @@ internal class EndToEndLogTest {
         requests.forEach { request ->
             assertThat(request.headers)
                 .isNotNull
-                .hasHeader(HeadersAssert.HEADER_CT, Runtime.DD_CONTENT_TYPE)
+                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
                 .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
 
             request.jsonBody!!.asJsonArray.forEach {
@@ -59,8 +59,8 @@ internal class EndToEndLogTest {
 
         // Check log contents
         val messagesSent = mockServerRule.activity.getSentMessages()
-        val globalTags = Runtime.allTags
-        val globalAttributes = Runtime.allAttributes
+        val globalTags = RuntimeConfig.allTags
+        val globalAttributes = RuntimeConfig.allAttributes
         val localAttributes = mockServerRule.activity.localAttributes()
 
         messagesSent.forEachIndexed { i, m ->
