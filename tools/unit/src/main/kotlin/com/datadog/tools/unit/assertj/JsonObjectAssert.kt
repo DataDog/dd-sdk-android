@@ -275,6 +275,11 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and BigInteger value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, expectedValue: BigInteger): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
@@ -380,6 +385,12 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and
+     *  Map<String,Any> value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
     fun hasField(name: String, map: Map<String, Any>): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(

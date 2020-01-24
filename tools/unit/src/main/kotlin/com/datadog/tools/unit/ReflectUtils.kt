@@ -96,7 +96,7 @@ fun <T : Any> T.invokeMethod(
         if (params.isEmpty()) {
             method.invoke(this)
         } else {
-            method.invoke(this, params)
+            method.invoke(this, *params)
         }
     } catch (e: InvocationTargetException) {
         throw e.cause ?: e
