@@ -1,6 +1,6 @@
 package com.datadog.android.utils.extension
 
-import com.datadog.android.log.assertj.JsonObjectAssert
+import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
 import datadog.opentracing.DDSpan
 

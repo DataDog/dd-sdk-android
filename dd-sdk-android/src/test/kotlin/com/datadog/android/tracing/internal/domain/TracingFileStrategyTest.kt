@@ -9,9 +9,9 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
+import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.threading.LazyHandlerThread
-import com.datadog.android.log.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.utils.copy
 import com.datadog.android.utils.extension.SpanKeys
 import com.datadog.android.utils.extension.assertMatches
@@ -60,8 +60,7 @@ internal class TracingFileStrategyTest :
         assertThat(oldDir).exists()
         (testedWriter as DeferredWriter<DDSpan>).deferredHandler = mockDeferredHandler
         (testedWriter as DeferredWriter<DDSpan>).invokeMethod(
-            "consumeQueue",
-            methodEnclosingClass = LazyHandlerThread::class.java
+            "consumeQueue"
         ) // consume all the queued messages
     }
     // endregion
