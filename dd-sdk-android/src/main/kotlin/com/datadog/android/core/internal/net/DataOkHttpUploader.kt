@@ -6,8 +6,6 @@
 
 package com.datadog.android.core.internal.net
 
-import android.os.Build
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.IOException
 import java.util.Locale
@@ -25,16 +23,6 @@ internal abstract class DataOkHttpUploader(
 
     private var url: String = buildUrl(endpoint, token)
 
-    private val userAgent = System.getProperty(SYSTEM_UA).let {
-        if (it.isNullOrBlank()) {
-            "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
-        } else {
-            it
-        }
-    }
-
     // region LogUploader
 
     override fun setEndpoint(endpoint: String) {
@@ -48,9 +36,9 @@ internal abstract class DataOkHttpUploader(
             val request = buildRequest(data)
             val response = client.newCall(request).execute()
             sdkLogger.i(
-                    "$tag: Response code:${response.code()} " +
-                            "body:${response.body()?.string()} " +
-                            "headers:${response.headers()}"
+                "$tag: Response code:${response.code()} " +
+                        "body:${response.body()?.string()} " +
+                        "headers:${response.headers()}"
             )
             responseCodeToUploadStatus(response.code())
         } catch (e: IOException) {
@@ -71,17 +59,19 @@ internal abstract class DataOkHttpUploader(
         )
     }
 
+    open fun headers(): MutableMap<String, String> {
+        return mutableMapOf(HEADER_CT to CONTENT_TYPE)
+    }
+
     private fun buildRequest(data: ByteArray): Request {
         sdkLogger.d("$tag: Sending data to $url")
-        return Request.Builder()
+        val builder = Request.Builder()
             .url(url)
             .post(RequestBody.create(null, data))
-            .addHeader(HEADER_UA, userAgent)
-            .addHeader(
-                HEADER_CT,
-                CONTENT_TYPE
-            )
-            .build()
+        headers().forEach {
+            builder.addHeader(it.key, it.value)
+        }
+        return builder.build()
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {
@@ -97,11 +87,7 @@ internal abstract class DataOkHttpUploader(
     // endregion
 
     companion object {
-
-        private const val HEADER_UA = "User-Agent"
         private const val HEADER_CT = "Content-Type"
-
         private const val CONTENT_TYPE = "application/json"
-        const val SYSTEM_UA = "http.agent"
     }
 }

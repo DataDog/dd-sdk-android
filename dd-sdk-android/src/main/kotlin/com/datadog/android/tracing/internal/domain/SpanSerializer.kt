@@ -15,7 +15,6 @@ internal class SpanSerializer : Serializer<DDSpan> {
         jsonObject.addProperty(SPAN_ID_KEY, Long.toHexString(model.spanId.toLong()))
         jsonObject.addProperty(PARENT_ID_KEY, Long.toHexString(model.parentId.toLong()))
         jsonObject.addProperty(RESOURCE_KEY, model.resourceName)
-        jsonObject.addProperty(RESOURCE_KEY, model.resourceName)
         jsonObject.addProperty(OPERATION_NAME_KEY, model.operationName)
         jsonObject.addProperty(SERVICE_NAME_KEY, model.serviceName)
         jsonObject.addProperty(DURATION_KEY, model.durationNano)
