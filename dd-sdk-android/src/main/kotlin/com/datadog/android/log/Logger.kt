@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -235,20 +236,29 @@ internal constructor(private val handler: LogHandler) {
 
         // region Internal
 
-        private fun buildLogcatHandler(): LogcatLogHandler {
+        private fun buildLogcatHandler(): LogHandler {
             return LogcatLogHandler(serviceName)
         }
 
-        private fun buildDatadogHandler(): DatadogLogHandler {
-            val netInfoProvider = if (networkInfoEnabled) Datadog.getNetworkInfoProvider() else null
-            return DatadogLogHandler(
-                writer = Datadog.getLogStrategy().getWriter(),
-                serviceName = serviceName,
-                loggerName = loggerName,
-                networkInfoProvider = netInfoProvider,
-                timeProvider = Datadog.getTimeProvider(),
-                userInfoProvider = Datadog.getUserInfoProvider()
-            )
+        private fun buildDatadogHandler(): LogHandler {
+            return if (!Datadog.isInitialized()) {
+                devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+                NoOpLogHandler
+            } else {
+                val netInfoProvider = if (networkInfoEnabled) {
+                    Datadog.getNetworkInfoProvider()
+                } else {
+                    null
+                }
+                DatadogLogHandler(
+                    writer = Datadog.getLogStrategy().getWriter(),
+                    serviceName = serviceName,
+                    loggerName = loggerName,
+                    networkInfoProvider = netInfoProvider,
+                    timeProvider = Datadog.getTimeProvider(),
+                    userInfoProvider = Datadog.getUserInfoProvider()
+                )
+            }
         }
 
         // endregion

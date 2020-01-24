@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class UploadWorker(
@@ -23,6 +24,11 @@ internal class UploadWorker(
     // region Worker
 
     override fun doWork(): Result {
+        if (!Datadog.isInitialized()) {
+            devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+            return Result.success()
+        }
+
         val reader = Datadog.getLogStrategy().getReader()
         val uploader = Datadog.getLogUploader()
 
