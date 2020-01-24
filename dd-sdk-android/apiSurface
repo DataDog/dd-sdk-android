@@ -6,7 +6,6 @@ object com.datadog.android.Datadog
   fun isInitialized(): Boolean
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
-enum com.datadog.android.log.EndpointUpdateStrategy
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_LOGS
   - SEND_OLD_LOGS_TO_NEW_ENDPOINT
