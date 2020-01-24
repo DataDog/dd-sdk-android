@@ -35,6 +35,7 @@ import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
@@ -149,24 +150,11 @@ object Datadog {
      * Because logs are sent asynchronously, some logs intended for the previous endpoint
      * might still be yet to sent.
      */
+    @Suppress("DeprecatedCallableAddReplaceWith")
     @JvmStatic
+    @Deprecated("This was only meant as an internal feature and is not needed anymore.")
     fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
-        when (strategy) {
-            EndpointUpdateStrategy.DISCARD_OLD_LOGS -> {
-                logStrategy.getReader().dropAllBatches()
-                devLogger.w(
-                    "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be deleted"
-                )
-            }
-            EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT -> {
-                devLogger.w(
-                    "$TAG: old logs targeted at $endpointUrl " +
-                        "will now be sent to $endpointUrl"
-                )
-            }
-        }
-        uploader.setEndpoint(endpointUrl)
+        devLogger.w(String.format(Locale.US, MESSAGE_DEPRECATED, "setEndpointUrl()"))
     }
 
     // Stop all Datadog work (for test purposes).
@@ -333,6 +321,9 @@ object Datadog {
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
         "Please add the following code in your application's onCreate() method:\n" +
         "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+
+    internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
+        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     // endregion
 }

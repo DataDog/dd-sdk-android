@@ -63,8 +63,7 @@ internal class DataOkHttpUploader(
 
     private fun buildUrl(endpoint: String, token: String): String {
         sdkLogger.i("$TAG: using endpoint $endpoint")
-        return String.format(Locale.US,
-            UPLOAD_URL, endpoint, token)
+        return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
     private fun buildRequest(data: ByteArray): Request {

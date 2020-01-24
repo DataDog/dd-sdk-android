@@ -40,9 +40,9 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -201,7 +201,10 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `drop logs on setEndpointUrl with Discard strategy`(forge: Forge) {
+    fun `does nothing on setEndpointUrl with Discard strategy`(
+        forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
         val mockReader: Reader = mock()
         val mockUploader: DataUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
@@ -209,15 +212,24 @@ internal class DatadogTest {
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
+        Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
 
-        verify(mockReader).dropAllBatches()
-        verify(mockUploader).setEndpoint(newEndpoint)
+        verifyZeroInteractions(mockUploader, mockReader)
+        assertThat(outputStream.lastLine())
+            .isEqualTo(
+                "W/Datadog: setEndpointUrl() has been deprecated. " +
+                    "If you need it, submit an issue at " +
+                    "https://github.com/DataDog/dd-sdk-android/issues/"
+            )
     }
 
     @Test
-    fun `keep logs on setEndpointUrl with Update strategy`(forge: Forge) {
+    fun `does nothing on setEndpointUrl with Update strategy`(
+        forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
         val mockReader: Reader = mock()
         val mockUploader: DataUploader = mock()
         whenever(mockLogStrategy.getReader()) doReturn mockReader
@@ -225,11 +237,17 @@ internal class DatadogTest {
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
         Datadog.javaClass.setStaticValue("uploader", mockUploader)
+        Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT)
 
-        verify(mockReader, never()).dropAllBatches()
-        verify(mockUploader).setEndpoint(newEndpoint)
+        verifyZeroInteractions(mockUploader, mockReader)
+        assertThat(outputStream.lastLine())
+            .isEqualTo(
+                "W/Datadog: setEndpointUrl() has been deprecated. " +
+                    "If you need it, submit an issue at " +
+                    "https://github.com/DataDog/dd-sdk-android/issues/"
+            )
     }
 
     @Test
