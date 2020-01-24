@@ -9,6 +9,8 @@ package com.datadog.android.log
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.isNull
@@ -352,6 +354,40 @@ internal class LoggerTest {
 
     @Test
     fun `add Date attribute to logger`(forge: Forge, @Forgery value: Date) {
+        val key = forge.anAlphabeticalString()
+
+        testedLogger.addAttribute(key, value)
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
+    }
+
+    @Test
+    fun `add JsonObject attribute to logger`(forge: Forge, @Forgery value: JsonObject) {
+        val key = forge.anAlphabeticalString()
+
+        testedLogger.addAttribute(key, value)
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
+    }
+
+    @Test
+    fun `add JsonArray attribute to logger`(forge: Forge, @Forgery value: JsonArray) {
         val key = forge.anAlphabeticalString()
 
         testedLogger.addAttribute(key, value)

@@ -14,6 +14,8 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.util.Date
 
 /**
@@ -325,9 +327,27 @@ internal constructor(private val handler: LogHandler) {
     /**
      * Add a custom attribute to all future logs sent by this logger.
      * @param key the key for this attribute
-     * @param value the (nullable) Date value of this attribute
+     * @param value the (nullable) [Date] value of this attribute
      */
     fun addAttribute(key: String, value: Date?) {
+        attributes[key] = value
+    }
+
+    /**
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the (nullable) [JsonObject] value of this attribute
+     */
+    fun addAttribute(key: String, value: JsonObject?) {
+        attributes[key] = value
+    }
+
+    /**
+     * Add a custom attribute to all future logs sent by this logger.
+     * @param key the key for this attribute
+     * @param value the (nullable) [JsonArray] value of this attribute
+     */
+    fun addAttribute(key: String, value: JsonArray?) {
         attributes[key] = value
     }
 

@@ -7,6 +7,7 @@ import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -141,7 +142,7 @@ internal class LogSerializerTest {
         assertNetworkInfoMatches(log, jsonObject)
         assertUserInfoMatches(log, jsonObject)
 
-        assertFieldsMatch(log, jsonObject)
+        assertAttributesMatch(log, jsonObject)
         assertTagsMatch(jsonObject, log)
         assertThrowableMatches(log, jsonObject)
     }
@@ -185,7 +186,7 @@ internal class LogSerializerTest {
         }
     }
 
-    private fun assertFieldsMatch(log: Log, jsonObject: JsonObject) {
+    private fun assertAttributesMatch(log: Log, jsonObject: JsonObject) {
         log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
@@ -199,6 +200,8 @@ internal class LogSerializerTest {
                     is Double -> assertThat(jsonObject).hasField(it.key, value)
                     is String -> assertThat(jsonObject).hasField(it.key, value)
                     is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
+                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
                     else -> assertThat(jsonObject).hasField(it.key, value.toString())
                 }
             }
