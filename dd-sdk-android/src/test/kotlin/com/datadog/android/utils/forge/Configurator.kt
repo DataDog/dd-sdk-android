@@ -19,6 +19,9 @@ class Configurator :
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
+        forge.addFactory(JsonObjectForgeryFactory())
+        forge.addFactory(JsonPrimitiveForgeryFactory())
+        forge.addFactory(JsonArrayForgeryFactory())
         forge.useJvmFactories()
     }
 }

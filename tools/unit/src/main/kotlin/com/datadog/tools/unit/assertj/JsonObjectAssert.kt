@@ -6,6 +6,8 @@
 
 package com.datadog.tools.unit.assertj
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -15,7 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 /**
  * Assertion methods for [JsonObject].
  */
-@Suppress("StringLiteralDuplication", "MethodOverloading")
+@Suppress("StringLiteralDuplication", "MethodOverloading", "TooManyFunctions")
 class JsonObjectAssert(actual: JsonObject) :
     AbstractObjectAssert<JsonObjectAssert, JsonObject>(actual, JsonObjectAssert::class.java) {
 
@@ -269,6 +271,58 @@ class JsonObjectAssert(actual: JsonObject) :
                     "but was $value"
             )
             .isEqualTo(expectedValue)
+        return this
+    }
+
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name and JsonObject value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
+    fun hasField(
+        name: String,
+        expectedValue: JsonElement
+    ): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        when (expectedValue) {
+            is JsonPrimitive -> {
+                assertThat(element is JsonPrimitive)
+                    .overridingErrorMessage(
+                        "Expected json object to have primitive field named $name but was $element"
+                    ).isTrue()
+            }
+            is JsonObject -> {
+                assertThat(element is JsonObject)
+                    .overridingErrorMessage(
+                        "Expected json object to have object field named $name but was $element"
+                    ).isTrue()
+                expectedValue.keySet().forEach {
+                    assertThat(element as JsonObject).hasField(it, expectedValue.get(it))
+                }
+            }
+            is JsonArray -> {
+                assertThat(element is JsonArray)
+                    .overridingErrorMessage(
+                        "Expected json object to have array field named $name but was $element"
+                    ).isTrue()
+                expectedValue.forEach {
+                    assertThat(element as JsonArray).contains(it)
+                }
+            }
+            is JsonNull -> {
+                assertThat(element is JsonNull)
+                    .overridingErrorMessage(
+                        "Expected json object to have null field named $name but was $element"
+                    ).isTrue()
+            }
+        }
+
         return this
     }
 

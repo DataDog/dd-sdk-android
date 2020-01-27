@@ -18,8 +18,9 @@ import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.assertj.JsonObjectAssert
+import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.invokeMethod
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
@@ -134,7 +135,7 @@ internal class LogFileStrategyTest :
     }
 
     override fun assertMatches(jsonObject: JsonObject, model: Log) {
-        JsonObjectAssert.assertThat(jsonObject)
+        assertThat(jsonObject)
             .hasField(LogSerializer.TAG_MESSAGE, model.message)
             .hasField(LogSerializer.TAG_SERVICE_NAME, model.serviceName)
             .hasField(LogSerializer.TAG_STATUS, levels[model.level])
@@ -142,7 +143,7 @@ internal class LogFileStrategyTest :
             .hasField(LogSerializer.TAG_THREAD_NAME, model.threadName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
-        JsonObjectAssert.assertThat(jsonObject).hasStringFieldMatching(
+        assertThat(jsonObject).hasStringFieldMatching(
             LogSerializer.TAG_DATE,
             "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
@@ -157,7 +158,7 @@ internal class LogFileStrategyTest :
     private fun assertNetworkInfoMatches(log: Log, jsonObject: JsonObject) {
         val info = log.networkInfo
         if (info != null) {
-            JsonObjectAssert.assertThat(jsonObject).apply {
+            assertThat(jsonObject).apply {
                 hasField(LogSerializer.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
                 if (!info.carrierName.isNullOrBlank()) {
                     hasField(LogSerializer.TAG_NETWORK_CARRIER_NAME, info.carrierName)
@@ -171,7 +172,7 @@ internal class LogFileStrategyTest :
                 }
             }
         } else {
-            JsonObjectAssert.assertThat(jsonObject)
+            assertThat(jsonObject)
                 .doesNotHaveField(LogSerializer.TAG_NETWORK_CONNECTIVITY)
                 .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
                 .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
@@ -184,15 +185,17 @@ internal class LogFileStrategyTest :
             .forEach {
                 val value = it.value
                 when (value) {
-                    null -> JsonObjectAssert.assertThat(jsonObject).hasNullField(it.key)
-                    is Boolean -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is Int -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is Long -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is Float -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is Double -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is String -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value)
-                    is Date -> JsonObjectAssert.assertThat(jsonObject).hasField(it.key, value.time)
-                    else -> JsonObjectAssert.assertThat(jsonObject).hasField(
+                    null -> assertThat(jsonObject).hasNullField(it.key)
+                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                    is Int -> assertThat(jsonObject).hasField(it.key, value)
+                    is Long -> assertThat(jsonObject).hasField(it.key, value)
+                    is Float -> assertThat(jsonObject).hasField(it.key, value)
+                    is Double -> assertThat(jsonObject).hasField(it.key, value)
+                    is String -> assertThat(jsonObject).hasField(it.key, value)
+                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
+                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
+                    else -> assertThat(jsonObject).hasField(
                         it.key,
                         value.toString()
                     )
@@ -222,12 +225,12 @@ internal class LogFileStrategyTest :
             val sw = StringWriter()
             throwable.printStackTrace(PrintWriter(sw))
 
-            JsonObjectAssert.assertThat(jsonObject)
+            assertThat(jsonObject)
                 .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
                 .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
                 .hasField(LogSerializer.TAG_ERROR_STACK, sw.toString())
         } else {
-            JsonObjectAssert.assertThat(jsonObject)
+            assertThat(jsonObject)
                 .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
                 .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
                 .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)

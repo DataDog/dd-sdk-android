@@ -8,6 +8,8 @@ package com.datadog.android.utils.forge
 
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.domain.Log
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.io.File
@@ -50,6 +52,8 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             getForgery<Locale>(),
             getForgery<TimeZone>(),
             getForgery<File>(),
+            getForgery<JsonObject>(),
+            getForgery<JsonArray>(),
             null
         ).map { anAlphabeticalString() to it }
             .toMap().toMutableMap()

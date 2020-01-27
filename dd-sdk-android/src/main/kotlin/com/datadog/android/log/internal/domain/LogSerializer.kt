@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
+import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -147,6 +148,8 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
                     is Double -> JsonPrimitive(value)
                     is String -> JsonPrimitive(value)
                     is Date -> JsonPrimitive(value.time)
+                    is JsonObject -> value
+                    is JsonArray -> value
                     else -> JsonPrimitive(value.toString())
                 }
                 jsonLog.add(it.key, jsonValue)
