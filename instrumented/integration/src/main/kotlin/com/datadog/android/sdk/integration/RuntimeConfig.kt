@@ -8,6 +8,7 @@ package com.datadog.android.sdk.integration
 
 import android.os.Build
 import com.datadog.android.log.Logger
+import com.datadog.android.tracing.Tracer
 
 internal object RuntimeConfig {
 
@@ -29,6 +30,10 @@ internal object RuntimeConfig {
         singleValueTags.forEach { logger.addTag(it) }
 
         return logger
+    }
+
+    fun tracer(): Tracer {
+        return Tracer.Builder().setServiceName(TRACES_SERVICE_NAME).build()
     }
 
     val keyValuePairsTags = mapOf(
@@ -65,4 +70,5 @@ internal object RuntimeConfig {
 
     const val DD_TOKEN = "MYTESTAPPTOKEN"
     const val DD_CONTENT_TYPE = "application/json"
+    const val TRACES_SERVICE_NAME = "android"
 }
