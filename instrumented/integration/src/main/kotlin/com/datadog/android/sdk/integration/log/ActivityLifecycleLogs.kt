@@ -9,9 +9,10 @@ package com.datadog.android.sdk.integration.log
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.integration.R
-import com.datadog.android.sdk.integration.Runtime
+import com.datadog.android.sdk.integration.RuntimeConfig
 import fr.xgouchet.elmyr.Forge
 
 internal class ActivityLifecycleLogs : AppCompatActivity() {
@@ -27,7 +28,9 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        logger = Runtime.logger()
+        Datadog.initialize(this, RuntimeConfig.DD_TOKEN, RuntimeConfig.endpointUrl)
+
+        logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)
 
         log(Log.INFO, "ActivityLifecycleLogs: onCreate ${System.nanoTime()}")

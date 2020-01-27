@@ -625,6 +625,71 @@ internal class KotlinFileVisitorTest {
         )
     }
 
+    @Test
+    fun `describes deprecated class`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            @Deprecated
+            class Spam {
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "DEPRECATED class foo.bar.Spam\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes deprecated function`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import kotlin.Deprecated
+            
+            class Spam {
+                @Deprecated
+                fun doSomething() {} 
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  DEPRECATED fun doSomething()\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes deprecated field`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import java.lang.Deprecated
+            
+            class Spam {
+                @Deprecated
+                val data : String = ""
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  DEPRECATED val data: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
     companion object {
         const val FILE_NAME = "file.kt"
     }

@@ -10,8 +10,7 @@ import android.app.Activity
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import com.datadog.android.Datadog
-import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
@@ -56,8 +55,7 @@ internal class MockServerActivityTestRule<T : Activity>(
             }
         })
 
-        val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        Datadog.setEndpointUrl(fakeEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
+        RuntimeConfig.endpointUrl = mockWebServer.url("/").toString().removeSuffix("/")
         super.beforeActivityLaunched()
     }
 

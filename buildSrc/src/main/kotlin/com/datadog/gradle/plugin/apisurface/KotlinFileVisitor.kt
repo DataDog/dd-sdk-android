@@ -45,6 +45,10 @@ class KotlinFileVisitor {
 
             description.append("  ".repeat(level))
 
+            if (declaration.isDeprecated()) {
+                description.append("DEPRECATED ")
+            }
+
             if (declaration.isProtected()) {
                 description.append("protected ")
             }
@@ -268,6 +272,17 @@ class KotlinFileVisitor {
                 when (it) {
                     is Node.Decl.Structured.Parent.CallConstructor -> it.type.description()
                     is Node.Decl.Structured.Parent.Type -> it.type.description()
+                }
+            }
+        }
+    }
+
+    private fun Node.WithAnnotations.isDeprecated(): Boolean {
+        return anns.any { annotationSet ->
+            annotationSet.anns.any { annotation ->
+                annotation.names.any {
+                    val name = imports[it] ?: it
+                    name == "Deprecated" || name == "kotlin.Deprecated" || name == "java.lang.Deprecated"
                 }
             }
         }

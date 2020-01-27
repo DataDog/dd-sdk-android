@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.integration.R
-import com.datadog.android.sdk.integration.Runtime
+import com.datadog.android.sdk.integration.RuntimeConfig
 
 internal class ActivityProfiling : AppCompatActivity() {
 
@@ -12,7 +12,7 @@ internal class ActivityProfiling : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        logger = Runtime.logger()
+        logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)
     }
 }

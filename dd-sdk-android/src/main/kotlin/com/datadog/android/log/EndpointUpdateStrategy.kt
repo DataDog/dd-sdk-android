@@ -10,6 +10,7 @@ package com.datadog.android.log
  * The strategy on how to deal with older logs when the
  * endpoint needs to be changed.
  */
+@Deprecated("This was only meant as an internal feature and is not needed anymore.")
 enum class EndpointUpdateStrategy {
 
     /**
