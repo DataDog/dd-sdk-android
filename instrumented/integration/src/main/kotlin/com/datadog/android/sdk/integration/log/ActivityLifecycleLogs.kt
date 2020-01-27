@@ -28,7 +28,10 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Datadog.initialize(this, RuntimeConfig.DD_TOKEN, RuntimeConfig.endpointUrl)
+        Datadog.initialize(this,
+            RuntimeConfig.DD_TOKEN,
+            RuntimeConfig.logsEndpointUrl,
+            RuntimeConfig.tracesEndpointUrl)
 
         logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)

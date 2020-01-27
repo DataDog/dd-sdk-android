@@ -10,10 +10,7 @@ import android.app.Activity
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import com.datadog.android.Datadog
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.tools.unit.getStaticValue
-import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
@@ -59,17 +56,8 @@ internal class MockServerActivityTestRule<T : Activity>(
         })
 
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        RuntimeConfig.endpointUrl = fakeEndpoint
-        val tracesUploader: Any = Datadog::class.java.getStaticValue("tracesUploader")
-        tracesUploader.javaClass.classLoader?.let {
-            val okHttpUploaderClass: Class<Any> =
-                it.loadClass("com.datadog.android.core.internal.net.DataOkHttpUploader")
-                        as Class<Any>
-            tracesUploader.invokeMethod(
-                "setEndpoint", okHttpUploaderClass,
-                fakeEndpoint
-            )
-        }
+        RuntimeConfig.logsEndpointUrl = fakeEndpoint
+        RuntimeConfig.tracesEndpointUrl = fakeEndpoint
         super.beforeActivityLaunched()
     }
 

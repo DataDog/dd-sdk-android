@@ -11,7 +11,8 @@ import com.datadog.android.log.Logger
 
 internal object RuntimeConfig {
 
-    var endpointUrl: String = "http://localhost"
+    var logsEndpointUrl: String = "http://localhost"
+    var tracesEndpointUrl: String = "http://localhost"
 
     fun logger(): Logger {
         // Initialise Logger
