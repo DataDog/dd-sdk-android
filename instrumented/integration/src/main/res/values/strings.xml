@@ -3,5 +3,6 @@
     <string name="app_name">Datadog Integration Tests</string>
 
     <string name="activity_logs_end_to_end">Logs (End to End)</string>
+    <string name="activity_traces_end_to_end">Traces (End to End)</string>
     <string name="activity_logs_profiling">Logs (Profiling)</string>
 </resources>
