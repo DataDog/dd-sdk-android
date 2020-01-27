@@ -66,8 +66,6 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
     abstract fun uploader(): T
 
-    abstract fun tag(): String
-
     abstract fun urlFormat(): String
 
     @AfterEach
@@ -336,7 +334,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             testedUploader.upload(data)
             val logMessages = systemOutputStream.toString().trim().split("\n")
             assertThat(logMessages.last())
-                .isEqualTo("E/DD_LOG: ${tag()}: unable to upload data")
+                .isEqualTo("E/DD_LOG: DataOkHttpUploader: unable to upload data")
         }
     }
 
@@ -355,7 +353,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             testedUploader.upload(data)
             val logMessages = systemOutputStream.toString().trim().split("\n")
             assertThat(logMessages.last())
-                .matches("I/DD_LOG: ${tag()}: Response code:$code .+")
+                .matches("I/DD_LOG: DataOkHttpUploader: Response code:$code .+")
         }
     }
 
