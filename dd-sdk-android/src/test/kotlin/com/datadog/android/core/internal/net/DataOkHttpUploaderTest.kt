@@ -70,8 +70,6 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
     abstract fun uploader(): T
 
-    abstract fun tag(): String
-
     abstract fun urlFormat(): String
 
     @AfterEach

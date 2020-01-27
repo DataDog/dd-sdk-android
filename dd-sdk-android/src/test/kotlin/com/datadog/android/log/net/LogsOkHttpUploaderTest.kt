@@ -36,10 +36,6 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
             .isEqualTo(expectedUserAgent)
     }
 
-    override fun tag(): String {
-        return LogsOkHttpUploader.TAG
-    }
-
     override fun urlFormat(): String {
         return LogsOkHttpUploader.UPLOAD_URL
     }

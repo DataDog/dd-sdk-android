@@ -7,25 +7,19 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.core.internal.utils.sdkLogger
-import java.util.Locale
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploader(
-    endpoint: String,
-    private val token: String,
-    private val client: OkHttpClient,
-    private val uploadUrlFormat: String,
-    private val tag: String
+    private var url: String,
+    private val client: OkHttpClient
 ) : DataUploader {
-
-    private var url: String = buildUrl(endpoint, token)
 
     // region LogUploader
 
     override fun setEndpoint(endpoint: String) {
-        url = buildUrl(endpoint, token)
+        this.url = endpoint
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -50,14 +44,6 @@ internal abstract class DataOkHttpUploader(
     // endregion
 
     // region Internal
-
-    private fun buildUrl(endpoint: String, token: String): String {
-        sdkLogger.i("using endpoint $endpoint")
-        return String.format(
-            Locale.US,
-            uploadUrlFormat, endpoint, token
-        )
-    }
 
     open fun headers(): MutableMap<String, String> {
         return mutableMapOf(HEADER_CT to CONTENT_TYPE)
@@ -89,5 +75,6 @@ internal abstract class DataOkHttpUploader(
     companion object {
         private const val HEADER_CT = "Content-Type"
         private const val CONTENT_TYPE = "application/json"
+        private const val TAG = "DataOkHttpUploader"
     }
 }

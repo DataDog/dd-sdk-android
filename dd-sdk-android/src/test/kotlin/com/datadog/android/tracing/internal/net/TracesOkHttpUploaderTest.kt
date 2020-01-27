@@ -18,10 +18,6 @@ internal class TracesOkHttpUploaderTest : DataOkHttpUploaderTest<TracesOkHttpUpl
         )
     }
 
-    override fun tag(): String {
-        return TracesOkHttpUploader.TAG
-    }
-
     override fun urlFormat(): String {
         return TracesOkHttpUploader.UPLOAD_URL
     }
