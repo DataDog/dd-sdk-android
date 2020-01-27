@@ -3,13 +3,14 @@ package com.datadog.android.log.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.DataOkHttpUploader
+import java.util.Locale
 import okhttp3.OkHttpClient
 
 internal open class LogsOkHttpUploader(
     endpoint: String,
-    token: String,
+    private val token: String,
     client: OkHttpClient
-) : DataOkHttpUploader(endpoint, token, client, UPLOAD_URL, TAG) {
+) : DataOkHttpUploader(buildUrl(endpoint, token), client) {
 
     private val userAgent = System.getProperty(SYSTEM_UA).let {
         if (it.isNullOrBlank()) {
@@ -28,6 +29,10 @@ internal open class LogsOkHttpUploader(
         return headers
     }
 
+    override fun setEndpoint(endpoint: String) {
+        super.setEndpoint(buildUrl(endpoint, token))
+    }
+
     companion object {
         private const val HEADER_UA = "User-Agent"
         const val SYSTEM_UA = "http.agent"
@@ -35,6 +40,12 @@ internal open class LogsOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
         internal const val UPLOAD_URL =
             "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
-        internal const val TAG = "LogsOkHttpUploader"
+
+        private fun buildUrl(endpoint: String, token: String): String {
+            return String.format(
+                Locale.US,
+                UPLOAD_URL, endpoint, token
+            )
+        }
     }
 }
