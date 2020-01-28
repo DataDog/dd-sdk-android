@@ -33,7 +33,7 @@ internal object RuntimeConfig {
     }
 
     fun tracer(): Tracer {
-        return Tracer.Builder().setServiceName(TRACES_SERVICE_NAME).build()
+        return Tracer.Builder().build()
     }
 
     val keyValuePairsTags = mapOf(
@@ -70,5 +70,4 @@ internal object RuntimeConfig {
 
     const val DD_TOKEN = "MYTESTAPPTOKEN"
     const val DD_CONTENT_TYPE = "application/json"
-    const val TRACES_SERVICE_NAME = "android"
 }
