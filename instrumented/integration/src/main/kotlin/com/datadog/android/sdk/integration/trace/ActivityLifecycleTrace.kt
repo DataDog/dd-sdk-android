@@ -21,8 +21,6 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private val forge = Forge()
 
-    private val randomAttributes = forge.aMap { anAlphabeticalString() to anHexadecimalString() }
-
     lateinit var tracer: Tracer
     private val sentSpans = LinkedList<DDSpan>()
     lateinit var activityStartScope: Scope

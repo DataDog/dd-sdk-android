@@ -72,9 +72,10 @@ internal class EndToEndTraceTest {
                 spansObjects.add(it.asJsonObject)
             }
         }
-
+        val sentSpans = mockServerRule.activity.getSentSpans()
         spansObjects.forEach {
-            it.assertMatches(mockServerRule.activity.getSentSpans().removeFirst())
+            val span = sentSpans.removeFirst()
+            it.assertMatches(span)
         }
     }
 
