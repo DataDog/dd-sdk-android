@@ -4,7 +4,6 @@ import android.os.Build
 import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
-import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -57,10 +56,8 @@ internal class DeferredWriterTest {
             mockDelegate
         )
         underTest.deferredHandler = mockDeferredHandler
-        underTest.invokeMethod(
-            "consumeQueue",
-            methodEnclosingClass = LazyHandlerThread::class.java
-        ) // force the lazy handler thread to consume all the queued messages
+        // force the lazy handler thread to consume all the queued messages
+        underTest.invokeMethod("consumeQueue")
     }
 
     @Test

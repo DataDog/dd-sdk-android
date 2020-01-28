@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
-import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.domain.FilePersistenceStrategyTest
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
@@ -58,10 +57,9 @@ internal class LogFileStrategyTest :
         file2.createNewFile()
         assertThat(oldDir).exists()
         (testedWriter as DeferredWriter<Log>).deferredHandler = mockDeferredHandler
-        (testedWriter as DeferredWriter<Log>).invokeMethod(
-            "consumeQueue",
-            methodEnclosingClass = LazyHandlerThread::class.java
-        ) // consume all the queued messages
+
+        // consume all the queued messages
+        (testedWriter as DeferredWriter<Log>).invokeMethod("consumeQueue")
     }
 
     @Test

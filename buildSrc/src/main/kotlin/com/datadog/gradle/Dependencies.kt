@@ -55,6 +55,7 @@ object Dependencies {
     object Libraries {
 
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
+        const val KotlinReflect = "org.jetbrains.kotlin:kotlin-reflect:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
 

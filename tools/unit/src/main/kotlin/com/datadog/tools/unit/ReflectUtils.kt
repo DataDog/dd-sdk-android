@@ -2,7 +2,27 @@ package com.datadog.tools.unit
 
 import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import kotlin.reflect.jvm.isAccessible
+
+/**
+ * Creates an instance of the given class name.
+ * @param className the full name of the class to instantiate
+ * @param params the parameters to provide the constructor
+ * @return the created instance
+ */
+@Suppress("SpreadOperator")
+fun createInstance(
+    className: String,
+    vararg params: Any?
+): Any {
+    return Class.forName(className)
+        .kotlin
+        .constructors.first()
+        .apply { isAccessible = true }
+        .call(*params)
+}
 
 /**
  * Sets a static value on the target class.
@@ -74,28 +94,116 @@ inline fun <reified T> Any.getFieldValue(fieldName: String): T {
 /**
  * Invokes a method on the target instance.
  * @param methodName the name of the method
- * @param methodEnclosingClass the class where the method could be found.
- * By default is the current instance subclass.
  * @param params the parameters to provide the method
+ * @return the result from the invoked method
  */
-@Suppress("SpreadOperator")
+@Suppress("SpreadOperator", "UNCHECKED_CAST", "TooGenericExceptionCaught")
 fun <T : Any> T.invokeMethod(
     methodName: String,
-    methodEnclosingClass: Class<T> = this.javaClass,
-    vararg params: Any
-) {
-    val declarationParams = Array<Class<*>>(params.size) {
-        params[it].javaClass
+    vararg params: Any?
+): Any? {
+    val declarationParams = Array<Class<*>?>(params.size) {
+        params[it]?.javaClass
     }
-    val method = methodEnclosingClass.getDeclaredMethod(methodName, *declarationParams)
+
+    val method = getDeclaredMethodRecursively(methodName, true, declarationParams)
+    val wasAccessible = method.isAccessible
+
+    val output: Any?
     method.isAccessible = true
     try {
-        if (params.isEmpty()) {
+        output = if (params.isEmpty()) {
             method.invoke(this)
         } else {
-            method.invoke(this, params)
+            method.invoke(this, *params)
         }
     } catch (e: InvocationTargetException) {
         throw e.cause ?: e
+    } finally {
+        method.isAccessible = wasAccessible
     }
+
+    return output
+}
+
+/**
+ * Invokes a method on the target instance, where one or more of the parameters
+ * are generics.
+ * @param methodName the name of the method
+ * @param params the parameters to provide the method
+ * @return the result from the invoked method
+ */
+@Suppress("SpreadOperator", "UNCHECKED_CAST")
+fun <T : Any> T.invokeGenericMethod(
+    methodName: String,
+    vararg params: Any
+): Any? {
+    val declarationParams = Array<Class<*>?>(params.size) {
+        params[it].javaClass
+    }
+
+    val method = getDeclaredMethodRecursively(methodName, false, declarationParams)
+    val wasAccessible = method.isAccessible
+
+    val output: Any?
+    method.isAccessible = true
+    try {
+        output = if (params.isEmpty()) {
+            method.invoke(this)
+        } else {
+            method.invoke(this, *params)
+        }
+    } catch (e: InvocationTargetException) {
+        throw e.cause ?: e
+    } finally {
+        method.isAccessible = wasAccessible
+    }
+
+    return output
+}
+
+@Suppress("TooGenericExceptionCaught", "SwallowedException", "SpreadOperator")
+private fun <T : Any> T.getDeclaredMethodRecursively(
+    methodName: String,
+    matchingParams: Boolean,
+    declarationParams: Array<Class<*>?>
+): Method {
+    val classesToSearch = mutableListOf<Class<*>>(this.javaClass)
+    val classesSearched = mutableListOf<Class<*>>()
+    var method: Method?
+    do {
+        val lookingInClass = classesToSearch.removeAt(0)
+        classesSearched.add(lookingInClass)
+        method = try {
+            if (matchingParams) {
+                lookingInClass.getDeclaredMethod(methodName, *declarationParams)
+            } else {
+                lookingInClass.declaredMethods.firstOrNull {
+                    it.name == methodName &&
+                        it.parameterTypes.size == declarationParams.size
+                }
+            }
+        } catch (e: Throwable) {
+            null
+        }
+
+        val superclass = lookingInClass.superclass
+        if (superclass != null &&
+            !classesToSearch.contains(superclass) &&
+            !classesSearched.contains(superclass)
+        ) {
+            classesToSearch.add(superclass)
+        }
+        lookingInClass.interfaces.forEach {
+            if (!classesToSearch.contains(it) && !classesSearched.contains(it)) {
+                classesToSearch.add(it)
+            }
+        }
+    } while (method == null && classesToSearch.isNotEmpty())
+
+    checkNotNull(method) {
+        "Unable to access method $methodName on ${javaClass.canonicalName}"
+    }
+
+    return method
 }
