@@ -10,10 +10,12 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
+
 import com.datadog.android.Datadog;
 import com.datadog.android.log.Logger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import org.json.JSONObject;
 
 public class SampleApplication extends Application {
@@ -23,12 +25,16 @@ public class SampleApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        final String logsEndpoint = (BuildConfig.DD_OVERRIDE_LOGS_URL == null)
+                ? Datadog.DATADOG_US_LOGS : BuildConfig.DD_OVERRIDE_LOGS_URL;
+        final String tracesEndpoint = (BuildConfig.DD_OVERRIDE_TRACES_URL == null)
+                ? Datadog.DATADOG_US_TRACES : BuildConfig.DD_OVERRIDE_TRACES_URL;
         // Initialise Datadog
         Datadog.initialize(
                 this,
                 BuildConfig.DD_CLIENT_TOKEN,
-                (BuildConfig.DD_OVERRIDE_URL == null) ? Datadog.DATADOG_US_LOGS : BuildConfig.DD_OVERRIDE_URL
+                logsEndpoint,
+                tracesEndpoint
         );
         Datadog.setVerbosity(Log.VERBOSE);
 

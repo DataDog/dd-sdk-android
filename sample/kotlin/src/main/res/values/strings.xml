@@ -10,6 +10,7 @@
 
     <string name="title_logs">Logs</string>
     <string name="title_webview">WebView</string>
+    <string name="title_traces">"Traces"</string>
     <string name="title_unknown">"?"</string>
 
 
@@ -17,5 +18,6 @@
     <string name="button_error">🚨</string>
     <string name="button_critical">💥</string>
     <string name="title_sendLog">Send a log</string>
+    <string name="start_async_operation">Start Async Operation</string>
 
 </resources>

@@ -27,11 +27,18 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
+import com.datadog.android.sample.MainActivity
 import com.datadog.android.sample.R
+import io.opentracing.Scope
+import io.opentracing.Span
+import io.opentracing.util.GlobalTracer
 
 class WebFragment : Fragment() {
     private lateinit var viewModel: WebViewModel
     private lateinit var webView: WebView
+
+    lateinit var mainScope: Scope
+    lateinit var mainSpan: Span
 
     private val logger: Logger by lazy {
         Logger.Builder()
@@ -70,16 +77,37 @@ class WebFragment : Fragment() {
         webView.loadUrl(viewModel.url)
     }
 
+    override fun onResume() {
+        val tracer = GlobalTracer.get()
+        val mainActivitySpan = (activity as MainActivity).mainSpan
+        mainSpan = tracer
+            .buildSpan("WebViewFragment").asChildOf(mainActivitySpan).start()
+        mainScope = tracer.activateSpan(mainSpan)
+        super.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mainScope.close()
+        mainSpan.finish()
+    }
+
     // endregion
 
     // region WebViewClient
 
     private val mWebViewClient: WebViewClient = object : WebViewClient() {
+        var onPageStartedOnPageClosedSpan: Span? = null
         override fun onPageStarted(
             view: WebView,
             url: String,
             favicon: Bitmap?
         ) {
+            val tracer = GlobalTracer.get()
+            onPageStartedOnPageClosedSpan = tracer
+                .buildSpan("WebViewInitialisation")
+                .asChildOf(tracer.activeSpan())
+                .start()
             super.onPageStarted(view, url, favicon)
             logger.d(
                 "onPageStarted",
@@ -98,6 +126,7 @@ class WebFragment : Fragment() {
                 null,
                 mapOf("http.url" to url)
             )
+            onPageStartedOnPageClosedSpan?.finish()
         }
 
         override fun onLoadResource(
@@ -119,6 +148,9 @@ class WebFragment : Fragment() {
             error: WebResourceError
         ) {
             super.onReceivedError(view, request, error)
+            onPageStartedOnPageClosedSpan?.log(
+                "Received error: ${error.errorCode} for request: ${request.url}"
+            )
             logger.e(
                 "received error",
                 null,
@@ -138,6 +170,9 @@ class WebFragment : Fragment() {
             errorResponse: WebResourceResponse
         ) {
             super.onReceivedHttpError(view, request, errorResponse)
+            onPageStartedOnPageClosedSpan?.log(
+                "Received error: ${errorResponse.reasonPhrase}  for request: ${request.url}"
+            )
             logger.e(
                 "received HTTP error",
                 null,
@@ -156,6 +191,10 @@ class WebFragment : Fragment() {
             error: SslError
         ) {
             super.onReceivedSslError(view, handler, error)
+            onPageStartedOnPageClosedSpan?.log(
+                "Received ssl error: ${error.primaryError} for request: ${error.url}"
+            )
+
             logger.e(
                 "received SSL error",
                 null,
