@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.time
 import android.content.Context
 import android.content.SharedPreferences
 import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 @Suppress("DEPRECATION")
@@ -66,6 +67,10 @@ internal class DatadogTimeProvider(
 
     override fun getServerTimestamp(): Long {
         return System.currentTimeMillis() + serverOffset
+    }
+
+    override fun getServerOffsetNanos(): Long {
+        return TimeUnit.MILLISECONDS.toNanos(serverOffset)
     }
 
     // endregion
