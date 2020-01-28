@@ -11,4 +11,6 @@ internal interface TimeProvider {
     fun getDeviceTimestamp(): Long
 
     fun getServerTimestamp(): Long
+
+    fun getServerOffsetNanos(): Long
 }

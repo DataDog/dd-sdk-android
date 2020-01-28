@@ -21,6 +21,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -103,10 +104,13 @@ internal class DatadogTimeProviderTest {
 
         val start = System.currentTimeMillis()
         val timestamp = testedProvider.getServerTimestamp()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
         val end = System.currentTimeMillis()
 
         assertThat(timestamp)
             .isBetween(start + offset, end + offset)
+        assertThat(offsetNanos)
+            .isEqualTo(TimeUnit.MILLISECONDS.toNanos(offset))
     }
 
     @Test
@@ -126,12 +130,18 @@ internal class DatadogTimeProviderTest {
         val start = System.currentTimeMillis()
 
         val timestamp = testedProvider.getServerTimestamp()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
         val end = System.currentTimeMillis()
 
         assertThat(timestamp)
             .isBetween(
                 start + averageOffset - deviation,
                 end + averageOffset + deviation
+            )
+        assertThat(offsetNanos)
+            .isBetween(
+                TimeUnit.MILLISECONDS.toNanos(averageOffset - deviation),
+                TimeUnit.MILLISECONDS.toNanos(averageOffset + deviation)
             )
     }
 
@@ -204,10 +214,13 @@ internal class DatadogTimeProviderTest {
 
         val start = System.currentTimeMillis()
         val timestamp = newProvider.getServerTimestamp()
+        val offsetNanos = newProvider.getServerOffsetNanos()
         val end = System.currentTimeMillis()
 
         assertThat(timestamp)
             .isBetween(start + offset, end + offset)
+        assertThat(offsetNanos)
+            .isEqualTo(TimeUnit.MILLISECONDS.toNanos(offset))
     }
 
     companion object {
