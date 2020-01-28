@@ -43,15 +43,24 @@ android {
     productFlavors {
         staging {
             dimension "version"
-            if (project.hasProperty("DD_OVERRIDE_URL")) {
-                buildConfigField("String", "DD_OVERRIDE_URL", "\"${project.property("DD_OVERRIDE_URL")}\"")
+            def logsUrl = project.findProperty("DD_OVERRIDE_LOGS_URL")
+            if (logsUrl != null) {
+                buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"${logsUrl}\"")
             } else {
-                buildConfigField("String", "DD_OVERRIDE_URL", "null")
+                buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "null")
+            }
+
+            def tracesUrl = project.findProperty("DD_OVERRIDE_TRACES_URL")
+            if (tracesUrl != null) {
+                buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"${tracesUrl}\"")
+            } else {
+                buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "null")
             }
         }
         full {
             dimension "version"
-            buildConfigField("String", "DD_OVERRIDE_URL", "null")
+            buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "null")
+            buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "null")
         }
     }
 }
@@ -79,7 +88,7 @@ dependencies {
     // if you want to test the library in production you should change this dependency with the
     // latest release maven artifact either local or live
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
-    implementation (project(":dd-sdk-android")){
+    implementation(project(":dd-sdk-android")) {
         exclude group: "com.google.guava", module: "listenablefuture"
     }
 

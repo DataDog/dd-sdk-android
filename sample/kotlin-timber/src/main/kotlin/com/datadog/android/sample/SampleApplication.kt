@@ -17,11 +17,19 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        val logsEndpointUrl =
+            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isEmpty()) Datadog.DATADOG_US_LOGS
+            else BuildConfig.DD_OVERRIDE_LOGS_URL
+        val tracesEndpointUrl =
+            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isEmpty()) Datadog.DATADOG_US_TRACES
+            else BuildConfig.DD_OVERRIDE_TRACES_URL
+
         // Initialise Datadog
         Datadog.initialize(
             this,
             BuildConfig.DD_CLIENT_TOKEN,
-            if (BuildConfig.DD_OVERRIDE_URL.isEmpty()) Datadog.DATADOG_US_LOGS else BuildConfig.DD_OVERRIDE_URL
+            logsEndpointUrl,
+            tracesEndpointUrl
         )
         Datadog.setVerbosity(Log.VERBOSE)
 
