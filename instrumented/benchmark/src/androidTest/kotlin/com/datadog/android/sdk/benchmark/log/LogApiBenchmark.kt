@@ -12,13 +12,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
+import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.invokeMethod
-import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.ForgeryException
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InvalidObjectException
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -42,13 +38,10 @@ class LogApiBenchmark {
 
     @Before
     fun setUp() {
-        mockWebServer = MockWebServer()
-            .apply {
-                start()
-            }
+        mockWebServer = MockWebServer().apply { start() }
         mockWebServer.setDispatcher(object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
-                return mockResponse(200)
+                return mockResponse()
             }
         })
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
@@ -69,7 +62,7 @@ class LogApiBenchmark {
     }
 
     @Test
-    fun benchmark_writing_logs() {
+    fun benchmark_create_one_log() {
         benchmark.measureRepeated {
             val message = runWithTimingDisabled { forge.anAlphabeticalString() }
             testedLogger.i(message)
@@ -77,7 +70,7 @@ class LogApiBenchmark {
     }
 
     @Test
-    fun benchmark_writing_logs_with_throwable() {
+    fun benchmark_create_one_log_with_throwable() {
         benchmark.measureRepeated {
             val (message, throwable) = runWithTimingDisabled {
                 forge.anAlphabeticalString() to forge.aThrowable()
@@ -87,7 +80,7 @@ class LogApiBenchmark {
     }
 
     @Test
-    fun benchmark_writing_logs_with_attributes() {
+    fun benchmark_create_one_log_with_attributes() {
         for (i in 1..16) {
             testedLogger.addAttribute(forge.anAlphabeticalString(), forge.anHexadecimalString())
         }
@@ -100,7 +93,7 @@ class LogApiBenchmark {
     }
 
     @Test
-    fun benchmark_writing_logs_with_tags() {
+    fun benchmark_create_one_log_with_tags() {
         for (i in 1..8) {
             testedLogger.addTag(forge.anAlphabeticalString(), forge.anHexadecimalString())
         }
@@ -112,58 +105,19 @@ class LogApiBenchmark {
         }
     }
 
-    @Test
-    fun benchmark_sending_medium_load_of_logs() {
-        sendLogs(MEDIUM_ITERATIONS)
-    }
-
-    @Test
-    fun benchmark_sending_heavy_load_of_logs() {
-        sendLogs(BIG_ITERATIONS)
-    }
-
-    private fun sendLogs(iterations: Int) {
-        benchmark.measureRepeated {
-            var counter = 0
-            do {
-
-                val (message, throwable) = runWithTimingDisabled {
-                    forge.anAlphabeticalString() to forge.aThrowable()
-                }
-                testedLogger.e(message, throwable)
-                counter++
-            } while (counter < iterations)
-        }
-    }
-
     // region Internal
 
-    private fun Forge.aThrowable(): Throwable {
-        val errorMessage = anAlphabeticalString()
-        return anElementFrom(
-            IOException(errorMessage),
-            IllegalStateException(errorMessage),
-            UnknownError(errorMessage),
-            ArrayIndexOutOfBoundsException(errorMessage),
-            NullPointerException(errorMessage),
-            ForgeryException(errorMessage),
-            InvalidObjectException(errorMessage),
-            UnsupportedOperationException(errorMessage),
-            FileNotFoundException(errorMessage)
-        )
-    }
-
-    private fun mockResponse(code: Int): MockResponse {
+    private fun mockResponse(): MockResponse {
         return MockResponse()
-            .setResponseCode(code)
+            .setResponseCode(200)
             .setBody("{}")
     }
+
+    // endregion
 
     companion object {
         const val MAX_LOGS_PER_BATCH = 500
         const val MEDIUM_ITERATIONS = MAX_LOGS_PER_BATCH / 2
         const val BIG_ITERATIONS = MAX_LOGS_PER_BATCH
     }
-
-    // endregion
 }
