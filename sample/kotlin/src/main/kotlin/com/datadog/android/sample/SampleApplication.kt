@@ -8,6 +8,8 @@ package com.datadog.android.sample
 import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.tracing.Tracer
+import io.opentracing.util.GlobalTracer
 
 class SampleApplication : Application() {
 
@@ -15,11 +17,21 @@ class SampleApplication : Application() {
         super.onCreate()
 
         // Initialise Datadog
+        val logsEndpointUrl =
+            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isEmpty()) Datadog.DATADOG_US_LOGS
+            else BuildConfig.DD_OVERRIDE_LOGS_URL
+        val tracesEndpointUrl =
+            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isEmpty()) Datadog.DATADOG_US_TRACES
+            else BuildConfig.DD_OVERRIDE_TRACES_URL
         Datadog.initialize(
             this,
             BuildConfig.DD_CLIENT_TOKEN,
-            if (BuildConfig.DD_OVERRIDE_URL.isEmpty()) Datadog.DATADOG_US_LOGS else BuildConfig.DD_OVERRIDE_URL
+            logsEndpointUrl,
+            tracesEndpointUrl
         )
         Datadog.setVerbosity(Log.VERBOSE)
+
+        // initialize the tracer here
+        GlobalTracer.registerIfAbsent(Tracer.Builder().build())
     }
 }
