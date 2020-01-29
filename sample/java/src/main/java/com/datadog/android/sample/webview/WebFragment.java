@@ -8,35 +8,39 @@ package com.datadog.android.sample.webview;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.*;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProviders;
-import com.datadog.android.log.Logger;
-import com.datadog.android.sample.R;
-import com.datadog.android.sample.SampleApplication;
-import com.datadog.android.sample.logs.LogsViewModel;
 
-import java.lang.annotation.Target;
+import com.datadog.android.log.Logger;
+import com.datadog.android.sample.MainActivity;
+import com.datadog.android.sample.R;
+
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Locale;
+
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 
 public class WebFragment extends Fragment {
 
     private WebViewModel mViewModel;
     private WebView mWebView;
+    private Scope mMainScope;
+    private Span mMainSpan;
+
 
     private Logger mLogger = new Logger.Builder()
             .setLogcatLogsEnabled(true)
@@ -74,14 +78,37 @@ public class WebFragment extends Fragment {
         mWebView.loadUrl(mViewModel.getUrl());
     }
 
+    @Override
+    public void onResume() {
+        final Tracer tracer = GlobalTracer.get();
+        @SuppressWarnings("ConstantConditions") final Span mainActivitySpan = ((MainActivity) getActivity()).getMainSpan();
+        mMainSpan = tracer
+                .buildSpan("WebViewFragment").asChildOf(mainActivitySpan).start();
+        mMainScope = tracer.activateSpan(mMainSpan);
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mMainScope.close();
+        mMainSpan.finish();
+    }
+
     // endregion
 
     // region WebViewClient
 
     private WebViewClient mWebViewClient = new WebViewClient() {
+        private Span mOnPageStartedOnPageClosedSpan = null;
 
         @Override
         public void onPageStarted(WebView view, final String url, Bitmap favicon) {
+            final Tracer tracer = GlobalTracer.get();
+            mOnPageStartedOnPageClosedSpan = tracer
+                    .buildSpan("WebViewInitialisation")
+                    .asChildOf(tracer.activeSpan())
+                    .start();
             super.onPageStarted(view, url, favicon);
             mLogger.d(
                     "onPageStarted",
@@ -102,6 +129,9 @@ public class WebFragment extends Fragment {
                         put("http.url", url);
                     }}
             );
+            if (mOnPageStartedOnPageClosedSpan != null) {
+                mOnPageStartedOnPageClosedSpan.finish();
+            }
         }
 
         @Override
@@ -122,6 +152,15 @@ public class WebFragment extends Fragment {
                                     final WebResourceRequest request,
                                     final WebResourceError error) {
             super.onReceivedError(view, request, error);
+            if (mOnPageStartedOnPageClosedSpan != null) {
+                String logError =
+                        String.format(Locale.US,
+                                "Received error: %d for request: %s",
+                                error.getErrorCode(),
+                                request.getUrl());
+
+                mOnPageStartedOnPageClosedSpan.log(logError);
+            }
             mLogger.e(
                     "received error",
                     null,
@@ -140,6 +179,15 @@ public class WebFragment extends Fragment {
                                         final WebResourceRequest request,
                                         final WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
+            if (mOnPageStartedOnPageClosedSpan != null) {
+                String logError =
+                        String.format(Locale.US,
+                                "Received error: %s for request: %s",
+                                errorResponse.getReasonPhrase(),
+                                request.getUrl());
+
+                mOnPageStartedOnPageClosedSpan.log(logError);
+            }
             mLogger.e(
                     "received HTTP error",
                     null,
@@ -155,6 +203,13 @@ public class WebFragment extends Fragment {
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, final SslError error) {
             super.onReceivedSslError(view, handler, error);
+            if (mOnPageStartedOnPageClosedSpan != null) {
+                String logError =
+                        String.format(Locale.US,
+                                "Received SSL error for request: %s", error.getUrl());
+
+                mOnPageStartedOnPageClosedSpan.log(logError);
+            }
             mLogger.e(
                     "received SSL error",
                     null,

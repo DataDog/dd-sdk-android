@@ -15,7 +15,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import com.datadog.android.log.Logger;
+import com.datadog.android.sample.MainActivity;
 import com.datadog.android.sample.R;
+
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 
 public class LogsFragment extends Fragment implements View.OnClickListener{
 
@@ -27,7 +33,9 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
             .setLogcatLogsEnabled(true)
             .build();
 
-    private int interactionsCount = 0;
+    private int mInteractionsCount = 0;
+    private Scope mMainScope;
+    private Span mMainSpan;
 
     public static LogsFragment newInstance() {
         return new LogsFragment();
@@ -50,7 +58,25 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(LogsViewModel.class);
-        mLogger.addAttribute("interactions", interactionsCount);
+        mLogger.addAttribute("interactions", mInteractionsCount);
+    }
+
+    @Override
+    public void onResume() {
+        final Tracer tracer = GlobalTracer.get();
+        @SuppressWarnings("ConstantConditions")
+        final Span mainActivitySpan = ((MainActivity)getActivity()).getMainSpan();
+        mMainSpan = tracer
+                .buildSpan("LogsFragment").asChildOf(mainActivitySpan).start();
+        mMainScope = tracer.activateSpan(mMainSpan);
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mMainScope.close();
+        mMainSpan.finish();
     }
 
     // endregion
@@ -60,8 +86,8 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
     @Override
     public void onClick(View v) {
 
-        interactionsCount++;
-        mLogger.addAttribute("interactions", interactionsCount);
+        mInteractionsCount++;
+        mLogger.addAttribute("interactions", mInteractionsCount);
         int i = v.getId() -  R.id.crash;
 
         switch (v.getId()) {

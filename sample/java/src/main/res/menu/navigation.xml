@@ -18,8 +18,8 @@
         android:title="@string/title_webview"/>
 
     <item
-        android:id="@+id/navigation_unknown"
-        android:icon="@drawable/ic_unknown_black_24dp"
-        android:title="@string/title_webview"/>
+        android:id="@+id/navigation_traces"
+        android:icon="@drawable/ic_timeline_black_24dp"
+        android:title="@string/title_traces" />
 
 </menu>
