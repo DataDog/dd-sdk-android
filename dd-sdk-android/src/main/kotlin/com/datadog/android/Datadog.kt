@@ -146,13 +146,12 @@ object Datadog {
 
         initNetworkInfoProvider(appContext)
 
-        logStrategy =
-            LogFileStrategy(appContext)
-
-        tracingStrategy = TracingFileStrategy(appContext)
-
         // prepare time management
         timeProvider = DatadogTimeProvider(appContext)
+
+        logStrategy = LogFileStrategy(appContext)
+
+        tracingStrategy = TracingFileStrategy(appContext, timeProvider)
 
         // Prepare user info management
         userInfoProvider = DatadogUserInfoProvider()
@@ -227,13 +226,13 @@ object Datadog {
                 tracingStrategy.getReader().dropAllBatches()
                 devLogger.w(
                     "$TAG: old traces targeted at $endpointUrl " +
-                            "will now be deleted"
+                        "will now be deleted"
                 )
             }
             EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT -> {
                 devLogger.w(
                     "$TAG: old traces targeted at $endpointUrl " +
-                            "will now be sent to $endpointUrl"
+                        "will now be sent to $endpointUrl"
                 )
             }
         }

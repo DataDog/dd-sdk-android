@@ -11,18 +11,22 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.utils.copy
-import com.datadog.android.utils.extension.assertMatches
+import com.datadog.android.utils.extension.getString
+import com.datadog.android.utils.extension.hexToBigInteger
+import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
+import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
@@ -34,11 +38,15 @@ internal class TracingFileStrategyTest :
         modelClass = DDSpan::class.java
     ) {
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     // region LogStrategyTest
 
     override fun getStrategy(): PersistenceStrategy<DDSpan> {
         return TracingFileStrategy(
             context = mockContext,
+            timeProvider = mockTimeProvider,
             recentDelayMs = RECENT_DELAY_MS,
             maxBatchSize = MAX_BATCH_SIZE,
             maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
@@ -108,28 +116,35 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = (jsonObject[SpanSerializer.SERVICE_NAME_KEY] as JsonPrimitive).asString
-        val spanIdHexa = (jsonObject[SpanSerializer.SPAN_ID_KEY] as JsonPrimitive).asString
-        val traceIdHexa = (jsonObject[SpanSerializer.TRACE_ID_KEY] as JsonPrimitive).asString
-        val parentIdHexa = (jsonObject[SpanSerializer.PARENT_ID_KEY] as JsonPrimitive).asString
-        val resourceName = (jsonObject[SpanSerializer.RESOURCE_KEY] as JsonPrimitive).asString
-        val traceId = java.lang.Long.parseLong(traceIdHexa, 16)
-        val spanId = java.lang.Long.parseLong(spanIdHexa, 16)
-        val parentId = java.lang.Long.parseLong(parentIdHexa, 16)
+        val serviceName = jsonObject.getString(SpanSerializer.SERVICE_NAME_KEY)
+        val resourceName = jsonObject.getString(SpanSerializer.RESOURCE_KEY)
+        val traceId = jsonObject.getString(SpanSerializer.TRACE_ID_KEY).hexToBigInteger()
+        val spanId = jsonObject.getString(SpanSerializer.SPAN_ID_KEY).hexToBigInteger()
+        val parentId = jsonObject.getString(SpanSerializer.PARENT_ID_KEY).hexToBigInteger()
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
-                    traceId == it.traceId.toLong() &&
-                    parentId == it.parentId.toLong() &&
-                    spanId == it.spanId.toLong() &&
-                    resourceName == it.resourceName
+                traceId == it.traceId &&
+                parentId == it.parentId &&
+                spanId == it.spanId &&
+                resourceName == it.resourceName
         }
 
         assertThat(roughMatches).isNotEmpty()
     }
 
     override fun assertMatches(jsonObject: JsonObject, model: DDSpan) {
-        jsonObject.assertMatches(model)
+        assertThat(jsonObject)
+            .hasField(SpanSerializer.START_TIMESTAMP_KEY, model.startTime)
+            .hasField(SpanSerializer.DURATION_KEY, model.durationNano)
+            .hasField(SpanSerializer.SERVICE_NAME_KEY, model.serviceName)
+            .hasField(SpanSerializer.TRACE_ID_KEY, model.traceId.toHexString())
+            .hasField(SpanSerializer.SPAN_ID_KEY, model.spanId.toHexString())
+            .hasField(SpanSerializer.PARENT_ID_KEY, model.parentId.toHexString())
+            .hasField(SpanSerializer.RESOURCE_KEY, model.resourceName)
+            .hasField(SpanSerializer.OPERATION_NAME_KEY, model.operationName)
+            .hasField(SpanSerializer.META_KEY, model.meta)
+            .hasField(SpanSerializer.METRICS_KEY, model.metrics)
     }
 
     // endregion
@@ -137,5 +152,7 @@ internal class TracingFileStrategyTest :
     companion object {
         private const val RECENT_DELAY_MS = 150L
         private const val MAX_DISK_SPACE = 16 * 32 * 1024L
+
+        private const val HEX_RAD = 16
     }
 }
