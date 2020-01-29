@@ -68,6 +68,13 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
+    public void onDetach() {
+        super.onDetach();
+        mViewModel.stopAsyncOperations();
+        mSpinner.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(TracesViewModel.class);
