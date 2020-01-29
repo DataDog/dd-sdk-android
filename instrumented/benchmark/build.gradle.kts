@@ -82,6 +82,7 @@ dependencies {
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
     implementation(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.KotlinReflect)
     implementation(Dependencies.Libraries.AndroidXMultidex)
 
     androidTestImplementation(project(":tools:unit"))
@@ -98,11 +99,11 @@ detektConfig()
 ktLintConfig()
 
 reviewBenchmark {
-    addThreshold("benchmark_writing_logs", TimeUnit.MICROSECONDS.toNanos(500))
-    addThreshold("benchmark_writing_logs_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_writing_logs_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_writing_logs_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold("benchmark_create_one_log", TimeUnit.MICROSECONDS.toNanos(500))
+    addThreshold("benchmark_create_one_log_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold("benchmark_create_one_log_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold("benchmark_create_one_log_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
 
-    addThreshold("benchmark_sending_medium_load_of_logs", TimeUnit.MILLISECONDS.toNanos(200))
-    addThreshold("benchmark_sending_heavy_load_of_logs", TimeUnit.MILLISECONDS.toNanos(300))
+    addThreshold("benchmark_write_logs_on_disk", TimeUnit.MILLISECONDS.toNanos(50))
+    addThreshold("benchmark_read_logs_from_disk", TimeUnit.MILLISECONDS.toNanos(50))
 }
