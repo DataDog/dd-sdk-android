@@ -55,6 +55,12 @@ class TracesFragment : Fragment(), View.OnClickListener {
         mainSpan.finish()
     }
 
+    override fun onDetach() {
+        super.onDetach()
+        viewModel.stopAsyncOperations()
+        spinner.visibility = View.INVISIBLE
+    }
+
     // endregion
 
     // region View.OnClickListener
