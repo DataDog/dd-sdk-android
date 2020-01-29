@@ -52,6 +52,12 @@ class SampleApplication : Application() {
 
     {{% /tab %}}
     {{< /tabs >}}
+    
+When writing your application, you can enable development logs. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.
+
+```kotlin
+    Datadog.setVerbosity(Log.INFO)
+```
 
 3. Configure the Android Logger:
 
@@ -109,7 +115,7 @@ class SampleApplication : Application() {
 
 ### Initialization
 
-The following parameters can be used when initializing the logger to send logs to Datadog:
+The following methods in `Logger.Builder` can be used when initializing the logger to send logs to Datadog:
 
 | Method                           | Description                                                                                                                                                                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -118,7 +124,6 @@ The following parameters can be used when initializing the logger to send logs t
 | `setLogcatLogsEnabled(true)`     | Set to `true` to use Logcat as logger.                                                                                                                                                                                              |
 | `setDatadogLogsEnabled(true)`    | Set to `true` to send logs to Datadog.                                                                                                                                                                                              |
 | `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                   |
-| `setVerbosity(Log.INFO)`         | Set the verbosity of the library. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.                                                                   |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                   |
 
 ### Global configuration
