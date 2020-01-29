@@ -13,10 +13,13 @@ import android.util.Log;
 
 import com.datadog.android.Datadog;
 import com.datadog.android.log.Logger;
+import com.datadog.android.tracing.Tracer;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONObject;
+
+import io.opentracing.util.GlobalTracer;
 
 public class SampleApplication extends Application {
 
@@ -72,6 +75,9 @@ public class SampleApplication extends Application {
         logger.addTag("flavor", BuildConfig.FLAVOR);
         logger.addTag("build_type", BuildConfig.BUILD_TYPE);
         logger.v("Added tags");
+
+        // initialize the tracer here
+        GlobalTracer.registerIfAbsent(new Tracer.Builder().build());
     }
 
     public Logger getLogger() {
