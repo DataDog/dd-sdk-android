@@ -8,10 +8,15 @@ import java.lang.Exception
 
 class TracesViewModel : ViewModel() {
 
-    lateinit var asyncTask: AsyncTask<Unit, Unit, Unit>
+    var asyncTask: AsyncTask<Unit, Unit, Unit>? = null
     fun startAsyncOperation(onDone: () -> Unit = {}) {
         asyncTask = Task(onDone)
-        asyncTask.execute()
+        asyncTask?.execute()
+    }
+
+    fun stopAsyncOperations() {
+        asyncTask?.cancel(true)
+        asyncTask = null
     }
 
     private class Task(val onDone: () -> Unit) : AsyncTask<Unit, Unit, Unit>() {

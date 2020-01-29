@@ -17,6 +17,13 @@ public class TracesViewModel extends ViewModel {
         asyncTask.execute();
     }
 
+    public void stopAsyncOperations() {
+        if (asyncTask != null) {
+            asyncTask.cancel(true);
+            asyncTask = null;
+        }
+    }
+
     public static class Task extends AsyncTask<Void, Void, Void> {
         private final Callback callback;
 
