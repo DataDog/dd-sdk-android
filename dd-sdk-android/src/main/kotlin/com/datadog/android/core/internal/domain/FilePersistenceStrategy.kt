@@ -6,30 +6,26 @@
 
 package com.datadog.android.core.internal.domain
 
-import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import java.io.File
 
-internal abstract class FilePersistenceStrategy<T : Any>(
+internal open class FilePersistenceStrategy<T : Any>(
     dataDirectory: File,
     serializer: Serializer<T>,
-    private val writerThreadName: String,
     recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
     maxBatchSize: Long = MAX_BATCH_SIZE,
     maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE,
     payloadPrefix: CharSequence = "",
-    payloadSuffix: CharSequence = "",
-    private val dataMigrator: DataMigrator? = null
+    payloadSuffix: CharSequence = ""
 ) : PersistenceStrategy<T> {
 
-    val fileOrchestrator = FileOrchestrator(
+    private val fileOrchestrator = FileOrchestrator(
         rootDirectory = dataDirectory,
         recentDelayMs = recentDelayMs,
         maxBatchSize = maxBatchSize,
@@ -47,26 +43,19 @@ internal abstract class FilePersistenceStrategy<T : Any>(
 
     // region Strategy methods
 
-    private val fileWriter = ImmediateFileWriter(
+    protected val fileWriter = ImmediateFileWriter(
         fileOrchestrator,
         serializer
     )
 
-    override fun getSynchronousWriter(): Writer<T> {
-        return fileWriter
-    }
-
     override fun getWriter(): Writer<T> {
-        return DeferredWriter(
-            writerThreadName,
-            fileWriter,
-            dataMigrator
-        )
+        return fileWriter
     }
 
     override fun getReader(): Reader {
         return fileReader
     }
+
     // endregion
 
     companion object {

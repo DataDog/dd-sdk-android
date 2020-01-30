@@ -12,26 +12,33 @@ internal open class LogsOkHttpUploader(
     client: OkHttpClient
 ) : DataOkHttpUploader(buildUrl(endpoint, token), client) {
 
-    private val userAgent = System.getProperty(SYSTEM_UA).let {
-        if (it.isNullOrBlank()) {
-            "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
-        } else {
-            it
-        }
-    }
+    // region DataOkHttpUploader
 
     override fun headers(): MutableMap<String, String> {
         val headers = super.headers()
-        headers[HEADER_UA] = userAgent // traces intake doesn't support this type of user agent
-        // and crashes at message format
+        headers[HEADER_UA] = userAgent
         return headers
     }
 
     override fun setEndpoint(endpoint: String) {
         super.setEndpoint(buildUrl(endpoint, token))
     }
+
+    // endregion
+
+    // region Internal
+
+    private val userAgent = System.getProperty(SYSTEM_UA).let {
+        if (it.isNullOrBlank()) {
+            "Datadog/${BuildConfig.VERSION_NAME} " +
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
+        } else {
+            it
+        }
+    }
+
+    // endregion
 
     companion object {
         private const val HEADER_UA = "User-Agent"

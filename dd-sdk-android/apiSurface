@@ -1,13 +1,30 @@
 object com.datadog.android.Datadog
-  const val DATADOG_US_LOGS: String
-  const val DATADOG_EU_LOGS: String
-  const val DATADOG_US_TRACES: String
-  const val DATADOG_EU_TRACES: String
-  fun initialize(android.content.Context, String, String? = null, String? = null)
+  DEPRECATED const val DATADOG_US: String
+  DEPRECATED const val DATADOG_EU: String
+  fun initialize(android.content.Context, DatadogConfig)
+  DEPRECATED fun initialize(android.content.Context, String, String? = null)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
-  fun setTracesEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
+class com.datadog.android.DatadogConfig
+  class Builder
+    constructor(String)
+    fun build(): DatadogConfig
+    fun setLogsEnabled(Boolean): Builder
+    fun setTracesEnabled(Boolean): Builder
+    fun setCrashReportsEnabled(Boolean): Builder
+    fun setServiceName(String): Builder
+    fun europeEndpoints(): Builder
+    fun usEndpoints(): Builder
+    fun customLogsEndpoint(String): Builder
+    fun customTracesEndpoint(String): Builder
+    fun customCrashReportsEndpoint(String): Builder
+  companion object
+object com.datadog.android.DatadogEndpoint
+  const val LOGS_US: String
+  const val LOGS_EU: String
+  const val TRACES_US: String
+  const val TRACES_EU: String
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -40,7 +57,6 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
-  companion object
 class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
   class Builder
     fun build(): Tracer

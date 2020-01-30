@@ -15,12 +15,12 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.UploadStatus
+import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
@@ -70,11 +70,10 @@ internal class UploadWorkerTest {
         mockContext = mockContext()
         Datadog.initialize(mockContext, "<CLIENT_TOKEN>")
 
-        Datadog.setFieldValue("logStrategy", mockLogStrategy)
-        Datadog.setFieldValue("logsUploader", mockDataUploader)
+        CrashReportsFeature.persistenceStrategy = mockLogStrategy
+        CrashReportsFeature.uploader = mockDataUploader
 
-        testedWorker =
-            UploadWorker(
+        testedWorker = UploadWorker(
                 mockContext,
                 fakeWorkerParameters
             )
