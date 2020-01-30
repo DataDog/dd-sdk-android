@@ -8,6 +8,7 @@ package com.datadog.android.sample
 import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.tracing.Tracer
 import io.opentracing.util.GlobalTracer
 
@@ -16,19 +17,19 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        val configBuilder = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+            .setServiceName("android-sample-java")
+
+        if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+            configBuilder.customLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+            configBuilder.customCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+        }
+        if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+            configBuilder.customTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+        }
+
         // Initialise Datadog
-        val logsEndpointUrl =
-            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isEmpty()) Datadog.DATADOG_US_LOGS
-            else BuildConfig.DD_OVERRIDE_LOGS_URL
-        val tracesEndpointUrl =
-            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isEmpty()) Datadog.DATADOG_US_TRACES
-            else BuildConfig.DD_OVERRIDE_TRACES_URL
-        Datadog.initialize(
-            this,
-            BuildConfig.DD_CLIENT_TOKEN,
-            logsEndpointUrl,
-            tracesEndpointUrl
-        )
+        Datadog.initialize(this, configBuilder.build())
         Datadog.setVerbosity(Log.VERBOSE)
 
         // initialize the tracer here
