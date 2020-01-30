@@ -9,27 +9,38 @@ package com.datadog.android.sample;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Toast;
+
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.logs.LogsFragment;
+import com.datadog.android.sample.traces.TracesFragment;
 import com.datadog.android.sample.webview.WebFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    private Logger logger;
+    private Logger mLogger;
+    private Scope mMainScope;
+    private Span mMainSpan;
+    private Span mResumePauseSpan;
 
     private BottomNavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-           return switchToFragment(menuItem.getItemId());
+            return switchToFragment(menuItem.getItemId());
         }
     };
 
@@ -39,80 +50,118 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        logger = SampleApplication.fromContext(this).getLogger();
-        logger.d("MainActivity/onCreate");
+        mLogger = SampleApplication.fromContext(this).getLogger();
+        mLogger.d("MainActivity/onCreate");
 
         setContentView(R.layout.activity_main);
 
         switchToFragment(R.id.navigation_logs);
-        ((BottomNavigationView )findViewById(R.id.navigation))
+        ((BottomNavigationView) findViewById(R.id.navigation))
                 .setOnNavigationItemSelectedListener(navigationItemSelectedListener);
     }
 
     @Override
     protected void onStart() {
+        final Tracer tracer = GlobalTracer.get();
+        mMainSpan = tracer.buildSpan("MainActivity").start();
+        mMainScope = tracer.activateSpan(mMainSpan);
         super.onStart();
-        logger.d("MainActivity/onStart");
+        mLogger.d("MainActivity/onStart");
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        logger.d("MainActivity/onRestart");
+        mLogger.d("MainActivity/onRestart");
     }
 
     @Override
     protected void onResume() {
+        mResumePauseSpan = GlobalTracer.get()
+                .buildSpan("onResumeOnPause")
+                .asChildOf(mMainSpan)
+                .start();
         super.onResume();
-        logger.d("MainActivity/onResume");
+        mLogger.d("MainActivity/onResume");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        logger.d("MainActivity/onPause");
+        mLogger.d("MainActivity/onPause");
+        mResumePauseSpan.finish();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        logger.d("MainActivity/onStop");
+        mLogger.d("MainActivity/onStop");
+        mMainScope.close();
+        mMainSpan.finish();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        logger.d("MainActivity/onDestroy");
+        mLogger.d("MainActivity/onDestroy");
     }
 
     // endregion
 
-    // region Internal
+    // region utility methods
 
-    private boolean switchToFragment(@IdRes int id){
-        Fragment fragmentToUse = null;
-        switch (id) {
-            case R.id.navigation_logs:
-                logger.i("Switching to fragment: Logs");
-                fragmentToUse = LogsFragment.newInstance();
-                break;
-            case R.id.navigation_webview :
-                logger.i("Switching to fragment: Web");
-                fragmentToUse =  WebFragment.newInstance();
-                break;
-        }
-
-        if (fragmentToUse == null) {
-            logger.w("Switching to fragment: unknown @" + id);
-            Toast.makeText(this, "We're unable to create this fragment.", Toast.LENGTH_LONG).show();
-            return false;
-        } else {
-            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            ft.replace(R.id.fragment_host, fragmentToUse);
-            ft.commit();
-            return true;
-        }
+    public Span getMainSpan() {
+        return mMainSpan;
     }
 
+    // endregion
+    // region Internal
+
+    private boolean switchToFragment(@IdRes int id) {
+        final Fragment fragmentToUse;
+        final String spanName;
+        switch (id) {
+            case R.id.navigation_logs:
+                mLogger.i("Switching to fragment: Logs");
+                spanName = "SwitchingToLogsFragment";
+                fragmentToUse = LogsFragment.newInstance();
+                break;
+            case R.id.navigation_webview:
+                mLogger.i("Switching to fragment: Web");
+                spanName = "SwitchingToWebViewFragment";
+                fragmentToUse = WebFragment.newInstance();
+                break;
+            default:
+                mLogger.i("Switching to fragment: Traces");
+                spanName = "SwitchingToTracesFragment";
+                fragmentToUse = TracesFragment.newInstance();
+                break;
+        }
+
+        addSpanInScope(spanName, new Runnable() {
+            @Override
+            public void run() {
+                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                ft.replace(R.id.fragment_host, fragmentToUse);
+                ft.commit();
+            }
+        });
+        return true;
+
+    }
+
+    private void addSpanInScope(String opName, Runnable execute) {
+        final Tracer tracer = GlobalTracer.get();
+        final Span span = tracer.buildSpan(opName).start();
+        try {
+            final Scope scope = tracer.activateSpan(span);
+            execute.run();
+            scope.close();
+        } catch (Exception e) {
+            span.log(e.getMessage());
+        } finally {
+            span.finish();
+        }
+    }
     // endregion
 }

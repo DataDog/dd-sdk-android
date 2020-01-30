@@ -69,13 +69,19 @@ android {
             dimension = "version"
             buildConfigField(
                 "String",
-                "DD_OVERRIDE_URL",
-                "\"${project.findProperty("DD_OVERRIDE_URL") ?: ""}\""
+                "DD_OVERRIDE_LOGS_URL",
+                "\"${project.findProperty("DD_OVERRIDE_LOGS_URL") ?: ""}\""
+            )
+            buildConfigField(
+                "String",
+                "DD_OVERRIDE_TRACES_URL",
+                "\"${project.findProperty("DD_OVERRIDE_TRACES_URL") ?: ""}\""
             )
         }
         register("full") {
             dimension = "version"
-            buildConfigField("String", "DD_OVERRIDE_URL", "\"\"")
+            buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"\"")
+            buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"\"")
         }
     }
 }
