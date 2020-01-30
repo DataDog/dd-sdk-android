@@ -10,9 +10,16 @@ internal open class TracesOkHttpUploader(
     client: OkHttpClient
 ) : DataOkHttpUploader(buildUrl(endpoint, token), client) {
 
+    // region DataOkHttpUploader
+
+    override fun setEndpoint(endpoint: String) {
+        super.setEndpoint(buildUrl(endpoint, token))
+    }
+
+    // endregion
+
     companion object {
-        internal const val UPLOAD_URL =
-            "%s/v1/input/%s"
+        internal const val UPLOAD_URL = "%s/v1/input/%s"
         internal const val TAG = "TracesOkHttpUploader"
 
         private fun buildUrl(endpoint: String, token: String): String {
@@ -21,9 +28,5 @@ internal open class TracesOkHttpUploader(
                 UPLOAD_URL, endpoint, token
             )
         }
-    }
-
-    override fun setEndpoint(endpoint: String) {
-        super.setEndpoint(buildUrl(endpoint, token))
     }
 }

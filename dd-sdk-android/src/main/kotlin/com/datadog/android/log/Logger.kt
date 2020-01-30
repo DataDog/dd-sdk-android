@@ -8,7 +8,9 @@ package com.datadog.android.log
 
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -166,12 +168,12 @@ internal constructor(private val handler: LogHandler) {
      */
     class Builder {
 
-        private var serviceName: String = DEFAULT_SERVICE_NAME
+        private var serviceName: String = LogsFeature.serviceName
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
 
-        private var loggerName: String = Datadog.packageName
+        private var loggerName: String = CoreFeature.packageName
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -243,22 +245,22 @@ internal constructor(private val handler: LogHandler) {
         }
 
         private fun buildDatadogHandler(): LogHandler {
-            return if (!Datadog.isInitialized()) {
+            return if (!LogsFeature.isInitialized()) {
                 devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
                 NoOpLogHandler
             } else {
                 val netInfoProvider = if (networkInfoEnabled) {
-                    Datadog.getNetworkInfoProvider()
+                    CoreFeature.networkInfoProvider
                 } else {
                     null
                 }
                 DatadogLogHandler(
-                    writer = Datadog.getLogStrategy().getWriter(),
+                    writer = LogsFeature.persistenceStrategy.getWriter(),
                     serviceName = serviceName,
                     loggerName = loggerName,
                     networkInfoProvider = netInfoProvider,
-                    timeProvider = Datadog.getTimeProvider(),
-                    userInfoProvider = Datadog.getUserInfoProvider()
+                    timeProvider = CoreFeature.timeProvider,
+                    userInfoProvider = CoreFeature.userInfoProvider
                 )
             }
         }
@@ -441,8 +443,4 @@ internal constructor(private val handler: LogHandler) {
     }
 
     // endregion
-
-    companion object {
-        internal const val DEFAULT_SERVICE_NAME = "android"
-    }
 }

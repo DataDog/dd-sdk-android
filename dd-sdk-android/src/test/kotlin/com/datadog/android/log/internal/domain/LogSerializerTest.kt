@@ -1,7 +1,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
@@ -129,7 +129,8 @@ internal class LogSerializerTest {
             .hasField(LogSerializer.TAG_LOGGER_NAME, log.loggerName)
             .hasField(LogSerializer.TAG_THREAD_NAME, log.threadName)
             .hasField(LogSerializer.TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-            .hasField(LogSerializer.TAG_APP_VERSION_NAME, Datadog.packageVersion)
+            .hasField(LogSerializer.TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
+            .hasField(LogSerializer.TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(
