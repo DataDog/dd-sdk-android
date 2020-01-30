@@ -7,54 +7,27 @@
 package com.datadog.android
 
 import android.app.Application
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
-import android.os.Build
-import android.util.Log as AndroidLog
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
-import com.datadog.android.core.internal.net.DataOkHttpUploader
-import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
-import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
-import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.error.internal.DatadogExceptionHandler
 import com.datadog.android.log.EndpointUpdateStrategy
-import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemStreamExtension
-import com.datadog.tools.unit.getFieldValue
-import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
-import java.io.File
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
@@ -68,6 +41,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.ByteArrayOutputStream
+import java.io.File
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -116,118 +92,13 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `initializes all dependencies at initialize`() {
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        val logsHandlerThread: DataUploadHandlerThread =
-            Datadog::class.java.getStaticValue("logsHandlerThread")
-        val tracesHandlerThread: DataUploadHandlerThread =
-            Datadog::class.java.getStaticValue("tracesHandlerThread")
-        val logStrategy = Datadog.getLogStrategy()
-        val tracingStrategy = Datadog.getTracingStrategy()
-        val networkInfoProvider = Datadog.getNetworkInfoProvider()
-        val userInfoProvider = Datadog.getUserInfoProvider()
-        val timeProvider = Datadog.getTimeProvider()
-
-        assertThat(logStrategy).isNotNull()
-        assertThat(tracingStrategy).isNotNull()
-        assertThat(networkInfoProvider).isNotNull()
-        assertThat(userInfoProvider).isNotNull()
-        assertThat(timeProvider).isNotNull()
-        assertThat(Datadog.packageName).isEqualTo(fakePackageName)
-        assertThat(Datadog.packageVersion).isEqualTo(fakePackageVersion)
-    }
-
-    @Test
-    fun `initializes all dependencies at initialize with null version name`(
-        @IntForgery(min = 0) versionCode: Int
-    ) {
-        mockAppContext = mockContext(fakePackageName, null, versionCode)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
-        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
-            .doReturn(mockConnectivityMgr)
-
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        assertThat(Datadog.packageName).isEqualTo(fakePackageName)
-        assertThat(Datadog.packageVersion).isEqualTo(versionCode.toString())
-    }
-
-    @Test
-    fun `initializes crash reporter`() {
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        val handler = Thread.getDefaultUncaughtExceptionHandler()
-
-        assertThat(handler)
-            .isInstanceOf(DatadogExceptionHandler::class.java)
-    }
-
-    @Test
-    fun `registers shutdown hooks`() {
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        val shutdownHooks: Map<Thread, Thread> =
-            getStaticValue("java.lang.ApplicationShutdownHooks", "hooks")
-
-        val shutdownThread = shutdownHooks.keys
-            .first { it.name == Datadog.SHUTDOWN_THREAD }
-        assertThat(shutdownThread).isNotNull()
-
-        shutdownThread.start()
-        Thread.sleep(500L)
-        // check that stop was called by the shutdownThread
-        assertThrows<IllegalStateException> {
-            Datadog.invokeMethod("stop")
-        }
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `registers broadcast receivers on initialize (Lollipop)`() {
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
-
-        assertThat(broadcastReceiverCaptor.allValues)
-            .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
-            .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.N)
-    fun `registers receivers and callbacks on initialize (Nougat)`() {
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
-        assertThat(broadcastReceiverCaptor.allValues)
-            .allMatch { it is BroadcastReceiverSystemInfoProvider }
-
-        verify(mockConnectivityMgr)
-            .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
-    }
-
-    @Test
     fun `ignores if initialize called more than once`(
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
-        val logStrategy = Datadog.getLogStrategy()
-        val tracingStrategy = Datadog.getTracingStrategy()
-        val networkInfoProvider = Datadog.getNetworkInfoProvider()
-        val userInfoProvider = Datadog.getUserInfoProvider()
-        val timeProvider = Datadog.getTimeProvider()
 
         Datadog.initialize(mockAppContext, fakeToken)
-        assertThat(logStrategy).isSameAs(Datadog.getLogStrategy())
-        assertThat(tracingStrategy).isSameAs(Datadog.getTracingStrategy())
-        assertThat(networkInfoProvider).isSameAs(Datadog.getNetworkInfoProvider())
-        assertThat(userInfoProvider).isSameAs(Datadog.getUserInfoProvider())
-        assertThat(timeProvider).isSameAs(Datadog.getTimeProvider())
         assertThat(outputStream)
             .hasLogLine(AndroidLog.WARN, "Datadog", Datadog.MESSAGE_ALREADY_INITIALIZED)
     }
@@ -244,24 +115,17 @@ internal class DatadogTest {
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
-        val mockReader: Reader = mock()
-        val mockUploader: LogsOkHttpUploader = mock()
-        whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
-        Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
-        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
 
-        verifyZeroInteractions(mockUploader, mockReader)
         assertThat(outputStream)
             .hasLogLine(
                 AndroidLog.WARN, "Datadog",
                 startsWith("setEndpointUrl() has been deprecated.")
             )
-        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
     }
 
     @Test
@@ -269,108 +133,17 @@ internal class DatadogTest {
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
-        val mockReader: Reader = mock()
-        val mockUploader: LogsOkHttpUploader = mock()
-        whenever(mockLogStrategy.getReader()) doReturn mockReader
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
-        Datadog.javaClass.setStaticValue("logStrategy", mockLogStrategy)
-        Datadog.javaClass.setStaticValue("logsUploader", mockUploader)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
 
-        verifyZeroInteractions(mockUploader, mockReader)
         assertThat(outputStream)
             .hasLogLine(
                 AndroidLog.WARN, "Datadog",
                 startsWith("setEndpointUrl() has been deprecated.")
             )
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `add strict network policy for https endpoints on 21+`(forge: Forge) {
-        val endpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-
-        Datadog.initialize(mockAppContext, fakeToken, endpoint)
-
-        val uploader: DataOkHttpUploader =
-            Datadog.javaClass.getStaticValue("logsUploader")
-        val okHttpClient: OkHttpClient =
-            uploader.getFieldValue("client", DataOkHttpUploader::class.java)
-
-        assertThat(okHttpClient.protocols())
-            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
-            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.RESTRICTED_TLS)
-    }
-
-    @Test
-    fun `uploaders share the same okhttp client`(forge: Forge) {
-        val logsEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        val tracesEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-
-        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
-
-        val logsUploader: LogsOkHttpUploader =
-            Datadog.javaClass.getStaticValue("logsUploader")
-        val tracesUploader: TracesOkHttpUploader =
-            Datadog.javaClass.getStaticValue("tracesUploader")
-        val logsOkHttpClient: OkHttpClient = logsUploader.getFieldValue(
-            "client",
-            DataOkHttpUploader::class.java
-        )
-        val tracesOkHttpClient: OkHttpClient = tracesUploader.getFieldValue(
-            "client",
-            DataOkHttpUploader::class.java
-        )
-
-        assertThat(logsOkHttpClient).isEqualTo(tracesOkHttpClient)
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.KITKAT)
-    fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
-        val logsEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        val tracesEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-
-        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
-
-        val uploader: LogsOkHttpUploader = Datadog.javaClass.getStaticValue("logsUploader")
-        val okHttpClient: OkHttpClient =
-            uploader.getFieldValue("client", DataOkHttpUploader::class.java)
-
-        assertThat(okHttpClient.protocols())
-            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
-            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.MODERN_TLS)
-    }
-
-    @Test
-    fun `no network policy for http endpoints`(forge: Forge) {
-        val logsEndpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
-        val tracesEndpoint = forge.aStringMatching("http://[a-z]+\\.[a-z]{3}")
-
-        Datadog.initialize(mockAppContext, fakeToken, logsEndpoint, tracesEndpoint)
-
-        val logsUploader: LogsOkHttpUploader =
-            Datadog.javaClass.getStaticValue("logsUploader")
-        val okHttpClient: OkHttpClient = logsUploader.getFieldValue(
-            "client",
-            DataOkHttpUploader::class.java
-        )
-
-        assertThat(okHttpClient.protocols())
-            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
-            .isEqualTo(Datadog.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.CLEARTEXT)
     }
 
     @Test
@@ -380,7 +153,7 @@ internal class DatadogTest {
         val email = forge.aStringMatching("\\w+@\\w+")
 
         Datadog.setUserInfo(id, name, email)
-        val userInfo = Datadog.getUserInfoProvider().getUserInfo()
+        val userInfo = CoreFeature.userInfoProvider.getUserInfo()
 
         assertThat(userInfo.id).isEqualTo(id)
         assertThat(userInfo.name).isEqualTo(name)
@@ -394,42 +167,15 @@ internal class DatadogTest {
         Datadog.initialize(mockAppContext, fakeToken)
 
         // then
-        val argumentCaptor = argumentCaptor<Application.ActivityLifecycleCallbacks>()
-        verify(application).registerActivityLifecycleCallbacks(argumentCaptor.capture())
-        assertThat(argumentCaptor.firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
+            verify(application).registerActivityLifecycleCallbacks(capture())
+            assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+        }
     }
 
     @Test
     fun `it will not initialize the LifecycleMonitor if provided context is not App Context`() {
         val mockContext = mockContext<Context>()
         Datadog.initialize(mockContext, fakeToken)
-    }
-
-    @Test
-    fun `is initialized will return true if SDK was initialized`() {
-        // when
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        // then
-        assertThat(Datadog.isInitialized()).isTrue()
-    }
-
-    @Test
-    fun `is initialized will return false if SDK was initialized`() {
-        // then
-        assertThat(Datadog.isInitialized()).isFalse()
-    }
-
-    @Test
-    fun `will update the isDebug flag if application is debuggable`() {
-        // when
-        Datadog.initialize(mockAppContext, fakeToken)
-
-        // then
-        if (BuildConfig.DEBUG) {
-            assertThat(Datadog.isDebug).isTrue()
-        } else {
-            assertThat(Datadog.isDebug).isFalse()
-        }
     }
 }

@@ -6,10 +6,8 @@
 
 package com.datadog.android.tracing
 
-import com.datadog.android.Datadog
-import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
-import datadog.opentracing.DDSpan
 import datadog.opentracing.DDTracer
 import datadog.trace.api.Config
 import java.util.Properties
@@ -30,8 +28,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
      */
     class Builder {
 
-        private var serviceName: String = DEFAULT_SERVICE_NAME
-        private val writer: Writer<DDSpan> = Datadog.getTracingStrategy().getWriter()
+        private var serviceName: String = TracesFeature.serviceName
 
         // region Public API
 
@@ -39,7 +36,10 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
          * Builds a [Tracer] based on the current state of this Builder.
          */
         fun build(): Tracer {
-            return Tracer(config(), TraceWriter(writer))
+            return Tracer(
+                config(),
+                TraceWriter(TracesFeature.persistenceStrategy.getWriter())
+            )
         }
 
         /**
@@ -61,12 +61,14 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
             return properties
         }
 
-        private fun config() = Config.get(properties())
+        private fun config(): Config {
+            return Config.get(properties())
+        }
 
         // endregion
+
         companion object {
             private const val SERVICE_NAME_KEY = "service.name"
-            internal const val DEFAULT_SERVICE_NAME = "android"
         }
     }
 }

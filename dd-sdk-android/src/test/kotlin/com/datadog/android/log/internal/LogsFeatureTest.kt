@@ -19,7 +19,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -44,7 +44,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)

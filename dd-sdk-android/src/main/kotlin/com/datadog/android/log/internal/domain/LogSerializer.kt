@@ -8,7 +8,7 @@ package com.datadog.android.log.internal.domain
 
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
@@ -47,7 +47,8 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog.addProperty(TAG_LOGGER_NAME, log.loggerName)
         jsonLog.addProperty(TAG_THREAD_NAME, log.threadName)
         jsonLog.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-        jsonLog.addProperty(TAG_APP_VERSION_NAME, Datadog.packageVersion)
+        jsonLog.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
+        jsonLog.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
 
         // Timestamp
         val formattedDate = simpleDateFormat.format(Date(log.timestamp))
@@ -180,6 +181,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_THREAD_NAME = "logger.thread_name"
         internal const val TAG_VERSION_NAME = "logger.version"
         internal const val TAG_APP_VERSION_NAME = "application.version"
+        internal const val TAG_APP_PACKAGE_NAME = "application.package"
 
         // NETWORK TAGS
         internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"

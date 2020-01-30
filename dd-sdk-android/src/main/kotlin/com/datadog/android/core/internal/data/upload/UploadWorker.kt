@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.error.internal.CrashReportsFeature
 
 internal class UploadWorker(
     appContext: Context,
@@ -29,8 +30,8 @@ internal class UploadWorker(
             return Result.success()
         }
 
-        val reader = Datadog.getLogStrategy().getReader()
-        val uploader = Datadog.getLogUploader()
+        val reader = CrashReportsFeature.persistenceStrategy.getReader()
+        val uploader = CrashReportsFeature.uploader
 
         val failedBatches = mutableListOf<Batch>()
         var batch: Batch?

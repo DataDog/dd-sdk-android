@@ -20,13 +20,6 @@ internal class BroadcastReceiverSystemInfoProvider :
 
     private var systemInfo: SystemInfo = SystemInfo()
 
-    internal fun register(context: Context) {
-        registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
-        }
-    }
-
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
@@ -47,6 +40,17 @@ internal class BroadcastReceiverSystemInfoProvider :
     // endregion
 
     // region SystemInfoProvider
+
+    override fun register(context: Context) {
+        registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        }
+    }
+
+    override fun unregister(context: Context) {
+        context.unregisterReceiver(this)
+    }
 
     override fun getLatestSystemInfo(): SystemInfo {
         return systemInfo
