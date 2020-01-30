@@ -12,6 +12,7 @@ import android.os.Build;
 import android.util.Log;
 
 import com.datadog.android.Datadog;
+import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
 import com.datadog.android.tracing.Tracer;
 import com.google.gson.JsonArray;
@@ -28,24 +29,25 @@ public class SampleApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        final String logsEndpoint = (BuildConfig.DD_OVERRIDE_LOGS_URL == null)
-                ? Datadog.DATADOG_US_LOGS : BuildConfig.DD_OVERRIDE_LOGS_URL;
-        final String tracesEndpoint = (BuildConfig.DD_OVERRIDE_TRACES_URL == null)
-                ? Datadog.DATADOG_US_TRACES : BuildConfig.DD_OVERRIDE_TRACES_URL;
+        DatadogConfig.Builder configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                .setServiceName("android-sample-java");
+
+        if (BuildConfig.DD_OVERRIDE_LOGS_URL != null){
+            configBuilder.customLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
+            configBuilder.customCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
+        }
+        if (BuildConfig.DD_OVERRIDE_TRACES_URL != null){
+            configBuilder.customTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL);
+        }
+
         // Initialise Datadog
-        Datadog.initialize(
-                this,
-                BuildConfig.DD_CLIENT_TOKEN,
-                logsEndpoint,
-                tracesEndpoint
-        );
+        Datadog.initialize(this, configBuilder.build());
         Datadog.setVerbosity(Log.VERBOSE);
 
         // Initialise Logger
         logger = new Logger.Builder()
                 .setLogcatLogsEnabled(true)
                 .setNetworkInfoEnabled(true)
-                .setServiceName("android-sample-java")
                 .setLoggerName("Application")
                 .build();
         logger.v("Created a logger");

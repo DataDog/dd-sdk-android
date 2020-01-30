@@ -27,8 +27,6 @@ public class LogsFragment extends Fragment implements View.OnClickListener{
 
     private LogsViewModel mViewModel;
     private Logger mLogger = new Logger.Builder()
-            .setLogcatLogsEnabled(true)
-            .setServiceName("android-sample-java")
             .setLoggerName("logs_fragment")
             .setLogcatLogsEnabled(true)
             .build();
