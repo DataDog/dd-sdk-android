@@ -27,7 +27,6 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
     private ProgressBar mSpinner;
     private TracesViewModel mViewModel;
     private Logger mLogger = new Logger.Builder()
-            .setServiceName("android-sample-java")
             .setLoggerName("traces_fragment")
             .setLogcatLogsEnabled(true)
             .build();
