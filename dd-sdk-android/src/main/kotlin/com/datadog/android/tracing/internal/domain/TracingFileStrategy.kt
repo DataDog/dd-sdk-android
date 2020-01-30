@@ -1,7 +1,7 @@
 package com.datadog.android.tracing.internal.domain
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.FilePersistenceStrategy
+import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.time.TimeProvider
 import datadog.opentracing.DDSpan
 import java.io.File
@@ -14,22 +14,18 @@ internal class TracingFileStrategy(
     maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE
-) : FilePersistenceStrategy<DDSpan>(
-    File(
-        context.filesDir,
-        TRACES_FOLDER
-    ),
+) : AsyncWriterFilePersistenceStrategy<DDSpan>(
+    File(context.filesDir, TRACES_FOLDER),
     SpanSerializer(timeProvider),
-    WRITER_THREAD_NAME,
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
     "{ \"spans\": [",
-    "]}"
+    "]}",
+    WRITER_THREAD_NAME
 ) {
-
     companion object {
         internal const val TRACES_DATA_VERSION = 1
         internal const val DATA_FOLDER_ROOT = "dd-tracing"

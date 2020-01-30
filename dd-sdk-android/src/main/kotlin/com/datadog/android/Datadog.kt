@@ -8,41 +8,17 @@ package com.datadog.android
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
-import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.GzipRequestInterceptor
-import com.datadog.android.core.internal.net.NetworkTimeInterceptor
-import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
-import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.core.internal.time.DatadogTimeProvider
-import com.datadog.android.core.internal.time.MutableTimeProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.error.internal.DatadogExceptionHandler
+import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogFileStrategy
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
-import com.datadog.android.log.internal.user.DatadogUserInfoProvider
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.tracing.internal.domain.TracingFileStrategy
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
-import datadog.opentracing.DDSpan
-import java.lang.IllegalStateException
-import java.lang.ref.WeakReference
+import com.datadog.android.tracing.internal.TracesFeature
 import java.util.Locale
-import java.util.concurrent.TimeUnit
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -51,84 +27,52 @@ import okhttp3.Protocol
 object Datadog {
 
     /**
-     * The endpoint for our Logs US based servers, used by default by the SDK.
+     * The endpoint for our US based servers, used by default by the SDK.
      * @see [initialize]
+     * @deprecated Use the [DatadogEndpoint.LOGS_US] instead
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_US_LOGS: String = "https://mobile-http-intake.logs.datadoghq.com"
+    @Deprecated(
+        "Use the DatadogEndpoint.LOGS_US instead",
+        ReplaceWith(
+            expression = "DatadogEndpoint.LOGS_US",
+            imports = ["com.datadog.android.DatadogEndpoint"]
+        )
+    )
+    const val DATADOG_US: String = "https://mobile-http-intake.logs.datadoghq.com"
 
     /**
-     * The endpoint for our Europe Logs based servers.
+     * The endpoint for our Europe based servers.
      * Use this in your call to [initialize] if you log on
      * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @deprecated Use the [DatadogEndpoint.LOGS_EU] instead
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_EU_LOGS: String = "https://mobile-http-intake.logs.datadoghq.eu"
-
-    /**
-     * The endpoint for our Traces US based servers, used by default by the SDK.
-     * @see [initialize]
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_US_TRACES: String = "https://public-trace-http-intake.logs.datadoghq.com"
-
-    /**
-     * The endpoint for our Europe Traces based servers.
-     * Use this in your call to [initialize] if you log on
-     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    const val DATADOG_EU_TRACES: String = "https://public-trace-http-intake.logs.datadoghq.eu"
-
-    private const val TAG = "Datadog"
-
-    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
-    internal const val LOG_UPLOAD_THREAD_NAME = "ddog-logs-upload"
-    internal const val TRACES_UPLOAD_THREAD_NAME = "ddog-traces-upload"
+    @Deprecated(
+        "Use the DatadogEndpoint.LOGS_EU instead",
+        ReplaceWith(
+            expression = "DatadogEndpoint.LOGS_EU",
+            imports = ["com.datadog.android.DatadogEndpoint"]
+        )
+    )
+    const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     private var initialized: Boolean = false
-    private lateinit var clientToken: String
-    private lateinit var logStrategy: PersistenceStrategy<Log>
-    private lateinit var networkInfoProvider: NetworkInfoProvider
-    private lateinit var systemInfoProvider: BroadcastReceiverSystemInfoProvider
-    private lateinit var logsHandlerThread: DataUploadHandlerThread
-    private lateinit var tracesHandlerThread: DataUploadHandlerThread
-    private lateinit var contextRef: WeakReference<Context>
-    private lateinit var logsUploader: LogsOkHttpUploader
-    private lateinit var tracesUploader: TracesOkHttpUploader
-    private lateinit var timeProvider: MutableTimeProvider
-    private lateinit var userInfoProvider: MutableUserInfoProvider
-    private lateinit var tracingStrategy: PersistenceStrategy<DDSpan>
-    internal var packageName: String = ""
-        private set
 
-    internal var packageVersion: String = ""
-        private set
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
-    private var okHttpClient: OkHttpClient? = null
 
-    // TODO: RUMM-193 Switch to the new way of initializing the SDK through using the DatadogConfig
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
-     * @param clientToken your API key of type Client Token
-     * @param logsEndpointUrl (optional) the logs endpoint url to target,
-     * or null to use the default.
-     * Possible values are [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
-     * @param tracesEndpointUrl (optional) the traces endpoint url to target,
-     * or null to use the default.
-     * Possible values are [DATADOG_US_TRACES], [DATADOG_EU_TRACES] or a custom endpoint.
+     * @param config the configuration for the SDK library
+     * @see [DatadogConfig]
      */
     @JvmStatic
-    @JvmOverloads
     fun initialize(
         context: Context,
-        clientToken: String,
-        logsEndpointUrl: String? = null,
-        tracesEndpointUrl: String? = null
+        config: DatadogConfig
     ) {
         if (initialized) {
             devLogger.w(
@@ -140,41 +84,67 @@ object Datadog {
 
         val appContext = context.applicationContext
 
-        initSdkCredentials(appContext, clientToken)
+        // always initialize Core Features first
+        CoreFeature.initialize(appContext, config.needsClearTextHttp)
 
-        initNetworkInfoProvider(appContext)
+        config.logsConfig?.let { featureConfig ->
+            LogsFeature.initialize(
+                appContext = appContext,
+                config = featureConfig,
+                okHttpClient = CoreFeature.okHttpClient,
+                networkInfoProvider = CoreFeature.networkInfoProvider,
+                systemInfoProvider = CoreFeature.systemInfoProvider
+            )
+        }
 
-        // prepare time management
-        timeProvider = DatadogTimeProvider(appContext)
+        config.tracesConfig?.let { featureConfig ->
+            TracesFeature.initialize(
+                appContext = appContext,
+                config = featureConfig,
+                okHttpClient = CoreFeature.okHttpClient,
+                networkInfoProvider = CoreFeature.networkInfoProvider,
+                timeProvider = CoreFeature.timeProvider,
+                systemInfoProvider = CoreFeature.systemInfoProvider
+            )
+        }
 
-        logStrategy = LogFileStrategy(appContext)
+        config.crashReportConfig?.let { featureConfig ->
+            CrashReportsFeature.initialize(
+                appContext = appContext,
+                config = featureConfig,
+                okHttpClient = CoreFeature.okHttpClient,
+                networkInfoProvider = CoreFeature.networkInfoProvider,
+                timeProvider = CoreFeature.timeProvider,
+                userInfoProvider = CoreFeature.userInfoProvider
+            )
+        }
 
-        tracingStrategy = TracingFileStrategy(appContext, timeProvider)
-
-        // Prepare user info management
-        userInfoProvider = DatadogUserInfoProvider()
-
-        // init the SystemInfoProvider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider()
-
-        // setup the system info provider
-        setupTheSystemInfoProvider(appContext)
-
-        // setup the logs uploader
-        setupLogsUploader(logsEndpointUrl)
-
-        // setup the traces uploader
-        setupTracesUploader(tracesEndpointUrl)
-
-        // setup the process lifecycle monitor
         setupLifecycleMonitorCallback(appContext)
 
         initialized = true
+    }
 
-        // setup the exception handler
-        // We set this up last.
-        // We don't want to catch any exception that might throw during the initialisation)
-        setupTheExceptionHandler(appContext)
+    /**
+     * Initializes the Datadog SDK.
+     * @param context your application context
+     * @param clientToken your API key of type Client Token
+     * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
+     * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
+     * @deprecated Use the [initialize] method with a [DatadogConfig] instance
+     */
+    @JvmStatic
+    @JvmOverloads
+    @Deprecated("Use the initialize method with a DatadogConfig instance")
+    fun initialize(
+        context: Context,
+        clientToken: String,
+        endpointUrl: String? = null
+    ) {
+        val config = DatadogConfig.Builder(clientToken)
+            .customLogsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
+            .customCrashReportsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
+            .build()
+        initialize(context, config)
     }
 
     /**
@@ -192,43 +162,14 @@ object Datadog {
         devLogger.w(String.format(Locale.US, MESSAGE_DEPRECATED, "setEndpointUrl()"))
     }
 
-    /**
-     * Changes the endpoint to which tracing data is sent.
-     * @param endpointUrl the endpoint url to target, or null to use the default.
-     * Possible values are [DATADOG_US_TRACES], [DATADOG_EU_TRACES] or a custom endpoint.
-     * @param strategy the strategy defining how to handle traces created previously.
-     * Because traces are sent asynchronously, some traces intended for the previous endpoint
-     * might still be yet to sent.
-     */
-    @JvmStatic
-    fun setTracesEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
-        when (strategy) {
-            EndpointUpdateStrategy.DISCARD_OLD_DATA -> {
-                tracingStrategy.getReader().dropAllBatches()
-                devLogger.w(
-                    "$TAG: old traces targeted at $endpointUrl " +
-                        "will now be deleted"
-                )
-            }
-            EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT -> {
-                devLogger.w(
-                    "$TAG: old traces targeted at $endpointUrl " +
-                        "will now be sent to $endpointUrl"
-                )
-            }
-        }
-        tracesUploader.setEndpoint(endpointUrl)
-    }
-
     // Stop all Datadog work (for test purposes).
     @Suppress("unused")
     private fun stop() {
         checkInitialized()
-        logsHandlerThread.quitSafely()
-        tracesHandlerThread.quitSafely()
-        contextRef.get()?.let { networkInfoProvider.unregister(it) }
-        contextRef.clear()
-        okHttpClient = null
+        LogsFeature.stop()
+        TracesFeature.stop()
+        CrashReportsFeature.stop()
+        CoreFeature.stop()
         initialized = false
     }
 
@@ -260,38 +201,8 @@ object Datadog {
         name: String? = null,
         email: String? = null
     ) {
-        userInfoProvider.setUserInfo(UserInfo(id, name, email))
+        CoreFeature.userInfoProvider.setUserInfo(UserInfo(id, name, email))
     }
-
-    // region Internal Provider
-
-    internal fun getLogStrategy(): PersistenceStrategy<Log> {
-        checkInitialized()
-        return logStrategy
-    }
-
-    internal fun getLogUploader(): DataUploader {
-        checkInitialized()
-        return logsUploader
-    }
-
-    internal fun getNetworkInfoProvider(): NetworkInfoProvider {
-        return networkInfoProvider
-    }
-
-    internal fun getTimeProvider(): TimeProvider {
-        return timeProvider
-    }
-
-    internal fun getUserInfoProvider(): UserInfoProvider {
-        return userInfoProvider
-    }
-
-    internal fun getTracingStrategy(): PersistenceStrategy<DDSpan> {
-        checkInitialized()
-        return tracingStrategy
-    }
-    // endregion
 
     // region Internal Initialization
 
@@ -304,112 +215,9 @@ object Datadog {
         return initialized
     }
 
-    private fun initNetworkInfoProvider(context: Context) {
-        val provider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            CallbackNetworkInfoProvider()
-        } else {
-            BroadcastReceiverNetworkInfoProvider()
-        }
-        provider.register(context)
-        networkInfoProvider = provider
-    }
-
-    private fun buildOkHttpClient(endpoint: String): OkHttpClient {
-        var currentOkHttpClient = okHttpClient
-        if (currentOkHttpClient != null) return currentOkHttpClient
-
-        val connectionSpec = when {
-            endpoint.startsWith("http://") -> ConnectionSpec.CLEARTEXT
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> ConnectionSpec.RESTRICTED_TLS
-            else -> ConnectionSpec.MODERN_TLS
-        }
-        currentOkHttpClient = OkHttpClient.Builder()
-            .addInterceptor(NetworkTimeInterceptor(timeProvider))
-            .addInterceptor(GzipRequestInterceptor())
-            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-            .connectionSpecs(listOf(connectionSpec))
-            .build()
-
-        okHttpClient = currentOkHttpClient
-        return currentOkHttpClient
-    }
-
-    private fun setupTheExceptionHandler(appContext: Context?) {
-        DatadogExceptionHandler(
-            networkInfoProvider,
-            timeProvider,
-            userInfoProvider,
-            logStrategy.getSynchronousWriter(),
-            appContext
-        ).register()
-    }
-
-    private fun setupTheSystemInfoProvider(appContext: Context) {
-        // Register Broadcast Receivers
-        systemInfoProvider.register(appContext)
-    }
-
-    private fun setupLogsUploader(
-        endpointUrl: String?
-    ) {
-        val endpoint = endpointUrl ?: DATADOG_US_LOGS
-        val okHttpClient = buildOkHttpClient(endpoint)
-
-        logsUploader = LogsOkHttpUploader(
-            endpoint,
-            clientToken,
-            okHttpClient
-        )
-        logsHandlerThread =
-            DataUploadHandlerThread(
-                LOG_UPLOAD_THREAD_NAME,
-                logStrategy.getReader(),
-                logsUploader,
-                networkInfoProvider,
-                systemInfoProvider
-            )
-        logsHandlerThread.start()
-    }
-
-    private fun setupTracesUploader(
-        endpointUrl: String?
-    ) {
-        val endpoint = endpointUrl ?: DATADOG_US_TRACES
-        val okHttpClient = buildOkHttpClient(endpoint)
-
-        tracesUploader = TracesOkHttpUploader(
-            endpoint,
-            clientToken,
-            okHttpClient
-        )
-        tracesHandlerThread =
-            DataUploadHandlerThread(
-                TRACES_UPLOAD_THREAD_NAME,
-                tracingStrategy.getReader(),
-                tracesUploader,
-                networkInfoProvider,
-                systemInfoProvider
-            )
-        tracesHandlerThread.start()
-    }
-
-    private fun initSdkCredentials(
-        appContext: Context,
-        clientToken: String
-    ) {
-        packageName = appContext.packageName
-        packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
-            it.versionName ?: it.versionCode.toString()
-        }
-        contextRef = WeakReference(appContext)
-        this.clientToken = clientToken
-    }
-
     private fun setupLifecycleMonitorCallback(appContext: Context) {
         if (appContext is Application) {
-            val callback = ProcessLifecycleCallback(networkInfoProvider, appContext)
+            val callback = ProcessLifecycleCallback(CoreFeature.networkInfoProvider, appContext)
             appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
         }
     }
