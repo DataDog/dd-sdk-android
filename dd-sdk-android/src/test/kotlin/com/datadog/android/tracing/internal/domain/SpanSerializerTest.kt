@@ -3,11 +3,13 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpan
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -69,5 +71,31 @@ internal class SpanSerializerTest {
                 hasField(SpanSerializer.METRICS_KEY_TOP_LEVEL, 1)
                 hasField(SpanSerializer.METRICS_KEY_SAMPLING, 1)
             }
+    }
+
+    @Test
+    fun `it will only add the metrics key top level for the top span`(forge: Forge) {
+        // given
+        val parentSpan =
+            SpanForgeryFactory.TEST_TRACER
+                .buildSpan(forge.anAlphabeticalString())
+                .start()
+        val childSpan =
+            SpanForgeryFactory.TEST_TRACER
+                .buildSpan(forge.anAlphabeticalString())
+                .asChildOf(parentSpan)
+                .start()
+
+        // when
+        val serializedParent = JsonParser.parseString(underTest.serialize(parentSpan)).asJsonObject
+        val serializedChild = JsonParser.parseString(underTest.serialize(childSpan)).asJsonObject
+
+        // then
+        assertThat(serializedParent).hasField(SpanSerializer.METRICS_KEY) {
+            hasField(SpanSerializer.METRICS_KEY_SAMPLING, 1)
+        }
+        assertThat(serializedChild).hasField(SpanSerializer.METRICS_KEY) {
+            doesNotHaveField(SpanSerializer.METRICS_KEY_TOP_LEVEL)
+        }
     }
 }

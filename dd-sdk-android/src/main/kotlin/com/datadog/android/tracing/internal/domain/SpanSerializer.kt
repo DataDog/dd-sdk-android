@@ -44,7 +44,9 @@ internal class SpanSerializer(
         // we need this for sampling priority
         metricsObject.addProperty(METRICS_KEY_SAMPLING, 1)
         // same magic thing for sampling
-        metricsObject.addProperty(METRICS_KEY_TOP_LEVEL, 1)
+        if (model.parentId.toLong() == 0L) {
+            metricsObject.addProperty(METRICS_KEY_TOP_LEVEL, 1)
+        }
         jsonObject.add(METRICS_KEY, metricsObject)
     }
 
