@@ -93,7 +93,7 @@ class SampleApplication : Application() {
     logger.i("onPageStarted", attributes = mapOf("http.url", url))
     ```
 
-    In java you would have:
+    In Java you would have:
 
     ```java
     Logger.d(
