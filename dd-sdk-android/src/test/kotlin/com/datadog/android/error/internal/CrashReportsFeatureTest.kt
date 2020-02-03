@@ -73,7 +73,8 @@ internal class CrashReportsFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
 
         fakePackageName = forge.anAlphabeticalString()
@@ -202,7 +203,8 @@ internal class CrashReportsFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
         CrashReportsFeature.initialize(
             mockAppContext,
