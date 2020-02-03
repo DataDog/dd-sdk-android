@@ -33,7 +33,10 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN)
+
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .build()
+        Datadog.initialize(this, config)
     }
 }
 ```
@@ -45,7 +48,11 @@ class SampleApplication : Application() {
 class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN, Datadog.DATADOG_EU)
+
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .europeEndpoints()
+                        .build()
+        Datadog.initialize(this, config)
     }
 }
 ```
