@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
@@ -68,7 +69,9 @@ internal class DatadogTreeTest {
         whenever(mockContext.packageManager) doReturn mockPackageMgr
         whenever(mockContext.packageName) doReturn fakePackageName
 
-        Datadog.initialize(mockContext, forge.anHexadecimalString())
+        val config = DatadogConfig.Builder(forge.anHexadecimalString())
+            .build()
+        Datadog.initialize(mockContext, config)
 
         val builder = Logger.Builder()
             .setServiceName(fakeServiceName)
