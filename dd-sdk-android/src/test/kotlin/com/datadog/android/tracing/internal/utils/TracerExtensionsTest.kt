@@ -27,7 +27,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 class TracerExtensionsTest {
 
@@ -38,7 +38,7 @@ class TracerExtensionsTest {
     }
 
     @Test
-    fun `it will return the trace id and span id if tracer was initialized`(forge: Forge) {
+    fun `it will return the trace id and span id if there is an active span`(forge: Forge) {
         // given
         val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
         Datadog.initialize(mockContext(), config)
@@ -52,6 +52,20 @@ class TracerExtensionsTest {
         // then
         assertThat(tracer.traceId()).isEqualTo(span.traceId.toString())
         assertThat(tracer.spanId()).isEqualTo(span.spanId.toString())
+    }
+    @Test
+    fun `it will return null for trace an span id if there is no active span`(forge: Forge) {
+        // given
+        val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
+        Datadog.initialize(mockContext(), config)
+        GlobalTracer.registerIfAbsent(Tracer.Builder().build())
+
+        // when
+        val tracer = GlobalTracer.get()
+
+        // then
+        assertThat(tracer.traceId()).isNull()
+        assertThat(tracer.spanId()).isNull()
     }
 
     @Test
