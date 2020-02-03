@@ -44,6 +44,7 @@ class com.datadog.android.log.Logger
     fun setLogcatLogsEnabled(Boolean): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
     fun setLoggerName(String): Builder
+    fun setBundleWithTraceEnabled(Boolean): Builder
   fun addAttribute(String, Boolean)
   fun addAttribute(String, Int)
   fun addAttribute(String, Long)

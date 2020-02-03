@@ -291,7 +291,7 @@ internal class DatadogLogHandlerTest {
             mockNetworkInfoProvider,
             mockTimeProvider,
             mockUserInfoProvider,
-            linkIntoCurrentTrace = false
+            bundleWithTraces = false
         )
         // when
         testedHandler.handleLog(
