@@ -172,7 +172,7 @@ internal constructor(private val handler: LogHandler) {
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
-
+        private var bundleWithTraceEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
 
         /**
@@ -238,6 +238,17 @@ internal constructor(private val handler: LogHandler) {
             return this
         }
 
+        /**
+         * Enables the logs bundling with the current active trace. If this feature is enabled all
+         * the logs from this moment on will be bundled with the current trace and you will be able
+         * to see all the logs sent during a specific trace.
+         * @param enabled true by default
+         */
+        fun setBundleWithTraceEnabled(enabled: Boolean): Builder {
+            bundleWithTraceEnabled = enabled
+            return this
+        }
+
         // region Internal
 
         private fun buildLogcatHandler(): LogHandler {
@@ -260,7 +271,8 @@ internal constructor(private val handler: LogHandler) {
                     loggerName = loggerName,
                     networkInfoProvider = netInfoProvider,
                     timeProvider = CoreFeature.timeProvider,
-                    userInfoProvider = CoreFeature.userInfoProvider
+                    userInfoProvider = CoreFeature.userInfoProvider,
+                    bundleWithTraces = bundleWithTraceEnabled
                 )
             }
         }
