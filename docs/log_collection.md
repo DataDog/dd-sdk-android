@@ -50,7 +50,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                        .europeEndpoints()
+                        .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
     }

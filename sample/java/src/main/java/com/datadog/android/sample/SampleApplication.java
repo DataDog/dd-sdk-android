@@ -33,11 +33,11 @@ public class SampleApplication extends Application {
                 .setServiceName("android-sample-java");
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null){
-            configBuilder.customLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
-            configBuilder.customCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
+            configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
+            configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
         }
         if (BuildConfig.DD_OVERRIDE_TRACES_URL != null){
-            configBuilder.customTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL);
+            configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL);
         }
 
         // Initialise Datadog

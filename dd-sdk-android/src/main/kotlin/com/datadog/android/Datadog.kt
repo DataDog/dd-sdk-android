@@ -19,6 +19,7 @@ import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.tracing.internal.TracesFeature
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -58,7 +59,7 @@ object Datadog {
     )
     const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
-    private var initialized: Boolean = false
+    internal val initialized = AtomicBoolean(false)
 
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
@@ -74,7 +75,7 @@ object Datadog {
         context: Context,
         config: DatadogConfig
     ) {
-        if (initialized) {
+        if (initialized.get()) {
             devLogger.w(
                 "The Datadog library has already been initialized.",
                 IllegalStateException("The Datadog library has already been initialized.")
@@ -121,7 +122,7 @@ object Datadog {
 
         setupLifecycleMonitorCallback(appContext)
 
-        initialized = true
+        initialized.set(true)
     }
 
     /**
@@ -141,8 +142,8 @@ object Datadog {
         endpointUrl: String? = null
     ) {
         val config = DatadogConfig.Builder(clientToken)
-            .customLogsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
-            .customCrashReportsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
+            .useCustomLogsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
+            .useCustomCrashReportsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
             .build()
         initialize(context, config)
     }
@@ -170,7 +171,7 @@ object Datadog {
         TracesFeature.stop()
         CrashReportsFeature.stop()
         CoreFeature.stop()
-        initialized = false
+        initialized.set(false)
     }
 
     /**
@@ -208,11 +209,11 @@ object Datadog {
 
     @Suppress("CheckInternal")
     private fun checkInitialized() {
-        check(initialized) { MESSAGE_NOT_INITIALIZED }
+        check(initialized.get()) { MESSAGE_NOT_INITIALIZED }
     }
 
     internal fun isInitialized(): Boolean {
-        return initialized
+        return initialized.get()
     }
 
     private fun setupLifecycleMonitorCallback(appContext: Context) {
