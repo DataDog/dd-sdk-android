@@ -10,7 +10,6 @@ import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.URL
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -122,7 +121,7 @@ class DatadogConfigBuilderTest {
     @Test
     fun `builder with US endpoints all features enabled`() {
         val config = DatadogConfig.Builder(fakeClientToken)
-            .usEndpoints()
+            .useUSEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -158,7 +157,7 @@ class DatadogConfigBuilderTest {
     @Test
     fun `builder with EU endpoints all features enabled`() {
         val config = DatadogConfig.Builder(fakeClientToken)
-            .europeEndpoints()
+            .useEUEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -197,11 +196,11 @@ class DatadogConfigBuilderTest {
     ) {
         val logsUrl = forge.aStringMatching("https://[a-z]+\\.com")
         val tracesUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val crashReportsUrl = forge.getForgery<URL>().toString()
+        val crashReportsUrl = forge.aStringMatching("https://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken)
-            .customLogsEndpoint(logsUrl)
-            .customTracesEndpoint(tracesUrl)
-            .customCrashReportsEndpoint(crashReportsUrl)
+            .useCustomLogsEndpoint(logsUrl)
+            .useCustomTracesEndpoint(tracesUrl)
+            .useCustomCrashReportsEndpoint(crashReportsUrl)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -240,13 +239,11 @@ class DatadogConfigBuilderTest {
     ) {
         val logsUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val tracesUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        println(logsUrl)
-        println(tracesUrl)
-        val crashReportsUrl = forge.getForgery<URL>().toString()
+        val crashReportsUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken)
-            .customLogsEndpoint(logsUrl)
-            .customTracesEndpoint(tracesUrl)
-            .customCrashReportsEndpoint(crashReportsUrl)
+            .useCustomLogsEndpoint(logsUrl)
+            .useCustomTracesEndpoint(tracesUrl)
+            .useCustomCrashReportsEndpoint(crashReportsUrl)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)

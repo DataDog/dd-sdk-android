@@ -20,11 +20,12 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
 internal object LogsFeature {
 
-    internal var initialized: Boolean = false
+    internal val initialized = AtomicBoolean(false)
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
@@ -41,7 +42,7 @@ internal object LogsFeature {
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider
     ) {
-        if (initialized) {
+        if (initialized.get()) {
             return
         }
 
@@ -52,16 +53,25 @@ internal object LogsFeature {
         persistenceStrategy = LogFileStrategy(appContext)
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
 
-        initialized = true
+        initialized.set(true)
     }
 
     fun isInitialized(): Boolean {
-        return initialized
+        return initialized.get()
     }
 
     fun stop() {
-        uploadHandlerThread.quitSafely()
-        initialized = false
+        if (initialized.get()) {
+            uploadHandlerThread.quitSafely()
+
+            persistenceStrategy = NoOpPersistenceStrategy()
+            uploadHandlerThread = HandlerThread("Test")
+            clientToken = ""
+            endpointUrl = DatadogEndpoint.LOGS_US
+            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
+
+            initialized.set(false)
+        }
     }
 
     // region Internal

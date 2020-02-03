@@ -32,8 +32,8 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN)
-            .customLogsEndpoint(RuntimeConfig.logsEndpointUrl)
-            .customTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
+            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .build()
 
         Datadog.initialize(this, config)

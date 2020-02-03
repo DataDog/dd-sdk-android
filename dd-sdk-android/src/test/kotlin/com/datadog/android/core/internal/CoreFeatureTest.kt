@@ -13,9 +13,7 @@ import android.net.ConnectivityManager
 import android.os.Build
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
-import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
@@ -78,10 +76,6 @@ internal class CoreFeatureTest {
     @AfterEach
     fun `tear down`() {
         CoreFeature.stop()
-        CoreFeature.timeProvider = NoOpTimeProvider()
-        CoreFeature.systemInfoProvider = NoOpSystemInfoProvider()
-        CoreFeature.networkInfoProvider = NoOpNetworkInfoProvider()
-        CoreFeature.userInfoProvider = NoOpUserInfoProvider()
     }
 
     @Test
