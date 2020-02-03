@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import android.util.Log
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonArray
@@ -45,6 +46,7 @@ internal class LoggerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        LogsFeature.envName = ""
         fakeMessage = forge.anAlphabeticalString()
         testedLogger = Logger(mockLogHandler)
     }
@@ -652,6 +654,23 @@ internal class LoggerTest {
     // endregion
 
     // region Tags
+
+    @Test
+    fun `adds env tag if present`(forge: Forge) {
+        val envName = forge.anAlphabeticalString()
+        LogsFeature.envName = envName
+
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf("env:$envName")
+            )
+    }
 
     @Test
     fun `add simple tag to logger`(forge: Forge) {
