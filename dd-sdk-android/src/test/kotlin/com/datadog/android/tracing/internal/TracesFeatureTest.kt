@@ -72,7 +72,8 @@ internal class TracesFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
 
         fakePackageName = forge.anAlphabeticalString()
@@ -161,7 +162,8 @@ internal class TracesFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
         TracesFeature.initialize(
             mockAppContext,

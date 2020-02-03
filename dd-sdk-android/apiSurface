@@ -15,6 +15,7 @@ class com.datadog.android.DatadogConfig
     fun setTracesEnabled(Boolean): Builder
     fun setCrashReportsEnabled(Boolean): Builder
     fun setServiceName(String): Builder
+    fun setEnvironmentName(String): Builder
     fun useEUEndpoints(): Builder
     fun useUSEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder

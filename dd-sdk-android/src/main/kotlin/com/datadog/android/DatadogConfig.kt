@@ -22,7 +22,8 @@ private constructor(
     internal data class FeatureConfig(
         val clientToken: String,
         val endpointUrl: String,
-        val serviceName: String
+        val serviceName: String,
+        val envName: String
     )
 
     // region Builder
@@ -31,30 +32,32 @@ private constructor(
      * A Builder class for a [DatadogConfig].
      * @param clientToken your API key of type Client Token
      */
+    @Suppress("TooManyFunctions")
     class Builder(clientToken: String) {
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
             DatadogEndpoint.LOGS_US,
-            DEFAULT_SERVICE_NAME
+            DEFAULT_SERVICE_NAME,
+            DEFAULT_ENV_NAME
         )
         private var tracesConfig: FeatureConfig = FeatureConfig(
             clientToken,
             DatadogEndpoint.TRACES_US,
-            DEFAULT_SERVICE_NAME
+            DEFAULT_SERVICE_NAME,
+            DEFAULT_ENV_NAME
         )
         private var crashReportConfig: FeatureConfig = FeatureConfig(
             clientToken,
             DatadogEndpoint.LOGS_US,
-            DEFAULT_SERVICE_NAME
+            DEFAULT_SERVICE_NAME,
+            DEFAULT_ENV_NAME
         )
 
         private var logsEnabled: Boolean = true
         private var tracesEnabled: Boolean = true
         private var crashReportsEnabled: Boolean = true
         private var needsClearTextHttp: Boolean = false
-
-        private var serviceName: String = DEFAULT_SERVICE_NAME
 
         /**
          * Builds a [DatadogConfig] based on the current state of this Builder.
@@ -103,13 +106,25 @@ private constructor(
         }
 
         /**
-         * Sets the service name that will appear in your logs.
+         * Sets the service name that will appear in your logs, traces and crash reports.
          * @param serviceName the service name (default = "android")
          */
         fun setServiceName(serviceName: String): Builder {
             logsConfig = logsConfig.copy(serviceName = serviceName)
             tracesConfig = tracesConfig.copy(serviceName = serviceName)
             crashReportConfig = crashReportConfig.copy(serviceName = serviceName)
+            return this
+        }
+
+        /**
+         * Sets the environment name that will appear in your logs, traces and crash reports.
+         * This can be used to filter logs or traces and distinguish between your production and staging environment.
+         * @param envName the environment name (default = "")
+         */
+        fun setEnvironmentName(envName: String): Builder {
+            logsConfig = logsConfig.copy(envName = envName)
+            tracesConfig = tracesConfig.copy(envName = envName)
+            crashReportConfig = crashReportConfig.copy(envName = envName)
             return this
         }
 
@@ -177,5 +192,6 @@ private constructor(
 
     companion object {
         internal const val DEFAULT_SERVICE_NAME = "android"
+        internal const val DEFAULT_ENV_NAME = ""
     }
 }

@@ -69,7 +69,8 @@ internal class LogsFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
 
         fakePackageName = forge.anAlphabeticalString()
@@ -155,7 +156,8 @@ internal class LogsFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
         LogsFeature.initialize(
             mockAppContext,
