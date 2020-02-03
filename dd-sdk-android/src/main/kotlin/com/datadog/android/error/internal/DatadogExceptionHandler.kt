@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
 import java.lang.ref.WeakReference
@@ -58,7 +57,7 @@ internal class DatadogExceptionHandler(
 
     private fun createLog(thread: Thread, throwable: Throwable): Log {
         return Log(
-            serviceName = Logger.DEFAULT_SERVICE_NAME,
+            serviceName = CrashReportsFeature.serviceName,
             level = Log.CRASH,
             loggerName = LOGGER_NAME,
             message = MESSAGE,

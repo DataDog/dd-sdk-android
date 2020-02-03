@@ -6,6 +6,10 @@
 
 package com.datadog.android.core.internal.system
 
+import android.content.Context
+
 internal interface SystemInfoProvider {
+    fun register(context: Context)
+    fun unregister(context: Context)
     fun getLatestSystemInfo(): SystemInfo
 }

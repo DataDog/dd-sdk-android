@@ -30,17 +30,16 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN)
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN).build()
+        Datadog.initialize(this, config)
 
         val  logger = Logger.Builder()
-                .setServiceName("com.example.app.android")
-                .setLoggerName("name")
                 .setNetworkInfoEnabled(true)
                 .setLogcatLogsEnabled(true)
                 .setDatadogLogsEnabled(true)
                 .build();
 
-        // You can configure the logger's tags and attributes, as explained [here](../dd-sdk-android/README.md) 
+        // You can configure the logger's tags and attributes, as explained in the  [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android)
 
         Timber.plant(DatadogTree(logger))
     }

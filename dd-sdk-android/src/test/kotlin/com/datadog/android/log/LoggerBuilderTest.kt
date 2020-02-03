@@ -9,6 +9,7 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -95,7 +96,7 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
-        assertThat(handler.serviceName).isEqualTo(Logger.DEFAULT_SERVICE_NAME)
+        assertThat(handler.serviceName).isEqualTo(LogsFeature.serviceName)
         assertThat(handler.loggerName).isEqualTo(packageName)
         assertThat(handler.networkInfoProvider).isNull()
         assertThat(handler.timeProvider).isNotNull()

@@ -10,11 +10,15 @@ import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.tracing.internal.TracesFeature
 
 internal class UploadWorker(
     appContext: Context,
@@ -29,9 +33,31 @@ internal class UploadWorker(
             return Result.success()
         }
 
-        val reader = Datadog.getLogStrategy().getReader()
-        val uploader = Datadog.getLogUploader()
+        // Upload Crash reports
+        uploadAllBatches(
+            CrashReportsFeature.persistenceStrategy.getReader(),
+            CrashReportsFeature.uploader
+        )
 
+        // Upload Logs
+        uploadAllBatches(
+            LogsFeature.persistenceStrategy.getReader(),
+            LogsFeature.uploader
+        )
+
+        // Upload Traces
+        uploadAllBatches(
+            TracesFeature.persistenceStrategy.getReader(),
+            TracesFeature.uploader
+        )
+
+        return Result.success()
+    }
+
+    private fun uploadAllBatches(
+        reader: Reader,
+        uploader: DataUploader
+    ) {
         val failedBatches = mutableListOf<Batch>()
         var batch: Batch?
         do {
@@ -48,8 +74,6 @@ internal class UploadWorker(
         failedBatches.forEach {
             reader.releaseBatch(it.id)
         }
-
-        return Result.success()
     }
 
     // endregion

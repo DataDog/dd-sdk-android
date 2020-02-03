@@ -71,6 +71,6 @@ internal class TracerTest {
         // then
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
-        assertThat(span.serviceName).isEqualTo(Tracer.Builder.DEFAULT_SERVICE_NAME)
+        assertThat(span.serviceName).isEqualTo(TracesFeature.serviceName)
     }
 }
