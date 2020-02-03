@@ -443,7 +443,14 @@ internal constructor(private val handler: LogHandler) {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)
-        handler.handleLog(level, message, throwable, combinedAttributes, tags)
+
+        val combinedTags = mutableSetOf<String>()
+        combinedTags.addAll(tags)
+        if (LogsFeature.envTag.isNotEmpty()) {
+            combinedTags.add(LogsFeature.envTag)
+        }
+
+        handler.handleLog(level, message, throwable, combinedAttributes, combinedTags)
     }
 
     private fun addTagInternal(tag: String) {
