@@ -11,6 +11,9 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.tracing.internal.utils.spanId
+import com.datadog.android.tracing.internal.utils.traceId
+import io.opentracing.util.GlobalTracer
 
 internal class DatadogLogHandler(
     internal val serviceName: String,
@@ -18,7 +21,8 @@ internal class DatadogLogHandler(
     internal val writer: Writer<Log>,
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val timeProvider: TimeProvider,
-    internal val userInfoProvider: UserInfoProvider
+    internal val userInfoProvider: UserInfoProvider,
+    internal val linkIntoCurrentTrace: Boolean = true
 ) : LogHandler {
 
     // region LogHandler
@@ -46,6 +50,13 @@ internal class DatadogLogHandler(
         tags: Set<String>
     ): Log {
 
+        var traceId: String? = null
+        var spanId: String? = null
+        if (linkIntoCurrentTrace && GlobalTracer.isRegistered()) {
+            val tracer = GlobalTracer.get()
+            traceId = tracer.traceId()
+            spanId = tracer.spanId()
+        }
         return Log(
             serviceName = serviceName,
             level = level,
@@ -57,7 +68,9 @@ internal class DatadogLogHandler(
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             userInfo = userInfoProvider.getUserInfo(),
             loggerName = loggerName,
-            threadName = Thread.currentThread().name
+            threadName = Thread.currentThread().name,
+            traceId = traceId,
+            spanId = spanId
         )
     }
 
