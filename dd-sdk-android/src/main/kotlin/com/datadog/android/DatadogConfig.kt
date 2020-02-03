@@ -118,7 +118,7 @@ private constructor(
          *
          * Call this if you log on [app.datadoghq.eu](https://app.datadoghq.eu/).
          */
-        fun europeEndpoints(): Builder {
+        fun useEUEndpoints(): Builder {
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
@@ -131,7 +131,7 @@ private constructor(
          *
          * Call this if you log on [app.datadoghq.com](https://app.datadoghq.com/).
          */
-        fun usEndpoints(): Builder {
+        fun useUSEndpoints(): Builder {
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
@@ -142,7 +142,7 @@ private constructor(
         /**
          * Let the SDK target a custom server for the logs feature.
          */
-        fun customLogsEndpoint(endpoint: String): Builder {
+        fun useCustomLogsEndpoint(endpoint: String): Builder {
             logsConfig = logsConfig.copy(endpointUrl = endpoint)
             checkCustomEndpoint(endpoint)
             return this
@@ -151,7 +151,7 @@ private constructor(
         /**
          * Let the SDK target a custom server for the tracing feature.
          */
-        fun customTracesEndpoint(endpoint: String): Builder {
+        fun useCustomTracesEndpoint(endpoint: String): Builder {
             tracesConfig = tracesConfig.copy(endpointUrl = endpoint)
             checkCustomEndpoint(endpoint)
             return this
@@ -160,7 +160,7 @@ private constructor(
         /**
          * Let the SDK target a custom server for the crash reports feature.
          */
-        fun customCrashReportsEndpoint(endpoint: String): Builder {
+        fun useCustomCrashReportsEndpoint(endpoint: String): Builder {
             crashReportConfig = crashReportConfig.copy(endpointUrl = endpoint)
             checkCustomEndpoint(endpoint)
             return this

@@ -21,10 +21,12 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
+import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
 internal object TracesFeature {
-    internal var initialized: Boolean = false
+
+    internal val initialized = AtomicBoolean(false)
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.TRACES_US
@@ -43,7 +45,7 @@ internal object TracesFeature {
         systemInfoProvider: SystemInfoProvider,
         timeProvider: TimeProvider
     ) {
-        if (initialized) {
+        if (initialized.get()) {
             return
         }
 
@@ -54,12 +56,21 @@ internal object TracesFeature {
         persistenceStrategy = TracingFileStrategy(appContext, timeProvider)
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
 
-        initialized = true
+        initialized.set(true)
     }
 
     fun stop() {
-        uploadHandlerThread.quitSafely()
-        initialized = false
+        if (initialized.get()) {
+            uploadHandlerThread.quitSafely()
+
+            persistenceStrategy = NoOpPersistenceStrategy()
+            uploadHandlerThread = HandlerThread("Test")
+            clientToken = ""
+            endpointUrl = DatadogEndpoint.TRACES_US
+            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
+
+            initialized.set(false)
+        }
     }
 
     // region Internal

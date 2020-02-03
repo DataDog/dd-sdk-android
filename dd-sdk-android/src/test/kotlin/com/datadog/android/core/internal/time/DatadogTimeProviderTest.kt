@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class, seed = 0x3e441e32L)
+@ForgeConfiguration(Configurator::class)
 internal class DatadogTimeProviderTest {
 
     @Mock

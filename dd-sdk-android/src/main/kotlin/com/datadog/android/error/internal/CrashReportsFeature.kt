@@ -18,12 +18,13 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
+import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
 internal object CrashReportsFeature {
 
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-    internal var initialized: Boolean = false
+    internal val initialized = AtomicBoolean(false)
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
@@ -42,7 +43,7 @@ internal object CrashReportsFeature {
         timeProvider: TimeProvider
     ) {
 
-        if (initialized) {
+        if (initialized.get()) {
             return
         }
 
@@ -55,12 +56,21 @@ internal object CrashReportsFeature {
 
         setupTheExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
 
-        initialized = true
+        initialized.set(true)
     }
 
     fun stop() {
-        Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
-        initialized = false
+        if (initialized.get()) {
+            Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
+
+            persistenceStrategy = NoOpPersistenceStrategy()
+            uploader = NoOpDataUploader()
+            clientToken = ""
+            endpointUrl = DatadogEndpoint.LOGS_US
+            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
+
+            initialized.set(false)
+        }
     }
 
     // region Internal

@@ -7,13 +7,10 @@
 package com.datadog.android.log.internal
 
 import android.app.Application
-import android.os.HandlerThread
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
@@ -86,12 +83,6 @@ internal class LogsFeatureTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
-
-        LogsFeature.persistenceStrategy = NoOpPersistenceStrategy()
-        LogsFeature.uploadHandlerThread = HandlerThread("Test")
-        LogsFeature.clientToken = ""
-        LogsFeature.endpointUrl = DatadogEndpoint.LOGS_US
-        LogsFeature.serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
     }
 
     @Test

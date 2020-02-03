@@ -14,11 +14,11 @@ class com.datadog.android.DatadogConfig
     fun setTracesEnabled(Boolean): Builder
     fun setCrashReportsEnabled(Boolean): Builder
     fun setServiceName(String): Builder
-    fun europeEndpoints(): Builder
-    fun usEndpoints(): Builder
-    fun customLogsEndpoint(String): Builder
-    fun customTracesEndpoint(String): Builder
-    fun customCrashReportsEndpoint(String): Builder
+    fun useEUEndpoints(): Builder
+    fun useUSEndpoints(): Builder
+    fun useCustomLogsEndpoint(String): Builder
+    fun useCustomTracesEndpoint(String): Builder
+    fun useCustomCrashReportsEndpoint(String): Builder
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String

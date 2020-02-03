@@ -11,10 +11,10 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.log.EndpointUpdateStrategy
-import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -24,6 +24,7 @@ import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.lastLine
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -55,8 +56,6 @@ import org.mockito.quality.Strictness
 internal class DatadogTest {
 
     lateinit var mockAppContext: Application
-    @Mock
-    lateinit var mockLogStrategy: PersistenceStrategy<Log>
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
@@ -152,13 +151,12 @@ internal class DatadogTest {
         val id = forge.anHexadecimalString()
         val name = forge.anAlphabeticalString()
         val email = forge.aStringMatching("\\w+@\\w+")
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        CoreFeature.userInfoProvider = mockUserInfoProvider
 
         Datadog.setUserInfo(id, name, email)
-        val userInfo = CoreFeature.userInfoProvider.getUserInfo()
 
-        assertThat(userInfo.id).isEqualTo(id)
-        assertThat(userInfo.name).isEqualTo(name)
-        assertThat(userInfo.email).isEqualTo(email)
+        verify(mockUserInfoProvider).setUserInfo(UserInfo(id, name, email))
     }
 
     @Test

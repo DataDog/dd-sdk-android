@@ -25,13 +25,14 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 
 internal object CoreFeature {
 
-    internal var initialized = false
+    internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
@@ -48,7 +49,7 @@ internal object CoreFeature {
         appContext: Context,
         needsClearTextHttp: Boolean
     ) {
-        if (initialized) {
+        if (initialized.get()) {
             return
         }
 
@@ -60,16 +61,24 @@ internal object CoreFeature {
 
         setupOkHttpClient(needsClearTextHttp)
 
-        initialized = true
+        initialized.set(true)
     }
 
     fun stop() {
-        contextRef.get()?.let {
-            networkInfoProvider.unregister(it)
-            systemInfoProvider.unregister(it)
+        if (initialized.get()) {
+            contextRef.get()?.let {
+                networkInfoProvider.unregister(it)
+                systemInfoProvider.unregister(it)
+            }
+            contextRef.clear()
+
+            timeProvider = NoOpTimeProvider()
+            systemInfoProvider = NoOpSystemInfoProvider()
+            networkInfoProvider = NoOpNetworkInfoProvider()
+            userInfoProvider = NoOpUserInfoProvider()
+
+            initialized.set(false)
         }
-        contextRef.clear()
-        initialized = false
     }
 
     // region Internal
