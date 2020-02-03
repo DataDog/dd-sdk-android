@@ -12,6 +12,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
@@ -74,7 +75,9 @@ internal class DatadogTreeTest {
             mockApplicationInfo.flags =
                 ApplicationInfo.FLAG_DEBUGGABLE or ApplicationInfo.FLAG_ALLOW_BACKUP
         }
-        Datadog.initialize(mockContext, forge.anHexadecimalString())
+        val config = DatadogConfig.Builder(forge.anHexadecimalString())
+            .build()
+        Datadog.initialize(mockContext, config)
 
         val builder = Logger.Builder()
             .setServiceName(fakeServiceName)
