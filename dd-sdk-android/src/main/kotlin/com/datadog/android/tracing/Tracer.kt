@@ -29,6 +29,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
     class Builder {
 
         private var serviceName: String = TracesFeature.serviceName
+        private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
 
         // region Public API
 
@@ -51,13 +52,28 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
             return this
         }
 
+        /**
+         * Sets the partial flush threshold. When this threshold is reached (you have a specific
+         * amount of spans closed waiting) the flush mechanism will be triggered and all the pending
+         * closed spans will be processed in order to be sent to the intake.
+         * @param threshold the threshold value (default = 5)
+         */
+        fun setPartialFlushThreshold(threshold: Int): Builder {
+            this.partialFlushThreshold = threshold
+            return this
+        }
+
         // endregion
 
         // region Internal
 
-        private fun properties(): Properties {
+        internal fun properties(): Properties {
             val properties = Properties()
-            properties.setProperty(SERVICE_NAME_KEY, serviceName)
+            properties.setProperty(Config.SERVICE_NAME, serviceName)
+            properties.setProperty(
+                Config.PARTIAL_FLUSH_MIN_SPANS,
+                partialFlushThreshold.toString()
+            )
             return properties
         }
 
@@ -68,7 +84,9 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
         // endregion
 
         companion object {
-            private const val SERVICE_NAME_KEY = "service.name"
+            // the minimum closed spans required for triggering a flush and deliver
+            // everything to the writer
+            internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
         }
     }
 }

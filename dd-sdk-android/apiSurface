@@ -62,4 +62,5 @@ class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
   class Builder
     fun build(): Tracer
     fun setServiceName(String): Builder
+    fun setPartialFlushThreshold(Int): Builder
     companion object
