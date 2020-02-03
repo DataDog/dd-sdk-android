@@ -9,11 +9,8 @@ package com.datadog.android.error.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -90,12 +87,6 @@ internal class CrashReportsFeatureTest {
     @AfterEach
     fun `tear down`() {
         CrashReportsFeature.stop()
-
-        CrashReportsFeature.persistenceStrategy = NoOpPersistenceStrategy()
-        CrashReportsFeature.uploader = NoOpDataUploader()
-        CrashReportsFeature.clientToken = ""
-        CrashReportsFeature.endpointUrl = DatadogEndpoint.LOGS_US
-        CrashReportsFeature.serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
     }
 
     @Test

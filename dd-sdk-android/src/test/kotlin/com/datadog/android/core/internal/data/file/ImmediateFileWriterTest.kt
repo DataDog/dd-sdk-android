@@ -37,7 +37,7 @@ import org.mockito.quality.Strictness
     ExtendWith(SystemOutputExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
-@ForgeConfiguration(Configurator::class, seed = 0x146ba9a6L)
+@ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ImmediateFileWriterTest {
 
