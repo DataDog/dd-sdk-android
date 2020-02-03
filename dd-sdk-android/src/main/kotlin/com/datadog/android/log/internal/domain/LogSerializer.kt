@@ -160,7 +160,6 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
             }
     }
 
-
     private fun addTraceInfo(log: Log, jsonLog: JsonObject) {
         val traceId = log.traceId
         val spanId = log.spanId
@@ -171,7 +170,6 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
             jsonLog.addProperty(TAG_SPAN_ID, spanId)
         }
     }
-
 
     companion object {
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
