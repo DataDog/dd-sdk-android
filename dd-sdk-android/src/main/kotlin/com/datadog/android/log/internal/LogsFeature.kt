@@ -30,6 +30,17 @@ internal object LogsFeature {
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
     internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
+    internal var envName: String = DatadogConfig.DEFAULT_ENV_NAME
+        set(value) {
+            field = value
+            envTag = if (value.isEmpty()) {
+                ""
+            } else {
+                "env:$value"
+            }
+        }
+    internal var envTag: String = ""
+        private set
 
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -49,6 +60,7 @@ internal object LogsFeature {
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         serviceName = config.serviceName
+        envName = config.envName
 
         persistenceStrategy = LogFileStrategy(appContext)
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
@@ -65,7 +77,7 @@ internal object LogsFeature {
             uploadHandlerThread.quitSafely()
 
             persistenceStrategy = NoOpPersistenceStrategy()
-            uploadHandlerThread = HandlerThread("Test")
+            uploadHandlerThread = HandlerThread("NoOp")
             clientToken = ""
             endpointUrl = DatadogEndpoint.LOGS_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
