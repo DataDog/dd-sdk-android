@@ -83,4 +83,16 @@ internal class TracerTest {
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
             .isEqualTo(Tracer.Builder.DEFAULT_PARTIAL_MIN_FLUSH)
     }
+
+    @Test
+    fun `it will correctly setup the properties for the config`(){
+        val builder = Tracer.Builder()
+        val properties = builder.properties()
+
+        // then
+        assertThat(properties.getProperty(Config.SERVICE_NAME)).
+            isEqualTo(Tracer.Builder.DEFAULT_SERVICE_NAME)
+        assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS)).
+            isEqualTo(Tracer.Builder.DEFAULT_PARTIAL_MIN_FLUSH)
+    }
 }
