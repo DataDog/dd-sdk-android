@@ -22,7 +22,7 @@ internal class DatadogLogHandler(
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val timeProvider: TimeProvider,
     internal val userInfoProvider: UserInfoProvider,
-    internal val linkIntoCurrentTrace: Boolean = true
+    internal val bundleWithTraces: Boolean = true
 ) : LogHandler {
 
     // region LogHandler
@@ -52,7 +52,7 @@ internal class DatadogLogHandler(
 
         var traceId: String? = null
         var spanId: String? = null
-        if (linkIntoCurrentTrace && GlobalTracer.isRegistered()) {
+        if (bundleWithTraces && GlobalTracer.isRegistered()) {
             val tracer = GlobalTracer.get()
             traceId = tracer.traceId()
             spanId = tracer.spanId()

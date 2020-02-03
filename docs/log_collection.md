@@ -68,6 +68,7 @@ class SampleApplication : Application() {
         .setServiceName("<SERVICE_NAME>")
         .setLogcatLogsEnabled(true)
         .setDatadogLogsEnabled(true)
+        .setBundleWithTraceEnabled(true)
         .setLoggerName("<LOGGER_NAME>")
         .build();
     ```
@@ -121,10 +122,11 @@ The following parameters can be used when initializing the logger to send logs t
 | Method                           | Description                                                                                                                                                                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `setNetworkInfoEnabled(true)`    | Add `network.client.connectivity` attribute to all log. The data logged by default is `connectivity` (`Wifi`, `3G`, `4G`...) and `carrier_name` (`AT&T - US`). `Carrier_name` is only available for Android API level 28 and above. |
-| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as value for the `service` [standard attribute][4] attached to all logs sent to Datadog.                                                                                                                        |
+| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as value for the `service` [standard attribute][4] attached to all logs sent to Datadog.                                                                                                                       |
 | `setLogcatLogsEnabled(true)`     | Set to `true` to use Logcat as logger.                                                                                                                                                                                              |
 | `setDatadogLogsEnabled(true)`    | Set to `true` to send logs to Datadog.                                                                                                                                                                                              |
-| `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                   |
+| `setBundleWithTraceEnabled(true)`| Set to `true` to bundle the logs with the active Trace in your application. This parameter is true by default and it will allow to see all the logs sent during a specific Trace by using the Datadog Dashboard.                    |
+| `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                              |
 | `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.                                                                   |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                   |
 
