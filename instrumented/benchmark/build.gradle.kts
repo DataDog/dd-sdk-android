@@ -102,11 +102,55 @@ detektConfig()
 ktLintConfig()
 
 reviewBenchmark {
-    addThreshold("benchmark_create_one_log", TimeUnit.MICROSECONDS.toNanos(500))
-    addThreshold("benchmark_create_one_log_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_create_one_log_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_create_one_log_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
 
-    addThreshold("benchmark_write_logs_on_disk", TimeUnit.MILLISECONDS.toNanos(50))
-    addThreshold("benchmark_read_logs_from_disk", TimeUnit.MILLISECONDS.toNanos(50))
+    // Logs Benchmarks
+    addThreshold(
+        "benchmark_create_one_log",
+        TimeUnit.MICROSECONDS.toNanos(500)
+    )
+    addThreshold(
+        "benchmark_create_one_log_with_throwable",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_create_one_log_with_tags",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_create_one_log_with_attributes",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+
+    // Traces Benchmarks
+    addThreshold(
+        "benchmark_creating_span",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_creating_span_with_throwable",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_creating_spans_with_baggage_items_and_logs",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_creating_heavy_load_of_spans",
+        TimeUnit.MILLISECONDS.toNanos(400)
+    )
+    addThreshold(
+        "benchmark_creating_medium_load_of_spans",
+        TimeUnit.MILLISECONDS.toNanos(250)
+    )
+
+    // LogIo Benchmarks
+
+    addThreshold(
+        "benchmark_write_logs_on_disk",
+        TimeUnit.MILLISECONDS.toNanos(60)
+    )
+    addThreshold(
+        "benchmark_read_logs_from_disk",
+        TimeUnit.MILLISECONDS.toNanos(60)
+    )
 }
