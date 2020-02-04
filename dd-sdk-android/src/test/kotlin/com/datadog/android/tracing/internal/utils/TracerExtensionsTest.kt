@@ -54,7 +54,7 @@ class TracerExtensionsTest {
         assertThat(tracer.spanId()).isEqualTo(span.spanId.toString())
     }
     @Test
-    fun `it will return null for trace an span id if there is no active span`(forge: Forge) {
+    fun `it will return null for trace and span id if there is no active span`(forge: Forge) {
         // given
         val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
         Datadog.initialize(mockContext(), config)

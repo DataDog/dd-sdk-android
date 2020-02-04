@@ -179,7 +179,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `buider can set the logger name`(@Forgery forge: Forge) {
+    fun `builder can set the logger name`(@Forgery forge: Forge) {
         val loggerName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder()
