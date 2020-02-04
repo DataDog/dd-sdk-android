@@ -9,9 +9,11 @@ package com.datadog.android.error.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.forge.Configurator
@@ -58,6 +60,8 @@ internal class CrashReportsFeatureTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
     @Mock
+    lateinit var mockSystemInfoProvider: SystemInfoProvider
+    @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
@@ -98,7 +102,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
 
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
@@ -115,13 +120,17 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
 
         val uploader = CrashReportsFeature.uploader
+        val uploadHandlerThread = CrashReportsFeature.uploadHandlerThread
 
         assertThat(uploader)
             .isInstanceOf(DataOkHttpUploader::class.java)
+        assertThat(uploadHandlerThread)
+            .isInstanceOf(DataUploadHandlerThread::class.java)
     }
 
     @Test
@@ -132,7 +141,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
 
         val clientToken = CrashReportsFeature.clientToken
@@ -152,7 +162,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
 
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -173,7 +184,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
         CrashReportsFeature.stop()
 
@@ -192,7 +204,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
         val uploader = CrashReportsFeature.uploader
@@ -212,7 +225,8 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSystemInfoProvider
         )
         val persistenceStrategy2 = CrashReportsFeature.persistenceStrategy
         val uploader2 = CrashReportsFeature.uploader
