@@ -30,7 +30,8 @@ public class SampleApplication extends Application {
     public void onCreate() {
         super.onCreate();
         DatadogConfig.Builder configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                .setServiceName("android-sample-java");
+                .setServiceName("android-sample-java")
+                .setEnvironmentName("staging");
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null){
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
