@@ -211,8 +211,8 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_USER_EMAIL = "usr.email"
 
         // TRACE
-        internal const val TAG_TRACE_ID = "trace_id"
-        internal const val TAG_SPAN_ID = "span_id"
+        internal const val TAG_TRACE_ID = "dd.trace_id"
+        internal const val TAG_SPAN_ID = "dd.span_id"
 
         internal val reservedAttributes = arrayOf(
             TAG_HOST,
