@@ -67,8 +67,9 @@ internal class SpanSerializerTest {
             .hasField(SpanSerializer.META_KEY, span.meta)
             .hasField(SpanSerializer.METRICS_KEY, span.metrics)
             .hasField(SpanSerializer.METRICS_KEY) {
-                // additional "magic" metrics key
-                hasField(SpanSerializer.METRICS_KEY_TOP_LEVEL, 1)
+                if (span.parentId.toLong() == 0L) {
+                    hasField(SpanSerializer.METRICS_KEY_TOP_LEVEL, 1)
+                }
                 hasField(SpanSerializer.METRICS_KEY_SAMPLING, 1)
             }
     }
