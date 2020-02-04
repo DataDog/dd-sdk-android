@@ -4,13 +4,15 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
+import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
+import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
+import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -68,12 +70,13 @@ internal class ProcessLifecycleCallbackTest {
         underTest.onStopped()
 
         // then
-        verify(mockWorkManager)
-            .enqueueUniqueWork(
-                eq(UPLOAD_WORKER_TAG),
-                eq(ExistingWorkPolicy.REPLACE),
-                any<OneTimeWorkRequest>()
-            )
+        verify(mockWorkManager).enqueueUniqueWork(
+            eq(UPLOAD_WORKER_NAME),
+            eq(ExistingWorkPolicy.REPLACE),
+            argThat<OneTimeWorkRequest> {
+                this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
+                    this.tags.contains(TAG_DATADOG_UPLOAD)
+            })
     }
 
     @Test
