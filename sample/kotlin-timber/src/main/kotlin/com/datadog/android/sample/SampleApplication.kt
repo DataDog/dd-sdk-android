@@ -19,7 +19,8 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val configBuilder = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-            .setServiceName("android-sample-java")
+            .setServiceName("android-sample-kotlin-timber")
+            .setEnvironmentName("staging")
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
