@@ -68,7 +68,7 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android")) {
-        exclude("com.google.guava")
+        exclude("com.google.guava", "listenablefuture")
     }
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
