@@ -34,13 +34,14 @@ import static org.mockito.Mockito.when;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.assertThat;
+import org.mockito.quality.Strictness;
 
 
 @Extensions(
         {@ExtendWith(MockitoExtension.class),
                 @ExtendWith(ForgeExtension.class),
                 @ExtendWith(SystemStreamExtension.class)})
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
 class LoggerBuilderJavaTest {
 
     private Context mockContext;

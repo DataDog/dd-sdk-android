@@ -5,6 +5,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.tracing.Tracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import datadog.opentracing.DDSpan

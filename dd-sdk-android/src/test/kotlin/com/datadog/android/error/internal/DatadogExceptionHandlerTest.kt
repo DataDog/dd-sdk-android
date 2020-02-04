@@ -12,10 +12,12 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.UPLOAD_WORKER_TAG
+import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
+import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
@@ -25,7 +27,7 @@ import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -147,10 +149,12 @@ internal class DatadogExceptionHandlerTest {
 
         verify(mockWorkManager)
             .enqueueUniqueWork(
-                eq(UPLOAD_WORKER_TAG),
+                eq(UPLOAD_WORKER_NAME),
                 eq(ExistingWorkPolicy.REPLACE),
-                any<OneTimeWorkRequest>()
-            )
+                argThat<OneTimeWorkRequest> {
+                    this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
+                        this.tags.contains(TAG_DATADOG_UPLOAD)
+                })
     }
 
     @Test

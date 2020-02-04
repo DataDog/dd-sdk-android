@@ -14,6 +14,7 @@ import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
@@ -62,6 +63,34 @@ internal class WorkManagerUtilsTest {
     }
 
     @Test
+    fun `it will cancel the worker if WorkManager was correctly instantiated`() {
+        // given
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
+
+        // when
+        cancelUploadWorker(mockContext())
+
+        // then
+        verify(mockedWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
+    }
+
+    @Test
+    fun `it will handle the cancel exception if WorkManager was not correctly instantiated`(
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
+        // when
+        cancelUploadWorker(mockContext())
+
+        // then
+        verifyZeroInteractions(mockedWorkManager)
+        if (BuildConfig.DEBUG) {
+            val expectedTag = if (Datadog.isDebug) "WorkManagerUtilsKt" else "DD_LOG"
+            assertThat(outputStream)
+                .hasLogLine(Log.ERROR, expectedTag, CANCEL_ERROR_MESSAGE)
+        }
+    }
+
+    @Test
     fun `it will schedule the worker if WorkManager was correctly instantiated`() {
         // given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
@@ -71,15 +100,16 @@ internal class WorkManagerUtilsTest {
 
         // then
         verify(mockedWorkManager).enqueueUniqueWork(
-            eq(UPLOAD_WORKER_TAG),
+            eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
-                this.workSpec.workerClassName == UploadWorker::class.java.canonicalName
+                this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
+                    this.tags.contains(TAG_DATADOG_UPLOAD)
             })
     }
 
     @Test
-    fun `it will handle the exception if WorkManager was not correctly instantiated`(
+    fun `it will handle the trigger exception if WorkManager was not correctly instantiated`(
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         // when
@@ -88,9 +118,9 @@ internal class WorkManagerUtilsTest {
         // then
         verifyZeroInteractions(mockedWorkManager)
         if (BuildConfig.DEBUG) {
-            val expectedTagName = if (Datadog.isDebug) "WorkManagerUtilsKt" else "DD_LOG"
+            val expectedTag = if (Datadog.isDebug) "WorkManagerUtilsKt" else "DD_LOG"
             assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedTagName, ERROR_MESSAGE)
+                .hasLogLine(Log.ERROR, expectedTag, SETUP_ERROR_MESSAGE)
         }
     }
 }
