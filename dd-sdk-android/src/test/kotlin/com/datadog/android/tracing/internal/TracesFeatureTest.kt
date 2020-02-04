@@ -18,6 +18,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemStreamExtension
+import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -90,7 +91,7 @@ internal class TracesFeatureTest {
     }
 
     @Test
-    fun `initializes persistence strategy`() {
+    fun `initializes persistence strategy with env`() {
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -103,6 +104,29 @@ internal class TracesFeatureTest {
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
             .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+        val reader = TracesFeature.persistenceStrategy.getReader()
+        val suffix: String = reader.getFieldValue("suffix")
+        assertThat(suffix).isEqualTo("], \"env\": \"${fakeConfig.envName}\"}")
+    }
+
+    @Test
+    fun `initializes persistence strategy without env`() {
+        fakeConfig = fakeConfig.copy(envName = "")
+        TracesFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockTimeProvider
+        )
+
+        val persistenceStrategy = TracesFeature.persistenceStrategy
+        assertThat(persistenceStrategy)
+            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+        val reader = TracesFeature.persistenceStrategy.getReader()
+        val suffix: String = reader.getFieldValue("suffix")
+        assertThat(suffix).isEqualTo("]}")
     }
 
     @Test
