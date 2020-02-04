@@ -122,9 +122,10 @@ private constructor(
          * @param envName the environment name (default = "")
          */
         fun setEnvironmentName(envName: String): Builder {
-            logsConfig = logsConfig.copy(envName = envName)
-            tracesConfig = tracesConfig.copy(envName = envName)
-            crashReportConfig = crashReportConfig.copy(envName = envName)
+            val validEnvName = envName.replace(Regex("[\"']+"), "")
+            logsConfig = logsConfig.copy(envName = validEnvName)
+            tracesConfig = tracesConfig.copy(envName = validEnvName)
+            crashReportConfig = crashReportConfig.copy(envName = validEnvName)
             return this
         }
 
