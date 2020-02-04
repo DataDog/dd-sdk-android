@@ -7,13 +7,16 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
@@ -43,6 +46,7 @@ internal object CrashReportsFeature {
 
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
+    internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -51,7 +55,8 @@ internal object CrashReportsFeature {
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
-        timeProvider: TimeProvider
+        timeProvider: TimeProvider,
+        systemInfoProvider: SystemInfoProvider
     ) {
 
         if (initialized.get()) {
@@ -64,9 +69,8 @@ internal object CrashReportsFeature {
         envName = config.envName
 
         persistenceStrategy = CrashLogFileStrategy(appContext)
-        uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-
-        setupTheExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
+        setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
+        setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
 
         initialized.set(true)
     }
@@ -74,9 +78,11 @@ internal object CrashReportsFeature {
     fun stop() {
         if (initialized.get()) {
             Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
+            uploadHandlerThread.quitSafely()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploader = NoOpDataUploader()
+            uploadHandlerThread = HandlerThread("NoOp")
             clientToken = ""
             endpointUrl = DatadogEndpoint.LOGS_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
@@ -87,7 +93,24 @@ internal object CrashReportsFeature {
 
     // region Internal
 
-    private fun setupTheExceptionHandler(
+    private fun setupUploader(
+        endpointUrl: String,
+        okHttpClient: OkHttpClient,
+        networkInfoProvider: NetworkInfoProvider,
+        systemInfoProvider: SystemInfoProvider
+    ) {
+        uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
+        uploadHandlerThread = DataUploadHandlerThread(
+            CRASH_REPORTS_UPLOAD_THREAD_NAME,
+            persistenceStrategy.getReader(),
+            uploader,
+            networkInfoProvider,
+            systemInfoProvider
+        )
+        uploadHandlerThread.start()
+    }
+
+    private fun setupExceptionHandler(
         appContext: Context,
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
@@ -102,6 +125,12 @@ internal object CrashReportsFeature {
             appContext
         ).register()
     }
+
+    // endregion
+
+    // region Constants
+
+    internal const val CRASH_REPORTS_UPLOAD_THREAD_NAME = "ddog-crash-upload"
 
     // endregion
 }
