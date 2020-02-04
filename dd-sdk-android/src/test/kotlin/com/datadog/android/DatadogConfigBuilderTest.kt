@@ -44,7 +44,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -52,7 +53,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -60,7 +62,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
     }
@@ -83,7 +86,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    serviceName
+                    serviceName,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -91,7 +95,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.TRACES_US,
-                    serviceName
+                    serviceName,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -99,7 +104,92 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    serviceName
+                    serviceName,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+    }
+
+    @Test
+    fun `builder with custom env name`(
+        forge: Forge
+    ) {
+        val envName = forge.anAlphabeticalString()
+        val config = DatadogConfig.Builder(fakeClientToken)
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setEnvironmentName(envName)
+            .build()
+
+        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.TRACES_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+    }
+
+    @Test
+    fun `builder with invalid custom env name`(
+        forge: Forge
+    ) {
+        val envName = forge.anAlphabeticalString()
+        val config = DatadogConfig.Builder(fakeClientToken)
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setEnvironmentName("\"'$envName'\"")
+            .build()
+
+        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.TRACES_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
                 )
             )
     }
@@ -133,7 +223,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -141,7 +232,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -149,7 +241,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
     }
@@ -169,7 +262,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -177,7 +271,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.TRACES_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -185,7 +280,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     DatadogEndpoint.LOGS_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
     }
@@ -212,7 +308,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     logsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -220,7 +317,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     tracesUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -228,7 +326,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     crashReportsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
     }
@@ -255,7 +354,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     logsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.tracesConfig)
@@ -263,7 +363,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     tracesUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
         assertThat(config.crashReportConfig)
@@ -271,7 +372,8 @@ class DatadogConfigBuilderTest {
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     crashReportsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
                 )
             )
     }

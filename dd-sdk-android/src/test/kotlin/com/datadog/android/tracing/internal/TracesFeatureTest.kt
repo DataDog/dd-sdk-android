@@ -18,6 +18,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -72,7 +73,8 @@ internal class TracesFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
 
         fakePackageName = forge.anAlphabeticalString()
@@ -89,7 +91,7 @@ internal class TracesFeatureTest {
     }
 
     @Test
-    fun `initializes persistence strategy`() {
+    fun `initializes persistence strategy with env`() {
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -102,6 +104,29 @@ internal class TracesFeatureTest {
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
             .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+        val reader = TracesFeature.persistenceStrategy.getReader()
+        val suffix: String = reader.getFieldValue("suffix")
+        assertThat(suffix).isEqualTo("], \"env\": \"${fakeConfig.envName}\"}")
+    }
+
+    @Test
+    fun `initializes persistence strategy without env`() {
+        fakeConfig = fakeConfig.copy(envName = "")
+        TracesFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockTimeProvider
+        )
+
+        val persistenceStrategy = TracesFeature.persistenceStrategy
+        assertThat(persistenceStrategy)
+            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+        val reader = TracesFeature.persistenceStrategy.getReader()
+        val suffix: String = reader.getFieldValue("suffix")
+        assertThat(suffix).isEqualTo("]}")
     }
 
     @Test
@@ -161,7 +186,8 @@ internal class TracesFeatureTest {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString()
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
         )
         TracesFeature.initialize(
             mockAppContext,
