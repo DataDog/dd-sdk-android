@@ -153,6 +153,48 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `builder with invalid custom env name`(
+        forge: Forge
+    ) {
+        val envName = forge.anAlphabeticalString()
+        val config = DatadogConfig.Builder(fakeClientToken)
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setEnvironmentName("\"'$envName'\"")
+            .build()
+
+        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.TRACES_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+    }
+
+    @Test
     fun `builder with all features disabled`() {
         val config = DatadogConfig.Builder(fakeClientToken)
             .setLogsEnabled(false)
