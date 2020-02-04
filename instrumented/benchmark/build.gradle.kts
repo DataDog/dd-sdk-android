@@ -101,12 +101,55 @@ kotlinConfig()
 detektConfig()
 ktLintConfig()
 
+// Logs Benchmarks
 reviewBenchmark {
-    addThreshold("benchmark_create_one_log", TimeUnit.MICROSECONDS.toNanos(500))
-    addThreshold("benchmark_create_one_log_with_throwable", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_create_one_log_with_tags", TimeUnit.MILLISECONDS.toNanos(1))
-    addThreshold("benchmark_create_one_log_with_attributes", TimeUnit.MILLISECONDS.toNanos(1))
+    addThreshold(
+        "benchmark_writing_logs",
+        TimeUnit.MICROSECONDS.toNanos(500)
+    )
+    addThreshold(
+        "benchmark_writing_logs_with_attributes",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_writing_logs_with_tags",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_writing_logs_with_throwable",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
 
-    addThreshold("benchmark_write_logs_on_disk", TimeUnit.MILLISECONDS.toNanos(50))
-    addThreshold("benchmark_read_logs_from_disk", TimeUnit.MILLISECONDS.toNanos(50))
+    addThreshold(
+        "benchmark_sending_medium_load_of_logs",
+        TimeUnit.MILLISECONDS.toNanos(200)
+    )
+    addThreshold(
+        "benchmark_sending_heavy_load_of_logs",
+        TimeUnit.MILLISECONDS.toNanos(300)
+    )
+}
+
+// Traces Benchmarks
+reviewBenchmark {
+    addThreshold(
+        "benchmark_sending_span",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_sending_span_with_throwable",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_sending_spans_with_baggage_items_and_logs",
+        TimeUnit.MILLISECONDS.toNanos(1)
+    )
+    addThreshold(
+        "benchmark_sending_heavy_load_of_spans",
+        TimeUnit.MILLISECONDS.toNanos(350)
+    )
+    addThreshold(
+        "benchmark_sending_medium_load_of_spans",
+        TimeUnit.MILLISECONDS.toNanos(150)
+    )
 }

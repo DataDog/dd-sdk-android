@@ -11,8 +11,9 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
-import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
@@ -47,7 +48,11 @@ class LogApiBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        Datadog.initialize(context, "NO_TOKEN", fakeEndpoint)
+        val config = DatadogConfig
+            .Builder("NO_TOKEN")
+            .useCustomLogsEndpoint(fakeEndpoint)
+            .build()
+        Datadog.initialize(context, config)
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
