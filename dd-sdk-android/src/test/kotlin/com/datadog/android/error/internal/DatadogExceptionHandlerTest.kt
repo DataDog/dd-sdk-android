@@ -113,6 +113,8 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `log exception when caught with no previous handler`(forge: Forge) {
+        val envName = forge.anAlphaNumericalString()
+        CrashReportsFeature.envName = envName
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
@@ -129,6 +131,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
+                .hasTags(listOf("env:$envName"))
         }
         verifyZeroInteractions(mockPreviousHandler)
     }
@@ -152,6 +155,8 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `log exception when caught`(forge: Forge) {
+        val envName = forge.anAlphaNumericalString()
+        CrashReportsFeature.envName = envName
         val currentThread = Thread.currentThread()
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
@@ -166,12 +171,37 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
+                .hasTags(listOf("env:$envName"))
+        }
+        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+    }
+
+    @Test
+    fun `log exception when caught without env name`(forge: Forge) {
+        CrashReportsFeature.envName = ""
+        val currentThread = Thread.currentThread()
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).write(capture())
+            assertThat(lastValue)
+                .hasThreadName(currentThread.name)
+                .hasMessage("Application crash detected")
+                .hasLevel(Log.CRASH)
+                .hasThrowable(fakeThrowable)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasTimestamp(fakeTime.time)
+                .hasTags(emptyList())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
     @Test
     fun `log exception when caught on background thread`(forge: Forge) {
+        val envName = forge.anAlphaNumericalString()
+        CrashReportsFeature.envName = envName
         val latch = CountDownLatch(1)
         val threadName = forge.anAlphabeticalString()
         val thread = Thread({
@@ -192,6 +222,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
+                .hasTags(listOf("env:$envName"))
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }

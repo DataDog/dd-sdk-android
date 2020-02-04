@@ -67,7 +67,11 @@ internal class DatadogExceptionHandler(
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             timestamp = timeProvider.getServerTimestamp(),
             attributes = emptyMap(),
-            tags = emptyList()
+            tags = if (CrashReportsFeature.envTag.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(CrashReportsFeature.envTag)
+            }
         )
     }
 
