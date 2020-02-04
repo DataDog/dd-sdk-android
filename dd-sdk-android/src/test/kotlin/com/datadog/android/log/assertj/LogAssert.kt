@@ -110,6 +110,24 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
+    fun hasTraceId(expected: String?): LogAssert {
+        assertThat(actual.traceId)
+            .overridingErrorMessage(
+                "Expected log to have traceId $expected but was ${actual.traceId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSpanId(expected: String?): LogAssert {
+        assertThat(actual.spanId)
+            .overridingErrorMessage(
+                "Expected log to have spanId $expected but was ${actual.spanId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         private const val TIMESTAMP_THRESHOLD_MS = 50

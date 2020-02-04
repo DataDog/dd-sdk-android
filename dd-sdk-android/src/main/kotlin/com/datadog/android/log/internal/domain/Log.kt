@@ -23,7 +23,9 @@ internal data class Log(
     val networkInfo: NetworkInfo?,
     val userInfo: UserInfo,
     val loggerName: String,
-    val threadName: String
+    val threadName: String,
+    val traceId: String? = null,
+    val spanId: String? = null
 ) {
 
     companion object {

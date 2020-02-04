@@ -69,6 +69,9 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         // Throwable
         addLogThrowable(log, jsonLog)
 
+        // Trace
+        addTraceInfo(log, jsonLog)
+
         return jsonLog.toString()
     }
 
@@ -157,6 +160,17 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
             }
     }
 
+    private fun addTraceInfo(log: Log, jsonLog: JsonObject) {
+        val traceId = log.traceId
+        val spanId = log.spanId
+        if (traceId != null) {
+            jsonLog.addProperty(TAG_TRACE_ID, traceId)
+        }
+        if (spanId != null) {
+            jsonLog.addProperty(TAG_SPAN_ID, spanId)
+        }
+    }
+
     companion object {
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
@@ -195,6 +209,10 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_USER_ID = "usr.id"
         internal const val TAG_USER_NAME = "usr.name"
         internal const val TAG_USER_EMAIL = "usr.email"
+
+        // TRACE
+        internal const val TAG_TRACE_ID = "dd.trace_id"
+        internal const val TAG_SPAN_ID = "dd.span_id"
 
         internal val reservedAttributes = arrayOf(
             TAG_HOST,

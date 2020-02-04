@@ -101,6 +101,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.networkInfoProvider).isNull()
         assertThat(handler.timeProvider).isNotNull()
         assertThat(handler.writer).isNotNull()
+        assertThat(handler.bundleWithTraces).isTrue()
     }
 
     @Test
@@ -154,7 +155,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `buider can set the logger name`(@Forgery forge: Forge) {
+    fun `builder can set the logger name`(@Forgery forge: Forge) {
         val loggerName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder()
@@ -163,5 +164,17 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.loggerName).isEqualTo(loggerName)
+    }
+
+    @Test
+    fun `buider can disable the bundle with trace feature`(@Forgery forge: Forge) {
+        val loggerName = forge.anAlphabeticalString()
+
+        val logger = Logger.Builder()
+            .setBundleWithTraceEnabled(false)
+            .build()
+
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        assertThat(handler.bundleWithTraces).isFalse()
     }
 }
