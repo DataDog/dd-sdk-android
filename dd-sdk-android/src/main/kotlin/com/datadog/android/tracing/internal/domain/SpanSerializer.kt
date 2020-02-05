@@ -1,5 +1,7 @@
 package com.datadog.android.tracing.internal.domain
 
+import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -19,15 +21,16 @@ internal class SpanSerializer(
         val serverOffset = timeProvider.getServerOffsetNanos()
         val jsonObject = JsonObject()
         // it is safe to convert BigInteger IDs to Long as they are parsed as Long on the backend
-        jsonObject.addProperty(TRACE_ID_KEY, model.traceId.toLong().toString(16))
-        jsonObject.addProperty(SPAN_ID_KEY, model.spanId.toLong().toString(16))
-        jsonObject.addProperty(PARENT_ID_KEY, model.parentId.toLong().toString(16))
-        jsonObject.addProperty(RESOURCE_KEY, model.resourceName)
-        jsonObject.addProperty(OPERATION_NAME_KEY, model.operationName)
-        jsonObject.addProperty(SERVICE_NAME_KEY, model.serviceName)
-        jsonObject.addProperty(DURATION_KEY, model.durationNano)
-        jsonObject.addProperty(START_TIMESTAMP_KEY, model.startTime + serverOffset)
-        jsonObject.addProperty(TYPE_KEY, "object") // do not know yet what should be here
+        jsonObject.addProperty(TAG_TRACE_ID, model.traceId.toLong().toString(16))
+        jsonObject.addProperty(TAG_SPAN_ID, model.spanId.toLong().toString(16))
+        jsonObject.addProperty(TAG_PARENT_ID, model.parentId.toLong().toString(16))
+        jsonObject.addProperty(TAG_RESOURCE, model.resourceName)
+        jsonObject.addProperty(TAG_OPERATION_NAME, model.operationName)
+        jsonObject.addProperty(TAG_SERVICE_NAME, model.serviceName)
+        jsonObject.addProperty(TAG_DURATION, model.durationNano)
+        jsonObject.addProperty(TAG_START_TIMESTAMP, model.startTime + serverOffset)
+        jsonObject.addProperty(TAG_ERROR, if (model.isError) 1 else 0)
+        jsonObject.addProperty(TAG_TYPE, "object") // do not know yet what should be here
         addMeta(jsonObject, model)
         addMetrics(jsonObject, model)
         return jsonObject.toString()
@@ -39,10 +42,13 @@ internal class SpanSerializer(
             metaObject.addProperty(it.key, it.value)
         }
 
+        metaObject.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
+        metaObject.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
+        metaObject.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
         addLogUserInfo(userInfoProvider.getUserInfo(), metaObject)
 
-        jsonObject.add(META_KEY, metaObject)
+        jsonObject.add(TAG_META, metaObject)
     }
 
     private fun addMetrics(jsonObject: JsonObject, model: DDSpan) {
@@ -51,13 +57,13 @@ internal class SpanSerializer(
             metricsObject.addProperty(it.key, it.value)
         }
         // For now disable the sampling on server
-        metricsObject.addProperty(METRICS_KEY_SAMPLING, 1)
+        metricsObject.addProperty(TAG_METRICS_SAMPLING_PRIORITY, 1)
 
         if (model.parentId.toLong() == 0L) {
             // mark this span as top level
-            metricsObject.addProperty(METRICS_KEY_TOP_LEVEL, 1)
+            metricsObject.addProperty(TAG_METRICS_TOP_LEVEL, 1)
         }
-        jsonObject.add(METRICS_KEY, metricsObject)
+        jsonObject.add(TAG_METRICS, metricsObject)
     }
 
     private fun addLogNetworkInfo(
@@ -97,19 +103,27 @@ internal class SpanSerializer(
     }
 
     companion object {
-        const val START_TIMESTAMP_KEY = "start"
-        const val DURATION_KEY = "duration"
-        const val SERVICE_NAME_KEY = "service"
-        const val TRACE_ID_KEY = "trace_id"
-        const val SPAN_ID_KEY = "span_id"
-        const val PARENT_ID_KEY = "parent_id"
-        const val RESOURCE_KEY = "resource"
-        const val OPERATION_NAME_KEY = "name"
-        const val TYPE_KEY = "type"
-        const val META_KEY = "meta"
-        const val METRICS_KEY = "metrics"
-        const val METRICS_KEY_TOP_LEVEL = "_top_level"
-        const val METRICS_KEY_SAMPLING = "_sampling_priority_v1"
+
+        // SPAN TAGS
+        const val TAG_START_TIMESTAMP = "start"
+        const val TAG_DURATION = "duration"
+        const val TAG_SERVICE_NAME = "service"
+        const val TAG_TRACE_ID = "trace_id"
+        const val TAG_SPAN_ID = "span_id"
+        const val TAG_PARENT_ID = "parent_id"
+        const val TAG_RESOURCE = "resource"
+        const val TAG_OPERATION_NAME = "name"
+        const val TAG_ERROR = "error"
+        const val TAG_TYPE = "type"
+        const val TAG_META = "meta"
+        const val TAG_METRICS = "metrics"
+        const val TAG_METRICS_TOP_LEVEL = "_top_level"
+        const val TAG_METRICS_SAMPLING_PRIORITY = "_sampling_priority_v1"
+
+        // GLOBAL TAGS
+        internal const val TAG_VERSION_NAME = "logger.version"
+        internal const val TAG_APP_VERSION_NAME = "application.version"
+        internal const val TAG_APP_PACKAGE_NAME = "application.package"
 
         // NETWORK TAGS
         internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"

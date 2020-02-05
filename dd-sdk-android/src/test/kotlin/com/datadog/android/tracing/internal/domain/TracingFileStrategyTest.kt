@@ -137,11 +137,11 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = jsonObject.getString(SpanSerializer.SERVICE_NAME_KEY)
-        val resourceName = jsonObject.getString(SpanSerializer.RESOURCE_KEY)
-        val traceId = jsonObject.getString(SpanSerializer.TRACE_ID_KEY).hexToBigInteger()
-        val spanId = jsonObject.getString(SpanSerializer.SPAN_ID_KEY).hexToBigInteger()
-        val parentId = jsonObject.getString(SpanSerializer.PARENT_ID_KEY).hexToBigInteger()
+        val serviceName = jsonObject.getString(SpanSerializer.TAG_SERVICE_NAME)
+        val resourceName = jsonObject.getString(SpanSerializer.TAG_RESOURCE)
+        val traceId = jsonObject.getString(SpanSerializer.TAG_TRACE_ID).hexToBigInteger()
+        val spanId = jsonObject.getString(SpanSerializer.TAG_SPAN_ID).hexToBigInteger()
+        val parentId = jsonObject.getString(SpanSerializer.TAG_PARENT_ID).hexToBigInteger()
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
@@ -156,16 +156,16 @@ internal class TracingFileStrategyTest :
 
     override fun assertMatches(jsonObject: JsonObject, model: DDSpan) {
         assertThat(jsonObject)
-            .hasField(SpanSerializer.START_TIMESTAMP_KEY, model.startTime)
-            .hasField(SpanSerializer.DURATION_KEY, model.durationNano)
-            .hasField(SpanSerializer.SERVICE_NAME_KEY, model.serviceName)
-            .hasField(SpanSerializer.TRACE_ID_KEY, model.traceId.toHexString())
-            .hasField(SpanSerializer.SPAN_ID_KEY, model.spanId.toHexString())
-            .hasField(SpanSerializer.PARENT_ID_KEY, model.parentId.toHexString())
-            .hasField(SpanSerializer.RESOURCE_KEY, model.resourceName)
-            .hasField(SpanSerializer.OPERATION_NAME_KEY, model.operationName)
-            .hasField(SpanSerializer.META_KEY, model.meta)
-            .hasField(SpanSerializer.METRICS_KEY, model.metrics)
+            .hasField(SpanSerializer.TAG_START_TIMESTAMP, model.startTime)
+            .hasField(SpanSerializer.TAG_DURATION, model.durationNano)
+            .hasField(SpanSerializer.TAG_SERVICE_NAME, model.serviceName)
+            .hasField(SpanSerializer.TAG_TRACE_ID, model.traceId.toHexString())
+            .hasField(SpanSerializer.TAG_SPAN_ID, model.spanId.toHexString())
+            .hasField(SpanSerializer.TAG_PARENT_ID, model.parentId.toHexString())
+            .hasField(SpanSerializer.TAG_RESOURCE, model.resourceName)
+            .hasField(SpanSerializer.TAG_OPERATION_NAME, model.operationName)
+            .hasField(SpanSerializer.TAG_META, model.meta)
+            .hasField(SpanSerializer.TAG_METRICS, model.metrics)
     }
 
     // endregion
