@@ -107,6 +107,7 @@ object Datadog {
                 okHttpClient = CoreFeature.okHttpClient,
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 timeProvider = CoreFeature.timeProvider,
+                userInfoProvider = CoreFeature.userInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider
             )
         }

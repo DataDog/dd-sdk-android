@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import android.content.Context
+import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.DatadogLogHandler
@@ -24,6 +25,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
@@ -34,9 +37,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import java.io.ByteArrayOutputStream
-import java.io.File
-import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

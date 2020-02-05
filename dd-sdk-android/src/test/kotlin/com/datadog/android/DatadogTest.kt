@@ -9,6 +9,7 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.log.EndpointUpdateStrategy
@@ -29,6 +30,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
@@ -42,9 +45,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.io.ByteArrayOutputStream
-import java.io.File
-import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

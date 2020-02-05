@@ -14,7 +14,6 @@ import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq

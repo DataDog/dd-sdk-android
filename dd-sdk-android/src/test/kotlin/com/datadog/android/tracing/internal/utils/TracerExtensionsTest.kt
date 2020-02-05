@@ -2,10 +2,6 @@ package com.datadog.android.tracing.internal.utils
 
 import com.datadog.android.tracing.Tracer
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
-import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setFieldValue
-import com.datadog.tools.unit.setStaticValue
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

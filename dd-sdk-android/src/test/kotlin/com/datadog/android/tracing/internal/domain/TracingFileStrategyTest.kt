@@ -11,7 +11,11 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.copy
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.hexToBigInteger
@@ -21,8 +25,11 @@ import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
@@ -40,6 +47,15 @@ internal class TracingFileStrategyTest :
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
 
     // region LogStrategyTest
 
@@ -47,6 +63,8 @@ internal class TracingFileStrategyTest :
         return TracingFileStrategy(
             context = mockContext,
             timeProvider = mockTimeProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            userInfoProvider = mockUserInfoProvider,
             recentDelayMs = RECENT_DELAY_MS,
             maxBatchSize = MAX_BATCH_SIZE,
             maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
@@ -55,6 +73,9 @@ internal class TracingFileStrategyTest :
     }
 
     override fun setUp(writer: Writer<DDSpan>, reader: Reader) {
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+
         // add fake data into the old data directory
         val oldDir = File(tempDir, TracingFileStrategy.DATA_FOLDER_ROOT)
         oldDir.mkdirs()
