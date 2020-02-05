@@ -7,19 +7,21 @@
 package com.datadog.android.sample;
 
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.logs.LogsFragment;
 import com.datadog.android.sample.traces.TracesFragment;
+import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.sample.webview.WebFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -115,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // endregion
+
     // region Internal
 
     private boolean switchToFragment(@IdRes int id) {
@@ -131,11 +134,19 @@ public class MainActivity extends AppCompatActivity {
                 spanName = "SwitchingToWebViewFragment";
                 fragmentToUse = WebFragment.newInstance();
                 break;
-            default:
+            case R.id.navigation_traces:
                 mLogger.i("Switching to fragment: Traces");
                 spanName = "SwitchingToTracesFragment";
                 fragmentToUse = TracesFragment.newInstance();
                 break;
+            case R.id.navigation_user:
+                mLogger.i("Switching to fragment: User");
+                spanName = "SwitchingToUserFragment";
+                fragmentToUse = UserFragment.newInstance();
+                break;
+            default:
+                mLogger.e("Switching to unknown fragment " + id);
+                throw new IllegalStateException("Unknown fragment " + id);
         }
 
         addSpanInScope(spanName, new Runnable() {

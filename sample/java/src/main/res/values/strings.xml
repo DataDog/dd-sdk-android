@@ -10,8 +10,8 @@
 
     <string name="title_logs">Logs</string>
     <string name="title_webview">WebView</string>
-    <string name="title_unknown">"?"</string>
-    <string name="title_traces">"Traces"</string>
+    <string name="title_traces">Traces</string>
+    <string name="title_user">User</string>
 
 
     <string name="button_warning">⚠️</string>
@@ -21,5 +21,10 @@
     <string name="title_crash">Crash the app</string>
     <string name="button_crash">💣</string>
     <string name="start_async_operation">Start Async Operation</string>
+
+    <string name="user_name">User Name</string>
+    <string name="user_email">Email</string>
+    <string name="user_id">ID</string>
+    <string name="save">Save</string>
 
 </resources>
