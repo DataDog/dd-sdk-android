@@ -1,10 +1,15 @@
 package com.datadog.android.tracing.internal.domain
 
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
@@ -34,12 +39,24 @@ internal class SpanSerializerTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     lateinit var underTest: SpanSerializer
 
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
+
     @BeforeEach
     fun `set up`() {
-        underTest = SpanSerializer(mockTimeProvider)
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+
+        underTest = SpanSerializer(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
     }
 
     @Test
@@ -55,15 +72,11 @@ internal class SpanSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
 
         // then
+        assertSpanMatches(span, jsonObject, serverOffsetNanos)
+        assertUserInfoMatches(fakeUserInfo, jsonObject.getAsJsonObject(SpanSerializer.META_KEY))
+        assertNetworkInfoMatches(fakeNetworkInfo, jsonObject.getAsJsonObject(SpanSerializer.META_KEY))
+
         assertThat(jsonObject)
-            .hasField(SpanSerializer.START_TIMESTAMP_KEY, span.startTime + serverOffsetNanos)
-            .hasField(SpanSerializer.DURATION_KEY, span.durationNano)
-            .hasField(SpanSerializer.SERVICE_NAME_KEY, span.serviceName)
-            .hasField(SpanSerializer.TRACE_ID_KEY, span.traceId.toHexString())
-            .hasField(SpanSerializer.SPAN_ID_KEY, span.spanId.toHexString())
-            .hasField(SpanSerializer.PARENT_ID_KEY, span.parentId.toHexString())
-            .hasField(SpanSerializer.RESOURCE_KEY, span.resourceName)
-            .hasField(SpanSerializer.OPERATION_NAME_KEY, span.operationName)
             .hasField(SpanSerializer.META_KEY, span.meta)
             .hasField(SpanSerializer.METRICS_KEY, span.metrics)
             .hasField(SpanSerializer.METRICS_KEY) {
@@ -99,4 +112,82 @@ internal class SpanSerializerTest {
             doesNotHaveField(SpanSerializer.METRICS_KEY_TOP_LEVEL)
         }
     }
+
+    // region Internal
+
+    private fun assertSpanMatches(
+        span: DDSpan,
+        jsonObject: JsonObject,
+        serverOffsetNanos: Long
+    ) {
+        assertThat(jsonObject)
+            .hasField(SpanSerializer.START_TIMESTAMP_KEY, span.startTime + serverOffsetNanos)
+            .hasField(SpanSerializer.DURATION_KEY, span.durationNano)
+            .hasField(SpanSerializer.SERVICE_NAME_KEY, span.serviceName)
+            .hasField(SpanSerializer.TRACE_ID_KEY, span.traceId.toHexString())
+            .hasField(SpanSerializer.SPAN_ID_KEY, span.spanId.toHexString())
+            .hasField(SpanSerializer.PARENT_ID_KEY, span.parentId.toHexString())
+            .hasField(SpanSerializer.RESOURCE_KEY, span.resourceName)
+            .hasField(SpanSerializer.OPERATION_NAME_KEY, span.operationName)
+    }
+
+    private fun assertNetworkInfoMatches(networkInfo: NetworkInfo?, jsonObject: JsonObject) {
+        if (networkInfo != null) {
+            assertThat(jsonObject).apply {
+                hasField(SpanSerializer.TAG_NETWORK_CONNECTIVITY, networkInfo.connectivity.serialized)
+                if (!networkInfo.carrierName.isNullOrBlank()) {
+                    hasField(SpanSerializer.TAG_NETWORK_CARRIER_NAME, networkInfo.carrierName)
+                } else {
+                    doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_NAME)
+                }
+                if (networkInfo.carrierId >= 0) {
+                    hasField(SpanSerializer.TAG_NETWORK_CARRIER_ID, networkInfo.carrierId.toString())
+                } else {
+                    doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_ID)
+                }
+                if (networkInfo.upKbps >= 0) {
+                    hasField(SpanSerializer.TAG_NETWORK_UP_KBPS, networkInfo.upKbps.toString())
+                } else {
+                    doesNotHaveField(SpanSerializer.TAG_NETWORK_UP_KBPS)
+                }
+                if (networkInfo.downKbps >= 0) {
+                    hasField(SpanSerializer.TAG_NETWORK_DOWN_KBPS, networkInfo.downKbps.toString())
+                } else {
+                    doesNotHaveField(SpanSerializer.TAG_NETWORK_DOWN_KBPS)
+                }
+                if (networkInfo.strength > Int.MIN_VALUE) {
+                    hasField(SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH, networkInfo.strength.toString())
+                } else {
+                    doesNotHaveField(SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH)
+                }
+            }
+        } else {
+            assertThat(jsonObject)
+                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CONNECTIVITY)
+                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_NAME)
+                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_ID)
+        }
+    }
+
+    private fun assertUserInfoMatches(userInfo: UserInfo, jsonObject: JsonObject) {
+        assertThat(jsonObject).apply {
+            if (userInfo.id.isNullOrEmpty()) {
+                doesNotHaveField(SpanSerializer.TAG_USER_ID)
+            } else {
+                hasField(SpanSerializer.TAG_USER_ID, userInfo.id)
+            }
+            if (userInfo.name.isNullOrEmpty()) {
+                doesNotHaveField(SpanSerializer.TAG_USER_NAME)
+            } else {
+                hasField(SpanSerializer.TAG_USER_NAME, userInfo.name)
+            }
+            if (userInfo.email.isNullOrEmpty()) {
+                doesNotHaveField(SpanSerializer.TAG_USER_EMAIL)
+            } else {
+                hasField(SpanSerializer.TAG_USER_EMAIL, userInfo.email)
+            }
+        }
+    }
+
+    // endregion
 }
