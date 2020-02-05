@@ -1,5 +1,7 @@
 package com.datadog.android.tracing.internal.domain
 
+import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -73,18 +75,10 @@ internal class SpanSerializerTest {
 
         // then
         assertSpanMatches(span, jsonObject, serverOffsetNanos)
-        assertUserInfoMatches(fakeUserInfo, jsonObject.getAsJsonObject(SpanSerializer.META_KEY))
-        assertNetworkInfoMatches(fakeNetworkInfo, jsonObject.getAsJsonObject(SpanSerializer.META_KEY))
-
-        assertThat(jsonObject)
-            .hasField(SpanSerializer.META_KEY, span.meta)
-            .hasField(SpanSerializer.METRICS_KEY, span.metrics)
-            .hasField(SpanSerializer.METRICS_KEY) {
-                if (span.parentId.toLong() == 0L) {
-                    hasField(SpanSerializer.METRICS_KEY_TOP_LEVEL, 1)
-                }
-                hasField(SpanSerializer.METRICS_KEY_SAMPLING, 1)
-            }
+        val metaObj = jsonObject.getAsJsonObject(SpanSerializer.TAG_META)
+        assertUserInfoMatches(fakeUserInfo, metaObj)
+        assertNetworkInfoMatches(fakeNetworkInfo, metaObj)
+        assertGlobalInfoMatches(metaObj)
     }
 
     @Test
@@ -105,15 +99,22 @@ internal class SpanSerializerTest {
         val serializedChild = JsonParser.parseString(underTest.serialize(childSpan)).asJsonObject
 
         // then
-        assertThat(serializedParent).hasField(SpanSerializer.METRICS_KEY) {
-            hasField(SpanSerializer.METRICS_KEY_SAMPLING, 1)
+        assertThat(serializedParent).hasField(SpanSerializer.TAG_METRICS) {
+            hasField(SpanSerializer.TAG_METRICS_SAMPLING_PRIORITY, 1)
         }
-        assertThat(serializedChild).hasField(SpanSerializer.METRICS_KEY) {
-            doesNotHaveField(SpanSerializer.METRICS_KEY_TOP_LEVEL)
+        assertThat(serializedChild).hasField(SpanSerializer.TAG_METRICS) {
+            doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
         }
     }
 
     // region Internal
+
+    private fun assertGlobalInfoMatches(jsonObject: JsonObject) {
+        assertThat(jsonObject)
+            .hasField(SpanSerializer.TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
+            .hasField(SpanSerializer.TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
+            .hasField(SpanSerializer.TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
+    }
 
     private fun assertSpanMatches(
         span: DDSpan,
@@ -121,27 +122,42 @@ internal class SpanSerializerTest {
         serverOffsetNanos: Long
     ) {
         assertThat(jsonObject)
-            .hasField(SpanSerializer.START_TIMESTAMP_KEY, span.startTime + serverOffsetNanos)
-            .hasField(SpanSerializer.DURATION_KEY, span.durationNano)
-            .hasField(SpanSerializer.SERVICE_NAME_KEY, span.serviceName)
-            .hasField(SpanSerializer.TRACE_ID_KEY, span.traceId.toHexString())
-            .hasField(SpanSerializer.SPAN_ID_KEY, span.spanId.toHexString())
-            .hasField(SpanSerializer.PARENT_ID_KEY, span.parentId.toHexString())
-            .hasField(SpanSerializer.RESOURCE_KEY, span.resourceName)
-            .hasField(SpanSerializer.OPERATION_NAME_KEY, span.operationName)
+            .hasField(SpanSerializer.TAG_START_TIMESTAMP, span.startTime + serverOffsetNanos)
+            .hasField(SpanSerializer.TAG_DURATION, span.durationNano)
+            .hasField(SpanSerializer.TAG_SERVICE_NAME, span.serviceName)
+            .hasField(SpanSerializer.TAG_TRACE_ID, span.traceId.toHexString())
+            .hasField(SpanSerializer.TAG_SPAN_ID, span.spanId.toHexString())
+            .hasField(SpanSerializer.TAG_PARENT_ID, span.parentId.toHexString())
+            .hasField(SpanSerializer.TAG_RESOURCE, span.resourceName)
+            .hasField(SpanSerializer.TAG_OPERATION_NAME, span.operationName)
+            .hasField(SpanSerializer.TAG_ERROR, if (span.isError) 1 else 0)
+            .hasField(SpanSerializer.TAG_META, span.meta)
+            .hasField(SpanSerializer.TAG_METRICS, span.metrics)
+            .hasField(SpanSerializer.TAG_METRICS) {
+                if (span.parentId.toLong() == 0L) {
+                    hasField(SpanSerializer.TAG_METRICS_TOP_LEVEL, 1)
+                }
+                hasField(SpanSerializer.TAG_METRICS_SAMPLING_PRIORITY, 1)
+            }
     }
 
     private fun assertNetworkInfoMatches(networkInfo: NetworkInfo?, jsonObject: JsonObject) {
         if (networkInfo != null) {
             assertThat(jsonObject).apply {
-                hasField(SpanSerializer.TAG_NETWORK_CONNECTIVITY, networkInfo.connectivity.serialized)
+                hasField(
+                    SpanSerializer.TAG_NETWORK_CONNECTIVITY,
+                    networkInfo.connectivity.serialized
+                )
                 if (!networkInfo.carrierName.isNullOrBlank()) {
                     hasField(SpanSerializer.TAG_NETWORK_CARRIER_NAME, networkInfo.carrierName)
                 } else {
                     doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_NAME)
                 }
                 if (networkInfo.carrierId >= 0) {
-                    hasField(SpanSerializer.TAG_NETWORK_CARRIER_ID, networkInfo.carrierId.toString())
+                    hasField(
+                        SpanSerializer.TAG_NETWORK_CARRIER_ID,
+                        networkInfo.carrierId.toString()
+                    )
                 } else {
                     doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_ID)
                 }
@@ -151,12 +167,18 @@ internal class SpanSerializerTest {
                     doesNotHaveField(SpanSerializer.TAG_NETWORK_UP_KBPS)
                 }
                 if (networkInfo.downKbps >= 0) {
-                    hasField(SpanSerializer.TAG_NETWORK_DOWN_KBPS, networkInfo.downKbps.toString())
+                    hasField(
+                        SpanSerializer.TAG_NETWORK_DOWN_KBPS,
+                        networkInfo.downKbps.toString()
+                    )
                 } else {
                     doesNotHaveField(SpanSerializer.TAG_NETWORK_DOWN_KBPS)
                 }
                 if (networkInfo.strength > Int.MIN_VALUE) {
-                    hasField(SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH, networkInfo.strength.toString())
+                    hasField(
+                        SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH,
+                        networkInfo.strength.toString()
+                    )
                 } else {
                     doesNotHaveField(SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH)
                 }
