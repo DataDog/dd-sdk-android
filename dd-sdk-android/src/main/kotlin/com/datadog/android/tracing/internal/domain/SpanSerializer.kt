@@ -1,12 +1,18 @@
 package com.datadog.android.tracing.internal.domain
 
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.google.gson.JsonObject
 import datadog.opentracing.DDSpan
 
 internal class SpanSerializer(
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val networkInfoProvider: NetworkInfoProvider,
+    private val userInfoProvider: UserInfoProvider
 ) : Serializer<DDSpan> {
 
     override fun serialize(model: DDSpan): String {
@@ -32,6 +38,10 @@ internal class SpanSerializer(
         model.meta.forEach {
             metaObject.addProperty(it.key, it.value)
         }
+
+        addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
+        addLogUserInfo(userInfoProvider.getUserInfo(), metaObject)
+
         jsonObject.add(META_KEY, metaObject)
     }
 
@@ -50,6 +60,42 @@ internal class SpanSerializer(
         jsonObject.add(METRICS_KEY, metricsObject)
     }
 
+    private fun addLogNetworkInfo(
+        networkInfo: NetworkInfo?,
+        jsonLog: JsonObject
+    ) {
+        if (networkInfo != null) {
+            jsonLog.addProperty(TAG_NETWORK_CONNECTIVITY, networkInfo.connectivity.serialized)
+            if (!networkInfo.carrierName.isNullOrBlank()) {
+                jsonLog.addProperty(TAG_NETWORK_CARRIER_NAME, networkInfo.carrierName)
+            }
+            if (networkInfo.carrierId >= 0) {
+                jsonLog.addProperty(TAG_NETWORK_CARRIER_ID, networkInfo.carrierId.toString())
+            }
+            if (networkInfo.upKbps >= 0) {
+                jsonLog.addProperty(TAG_NETWORK_UP_KBPS, networkInfo.upKbps.toString())
+            }
+            if (networkInfo.downKbps >= 0) {
+                jsonLog.addProperty(TAG_NETWORK_DOWN_KBPS, networkInfo.downKbps.toString())
+            }
+            if (networkInfo.strength > Int.MIN_VALUE) {
+                jsonLog.addProperty(TAG_NETWORK_SIGNAL_STRENGTH, networkInfo.strength.toString())
+            }
+        }
+    }
+
+    private fun addLogUserInfo(userInfo: UserInfo, jsonLog: JsonObject) {
+        if (!userInfo.id.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_ID, userInfo.id)
+        }
+        if (!userInfo.name.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_NAME, userInfo.name)
+        }
+        if (!userInfo.email.isNullOrEmpty()) {
+            jsonLog.addProperty(TAG_USER_EMAIL, userInfo.email)
+        }
+    }
+
     companion object {
         const val START_TIMESTAMP_KEY = "start"
         const val DURATION_KEY = "duration"
@@ -64,5 +110,18 @@ internal class SpanSerializer(
         const val METRICS_KEY = "metrics"
         const val METRICS_KEY_TOP_LEVEL = "_top_level"
         const val METRICS_KEY_SAMPLING = "_sampling_priority_v1"
+
+        // NETWORK TAGS
+        internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
+        internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
+        internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
+        internal const val TAG_NETWORK_UP_KBPS = "network.client.uplink_kbps"
+        internal const val TAG_NETWORK_DOWN_KBPS = "network.client.downlink_kbps"
+        internal const val TAG_NETWORK_SIGNAL_STRENGTH = "network.client.signal_strength"
+
+        // USER TAGS
+        internal const val TAG_USER_ID = "usr.id"
+        internal const val TAG_USER_NAME = "usr.name"
+        internal const val TAG_USER_EMAIL = "usr.email"
     }
 }
