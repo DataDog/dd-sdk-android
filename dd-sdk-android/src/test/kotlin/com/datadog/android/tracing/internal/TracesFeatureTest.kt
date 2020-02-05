@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrate
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -58,6 +59,8 @@ internal class TracesFeatureTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
     @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+    @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
@@ -97,6 +100,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
@@ -117,6 +121,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
@@ -136,6 +141,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
@@ -153,6 +159,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
@@ -174,6 +181,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
@@ -194,6 +202,7 @@ internal class TracesFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
+            mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider
         )
