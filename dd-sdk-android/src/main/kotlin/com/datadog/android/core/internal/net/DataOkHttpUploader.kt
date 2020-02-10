@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.net
 
+import android.os.Build
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.sdkLogger
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -45,8 +47,21 @@ internal abstract class DataOkHttpUploader(
 
     // region Internal
 
-    open fun headers(): MutableMap<String, String> {
-        return mutableMapOf(HEADER_CT to CONTENT_TYPE)
+    private fun headers(): MutableMap<String, String> {
+        return mutableMapOf(
+            HEADER_UA to userAgent,
+            HEADER_CT to CONTENT_TYPE
+        )
+    }
+
+    private val userAgent = System.getProperty(SYSTEM_UA).let {
+        if (it.isNullOrBlank()) {
+            "Datadog/${BuildConfig.VERSION_NAME} " +
+                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                    "${Build.MODEL} Build/${Build.ID})"
+        } else {
+            it
+        }
     }
 
     private fun buildRequest(data: ByteArray): Request {
@@ -75,6 +90,8 @@ internal abstract class DataOkHttpUploader(
     companion object {
         private const val HEADER_CT = "Content-Type"
         private const val CONTENT_TYPE = "application/json"
+        private const val HEADER_UA = "User-Agent"
+        const val SYSTEM_UA = "http.agent"
         private const val TAG = "DataOkHttpUploader"
     }
 }

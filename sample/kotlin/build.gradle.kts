@@ -89,7 +89,7 @@ android {
 dependencies {
 
     api(project(":dd-sdk-android")) {
-        exclude("com.google.guava")
+        exclude("com.google.guava", module = "listenablefuture")
     }
 
     // Android dependencies
