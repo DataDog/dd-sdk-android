@@ -53,7 +53,7 @@ class SampleApplication : Application() {
     {{% /tab %}}
     {{< /tabs >}}
     
-When writing your application, you can enable development logs. All internal messages in the library with a priority equal or higher than the provided level will be logged to Android's Logcat.
+When writing your application, you can enable development logs. All internal messages in the library with a priority equal or higher than the provided level are then logged to Android's Logcat.
 
 ```kotlin
     Datadog.setVerbosity(Log.INFO)
