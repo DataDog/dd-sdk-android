@@ -11,8 +11,12 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.copy
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.hexToBigInteger
@@ -22,8 +26,11 @@ import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
@@ -41,6 +48,15 @@ internal class TracingFileStrategyTest :
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
 
     // region LogStrategyTest
 
@@ -48,6 +64,8 @@ internal class TracingFileStrategyTest :
         return TracingFileStrategy(
             context = mockContext,
             timeProvider = mockTimeProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            userInfoProvider = mockUserInfoProvider,
             recentDelayMs = RECENT_DELAY_MS,
             maxBatchSize = MAX_BATCH_SIZE,
             maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
@@ -56,6 +74,9 @@ internal class TracingFileStrategyTest :
     }
 
     override fun setUp(writer: Writer<DDSpan>, reader: Reader) {
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+
         // add fake data into the old data directory
         val oldDir = File(tempDir, TracingFileStrategy.DATA_FOLDER_ROOT)
         oldDir.mkdirs()
@@ -118,11 +139,11 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = jsonObject.getString(SpanSerializer.SERVICE_NAME_KEY)
-        val resourceName = jsonObject.getString(SpanSerializer.RESOURCE_KEY)
-        val traceId = jsonObject.getString(SpanSerializer.TRACE_ID_KEY).hexToBigInteger()
-        val spanId = jsonObject.getString(SpanSerializer.SPAN_ID_KEY).hexToBigInteger()
-        val parentId = jsonObject.getString(SpanSerializer.PARENT_ID_KEY).hexToBigInteger()
+        val serviceName = jsonObject.getString(SpanSerializer.TAG_SERVICE_NAME)
+        val resourceName = jsonObject.getString(SpanSerializer.TAG_RESOURCE)
+        val traceId = jsonObject.getString(SpanSerializer.TAG_TRACE_ID).hexToBigInteger()
+        val spanId = jsonObject.getString(SpanSerializer.TAG_SPAN_ID).hexToBigInteger()
+        val parentId = jsonObject.getString(SpanSerializer.TAG_PARENT_ID).hexToBigInteger()
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
@@ -137,16 +158,16 @@ internal class TracingFileStrategyTest :
 
     override fun assertMatches(jsonObject: JsonObject, model: DDSpan) {
         assertThat(jsonObject)
-            .hasField(SpanSerializer.START_TIMESTAMP_KEY, model.startTime)
-            .hasField(SpanSerializer.DURATION_KEY, model.durationNano)
-            .hasField(SpanSerializer.SERVICE_NAME_KEY, model.serviceName)
-            .hasField(SpanSerializer.TRACE_ID_KEY, model.traceId.toHexString())
-            .hasField(SpanSerializer.SPAN_ID_KEY, model.spanId.toHexString())
-            .hasField(SpanSerializer.PARENT_ID_KEY, model.parentId.toHexString())
-            .hasField(SpanSerializer.RESOURCE_KEY, model.resourceName)
-            .hasField(SpanSerializer.OPERATION_NAME_KEY, model.operationName)
-            .hasField(SpanSerializer.META_KEY, model.meta)
-            .hasField(SpanSerializer.METRICS_KEY, model.metrics)
+            .hasField(SpanSerializer.TAG_START_TIMESTAMP, model.startTime)
+            .hasField(SpanSerializer.TAG_DURATION, model.durationNano)
+            .hasField(SpanSerializer.TAG_SERVICE_NAME, model.serviceName)
+            .hasField(SpanSerializer.TAG_TRACE_ID, model.traceId.toHexString())
+            .hasField(SpanSerializer.TAG_SPAN_ID, model.spanId.toHexString())
+            .hasField(SpanSerializer.TAG_PARENT_ID, model.parentId.toHexString())
+            .hasField(SpanSerializer.TAG_RESOURCE, model.resourceName)
+            .hasField(SpanSerializer.TAG_OPERATION_NAME, model.operationName)
+            .hasField(SpanSerializer.TAG_META, model.meta)
+            .hasField(SpanSerializer.TAG_METRICS, model.metrics)
     }
 
     // endregion

@@ -2,13 +2,17 @@ package com.datadog.android.tracing.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import datadog.opentracing.DDSpan
 import java.io.File
 
 internal class TracingFileStrategy(
     context: Context,
     timeProvider: TimeProvider,
+    networkInfoProvider: NetworkInfoProvider,
+    userInfoProvider: UserInfoProvider,
     recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
     maxBatchSize: Long = MAX_BATCH_SIZE,
     maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
@@ -17,7 +21,7 @@ internal class TracingFileStrategy(
     envSuffix: String = ""
 ) : AsyncWriterFilePersistenceStrategy<DDSpan>(
     File(context.filesDir, TRACES_FOLDER),
-    SpanSerializer(timeProvider),
+    SpanSerializer(timeProvider, networkInfoProvider, userInfoProvider),
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,

@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
@@ -42,6 +43,7 @@ internal object TracesFeature {
         config: DatadogConfig.FeatureConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
+        userInfoProvider: UserInfoProvider,
         systemInfoProvider: SystemInfoProvider,
         timeProvider: TimeProvider
     ) {
@@ -54,7 +56,13 @@ internal object TracesFeature {
         serviceName = config.serviceName
         val envSuffix = if (config.envName.isEmpty()) "" else ", \"env\": \"${config.envName}\""
 
-        persistenceStrategy = TracingFileStrategy(appContext, timeProvider, envSuffix = envSuffix)
+        persistenceStrategy = TracingFileStrategy(
+            appContext,
+            timeProvider,
+            networkInfoProvider,
+            userInfoProvider,
+            envSuffix = envSuffix
+        )
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
 
         initialized.set(true)
