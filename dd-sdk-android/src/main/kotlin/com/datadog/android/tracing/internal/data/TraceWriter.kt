@@ -12,8 +12,7 @@ internal class TraceWriter(
     }
 
     override fun write(trace: MutableList<DDSpan>?) {
-        // TODO: RUM-184 Modify the Writer to accept also a list of models
-        trace?.forEach {
+        trace?.let {
             writer.write(it)
         }
     }
