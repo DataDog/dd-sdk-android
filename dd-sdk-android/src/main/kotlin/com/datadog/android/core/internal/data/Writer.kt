@@ -13,4 +13,6 @@ package com.datadog.android.core.internal.data
 internal interface Writer<T : Any> {
 
     fun write(model: T)
+
+    fun write(models: List<T>)
 }

@@ -17,6 +17,10 @@ internal class NoOpPersistenceStrategy<T : Any> :
             override fun write(model: T) {
                 // No Op
             }
+
+            override fun write(models: List<T>) {
+                // No Op
+            }
         }
     }
 
