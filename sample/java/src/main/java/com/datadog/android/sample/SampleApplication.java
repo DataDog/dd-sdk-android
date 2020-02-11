@@ -12,15 +12,15 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
-
+import androidx.multidex.MultiDex;
 import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.tracing.Tracer;
+import com.facebook.stetho.Stetho;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 import io.opentracing.util.GlobalTracer;
 
 public class SampleApplication extends Application {
@@ -28,8 +28,16 @@ public class SampleApplication extends Application {
     private Logger logger;
 
     @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
+    }
+
+    @Override
     public void onCreate() {
         super.onCreate();
+        Stetho.initializeWithDefaults(this);
+
         DatadogConfig.Builder configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
                 .setServiceName("android-sample-java")
                 .setEnvironmentName("staging");

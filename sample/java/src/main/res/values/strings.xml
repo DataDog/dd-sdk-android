@@ -26,5 +26,6 @@
     <string name="user_email">Email</string>
     <string name="user_id">ID</string>
     <string name="save">Save</string>
+    <string name="start_request">Start request</string>
 
 </resources>
