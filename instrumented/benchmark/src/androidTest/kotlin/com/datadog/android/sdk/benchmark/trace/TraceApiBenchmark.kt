@@ -70,7 +70,7 @@ class TraceApiBenchmark {
     }
 
     @Test
-    fun benchmark_sending_span() {
+    fun benchmark_creating_span() {
         benchmark.measureRepeated {
             val operationName = runWithTimingDisabled { forge.anAlphabeticalString() }
             val span = testedTracer.buildSpan(operationName).start()
@@ -79,7 +79,7 @@ class TraceApiBenchmark {
     }
 
     @Test
-    fun benchmark_sending_span_with_throwable() {
+    fun benchmark_creating_span_with_throwable() {
         benchmark.measureRepeated {
             val (operationName, throwable) = runWithTimingDisabled {
                 forge.anAlphabeticalString() to forge.aThrowable()
@@ -92,21 +92,21 @@ class TraceApiBenchmark {
     }
 
     @Test
-    fun benchmark_sending_spans_with_baggage_items_and_logs() {
-        addSpans(1)
+    fun benchmark_creating_spans_with_baggage_items_and_logs() {
+        createSpansWithLogsTagsAndBaggageItems(1)
     }
 
     @Test
-    fun benchmark_sending_medium_load_of_spans() {
-        addSpans(MEDIUM_ITERATIONS)
+    fun benchmark_creating_medium_load_of_spans() {
+        createSpansWithLogsTagsAndBaggageItems(MEDIUM_ITERATIONS)
     }
 
     @Test
-    fun benchmark_sending_heavy_load_of_spans() {
-        addSpans(BIG_ITERATIONS)
+    fun benchmark_creating_heavy_load_of_spans() {
+        createSpansWithLogsTagsAndBaggageItems(BIG_ITERATIONS)
     }
 
-    private fun addSpans(iterations: Int) {
+    private fun createSpansWithLogsTagsAndBaggageItems(iterations: Int) {
         benchmark.measureRepeated {
             var counter = 0
             do {
