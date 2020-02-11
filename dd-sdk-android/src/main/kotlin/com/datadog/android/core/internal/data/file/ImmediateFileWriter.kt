@@ -24,6 +24,20 @@ internal class ImmediateFileWriter<T : Any>(
     // region Writer
 
     override fun write(model: T) {
+        consume(model)
+    }
+
+    override fun write(models: List<T>) {
+        models.forEach {
+            consume(it)
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun consume(model: T) {
         val data = serializer.serialize(model)
 
         if (data.length >= MAX_ITEM_SIZE) {
@@ -34,10 +48,6 @@ internal class ImmediateFileWriter<T : Any>(
             }
         }
     }
-
-    // endregion
-
-    // region Internal
 
     private fun writeData(data: String) {
         var file: File? = null

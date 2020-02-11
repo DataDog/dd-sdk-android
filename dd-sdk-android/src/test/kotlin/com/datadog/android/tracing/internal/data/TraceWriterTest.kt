@@ -2,7 +2,6 @@ package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -10,7 +9,6 @@ import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,9 +49,7 @@ internal class TraceWriterTest {
         underTest.write(spansList)
 
         // then
-        val argumentCaptor = argumentCaptor<DDSpan>()
-        verify(mockedFilesWriter, times(spansList.size)).write(argumentCaptor.capture())
-        assertThat(argumentCaptor.allValues).containsExactlyElementsOf(spansList)
+        verify(mockedFilesWriter).write(spansList)
     }
 
     @Test

@@ -92,6 +92,20 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes a collection of models`(forge: Forge) {
+        val models: List<String> = forge.aList { forge.anAlphabeticalString() }
+        val fileNameToWriteTo = forge.anAlphaNumericalString()
+        val file = File(rootDir, fileNameToWriteTo)
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+
+        underTest.write(models)
+
+        assertThat(file.readText().split(","))
+            .isEqualTo(models)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes several models`(forge: Forge) {
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
