@@ -1,0 +1,95 @@
+# Android Trace Collection
+
+Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side tracing library][2] and leverage the following features:
+
+* Create custom [spans][3] for operations in your application.
+* Add `context` and extra custom attributes to each span sent.
+* Optimized network usage with automatic bulk posts. 
+
+**Note**: Traces are available in the `dd-sdk-android` library version `1.4.0` or higher. The `dd-sdk-android` library supports all Android versions from API level 19 (Kit-Kat).
+
+## Setup
+
+1. Add the Gradle dependency by declaring the library as a dependency in your `build.gradle` file:
+
+    ```conf
+    repositories {
+        maven { url "https://dl.bintray.com/datadog/datadog-maven" }
+    }
+
+    dependencies {
+        implementation "com.datadoghq:dd-sdk-android:x.x.x"
+    }
+    ```
+
+2. Initialize the library with your application context and your [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
+
+    {{< tabs >}}
+    {{% tab "US" %}}
+
+```kotlin
+class SampleApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .build()
+        Datadog.initialize(this, config)
+    }
+}
+```
+
+    {{% /tab %}}
+    {{% tab "EU" %}}
+
+```kotlin
+class SampleApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .useEUEndpoints()
+                        .build()
+        Datadog.initialize(this, config)
+    }
+}
+```
+
+    {{% /tab %}}
+    {{< /tabs >}}
+
+3. Configure and register the Android Tracer (you only need to do it once, usually in your application's `onCreate()` method:
+
+    ```kotlin
+    val tracer = Tracer.Builder()
+        .setServiceName("<SERVICE_NAME>")
+        .build()
+    GlobalTracer.registerIfAbsent(tracer)
+    ```
+
+4. Start a custom span using the following method:
+
+    ```kotlin
+    val tracer = GlobalTracer.get()
+    val span = tracer.buildSpan("<SPAN_NAME>").start()
+    // Do something …
+    // …
+    // Then when the span should be closed
+    span.finish()
+    ```
+
+5. (Optional) - Provide additional tags alongside your span. 
+
+    ```kotlin
+    span.setTag("http.url", url)
+    ```
+
+## Further Reading
+
+{{< partial name="whats-next/whats-next.html" >}}
+
+[1]: https://docs.datadoghq.com/tracing/visualization/#trace
+[2]: https://github.com/DataDog/dd-sdk-android
+[3]: https://docs.datadoghq.com/tracing/visualization/#spans
+[4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
+[5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
