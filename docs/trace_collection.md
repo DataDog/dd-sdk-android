@@ -58,7 +58,7 @@ class SampleApplication : Application() {
     {{% /tab %}}
     {{< /tabs >}}
 
-3. Configure and register the Android Tracer (you only need to do it once, usually in your application's `onCreate()` method:
+3. Configure and register the Android Tracer. You only need to do it once, usually in your application's `onCreate()` method:
 
     ```kotlin
     val tracer = Tracer.Builder()
@@ -72,8 +72,8 @@ class SampleApplication : Application() {
     ```kotlin
     val tracer = GlobalTracer.get()
     val span = tracer.buildSpan("<SPAN_NAME>").start()
-    // Do something …
-    // …
+    // Do something ...
+    // ...
     // Then when the span should be closed
     span.finish()
     ```
