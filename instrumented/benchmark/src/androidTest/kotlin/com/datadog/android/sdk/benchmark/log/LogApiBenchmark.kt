@@ -11,14 +11,12 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
+import com.datadog.android.sdk.benchmark.aThrowable
+import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.invokeMethod
-import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.ForgeryException
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InvalidObjectException
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -54,7 +52,11 @@ class LogApiBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        Datadog.initialize(context, "NO_TOKEN", fakeEndpoint)
+        val config = DatadogConfig
+            .Builder("NO_TOKEN")
+            .useCustomLogsEndpoint(fakeEndpoint)
+            .build()
+        Datadog.initialize(context, config)
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
@@ -136,34 +138,9 @@ class LogApiBenchmark {
         }
     }
 
-    // region Internal
-
-    private fun Forge.aThrowable(): Throwable {
-        val errorMessage = anAlphabeticalString()
-        return anElementFrom(
-            IOException(errorMessage),
-            IllegalStateException(errorMessage),
-            UnknownError(errorMessage),
-            ArrayIndexOutOfBoundsException(errorMessage),
-            NullPointerException(errorMessage),
-            ForgeryException(errorMessage),
-            InvalidObjectException(errorMessage),
-            UnsupportedOperationException(errorMessage),
-            FileNotFoundException(errorMessage)
-        )
-    }
-
-    private fun mockResponse(code: Int): MockResponse {
-        return MockResponse()
-            .setResponseCode(code)
-            .setBody("{}")
-    }
-
     companion object {
         const val MAX_LOGS_PER_BATCH = 500
         const val MEDIUM_ITERATIONS = MAX_LOGS_PER_BATCH / 2
         const val BIG_ITERATIONS = MAX_LOGS_PER_BATCH
     }
-
-    // endregion
 }
