@@ -17,11 +17,11 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:padding="16dp"
-        android:text="@string/title_sendLog"
+        android:text="@string/title_traces"
         android:textAppearance="@style/TextAppearance.AppCompat.Title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/start_async_operation"
@@ -30,7 +30,7 @@
         android:text="@string/start_async_operation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintEnd_toStartOf="@+id/spinner"/>
 
     <ProgressBar
         android:id="@+id/spinner"
@@ -39,9 +39,31 @@
         android:indeterminate="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/start_async_operation"
-        app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@id/start_async_operation"
+        app:layout_constraintBottom_toBottomOf="@id/start_async_operation"
         android:visibility="invisible"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/start_request"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/start_request"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_async_operation"
+        app:layout_constraintEnd_toStartOf="@+id/request_status"/>
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/request_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:layout_constraintStart_toEndOf="@id/start_request"
+        app:layout_constraintTop_toTopOf="@id/start_request"
+        app:layout_constraintBottom_toBottomOf="@id/start_request"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:src="@drawable/ic_check_circle_green_24dp"
+    />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
