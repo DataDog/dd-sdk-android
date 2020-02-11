@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
@@ -26,12 +27,12 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
     private Span mMainSpan;
     private ProgressBar mSpinner;
     private TracesViewModel mViewModel;
+    private ImageView mRequestStatus;
+
     private Logger mLogger = new Logger.Builder()
             .setLoggerName("traces_fragment")
             .setLogcatLogsEnabled(true)
             .build();
-
-    private int mInteractionsCount = 0;
 
     public static TracesFragment newInstance() {
         return new TracesFragment();
@@ -44,7 +45,9 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
                              @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_traces, container, false);
         rootView.findViewById(R.id.start_async_operation).setOnClickListener(this);
+        rootView.findViewById(R.id.start_request).setOnClickListener(this);
         mSpinner = rootView.findViewById(R.id.spinner);
+        mRequestStatus = rootView.findViewById(R.id.request_status);
         return rootView;
     }
 
@@ -71,13 +74,13 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
         super.onDetach();
         mViewModel.stopAsyncOperations();
         mSpinner.setVisibility(View.INVISIBLE);
+        mRequestStatus.setVisibility(View.INVISIBLE);
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(TracesViewModel.class);
-        mLogger.addAttribute("interactions", mInteractionsCount);
     }
 
     // endregion
@@ -95,6 +98,24 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
                     mSpinner.setVisibility(View.INVISIBLE);
                 }
             });
+        } else if (v.getId() == R.id.start_request) {
+            mLogger.w("User triggered an http request");
+            mRequestStatus.setVisibility(View.VISIBLE);
+            mRequestStatus.setImageResource(R.drawable.ic_unknown_grey_24dp);
+            mViewModel.startRequest(new TracesViewModel.Request.Callback() {
+                @Override
+                public void onResult(TracesViewModel.Request.Result result) {
+                    if (result.response == null){
+                        mRequestStatus.setImageResource(R.drawable.ic_cancel_red_24dp);
+                    } else if (result.response.code() >= 400 ){
+                        mRequestStatus.setImageResource(R.drawable.ic_error_red_24dp);
+                    } else {
+                        mRequestStatus.setImageResource(R.drawable.ic_check_circle_green_24dp);
+                    }
+                }
+            });
         }
     }
+
+    // endregion
 }

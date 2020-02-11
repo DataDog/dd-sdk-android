@@ -4,12 +4,12 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-apply plugin: 'com.android.application'
+apply plugin: "com.android.application"
 
 def getGitHash = { ->
     def stdout = new ByteArrayOutputStream()
     exec {
-        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        commandLine "git", "rev-parse", "--short", "HEAD"
         standardOutput = stdout
     }
     return stdout.toString().trim()
@@ -92,4 +92,6 @@ dependencies {
         exclude group: "com.google.guava", module: "listenablefuture"
     }
 
+    implementation "com.facebook.stetho:stetho:1.5.1"
+    implementation "com.facebook.stetho:stetho-okhttp3:1.5.1"
 }
