@@ -96,7 +96,7 @@ internal class DeferredWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `run delegate in deferred handler`(forge: Forge) {
+    fun `run delegate in deferred handler when writing a model`(forge: Forge) {
         val model = forge.anAlphabeticalString()
         var runnable = Runnable {}
         whenever(mockDeferredHandler.handle(any())) doAnswer {
@@ -109,5 +109,22 @@ internal class DeferredWriterTest {
 
         runnable.run()
         verify(mockDelegate).write(model)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `run delegate in deferred handler when writing a models list`(forge: Forge) {
+        val models: List<String> = forge.aList(size = 10) { forge.anAlphabeticalString() }
+        var runnable = Runnable {}
+        whenever(mockDeferredHandler.handle(any())) doAnswer {
+            runnable = it.arguments[0] as Runnable
+            Unit
+        }
+
+        underTest.write(models)
+        verifyZeroInteractions(mockDelegate)
+
+        runnable.run()
+        verify(mockDelegate).write(models)
     }
 }

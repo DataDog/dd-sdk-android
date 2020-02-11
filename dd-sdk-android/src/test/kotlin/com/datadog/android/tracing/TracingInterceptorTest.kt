@@ -110,7 +110,7 @@ internal class TracingInterceptorTest {
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
-        }.whenever(mockTracer.inject<TextMapInject>(any(), any(), any()))
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
 
         val response = testedInterceptor.intercept(mockChain)
 
