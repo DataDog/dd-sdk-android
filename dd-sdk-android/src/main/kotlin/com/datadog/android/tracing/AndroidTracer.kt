@@ -6,10 +6,13 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.log.Logger
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
+import com.datadog.android.tracing.internal.handlers.AndroidLogsHandler
 import datadog.opentracing.DDTracer
 import datadog.opentracing.propagation.ExtractedContext
+import datadog.opentracing.LogsHandler
 import datadog.trace.api.Config
 import datadog.trace.api.sampling.PrioritySampling
 import java.math.BigInteger
@@ -25,16 +28,14 @@ import java.util.Random
  * You can have multiple tracers configured in your application, each with their own settings.
  *
  */
-class Tracer
-internal constructor(
+class AndroidTracer internal constructor(
     config: Config,
     writer: TraceWriter,
+    val logsHandler: LogsHandler,
     private val random: Random
 ) : DDTracer(config, writer) {
 
-    // region Tracer
-
-    override fun buildSpan(operationName: String?): DDSpanBuilder {
+    override fun buildSpan(operationName: String): DDSpanBuilder {
         // On Android, the same zygote is reused for every single application,
         // meaning that the ThreadLocalRandom reuses the same exact state,
         // resulting in conflicting TraceIds.
@@ -47,14 +48,13 @@ internal constructor(
             emptyMap(),
             emptyMap()
         )
-        return super.buildSpan(operationName)
+        return DDSpanBuilder(operationName, scopeManager())
+            .withLogsHandler(logsHandler)
             .asChildOf(parentContext)
     }
 
-    // endregion
-
     /**
-     * Builds a [Tracer] instance.
+     * Builds a [AndroidTracer] instance.
      *
      */
     class Builder {
@@ -62,16 +62,18 @@ internal constructor(
         private var serviceName: String = TracesFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
+        private val logsHandler: LogsHandler = AndroidLogsHandler(Logger.Builder().build())
 
         // region Public API
 
         /**
-         * Builds a [Tracer] based on the current state of this Builder.
+         * Builds a [AndroidTracer] based on the current state of this Builder.
          */
-        fun build(): Tracer {
-            return Tracer(
+        fun build(): AndroidTracer {
+            return AndroidTracer(
                 config(),
                 TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
+                logsHandler,
                 random
             )
         }

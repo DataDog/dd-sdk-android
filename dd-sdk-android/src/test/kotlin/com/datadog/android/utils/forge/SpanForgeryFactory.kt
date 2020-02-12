@@ -1,9 +1,8 @@
 package com.datadog.android.utils.forge
 
-import com.nhaarman.mockitokotlin2.mock
+import com.datadog.android.tracing.AndroidTracer
 import datadog.opentracing.DDSpan
 import datadog.opentracing.DDTracer
-import datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -25,7 +24,7 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             serviceName,
             isWithErrorFlag,
             tags
-        ).start()
+        ).start() as DDSpan
         metrics.forEach {
             span.context().setMetric(it.key, it.value)
         }
@@ -65,7 +64,7 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
     }
 
     companion object {
-        val TEST_TRACER = DDTracer(Config.get(), mock())
+        val TEST_TRACER = AndroidTracer.Builder().build()
 
         fun generateSpanBuilder(
             operationName: String,

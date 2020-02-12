@@ -2,12 +2,16 @@ package com.datadog.android.tracing.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
-import datadog.opentracing.scopemanager.ContextualScopeManager
+import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.verify
+import datadog.opentracing.DDSpan
+import datadog.opentracing.LogsHandler
 import datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -24,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -35,12 +40,14 @@ import org.mockito.quality.Strictness
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
-internal class TracerTest {
+internal class AndroidTracerTest {
 
-    lateinit var testedBuilder: Tracer.Builder
+    lateinit var underTest: AndroidTracer.Builder
     lateinit var mockAppContext: Application
     lateinit var fakeToken: String
     lateinit var fakeServiceName: String
+    @Mock
+    lateinit var mockLogsHandler: LogsHandler
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -48,6 +55,8 @@ internal class TracerTest {
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
         Datadog.initialize(mockAppContext, fakeToken)
+        underTest = AndroidTracer.Builder()
+        underTest.setFieldValue("logsHandler", mockLogsHandler)
     }
 
     @AfterEach
@@ -69,8 +78,8 @@ internal class TracerTest {
         @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
-        val expectedTraceId = BigInteger(Tracer.TRACE_ID_BIT_SIZE, Random(seed))
-        val tracer = Tracer.Builder()
+        val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
+        val tracer = underTest
             .withRandom(Random(seed))
             .build()
 
@@ -86,8 +95,8 @@ internal class TracerTest {
         @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
-        val expectedTraceId = BigInteger(Tracer.TRACE_ID_BIT_SIZE, Random(seed))
-        val tracer = Tracer.Builder()
+        val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
+        val tracer = underTest
             .withRandom(Random(seed))
             .build()
 
@@ -103,18 +112,17 @@ internal class TracerTest {
     @Test
     fun `it will build a valid Tracer`(forge: Forge) {
         // given
-        testedBuilder = Tracer.Builder()
         val threshold = forge.anInt(max = 100)
         // when
-        val tracer = testedBuilder
+        val tracer = underTest
             .setServiceName(fakeServiceName)
             .setPartialFlushThreshold(threshold)
             .build()
-        val properties = testedBuilder.properties()
+        val properties = underTest.properties()
 
         // then
         assertThat(tracer).isNotNull()
-        val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
+        val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
         assertThat(span.serviceName).isEqualTo(fakeServiceName)
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
             .isEqualTo(threshold)
@@ -122,18 +130,40 @@ internal class TracerTest {
 
     @Test
     fun `it will build a valid Tracer with default values if not provided`(forge: Forge) {
-        // given
-        testedBuilder = Tracer.Builder()
-
         // when
-        val tracer = testedBuilder.build()
+        val tracer = underTest.build()
 
         // then
-        val properties = testedBuilder.properties()
+        val properties = underTest.properties()
         assertThat(tracer).isNotNull()
-        val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
+        val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
         assertThat(span.serviceName).isEqualTo(TracesFeature.serviceName)
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
-            .isEqualTo(Tracer.DEFAULT_PARTIAL_MIN_FLUSH)
+            .isEqualTo(AndroidTracer.DEFAULT_PARTIAL_MIN_FLUSH)
+    }
+
+    @Test
+    fun `it will delegate all the span log action to the logsHandler`(forge: Forge) {
+        // given
+        val tracer = underTest.build()
+        val logEvent = forge.anAlphabeticalString()
+        val logMaps = forge.aMap {
+            forge.anAlphabeticalString() to forge.anAlphabeticalString()
+        }
+        val logTimestamp = forge.aLong()
+        val span = tracer.buildSpan(logEvent).start()
+
+        // when
+        span.log(logEvent)
+        span.log(logTimestamp, logEvent)
+        span.log(logMaps)
+        span.log(logTimestamp, logMaps)
+
+        // then
+        val inOrder = inOrder(mockLogsHandler)
+        inOrder.verify(mockLogsHandler).log(logEvent)
+        inOrder.verify(mockLogsHandler).log(logTimestamp, logEvent)
+        inOrder.verify(mockLogsHandler).log(logMaps)
+        inOrder.verify(mockLogsHandler).log(logTimestamp, logMaps)
     }
 }
