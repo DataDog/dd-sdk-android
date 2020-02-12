@@ -8,7 +8,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 * Record real client IP addresses and User-Agents.
 * Optimized network usage with automatic bulk posts.
 
-**Note**: The `dd-sdk-android` library supports all Android versions from API level 21 (Lollipop).
+**Note**: The `dd-sdk-android` library supports all Android versions from API level 19 (KitKat).
 
 ## Setup
 
@@ -20,7 +20,9 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
 
     dependencies {
-        implementation "com.datadoghq:dd-sdk-android:x.x.x"
+        implementation "com.datadoghq:dd-sdk-android:x.x.x" {
+            exclude group: "com.google.guava", module: "listenablefuture"
+        }
     }
     ```
 
