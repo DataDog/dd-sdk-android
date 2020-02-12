@@ -144,10 +144,10 @@ reviewBenchmark {
     )
     addThreshold(
         "benchmark_creating_heavy_load_of_spans",
-        TimeUnit.MILLISECONDS.toNanos(350)
+        TimeUnit.MILLISECONDS.toNanos(400)
     )
     addThreshold(
         "benchmark_creating_medium_load_of_spans",
-        TimeUnit.MILLISECONDS.toNanos(200)
+        TimeUnit.MILLISECONDS.toNanos(250)
     )
 }
