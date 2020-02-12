@@ -17,7 +17,7 @@ import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.user.UserFragment;
-import com.datadog.android.tracing.Tracer;
+import com.datadog.android.tracing.AndroidTracer;
 import com.facebook.stetho.Stetho;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -95,7 +95,7 @@ public class SampleApplication extends Application {
         logger.v("Added tags");
 
         // initialize the tracer here
-        GlobalTracer.registerIfAbsent(new Tracer.Builder().build());
+        GlobalTracer.registerIfAbsent(new AndroidTracer.Builder().build());
     }
 
     public Logger getLogger() {

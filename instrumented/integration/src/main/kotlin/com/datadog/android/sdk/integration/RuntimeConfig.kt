@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration
 
 import android.os.Build
 import com.datadog.android.log.Logger
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 
 internal object RuntimeConfig {
 
@@ -32,8 +32,8 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(): Tracer {
-        return Tracer.Builder().build()
+    fun tracer(): AndroidTracer {
+        return AndroidTracer.Builder().build()
     }
 
     val keyValuePairsTags = mapOf(

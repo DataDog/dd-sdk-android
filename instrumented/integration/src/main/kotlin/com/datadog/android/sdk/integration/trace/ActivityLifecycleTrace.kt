@@ -12,7 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
@@ -22,7 +22,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private val forge = Forge()
 
-    lateinit var tracer: Tracer
+    lateinit var tracer: AndroidTracer
     private val sentSpans = LinkedList<DDSpan>()
     lateinit var activityStartScope: Scope
     lateinit var activityResumeScope: Scope

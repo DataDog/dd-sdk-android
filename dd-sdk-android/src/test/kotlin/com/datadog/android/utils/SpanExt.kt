@@ -14,7 +14,7 @@ fun DDSpan.copy(): DDSpan {
             tags
         )
         .withStartTimestamp(startTime)
-        .start()
+        .start() as DDSpan
     metrics.forEach {
         ddSpan.context().setMetric(it.key, it.value)
     }

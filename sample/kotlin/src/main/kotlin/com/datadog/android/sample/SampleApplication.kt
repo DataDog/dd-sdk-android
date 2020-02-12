@@ -9,7 +9,7 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import io.opentracing.util.GlobalTracer
 
 class SampleApplication : Application() {
@@ -34,6 +34,6 @@ class SampleApplication : Application() {
         Datadog.setVerbosity(Log.VERBOSE)
 
         // initialize the tracer here
-        GlobalTracer.registerIfAbsent(Tracer.Builder().build())
+        GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
     }
 }

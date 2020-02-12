@@ -130,10 +130,10 @@ internal class TracingFileStrategyTest :
         }
         val span = spanBuilder.start()
         meta.forEach {
-            span.context().setBaggageItem(it.key, it.value)
+            span.setBaggageItem(it.key, it.value)
         }
 
-        return span
+        return span as DDSpan
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {

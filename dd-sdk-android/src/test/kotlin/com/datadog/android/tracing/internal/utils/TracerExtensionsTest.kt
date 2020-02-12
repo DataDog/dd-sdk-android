@@ -1,6 +1,6 @@
 package com.datadog.android.tracing.internal.utils
 
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.getStaticValue
 import datadog.opentracing.DDSpan
@@ -27,11 +27,11 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class, seed = 0x4f36670aL)
 class TracerExtensionsTest {
 
-    lateinit var tracer: Tracer
+    lateinit var tracer: AndroidTracer
 
     @BeforeEach
     fun `set up`() {
-        tracer = Tracer.Builder().build()
+        tracer = AndroidTracer.Builder().build()
     }
 
     @AfterEach
@@ -60,7 +60,7 @@ class TracerExtensionsTest {
     @Test
     fun `it will return null for trace and span id if there is no active span`() {
         // given
-        val tracer = Tracer.Builder().build()
+        val tracer = AndroidTracer.Builder().build()
 
         // then
         assertThat(tracer.traceId()).isNull()

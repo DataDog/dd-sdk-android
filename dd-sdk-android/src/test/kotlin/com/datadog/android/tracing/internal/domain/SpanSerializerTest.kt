@@ -86,12 +86,12 @@ internal class SpanSerializerTest {
         val parentSpan =
             SpanForgeryFactory.TEST_TRACER
                 .buildSpan(forge.anAlphabeticalString())
-                .start()
+                .start() as DDSpan
         val childSpan =
             SpanForgeryFactory.TEST_TRACER
                 .buildSpan(forge.anAlphabeticalString())
                 .asChildOf(parentSpan)
-                .start()
+                .start() as DDSpan
 
         // when
         val serializedParent = JsonParser.parseString(underTest.serialize(parentSpan)).asJsonObject

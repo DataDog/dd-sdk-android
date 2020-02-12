@@ -16,7 +16,7 @@ import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.invokeMethod
@@ -235,7 +235,7 @@ internal class DatadogLogHandlerTest {
         // given
         val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
         Datadog.initialize(mockContext(), config)
-        val tracer = Tracer.Builder().build()
+        val tracer = AndroidTracer.Builder().build()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
         tracer.activateSpan(span)
         GlobalTracer.registerIfAbsent(tracer)

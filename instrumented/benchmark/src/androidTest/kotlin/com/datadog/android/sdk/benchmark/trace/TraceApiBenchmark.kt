@@ -13,8 +13,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.benchmark.aThrowable
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.tools.unit.invokeMethod
+import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -33,7 +34,7 @@ class TraceApiBenchmark {
     @get:Rule
     val forge = ForgeRule()
 
-    lateinit var testedTracer: Tracer
+    lateinit var testedTracer: AndroidTracer
 
     lateinit var mockWebServer: MockWebServer
 
@@ -57,7 +58,7 @@ class TraceApiBenchmark {
             .build()
         Datadog.initialize(context, config)
 
-        testedTracer = Tracer
+        testedTracer = AndroidTracer
             .Builder()
             .setPartialFlushThreshold(1)
             .build()
@@ -85,7 +86,7 @@ class TraceApiBenchmark {
                 forge.anAlphabeticalString() to forge.aThrowable()
             }
 
-            val span = testedTracer.buildSpan(operationName).start()
+            val span = testedTracer.buildSpan(operationName).start() as DDSpan
             span.setErrorMeta(throwable)
             span.finish()
         }
