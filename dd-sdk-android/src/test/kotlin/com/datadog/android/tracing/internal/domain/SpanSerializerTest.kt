@@ -57,7 +57,6 @@ internal class SpanSerializerTest {
     fun `set up`() {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-
         underTest = SpanSerializer(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
     }
 
@@ -100,7 +99,7 @@ internal class SpanSerializerTest {
 
         // then
         assertThat(serializedParent).hasField(SpanSerializer.TAG_METRICS) {
-            hasField(SpanSerializer.TAG_METRICS_SAMPLING_PRIORITY, 1)
+            hasField(SpanSerializer.TAG_METRICS_TOP_LEVEL, 1)
         }
         assertThat(serializedChild).hasField(SpanSerializer.TAG_METRICS) {
             doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
@@ -137,7 +136,6 @@ internal class SpanSerializerTest {
                 if (span.parentId.toLong() == 0L) {
                     hasField(SpanSerializer.TAG_METRICS_TOP_LEVEL, 1)
                 }
-                hasField(SpanSerializer.TAG_METRICS_SAMPLING_PRIORITY, 1)
             }
     }
 
