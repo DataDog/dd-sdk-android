@@ -85,7 +85,25 @@ class SampleApplication : Application() {
     ```kotlin
     span.setTag("http.url", url)
     ```
+   
+## Integrations
 
+In addition to manual tracing, the `dd-sdk-android` library provides the following integrations.
+
+### OkHttp
+
+If you want to trace your OkHttp requests, you can add the provided [Interceptor][6] as follow:
+ 
+    ```kotlin
+    OkHttpClient client = new OkHttpClient.Builder()
+        .addInterceptor(new TracingInterceptor())
+        .build();
+    ```
+
+This will create a span around each request this OkHttpClient process, with all the relevant information automatically filled (url, method, status code, error), and will propagate the tracing information to your backend to get a unified trace.
+
+**Note**: If you use multiple Interceptors, make sure that this one is called first.
+    
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
@@ -95,3 +113,4 @@ class SampleApplication : Application() {
 [3]: https://docs.datadoghq.com/tracing/visualization/#spans
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
+[6]: https://square.github.io/okhttp/interceptors/
