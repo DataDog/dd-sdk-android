@@ -88,21 +88,21 @@ class SampleApplication : Application() {
    
 ## Integrations
 
-In addition to manual tracing, the `dd-sdk-android` library provides the following integrations.
+In addition to manual tracing, the `dd-sdk-android` library provides the following integration.
 
 ### OkHttp
 
 If you want to trace your OkHttp requests, you can add the provided [Interceptor][6] as follow:
  
-    ```kotlin
-    OkHttpClient client = new OkHttpClient.Builder()
-        .addInterceptor(new TracingInterceptor())
-        .build();
-    ```
+```kotlin
+OkHttpClient client = new OkHttpClient.Builder()
+    .addInterceptor(new TracingInterceptor())
+    .build();
+```
 
-This will create a span around each request this OkHttpClient process, with all the relevant information automatically filled (url, method, status code, error), and will propagate the tracing information to your backend to get a unified trace.
+This creates a span around each request processed by the OkHttpClient, with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
 
-**Note**: If you use multiple Interceptors, make sure that this one is called first.
+**Note**: If you use multiple Interceptors, this one must be called first.
     
 ## Further Reading
 
