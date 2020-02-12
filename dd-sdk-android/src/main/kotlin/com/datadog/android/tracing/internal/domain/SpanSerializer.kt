@@ -56,9 +56,6 @@ internal class SpanSerializer(
         model.metrics.forEach {
             metricsObject.addProperty(it.key, it.value)
         }
-        // For now disable the sampling on server
-        metricsObject.addProperty(TAG_METRICS_SAMPLING_PRIORITY, 1)
-
         if (model.parentId.toLong() == 0L) {
             // mark this span as top level
             metricsObject.addProperty(TAG_METRICS_TOP_LEVEL, 1)
@@ -118,7 +115,6 @@ internal class SpanSerializer(
         const val TAG_META = "meta"
         const val TAG_METRICS = "metrics"
         const val TAG_METRICS_TOP_LEVEL = "_top_level"
-        const val TAG_METRICS_SAMPLING_PRIORITY = "_sampling_priority_v1"
 
         // GLOBAL TAGS
         internal const val TAG_VERSION_NAME = "logger.version"
