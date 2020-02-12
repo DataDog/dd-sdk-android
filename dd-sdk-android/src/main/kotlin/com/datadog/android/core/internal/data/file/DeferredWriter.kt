@@ -32,5 +32,11 @@ internal class DeferredWriter<T : Any>(
         })
     }
 
+    override fun write(models: List<T>) {
+        post(Runnable {
+            writer.write(models)
+        })
+    }
+
     // endregion
 }
