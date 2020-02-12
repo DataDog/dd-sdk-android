@@ -18,7 +18,9 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     }
 
     dependencies {
-        implementation "com.datadoghq:dd-sdk-android:x.x.x"
+        implementation "com.datadoghq:dd-sdk-android:x.x.x" {
+            exclude group: "com.google.guava", module: "listenablefuture"
+        }
     }
     ```
 
