@@ -6,13 +6,20 @@
 
 package com.datadog.android.tracing
 
+import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpanContext
 import fr.xgouchet.elmyr.Forge
@@ -23,6 +30,7 @@ import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
+import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
 import okhttp3.Interceptor
@@ -43,7 +51,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(SystemOutputExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -115,6 +124,11 @@ internal class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
     }
 
     @Test
@@ -156,6 +170,29 @@ internal class TracingInterceptorTest {
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", sw.toString())
         verify(mockSpan).finish()
+    }
+
+    @Test
+    fun `does nothing but logs a warning if no tracer is registered`(
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        Datadog.setVerbosity(Log.VERBOSE)
+        setupFakeResponse()
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue).isSameAs(fakeRequest)
+        }
+        assertThat(response).isSameAs(fakeResponse)
+        assertThat(outputStream.lastLine())
+            .isEqualTo(
+                "W/Datadog: You added the TracingInterceptor to your OkHttpClient, " +
+                    "but you didn't register any Tracer."
+            )
+        verifyZeroInteractions(mockTracer)
     }
 
     // region Internal
