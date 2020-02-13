@@ -74,6 +74,7 @@ internal class DataUploadRunnable(
         val batchId = batch.id
         sdkLogger.i("Sending batch $batchId")
         val status = dataUploader.upload(batch.data)
+        status.logStatus(dataUploader.javaClass.simpleName)
         if (status in dropableBatchStatus) {
             reader.dropBatch(batchId)
         } else {

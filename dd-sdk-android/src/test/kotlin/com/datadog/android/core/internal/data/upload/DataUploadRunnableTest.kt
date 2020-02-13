@@ -311,7 +311,10 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `when has batches the upload frequency will increase`(@Forgery batch: Batch) {
+    fun `when has batches the upload frequency will increase`(
+        @Forgery batch: Batch
+    ) {
+        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
         whenever(mockReader.readNextBatch()).doReturn(batch)
 
         repeat(5) {
@@ -328,7 +331,10 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `when has batches will increase the frequency up to a specific max`(@Forgery batch: Batch) {
+    fun `when has batches will increase the frequency up to a specific max`(
+        @Forgery batch: Batch
+    ) {
+        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
         whenever(mockReader.readNextBatch()).doReturn(batch)
 
         repeat(30) {
@@ -349,6 +355,7 @@ internal class DataUploadRunnableTest {
     fun `when no more batches available the scheduler delay will be increased`(
         @Forgery batch: Batch
     ) {
+        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
         whenever(mockReader.readNextBatch())
             .doReturn(batch)
             .doReturn(null)
