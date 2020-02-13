@@ -77,6 +77,7 @@ internal abstract class DataOkHttpUploader(
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {
         return when (code) {
+            403 -> UploadStatus.INVALID_TOKEN_ERROR
             in 200..299 -> UploadStatus.SUCCESS
             in 300..399 -> UploadStatus.HTTP_REDIRECTION
             in 400..499 -> UploadStatus.HTTP_CLIENT_ERROR
