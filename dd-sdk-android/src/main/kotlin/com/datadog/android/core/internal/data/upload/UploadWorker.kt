@@ -87,6 +87,7 @@ internal class UploadWorker(
         val batchId = batch.id
         sdkLogger.i("$TAG: Sending batch $batchId")
         val status = uploader.upload(batch.data)
+        status.logStatus(uploader.javaClass.simpleName)
         return status == UploadStatus.SUCCESS
     }
 

@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.core.internal.utils.devLogger
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
 import io.opentracing.Span
@@ -43,11 +44,20 @@ class TracingInterceptor : Interceptor {
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = GlobalTracer.get()
-        val span = tracer.buildSpan("okhttp.request")
-            .start()
 
-        return updateAndProceedSafely(chain, tracer, span)
+        if (GlobalTracer.isRegistered()) {
+            val tracer = GlobalTracer.get()
+            val span = tracer.buildSpan("okhttp.request")
+                .start()
+
+            return updateAndProceedSafely(chain, tracer, span)
+        } else {
+            devLogger.w(
+                "You added the TracingInterceptor to your OkHttpClient, " +
+                    "but you didn't register any Tracer."
+            )
+            return chain.proceed(chain.request())
+        }
     }
 
     // endregion
