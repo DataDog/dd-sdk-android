@@ -186,6 +186,18 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     }
 
     @Test
+    fun `uploads data 403-Forbidden`(forge: Forge) {
+        val anHexadecimalString = forge.anHexadecimalString()
+        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
+        mockWebServer.enqueue(mockResponse(403))
+
+        val status = testedUploader.upload(data)
+
+        assertThat(status).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        assertValidRequest(mockWebServer.takeRequest(), anHexadecimalString)
+    }
+
+    @Test
     fun `uploads data 404-NotFound`(forge: Forge) {
         val anHexadecimalString = forge.anHexadecimalString()
         val data = anHexadecimalString.toByteArray(Charsets.UTF_8)

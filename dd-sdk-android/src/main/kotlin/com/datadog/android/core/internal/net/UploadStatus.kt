@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.net
 internal enum class UploadStatus {
     SUCCESS,
     NETWORK_ERROR,
+    INVALID_TOKEN_ERROR,
     HTTP_REDIRECTION,
     HTTP_CLIENT_ERROR,
     HTTP_SERVER_ERROR,
