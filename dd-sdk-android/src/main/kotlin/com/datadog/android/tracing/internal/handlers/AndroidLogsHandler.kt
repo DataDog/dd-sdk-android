@@ -9,7 +9,7 @@ internal class AndroidLogsHandler(
 
     // region Span
     override fun log(timestampMicroseconds: Long, fields: Map<String, *>) {
-        // not sure that we should do something with the timestamp here
+        // not sure that we should do something with the timestamp here ???
         logFields(fields)
     }
 

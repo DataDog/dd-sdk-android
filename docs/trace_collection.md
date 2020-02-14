@@ -65,7 +65,7 @@ class SampleApplication : Application() {
 3. Configure and register the Android Tracer. You only need to do it once, usually in your application's `onCreate()` method:
 
     ```kotlin
-    val tracer = Tracer.Builder()
+    val tracer = AndroidTracer.Builder()
         .setServiceName("<SERVICE_NAME>")
         .build()
     GlobalTracer.registerIfAbsent(tracer)
