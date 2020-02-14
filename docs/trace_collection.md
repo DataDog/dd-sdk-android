@@ -1,10 +1,12 @@
 # Android Trace Collection
 
+<div class="alert alert-info">The Android trace collection is in public alpha, and is currently not supported by Datadog.</div>
+
 Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side tracing library][2] and leverage the following features:
 
 * Create custom [spans][3] for operations in your application.
 * Add `context` and extra custom attributes to each span sent.
-* Optimized network usage with automatic bulk posts. 
+* Optimized network usage with automatic bulk posts.
 
 **Note**: Traces are still experimental, and will be available in the `dd-sdk-android` library version `1.4.0` or higher. The `dd-sdk-android` library supports all Android versions from API level 19 (Kit-Kat).
 
@@ -80,12 +82,12 @@ class SampleApplication : Application() {
     span.finish()
     ```
 
-5. (Optional) - Provide additional tags alongside your span. 
+5. (Optional) - Provide additional tags alongside your span.
 
     ```kotlin
     span.setTag("http.url", url)
     ```
-   
+
 ## Integrations
 
 In addition to manual tracing, the `dd-sdk-android` library provides the following integration.
@@ -93,7 +95,7 @@ In addition to manual tracing, the `dd-sdk-android` library provides the followi
 ### OkHttp
 
 If you want to trace your OkHttp requests, you can add the provided [Interceptor][6] as follow:
- 
+
 ```kotlin
 OkHttpClient client = new OkHttpClient.Builder()
     .addInterceptor(new TracingInterceptor())
@@ -103,7 +105,7 @@ OkHttpClient client = new OkHttpClient.Builder()
 This creates a span around each request processed by the OkHttpClient, with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
 
 **Note**: If you use multiple Interceptors, this one must be called first.
-    
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
