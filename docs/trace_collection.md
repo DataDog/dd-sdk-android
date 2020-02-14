@@ -6,7 +6,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
 * Add `context` and extra custom attributes to each span sent.
 * Optimized network usage with automatic bulk posts. 
 
-**Note**: Traces are available in the `dd-sdk-android` library version `1.4.0` or higher. The `dd-sdk-android` library supports all Android versions from API level 19 (Kit-Kat).
+**Note**: Traces are still experimental, and will be available in the `dd-sdk-android` library version `1.4.0` or higher. The `dd-sdk-android` library supports all Android versions from API level 19 (Kit-Kat).
 
 ## Setup
 
