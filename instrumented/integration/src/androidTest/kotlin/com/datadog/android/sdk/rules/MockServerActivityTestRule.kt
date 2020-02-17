@@ -10,7 +10,9 @@ import android.app.Activity
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
+import com.datadog.android.Datadog
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
@@ -28,6 +30,7 @@ internal class MockServerActivityTestRule<T : Activity>(
 ) : ActivityTestRule<T>(activityClass) {
 
     data class HandledRequest(
+        val url: String? = null,
         val headers: Headers? = null,
         val method: String? = null,
         val jsonBody: JsonElement? = null,
@@ -56,14 +59,15 @@ internal class MockServerActivityTestRule<T : Activity>(
         })
 
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        RuntimeConfig.logsEndpointUrl = fakeEndpoint
-        RuntimeConfig.tracesEndpointUrl = fakeEndpoint
+        RuntimeConfig.logsEndpointUrl = "$fakeEndpoint/logs"
+        RuntimeConfig.tracesEndpointUrl = "$fakeEndpoint/traces"
         super.beforeActivityLaunched()
     }
 
     override fun afterActivityFinished() {
         mockWebServer.shutdown()
         InstrumentationRegistry.getInstrumentation().context.filesDir?.deleteRecursively()
+        Datadog.invokeMethod("stop")
         super.afterActivityFinished()
     }
 
@@ -104,6 +108,7 @@ internal class MockServerActivityTestRule<T : Activity>(
 
         requests.add(
             HandledRequest(
+                url = request.requestUrl.toString(),
                 headers = request.headers,
                 method = request.method,
                 jsonBody = jsonBody,
