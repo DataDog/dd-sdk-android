@@ -20,6 +20,7 @@ internal interface LogHandler {
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long? = null
     )
 }

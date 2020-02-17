@@ -22,7 +22,8 @@ internal class LogcatLogHandler(
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
         val stackElement = getCallerStackElement()
         val tag = resolveTag(stackElement)
@@ -99,6 +100,8 @@ internal class LogcatLogHandler(
         private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
         private val ignoredClassNames = arrayOf(
             Logger::class.java.canonicalName,
+            LogHandler::class.java.canonicalName,
+            LogHandler::class.java.canonicalName + "\$DefaultImpls",
             LogcatLogHandler::class.java.canonicalName,
             ConditionalLogHandler::class.java.canonicalName,
             CombinedLogHandler::class.java.canonicalName,

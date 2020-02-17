@@ -5,5 +5,5 @@ internal fun String.isTracesUrl(): Boolean {
 }
 
 internal fun String.isLogsUrl(): Boolean {
-    return this.matches(Regex("(.*)logs(.*)"))
+    return this.matches(Regex("(.*)/logs/(.*)"))
 }

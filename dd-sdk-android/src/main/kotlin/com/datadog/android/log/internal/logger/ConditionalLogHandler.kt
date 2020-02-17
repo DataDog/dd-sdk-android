@@ -15,10 +15,11 @@ internal class ConditionalLogHandler(
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
         if (condition(level, throwable)) {
-            delegateHandler.handleLog(level, message, throwable, attributes, tags)
+            delegateHandler.handleLog(level, message, throwable, attributes, tags, timestamp)
         }
     }
 }
