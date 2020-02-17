@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.integration.trace
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
@@ -24,6 +25,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     lateinit var tracer: AndroidTracer
     private val sentSpans = LinkedList<DDSpan>()
+    private val sentLogs = LinkedList<Pair<Int, String>>()
     lateinit var activityStartScope: Scope
     lateinit var activityResumeScope: Scope
 
@@ -70,13 +72,20 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         return sentSpans
     }
 
+    fun getSentLogs(): LinkedList<Pair<Int, String>> {
+        return sentLogs
+    }
+
     // endregion
 
     // region Internal
 
     private fun buildSpan(title: String): Scope {
         val scope = tracer.buildSpan(title).startActive(true)
-        sentSpans.add(tracer.activeSpan() as DDSpan)
+        val ddSpan = tracer.activeSpan() as DDSpan
+        ddSpan.log(title)
+        sentLogs.add(Log.VERBOSE to title)
+        sentSpans.add(ddSpan)
         return scope
     }
 
