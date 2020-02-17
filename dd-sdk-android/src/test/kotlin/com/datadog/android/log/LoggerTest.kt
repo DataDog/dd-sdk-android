@@ -68,6 +68,23 @@ internal class LoggerTest {
     }
 
     @Test
+    fun `logger logs message with verbose level and custom timestamp`(forge: Forge) {
+        val timestamp = forge.aLong()
+        val level = forge.anInt()
+        testedLogger.internalLog(level, fakeMessage, null, emptyMap(), timestamp)
+
+        verify(mockLogHandler)
+            .handleLog(
+                level,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet(),
+                timestamp
+            )
+    }
+
+    @Test
     fun `logger logs message with debug level`() {
         testedLogger.d(fakeMessage)
 
@@ -583,6 +600,26 @@ internal class LoggerTest {
     }
 
     @Test
+    fun `log message with local attributes and timestamp`(forge: Forge) {
+        val timestamp = forge.aLong()
+        val key = forge.anAlphabeticalString()
+        val value = forge.anInt()
+        val level = forge.anInt()
+
+        testedLogger.internalLog(level, fakeMessage, null, mapOf(key to value), timestamp)
+
+        verify(mockLogHandler)
+            .handleLog(
+                level,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet(),
+                timestamp
+            )
+    }
+
+    @Test
     fun `log message with local attributes (null value)`(forge: Forge) {
 
         val key = forge.anAlphabeticalString()
@@ -638,7 +675,8 @@ internal class LoggerTest {
                     eq(message1),
                     isNull(),
                     eq(mapOf(key to value)),
-                    eq(emptySet())
+                    eq(emptySet()),
+                    isNull()
                 )
             verify(mockLogHandler)
                 .handleLog(
@@ -646,7 +684,8 @@ internal class LoggerTest {
                     eq(message2),
                     isNull(),
                     eq(emptyMap()),
-                    eq(emptySet())
+                    eq(emptySet()),
+                    isNull()
                 )
         }
     }

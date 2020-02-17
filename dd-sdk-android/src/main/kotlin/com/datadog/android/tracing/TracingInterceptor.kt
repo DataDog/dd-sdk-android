@@ -95,7 +95,7 @@ class TracingInterceptor : Interceptor {
         return localTracerReference.get()
     }
 
-    internal fun buildLocalTracer(): Tracer = com.datadog.android.tracing.Tracer.Builder().build()
+    internal fun buildLocalTracer(): Tracer = AndroidTracer.Builder().build()
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun updateAndProceedSafely(

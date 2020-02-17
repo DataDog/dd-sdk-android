@@ -138,6 +138,36 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
+    fun `forward log with custom timestamp to LogWriter`(forge: Forge) {
+        val customTimestamp = forge.aLong()
+
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            customTimestamp
+        )
+
+        argumentCaptor<Log>().apply {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasServiceName(fakeServiceName)
+                .hasLoggerName(fakeLoggerName)
+                .hasThreadName(Thread.currentThread().name)
+                .hasLevel(fakeLevel)
+                .hasMessage(fakeMessage)
+                .hasTimestamp(customTimestamp)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasTags(fakeTags)
+        }
+    }
+
+    @Test
     fun `forward log to LogWriter on background thread`(forge: Forge) {
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)

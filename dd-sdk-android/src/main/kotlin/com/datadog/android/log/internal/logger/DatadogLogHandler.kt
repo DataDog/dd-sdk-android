@@ -32,9 +32,11 @@ internal class DatadogLogHandler(
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
-        val log = createLog(level, message, throwable, attributes, tags)
+        val resolvedTimeStamp = timestamp ?: timeProvider.getServerTimestamp()
+        val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
         writer.write(log)
     }
 
@@ -42,12 +44,14 @@ internal class DatadogLogHandler(
 
     // region Internal
 
+    @Suppress("LongParameterList")
     private fun createLog(
         level: Int,
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long
     ): Log {
 
         var traceId: String? = null
@@ -61,7 +65,7 @@ internal class DatadogLogHandler(
             serviceName = serviceName,
             level = level,
             message = message,
-            timestamp = timeProvider.getServerTimestamp(),
+            timestamp = timestamp,
             throwable = throwable,
             attributes = attributes,
             tags = tags.toList(),

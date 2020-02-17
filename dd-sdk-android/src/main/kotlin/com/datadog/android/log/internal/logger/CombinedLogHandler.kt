@@ -17,9 +17,10 @@ internal class CombinedLogHandler(
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
-        handlers.forEach { it.handleLog(level, message, throwable, attributes, tags) }
+        handlers.forEach { it.handleLog(level, message, throwable, attributes, tags, timestamp) }
     }
 
     // endregion

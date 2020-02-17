@@ -9,10 +9,10 @@ package com.datadog.android.tracing
 import com.datadog.android.log.Logger
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
-import com.datadog.android.tracing.internal.handlers.AndroidLogsHandler
+import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
 import datadog.opentracing.DDTracer
+import datadog.opentracing.LogHandler
 import datadog.opentracing.propagation.ExtractedContext
-import datadog.opentracing.LogsHandler
 import datadog.trace.api.Config
 import datadog.trace.api.sampling.PrioritySampling
 import java.math.BigInteger
@@ -31,7 +31,7 @@ import java.util.Random
 class AndroidTracer internal constructor(
     config: Config,
     writer: TraceWriter,
-    val logsHandler: LogsHandler,
+    val logsHandler: LogHandler,
     private val random: Random
 ) : DDTracer(config, writer) {
 
@@ -49,7 +49,7 @@ class AndroidTracer internal constructor(
             emptyMap()
         )
         return DDSpanBuilder(operationName, scopeManager())
-            .withLogsHandler(logsHandler)
+            .withLogHandler(logsHandler)
             .asChildOf(parentContext)
     }
 
@@ -62,7 +62,12 @@ class AndroidTracer internal constructor(
         private var serviceName: String = TracesFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
-        private val logsHandler: LogsHandler = AndroidLogsHandler(Logger.Builder().build())
+        private val logsHandler: LogHandler
+
+        init {
+            val logger = Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
+            logsHandler = AndroidSpanLogsHandler(logger)
+        }
 
         // region Public API
 
@@ -128,6 +133,8 @@ class AndroidTracer internal constructor(
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
+
+        internal const val TRACE_LOGGER_NAME = "trace"
 
         internal const val TRACE_ID_BIT_SIZE = 63
     }

@@ -434,11 +434,12 @@ internal constructor(private val handler: LogHandler) {
 
     // region Internal
 
-    private fun internalLog(
+    internal fun internalLog(
         level: Int,
         message: String,
         throwable: Throwable?,
-        localAttributes: Map<String, Any?>
+        localAttributes: Map<String, Any?>,
+        timestamp: Long? = null
     ) {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
@@ -450,7 +451,7 @@ internal constructor(private val handler: LogHandler) {
             combinedTags.add(LogsFeature.envTag)
         }
 
-        handler.handleLog(level, message, throwable, combinedAttributes, combinedTags)
+        handler.handleLog(level, message, throwable, combinedAttributes, combinedTags, timestamp)
     }
 
     private fun addTagInternal(tag: String) {

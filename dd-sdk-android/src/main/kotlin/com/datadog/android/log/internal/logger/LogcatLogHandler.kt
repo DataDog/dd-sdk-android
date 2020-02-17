@@ -20,7 +20,8 @@ internal class LogcatLogHandler(
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
         if (Build.MODEL == null) {
             println("${levelPrefixes[level]}/$serviceName: $message")

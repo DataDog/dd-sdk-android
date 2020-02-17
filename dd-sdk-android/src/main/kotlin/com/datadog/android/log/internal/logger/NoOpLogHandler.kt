@@ -16,7 +16,8 @@ internal object NoOpLogHandler :
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
-        tags: Set<String>
+        tags: Set<String>,
+        timestamp: Long?
     ) {
         // No Op
     }

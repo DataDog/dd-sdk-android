@@ -9,9 +9,9 @@ import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.verify
 import datadog.opentracing.DDSpan
-import datadog.opentracing.LogsHandler
+import datadog.opentracing.LogHandler
+import datadog.opentracing.scopemanager.ContextualScopeManager
 import datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -47,7 +47,7 @@ internal class AndroidTracerTest {
     lateinit var fakeToken: String
     lateinit var fakeServiceName: String
     @Mock
-    lateinit var mockLogsHandler: LogsHandler
+    lateinit var mockLogsHandler: LogHandler
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -69,7 +69,8 @@ internal class AndroidTracerTest {
         activeSpan?.finish()
         activeScope?.close()
 
-        val tlsScope: ThreadLocal<*> = ContextualScopeManager::class.java.getStaticValue("tlsScope")
+        val tlsScope: ThreadLocal<*> =
+            ContextualScopeManager::class.java.getStaticValue("tlsScope")
         tlsScope.remove()
     }
 
@@ -83,7 +84,7 @@ internal class AndroidTracerTest {
             .withRandom(Random(seed))
             .build()
 
-        val span = tracer.buildSpan(operationName).start()
+        val span = tracer.buildSpan(operationName).start() as DDSpan
 
         val traceId = span.traceId
         assertThat(traceId)
@@ -102,7 +103,7 @@ internal class AndroidTracerTest {
 
         val span = tracer.buildSpan(operationName).start()
         tracer.activateSpan(span)
-        val subSpan = tracer.buildSpan(operationName).start()
+        val subSpan = tracer.buildSpan(operationName).start() as DDSpan
 
         val traceId = subSpan.traceId
         assertThat(traceId)
@@ -151,7 +152,7 @@ internal class AndroidTracerTest {
             forge.anAlphabeticalString() to forge.anAlphabeticalString()
         }
         val logTimestamp = forge.aLong()
-        val span = tracer.buildSpan(logEvent).start()
+        val span = tracer.buildSpan(logEvent).start() as DDSpan
 
         // when
         span.log(logEvent)
@@ -161,9 +162,9 @@ internal class AndroidTracerTest {
 
         // then
         val inOrder = inOrder(mockLogsHandler)
-        inOrder.verify(mockLogsHandler).log(logEvent)
-        inOrder.verify(mockLogsHandler).log(logTimestamp, logEvent)
-        inOrder.verify(mockLogsHandler).log(logMaps)
-        inOrder.verify(mockLogsHandler).log(logTimestamp, logMaps)
+        inOrder.verify(mockLogsHandler).log(logEvent, span)
+        inOrder.verify(mockLogsHandler).log(logTimestamp, logEvent, span)
+        inOrder.verify(mockLogsHandler).log(logMaps, span)
+        inOrder.verify(mockLogsHandler).log(logTimestamp, logMaps, span)
     }
 }
