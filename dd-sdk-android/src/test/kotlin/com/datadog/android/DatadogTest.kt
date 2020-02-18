@@ -33,10 +33,10 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
@@ -103,9 +103,9 @@ internal class DatadogTest {
 
     @Test
     fun `fails if stop called without initialize`() {
-        assertThrows<IllegalStateException> {
+        assertThatThrownBy {
             Datadog.invokeMethod("stop")
-        }
+        }.isInstanceOf(java.lang.IllegalStateException::class.java)
     }
 
     @Test
