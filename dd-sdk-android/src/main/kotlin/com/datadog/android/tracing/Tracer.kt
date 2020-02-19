@@ -9,8 +9,13 @@ package com.datadog.android.tracing
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import datadog.opentracing.DDTracer
+import datadog.opentracing.propagation.ExtractedContext
 import datadog.trace.api.Config
+import datadog.trace.api.sampling.PrioritySampling
+import java.math.BigInteger
+import java.security.SecureRandom
 import java.util.Properties
+import java.util.Random
 
 /**
  *  A class enabling Datadog tracing features.
@@ -20,7 +25,33 @@ import java.util.Properties
  * You can have multiple tracers configured in your application, each with their own settings.
  *
  */
-class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTracer(config, writer) {
+class Tracer
+internal constructor(
+    config: Config,
+    writer: TraceWriter,
+    private val random: Random
+) : DDTracer(config, writer) {
+
+    // region Tracer
+
+    override fun buildSpan(operationName: String?): DDSpanBuilder {
+        // On Android, the same zygote is reused for every single application,
+        // meaning that the ThreadLocalRandom reuses the same exact state,
+        // resulting in conflicting TraceIds.
+        // To mitigate this, we recompute our own trace id and override it here
+        val parentContext = activeSpan()?.context() ?: ExtractedContext(
+            BigInteger(TRACE_ID_BIT_SIZE, random),
+            BigInteger.ZERO,
+            PrioritySampling.UNSET,
+            null,
+            emptyMap(),
+            emptyMap()
+        )
+        return super.buildSpan(operationName)
+            .asChildOf(parentContext)
+    }
+
+    // endregion
 
     /**
      * Builds a [Tracer] instance.
@@ -30,6 +61,7 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
 
         private var serviceName: String = TracesFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
+        private var random: Random = SecureRandom()
 
         // region Public API
 
@@ -39,7 +71,8 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
         fun build(): Tracer {
             return Tracer(
                 config(),
-                TraceWriter(TracesFeature.persistenceStrategy.getWriter())
+                TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
+                random
             )
         }
 
@@ -67,6 +100,11 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
 
         // region Internal
 
+        internal fun withRandom(random: Random): Builder {
+            this.random = random
+            return this
+        }
+
         internal fun properties(): Properties {
             val properties = Properties()
             properties.setProperty(Config.SERVICE_NAME, serviceName)
@@ -82,11 +120,13 @@ class Tracer internal constructor(config: Config, writer: TraceWriter) : DDTrace
         }
 
         // endregion
+    }
 
-        companion object {
-            // the minimum closed spans required for triggering a flush and deliver
-            // everything to the writer
-            internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
-        }
+    companion object {
+        // the minimum closed spans required for triggering a flush and deliver
+        // everything to the writer
+        internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
+
+        internal const val TRACE_ID_BIT_SIZE = 63
     }
 }

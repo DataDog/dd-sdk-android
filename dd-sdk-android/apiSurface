@@ -61,10 +61,11 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
 class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
+  override fun buildSpan(String?): DDSpanBuilder
   class Builder
     fun build(): Tracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
-    companion object
+  companion object
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
