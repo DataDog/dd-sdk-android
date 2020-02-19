@@ -1,3 +1,9 @@
+# 1.2.1 / 2020-02-19
+
+### Changes
+
+* [BUGFIX] Fix invalid dependency version in `dd-sdk-android-timber` See #138 (Thanks @mduong)
+
 # 1.2.0 / 2020-01-20
 
 ### Changes
