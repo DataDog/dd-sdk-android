@@ -20,6 +20,7 @@ const val BINTRAY_API_KEY = "bintrayApiKey"
 
 fun Project.publishingConfig(localRepo: String) {
 
+    version = AndroidConfig.VERSION.name
     val projectName = name
 
     extensionConfig<PublishingExtension> {
