@@ -5,4 +5,4 @@
 ## Docs
 
 docs/ @DataDog/baklava
-*.md @DataDog/baklava
+README.md @DataDog/baklava
