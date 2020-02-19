@@ -11,11 +11,8 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.tools.unit.createInstance
+import com.datadog.tools.unit.*
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.getFieldValue
-import com.datadog.tools.unit.invokeGenericMethod
-import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -53,8 +50,11 @@ class LogIOBenchmark {
 
         val context = InstrumentationRegistry.getInstrumentation().context
         Datadog.initialize(context, "NO_TOKEN", fakeEndpoint)
-        testedStrategy = Datadog.getFieldValue("logStrategy")
-        testedWriter = testedStrategy.invokeMethod("getSynchronousWriter")!!
+        val classLoader = Datadog::class.java.classLoader!!
+        val LogFeatureClass =
+            classLoader.loadClass("com.datadog.android.log.internal.LogsFeature") as Class<Any>
+        testedStrategy = LogFeatureClass.getStaticValue("persistenceStrategy")
+        testedWriter = testedStrategy.invokeMethod("getWriter")!!
         testedReader = testedStrategy.invokeMethod("getReader")!!
     }
 
@@ -115,6 +115,8 @@ class LogIOBenchmark {
             forge.anAlphabeticalString(),
             forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com")
         )
+        val spanId = forge.anAlphaNumericalString()
+        val traceId = forge.anAlphaNumericalString()
 
         return createInstance(
             "com.datadog.android.log.internal.domain.Log",
@@ -128,7 +130,9 @@ class LogIOBenchmark {
             networkInfo,
             userInfo,
             loggerName,
-            threadName
+            threadName,
+            spanId,
+            traceId
         )
     }
 

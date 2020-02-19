@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.threading.LazyHandlerThread
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
