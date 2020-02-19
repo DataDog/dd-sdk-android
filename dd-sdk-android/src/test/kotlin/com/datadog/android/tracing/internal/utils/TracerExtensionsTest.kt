@@ -2,7 +2,9 @@ package com.datadog.android.tracing.internal.utils
 
 import com.datadog.android.tracing.Tracer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.getStaticValue
 import datadog.opentracing.DDSpan
+import datadog.opentracing.scopemanager.ContextualScopeManager
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,7 +36,13 @@ class TracerExtensionsTest {
 
     @AfterEach
     fun `tear down`() {
-        tracer.scopeManager().active()?.close()
+        val activeSpan = tracer.activeSpan()
+        val activeScope = tracer.scopeManager().active()
+        activeSpan?.finish()
+        activeScope?.close()
+
+        val tlsScope: ThreadLocal<*> = ContextualScopeManager::class.java.getStaticValue("tlsScope")
+        tlsScope.remove()
     }
 
     @Test
