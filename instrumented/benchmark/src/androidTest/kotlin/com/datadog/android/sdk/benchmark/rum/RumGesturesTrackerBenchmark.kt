@@ -28,7 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class RumGesturesTrackerBenchmark {
+internal class RumGesturesTrackerBenchmark {
 
     @get:Rule
     val benchmark = BenchmarkRule()
