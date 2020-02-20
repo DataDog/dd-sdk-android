@@ -118,17 +118,4 @@ internal class DatadogGesturesTrackerTest {
         // then
         verify(mockWindow, never()).callback = any()
     }
-
-//    @Test
-//    fun `when tap was detected will start and finish a span`() {
-//        // given
-//        val motionEvent: MotionEvent = mock()
-//
-//        // when
-//        underTest.onSingleTapUp(motionEvent)
-//
-//        // verify
-//        verify(mockRumTracer).buildSpan(DatadogGesturesTracker.UI_TAP_ACTION_EVENT)
-//        verify(mockSpan).finish(DatadogGesturesTracker.DEFAULT_EVENT_DURATION)
-//    }
 }
