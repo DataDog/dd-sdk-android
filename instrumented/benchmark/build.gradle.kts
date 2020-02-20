@@ -4,6 +4,7 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.implementation
 
 plugins {
     id("com.android.library")
@@ -85,6 +86,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.KotlinReflect)
     implementation(Dependencies.Libraries.AndroidXMultidex)
+    implementation(Dependencies.Libraries.AndroidxSupportBase)
 
     androidTestImplementation(project(":tools:unit"))
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
@@ -155,5 +157,26 @@ reviewBenchmark {
     addThreshold(
         "benchmark_read_logs_from_disk",
         TimeUnit.MILLISECONDS.toNanos(60)
+    )
+
+    // Rum Gestures Tracker Benchmarks
+    // the threshold are a bit high because of the Espresso instrumentation but what
+    // we want to point out is that the difference between running with tracker and without
+    // is not significant
+    addThreshold(
+        "benchmark_clicking_on_recycler_view_item_tracker_attached",
+        TimeUnit.MILLISECONDS.toNanos(270)
+    )
+    addThreshold(
+        "benchmark_clicking_on_simple_button_tracker_attached",
+        TimeUnit.MILLISECONDS.toNanos(270)
+    )
+    addThreshold(
+        "benchmark_clicking_on_recycler_view_item_tracker_not_attached",
+        TimeUnit.MILLISECONDS.toNanos(270)
+    )
+    addThreshold(
+        "benchmark_clicking_on_simple_button_tracker_not_attached",
+        TimeUnit.MILLISECONDS.toNanos(270)
     )
 }
