@@ -11,6 +11,7 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
@@ -46,7 +47,7 @@ class LogIOBenchmark {
         mockWebServer = MockWebServer().apply { start() }
         mockWebServer.setDispatcher(object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
-                return mockResponse()
+                return mockResponse(200)
             }
         })
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
@@ -137,12 +138,6 @@ class LogIOBenchmark {
             spanId,
             traceId
         )
-    }
-
-    private fun mockResponse(): MockResponse {
-        return MockResponse()
-            .setResponseCode(200)
-            .setBody("{}")
     }
 
     // endregion
