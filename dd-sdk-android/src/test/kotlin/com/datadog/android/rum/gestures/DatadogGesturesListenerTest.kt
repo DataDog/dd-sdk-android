@@ -12,6 +12,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpan
 import datadog.opentracing.DDTracer
@@ -348,6 +349,19 @@ internal class DatadogGesturesListenerTest {
         verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
     }
 
+    @Test
+    fun `will not send any span if decor view does not have a strong reference`(forge: Forge) {
+        // given
+        val mockEvent = mockMotionEvent(forge)
+        underTest = DatadogGesturesListener(mockRumTracer, WeakReference<View>(null))
+
+        // when
+        underTest.onSingleTapUp(mockEvent)
+
+        // then
+        verifyZeroInteractions(mockRumTracer)
+    }
+
     // endregion
 
     // region Internal
@@ -375,11 +389,11 @@ internal class DatadogGesturesListenerTest {
 
         val locationOnScreenArray = IntArray(2)
         if (!hitTest && failHitTestBecauseOfXY) {
-            locationOnScreenArray[0] = (forEvent.x).toInt() + random.nextInt(10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() + random.nextInt(10)
+            locationOnScreenArray[0] = (forEvent.x).toInt() + random.nextInt(from = 1, until = 10)
+            locationOnScreenArray[1] = (forEvent.y).toInt() + random.nextInt(from = 1, until = 10)
         } else {
-            locationOnScreenArray[0] = (forEvent.x).toInt() - random.nextInt(10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() - random.nextInt(10)
+            locationOnScreenArray[0] = (forEvent.x).toInt() - random.nextInt(from = 1, until = 10)
+            locationOnScreenArray[1] = (forEvent.y).toInt() - random.nextInt(from = 1, until = 10)
         }
         val mockedView: T = mock {
             whenever(it.id).thenReturn(id)
@@ -393,14 +407,14 @@ internal class DatadogGesturesListenerTest {
                 null
             }
 
-            val diffPosX = abs((abs(forEvent.x) - abs(locationOnScreenArray[0]))).toInt()
-            val diffPosY = abs((abs(forEvent.y) - abs(locationOnScreenArray[1]))).toInt()
+            val diffPosX = abs(forEvent.x - locationOnScreenArray[0]).toInt()
+            val diffPosY = abs(forEvent.y - locationOnScreenArray[1]).toInt()
             if (!hitTest && failHitTestBecauseOfWidthHeight) {
-                whenever(it.width).thenReturn(diffPosX - random.nextInt(10))
-                whenever(it.height).thenReturn(diffPosY - random.nextInt(10))
+                whenever(it.width).thenReturn(diffPosX - random.nextInt(from = 1, until = 10))
+                whenever(it.height).thenReturn(diffPosY - random.nextInt(from = 1, until = 10))
             } else {
-                whenever(it.width).thenReturn(diffPosX + random.nextInt(10))
-                whenever(it.height).thenReturn(diffPosY + random.nextInt(10))
+                whenever(it.width).thenReturn(diffPosX + random.nextInt(from = 1, until = 10))
+                whenever(it.height).thenReturn(diffPosY + random.nextInt(from = 1, until = 10))
             }
 
             applyOthers(this.mock)
