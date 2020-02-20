@@ -1,18 +1,12 @@
 package com.datadog.android.rum.gestures
 
 import android.content.res.Resources
-import android.graphics.Rect
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.*
 import datadog.opentracing.DDSpan
 import datadog.opentracing.DDTracer
 import fr.xgouchet.elmyr.Forge
@@ -27,6 +21,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.random.Random
 
 @Extensions(
     ExtendWith(
@@ -67,7 +64,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap creates the span when target deep in the View Hierarchy`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         val container1: ViewGroup = mock(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -131,7 +128,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap creates the span if target is ViewGroup with no children`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         val target: ViewGroup = mock(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -186,7 +183,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap creates span for valid visible target`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         val invalidTarget: View = mock(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -233,7 +230,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap creates span for valid clickable target`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         val invalidTarget: View = mock(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -280,7 +277,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap creates span with decorView as target if no children present`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         decorView = mock<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -314,7 +311,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap does not add the resource name if any exception`(forge: Forge) {
         // given
-        val mockEvent = mockEvent(forge.aFloat(), forge.aFloat())
+        val mockEvent = mockMotionEvent(forge)
         decorView = mock<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -352,6 +349,13 @@ internal class DatadogGesturesListenerTest {
 
     // region Internal
 
+    private fun mockMotionEvent(forge: Forge): MotionEvent {
+        return mock {
+            whenever(it.x).thenReturn(forge.aFloat(min = 0f, max = XY_MAX_VALUE))
+            whenever(it.y).thenReturn(forge.aFloat(min = 0f, max = XY_MAX_VALUE))
+        }
+    }
+
     private inline fun <reified T : View> mock(
         id: Int,
         forEvent: MotionEvent,
@@ -361,24 +365,45 @@ internal class DatadogGesturesListenerTest {
         applyOthers: (T) -> Unit = {}
     ): T {
 
+        val random = Random(System.currentTimeMillis())
+
+        val failHitTestBecauseOfXY = random.nextBits(1) == 1
+        val failHitTestBecauseOfWidthHeight = !failHitTestBecauseOfXY
+
+        val locationOnScreenArray = IntArray(2)
+        if (!hitTest && failHitTestBecauseOfXY) {
+            locationOnScreenArray[0] = (forEvent.x).toInt() + random.nextInt(10)
+            locationOnScreenArray[1] = (forEvent.y).toInt() + random.nextInt(10)
+        } else {
+            locationOnScreenArray[0] = (forEvent.x).toInt() - random.nextInt(10)
+            locationOnScreenArray[1] = (forEvent.y).toInt() - random.nextInt(10)
+        }
         val mockedView: T = mock {
             whenever(it.id).thenReturn(id)
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
-            val rect = mock<Rect>()
-            whenever(it.clipBounds).thenReturn(rect)
-            whenever(rect.contains(forEvent.x.toInt(), forEvent.y.toInt())).thenReturn(hitTest)
+
+            whenever(it.getLocationOnScreen(any())).doAnswer {
+                val array = it.arguments[0] as IntArray
+                array[0] = locationOnScreenArray[0]
+                array[1] = locationOnScreenArray[1]
+                null
+            }
+
+            val diffPosX = abs((abs(forEvent.x) - abs(locationOnScreenArray[0]))).toInt()
+            val diffPosY = abs((abs(forEvent.y) - abs(locationOnScreenArray[1]))).toInt()
+            if (!hitTest && failHitTestBecauseOfWidthHeight) {
+                whenever(it.width).thenReturn(diffPosX - random.nextInt(10))
+                whenever(it.height).thenReturn(diffPosY - random.nextInt(10))
+            } else {
+                whenever(it.width).thenReturn(diffPosX + random.nextInt(10))
+                whenever(it.height).thenReturn(diffPosY + random.nextInt(10))
+            }
+
             applyOthers(this.mock)
         }
 
         return mockedView
-    }
-
-    private fun mockEvent(x: Float, y: Float): MotionEvent {
-        return mock {
-            whenever(it.x).thenReturn(x)
-            whenever(it.y).thenReturn(y)
-        }
     }
 
     private fun mockResourcesForTarget(target: View, expectedResourceName: String) {
@@ -389,4 +414,8 @@ internal class DatadogGesturesListenerTest {
     }
 
     // endregion
+
+    companion object {
+        const val XY_MAX_VALUE = 1000f
+    }
 }
