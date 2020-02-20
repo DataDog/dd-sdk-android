@@ -50,7 +50,7 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
         if (deviceDir.exists() && deviceDir.isDirectory && deviceDir.canRead()) {
             deviceDir.listFiles()?.forEach {
                 if (it.isFile && it.canRead() && it.extension == "json") {
-                    check(visitor.visitBenchmarkJsonFile(it, extension.thresholds)) {
+                    check(visitor.visitBenchmarkJsonFile(it, extension.thresholds, extension.ignored)) {
                         "One or more benchmark tests in ${it.path} didn't match the expected threshold."
                     }
                 }

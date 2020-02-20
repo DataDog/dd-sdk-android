@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.sdk.benchmark.R
 
-class RumTrackedActivity : Activity() {
+internal class RumTrackedActivity : Activity() {
 
     lateinit var recyclerView: RecyclerView
     private val data = arrayOf(
@@ -30,7 +30,8 @@ class RumTrackedActivity : Activity() {
         recyclerView.adapter = Adapter(data)
     }
 
-    inner class Adapter(val data: Array<String>) : RecyclerView.Adapter<Adapter.ViewHolder>() {
+    internal inner class Adapter(val data: Array<String>) :
+        RecyclerView.Adapter<Adapter.ViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return ViewHolder(
@@ -50,7 +51,7 @@ class RumTrackedActivity : Activity() {
             holder.render(data[position])
         }
 
-        inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+        internal inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
 
             fun render(model: String) {
                 view.findViewById<TextView>(R.id.textView).setText(model)
