@@ -7,8 +7,9 @@ import android.view.ViewGroup
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.Tracer
 import java.lang.ref.WeakReference
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.TimeUnit
+
 
 internal class DatadogGesturesListener(
     private val rumTracer: Tracer,
@@ -139,11 +140,14 @@ internal class DatadogGesturesListener(
         }
 
         private fun hitTest(view: View, x: Float, y: Float): Boolean {
-            val clipBounds = view.clipBounds
-            clipBounds?.let {
-                return clipBounds.contains(x.toInt(), y.toInt())
-            }
-            return false
+            val l = IntArray(2)
+            view.getLocationOnScreen(l)
+            val vx = l[0]
+            val vy = l[1]
+            val w = view.width
+            val h = view.height
+
+            return !(x < vx || x > vx + w || y < vy || y > vy + h)
         }
     }
 }
