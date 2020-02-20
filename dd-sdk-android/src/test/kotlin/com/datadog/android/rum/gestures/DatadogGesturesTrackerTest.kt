@@ -1,12 +1,8 @@
-package com.datadog.android.instrumentation.gestures
+package com.datadog.android.rum.gestures
 
 import android.app.Activity
-import android.view.MotionEvent
 import android.view.Window
 import androidx.core.view.GestureDetectorCompat
-import com.datadog.android.instrumentation.gesture.DatadogGesturesTracker
-import com.datadog.android.instrumentation.gesture.NoOpWindowCallback
-import com.datadog.android.instrumentation.gesture.WindowCallbackWrapper
 import com.datadog.android.tracing.Tracer
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -51,14 +47,8 @@ internal class DatadogGesturesTrackerTest {
 
     @BeforeEach
     fun `set up`() {
-        mockRumTracer.apply {
-            whenever(buildSpan(DatadogGesturesTracker.UI_TAP_ACTION_EVENT))
-                .thenReturn(mockSpanBuilder)
-        }
-        mockSpanBuilder.apply {
-            whenever(start()).thenReturn(mockSpan)
-        }
-        underTest = DatadogGesturesTracker(mockRumTracer)
+        underTest =
+            DatadogGesturesTracker(mockRumTracer)
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mock())
     }
@@ -129,16 +119,16 @@ internal class DatadogGesturesTrackerTest {
         verify(mockWindow, never()).callback = any()
     }
 
-    @Test
-    fun `when tap was detected will start and finish a span`() {
-        // given
-        val motionEvent: MotionEvent = mock()
-
-        // when
-        underTest.onSingleTapUp(motionEvent)
-
-        // verify
-        verify(mockRumTracer).buildSpan(DatadogGesturesTracker.UI_TAP_ACTION_EVENT)
-        verify(mockSpan).finish(DatadogGesturesTracker.DEFAULT_EVENT_DURATION)
-    }
+//    @Test
+//    fun `when tap was detected will start and finish a span`() {
+//        // given
+//        val motionEvent: MotionEvent = mock()
+//
+//        // when
+//        underTest.onSingleTapUp(motionEvent)
+//
+//        // verify
+//        verify(mockRumTracer).buildSpan(DatadogGesturesTracker.UI_TAP_ACTION_EVENT)
+//        verify(mockSpan).finish(DatadogGesturesTracker.DEFAULT_EVENT_DURATION)
+//    }
 }

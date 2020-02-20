@@ -11,8 +11,11 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.tools.unit.*
+import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.getStaticValue
+import com.datadog.tools.unit.invokeGenericMethod
+import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
