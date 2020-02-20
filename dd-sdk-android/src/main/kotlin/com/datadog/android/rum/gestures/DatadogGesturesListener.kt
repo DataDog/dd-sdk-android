@@ -23,10 +23,10 @@ internal class DatadogGesturesListener(
     }
 
     override fun onSingleTapUp(e: MotionEvent): Boolean {
-        // we just intercept but not steal the event
-        val spanBuilder = rumTracer
-            .buildSpan(UI_TAP_ACTION_EVENT)
         decorViewReference.get()?.let {
+            // we just intercept but not steal the event
+            val spanBuilder = rumTracer
+                .buildSpan(UI_TAP_ACTION_EVENT)
             val target =
                 findTarget(
                     it,
@@ -45,10 +45,10 @@ internal class DatadogGesturesListener(
             } catch (e: Exception) {
                 sdkLogger.e("$TAG: Could not found resource name for target:${target.id}", e)
             }
+            spanBuilder
+                .start()
+                .finish(DEFAULT_EVENT_DURATION)
         }
-        spanBuilder
-            .start()
-            .finish(DEFAULT_EVENT_DURATION)
         return false
     }
 
@@ -130,10 +130,7 @@ internal class DatadogGesturesListener(
                 return false
             }
             if (view is ViewGroup) {
-                if (view.childCount == 0) {
-                    return true
-                }
-                return false
+                return (view.childCount == 0)
             }
             return true
         }
