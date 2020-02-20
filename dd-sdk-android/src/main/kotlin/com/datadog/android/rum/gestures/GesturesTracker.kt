@@ -1,4 +1,4 @@
-package com.datadog.android.instrumentation.gesture
+package com.datadog.android.rum.gestures
 
 import android.app.Activity
 
