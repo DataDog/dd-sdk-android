@@ -159,24 +159,21 @@ reviewBenchmark {
         TimeUnit.MILLISECONDS.toNanos(60)
     )
 
-    // Rum Gestures Tracker Benchmarks
-    // the threshold are a bit high because of the Espresso instrumentation but what
-    // we want to point out is that the difference between running with tracker and without
-    // is not significant
-    addThreshold(
-        "benchmark_clicking_on_recycler_view_item_tracker_attached",
-        TimeUnit.MILLISECONDS.toNanos(270)
+    // Ignore Gestures Tracker Benchmarks
+    // The thresholds are too high because of the Espresso instrumentation.
+    // The only reason we added those benchmarks is to see the diffs between running with or without
+    // the tracker attached.
+    // TODO RUMM-240 Add a plugin extension to be able to assert diffs in execution time
+    ignoreTest(
+        "benchmark_clicking_on_recycler_view_item_tracker_attached"
     )
-    addThreshold(
-        "benchmark_clicking_on_simple_button_tracker_attached",
-        TimeUnit.MILLISECONDS.toNanos(270)
+    ignoreTest(
+        "benchmark_clicking_on_simple_button_tracker_attached"
     )
-    addThreshold(
-        "benchmark_clicking_on_recycler_view_item_tracker_not_attached",
-        TimeUnit.MILLISECONDS.toNanos(270)
+    ignoreTest(
+        "benchmark_clicking_on_recycler_view_item_tracker_not_attached"
     )
-    addThreshold(
-        "benchmark_clicking_on_simple_button_tracker_not_attached",
-        TimeUnit.MILLISECONDS.toNanos(270)
+    ignoreTest(
+        "benchmark_clicking_on_simple_button_tracker_not_attached"
     )
 }

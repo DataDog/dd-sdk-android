@@ -15,14 +15,18 @@ class BenchmarkJsonFileVisitor {
 
     // region ReviewJsonFileVisitor
 
-    fun visitBenchmarkJsonFile(jsonFile: File, thresholds: Map<String, Long>): Boolean {
+    fun visitBenchmarkJsonFile(
+        jsonFile: File,
+        thresholds: Map<String, Long>,
+        ignored: MutableSet<String>
+    ): Boolean {
         val gson = Gson()
         val benchmarkResult = gson.fromJson(jsonFile.readText(), BenchmarkResult::class.java)
 
         println(benchmarkResult.context.targetBuild)
 
         return benchmarkResult.benchmarks.all {
-            processBenchmarkResults(it, thresholds)
+            processBenchmarkResults(it, thresholds, ignored)
         }
     }
 
@@ -32,9 +36,13 @@ class BenchmarkJsonFileVisitor {
 
     private fun processBenchmarkResults(
         benchmark: Benchmark,
-        thresholds: Map<String, Long>
+        thresholds: Map<String, Long>,
+        ignored: MutableSet<String>
     ): Boolean {
         val testName = benchmark.nameWithoutPrefixes()
+        if (ignored.contains(testName)) {
+            return true
+        }
         val expectedThreshold = thresholds[testName]
         val median = benchmark.metrics.timeNs.median
 
@@ -46,7 +54,7 @@ class BenchmarkJsonFileVisitor {
             median > expectedThreshold -> {
                 System.err.println(
                     "Benchmark test \"$testName\" reported a median time of $median nanos, " +
-                        "but threshold is set to $expectedThreshold nanos"
+                            "but threshold is set to $expectedThreshold nanos"
                 )
                 false
             }

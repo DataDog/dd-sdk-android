@@ -7,9 +7,8 @@ import android.view.ViewGroup
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.AndroidTracer
 import java.lang.ref.WeakReference
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
-
 
 internal class DatadogGesturesListener(
     private val rumTracer: AndroidTracer,
