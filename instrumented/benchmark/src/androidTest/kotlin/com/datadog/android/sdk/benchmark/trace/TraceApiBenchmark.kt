@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.benchmark.aThrowable
+import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.android.tracing.Tracer
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -136,12 +137,6 @@ class TraceApiBenchmark {
                 counter++
             } while (counter < iterations)
         }
-    }
-
-    private fun mockResponse(code: Int): MockResponse {
-        return MockResponse()
-            .setResponseCode(code)
-            .setBody("{}")
     }
 
     companion object {
