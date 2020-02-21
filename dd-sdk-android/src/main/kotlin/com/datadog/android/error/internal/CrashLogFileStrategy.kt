@@ -8,6 +8,7 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
@@ -28,8 +29,7 @@ internal class CrashLogFileStrategy(
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    "[",
-    "]"
+    PayloadDecoration.JSON_ARRAY_DECORATION
 ) {
     companion object {
         internal const val CRASH_REPORTS_DATA_VERSION = LogFileStrategy.LOGS_DATA_VERSION
