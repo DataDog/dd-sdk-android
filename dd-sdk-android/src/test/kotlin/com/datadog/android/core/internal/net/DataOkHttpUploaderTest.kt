@@ -370,7 +370,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             testedUploader.upload(data)
 
             assertThat(outputStream)
-                .hasLogLine(Log.INFO, expectedTag, startsWith("Response code:$code"))
+                .hasLogLine(Log.INFO, expectedTag, startsWith("Response from:"))
         }
     }
 
