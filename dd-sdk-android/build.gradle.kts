@@ -18,6 +18,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
 
 plugins {
@@ -108,6 +109,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.JetpackWorkManager)
+    implementation(Dependencies.Libraries.AndroidxSupportBase)
     api(Dependencies.Libraries.TracingOt)
 
     testImplementation(project(":tools:unit"))
