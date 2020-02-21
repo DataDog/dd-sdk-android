@@ -62,18 +62,6 @@ internal class LogSerializerTest {
     }
 
     @Test
-    fun `serializes a log with trace id and span id`(@Forgery fakeLog: Log, forge: Forge) {
-        val tracedLog = fakeLog.copy(
-            traceId = forge.aNumericalString(),
-            spanId = forge.aNumericalString()
-        )
-
-        val serialized = underTest.serialize(tracedLog)
-
-        assertLogMatches(serialized, tracedLog)
-    }
-
-    @Test
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
         // given
         val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
@@ -143,17 +131,6 @@ internal class LogSerializerTest {
             .hasField(LogSerializer.TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
             .hasField(LogSerializer.TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
             .hasField(LogSerializer.TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
-
-        if (log.traceId != null) {
-            assertThat(jsonObject).hasField(LogSerializer.TAG_TRACE_ID, log.traceId)
-        } else {
-            assertThat(jsonObject).doesNotHaveField(LogSerializer.TAG_TRACE_ID)
-        }
-        if (log.spanId != null) {
-            assertThat(jsonObject).hasField(LogSerializer.TAG_SPAN_ID, log.spanId)
-        } else {
-            assertThat(jsonObject).doesNotHaveField(LogSerializer.TAG_SPAN_ID)
-        }
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(

@@ -82,7 +82,7 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.getFieldValue("handler")
 
-        assertThat(handler).isSameAs(NoOpLogHandler)
+        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
         assertThat(outputStream)
             .hasLogLine(AndroidLog.ERROR, "Datadog", startsWith("Datadog has not been initialized"))
     }
