@@ -178,6 +178,7 @@ internal constructor(private val handler: LogHandler) {
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
+        private var bundleWithRumEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
 
@@ -194,9 +195,8 @@ internal constructor(private val handler: LogHandler) {
                     )
                 }
                 datadogLogsEnabled -> buildDatadogHandler()
-                logcatLogsEnabled ->
-                    buildLogcatHandler()
-                else -> NoOpLogHandler
+                logcatLogsEnabled -> buildLogcatHandler()
+                else -> NoOpLogHandler()
             }
 
             return Logger(handler)
@@ -260,6 +260,17 @@ internal constructor(private val handler: LogHandler) {
         }
 
         /**
+         * Enables the logs bundling with the current active View. If this feature is enabled all
+         * the logs from this moment on will be bundled with the current view information and you
+         * will be able to see all the logs sent during a specific view in the Rum Explorer.
+         * @param enabled true by default
+         */
+        fun setBundleWithRumEnabled(enabled: Boolean): Builder {
+            bundleWithRumEnabled = enabled
+            return this
+        }
+
+        /**
          * Sets the sample rate for this Logger.
          * @param rate the sampling rate, in percent.
          * A value of `0.3` means we'll send 30% of the logs.
@@ -279,7 +290,7 @@ internal constructor(private val handler: LogHandler) {
         private fun buildDatadogHandler(): LogHandler {
             return if (!LogsFeature.isInitialized()) {
                 devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
-                NoOpLogHandler
+                NoOpLogHandler()
             } else {
                 val netInfoProvider = if (networkInfoEnabled) {
                     CoreFeature.networkInfoProvider
@@ -287,14 +298,15 @@ internal constructor(private val handler: LogHandler) {
                     null
                 }
                 DatadogLogHandler(
-                        writer = LogsFeature.persistenceStrategy.getWriter(),
-                        serviceName = serviceName,
-                        loggerName = loggerName,
-                        networkInfoProvider = netInfoProvider,
-                        timeProvider = CoreFeature.timeProvider,
-                        userInfoProvider = CoreFeature.userInfoProvider,
-                        bundleWithTraces = bundleWithTraceEnabled,
-                        sampler = RateBasedSampler(sampleRate)
+                    writer = LogsFeature.persistenceStrategy.getWriter(),
+                    serviceName = serviceName,
+                    loggerName = loggerName,
+                    networkInfoProvider = netInfoProvider,
+                    timeProvider = CoreFeature.timeProvider,
+                    userInfoProvider = CoreFeature.userInfoProvider,
+                    bundleWithTraces = bundleWithTraceEnabled,
+                    bundleWithRum = bundleWithRumEnabled,
+                    sampler = RateBasedSampler(sampleRate)
                 )
             }
         }

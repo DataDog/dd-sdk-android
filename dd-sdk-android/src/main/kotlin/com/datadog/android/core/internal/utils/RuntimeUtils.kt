@@ -20,7 +20,7 @@ internal fun buildSdkLogger(): Logger {
     val handler = if (BuildConfig.LOGCAT_ENABLED) {
         LogcatLogHandler(SDK_LOG_PREFIX)
     } else {
-        NoOpLogHandler
+        NoOpLogHandler()
     }
     return Logger(handler)
 }
