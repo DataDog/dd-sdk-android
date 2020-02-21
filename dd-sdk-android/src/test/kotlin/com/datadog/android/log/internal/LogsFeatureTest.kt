@@ -68,6 +68,7 @@ internal class LogsFeatureTest {
     fun `set up`(forge: Forge) {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
@@ -155,6 +156,7 @@ internal class LogsFeatureTest {
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()

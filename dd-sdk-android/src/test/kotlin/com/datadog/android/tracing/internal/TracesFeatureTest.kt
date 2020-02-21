@@ -75,6 +75,7 @@ internal class TracesFeatureTest {
     fun `set up`(forge: Forge) {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
@@ -193,6 +194,7 @@ internal class TracesFeatureTest {
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
