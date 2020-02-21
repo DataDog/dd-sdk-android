@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import java.io.File
 
 internal class LogFileStrategy(
@@ -25,8 +26,7 @@ internal class LogFileStrategy(
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    "[",
-    "]",
+    PayloadDecoration.JSON_ARRAY_DECORATION,
     WRITER_THREAD_NAME,
     LogFileDataMigrator(context.filesDir)
 ) {
