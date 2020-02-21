@@ -18,6 +18,7 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -72,6 +73,7 @@ object Datadog {
      * @param config the configuration for the SDK library
      * @see [DatadogConfig]
      */
+    @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
@@ -105,6 +107,16 @@ object Datadog {
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 timeProvider = CoreFeature.timeProvider,
                 userInfoProvider = CoreFeature.userInfoProvider,
+                systemInfoProvider = CoreFeature.systemInfoProvider
+            )
+        }
+
+        config.rumConfig?.let { featureConfig ->
+            RumFeature.initialize(
+                appContext = appContext,
+                config = featureConfig,
+                okHttpClient = CoreFeature.okHttpClient,
+                networkInfoProvider = CoreFeature.networkInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider
             )
         }
@@ -187,6 +199,7 @@ object Datadog {
         if (initialized.get()) {
             LogsFeature.stop()
             TracesFeature.stop()
+            RumFeature.stop()
             CrashReportsFeature.stop()
             CoreFeature.stop()
             isDebug = false
