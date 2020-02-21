@@ -80,7 +80,7 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.getFieldValue("handler")
 
-        assertThat(handler).isSameAs(NoOpLogHandler)
+        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
         verify(mockDevLogHandler)
             .handleLog(AndroidLog.ERROR, Datadog.MESSAGE_NOT_INITIALIZED)
     }
