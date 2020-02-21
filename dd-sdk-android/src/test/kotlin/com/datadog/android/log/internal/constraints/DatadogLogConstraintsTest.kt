@@ -25,6 +25,9 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.allOf
+import org.hamcrest.CoreMatchers.endsWith
+import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -108,7 +111,10 @@ internal class DatadogLogConstraintsTest {
             .hasLogLine(
                 Log.WARN,
                 expectedTag,
-                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+                allOf(
+                    startsWith("tag ") ,
+                    endsWith(" was modified to \"$expectedCorrectedTag\" to match our constraints.")
+                )
             )
     }
 
