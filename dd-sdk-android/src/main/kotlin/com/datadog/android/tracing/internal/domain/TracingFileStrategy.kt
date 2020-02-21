@@ -2,6 +2,7 @@ package com.datadog.android.tracing.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -27,8 +28,7 @@ internal class TracingFileStrategy(
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    "{ \"spans\": [",
-    "]$envSuffix}",
+    PayloadDecoration("{ \"spans\": [", "]$envSuffix}", ","),
     WRITER_THREAD_NAME
 ) {
     companion object {
