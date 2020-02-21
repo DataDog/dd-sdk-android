@@ -8,8 +8,10 @@ package com.datadog.android
 
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 class DatadogConfigBuilderTest {
 
     lateinit var fakeClientToken: String
+    @Forgery lateinit var fakeApplicationId: UUID
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -34,7 +37,7 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder returns sensible defaults`() {
+    fun `builder returns sensible defaults without applicationId`() {
         val config = DatadogConfig.Builder(fakeClientToken)
             .build()
 
@@ -43,6 +46,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -52,6 +56,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    UUID(0, 0),
                     DatadogEndpoint.TRACES_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -61,7 +66,105 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isNull()
+    }
+
+    @Test
+    fun `builder returns sensible defaults with String applicationId`() {
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId.toString())
+            .build()
+
+        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+    }
+    @Test
+    fun `builder returns sensible defaults with UUID applicationId`() {
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .build()
+
+        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )
@@ -73,7 +176,7 @@ class DatadogConfigBuilderTest {
         forge: Forge
     ) {
         val serviceName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -85,6 +188,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     serviceName,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -94,6 +198,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     serviceName,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -103,7 +208,18 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
+                    serviceName,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     serviceName,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )
@@ -115,7 +231,7 @@ class DatadogConfigBuilderTest {
         forge: Forge
     ) {
         val envName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -127,6 +243,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
@@ -136,6 +253,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
@@ -145,7 +263,19 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
@@ -157,7 +287,7 @@ class DatadogConfigBuilderTest {
         forge: Forge
     ) {
         val envName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -169,6 +299,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
@@ -178,6 +309,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
@@ -187,7 +319,19 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    envName
+                )
+            )
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
@@ -196,21 +340,23 @@ class DatadogConfigBuilderTest {
 
     @Test
     fun `builder with all features disabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .setLogsEnabled(false)
             .setTracesEnabled(false)
             .setCrashReportsEnabled(false)
+            .setRumEnabled(false)
             .build()
 
         assertThat(config.needsClearTextHttp).isFalse()
         assertThat(config.logsConfig).isNull()
         assertThat(config.tracesConfig).isNull()
         assertThat(config.crashReportConfig).isNull()
+        assertThat(config.rumConfig).isNull()
     }
 
     @Test
     fun `builder with US endpoints all features enabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useUSEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
@@ -222,6 +368,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -231,6 +378,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -240,7 +388,19 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )
@@ -249,7 +409,7 @@ class DatadogConfigBuilderTest {
 
     @Test
     fun `builder with EU endpoints all features enabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useEUEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
@@ -261,6 +421,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -270,6 +431,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.TRACES_EU,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -279,7 +441,18 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_EU,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )
@@ -293,10 +466,12 @@ class DatadogConfigBuilderTest {
         val logsUrl = forge.aStringMatching("https://[a-z]+\\.com")
         val tracesUrl = forge.aStringMatching("https://[a-z]+\\.com")
         val crashReportsUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val rumUrl = forge.aStringMatching("https://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
+            .useCustomRumEndpoint(rumUrl)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -307,6 +482,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     logsUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -316,6 +492,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     tracesUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -325,7 +502,19 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     crashReportsUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )
@@ -339,10 +528,12 @@ class DatadogConfigBuilderTest {
         val logsUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val tracesUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val crashReportsUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken)
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
+            .useCustomRumEndpoint(rumUrl)
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -353,6 +544,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     logsUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -362,6 +554,7 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     tracesUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
@@ -371,7 +564,18 @@ class DatadogConfigBuilderTest {
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
+                    fakeApplicationId,
                     crashReportsUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
                 )

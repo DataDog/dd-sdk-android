@@ -9,11 +9,14 @@ object com.datadog.android.Datadog
   fun setUserInfo(String? = null, String? = null, String? = null)
 class com.datadog.android.DatadogConfig
   class Builder
+    constructor(String, java.util.UUID)
     constructor(String)
+    constructor(String, String)
     fun build(): DatadogConfig
     fun setLogsEnabled(Boolean): Builder
     fun setTracesEnabled(Boolean): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setRumEnabled(Boolean): Builder
     fun setServiceName(String): Builder
     fun setEnvironmentName(String): Builder
     fun useEUEndpoints(): Builder
@@ -21,6 +24,7 @@ class com.datadog.android.DatadogConfig
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
+    fun useCustomRumEndpoint(String): Builder
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
