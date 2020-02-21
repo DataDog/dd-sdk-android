@@ -7,18 +7,18 @@
 package com.datadog.android.sample;
 
 import android.os.Bundle;
-import android.view.Menu;
 import android.view.MenuItem;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.datadog.android.log.Logger;
+import com.datadog.android.rum.GlobalRum;
+import com.datadog.android.rum.RumMonitor;
 import com.datadog.android.sample.logs.LogsFragment;
 import com.datadog.android.sample.traces.TracesFragment;
 import com.datadog.android.sample.user.UserFragment;
@@ -30,6 +30,8 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 
+import java.util.HashMap;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Scope mMainScope;
     private Span mMainSpan;
     private Span mResumePauseSpan;
+    private RumMonitor mRumMonitor;
 
     private BottomNavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -54,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
 
         mLogger = SampleApplication.fromContext(this).getLogger();
         mLogger.d("MainActivity/onCreate");
+
+        mRumMonitor = GlobalRum.get();
 
         setContentView(R.layout.activity_main);
 
@@ -79,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
+        mRumMonitor.startView(this, getComponentName().getClassName(), new HashMap<String, Object>());
         mResumePauseSpan = GlobalTracer.get()
                 .buildSpan("onResumeOnPause")
                 .asChildOf(mMainSpan)
@@ -92,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         mLogger.d("MainActivity/onPause");
         mResumePauseSpan.finish();
+        mRumMonitor.stopView(this, new HashMap<String, Object>());
     }
 
     @Override
@@ -120,7 +127,13 @@ public class MainActivity extends AppCompatActivity {
 
     // region Internal
 
-    private boolean switchToFragment(@IdRes int id) {
+    private boolean switchToFragment(@IdRes final int id) {
+
+        mRumMonitor.addUserAction(
+                "switchToFragment",
+                new HashMap<String,Object>(){{
+                    put("fragment_id", Integer.toString(id));
+                }});
         final Fragment fragmentToUse;
         final String spanName;
         switch (id) {
@@ -157,6 +170,8 @@ public class MainActivity extends AppCompatActivity {
                 ft.commit();
             }
         });
+
+
         return true;
 
     }

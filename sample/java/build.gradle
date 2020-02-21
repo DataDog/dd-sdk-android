@@ -43,24 +43,17 @@ android {
     productFlavors {
         staging {
             dimension "version"
-            def logsUrl = project.findProperty("DD_OVERRIDE_LOGS_URL")
-            if (logsUrl != null) {
-                buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"${logsUrl}\"")
-            } else {
-                buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "null")
-            }
-
-            def tracesUrl = project.findProperty("DD_OVERRIDE_TRACES_URL")
-            if (tracesUrl != null) {
-                buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"${tracesUrl}\"")
-            } else {
-                buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "null")
-            }
+            buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"${project.findProperty("DD_OVERRIDE_LOGS_URL")}\"")
+            buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"${project.findProperty("DD_OVERRIDE_TRACES_URL")}\"")
+            buildConfigField("String", "DD_OVERRIDE_RUM_URL", "\"${project.findProperty("DD_OVERRIDE_RUM_URL")}\"")
+            buildConfigField("String", "DD_RUM_APPLICATION_ID", "\"${project.findProperty("DD_RUM_APPLICATION_ID")}\"")
         }
         full {
             dimension "version"
             buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "null")
             buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "null")
+            buildConfigField("String", "DD_OVERRIDE_RUM_URL", "null")
+            buildConfigField("String", "DD_RUM_APPLICATION_ID", "null")
         }
     }
 }
