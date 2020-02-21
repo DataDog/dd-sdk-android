@@ -33,7 +33,9 @@ internal abstract class DataOkHttpUploader(
             val call = client.newCall(request)
             val response = call.execute()
             sdkLogger.i(
-                    "Response code:${response.code()} " +
+                    "Response " +
+                            "from ${url.substring(0, 32)}… " +
+                            "code:${response.code()} " +
                             "body:${response.body()?.string()} " +
                             "headers:${response.headers()}"
             )
@@ -58,8 +60,8 @@ internal abstract class DataOkHttpUploader(
     private val userAgent = System.getProperty(SYSTEM_UA).let {
         if (it.isNullOrBlank()) {
             "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
         } else {
             it
         }
