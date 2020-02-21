@@ -40,4 +40,18 @@ object DatadogEndpoint {
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
     const val TRACES_EU: String = "https://public-trace-http-intake.logs.datadoghq.eu"
+
+    /**
+     * The endpoint for Real User Monitoring (US based servers), used by default by the SDK.
+     * @see [DatadogConfig]
+     */
+    const val RUM_US: String = "https://rum-http-intake.logs.datadoghq.com"
+
+    /**
+     * The endpoint for Real User Monitoring (Europe based servers).
+     * Use this in your [DatadogConfig] if you log on
+     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    const val RUM_EU: String = "https://rum-http-intake.logs.datadoghq.eu"
 }
