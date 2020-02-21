@@ -23,6 +23,12 @@ class Configurator :
         forge.addFactory(JsonPrimitiveForgeryFactory())
         forge.addFactory(JsonArrayForgeryFactory())
         forge.addFactory(SpanForgeryFactory())
+        forge.addFactory(RumEventForgeryFactory())
+        forge.addFactory(RumContextForgeryFactory())
+        forge.addFactory(RumEventDataResourceForgeryFactory())
+        forge.addFactory(RumEventDataUserActionForgeryFactory())
+        forge.addFactory(RumEventDataViewForgeryFactory())
+        forge.addFactory(RumEventDataErrorForgeryFactory())
         forge.useJvmFactories()
     }
 }

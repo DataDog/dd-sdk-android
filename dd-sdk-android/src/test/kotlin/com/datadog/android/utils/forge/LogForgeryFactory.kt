@@ -8,14 +8,8 @@ package com.datadog.android.utils.forge
 
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.domain.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import java.io.File
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 internal class LogForgeryFactory : ForgeryFactory<Log> {
     override fun getForgery(forge: Forge): Log {
@@ -38,28 +32,6 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
             loggerName = forge.anAlphabeticalString(),
             threadName = forge.anAlphabeticalString()
         )
-    }
-
-    private fun Forge.exhaustiveAttributes(): Map<String, Any?> {
-        val map = listOf(
-            aBool(),
-            anInt(),
-            aLong(),
-            aFloat(),
-            aDouble(),
-            anAsciiString(),
-            getForgery<Date>(),
-            getForgery<Locale>(),
-            getForgery<TimeZone>(),
-            getForgery<File>(),
-            getForgery<JsonObject>(),
-            getForgery<JsonArray>(),
-            null
-        ).map { anAlphabeticalString() to it }
-            .toMap().toMutableMap()
-        map[""] = anHexadecimalString()
-        map[aWhitespaceString()] = anHexadecimalString()
-        return map
     }
 
     private fun Forge.exhaustiveTags(): List<String> {
