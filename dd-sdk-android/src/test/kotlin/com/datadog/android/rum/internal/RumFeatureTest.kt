@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -95,8 +96,21 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `initializes GlobalRum context`() {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val context = GlobalRum.getRumContext()
+        assertThat(context.applicationId).isEqualTo(fakeConfig.applicationId)
+    }
+
+    @Test
     fun `initializes persistence strategy`() {
-        fakeConfig = fakeConfig.copy(envName = "")
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
