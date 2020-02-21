@@ -19,8 +19,7 @@ internal abstract class AsyncWriterFilePersistenceStrategy<T : Any>(
     maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE,
-    payloadPrefix: CharSequence = "",
-    payloadSuffix: CharSequence = "",
+    payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
     private val writerThreadName: String,
     private val dataMigrator: DataMigrator? = null
 ) : FilePersistenceStrategy<T>(
@@ -31,8 +30,7 @@ internal abstract class AsyncWriterFilePersistenceStrategy<T : Any>(
     maxItemsPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    payloadPrefix,
-    payloadSuffix
+    payloadDecoration
 ) {
 
     val deferredWriter: DeferredWriter<T> by lazy {

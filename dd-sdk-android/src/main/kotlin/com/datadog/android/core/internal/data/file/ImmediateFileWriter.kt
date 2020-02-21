@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.data.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -18,8 +19,11 @@ import java.io.IOException
 
 internal class ImmediateFileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
-    private val serializer: Serializer<T>
+    private val serializer: Serializer<T>,
+    separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
 ) : Writer<T> {
+
+    private val separatorBytes = separator.toString().toByteArray(Charsets.UTF_8)
 
     // region Writer
 
@@ -72,7 +76,7 @@ internal class ImmediateFileWriter<T : Any>(
         val fileSize = file.length()
         FileOutputStream(file, true).use {
             if (fileSize > 0) {
-                it.write(separator)
+                it.write(separatorBytes)
             }
             it.write(dataAsByteArray)
         }
@@ -82,6 +86,5 @@ internal class ImmediateFileWriter<T : Any>(
 
     companion object {
         private const val MAX_ITEM_SIZE = 256 * 1024 // 256 Kb
-        private val separator = ByteArray(1) { ','.toByte() }
     }
 }
