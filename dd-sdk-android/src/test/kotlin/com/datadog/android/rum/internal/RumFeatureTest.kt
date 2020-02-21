@@ -13,20 +13,16 @@ import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
-import java.net.URL
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -39,12 +35,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.File
+import java.net.URL
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -56,10 +53,7 @@ internal class RumFeatureTest {
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-    @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
@@ -95,8 +89,21 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `initializes GlobalRum context`() {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val context = GlobalRum.getRumContext()
+        assertThat(context.applicationId).isEqualTo(fakeConfig.applicationId)
+    }
+
+    @Test
     fun `initializes persistence strategy`() {
-        fakeConfig = fakeConfig.copy(envName = "")
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
