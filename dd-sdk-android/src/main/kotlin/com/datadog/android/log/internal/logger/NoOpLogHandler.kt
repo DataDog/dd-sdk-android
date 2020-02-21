@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
-internal object NoOpLogHandler :
+internal class NoOpLogHandler :
     LogHandler {
 
     // region LogHandler
