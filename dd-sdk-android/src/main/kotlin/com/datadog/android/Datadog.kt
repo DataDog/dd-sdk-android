@@ -17,6 +17,7 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -110,6 +111,16 @@ object Datadog {
             )
         }
 
+        config.rumConfig?.let { featureConfig ->
+            RumFeature.initialize(
+                appContext = appContext,
+                config = featureConfig,
+                okHttpClient = CoreFeature.okHttpClient,
+                networkInfoProvider = CoreFeature.networkInfoProvider,
+                systemInfoProvider = CoreFeature.systemInfoProvider
+            )
+        }
+
         config.crashReportConfig?.let { featureConfig ->
             CrashReportsFeature.initialize(
                 appContext = appContext,
@@ -171,6 +182,7 @@ object Datadog {
         checkInitialized()
         LogsFeature.stop()
         TracesFeature.stop()
+        RumFeature.stop()
         CrashReportsFeature.stop()
         CoreFeature.stop()
         initialized.set(false)
