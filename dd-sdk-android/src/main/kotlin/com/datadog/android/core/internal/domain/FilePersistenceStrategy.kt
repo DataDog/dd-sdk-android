@@ -21,8 +21,7 @@ internal open class FilePersistenceStrategy<T : Any>(
     maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE,
-    payloadPrefix: CharSequence = "",
-    payloadSuffix: CharSequence = ""
+    payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION
 ) : PersistenceStrategy<T> {
 
     private val fileOrchestrator = FileOrchestrator(
@@ -37,15 +36,16 @@ internal open class FilePersistenceStrategy<T : Any>(
     private val fileReader = FileReader(
         fileOrchestrator,
         dataDirectory,
-        payloadPrefix,
-        payloadSuffix
+        payloadDecoration.prefix,
+        payloadDecoration.suffix
     )
 
     // region Strategy methods
 
     protected val fileWriter = ImmediateFileWriter(
         fileOrchestrator,
-        serializer
+        serializer,
+        payloadDecoration.separator
     )
 
     override fun getWriter(): Writer<T> {
