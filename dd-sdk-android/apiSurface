@@ -66,6 +66,21 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+object com.datadog.android.rum.GlobalRum
+  fun isRegistered(): Boolean
+  fun registerIfAbsent(RumMonitor): Boolean
+  fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
+  fun get(): RumMonitor
+interface com.datadog.android.rum.RumMonitor
+  fun addUserAction(String, Map<String, Any?> = emptyMap())
+  fun startView(Any, String, Map<String, Any?> = emptyMap())
+  fun stopView(Any, Map<String, Any?> = emptyMap())
+  fun startResource(Any, String, Map<String, Any?> = emptyMap())
+  fun stopResource(Any, String?, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(Any, String, String, Throwable)
+  fun addError(String, String, Throwable, Map<String, Any?>)
+  class Builder
+    fun build(): RumMonitor
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
