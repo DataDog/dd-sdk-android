@@ -74,6 +74,7 @@ internal class CrashReportsFeatureTest {
     fun `set up`(forge: Forge) {
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
@@ -213,6 +214,7 @@ internal class CrashReportsFeatureTest {
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
+            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
