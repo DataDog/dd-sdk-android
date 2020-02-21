@@ -17,7 +17,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
@@ -51,7 +51,7 @@ internal object RumFeature {
             return
         }
 
-        GlobalRumMonitor.updateApplicationId(config.applicationId)
+        GlobalRum.updateApplicationId(config.applicationId)
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         serviceName = config.serviceName
