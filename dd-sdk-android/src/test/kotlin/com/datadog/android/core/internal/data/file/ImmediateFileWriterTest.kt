@@ -118,6 +118,28 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
+    fun `writes several models with custom separator`(forge: Forge) {
+        val separator = forge.anAsciiString()
+        underTest = ImmediateFileWriter(
+            mockedOrchestrator,
+            mockedSerializer,
+            separator
+        )
+        val models = forge.aList { anAlphabeticalString() }
+        val fileNameToWriteTo = forge.anAlphaNumericalString()
+        val file = File(rootDir, fileNameToWriteTo)
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+
+        models.forEach {
+            underTest.write(it)
+        }
+
+        assertThat(file.readText())
+            .isEqualTo(models.joinToString(separator))
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
     fun `does nothing when SecurityException was thrown while providing a file`(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
