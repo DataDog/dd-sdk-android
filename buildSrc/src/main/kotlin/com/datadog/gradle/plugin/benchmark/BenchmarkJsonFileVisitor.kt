@@ -17,52 +17,21 @@ class BenchmarkJsonFileVisitor {
 
     fun visitBenchmarkJsonFile(
         jsonFile: File,
-        thresholds: Map<String, Long>,
-        ignored: MutableSet<String>
-    ): Boolean {
+        benchmarksAccumulator: MutableMap<String, Long>
+    ) {
         val gson = Gson()
         val benchmarkResult = gson.fromJson(jsonFile.readText(), BenchmarkResult::class.java)
 
         println(benchmarkResult.context.targetBuild)
 
-        return benchmarkResult.benchmarks.all {
-            processBenchmarkResults(it, thresholds, ignored)
+        benchmarkResult.benchmarks.forEach {
+            benchmarksAccumulator[it.nameWithoutPrefixes()] = it.metrics.timeNs.median
         }
     }
 
     // endregion
 
     // region Internal
-
-    private fun processBenchmarkResults(
-        benchmark: Benchmark,
-        thresholds: Map<String, Long>,
-        ignored: MutableSet<String>
-    ): Boolean {
-        val testName = benchmark.nameWithoutPrefixes()
-        if (ignored.contains(testName)) {
-            return true
-        }
-        val expectedThreshold = thresholds[testName]
-        val median = benchmark.metrics.timeNs.median
-
-        return when {
-            expectedThreshold == null -> {
-                System.err.println("No benchmark threshold set for test \"$testName\" (from ${benchmark.name})")
-                false
-            }
-            median > expectedThreshold -> {
-                System.err.println(
-                    "Benchmark test \"$testName\" reported a median time of $median nanos, " +
-                            "but threshold is set to $expectedThreshold nanos"
-                )
-                false
-            }
-            else -> {
-                true
-            }
-        }
-    }
 
     private fun Benchmark.nameWithoutPrefixes(): String {
         return devicePrefixes.fold(name) { acc, prefix ->
