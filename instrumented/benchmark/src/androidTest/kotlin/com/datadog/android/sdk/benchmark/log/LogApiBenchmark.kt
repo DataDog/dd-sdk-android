@@ -14,6 +14,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.benchmark.aThrowable
+import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
@@ -42,7 +43,7 @@ class LogApiBenchmark {
         mockWebServer = MockWebServer().apply { start() }
         mockWebServer.setDispatcher(object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
-                return mockResponse()
+                return mockResponse(200)
             }
         })
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
@@ -109,16 +110,6 @@ class LogApiBenchmark {
             testedLogger.e(message, throwable)
         }
     }
-
-    // region Internal
-
-    private fun mockResponse(): MockResponse {
-        return MockResponse()
-            .setResponseCode(200)
-            .setBody("{}")
-    }
-
-    // endregion
 
     companion object {
         const val MAX_LOGS_PER_BATCH = 500

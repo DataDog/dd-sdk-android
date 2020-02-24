@@ -4,6 +4,7 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.implementation
 
 plugins {
     id("com.android.library")
@@ -87,6 +88,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.KotlinReflect)
     implementation(Dependencies.Libraries.AndroidXMultidex)
+    implementation(Dependencies.Libraries.AndroidxSupportBase)
 
     androidTestImplementation(project(":tools:unit"))
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
@@ -154,4 +156,21 @@ reviewBenchmark {
         TimeUnit.MILLISECONDS.toNanos(60)
     )
 
+    // Ignore Gestures Tracker Benchmarks
+    // The thresholds are too high because of the Espresso instrumentation.
+    // The only reason we added those benchmarks is to see the diffs between running with or without
+    // the tracker attached.
+    // TODO RUMM-240 Add a plugin extension to be able to assert diffs in execution time
+    ignoreTest(
+        "benchmark_clicking_on_recycler_view_item_tracker_attached"
+    )
+    ignoreTest(
+        "benchmark_clicking_on_simple_button_tracker_attached"
+    )
+    ignoreTest(
+        "benchmark_clicking_on_recycler_view_item_tracker_not_attached"
+    )
+    ignoreTest(
+        "benchmark_clicking_on_simple_button_tracker_not_attached"
+    )
 }

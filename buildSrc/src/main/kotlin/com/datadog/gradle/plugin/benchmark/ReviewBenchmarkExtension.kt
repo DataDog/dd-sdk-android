@@ -9,8 +9,13 @@ package com.datadog.gradle.plugin.benchmark
 open class ReviewBenchmarkExtension {
 
     internal val thresholds = mutableMapOf<String, Long>()
+    internal val ignored = mutableSetOf<String>()
 
     fun addThreshold(name: String, threshold: Long) {
         thresholds[name] = threshold
+    }
+
+    fun ignoreTest(name: String) {
+        ignored.add(name)
     }
 }
