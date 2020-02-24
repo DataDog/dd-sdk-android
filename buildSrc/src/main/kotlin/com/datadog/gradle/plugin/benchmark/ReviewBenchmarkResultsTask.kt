@@ -16,11 +16,12 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
     internal lateinit var extension: ReviewBenchmarkExtension
     internal lateinit var buildDir: File
 
-    private val visitor = BenchmarkJsonFileVisitor()
+    val visitor = BenchmarkJsonFileVisitor()
 
     init {
         group = "datadog"
-        description = "Review the benchmark results and ensure they are below the specified threshold"
+        description =
+            "Review the benchmark results and ensure they are below the specified threshold"
     }
 
     // region Task
@@ -30,7 +31,7 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
         val targetDir = getInputDir()
         if (targetDir.exists() && targetDir.canRead()) {
             targetDir.listFiles()?.forEach {
-                processDeviceBenchmarks(it)
+                processBenchmarksPerDevice(it)
             }
         }
     }
@@ -45,15 +46,29 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
 
     // region Internal
 
-    private fun processDeviceBenchmarks(deviceDir: File) {
+    private fun processBenchmarksPerDevice(
+        deviceDir: File
+    ) {
         println("processing benchmark results for device ${deviceDir.name}")
         if (deviceDir.exists() && deviceDir.isDirectory && deviceDir.canRead()) {
+            val benchmarksResults = mutableMapOf<String, Long>()
             deviceDir.listFiles()?.forEach {
                 if (it.isFile && it.canRead() && it.extension == "json") {
-                    check(visitor.visitBenchmarkJsonFile(it, extension.thresholds, extension.ignored)) {
-                        "One or more benchmark tests in ${it.path} didn't match the expected threshold."
-                    }
+                    visitor.visitBenchmarkJsonFile(it, benchmarksResults)
                 }
+            }
+
+            val strategies = extension.benchmarkStrategies
+
+            // verify that all the benchmarks have at least one strategy and
+            // then verify the strategy
+            benchmarksResults.forEach {
+                val strategy = strategies[it.key]
+                checkNotNull(strategy) {
+                    System.err.println("No benchmarking strategy added for test \"${it.key}\"")
+                }
+
+                check(strategy.verify(benchmarksResults))
             }
         }
     }

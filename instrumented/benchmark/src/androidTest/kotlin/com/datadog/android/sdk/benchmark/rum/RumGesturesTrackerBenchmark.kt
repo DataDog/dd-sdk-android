@@ -70,6 +70,7 @@ internal class RumGesturesTrackerBenchmark {
             "com.datadog.android.rum.gestures.DatadogGesturesTracker",
             testedTracer
         )
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     @After
