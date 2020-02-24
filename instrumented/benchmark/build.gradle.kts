@@ -107,70 +107,59 @@ reviewBenchmark {
 
     // Logs Benchmarks
     addThreshold(
-        "benchmark_create_one_log",
-        TimeUnit.MICROSECONDS.toNanos(500)
+        "benchmark_create_one_log", 500
     )
     addThreshold(
-        "benchmark_create_one_log_with_throwable",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        "benchmark_create_one_log_with_throwable", 1
     )
     addThreshold(
-        "benchmark_create_one_log_with_tags",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        "benchmark_create_one_log_with_tags", 1
     )
     addThreshold(
-        "benchmark_create_one_log_with_attributes",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        "benchmark_create_one_log_with_attributes", 1
     )
 
     // Traces Benchmarks
     addThreshold(
-        "benchmark_creating_span",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        "benchmark_creating_span", 1
     )
     addThreshold(
-        "benchmark_creating_span_with_throwable",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        "benchmark_creating_span_with_throwable", 1
     )
     addThreshold(
         "benchmark_creating_spans_with_baggage_items_and_logs",
-        TimeUnit.MILLISECONDS.toNanos(1)
+        1
     )
     addThreshold(
-        "benchmark_creating_heavy_load_of_spans",
-        TimeUnit.MILLISECONDS.toNanos(400)
+        "benchmark_creating_heavy_load_of_spans", 400
     )
     addThreshold(
-        "benchmark_creating_medium_load_of_spans",
-        TimeUnit.MILLISECONDS.toNanos(250)
+        "benchmark_creating_medium_load_of_spans", 250
     )
 
     // LogIo Benchmarks
 
     addThreshold(
-        "benchmark_write_logs_on_disk",
-        TimeUnit.MILLISECONDS.toNanos(60)
+        "benchmark_write_logs_on_disk", 60
     )
     addThreshold(
-        "benchmark_read_logs_from_disk",
-        TimeUnit.MILLISECONDS.toNanos(60)
+        "benchmark_read_logs_from_disk", 60
     )
 
-    // Ignore Gestures Tracker Benchmarks
-    // The thresholds are too high because of the Espresso instrumentation.
-    // The only reason we added those benchmarks is to see the diffs between running with or without
-    // the tracker attached.
-    // TODO RUMM-240 Add a plugin extension to be able to assert diffs in execution time
-    ignoreTest(
-        "benchmark_clicking_on_recycler_view_item_tracker_attached"
+    // Rum - Gesture Tracker Benchmarks
+
+    relativeThreshold(
+        "benchmark_clicking_on_simple_button_tracker_attached",
+        "benchmark_clicking_on_simple_button_tracker_not_attached",
+        250
     )
-    ignoreTest(
-        "benchmark_clicking_on_simple_button_tracker_attached"
+    relativeThreshold(
+        "benchmark_clicking_on_recycler_view_item_tracker_attached",
+        "benchmark_clicking_on_recycler_view_item_tracker_not_attached",
+        250
     )
-    ignoreTest(
-        "benchmark_clicking_on_recycler_view_item_tracker_not_attached"
-    )
-    ignoreTest(
-        "benchmark_clicking_on_simple_button_tracker_not_attached"
-    )
+
+    // those values are very big due to Bitrise emulator which is too slow. We will need to see
+    // how we can have same values as on local emulator. Have in mind that locally
+    // that difference threshold is somewhere around 7 millis
 }
