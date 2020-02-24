@@ -8,14 +8,20 @@ package com.datadog.gradle.plugin.benchmark
 
 open class ReviewBenchmarkExtension {
 
-    internal val thresholds = mutableMapOf<String, Long>()
-    internal val ignored = mutableSetOf<String>()
-
+    internal val benchmarkStrategies = mutableMapOf<String, BenchmarkStrategy>()
     fun addThreshold(name: String, threshold: Long) {
-        thresholds[name] = threshold
+        benchmarkStrategies[name] = BenchmarkStrategy.AbsoluteThreshold(name, threshold)
     }
 
     fun ignoreTest(name: String) {
-        ignored.add(name)
+        benchmarkStrategies[name] = BenchmarkStrategy.Ignore
+    }
+
+    fun relativeThreshold(betweenTest: String, andTest: String, shouldNotExceed: Long) {
+        benchmarkStrategies[betweenTest] =
+            BenchmarkStrategy.RelativeThreshold(betweenTest, andTest, shouldNotExceed)
+        // add an ignore strategy for the second in order to not be matched
+        // as a no - strategy benchmark
+        benchmarkStrategies[andTest] = BenchmarkStrategy.Ignore
     }
 }
