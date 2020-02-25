@@ -3,6 +3,7 @@ object com.datadog.android.Datadog
   const val DATADOG_EU: String
   fun initialize(android.content.Context, String, String? = null)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
+  fun isInitialized(): Boolean
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
