@@ -16,7 +16,8 @@ import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploader(
     private var url: String,
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
+    internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 
     // region LogUploader
@@ -51,7 +52,7 @@ internal abstract class DataOkHttpUploader(
     private fun headers(): MutableMap<String, String> {
         return mutableMapOf(
             HEADER_UA to userAgent,
-            HEADER_CT to CONTENT_TYPE
+            HEADER_CT to contentType
         )
     }
 
@@ -66,12 +67,13 @@ internal abstract class DataOkHttpUploader(
     }
 
     private fun buildRequest(data: ByteArray): Request {
-        sdkLogger.d("$TAG: Sending data to $url")
+        sdkLogger.d("$TAG: Sending data to POST $url")
         val builder = Request.Builder()
             .url(url)
             .post(RequestBody.create(null, data))
         headers().forEach {
             builder.addHeader(it.key, it.value)
+            sdkLogger.d("$TAG: ${it.key}: ${it.value}")
         }
         return builder.build()
     }
@@ -90,10 +92,13 @@ internal abstract class DataOkHttpUploader(
     // endregion
 
     companion object {
+        internal const val CONTENT_TYPE_JSON = "application/json"
+        internal const val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8"
+
         private const val HEADER_CT = "Content-Type"
-        private const val CONTENT_TYPE = "application/json"
         private const val HEADER_UA = "User-Agent"
         const val SYSTEM_UA = "http.agent"
+
         private const val TAG = "DataOkHttpUploader"
     }
 }
