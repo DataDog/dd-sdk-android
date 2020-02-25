@@ -8,7 +8,7 @@ internal open class TracesOkHttpUploader(
     endpoint: String,
     private val token: String,
     client: OkHttpClient
-) : DataOkHttpUploader(buildUrl(endpoint, token), client) {
+) : DataOkHttpUploader(buildUrl(endpoint, token), client, CONTENT_TYPE_TEXT_UTF8) {
 
     // region DataOkHttpUploader
 
