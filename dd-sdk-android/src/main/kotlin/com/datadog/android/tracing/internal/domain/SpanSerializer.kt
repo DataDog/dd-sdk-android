@@ -30,7 +30,7 @@ internal class SpanSerializer(
         jsonObject.addProperty(TAG_DURATION, model.durationNano)
         jsonObject.addProperty(TAG_START_TIMESTAMP, model.startTime + serverOffset)
         jsonObject.addProperty(TAG_ERROR, if (model.isError) 1 else 0)
-        jsonObject.addProperty(TAG_TYPE, "object") // do not know yet what should be here
+        jsonObject.addProperty(TAG_TYPE, "custom")
         addMeta(jsonObject, model)
         addMetrics(jsonObject, model)
         return jsonObject.toString()
