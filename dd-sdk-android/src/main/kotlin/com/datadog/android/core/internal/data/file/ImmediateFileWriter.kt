@@ -47,14 +47,14 @@ internal class ImmediateFileWriter<T : Any>(
             if (file != null) {
                 writeDataToFile(file, dataAsByteArray)
             } else {
-                sdkLogger.e("$TAG: Could not get a valid file")
+                sdkLogger.e("Could not get a valid file")
             }
         } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an output stream to file ${file?.path}", e)
+            sdkLogger.e("Couldn't create an output stream to file ${file?.path}", e)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't write data to file ${file?.path}", e)
+            sdkLogger.e("Couldn't write data to file ${file?.path}", e)
         } catch (e: SecurityException) {
-            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
+            sdkLogger.e("Couldn't access file ${file?.path}", e)
         }
     }
 
@@ -72,7 +72,6 @@ internal class ImmediateFileWriter<T : Any>(
 
     companion object {
         private const val MAX_ITEM_SIZE = 256 * 1024 // 256 Kb
-        private const val TAG = "ImmediateFileWriter"
         private val separator = ByteArray(1) { ','.toByte() }
     }
 }

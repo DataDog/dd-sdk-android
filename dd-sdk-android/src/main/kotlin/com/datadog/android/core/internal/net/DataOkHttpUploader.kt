@@ -46,13 +46,13 @@ internal class DataOkHttpUploader(
             val request = buildRequest(data)
             val response = client.newCall(request).execute()
             sdkLogger.i(
-                    "$TAG: Response code:${response.code()} " +
+                    "Response code:${response.code()} " +
                             "body:${response.body()?.string()} " +
                             "headers:${response.headers()}"
             )
             responseCodeToUploadStatus(response.code())
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: unable to upload data", e)
+            sdkLogger.e("unable to upload data", e)
             UploadStatus.NETWORK_ERROR
         }
     }
@@ -62,12 +62,12 @@ internal class DataOkHttpUploader(
     // region Internal
 
     private fun buildUrl(endpoint: String, token: String): String {
-        sdkLogger.i("$TAG: using endpoint $endpoint")
+        sdkLogger.i("using endpoint $endpoint")
         return String.format(Locale.US, UPLOAD_URL, endpoint, token)
     }
 
     private fun buildRequest(data: ByteArray): Request {
-        sdkLogger.d("$TAG: Sending data to $url")
+        sdkLogger.d("Sending data to $url")
         return Request.Builder()
             .url(url)
             .post(RequestBody.create(null, data))
@@ -104,6 +104,5 @@ internal class DataOkHttpUploader(
         private const val DD_SOURCE_MOBILE = "mobile"
 
         const val UPLOAD_URL = "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
-        private const val TAG = "DataOkHttpUploader"
     }
 }

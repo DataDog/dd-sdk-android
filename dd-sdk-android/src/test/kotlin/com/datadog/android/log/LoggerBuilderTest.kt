@@ -18,7 +18,6 @@ import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -53,8 +52,6 @@ internal class LoggerBuilderTest {
 
     @BeforeEach
     fun `set up Datadog`(forge: Forge) {
-        Datadog.setFieldValue("isDebug", true)
-
         packageName = forge.anAlphabeticalString()
         mockContext = mockContext(packageName, "")
         whenever(mockContext.filesDir) doReturn rootDir

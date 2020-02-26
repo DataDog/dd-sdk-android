@@ -83,7 +83,7 @@ internal class DatadogLogConstraintsTest {
         val expectedTag = resolveTagName(testedConstraints)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "E/$expectedTag: DatadogLogConstraints: \"$tag\" is an invalid tag, " +
+                "E/$expectedTag: \"$tag\" is an invalid tag, " +
                         "and was ignored."
             )
     }
@@ -110,7 +110,7 @@ internal class DatadogLogConstraintsTest {
 
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: tag \"$tag\" " +
+                "W/$expectedLogcatTag: tag \"$tag\" " +
                         "was modified to \"$expectedInnerTag\" to match our constraints."
             )
     }
@@ -131,7 +131,7 @@ internal class DatadogLogConstraintsTest {
             .containsOnly(expectedInnerTag)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: tag \"$tag\" " +
+                "W/$expectedLogcatTag: tag \"$tag\" " +
                         "was modified to \"$expectedInnerTag\" to match our constraints."
             )
     }
@@ -150,7 +150,7 @@ internal class DatadogLogConstraintsTest {
             .containsOnly(expectedInnerTag)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: tag \"$tag\" " +
+                "W/$expectedLogcatTag: tag \"$tag\" " +
                         "was modified to \"$expectedInnerTag\" to match our constraints."
             )
     }
@@ -171,7 +171,7 @@ internal class DatadogLogConstraintsTest {
         if (BuildConfig.DEBUG) {
             assertThat(outputStream.lastLine())
                 .isEqualTo(
-                    "W/$expectedLogcatTag: DatadogLogConstraints: tag \"$expectedInnerTag:\" " +
+                    "W/$expectedLogcatTag: tag \"$expectedInnerTag:\" " +
                             "was modified to \"$expectedInnerTag\" to match our constraints."
                 )
         }
@@ -193,7 +193,7 @@ internal class DatadogLogConstraintsTest {
             .isEmpty()
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "E/$expectedLogcatTag: DatadogLogConstraints: \"$expectedInnerTag\" " +
+                "E/$expectedLogcatTag: \"$expectedInnerTag\" " +
                         "is an invalid tag, " +
                         "and was ignored."
             )
@@ -215,7 +215,7 @@ internal class DatadogLogConstraintsTest {
             .isEmpty()
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "E/$expectedLogcatTag: DatadogLogConstraints: \"$expectedInnerTag\" " +
+                "E/$expectedLogcatTag: \"$expectedInnerTag\" " +
                         "is an invalid tag," +
                         " and was ignored."
             )
@@ -237,7 +237,7 @@ internal class DatadogLogConstraintsTest {
             .containsExactlyElementsOf(firstTags)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: too many tags were added, " +
+                "W/$expectedLogcatTag: too many tags were added, " +
                         "$discardedCount had to be discarded."
             )
     }
@@ -280,7 +280,7 @@ internal class DatadogLogConstraintsTest {
         val expectedLogcatTag = resolveTagName(testedConstraints)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: attribute \"$key\" " +
+                "W/$expectedLogcatTag: attribute \"$key\" " +
                         "was modified to \"$expectedKey\" to match our constraints."
             )
     }
@@ -302,7 +302,7 @@ internal class DatadogLogConstraintsTest {
         val expectedLogcatTag = resolveTagName(testedConstraints)
         assertThat(outputStream.lastLine())
             .isEqualTo(
-                "W/$expectedLogcatTag: DatadogLogConstraints: too many " +
+                "W/$expectedLogcatTag: too many " +
                         "attributes were added, " +
                         "$discardedCount had to be discarded."
             )

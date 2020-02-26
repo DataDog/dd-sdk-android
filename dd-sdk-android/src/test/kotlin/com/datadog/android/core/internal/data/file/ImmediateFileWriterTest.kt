@@ -118,7 +118,7 @@ internal class ImmediateFileWriterTest {
 
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/$expectedLogcatTag: ImmediateFileWriter: .*")
+            assertThat(logMessages[0]).matches("E/$expectedLogcatTag: Couldn't access file .*")
         }
     }
 
@@ -138,7 +138,7 @@ internal class ImmediateFileWriterTest {
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("E/$expectedLogcatTag: ImmediateFileWriter: Could not get a valid file")
+                .matches("E/$expectedLogcatTag: Could not get a valid file")
         }
     }
 }

@@ -137,7 +137,7 @@ internal class FileOrchestrator(
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
             sdkLogger.w(
-                "$TAG: Too much disk space used ($sizeOnDisk / $maxDiskSpace): " +
+                "Too much disk space used ($sizeOnDisk / $maxDiskSpace): " +
                         "cleaning up to free $sizeToFree bytes…"
             )
             files.asSequence()
@@ -157,8 +157,4 @@ internal class FileOrchestrator(
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "FileOrchestrator"
-    }
 }

@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.setStaticValue
@@ -334,11 +335,11 @@ internal class DataOkHttpUploaderTest {
             // we need to set the Build.MODEL to null, to override the setup
             Build::class.java.setStaticValue("MODEL", null)
             mockWebServer.enqueue(mockResponse(forge.anInt(1000)))
-
+            val expectedTag = resolveTagName(testedUploader, "DD_LOG")
             testedUploader.upload(data)
             val logMessages = systemOutputStream.toString().trim().split("\n")
             assertThat(logMessages.last())
-                .isEqualTo("E/DD_LOG: DataOkHttpUploader: unable to upload data")
+                .isEqualTo("E/$expectedTag: unable to upload data")
         }
     }
 
@@ -353,11 +354,12 @@ internal class DataOkHttpUploaderTest {
             Build::class.java.setStaticValue("MODEL", null)
             val code = forge.anInt(500, 599)
             mockWebServer.enqueue(mockResponse(code))
+            val expectedTag = resolveTagName(testedUploader, "DD_LOG")
 
             testedUploader.upload(data)
             val logMessages = systemOutputStream.toString().trim().split("\n")
             assertThat(logMessages.last())
-                .matches("I/DD_LOG: DataOkHttpUploader: Response code:$code .+")
+                .matches("I/$expectedTag: Response code:$code .+")
         }
     }
 

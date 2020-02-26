@@ -170,7 +170,7 @@ internal class FileReaderTest {
             val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[0]).matches(
-                "E/$expectedLogcatTag: FileReader:" +
+                "E/$expectedLogcatTag:" +
                         " Couldn't access file .+"
             )
         }
@@ -196,7 +196,7 @@ internal class FileReaderTest {
             val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("I/$expectedLogcatTag: FileReader: dropBatch $fileName")
+                .matches("I/$expectedLogcatTag: dropBatch $fileName")
         }
     }
 
@@ -221,7 +221,7 @@ internal class FileReaderTest {
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[1])
                 .matches(
-                    "W/$expectedLogcatTag: FileReader: " +
+                    "W/$expectedLogcatTag: " +
                             "file ${notExistingFile.path} does not exist.*"
                 )
         }
@@ -250,7 +250,7 @@ internal class FileReaderTest {
             val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("I/$expectedLogcatTag: FileReader: dropAllBatches.*")
+                .matches("I/$expectedLogcatTag: dropAllBatches.*")
         }
     }
 

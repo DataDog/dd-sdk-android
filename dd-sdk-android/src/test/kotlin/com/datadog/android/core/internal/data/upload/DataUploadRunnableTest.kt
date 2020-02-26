@@ -191,7 +191,7 @@ internal class DataUploadRunnableTest {
         if (BuildConfig.DEBUG) {
             val exptectedTag = resolveTagName(testedRunnable, "DD_LOG")
             assertThat(systemOutStream.toString().trim())
-                .matches("I/$exptectedTag: DataUploadRunnable: .+")
+                .matches("I/$exptectedTag: .+")
         }
     }
 

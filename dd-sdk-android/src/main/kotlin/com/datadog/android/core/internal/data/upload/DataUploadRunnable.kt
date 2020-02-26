@@ -60,7 +60,7 @@ internal class DataUploadRunnable(
     }
 
     private fun delayTheRunnable() {
-        sdkLogger.i("$TAG: There was no batch to be sent")
+        sdkLogger.i("There was no batch to be sent")
         currentDelayInterval =
             DEFAULT_DELAY
         handler.removeCallbacks(this)
@@ -71,7 +71,7 @@ internal class DataUploadRunnable(
 
     private fun consumeBatch(batch: Batch) {
         val batchId = batch.id
-        sdkLogger.i("$TAG: Sending batch $batchId")
+        sdkLogger.i("Sending batch $batchId")
         val status = dataUploader.upload(batch.data)
         if (status in dropableBatchStatus) {
             reader.dropBatch(batchId)
@@ -108,6 +108,5 @@ internal class DataUploadRunnable(
         const val MIN_DELAY_MS = 1000L // 1 second
         const val MAX_DELAY = DEFAULT_DELAY * 4 // 20 seconds
         const val DELAY_PERCENT = 90 // as 90 percent of
-        private const val TAG = "DataUploadRunnable"
     }
 }

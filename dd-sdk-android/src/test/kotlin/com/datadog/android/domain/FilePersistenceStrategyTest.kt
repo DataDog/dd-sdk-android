@@ -273,7 +273,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[logMessages.size - 1].trim())
-                .matches("W/$expectedTag: FileReader: .+")
+                .matches("W/$expectedTag: .+")
         }
     }
 

@@ -40,14 +40,14 @@ internal class FileReader(
     }
 
     override fun releaseBatch(batchId: String) {
-        sdkLogger.i("$TAG: releaseBatch $batchId")
+        sdkLogger.i("releaseBatch $batchId")
         synchronized(readFiles) {
             readFiles.remove(batchId)
         }
     }
 
     override fun dropBatch(batchId: String) {
-        sdkLogger.i("$TAG: dropBatch $batchId")
+        sdkLogger.i("dropBatch $batchId")
         sentBatches.add(batchId)
         readFiles.remove(batchId)
         val fileToDelete = File(dataDirectory, batchId)
@@ -56,7 +56,7 @@ internal class FileReader(
     }
 
     override fun dropAllBatches() {
-        sdkLogger.i("$TAG: dropAllBatches")
+        sdkLogger.i("dropAllBatches")
         fileOrchestrator.getAllFiles().forEach { deleteFile(it) }
     }
 
@@ -75,13 +75,13 @@ internal class FileReader(
                 file.readBytes(withPrefix = '[', withSuffix = ']')
             }
         } catch (e: FileNotFoundException) {
-            sdkLogger.e("$TAG: Couldn't create an input stream from file ${file?.path}", e)
+            sdkLogger.e("Couldn't create an input stream from file ${file?.path}", e)
             ByteArray(0)
         } catch (e: IOException) {
-            sdkLogger.e("$TAG: Couldn't read messages from file ${file?.path}", e)
+            sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
             ByteArray(0)
         } catch (e: SecurityException) {
-            sdkLogger.e("$TAG: Couldn't access file ${file?.path}", e)
+            sdkLogger.e("Couldn't access file ${file?.path}", e)
             ByteArray(0)
         }
 
@@ -91,18 +91,14 @@ internal class FileReader(
     private fun deleteFile(fileToDelete: File) {
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {
-                sdkLogger.d("$TAG: File ${fileToDelete.path} deleted")
+                sdkLogger.d("File ${fileToDelete.path} deleted")
             } else {
-                sdkLogger.e("$TAG: Error deleting file ${fileToDelete.path}")
+                sdkLogger.e("Error deleting file ${fileToDelete.path}")
             }
         } else {
-            sdkLogger.w("$TAG: file ${fileToDelete.path} does not exist")
+            sdkLogger.w("file ${fileToDelete.path} does not exist")
         }
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "FileReader"
-    }
 }
