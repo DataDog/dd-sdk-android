@@ -112,7 +112,7 @@ internal class DatadogLogConstraintsTest {
                 Log.WARN,
                 expectedTag,
                 allOf(
-                    startsWith("tag ") ,
+                    startsWith("tag "),
                     endsWith(" was modified to \"$expectedCorrectedTag\" to match our constraints.")
                 )
             )

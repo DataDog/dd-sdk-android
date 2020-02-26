@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object GlobalRum {
 
-    private val isRegistered = AtomicBoolean(false)
-    private var monitor: RumMonitor = NoOpRumMonitor()
+    internal val isRegistered = AtomicBoolean(false)
+    internal var monitor: RumMonitor = NoOpRumMonitor()
 
     private var activeContext: AtomicReference<RumContext> = AtomicReference(RumContext())
 
