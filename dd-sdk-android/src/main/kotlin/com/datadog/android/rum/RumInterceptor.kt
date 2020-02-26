@@ -6,21 +6,25 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.tracing.TracingInterceptor
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 
 /**
- * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.
+ * Provides automatic RUM integration for [OkHttpClient] by way of the [Interceptor] system.
  *
  * This interceptor will log the request as a RUM resource fill the request information
  * (url, method, status code, optional error).
  *
  * If you use multiple Interceptors, make sure that this one is called first.
+ * If you also use the [TracingInterceptor], make it is called after this one.
  *
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
+ *       .addInterceptor(new RumInterceptor())
+ *       // Optional APM Traces integration
  *       .addInterceptor(new TracingInterceptor())
  *       .build();
  * ```
