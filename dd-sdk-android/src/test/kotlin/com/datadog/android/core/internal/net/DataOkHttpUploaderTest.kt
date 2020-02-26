@@ -365,7 +365,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             testedUploader.upload(data)
             val logMessages = systemOutputStream.toString().trim().split("\n")
             assertThat(logMessages.last())
-                .matches("I/DD_LOG: DataOkHttpUploader: Response code:$code .+")
+                .matches("I/DD_LOG: DataOkHttpUploader: Response from .+ code:$code .+")
         }
     }
 

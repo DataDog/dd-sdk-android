@@ -16,6 +16,8 @@ import androidx.multidex.MultiDex;
 import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
+import com.datadog.android.rum.GlobalRum;
+import com.datadog.android.rum.RumMonitor;
 import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.tracing.Tracer;
 import com.facebook.stetho.Stetho;
@@ -38,9 +40,13 @@ public class SampleApplication extends Application {
         super.onCreate();
         Stetho.initializeWithDefaults(this);
 
-        DatadogConfig.Builder configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                .setServiceName("android-sample-java")
-                .setEnvironmentName("staging");
+        DatadogConfig.Builder configBuilder =
+                new DatadogConfig.Builder(
+                        BuildConfig.DD_CLIENT_TOKEN,
+                        BuildConfig.DD_RUM_APPLICATION_ID
+                )
+                        .setServiceName("android-sample-java")
+                        .setEnvironmentName("staging");
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
@@ -48,6 +54,9 @@ public class SampleApplication extends Application {
         }
         if (BuildConfig.DD_OVERRIDE_TRACES_URL != null) {
             configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL);
+        }
+        if (BuildConfig.DD_OVERRIDE_RUM_URL != null) {
+            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL);
         }
 
         // Initialise Datadog
@@ -96,6 +105,7 @@ public class SampleApplication extends Application {
 
         // initialize the tracer here
         GlobalTracer.registerIfAbsent(new Tracer.Builder().build());
+        GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
     }
 
     public Logger getLogger() {

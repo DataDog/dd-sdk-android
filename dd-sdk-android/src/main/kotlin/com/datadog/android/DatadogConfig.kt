@@ -6,6 +6,8 @@
 
 package com.datadog.android
 
+import java.util.UUID
+
 /**
  * An object describing the configuration of the Datadog SDK.
  *
@@ -16,11 +18,13 @@ private constructor(
     internal val needsClearTextHttp: Boolean,
     internal val logsConfig: FeatureConfig?,
     internal val tracesConfig: FeatureConfig?,
-    internal val crashReportConfig: FeatureConfig?
+    internal val crashReportConfig: FeatureConfig?,
+    internal val rumConfig: FeatureConfig?
 ) {
 
     internal data class FeatureConfig(
         val clientToken: String,
+        val applicationId: UUID,
         val endpointUrl: String,
         val serviceName: String,
         val envName: String
@@ -31,25 +35,51 @@ private constructor(
     /**
      * A Builder class for a [DatadogConfig].
      * @param clientToken your API key of type Client Token
+     * @param applicationId your applicationId for RUM events
      */
     @Suppress("TooManyFunctions")
-    class Builder(clientToken: String) {
+    class Builder(clientToken: String, applicationId: UUID) {
+
+        /**
+         * A Builder class for a [DatadogConfig].
+         * @param clientToken your API key of type Client Token
+         */
+        constructor(clientToken: String) :
+            this(clientToken, UUID(0, 0))
+
+        /**
+         * A Builder class for a [DatadogConfig].
+         * @param clientToken your API key of type Client Token
+         * @param applicationId your applicationId for RUM events
+         */
+        constructor(clientToken: String, applicationId: String) :
+            this(clientToken, UUID.fromString(applicationId))
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
+            applicationId,
             DatadogEndpoint.LOGS_US,
             DEFAULT_SERVICE_NAME,
             DEFAULT_ENV_NAME
         )
         private var tracesConfig: FeatureConfig = FeatureConfig(
             clientToken,
+            applicationId,
             DatadogEndpoint.TRACES_US,
             DEFAULT_SERVICE_NAME,
             DEFAULT_ENV_NAME
         )
         private var crashReportConfig: FeatureConfig = FeatureConfig(
             clientToken,
+            applicationId,
             DatadogEndpoint.LOGS_US,
+            DEFAULT_SERVICE_NAME,
+            DEFAULT_ENV_NAME
+        )
+        private var rumConfig: FeatureConfig = FeatureConfig(
+            clientToken,
+            applicationId,
+            DatadogEndpoint.RUM_US,
             DEFAULT_SERVICE_NAME,
             DEFAULT_ENV_NAME
         )
@@ -57,6 +87,7 @@ private constructor(
         private var logsEnabled: Boolean = true
         private var tracesEnabled: Boolean = true
         private var crashReportsEnabled: Boolean = true
+        private var rumEnabled: Boolean = applicationId != UUID(0, 0)
         private var needsClearTextHttp: Boolean = false
 
         /**
@@ -68,7 +99,8 @@ private constructor(
                 needsClearTextHttp = needsClearTextHttp,
                 logsConfig = if (logsEnabled) logsConfig else null,
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
-                crashReportConfig = if (crashReportsEnabled) crashReportConfig else null
+                crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
+                rumConfig = if (rumEnabled) rumConfig else null
             )
         }
 
@@ -106,6 +138,17 @@ private constructor(
         }
 
         /**
+         * Enables or disables the Real User Monitoring feature.
+         * This feature is enabled by default, disabling it will prevent any RUM data to be
+         * sent to Datadog servers.
+         * @param enabled true by default
+         */
+        fun setRumEnabled(enabled: Boolean): Builder {
+            rumEnabled = enabled
+            return this
+        }
+
+        /**
          * Sets the service name that will appear in your logs, traces and crash reports.
          * @param serviceName the service name (default = "android")
          */
@@ -113,6 +156,7 @@ private constructor(
             logsConfig = logsConfig.copy(serviceName = serviceName)
             tracesConfig = tracesConfig.copy(serviceName = serviceName)
             crashReportConfig = crashReportConfig.copy(serviceName = serviceName)
+            rumConfig = rumConfig.copy(serviceName = serviceName)
             return this
         }
 
@@ -126,6 +170,7 @@ private constructor(
             logsConfig = logsConfig.copy(envName = validEnvName)
             tracesConfig = tracesConfig.copy(envName = validEnvName)
             crashReportConfig = crashReportConfig.copy(envName = validEnvName)
+            rumConfig = rumConfig.copy(envName = validEnvName)
             return this
         }
 
@@ -138,6 +183,7 @@ private constructor(
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
+            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_EU)
             needsClearTextHttp = false
             return this
         }
@@ -151,6 +197,7 @@ private constructor(
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
+            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_US)
             needsClearTextHttp = false
             return this
         }
@@ -178,6 +225,15 @@ private constructor(
          */
         fun useCustomCrashReportsEndpoint(endpoint: String): Builder {
             crashReportConfig = crashReportConfig.copy(endpointUrl = endpoint)
+            checkCustomEndpoint(endpoint)
+            return this
+        }
+
+        /**
+         * Let the SDK target a custom server for the RUM feature.
+         */
+        fun useCustomRumEndpoint(endpoint: String): Builder {
+            rumConfig = rumConfig.copy(endpointUrl = endpoint)
             checkCustomEndpoint(endpoint)
             return this
         }

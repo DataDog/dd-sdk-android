@@ -4,24 +4,24 @@
  * Copyright 2016-2020 Datadog, Inc.
  */
 
-package com.datadog.android.error.internal
+package com.datadog.android.rum.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
-import com.datadog.android.core.internal.domain.FilePersistenceStrategy
-import com.datadog.android.core.internal.net.DataOkHttpUploader
+import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -49,18 +49,18 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class CrashReportsFeatureTest {
+internal class RumFeatureTest {
 
     lateinit var mockAppContext: Application
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
+    lateinit var mockSystemInfoProvider: SystemInfoProvider
     @Mock
     lateinit var mockTimeProvider: TimeProvider
     @Mock
-    lateinit var mockSystemInfoProvider: SystemInfoProvider
+    lateinit var mockUserInfoProvider: UserInfoProvider
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
@@ -92,63 +92,72 @@ internal class CrashReportsFeatureTest {
 
     @AfterEach
     fun `tear down`() {
-        CrashReportsFeature.stop()
+        RumFeature.stop()
+    }
+
+    @Test
+    fun `initializes GlobalRum context`() {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val context = GlobalRum.getRumContext()
+        assertThat(context.applicationId).isEqualTo(fakeConfig.applicationId)
     }
 
     @Test
     fun `initializes persistence strategy`() {
-        CrashReportsFeature.initialize(
+        RumFeature.initialize(
             mockAppContext,
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider
         )
 
-        val persistenceStrategy = CrashReportsFeature.persistenceStrategy
-
+        val persistenceStrategy = RumFeature.persistenceStrategy
         assertThat(persistenceStrategy)
-            .isInstanceOf(FilePersistenceStrategy::class.java)
+            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+        val reader = RumFeature.persistenceStrategy.getReader()
+        val suffix: String = reader.getFieldValue("suffix")
+        assertThat(suffix).isEqualTo("")
+        val prefix: String = reader.getFieldValue("prefix")
+        assertThat(prefix).isEqualTo("")
     }
 
     @Test
     fun `initializes uploader thread`() {
-        CrashReportsFeature.initialize(
+        RumFeature.initialize(
             mockAppContext,
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider
         )
 
-        val uploader = CrashReportsFeature.uploader
-        val uploadHandlerThread = CrashReportsFeature.uploadHandlerThread
+        val uploadHandlerThread = RumFeature.uploadHandlerThread
 
-        assertThat(uploader)
-            .isInstanceOf(DataOkHttpUploader::class.java)
         assertThat(uploadHandlerThread)
             .isInstanceOf(DataUploadHandlerThread::class.java)
     }
 
     @Test
     fun `initializes from configuration`() {
-        CrashReportsFeature.initialize(
+        RumFeature.initialize(
             mockAppContext,
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider
         )
 
-        val clientToken = CrashReportsFeature.clientToken
-        val endpointUrl = CrashReportsFeature.endpointUrl
-        val serviceName = CrashReportsFeature.serviceName
+        val clientToken = RumFeature.clientToken
+        val endpointUrl = RumFeature.endpointUrl
+        val serviceName = RumFeature.serviceName
 
         assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
@@ -156,63 +165,20 @@ internal class CrashReportsFeatureTest {
     }
 
     @Test
-    fun `initializes crash reporter`() {
-        CrashReportsFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            mockSystemInfoProvider
-        )
-
-        val handler = Thread.getDefaultUncaughtExceptionHandler()
-
-        assertThat(handler)
-            .isInstanceOf(DatadogExceptionHandler::class.java)
-    }
-
-    @Test
-    fun `restores original crash reporter on stop`() {
-        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
-        val handler: Thread.UncaughtExceptionHandler = mock()
-        Thread.setDefaultUncaughtExceptionHandler(handler)
-
-        CrashReportsFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            mockSystemInfoProvider
-        )
-        CrashReportsFeature.stop()
-
-        val finalHandler = Thread.getDefaultUncaughtExceptionHandler()
-        assertThat(finalHandler)
-            .isSameAs(handler)
-        Thread.setDefaultUncaughtExceptionHandler(originalHandler)
-    }
-
-    @Test
     fun `ignores if initialize called more than once`(forge: Forge) {
         Datadog.setVerbosity(android.util.Log.VERBOSE)
-        CrashReportsFeature.initialize(
+        RumFeature.initialize(
             mockAppContext,
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider
         )
-        val persistenceStrategy = CrashReportsFeature.persistenceStrategy
-        val uploader = CrashReportsFeature.uploader
-        val clientToken = CrashReportsFeature.clientToken
-        val endpointUrl = CrashReportsFeature.endpointUrl
-        val serviceName = CrashReportsFeature.serviceName
+        val persistenceStrategy = RumFeature.persistenceStrategy
+        val uploadHandlerThread = RumFeature.uploadHandlerThread
+        val clientToken = RumFeature.clientToken
+        val endpointUrl = RumFeature.endpointUrl
+        val serviceName = RumFeature.serviceName
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
@@ -221,23 +187,21 @@ internal class CrashReportsFeatureTest {
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
-        CrashReportsFeature.initialize(
+        RumFeature.initialize(
             mockAppContext,
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider
         )
-        val persistenceStrategy2 = CrashReportsFeature.persistenceStrategy
-        val uploader2 = CrashReportsFeature.uploader
-        val clientToken2 = CrashReportsFeature.clientToken
-        val endpointUrl2 = CrashReportsFeature.endpointUrl
-        val serviceName2 = CrashReportsFeature.serviceName
+        val persistenceStrategy2 = RumFeature.persistenceStrategy
+        val uploadHandlerThread2 = RumFeature.uploadHandlerThread
+        val clientToken2 = RumFeature.clientToken
+        val endpointUrl2 = RumFeature.endpointUrl
+        val serviceName2 = RumFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
-        assertThat(uploader).isSameAs(uploader2)
+        assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)

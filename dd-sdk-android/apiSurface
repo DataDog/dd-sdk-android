@@ -8,11 +8,14 @@ object com.datadog.android.Datadog
   fun setUserInfo(String? = null, String? = null, String? = null)
 class com.datadog.android.DatadogConfig
   class Builder
+    constructor(String, java.util.UUID)
     constructor(String)
+    constructor(String, String)
     fun build(): DatadogConfig
     fun setLogsEnabled(Boolean): Builder
     fun setTracesEnabled(Boolean): Builder
     fun setCrashReportsEnabled(Boolean): Builder
+    fun setRumEnabled(Boolean): Builder
     fun setServiceName(String): Builder
     fun setEnvironmentName(String): Builder
     fun useEUEndpoints(): Builder
@@ -20,12 +23,15 @@ class com.datadog.android.DatadogConfig
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
+    fun useCustomRumEndpoint(String): Builder
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
   const val LOGS_EU: String
   const val TRACES_US: String
   const val TRACES_EU: String
+  const val RUM_US: String
+  const val RUM_EU: String
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -59,6 +65,21 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+object com.datadog.android.rum.GlobalRum
+  fun isRegistered(): Boolean
+  fun registerIfAbsent(RumMonitor): Boolean
+  fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
+  fun get(): RumMonitor
+interface com.datadog.android.rum.RumMonitor
+  fun addUserAction(String, Map<String, Any?> = emptyMap())
+  fun startView(Any, String, Map<String, Any?> = emptyMap())
+  fun stopView(Any, Map<String, Any?> = emptyMap())
+  fun startResource(Any, String, Map<String, Any?> = emptyMap())
+  fun stopResource(Any, String?, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(Any, String, String, Throwable)
+  fun addError(String, String, Throwable, Map<String, Any?>)
+  class Builder
+    fun build(): RumMonitor
 class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
   override fun buildSpan(String?): DDSpanBuilder
   class Builder
