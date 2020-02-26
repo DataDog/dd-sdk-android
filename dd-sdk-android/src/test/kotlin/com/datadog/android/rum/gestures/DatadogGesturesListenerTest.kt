@@ -21,6 +21,9 @@ import datadog.opentracing.DDTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.ByteArrayOutputStream
+import java.lang.ref.WeakReference
+import kotlin.math.abs
 import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -31,8 +34,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
-import kotlin.math.abs
 
 @Extensions(
     ExtendWith(
