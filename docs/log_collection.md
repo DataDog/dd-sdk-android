@@ -52,7 +52,8 @@ class SampleApplication : Application() {
 
     {{% /tab %}}
     {{< /tabs >}}
-There is also an utility method which gives you the current state of the SDK. You can use this to check if it was properly initialized or not:
+
+There is also a utility method which gives you the current state of the SDK. You can use this to check if it was properly initialized or not:
 
 ```kotlin
     if(Datadog.isInitialized()){
