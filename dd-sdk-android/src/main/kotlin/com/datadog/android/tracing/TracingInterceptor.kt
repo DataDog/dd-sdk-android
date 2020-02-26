@@ -7,6 +7,7 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.tracing.internal.TracesFeature
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
 import io.opentracing.Span
@@ -17,6 +18,7 @@ import io.opentracing.tag.Tags
 import io.opentracing.util.GlobalTracer
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -40,29 +42,60 @@ import okhttp3.Response
  */
 class TracingInterceptor : Interceptor {
 
+    private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
+
     // region Interceptor
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-
-        if (GlobalTracer.isRegistered()) {
-            val tracer = GlobalTracer.get()
+        val tracer = resolveTracer()
+        return if (tracer != null) {
             val span = tracer.buildSpan("okhttp.request")
                 .start()
-
-            return updateAndProceedSafely(chain, tracer, span)
+            updateAndProceedSafely(chain, tracer, span)
         } else {
-            devLogger.w(
-                "You added the TracingInterceptor to your OkHttpClient, " +
-                    "but you didn't register any Tracer."
-            )
-            return chain.proceed(chain.request())
+            chain.proceed(chain.request())
         }
     }
 
     // endregion
 
     // region Internal
+
+    private fun resolveTracer(): Tracer? {
+        if (GlobalTracer.isRegistered()) {
+            // clear the localTracer reference if any
+            localTracerReference.set(null)
+            return GlobalTracer.get()
+        } else {
+            if (!TracesFeature.initialized.get()) {
+                devLogger.w(
+                    "You added the TracingInterceptor to your OkHttpClient " +
+                            "but you did not enable the TracesFeature."
+                )
+                return null
+            }
+
+            // we check if we already have a local tracer if not we instantiate one
+            return resolveLocalTracer()
+        }
+    }
+
+    private fun resolveLocalTracer(): Tracer {
+        if (localTracerReference.get() == null) {
+            // only register once
+            localTracerReference.compareAndSet(null, buildLocalTracer())
+            devLogger.w(
+                "You added the TracingInterceptor to your OkHttpClient, " +
+                        "but you didn't register any Tracer. " +
+                        "We automatically created a local tracer for you. " +
+                        "If you choose to register a GlobalTracer we will do the switch for you."
+            )
+        }
+        return localTracerReference.get()
+    }
+
+    internal fun buildLocalTracer(): Tracer = com.datadog.android.tracing.Tracer.Builder().build()
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun updateAndProceedSafely(
