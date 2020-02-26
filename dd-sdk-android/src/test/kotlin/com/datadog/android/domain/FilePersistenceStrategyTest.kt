@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -267,12 +268,12 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
+        val expectedTag = resolveTagName(testedReader, "DD_LOG")
         testedReader.dropBatch(forge.aNumericalString())
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[logMessages.size - 1].trim())
-                .withFailMessage("We were expecting a log message here")
-                .matches("W/DD_LOG: FileReader: .+")
+                .matches("W/$expectedTag: FileReader: .+")
         }
     }
 

@@ -177,6 +177,7 @@ object Datadog {
         contextRef.get()?.let { networkInfoProvider.unregister(it) }
         contextRef.clear()
         initialized = false
+        isDebug = false
     }
 
     /**

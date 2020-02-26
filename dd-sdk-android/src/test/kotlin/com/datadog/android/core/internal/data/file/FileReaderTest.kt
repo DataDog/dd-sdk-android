@@ -3,6 +3,7 @@ package com.datadog.android.core.internal.data.file
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -166,8 +167,12 @@ internal class FileReaderTest {
         // then
         assertThat(nextBatch).isNull()
         if (BuildConfig.DEBUG) {
+            val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/DD_LOG: FileReader: Couldn't access file .+")
+            assertThat(logMessages[0]).matches(
+                "E/$expectedLogcatTag: FileReader:" +
+                        " Couldn't access file .+"
+            )
         }
     }
 
@@ -188,9 +193,10 @@ internal class FileReaderTest {
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
+            val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("I/DD_LOG: FileReader: dropBatch $fileName")
+                .matches("I/$expectedLogcatTag: FileReader: dropBatch $fileName")
         }
     }
 
@@ -211,9 +217,13 @@ internal class FileReaderTest {
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
         if (BuildConfig.DEBUG) {
+            val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[1])
-                .matches("W/DD_LOG: FileReader: file ${notExistingFile.path} does not exist.*")
+                .matches(
+                    "W/$expectedLogcatTag: FileReader: " +
+                            "file ${notExistingFile.path} does not exist.*"
+                )
         }
     }
 
@@ -237,9 +247,10 @@ internal class FileReaderTest {
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).isEmpty()
         if (BuildConfig.DEBUG) {
+            val expectedLogcatTag = resolveTagName(testedReader, "DD_LOG")
             val logMessages = systemOutStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("I/DD_LOG: FileReader: dropAllBatches.*")
+                .matches("I/$expectedLogcatTag: FileReader: dropAllBatches.*")
         }
     }
 

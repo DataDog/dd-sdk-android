@@ -7,9 +7,11 @@
 package com.datadog.android.utils
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.datadog.android.BuildConfig
+import com.datadog.android.Datadog
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -33,9 +35,26 @@ inline fun <reified T : Context> mockContext(
 
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr
-    whenever(mockContext.applicationInfo) doReturn mock()
+    val mockApplicationInfo = mock<ApplicationInfo>()
+    whenever(mockContext.applicationInfo) doReturn mockApplicationInfo
+    if (BuildConfig.DEBUG) {
+        mockApplicationInfo.flags =
+            ApplicationInfo.FLAG_DEBUGGABLE.or(ApplicationInfo.FLAG_ALLOW_BACKUP)
+    }
     whenever(mockContext.packageName) doReturn packageName
     whenever(mockContext.filesDir) doReturn File("/dev/null")
 
     return mockContext
+}
+
+/**
+ * Resolves the expected tag name for the logcat message depending on the application type
+ * (debug or release)
+ */
+fun resolveTagName(caller: Any, defaultIfNotDebug: String? = null): String {
+    return if (Datadog.isDebug) {
+        caller.javaClass.simpleName
+    } else {
+        defaultIfNotDebug ?: "Datadog"
+    }
 }
