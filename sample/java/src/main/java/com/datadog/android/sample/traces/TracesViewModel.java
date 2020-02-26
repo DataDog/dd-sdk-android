@@ -2,6 +2,7 @@ package com.datadog.android.sample.traces;
 
 import android.os.AsyncTask;
 import androidx.lifecycle.ViewModel;
+import com.datadog.android.rum.RumInterceptor;
 import com.datadog.android.tracing.TracingInterceptor;
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 import io.opentracing.Scope;
@@ -63,6 +64,7 @@ public class TracesViewModel extends ViewModel {
         }
 
         private OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new RumInterceptor())
                 .addInterceptor(new TracingInterceptor())
                 .addNetworkInterceptor(new StethoInterceptor())
                 .build();

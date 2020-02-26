@@ -131,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
 
         mRumMonitor.addUserAction(
                 "switchToFragment",
-                new HashMap<String,Object>(){{
+                new HashMap<String, Object>() {{
                     put("fragment_id", Integer.toString(id));
                 }});
         final Fragment fragmentToUse;

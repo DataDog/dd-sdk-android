@@ -7,6 +7,7 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.rum.RumInterceptor
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
 import io.opentracing.Span
@@ -30,10 +31,13 @@ import okhttp3.Response
  * information in the request header to link it with backend spans.
  *
  * If you use multiple Interceptors, make sure that this one is called first.
+ * If you also use the [RumInterceptor], make it is called before this one.
  *
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
+ *       // Optional RUM integration
+ *       .addInterceptor(new RumInterceptor())
  *       .addInterceptor(new TracingInterceptor())
  *       .build();
  * ```
