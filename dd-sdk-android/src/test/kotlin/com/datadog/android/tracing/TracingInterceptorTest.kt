@@ -6,11 +6,17 @@
 
 package com.datadog.android.tracing
 
+import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
+import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -18,6 +24,9 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -33,6 +42,10 @@ import io.opentracing.util.GlobalTracer
 import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.net.URL
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -58,7 +71,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TracingInterceptorTest {
 
-    lateinit var testedInterceptor: Interceptor
+    lateinit var testedInterceptor: TracingInterceptor
 
     @Mock
     lateinit var mockTracer: Tracer
@@ -75,9 +88,24 @@ internal class TracingInterceptorTest {
     lateinit var fakeResponse: Response
     lateinit var fakeSpanId: String
     lateinit var fakeTraceId: String
+    lateinit var fakePackageName: String
+    lateinit var fakePackageVersion: String
+    lateinit var mockAppContext: Context
+    lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeConfig = DatadogConfig.FeatureConfig(
+            clientToken = forge.anHexadecimalString(),
+            endpointUrl = forge.getForgery<URL>().toString(),
+            serviceName = forge.anAlphabeticalString(),
+            envName = forge.anAlphabeticalString()
+        )
+
+        fakePackageName = forge.anAlphabeticalString()
+        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
+
+        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
 
         fakeSpanId = forge.anHexadecimalString()
         fakeTraceId = forge.anHexadecimalString()
@@ -99,7 +127,7 @@ internal class TracingInterceptorTest {
 
         fakeRequest = builder.build()
         testedInterceptor = TracingInterceptor()
-
+        TracesFeature.initialize(mockAppContext, fakeConfig, mock(), mock(), mock(), mock(), mock())
         GlobalTracer.registerIfAbsent(mockTracer)
     }
 
@@ -173,26 +201,119 @@ internal class TracingInterceptorTest {
     }
 
     @Test
-    fun `does nothing but logs a warning if no tracer is registered`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
+    fun `warns the user if no tracer registered and TracingFeature not initialized`(
+        @SystemOutStream outputStream: ByteArrayOutputStream,
+        @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        TracesFeature.invokeMethod("stop")
         Datadog.setVerbosity(Log.VERBOSE)
-        setupFakeResponse()
+        setupFakeResponse(statusCode)
+        val spiedInterceptor = spy(testedInterceptor)
+        val mockLocalTracer: Tracer = mock()
+        doReturn(mockLocalTracer).whenever(spiedInterceptor).buildLocalTracer()
 
-        val response = testedInterceptor.intercept(mockChain)
+        // when
+        spiedInterceptor.intercept(mockChain)
 
-        argumentCaptor<Request> {
-            verify(mockChain).proceed(capture())
-            assertThat(lastValue).isSameAs(fakeRequest)
-        }
+        verifyZeroInteractions(mockLocalTracer)
+        verifyZeroInteractions(mockTracer)
+        assertThat(outputStream.lastLine())
+            .isEqualTo(
+                "W/Datadog: You added the TracingInterceptor to your OkHttpClient " +
+                        "but you did not enable the TracesFeature."
+            )
+    }
+
+    @Test
+    fun `uses the local tracer if no tracer is registered`(
+        @SystemOutStream outputStream: ByteArrayOutputStream,
+        @IntForgery(min = 200, max = 299) statusCode: Int
+    ) {
+        // given
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        Datadog.setVerbosity(Log.VERBOSE)
+        setupFakeResponse(statusCode)
+        val spiedInterceptor = spy(testedInterceptor)
+        val mockLocalTracer: Tracer = mock()
+        doReturn(mockLocalTracer).whenever(spiedInterceptor).buildLocalTracer()
+        whenever(mockLocalTracer.buildSpan(any())).thenReturn(mockSpanBuilder)
+
+        // when
+        val response = spiedInterceptor.intercept(mockChain)
+
+        // then
+        verify(mockLocalTracer).buildSpan("okhttp.request")
+        verify(mockSpan).setTag("http.url", fakeRequest.url().toString())
+        verify(mockSpan).setTag("http.method", fakeRequest.method())
+        verify(mockSpan).setTag("http.status_code", statusCode)
+        verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/Datadog: You added the TracingInterceptor to your OkHttpClient, " +
-                    "but you didn't register any Tracer."
+                        "but you didn't register any Tracer. " +
+                        "We automatically created a local tracer for you. " +
+                        "If you choose to register a GlobalTracer we will do the switch for you."
             )
-        verifyZeroInteractions(mockTracer)
+    }
+
+    @Test
+    fun `when registering a global tracer the local tracer will be dropped`(
+        @SystemOutStream outputStream: ByteArrayOutputStream,
+        @IntForgery(min = 200, max = 299) statusCode: Int
+    ) {
+        // given
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        setupFakeResponse(statusCode)
+        val spiedInterceptor = spy(testedInterceptor)
+        val mockLocalTracer: Tracer = mock()
+        doReturn(mockLocalTracer).whenever(spiedInterceptor).buildLocalTracer()
+        whenever(mockLocalTracer.buildSpan(any())).thenReturn(mockSpanBuilder)
+        spiedInterceptor.intercept(mockChain)
+
+        // when
+        GlobalTracer.registerIfAbsent(mockTracer)
+        spiedInterceptor.intercept(mockChain)
+
+        // then
+        val localTracerReference: AtomicReference<Tracer> =
+            spiedInterceptor.getFieldValue("localTracerReference")
+        assertThat(localTracerReference.get()).isNull()
+    }
+
+    @Test
+    fun `when called from multiple threads will only create one local tracer`(
+        @SystemOutStream outputStream: ByteArrayOutputStream,
+        @IntForgery(min = 200, max = 299) statusCode: Int
+    ) {
+        // given
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        setupFakeResponse(statusCode)
+        val spiedInterceptor = spy(testedInterceptor)
+        val mockLocalTracer1: Tracer = mock()
+        val mockLocalTracer2: Tracer = mock()
+        doReturn(mockLocalTracer1)
+            .doReturn(mockLocalTracer2)
+            .whenever(spiedInterceptor).buildLocalTracer()
+        whenever(mockLocalTracer1.buildSpan(any())).thenReturn(mockSpanBuilder)
+        whenever(mockLocalTracer2.buildSpan(any())).thenReturn(mockSpanBuilder)
+
+        val countDownLatch = CountDownLatch(2)
+        // when
+        Thread {
+            spiedInterceptor.intercept(mockChain)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            spiedInterceptor.intercept(mockChain)
+            countDownLatch.countDown()
+        }.start()
+
+        // then
+        countDownLatch.await(5, TimeUnit.SECONDS)
+        verify(mockLocalTracer1, times(2)).buildSpan("okhttp.request")
+        verifyZeroInteractions(mockLocalTracer2)
     }
 
     // region Internal
