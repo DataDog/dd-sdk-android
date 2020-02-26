@@ -9,6 +9,7 @@ package com.datadog.android
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log as AndroidLog
@@ -220,8 +221,8 @@ internal class DatadogTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/Datadog: setEndpointUrl() has been deprecated. " +
-                    "If you need it, submit an issue at " +
-                    "https://github.com/DataDog/dd-sdk-android/issues/"
+                        "If you need it, submit an issue at " +
+                        "https://github.com/DataDog/dd-sdk-android/issues/"
             )
     }
 
@@ -245,8 +246,8 @@ internal class DatadogTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/Datadog: setEndpointUrl() has been deprecated. " +
-                    "If you need it, submit an issue at " +
-                    "https://github.com/DataDog/dd-sdk-android/issues/"
+                        "If you need it, submit an issue at " +
+                        "https://github.com/DataDog/dd-sdk-android/issues/"
             )
     }
 
@@ -348,5 +349,29 @@ internal class DatadogTest {
     fun `is initialized will return false if SDK was initialized`() {
         // then
         assertThat(Datadog.isInitialized()).isFalse()
+    }
+
+    @Test
+    fun `will update the isDebug flag if application is debuggable`() {
+        // given
+        val mockAppInfo = mock<ApplicationInfo>()
+        whenever(mockAppContext.applicationInfo).thenReturn(mockAppInfo)
+        mockAppInfo.flags = ApplicationInfo.FLAG_DEBUGGABLE
+            .or(ApplicationInfo.FLAG_ALLOW_BACKUP)
+
+        // when
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        // then
+        assertThat(Datadog.isDebug).isTrue()
+    }
+
+    @Test
+    fun `will update the isDebug flag if application is not`() {
+        // when
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        // then
+        assertThat(Datadog.isDebug).isFalse()
     }
 }

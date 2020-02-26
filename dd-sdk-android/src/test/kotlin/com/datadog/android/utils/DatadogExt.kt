@@ -33,6 +33,7 @@ inline fun <reified T : Context> mockContext(
 
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr
+    whenever(mockContext.applicationInfo) doReturn mock()
     whenever(mockContext.packageName) doReturn packageName
     whenever(mockContext.filesDir) doReturn File("/dev/null")
 
