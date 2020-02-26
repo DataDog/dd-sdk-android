@@ -334,4 +334,19 @@ internal class DatadogTest {
         val mockContext = mockContext<Context>()
         Datadog.initialize(mockContext, fakeToken)
     }
+
+    @Test
+    fun `is initialized will return true if SDK was initialized`() {
+        // when
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        // then
+        assertThat(Datadog.isInitialized()).isTrue()
+    }
+
+    @Test
+    fun `is initialized will return false if SDK was initialized`() {
+        // then
+        assertThat(Datadog.isInitialized()).isFalse()
+    }
 }

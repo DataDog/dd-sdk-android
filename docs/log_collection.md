@@ -52,7 +52,15 @@ class SampleApplication : Application() {
 
     {{% /tab %}}
     {{< /tabs >}}
-    
+
+There is also a utility method which gives you the current state of the SDK. You can use this to check if it was properly initialized or not:
+
+```kotlin
+    if(Datadog.isInitialized()){
+      // your code here
+    }
+```
+
 When writing your application, you can enable development logs. All internal messages in the library with a priority equal or higher than the provided level are then logged to Android's Logcat.
 
 ```kotlin

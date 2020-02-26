@@ -157,6 +157,14 @@ object Datadog {
         devLogger.w(String.format(Locale.US, MESSAGE_DEPRECATED, "setEndpointUrl()"))
     }
 
+    /**
+     * Checks if the Datadog SDK was already initialized.
+     * @return true if the SDK was initialized, false otherwise
+     */
+    fun isInitialized(): Boolean {
+        return initialized
+    }
+
     // Stop all Datadog work (for test purposes).
     @Suppress("unused")
     private fun stop() {
@@ -229,10 +237,6 @@ object Datadog {
     @Suppress("CheckInternal")
     private fun checkInitialized() {
         check(initialized) { MESSAGE_NOT_INITIALIZED }
-    }
-
-    internal fun isInitialized(): Boolean {
-        return initialized
     }
 
     private fun initNetworkInfoProvider(context: Context) {
@@ -319,11 +323,11 @@ object Datadog {
     }
 
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
-        "Please add the following code in your application's onCreate() method:\n" +
-        "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+            "Please add the following code in your application's onCreate() method:\n" +
+            "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
-        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+            "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     // endregion
 }
