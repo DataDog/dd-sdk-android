@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
 import java.util.UUID
@@ -100,7 +101,7 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         val eventData = RumEventData.Resource(
-            RumEventData.Resource.Kind.OTHER,
+            RumResourceKind.OTHER,
             url,
             System.nanoTime()
         )
@@ -115,7 +116,7 @@ internal class DatadogRumMonitor(
 
     override fun stopResource(
         key: Any,
-        mimeType: String?,
+        kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
         val startedEvent = activeResources.remove(key)
@@ -134,10 +135,10 @@ internal class DatadogRumMonitor(
                 )
             }
             else -> {
-                // TODO RUMM-248 detect Kind based on Content-Type
                 val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
                 val updatedEvent = startedEvent.copy(
                     eventData = startedEventData.copy(
+                        kind = kind,
                         durationNanoSeconds = updatedDurationNs
                     ),
                     attributes = startedEvent.attributes.toMutableMap().apply {

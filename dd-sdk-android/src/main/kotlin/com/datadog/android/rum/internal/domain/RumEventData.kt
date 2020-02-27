@@ -6,28 +6,15 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.rum.RumResourceKind
+
 internal sealed class RumEventData(val category: String) {
 
     internal data class Resource(
-        val kind: Kind,
+        val kind: RumResourceKind,
         val url: String,
         val durationNanoSeconds: Long
-    ) : RumEventData("resource") {
-
-        internal enum class Kind(val value: String) {
-            UNKNOWN("unknown"),
-            XHR("xhr"),
-            FETCH("fetch"),
-            IMAGE("image"),
-            JS("js"),
-            FONT("font"),
-            CSS("css"),
-            BEACON("beacon"),
-            MEDIA("media"),
-            DOCUMENT("document"),
-            OTHER("other");
-        }
-    }
+    ) : RumEventData("resource")
 
     internal data class UserAction(
         val name: String
