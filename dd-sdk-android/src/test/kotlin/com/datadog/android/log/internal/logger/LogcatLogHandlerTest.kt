@@ -48,8 +48,6 @@ internal class LogcatLogHandlerTest {
 
     var fakeLevel: Int = 0
 
-    var callerStackIndex = 3
-
     @Forgery
     lateinit var fakeThrowable: Throwable
 
@@ -62,7 +60,7 @@ internal class LogcatLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
-        testedHandler = LogcatLogHandler(fakeServiceName, callerStackIndex)
+        testedHandler = LogcatLogHandler(fakeServiceName, -3)
     }
 
     @Test

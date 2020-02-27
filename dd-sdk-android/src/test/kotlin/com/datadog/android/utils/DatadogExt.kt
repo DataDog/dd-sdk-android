@@ -39,7 +39,7 @@ inline fun <reified T : Context> mockContext(
     whenever(mockContext.applicationInfo) doReturn mockApplicationInfo
     if (BuildConfig.DEBUG) {
         mockApplicationInfo.flags =
-            ApplicationInfo.FLAG_DEBUGGABLE.or(ApplicationInfo.FLAG_ALLOW_BACKUP)
+            ApplicationInfo.FLAG_DEBUGGABLE or ApplicationInfo.FLAG_ALLOW_BACKUP
     }
     whenever(mockContext.packageName) doReturn packageName
     whenever(mockContext.filesDir) doReturn File("/dev/null")

@@ -89,7 +89,7 @@ internal class WorkManagerUtilsTest {
         if (BuildConfig.DEBUG) {
             val expectedTagName = if (Datadog.isDebug) "WorkManagerUtilsKt" else "DD_LOG"
             val logMessages = outStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/$expectedTagName: $TAG.*")
+            assertThat(logMessages[0]).matches("E/$expectedTagName: $ERROR_MESSAGE.*")
         }
     }
 }

@@ -13,9 +13,14 @@ import java.util.regex.Pattern
 
 internal class LogcatLogHandler(
     internal val serviceName: String,
-    internal val callerNameStackIndex: Int = DEFAULT_LOGGER_CALLER_STACK_INDEX
+    nestedDepth: Int = 0
 ) : LogHandler {
 
+    private val callerNameStackIndex: Int
+
+    init {
+        callerNameStackIndex = DEFAULT_LOGGER_CALLER_STACK_INDEX + nestedDepth
+    }
     // region LogHandler
 
     override fun handleLog(
@@ -73,11 +78,7 @@ internal class LogcatLogHandler(
 
     private fun stripAnonymousPart(className: String): String {
         val matcher = ANONYMOUS_CLASS.matcher(className)
-        return if (matcher.find()) {
-            matcher.replaceAll("")
-        } else {
-            className
-        }
+        return matcher.replaceAll("")
     }
 
     // endregion
@@ -97,7 +98,6 @@ internal class LogcatLogHandler(
             Pattern.compile("(\\$\\d+)+$")
         private const val MAX_TAG_LENGTH = 23
 
-        internal const val SDK_LOGGER_CALLER_STACK_INDEX = 6
-        internal const val DEFAULT_LOGGER_CALLER_STACK_INDEX = 7
+        private const val DEFAULT_LOGGER_CALLER_STACK_INDEX = 6
     }
 }

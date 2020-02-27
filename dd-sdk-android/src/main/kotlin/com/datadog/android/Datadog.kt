@@ -328,7 +328,7 @@ object Datadog {
     }
 
     private fun resolveIsDebug(context: Context): Boolean {
-        return (context.applicationInfo.flags.and(ApplicationInfo.FLAG_DEBUGGABLE)) != 0
+        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
