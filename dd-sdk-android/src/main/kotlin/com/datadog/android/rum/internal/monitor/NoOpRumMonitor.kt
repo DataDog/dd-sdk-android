@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceKind
 
 internal class NoOpRumMonitor : RumMonitor {
 
@@ -42,7 +43,7 @@ internal class NoOpRumMonitor : RumMonitor {
 
     override fun stopResource(
         key: Any,
-        mimeType: String?,
+        kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
         // No Op

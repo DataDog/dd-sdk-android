@@ -41,9 +41,15 @@ class RumInterceptor : Interceptor {
 
         try {
             val response = chain.proceed(request)
+            val mimeType = response.header(HEADER_CT)
+            val kind = when {
+                method in xhrMethods -> RumResourceKind.XHR
+                mimeType == null -> RumResourceKind.UNKNOWN
+                else -> RumResourceKind.fromMimeType(mimeType)
+            }
             GlobalRum.get().stopResource(
                 request,
-                response.header(HEADER_CT),
+                kind,
                 mapOf("http.status_code" to response.code())
             )
             return response
@@ -57,5 +63,7 @@ class RumInterceptor : Interceptor {
 
     companion object {
         private const val HEADER_CT = "Content-Type"
+
+        private val xhrMethods = arrayOf("POST", "PUT", "DELETE")
     }
 }

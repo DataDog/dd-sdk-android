@@ -10,9 +10,9 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
-import com.datadog.android.rum.internal.domain.RumEventData
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -152,9 +152,9 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         val resourceKey = forge.anAsciiString()
-        val resourceMimeType = forge.aStringMatching("[a-z]+/[a-z]+")
+        val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
 
-        testedMonitor.stopResource(resourceKey, resourceMimeType, emptyMap())
+        testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
 
         verifyZeroInteractions(mockWriter)
     }
@@ -168,7 +168,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAsciiString()
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
-        val resourceMimeType = forge.aStringMatching("[a-z]+/[a-z]+")
+        val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
         whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
 
@@ -176,7 +176,7 @@ internal class DatadogRumMonitorTest {
         val viewId = GlobalRum.getRumContext().viewId
         val duration = measureNanoTime {
             testedMonitor.startResource(resourceKey, resourceUrl, attributes)
-            testedMonitor.stopResource(resourceKey, resourceMimeType, emptyMap())
+            testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
         }
 
         checkNotNull(viewId)
@@ -189,7 +189,7 @@ internal class DatadogRumMonitorTest {
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasDurationLowerThan(duration)
-                    hasKind(RumEventData.Resource.Kind.OTHER)
+                    hasKind(resourceKind)
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
