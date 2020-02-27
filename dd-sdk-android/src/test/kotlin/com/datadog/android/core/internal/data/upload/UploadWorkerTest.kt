@@ -36,6 +36,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -166,6 +167,10 @@ internal class UploadWorkerTest {
     fun `doWork multiple logs batches all Success`(
         @Forgery batches: List<Batch>
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -193,6 +198,10 @@ internal class UploadWorkerTest {
     fun `doWork multiple traces batches all Success`(
         @Forgery batches: List<Batch>
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -220,6 +229,10 @@ internal class UploadWorkerTest {
     fun `doWork multiple crashReports batches all Success`(
         @Forgery batches: List<Batch>
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -249,6 +262,10 @@ internal class UploadWorkerTest {
         @Forgery batches: List<Batch>,
         forge: Forge
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val status = forge.aValueFrom(
             UploadStatus::class.java,
             exclude = listOf(UploadStatus.SUCCESS)
@@ -285,6 +302,10 @@ internal class UploadWorkerTest {
         @Forgery batches: List<Batch>,
         forge: Forge
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val status = forge.aValueFrom(
             UploadStatus::class.java,
             exclude = listOf(UploadStatus.SUCCESS)
@@ -321,6 +342,10 @@ internal class UploadWorkerTest {
         @Forgery batches: List<Batch>,
         forge: Forge
     ) {
+        assumeTrue {
+            // make sure there are no id duplicates
+            batches.map { it.id }.toSet().size == batches.size
+        }
         val status = forge.aValueFrom(
             UploadStatus::class.java,
             exclude = listOf(UploadStatus.SUCCESS)
