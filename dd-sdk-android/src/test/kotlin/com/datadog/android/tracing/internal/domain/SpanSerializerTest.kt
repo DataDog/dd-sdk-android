@@ -130,7 +130,11 @@ internal class SpanSerializerTest {
             .hasField(SpanSerializer.TAG_RESOURCE, span.resourceName)
             .hasField(SpanSerializer.TAG_OPERATION_NAME, span.operationName)
             .hasField(SpanSerializer.TAG_ERROR, if (span.isError) 1 else 0)
+            .hasField(SpanSerializer.TAG_TYPE, SpanSerializer.TYPE_CUSTOM)
             .hasField(SpanSerializer.TAG_META, span.meta)
+            .hasField(SpanSerializer.TAG_META) {
+                hasField(SpanSerializer.TAG_DD_SOURCE, SpanSerializer.DD_SOURCE_MOBILE)
+            }
             .hasField(SpanSerializer.TAG_METRICS, span.metrics)
             .hasField(SpanSerializer.TAG_METRICS) {
                 if (span.parentId.toLong() == 0L) {
