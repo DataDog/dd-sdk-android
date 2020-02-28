@@ -9,7 +9,7 @@ package com.datadog.android.log.internal.logger
 import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
-import java.util.logging.Logger
+import com.datadog.android.log.Logger
 import java.util.regex.Pattern
 
 internal class LogcatLogHandler(
