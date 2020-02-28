@@ -60,7 +60,7 @@ internal class LogcatLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
-        testedHandler = LogcatLogHandler(fakeServiceName, -3)
+        testedHandler = LogcatLogHandler(fakeServiceName)
     }
 
     @Test
@@ -82,6 +82,7 @@ internal class LogcatLogHandlerTest {
             .isEqualTo("$prefix/$exptectedTagName: $fakeMessage\n")
         assertThat(errorStream.toString())
             .startsWith("${fakeThrowable.javaClass.canonicalName}: ${fakeThrowable.message}")
+            .endsWith("\t| at .onStart(MainActivity.java:55)")
     }
 
     @Test
@@ -93,7 +94,7 @@ internal class LogcatLogHandlerTest {
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val exptectedTagName = resolveTagName(this, fakeServiceName)
-        testedHandler = LogcatLogHandler(fakeServiceName, 4)
+        testedHandler = LogcatLogHandler(fakeServiceName)
         val thread = Thread({
             testedHandler.handleLog(
                 fakeLevel,
