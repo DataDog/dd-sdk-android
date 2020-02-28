@@ -111,7 +111,7 @@ reviewBenchmark {
 
     // Logs Benchmarks
     addThreshold(
-        "benchmark_create_one_log", 500
+        "benchmark_create_one_log", 1
     )
     addThreshold(
         "benchmark_create_one_log_with_throwable", 1
