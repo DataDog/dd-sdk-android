@@ -41,13 +41,16 @@ task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
 
-gitDiffTask("unitTestAll") {
+gitDiffTask("unitTestChanged") {
     dependsOnDiff(
         "dd-sdk-android/.*",
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest",
         ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug"
+        ":sample:kotlin:assembleDebug",
+        ":sample:kotlin-timber:assembleDebug"
     )
     dependsOnDiff(
         "dd-sdk-android-timber/.*",
@@ -56,13 +59,40 @@ gitDiffTask("unitTestAll") {
         ":sample:kotlin-timber:assembleDebug"
     )
     dependsOnDiff(
-        "tools/.*",
-        ":tools:detekt:test",
+        "tools/detekt/.*",
+        ":tools:detekt:test"
+    )
+    dependsOnDiff(
+        "tools/unit/.*",
         ":tools:unit:testDebugUnitTest",
         ":tools:unit:testReleaseUnitTest"
     )
     dependsOnDiff(
-        "sample/.*",
+        "sample/java/.*",
+        ":sample:java:assembleDebug"
+    )
+    dependsOnDiff(
+        "sample/kotlin/.*",
+        ":sample:kotlin:assembleDebug"
+    )
+    dependsOnDiff(
+        "sample/kotlin/.*",
+        ":sample:kotlin-timber:assembleDebug"
+    )
+}
+
+gitDiffTask("unitTestAll") {
+    dependsOn(
+        ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android:testReleaseUnitTest",
+        ":sample:java:assembleDebug",
+        ":sample:kotlin:assembleDebug",
+        ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest",
+        ":sample:kotlin-timber:assembleDebug",
+        ":tools:detekt:test",
+        ":tools:unit:testDebugUnitTest",
+        ":tools:unit:testReleaseUnitTest",
         ":sample:java:assembleDebug",
         ":sample:kotlin:assembleDebug",
         ":sample:kotlin-timber:assembleDebug"

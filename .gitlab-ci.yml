@@ -68,7 +68,7 @@ test:unit:
   stage: test
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew unitTestAll
+    - ./gradlew unitTestChanged
 
 publish:release:
   tags: [ "runner:docker", "size:large" ]

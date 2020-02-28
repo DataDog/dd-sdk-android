@@ -147,6 +147,25 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `registers shutdown hooks`() {
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        val shutdownHooks: Map<Thread, Thread> =
+            getStaticValue("java.lang.ApplicationShutdownHooks", "hooks")
+
+        val shutdownThread = shutdownHooks.keys
+            .first { it.name == Datadog.SHUTDOWN_THREAD }
+        assertThat(shutdownThread).isNotNull()
+
+        shutdownThread.start()
+        Thread.sleep(500L)
+        // check that stop was called by the shutdownThread
+        assertThrows<IllegalStateException> {
+            Datadog.invokeMethod("stop")
+        }
+    }
+
+    @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `registers broadcast receivers on initialize (Lollipop)`() {
         Datadog.initialize(mockAppContext, fakeToken)

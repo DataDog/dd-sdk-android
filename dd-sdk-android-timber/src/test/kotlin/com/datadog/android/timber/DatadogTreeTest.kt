@@ -7,6 +7,7 @@
 package com.datadog.android.timber
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.datadog.android.Datadog
@@ -61,13 +62,18 @@ internal class DatadogTreeTest {
         val mockPackageInfo = PackageInfo()
         val mockPackageMgr = mock<PackageManager>()
         val mockContext: Context = mock()
+        val mockApplicationInfo: ApplicationInfo = mock()
         mockPackageInfo.versionName = forge.anAlphabeticalString()
         whenever(mockPackageMgr.getPackageInfo(fakePackageName, 0)) doReturn mockPackageInfo
         whenever(mockContext.filesDir).thenReturn(tempDir)
         whenever(mockContext.applicationContext) doReturn mockContext
         whenever(mockContext.packageManager) doReturn mockPackageMgr
         whenever(mockContext.packageName) doReturn fakePackageName
-
+        whenever(mockContext.applicationInfo) doReturn mockApplicationInfo
+        if (BuildConfig.DEBUG) {
+            mockApplicationInfo.flags =
+                ApplicationInfo.FLAG_DEBUGGABLE or ApplicationInfo.FLAG_ALLOW_BACKUP
+        }
         Datadog.initialize(mockContext, forge.anHexadecimalString())
 
         val builder = Logger.Builder()
@@ -147,8 +153,9 @@ internal class DatadogTreeTest {
         logCatPrefix: String,
         outputStream: ByteArrayOutputStream
     ) {
+        val tag = if (BuildConfig.DEBUG) "DatadogTree" else fakeServiceName
         assertThat(outputStream.lastLine())
-            .isEqualTo("$logCatPrefix/$fakeServiceName: $fakeMessage")
+            .isEqualTo("$logCatPrefix/$tag: $fakeMessage")
     }
 
     // endregion
