@@ -47,6 +47,23 @@ inline fun <reified T, R> Class<T>.setStaticValue(
 
 /**
  * Gets the static value from the target class.
+ * @param className the full name of the class
+ * @param fieldName the name of the field
+ */
+inline fun <reified R> getStaticValue(
+    className: String,
+    fieldName: String
+): R {
+    val clazz = Class.forName(className)
+    val field = clazz.getDeclaredField(fieldName)
+    // make it accessible
+    field.isAccessible = true
+
+    return field.get(null) as R
+}
+
+/**
+ * Gets the static value from the target class.
  * @param fieldName the name of the field
  */
 inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R {

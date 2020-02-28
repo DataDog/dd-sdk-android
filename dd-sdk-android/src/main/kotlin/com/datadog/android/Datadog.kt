@@ -144,6 +144,13 @@ object Datadog {
         // We set this up last.
         // We don't want to catch any exception that might throw during the initialisation)
         setupTheExceptionHandler(appContext)
+
+        // Issue #154 (“Thread starting during runtime shutdown”)
+        // Make sure we stop Datadog when the Runtime shuts down
+        Runtime.getRuntime()
+            .addShutdownHook(
+                Thread(Runnable { stop() }, SHUTDOWN_THREAD)
+            )
     }
 
     /**
@@ -337,6 +344,8 @@ object Datadog {
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
             "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+
+    internal const val SHUTDOWN_THREAD = "datadog_shutdown"
 
     // endregion
 }

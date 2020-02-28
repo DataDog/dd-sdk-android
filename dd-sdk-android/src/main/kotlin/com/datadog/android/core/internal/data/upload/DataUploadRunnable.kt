@@ -64,7 +64,8 @@ internal class DataUploadRunnable(
         currentDelayInterval =
             DEFAULT_DELAY
         handler.removeCallbacks(this)
-        handler.postDelayed(this,
+        handler.postDelayed(
+            this,
             MAX_DELAY
         )
     }
