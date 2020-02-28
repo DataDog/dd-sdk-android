@@ -30,7 +30,7 @@ internal class SpanSerializer(
         jsonObject.addProperty(TAG_DURATION, model.durationNano)
         jsonObject.addProperty(TAG_START_TIMESTAMP, model.startTime + serverOffset)
         jsonObject.addProperty(TAG_ERROR, if (model.isError) 1 else 0)
-        jsonObject.addProperty(TAG_TYPE, "custom")
+        jsonObject.addProperty(TAG_TYPE, TYPE_CUSTOM)
         addMeta(jsonObject, model)
         addMetrics(jsonObject, model)
         return jsonObject.toString()
@@ -42,6 +42,7 @@ internal class SpanSerializer(
             metaObject.addProperty(it.key, it.value)
         }
 
+        metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_MOBILE)
         metaObject.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
         metaObject.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
         metaObject.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
@@ -101,20 +102,24 @@ internal class SpanSerializer(
 
     companion object {
 
+        internal const val TYPE_CUSTOM = "custom"
+        internal const val DD_SOURCE_MOBILE = "mobile"
+
         // SPAN TAGS
-        const val TAG_START_TIMESTAMP = "start"
-        const val TAG_DURATION = "duration"
-        const val TAG_SERVICE_NAME = "service"
-        const val TAG_TRACE_ID = "trace_id"
-        const val TAG_SPAN_ID = "span_id"
-        const val TAG_PARENT_ID = "parent_id"
-        const val TAG_RESOURCE = "resource"
-        const val TAG_OPERATION_NAME = "name"
-        const val TAG_ERROR = "error"
-        const val TAG_TYPE = "type"
-        const val TAG_META = "meta"
-        const val TAG_METRICS = "metrics"
-        const val TAG_METRICS_TOP_LEVEL = "_top_level"
+        internal const val TAG_START_TIMESTAMP = "start"
+        internal const val TAG_DURATION = "duration"
+        internal const val TAG_SERVICE_NAME = "service"
+        internal const val TAG_TRACE_ID = "trace_id"
+        internal const val TAG_SPAN_ID = "span_id"
+        internal const val TAG_PARENT_ID = "parent_id"
+        internal const val TAG_RESOURCE = "resource"
+        internal const val TAG_OPERATION_NAME = "name"
+        internal const val TAG_ERROR = "error"
+        internal const val TAG_TYPE = "type"
+        internal const val TAG_META = "meta"
+        internal const val TAG_METRICS = "metrics"
+        internal const val TAG_METRICS_TOP_LEVEL = "_top_level"
+        internal const val TAG_DD_SOURCE = "_dd.source"
 
         // GLOBAL TAGS
         internal const val TAG_VERSION_NAME = "logger.version"
