@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
@@ -188,9 +189,9 @@ internal class DataUploadRunnableTest {
         verifyZeroInteractions(mockDataUploader)
         verify(mockHandler).postDelayed(testedRunnable, DataUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
+            val exptectedTag = resolveTagName(testedRunnable, "DD_LOG")
             assertThat(systemOutStream.toString().trim())
-                .withFailMessage("We were expecting an info log message here")
-                .matches("I/DD_LOG: DataUploadRunnable: .+")
+                .matches("I/$exptectedTag: .+")
         }
     }
 

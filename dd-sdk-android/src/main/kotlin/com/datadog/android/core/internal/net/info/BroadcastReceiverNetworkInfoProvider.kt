@@ -29,7 +29,7 @@ internal class BroadcastReceiverNetworkInfoProvider :
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        sdkLogger.d("$TAG: received network update")
+        sdkLogger.d("received network update")
         val connectivityMgr =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
@@ -153,7 +153,5 @@ internal class BroadcastReceiverNetworkInfoProvider :
         )
 
         private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
-
-        private const val TAG = "BroadcastReceiver"
     }
 }

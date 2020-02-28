@@ -5,6 +5,7 @@ import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.BuildConfig
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -111,12 +112,13 @@ internal class ImmediateFileWriterTest {
         val modelValue = forge.anAlphabeticalString()
         val exception = SecurityException(forge.anAlphabeticalString())
         doThrow(exception).whenever(mockedOrchestrator).getWritableFile(any())
+        val expectedLogcatTag = resolveTagName(underTest, "DD_LOG")
 
         underTest.write(modelValue)
 
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/DD_LOG: ImmediateFileWriter: .*")
+            assertThat(logMessages[0]).matches("E/$expectedLogcatTag: Couldn't access file .*")
         }
     }
 
@@ -127,6 +129,7 @@ internal class ImmediateFileWriterTest {
     ) {
         val modelValue = forge.anAlphabeticalString()
         whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(null)
+        val expectedLogcatTag = resolveTagName(underTest, "DD_LOG")
 
         // when
         underTest.write(modelValue)
@@ -135,7 +138,7 @@ internal class ImmediateFileWriterTest {
         if (BuildConfig.DEBUG) {
             val logMessages = outputStream.toString().trim().split("\n")
             assertThat(logMessages[0])
-                .matches("E/DD_LOG: ImmediateFileWriter: Could not get a valid file")
+                .matches("E/$expectedLogcatTag: Could not get a valid file")
         }
     }
 }

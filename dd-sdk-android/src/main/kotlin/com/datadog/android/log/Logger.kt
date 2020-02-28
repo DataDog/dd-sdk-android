@@ -180,10 +180,14 @@ internal constructor(private val handler: LogHandler) {
 
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
-                    CombinedLogHandler(buildDatadogHandler(), buildLogcatHandler())
+                    CombinedLogHandler(
+                        buildDatadogHandler(),
+                        buildLogcatHandler(1)
+                    )
                 }
                 datadogLogsEnabled -> buildDatadogHandler()
-                logcatLogsEnabled -> buildLogcatHandler()
+                logcatLogsEnabled ->
+                    buildLogcatHandler()
                 else -> NoOpLogHandler
             }
 
@@ -238,8 +242,10 @@ internal constructor(private val handler: LogHandler) {
 
         // region Internal
 
-        private fun buildLogcatHandler(): LogHandler {
-            return LogcatLogHandler(serviceName)
+        private fun buildLogcatHandler(
+            nestedDepth: Int = 0
+        ): LogHandler {
+            return LogcatLogHandler(serviceName, nestedDepth)
         }
 
         private fun buildDatadogHandler(): LogHandler {

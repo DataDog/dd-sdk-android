@@ -220,8 +220,8 @@ internal class DatadogTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/Datadog: setEndpointUrl() has been deprecated. " +
-                    "If you need it, submit an issue at " +
-                    "https://github.com/DataDog/dd-sdk-android/issues/"
+                        "If you need it, submit an issue at " +
+                        "https://github.com/DataDog/dd-sdk-android/issues/"
             )
     }
 
@@ -245,8 +245,8 @@ internal class DatadogTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/Datadog: setEndpointUrl() has been deprecated. " +
-                    "If you need it, submit an issue at " +
-                    "https://github.com/DataDog/dd-sdk-android/issues/"
+                        "If you need it, submit an issue at " +
+                        "https://github.com/DataDog/dd-sdk-android/issues/"
             )
     }
 
@@ -348,5 +348,18 @@ internal class DatadogTest {
     fun `is initialized will return false if SDK was initialized`() {
         // then
         assertThat(Datadog.isInitialized()).isFalse()
+    }
+
+    @Test
+    fun `will update the isDebug flag if application is debuggable`() {
+        // when
+        Datadog.initialize(mockAppContext, fakeToken)
+
+        // then
+        if (BuildConfig.DEBUG) {
+            assertThat(Datadog.isDebug).isTrue()
+        } else {
+            assertThat(Datadog.isDebug).isFalse()
+        }
     }
 }

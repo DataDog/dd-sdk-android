@@ -45,12 +45,12 @@ internal class NetworkTimeInterceptor(
         val serverDate = try {
             formatter.parse(serverDateStr)
         } catch (e: ParseException) {
-            sdkLogger.w("$TAG: invalid date received \"$serverDateStr\"")
+            sdkLogger.w("invalid date received \"$serverDateStr\"")
             null
         }
 
         if (serverDate != null) {
-            sdkLogger.v("$TAG: updating offset with server time $serverDate")
+            sdkLogger.v("updating offset with server time $serverDate")
             val localTimestamp = (start + end) / 2
             val offset = serverDate.time - localTimestamp
             timeProvider.updateOffset(offset)
@@ -60,8 +60,4 @@ internal class NetworkTimeInterceptor(
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "NetworkTimeInterceptor"
-    }
 }

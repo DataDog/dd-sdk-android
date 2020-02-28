@@ -9,12 +9,11 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
@@ -127,17 +126,48 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can enable logcat logs`(@Forgery forge: Forge) {
+    fun `builder can enable logcat logs`(
+        @Forgery forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
         val logcatLogsEnabled = true
+        val fakeMessage = forge.anAlphabeticalString()
+        val fakeServiceName = forge.anAlphaNumericalString()
 
         val logger = Logger.Builder()
             .setLogcatLogsEnabled(logcatLogsEnabled)
+            .setServiceName(fakeServiceName)
             .build()
+        logger.v(fakeMessage)
+        val expectedTagName = resolveTagName(this, fakeServiceName)
 
-        val handler = logger.getFieldValue("handler") as CombinedLogHandler
-        assertThat(handler.handlers)
-            .hasAtLeastOneElementOfType(DatadogLogHandler::class.java)
-            .hasAtLeastOneElementOfType(LogcatLogHandler::class.java)
+        assertThat(outputStream.toString())
+            .isEqualTo(
+                "V/$expectedTagName: $fakeMessage\n"
+            )
+    }
+
+    @Test
+    fun `builder can enable only logcat logs`(
+        @Forgery forge: Forge,
+        @SystemOutStream outputStream: ByteArrayOutputStream
+    ) {
+        val logcatLogsEnabled = true
+        val fakeMessage = forge.anAlphabeticalString()
+        val fakeServiceName = forge.anAlphaNumericalString()
+
+        val logger = Logger.Builder()
+            .setDatadogLogsEnabled(false)
+            .setLogcatLogsEnabled(logcatLogsEnabled)
+            .setServiceName(fakeServiceName)
+            .build()
+        logger.v(fakeMessage)
+        val expectedTagName = resolveTagName(this, fakeServiceName)
+
+        assertThat(outputStream.toString())
+            .isEqualTo(
+                "V/$expectedTagName: $fakeMessage\n"
+            )
     }
 
     @Test

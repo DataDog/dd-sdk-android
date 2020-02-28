@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
 import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -84,6 +85,7 @@ object Datadog {
         private set
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
+    internal var isDebug = false
 
     /**
      * Initializes the Datadog SDK.
@@ -134,6 +136,8 @@ object Datadog {
         // setup the process lifecycle monitor
         setupLifecycleMonitorCallback(appContext)
 
+        isDebug = resolveIsDebug(context)
+
         initialized = true
 
         // setup the exception handler
@@ -173,6 +177,7 @@ object Datadog {
         contextRef.get()?.let { networkInfoProvider.unregister(it) }
         contextRef.clear()
         initialized = false
+        isDebug = false
     }
 
     /**
@@ -320,6 +325,10 @@ object Datadog {
             val callback = ProcessLifecycleCallback(networkInfoProvider, appContext)
             appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
         }
+    }
+
+    private fun resolveIsDebug(context: Context): Boolean {
+        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +

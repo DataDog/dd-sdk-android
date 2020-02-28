@@ -9,7 +9,7 @@ import androidx.work.WorkManager
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import java.lang.IllegalStateException
 
-internal const val TAG = "WorkManagerUtils"
+internal const val ERROR_MESSAGE = "Error while trying to setup the upload worker."
 internal const val UPLOAD_WORKER_TAG = "UploadWorker"
 
 internal fun triggerUploadWorker(context: Context) {
@@ -28,6 +28,6 @@ internal fun triggerUploadWorker(context: Context) {
                 uploadWorkRequest
             )
     } catch (e: IllegalStateException) {
-        sdkLogger.e(TAG, e)
+        sdkLogger.e(ERROR_MESSAGE, e)
     }
 }

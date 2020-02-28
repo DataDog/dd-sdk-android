@@ -33,14 +33,14 @@ internal class BroadcastReceiverSystemInfoProvider :
         val action = intent?.action
         when (action) {
             Intent.ACTION_BATTERY_CHANGED -> {
-                sdkLogger.d("$TAG: received battery update")
+                sdkLogger.d("received battery update")
                 handleBatteryIntent(intent)
             }
             PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
-                sdkLogger.d("$TAG: received power save mode update")
+                sdkLogger.d("received power save mode update")
                 handlePowerSaveIntent(context)
             }
-            else -> sdkLogger.d("$TAG: received unknown update $action")
+            else -> sdkLogger.d("received unknown update $action")
         }
     }
 
@@ -88,8 +88,4 @@ internal class BroadcastReceiverSystemInfoProvider :
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "BroadcastReceiver"
-    }
 }
