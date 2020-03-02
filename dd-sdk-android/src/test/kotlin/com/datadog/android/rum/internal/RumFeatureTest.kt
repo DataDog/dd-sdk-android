@@ -64,7 +64,7 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.RumConfig
 
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
@@ -74,7 +74,7 @@ internal class RumFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
@@ -180,7 +180,7 @@ internal class RumFeatureTest {
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
 
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
