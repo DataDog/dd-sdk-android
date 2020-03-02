@@ -1,3 +1,22 @@
+
+# 1.3.0 / 2020-03-02
+
+### Changes
+
+* [FEATURE] Logs: Add the caller class name as a tag in the LogcatLogHandler (only when app is in Debug)
+* [FEATURE] Logs: Allow adding a `JsonElement` as Attribute
+* [FEATURE] CrashReport: Let Crash logs use the EMERGENCY log level
+* [FEATURE] Global: Warn developers on SDK errors in the Logcat (cf `Datadog.setVerbosity()`)
+* [FEATURE] Global: Expose the `Datadog.isInitialized()` method to the public API
+* [OTHER] Deprecate the `Datadog.switchEndpoint()` method
+* [OTHER] Fail silently when the SDK is not initialized
+
+# 1.2.2 / 2020-02-26
+
+### Changes
+
+* [BUGFIX] Fix invalid dependency group in `dd-sdk-android-timber` See #147 (Thanks @mduong, @alparp27, @rafaela-stockx)
+
 # 1.2.1 / 2020-02-19
 
 ### Changes

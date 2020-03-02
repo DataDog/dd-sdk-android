@@ -99,8 +99,7 @@ notify:release:
   only:
     - tags
   script:
-    - 'RELEASE_NOTE="https://github.com/DataDog/$CI_PROJECT_NAME/releases/tag/$CI_COMMIT_TAG"'
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray: ($BINTRAY_URL)."'
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray:"'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:
