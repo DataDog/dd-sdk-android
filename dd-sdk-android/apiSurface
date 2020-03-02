@@ -78,11 +78,25 @@ interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun startResource(Any, String, Map<String, Any?> = emptyMap())
-  fun stopResource(Any, String?, Map<String, Any?> = emptyMap())
+  fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(Any, String, String, Throwable)
   fun addError(String, String, Throwable, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
+enum com.datadog.android.rum.RumResourceKind
+  constructor(String)
+  - BEACON
+  - FETCH
+  - XHR
+  - DOCUMENT
+  - UNKNOWN
+  - IMAGE
+  - JS
+  - FONT
+  - CSS
+  - MEDIA
+  - OTHER
+  companion object
 class com.datadog.android.tracing.Tracer : datadog.opentracing.DDTracer
   override fun buildSpan(String?): DDSpanBuilder
   class Builder

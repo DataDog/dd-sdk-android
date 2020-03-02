@@ -52,7 +52,7 @@ internal class RumInterceptorTest {
     lateinit var mockChain: Interceptor.Chain
 
     lateinit var fakeUrl: String
-    lateinit var fakeMimeType: String
+    var fakeMimeType: String? = null
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -60,16 +60,7 @@ internal class RumInterceptorTest {
     fun `set up`(forge: Forge) {
         fakeMimeType = forge.aStringMatching("[a-z]+/[a-z]+")
         fakeUrl = forge.aStringMatching("http://[a-z0-9_]{8}\\.[a-z]{3}/")
-        val builder = Request.Builder()
-            .url(fakeUrl)
-        if (forge.aBool()) {
-            val fakeBody = forge.anAlphabeticalString()
-            builder.post(RequestBody.create(null, fakeBody.toByteArray()))
-        } else {
-            builder.get()
-        }
 
-        fakeRequest = builder.build()
         testedInterceptor = RumInterceptor()
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
@@ -82,11 +73,11 @@ internal class RumInterceptorTest {
     }
 
     @Test
-    fun `starts and stop a Rum Resource event around request and fills request info`(
+    fun `starts and stop a Rum Resource event around GET request`(
         @IntForgery(min = 200, max = 299) statusCode: Int,
         forge: Forge
     ) {
-        setupFakeResponse(statusCode)
+        setupFakeResponse(statusCode, "GET")
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -94,11 +85,108 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to fakeRequest.method())
+                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
-                fakeMimeType,
+                RumResourceKind.fromMimeType(fakeMimeType!!),
+                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+            )
+        }
+        assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `starts and stop a Rum Resource event around GET request without contentType`(
+        @IntForgery(min = 200, max = 299) statusCode: Int,
+        forge: Forge
+    ) {
+        fakeMimeType = null
+        setupFakeResponse(statusCode, "GET")
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                fakeRequest,
+                fakeUrl,
+                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
+            )
+            verify(mockRumMonitor).stopResource(
+                fakeRequest,
+                RumResourceKind.UNKNOWN,
+                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+            )
+        }
+        assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `starts and stop a Rum Resource event around POST request`(
+        @IntForgery(min = 200, max = 299) statusCode: Int,
+        forge: Forge
+    ) {
+        setupFakeResponse(statusCode, "POST")
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                fakeRequest,
+                fakeUrl,
+                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "POST")
+            )
+            verify(mockRumMonitor).stopResource(
+                fakeRequest,
+                RumResourceKind.XHR,
+                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+            )
+        }
+        assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `starts and stop a Rum Resource event around PUT request`(
+        @IntForgery(min = 200, max = 299) statusCode: Int,
+        forge: Forge
+    ) {
+        setupFakeResponse(statusCode, "PUT")
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                fakeRequest,
+                fakeUrl,
+                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "PUT")
+            )
+            verify(mockRumMonitor).stopResource(
+                fakeRequest,
+                RumResourceKind.XHR,
+                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+            )
+        }
+        assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `starts and stop a Rum Resource event around DELETE request`(
+        @IntForgery(min = 200, max = 299) statusCode: Int,
+        forge: Forge
+    ) {
+        setupFakeResponse(statusCode, "DELETE")
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                fakeRequest,
+                fakeUrl,
+                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "DELETE")
+            )
+            verify(mockRumMonitor).stopResource(
+                fakeRequest,
+                RumResourceKind.XHR,
                 mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
             )
         }
@@ -109,6 +197,7 @@ internal class RumInterceptorTest {
     fun `sends a Rum Error event around request throwing exception`(
         forge: Forge
     ) {
+        setupFakeResponse(200, forge.anElementFrom("GET", "POST", "PUT", "DELETE"))
         val throwable = forge.aThrowable()
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
@@ -138,16 +227,30 @@ internal class RumInterceptorTest {
 
     // region Internal
 
-    private fun setupFakeResponse(statusCode: Int = 200) {
+    private fun setupFakeResponse(
+        statusCode: Int,
+        method: String
+    ) {
+        fakeRequest = Request.Builder()
+            .url(fakeUrl)
+            .apply {
+                when (method) {
+                    "POST" -> post(RequestBody.create(null, "{}".toByteArray()))
+                    "GET" -> get()
+                    "DELETE" -> delete()
+                    "PUT" -> put(RequestBody.create(null, "{}".toByteArray()))
+                }
+            }
+            .build()
 
-        val builder = Response.Builder()
+        fakeResponse = Response.Builder()
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
             .code(statusCode)
             .message("{}")
-
-        fakeResponse = builder
-            .header("Content-Type", fakeMimeType)
+            .apply {
+                fakeMimeType?.let { header("Content-Type", it) }
+            }
             .build()
 
         whenever(mockChain.request()) doReturn fakeRequest

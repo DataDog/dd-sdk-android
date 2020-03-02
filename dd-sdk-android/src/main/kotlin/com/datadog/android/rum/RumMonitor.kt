@@ -87,7 +87,7 @@ interface RumMonitor {
      */
     fun stopResource(
         key: Any,
-        mimeType: String?,
+        kind: RumResourceKind,
         attributes: Map<String, Any?> = emptyMap()
     )
 
