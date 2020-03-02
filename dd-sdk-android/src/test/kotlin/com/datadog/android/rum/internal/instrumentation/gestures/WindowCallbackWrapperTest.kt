@@ -1,4 +1,4 @@
-package com.datadog.android.rum.gestures
+package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.view.MotionEvent
 import android.view.Window
