@@ -621,7 +621,7 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    trackActivityAsScreens = true
+                    trackActivitiesAsScreens = true
                 )
             )
     }
@@ -642,7 +642,7 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    trackFragmentAsScreens = true
+                    trackFragmentsAsScreens = true
                 )
             )
     }
