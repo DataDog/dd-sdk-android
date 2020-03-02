@@ -77,11 +77,23 @@ android {
                 "DD_OVERRIDE_TRACES_URL",
                 "\"${project.findProperty("DD_OVERRIDE_TRACES_URL") ?: ""}\""
             )
+            buildConfigField(
+                "String",
+                "DD_OVERRIDE_RUM_URL",
+                "\"${project.findProperty("DD_OVERRIDE_RUM_URL") ?: ""}\""
+            )
+            buildConfigField(
+                "String",
+                "DD_RUM_APPLICATION_ID",
+                "\"${project.findProperty("DD_RUM_APPLICATION_ID") ?: ""}\""
+            )
         }
         register("full") {
             dimension = "version"
             buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"\"")
             buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"\"")
+            buildConfigField("String", "DD_OVERRIDE_RUM_URL", "\"\"")
+            buildConfigField("String", "DD_RUM_APPLICATION_ID", "\"\"")
         }
     }
 }
