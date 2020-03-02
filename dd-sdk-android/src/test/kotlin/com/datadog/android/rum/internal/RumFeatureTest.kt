@@ -19,7 +19,10 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -173,9 +176,6 @@ internal class RumFeatureTest {
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
-        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
-        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
-        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
 
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
@@ -199,22 +199,20 @@ internal class RumFeatureTest {
         val clientToken2 = RumFeature.clientToken
         val endpointUrl2 = RumFeature.endpointUrl
         val serviceName2 = RumFeature.serviceName
-        val gesturesTrackingStrategy2 = RumFeature.gesturesTrackingStrategy
-        val activityTrackingStrategy2 = RumFeature.activityTrackingStrategy
-        val fragmentsTrackingStrategy2 = RumFeature.fragmentsTrackingStrategy
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
-        assertThat(gesturesTrackingStrategy).isSameAs(gesturesTrackingStrategy2)
-        assertThat(activityTrackingStrategy).isSameAs(activityTrackingStrategy2)
-        assertThat(fragmentsTrackingStrategy).isSameAs(fragmentsTrackingStrategy2)
+
+        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
+            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
+        })
     }
 
     @Test
-    fun `will use default NoOpStrategy if no instrumentation feature enabled`() {
+    fun `will not register any callback if no instrumentation feature enabled`() {
         // when
         RumFeature.initialize(
             mockAppContext,
@@ -224,15 +222,12 @@ internal class RumFeatureTest {
             mockSystemInfoProvider
         )
 
-        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
-        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
-        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
-
         // then
-        assertThat(gesturesTrackingStrategy).isNull()
-        assertThat(activityTrackingStrategy).isNull()
-        assertThat(fragmentsTrackingStrategy).isNull()
+        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
+            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
+        })
     }
+
     @Test
     fun `will use the right Strategy when tracking gestures enabled`() {
         // given
@@ -247,15 +242,14 @@ internal class RumFeatureTest {
             mockSystemInfoProvider
         )
 
-        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
-
         // then
-        assertThat(gesturesTrackingStrategy)
-            .isInstanceOf(TrackingStrategy.GesturesTrackingStrategy::class.java)
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.GesturesTrackingStrategy
+        })
     }
 
     @Test
-    fun `will use default right Strategy if track activities as screens enabled`() {
+    fun `will use the right Strategy if track activities as screens enabled`() {
         // given
         fakeConfig = fakeConfig.copy(trackActivitiesAsScreens = true)
 
@@ -268,15 +262,14 @@ internal class RumFeatureTest {
             mockSystemInfoProvider
         )
 
-        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
-
         // then
-        assertThat(activityTrackingStrategy)
-            .isInstanceOf(TrackingStrategy.ActivityTrackingStrategy::class.java)
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.ActivityTrackingStrategy
+        })
     }
 
     @Test
-    fun `will use default right Strategy if track fragments as screens enabled`() {
+    fun `will use the right Strategy if track fragments as screens enabled`() {
         // given
         fakeConfig = fakeConfig.copy(trackFragmentsAsScreens = true)
 
@@ -289,10 +282,9 @@ internal class RumFeatureTest {
             mockSystemInfoProvider
         )
 
-        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
-
         // then
-        assertThat(fragmentsTrackingStrategy)
-            .isInstanceOf(TrackingStrategy.FragmentsTrackingStrategy::class.java)
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.FragmentsTrackingStrategy
+        })
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.Application
 import android.content.Context
 import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
@@ -17,6 +18,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
@@ -39,9 +41,6 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
-    internal var gesturesTrackingStrategy: TrackingStrategy? = null
-    internal var activityTrackingStrategy: TrackingStrategy? = null
-    internal var fragmentsTrackingStrategy: TrackingStrategy? = null
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -63,7 +62,7 @@ internal object RumFeature {
 
         persistenceStrategy = RumFileStrategy(appContext)
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
-        setupTrackingStrategies(config)
+        setupTrackingStrategies(appContext, config)
 
         initialized.set(true)
     }
@@ -106,15 +105,28 @@ internal object RumFeature {
         uploadHandlerThread.start()
     }
 
-    private fun setupTrackingStrategies(config: DatadogConfig.RumConfig) {
-        if (config.trackGestures) {
-            gesturesTrackingStrategy = TrackingStrategy.GesturesTrackingStrategy()
-        }
-        if (config.trackActivitiesAsScreens) {
-            activityTrackingStrategy = TrackingStrategy.ActivityTrackingStrategy()
-        }
-        if (config.trackFragmentsAsScreens) {
-            fragmentsTrackingStrategy = TrackingStrategy.FragmentsTrackingStrategy()
+    private fun setupTrackingStrategies(appContext: Context, config: DatadogConfig.RumConfig) {
+        if (appContext is Application) {
+            if (config.trackGestures) {
+                appContext.registerActivityLifecycleCallbacks(
+                    TrackingStrategy.GesturesTrackingStrategy
+                )
+            }
+            if (config.trackActivitiesAsScreens) {
+                appContext.registerActivityLifecycleCallbacks(
+                    TrackingStrategy.ActivityTrackingStrategy
+                )
+            }
+            if (config.trackFragmentsAsScreens) {
+                appContext.registerActivityLifecycleCallbacks(
+                    TrackingStrategy.FragmentsTrackingStrategy
+                )
+            }
+        } else {
+            devLogger.e(
+                "In order to use the RUM automatic tracking feature you will have" +
+                        "to use the Application context when initializing the SDK"
+            )
         }
     }
 

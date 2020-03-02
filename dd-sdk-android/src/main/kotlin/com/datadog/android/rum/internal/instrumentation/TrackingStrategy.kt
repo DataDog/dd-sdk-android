@@ -3,6 +3,7 @@ package com.datadog.android.rum.internal.instrumentation
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import com.datadog.android.rum.GlobalRum
 
 internal sealed class TrackingStrategy : Application.ActivityLifecycleCallbacks {
 
@@ -35,10 +36,20 @@ internal sealed class TrackingStrategy : Application.ActivityLifecycleCallbacks 
     }
 
     // TODO RUMM-242
-    internal class GesturesTrackingStrategy : TrackingStrategy()
+    internal object GesturesTrackingStrategy : TrackingStrategy()
 
-    internal class ActivityTrackingStrategy : TrackingStrategy()
+    internal object ActivityTrackingStrategy : TrackingStrategy() {
+        override fun onActivityResumed(activity: Activity) {
+            super.onActivityResumed(activity)
+            GlobalRum.monitor.startView(activity, activity.javaClass.canonicalName!!)
+        }
+
+        override fun onActivityPaused(activity: Activity) {
+            super.onActivityPaused(activity)
+            GlobalRum.monitor.stopView(activity)
+        }
+    }
 
     // TODO RUMM-271
-    internal class FragmentsTrackingStrategy : TrackingStrategy()
+    internal object FragmentsTrackingStrategy : TrackingStrategy()
 }
