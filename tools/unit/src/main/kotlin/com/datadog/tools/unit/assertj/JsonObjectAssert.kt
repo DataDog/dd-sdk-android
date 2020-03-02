@@ -358,7 +358,7 @@ class JsonObjectAssert(actual: JsonObject) :
 
         /**
          * Create assertion for [JsonObject].
-         *
+         * @param actual the actual object to assert on
          * @return the created assertion object.
          */
         fun assertThat(actual: JsonObject): JsonObjectAssert =

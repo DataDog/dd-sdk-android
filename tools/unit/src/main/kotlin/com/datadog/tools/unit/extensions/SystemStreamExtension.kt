@@ -5,8 +5,9 @@ import com.datadog.tools.unit.annotations.SystemErrorStream
 import com.datadog.tools.unit.annotations.SystemOutStream
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
-import org.junit.jupiter.api.extension.AfterTestExecutionCallback
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback
+import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.BeforeAllCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.Extension
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.api.extension.ParameterContext
@@ -19,13 +20,16 @@ import org.junit.jupiter.api.extension.ParameterResolver
  * test method, with the @[SystemErrorStream] or @[SystemOutStream] annotation.
  */
 @SuppressLint("NewApi")
-class SystemOutputExtension :
+class SystemStreamExtension :
     ParameterResolver,
-    BeforeTestExecutionCallback,
-    AfterTestExecutionCallback {
+    BeforeEachCallback,
+    BeforeAllCallback,
+    AfterAllCallback {
 
-    private lateinit var originalErrorStream: PrintStream
     private lateinit var originalOutputStream: PrintStream
+    private lateinit var originalErrorStream: PrintStream
+    private lateinit var outputStream: ByteArrayOutputStream
+    private lateinit var errorStream: ByteArrayOutputStream
 
     // region ParameterResolver
 
@@ -47,36 +51,46 @@ class SystemOutputExtension :
         parameterContext: ParameterContext,
         extensionContext: ExtensionContext
     ): Any {
-        val systemOutAnnotation = parameterContext.findAnnotation(SystemOutStream::class.java)
-        val errorOutAnnotation = parameterContext.findAnnotation(SystemErrorStream::class.java)
-        val byteStream = ByteArrayOutputStream()
+        val outputStreamAnnotation = parameterContext.findAnnotation(SystemOutStream::class.java)
+        val errorStreamAnnotation = parameterContext.findAnnotation(SystemErrorStream::class.java)
 
-        if (systemOutAnnotation?.isPresent == true) {
-            System.setOut(PrintStream(byteStream))
+        return when {
+            outputStreamAnnotation.isPresent -> outputStream
+            errorStreamAnnotation.isPresent -> errorStream
+            else -> ByteArrayOutputStream()
         }
-
-        if (errorOutAnnotation?.isPresent == true) {
-            System.setErr(PrintStream(byteStream))
-        }
-        return byteStream
     }
 
     // endregion
 
-    // region BeforeTestExecutionCallback
+    // region BeforeAllCallback
 
     /** @inheritdoc */
-    override fun beforeTestExecution(context: ExtensionContext?) {
-        originalErrorStream = System.err
+    override fun beforeAll(context: ExtensionContext?) {
         originalOutputStream = System.out
+        outputStream = ByteArrayOutputStream()
+        System.setOut(PrintStream(outputStream))
+        originalErrorStream = System.err
+        errorStream = ByteArrayOutputStream()
+        System.setErr(PrintStream(errorStream))
     }
 
     // endregion
 
-    // region AfterTestExecutionCallback
+    // region BeforeEachExecutionCallback
 
     /** @inheritdoc */
-    override fun afterTestExecution(context: ExtensionContext?) {
+    override fun beforeEach(context: ExtensionContext?) {
+        outputStream.reset()
+        errorStream.reset()
+    }
+
+    //endregion
+
+    // region AfterAllCallback
+
+    /** @inheritdoc */
+    override fun afterAll(context: ExtensionContext?) {
         System.setErr(originalErrorStream)
         System.setOut(originalOutputStream)
     }
