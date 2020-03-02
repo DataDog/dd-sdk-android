@@ -84,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        mRumMonitor.startView(this, getComponentName().getClassName(), new HashMap<String, Object>());
         mResumePauseSpan = GlobalTracer.get()
                 .buildSpan("onResumeOnPause")
                 .asChildOf(mMainSpan)
@@ -98,7 +97,6 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         mLogger.d("MainActivity/onPause");
         mResumePauseSpan.finish();
-        mRumMonitor.stopView(this, new HashMap<String, Object>());
     }
 
     @Override
