@@ -42,7 +42,7 @@ internal object RumFeature {
     @Suppress("LongParameterList")
     fun initialize(
         appContext: Context,
-        config: DatadogConfig.FeatureConfig,
+        config: DatadogConfig.RumConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider
