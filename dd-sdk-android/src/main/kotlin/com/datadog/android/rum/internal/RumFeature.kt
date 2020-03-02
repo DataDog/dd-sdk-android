@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,6 +39,9 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
+    internal var gesturesTrackingStrategy: TrackingStrategy? = null
+    internal var activityTrackingStrategy: TrackingStrategy? = null
+    internal var fragmentsTrackingStrategy: TrackingStrategy? = null
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -59,6 +63,7 @@ internal object RumFeature {
 
         persistenceStrategy = RumFileStrategy(appContext)
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
+        setupTrackingStrategies(config)
 
         initialized.set(true)
     }
@@ -99,6 +104,18 @@ internal object RumFeature {
             systemInfoProvider
         )
         uploadHandlerThread.start()
+    }
+
+    private fun setupTrackingStrategies(config: DatadogConfig.RumConfig) {
+        if (config.trackGestures) {
+            gesturesTrackingStrategy = TrackingStrategy.GesturesTrackingStrategy()
+        }
+        if (config.trackActivitiesAsScreens) {
+            activityTrackingStrategy = TrackingStrategy.ActivityTrackingStrategy()
+        }
+        if (config.trackFragmentsAsScreens) {
+            fragmentsTrackingStrategy = TrackingStrategy.FragmentsTrackingStrategy()
+        }
     }
 
     // endregion
