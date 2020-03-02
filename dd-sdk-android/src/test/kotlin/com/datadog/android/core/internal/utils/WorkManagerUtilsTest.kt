@@ -1,6 +1,7 @@
 package com.datadog.android.core.internal.utils
 
 import android.app.Application
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -10,7 +11,8 @@ import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argThat
@@ -21,7 +23,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,7 +36,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(
         MockitoExtension::class,
-        SystemOutputExtension::class,
+        SystemStreamExtension::class,
         ForgeExtension::class
     )
 )
@@ -79,7 +80,7 @@ internal class WorkManagerUtilsTest {
 
     @Test
     fun `it will handle the exception if WorkManager was not correctly instantiated`(
-        @SystemOutStream outStream: ByteArrayOutputStream
+        @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         // when
         triggerUploadWorker(mockContext())
@@ -88,8 +89,8 @@ internal class WorkManagerUtilsTest {
         verifyZeroInteractions(mockedWorkManager)
         if (BuildConfig.DEBUG) {
             val expectedTagName = if (Datadog.isDebug) "WorkManagerUtilsKt" else "DD_LOG"
-            val logMessages = outStream.toString().trim().split("\n")
-            assertThat(logMessages[0]).matches("E/$expectedTagName: $ERROR_MESSAGE.*")
+            assertThat(outputStream)
+                .hasLogLine(Log.ERROR, expectedTagName, ERROR_MESSAGE)
         }
     }
 }

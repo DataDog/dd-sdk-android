@@ -10,12 +10,13 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.lastLine
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -23,7 +24,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.File
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +38,7 @@ import timber.log.Timber
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogTreeTest {
@@ -54,7 +54,7 @@ internal class DatadogTreeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeServiceName = forge.anAlphabeticalString()
+        fakeServiceName = forge.anAlphabeticalString(size = 10)
         fakeLoggerName = forge.anAlphabeticalString()
         fakePackageName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
@@ -99,7 +99,7 @@ internal class DatadogTreeTest {
     ) {
         Timber.v(fakeMessage)
 
-        verifyLogSideEffects("V", outputStream)
+        verifyLogSideEffects(Log.VERBOSE, outputStream)
     }
 
     @Test
@@ -108,7 +108,7 @@ internal class DatadogTreeTest {
     ) {
         Timber.d(fakeMessage)
 
-        verifyLogSideEffects("D", outputStream)
+        verifyLogSideEffects(Log.DEBUG, outputStream)
     }
 
     @Test
@@ -117,7 +117,7 @@ internal class DatadogTreeTest {
     ) {
         Timber.i(fakeMessage)
 
-        verifyLogSideEffects("I", outputStream)
+        verifyLogSideEffects(Log.INFO, outputStream)
     }
 
     @Test
@@ -126,7 +126,7 @@ internal class DatadogTreeTest {
     ) {
         Timber.w(fakeMessage)
 
-        verifyLogSideEffects("W", outputStream)
+        verifyLogSideEffects(Log.WARN, outputStream)
     }
 
     @Test
@@ -135,7 +135,7 @@ internal class DatadogTreeTest {
     ) {
         Timber.e(fakeMessage)
 
-        verifyLogSideEffects("E", outputStream)
+        verifyLogSideEffects(Log.ERROR, outputStream)
     }
 
     @Test
@@ -144,18 +144,18 @@ internal class DatadogTreeTest {
     ) {
         Timber.wtf(fakeMessage)
 
-        verifyLogSideEffects("A", outputStream)
+        verifyLogSideEffects(Log.ASSERT, outputStream)
     }
 
     // region Internal
 
     private fun verifyLogSideEffects(
-        logCatPrefix: String,
+        logLevel: Int,
         outputStream: ByteArrayOutputStream
     ) {
         val tag = if (BuildConfig.DEBUG) "DatadogTree" else fakeServiceName
-        assertThat(outputStream.lastLine())
-            .isEqualTo("$logCatPrefix/$tag: $fakeMessage")
+        assertThat(outputStream)
+            .hasLogLine(logLevel, tag, fakeMessage)
     }
 
     // endregion

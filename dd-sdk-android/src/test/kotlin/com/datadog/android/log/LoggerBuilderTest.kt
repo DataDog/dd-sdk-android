@@ -15,7 +15,8 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
@@ -26,6 +27,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +40,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings()
 internal class LoggerBuilderTest {
@@ -80,12 +82,8 @@ internal class LoggerBuilderTest {
         val handler: LogHandler = logger.getFieldValue("handler")
 
         assertThat(handler).isSameAs(NoOpLogHandler)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "E/Datadog: Datadog has not been initialized.\n" +
-                    "Please add the following code in your application's onCreate() method:\n" +
-                    "Datadog.initialize(context, \"<CLIENT_TOKEN>\");\n"
-            )
+        assertThat(outputStream)
+            .hasLogLine(AndroidLog.ERROR, "Datadog", startsWith("Datadog has not been initialized"))
     }
 
     @Test
@@ -141,10 +139,8 @@ internal class LoggerBuilderTest {
         logger.v(fakeMessage)
         val expectedTagName = resolveTagName(this, fakeServiceName)
 
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/$expectedTagName: $fakeMessage\n"
-            )
+        assertThat(outputStream)
+            .hasLogLine(AndroidLog.VERBOSE, expectedTagName, fakeMessage)
     }
 
     @Test
@@ -164,10 +160,8 @@ internal class LoggerBuilderTest {
         logger.v(fakeMessage)
         val expectedTagName = resolveTagName(this, fakeServiceName)
 
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/$expectedTagName: $fakeMessage\n"
-            )
+        assertThat(outputStream)
+            .hasLogLine(AndroidLog.VERBOSE, expectedTagName, fakeMessage)
     }
 
     @Test

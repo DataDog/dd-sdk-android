@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -30,8 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)

@@ -14,7 +14,8 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.resolveTagName
 import com.datadog.android.utils.times
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Case
@@ -34,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -50,6 +51,7 @@ internal class DatadogLogConstraintsTest {
 
         testedConstraints = DatadogLogConstraints()
     }
+
     // region Tags
 
     @Test
@@ -61,10 +63,8 @@ internal class DatadogLogConstraintsTest {
 
         val result = testedConstraints.validateTags(listOf(tag))
 
-        assertThat(result)
-            .containsOnly(tag)
-        assertThat(outputStream.lastLine())
-            .isNull()
+        assertThat(result).containsOnly(tag)
+        assertThat(outputStream).isEmpty()
     }
 
     @Test
@@ -78,14 +78,10 @@ internal class DatadogLogConstraintsTest {
 
         val result = testedConstraints.validateTags(listOf(tag))
 
-        assertThat(result)
-            .isEmpty()
+        assertThat(result).isEmpty()
         val expectedTag = resolveTagName(testedConstraints)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/$expectedTag: \"$tag\" is an invalid tag, " +
-                        "and was ignored."
-            )
+        assertThat(outputStream)
+            .hasLogLine(Log.ERROR, expectedTag, "\"$tag\" is an invalid tag, and was ignored.")
     }
 
     @Test
@@ -103,15 +99,16 @@ internal class DatadogLogConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         val converted = '_' * invalidPart.length
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        val expectedInnerTag = "$validPart$converted:$value"
+        val expectedTag = resolveTagName(testedConstraints)
+        val expectedCorrectedTag = "$validPart$converted:$value"
         assertThat(result)
-            .containsOnly(expectedInnerTag)
+            .containsOnly(expectedCorrectedTag)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: tag \"$tag\" " +
-                        "was modified to \"$expectedInnerTag\" to match our constraints."
+        assertThat(outputStream)
+            .hasLogLine(
+                Log.WARN,
+                expectedTag,
+                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
             )
     }
 
@@ -125,14 +122,15 @@ internal class DatadogLogConstraintsTest {
         val tag = "$key:$value"
 
         val result = testedConstraints.validateTags(listOf(tag))
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        val expectedInnerTag = "${key.toLowerCase(Locale.US)}:$value"
+        val expectedTag = resolveTagName(testedConstraints)
+        val expectedCorrectedTag = "${key.toLowerCase(Locale.US)}:$value"
         assertThat(result)
-            .containsOnly(expectedInnerTag)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: tag \"$tag\" " +
-                        "was modified to \"$expectedInnerTag\" to match our constraints."
+            .containsOnly(expectedCorrectedTag)
+        assertThat(outputStream)
+            .hasLogLine(
+                Log.WARN,
+                expectedTag,
+                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
             )
     }
 
@@ -144,14 +142,15 @@ internal class DatadogLogConstraintsTest {
         val tag = forge.anAlphabeticalString(size = forge.aSmallInt() + 200)
 
         val result = testedConstraints.validateTags(listOf(tag))
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        val expectedInnerTag = tag.substring(0, 200)
+        val expectedTag = resolveTagName(testedConstraints)
+        val expectedCorrectedTag = tag.substring(0, 200)
         assertThat(result)
-            .containsOnly(expectedInnerTag)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: tag \"$tag\" " +
-                        "was modified to \"$expectedInnerTag\" to match our constraints."
+            .containsOnly(expectedCorrectedTag)
+        assertThat(outputStream)
+            .hasLogLine(
+                Log.WARN,
+                expectedTag,
+                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
             )
     }
 
@@ -161,18 +160,20 @@ internal class DatadogLogConstraintsTest {
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
 
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        val expectedInnerTag = forge.anAlphabeticalString()
+        val expectedTag = resolveTagName(testedConstraints)
+        val expectedCorrectedTag = forge.anAlphabeticalString()
 
-        val result = testedConstraints.validateTags(listOf("$expectedInnerTag:"))
+        val result = testedConstraints.validateTags(listOf("$expectedCorrectedTag:"))
 
         assertThat(result)
-            .containsOnly(expectedInnerTag)
+            .containsOnly(expectedCorrectedTag)
         if (BuildConfig.DEBUG) {
-            assertThat(outputStream.lastLine())
-                .isEqualTo(
-                    "W/$expectedLogcatTag: tag \"$expectedInnerTag:\" " +
-                            "was modified to \"$expectedInnerTag\" to match our constraints."
+            assertThat(outputStream)
+                .hasLogLine(
+                    Log.WARN,
+                    expectedTag,
+                    "tag \"$expectedCorrectedTag:\" was modified to \"$expectedCorrectedTag\" " +
+                        "to match our constraints."
                 )
         }
     }
@@ -184,18 +185,19 @@ internal class DatadogLogConstraintsTest {
     ) {
         val key = forge.anElementFrom("host", "device", "source", "service")
         val value = forge.aNumericalString()
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        val expectedInnerTag = "$key:$value"
+        val expectedTag = resolveTagName(testedConstraints)
+        val invalidTag = "$key:$value"
 
-        val result = testedConstraints.validateTags(listOf(expectedInnerTag))
+        val result = testedConstraints.validateTags(listOf(invalidTag))
 
         assertThat(result)
             .isEmpty()
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/$expectedLogcatTag: \"$expectedInnerTag\" " +
-                        "is an invalid tag, " +
-                        "and was ignored."
+
+        assertThat(outputStream)
+            .hasLogLine(
+                Log.ERROR,
+                expectedTag,
+                "\"$invalidTag\" is an invalid tag, and was ignored."
             )
     }
 
@@ -216,8 +218,8 @@ internal class DatadogLogConstraintsTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "E/$expectedLogcatTag: \"$expectedInnerTag\" " +
-                        "is an invalid tag," +
-                        " and was ignored."
+                    "is an invalid tag," +
+                    " and was ignored."
             )
     }
 
@@ -238,7 +240,7 @@ internal class DatadogLogConstraintsTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/$expectedLogcatTag: too many tags were added, " +
-                        "$discardedCount had to be discarded."
+                    "$discardedCount had to be discarded."
             )
     }
 
@@ -281,7 +283,7 @@ internal class DatadogLogConstraintsTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/$expectedLogcatTag: attribute \"$key\" " +
-                        "was modified to \"$expectedKey\" to match our constraints."
+                    "was modified to \"$expectedKey\" to match our constraints."
             )
     }
 
@@ -303,8 +305,8 @@ internal class DatadogLogConstraintsTest {
         assertThat(outputStream.lastLine())
             .isEqualTo(
                 "W/$expectedLogcatTag: too many " +
-                        "attributes were added, " +
-                        "$discardedCount had to be discarded."
+                    "attributes were added, " +
+                    "$discardedCount had to be discarded."
             )
     }
 

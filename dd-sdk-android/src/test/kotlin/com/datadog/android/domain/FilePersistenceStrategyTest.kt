@@ -8,6 +8,7 @@ package com.datadog.android.domain
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
@@ -20,8 +21,9 @@ import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -35,6 +37,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.endsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,7 +52,7 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings()
@@ -269,11 +272,16 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         val expectedTag = resolveTagName(testedReader, "DD_LOG")
-        testedReader.dropBatch(forge.aNumericalString())
+        val batchId = forge.aNumericalString()
+
+        testedReader.dropBatch(batchId)
+
         if (BuildConfig.DEBUG) {
-            val logMessages = outputStream.toString().trim().split("\n")
-            assertThat(logMessages[logMessages.size - 1].trim())
-                .matches("W/$expectedTag: .+")
+            assertThat(outputStream)
+                .hasLogLine(
+                    Log.WARN, expectedTag,
+                    endsWith("/$dataFolderName/$batchId does not exist")
+                )
         }
     }
 

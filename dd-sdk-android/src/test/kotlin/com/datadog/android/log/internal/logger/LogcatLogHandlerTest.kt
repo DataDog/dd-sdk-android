@@ -11,7 +11,8 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemErrorStream
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -20,7 +21,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -76,13 +76,9 @@ internal class LogcatLogHandlerTest {
             fakeTags
         )
 
-        val exptectedTagName = resolveTagName(this, fakeServiceName)
-        val prefix = levels[fakeLevel]
-        assertThat(outputStream.toString())
-            .isEqualTo("$prefix/$exptectedTagName: $fakeMessage\n")
-        assertThat(errorStream.toString())
-            .startsWith("${fakeThrowable.javaClass.canonicalName}: ${fakeThrowable.message}")
-            .endsWith("\t| at .onStart(MainActivity.java:55)")
+        val expectedTag = resolveTagName(this, fakeServiceName)
+        assertThat(outputStream)
+            .hasLogLine(fakeLevel, expectedTag, fakeMessage, Datadog.isDebug)
     }
 
     @Test
@@ -93,9 +89,8 @@ internal class LogcatLogHandlerTest {
     ) {
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
-        val exptectedTagName = resolveTagName(this, fakeServiceName)
         testedHandler = LogcatLogHandler(fakeServiceName)
-        val thread = Thread({
+        val runnable = Runnable {
             testedHandler.handleLog(
                 fakeLevel,
                 fakeMessage,
@@ -104,16 +99,15 @@ internal class LogcatLogHandlerTest {
                 fakeTags
             )
             countDownLatch.countDown()
-        }, threadName)
+        }
+        val thread = Thread(runnable, threadName)
+        val expectedTag = resolveTagName(runnable, fakeServiceName)
 
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        val prefix = levels[fakeLevel]
-        assertThat(outputStream.toString())
-            .isEqualTo("$prefix/$exptectedTagName: $fakeMessage\n")
-        assertThat(errorStream.toString())
-            .startsWith("${fakeThrowable.javaClass.canonicalName}: ${fakeThrowable.message}")
+        assertThat(outputStream)
+            .hasLogLine(fakeLevel, expectedTag, fakeMessage, Datadog.isDebug)
     }
 
     @Test
@@ -121,7 +115,7 @@ internal class LogcatLogHandlerTest {
         @SystemOutStream outputStream: ByteArrayOutputStream,
         @SystemErrorStream errorStream: ByteArrayOutputStream
     ) {
-        val exptectedTagName = resolveTagName(this, fakeServiceName)
+        val expectedTag = resolveTagName(this, fakeServiceName)
 
         testedHandler.handleLog(
             fakeLevel,
@@ -131,11 +125,8 @@ internal class LogcatLogHandlerTest {
             emptySet()
         )
 
-        val prefix = levels[fakeLevel]
-        assertThat(outputStream.toString())
-            .isEqualTo("$prefix/$exptectedTagName: $fakeMessage\n")
-        assertThat(errorStream.toString())
-            .isEmpty()
+        assertThat(outputStream)
+            .hasLogLine(fakeLevel, expectedTag, fakeMessage, Datadog.isDebug)
     }
 
     @Test
@@ -157,16 +148,12 @@ internal class LogcatLogHandlerTest {
         )
 
         // then
-        val prefix = levels[fakeLevel]
-        val expectedTagName = resolveTagName(this, fakeServiceName)
-        assertThat(outputStream.toString())
-            .isEqualTo("$prefix/$expectedTagName: $fakeMessage\n")
-        assertThat(errorStream.toString())
+        val expectedTag = resolveTagName(this, fakeServiceName)
+
+        assertThat(outputStream)
+            .hasLogLine(fakeLevel, expectedTag, fakeMessage, Datadog.isDebug)
+        assertThat(errorStream)
             .isEmpty()
         Datadog.setFieldValue("isDebug", isDebug)
-    }
-
-    companion object {
-        val levels = arrayOf("0", "1", "V", "D", "I", "W", "E", "A", "X")
     }
 }

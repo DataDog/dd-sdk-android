@@ -7,7 +7,6 @@ import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -29,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
