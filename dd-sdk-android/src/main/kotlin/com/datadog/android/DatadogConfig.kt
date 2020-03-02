@@ -37,8 +37,8 @@ private constructor(
         val serviceName: String,
         val envName: String,
         val trackGestures: Boolean = false,
-        val trackActivityAsScreens: Boolean = false,
-        val trackFragmentAsScreens: Boolean = false
+        val trackActivitiesAsScreens: Boolean = false,
+        val trackFragmentsAsScreens: Boolean = false
     )
 
     // region Builder
@@ -264,7 +264,7 @@ private constructor(
          * events for you.
          */
         fun trackActivitiesAsScreens(): Builder {
-            rumConfig = rumConfig.copy(trackActivityAsScreens = true)
+            rumConfig = rumConfig.copy(trackActivitiesAsScreens = true)
             return this
         }
 
@@ -274,7 +274,7 @@ private constructor(
          * as RUM new View events for you.
          */
         fun trackFragmentsAsScreens(): Builder {
-            rumConfig = rumConfig.copy(trackFragmentAsScreens = true)
+            rumConfig = rumConfig.copy(trackFragmentsAsScreens = true)
             return this
         }
 

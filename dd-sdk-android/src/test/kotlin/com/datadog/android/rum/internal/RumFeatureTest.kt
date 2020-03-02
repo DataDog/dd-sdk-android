@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -179,13 +180,19 @@ internal class RumFeatureTest {
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
+        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
+        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
+        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
 
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
-            envName = forge.anAlphabeticalString()
+            envName = forge.anAlphabeticalString(),
+            trackGestures = forge.aBool(),
+            trackActivitiesAsScreens = forge.aBool(),
+            trackFragmentsAsScreens = forge.aBool()
         )
         RumFeature.initialize(
             mockAppContext,
@@ -199,11 +206,100 @@ internal class RumFeatureTest {
         val clientToken2 = RumFeature.clientToken
         val endpointUrl2 = RumFeature.endpointUrl
         val serviceName2 = RumFeature.serviceName
+        val gesturesTrackingStrategy2 = RumFeature.gesturesTrackingStrategy
+        val activityTrackingStrategy2 = RumFeature.activityTrackingStrategy
+        val fragmentsTrackingStrategy2 = RumFeature.fragmentsTrackingStrategy
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
+        assertThat(gesturesTrackingStrategy).isSameAs(gesturesTrackingStrategy2)
+        assertThat(activityTrackingStrategy).isSameAs(activityTrackingStrategy2)
+        assertThat(fragmentsTrackingStrategy).isSameAs(fragmentsTrackingStrategy2)
+    }
+
+    @Test
+    fun `will use default NoOpStrategy if no instrumentation feature enabled`() {
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
+        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
+        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
+
+        // then
+        assertThat(gesturesTrackingStrategy).isNull()
+        assertThat(activityTrackingStrategy).isNull()
+        assertThat(fragmentsTrackingStrategy).isNull()
+    }
+    @Test
+    fun `will use the right Strategy when tracking gestures enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(trackGestures = true)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val gesturesTrackingStrategy = RumFeature.gesturesTrackingStrategy
+
+        // then
+        assertThat(gesturesTrackingStrategy)
+            .isInstanceOf(TrackingStrategy.GesturesTrackingStrategy::class.java)
+    }
+
+    @Test
+    fun `will use default right Strategy if track activities as screens enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(trackActivitiesAsScreens = true)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val activityTrackingStrategy = RumFeature.activityTrackingStrategy
+
+        // then
+        assertThat(activityTrackingStrategy)
+            .isInstanceOf(TrackingStrategy.ActivityTrackingStrategy::class.java)
+    }
+
+    @Test
+    fun `will use default right Strategy if track fragments as screens enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(trackFragmentsAsScreens = true)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        val fragmentsTrackingStrategy = RumFeature.fragmentsTrackingStrategy
+
+        // then
+        assertThat(fragmentsTrackingStrategy)
+            .isInstanceOf(TrackingStrategy.FragmentsTrackingStrategy::class.java)
     }
 }
