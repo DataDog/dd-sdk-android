@@ -56,7 +56,7 @@ public class SampleApplication extends Application {
         }
 
         configBuilder.setServiceName("android-sample-java")
-                .trackActivitiesAsScreens()
+                .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
                 .setEnvironmentName("staging");
 
 

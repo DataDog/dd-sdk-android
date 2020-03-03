@@ -31,7 +31,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin")
             .setEnvironmentName("staging")
-            .trackActivitiesAsScreens()
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)

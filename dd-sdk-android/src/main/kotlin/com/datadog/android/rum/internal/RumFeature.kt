@@ -112,15 +112,18 @@ internal object RumFeature {
                     TrackingStrategy.GesturesTrackingStrategy
                 )
             }
-            if (config.trackActivitiesAsScreens) {
-                appContext.registerActivityLifecycleCallbacks(
-                    TrackingStrategy.ActivityTrackingStrategy
-                )
-            }
-            if (config.trackFragmentsAsScreens) {
-                appContext.registerActivityLifecycleCallbacks(
-                    TrackingStrategy.FragmentsTrackingStrategy
-                )
+
+            when (config.viewTrackerStrategy) {
+                DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS ->
+                    appContext.registerActivityLifecycleCallbacks(
+                        TrackingStrategy.ActivityTrackingStrategy
+                    )
+                DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS ->
+                    appContext.registerActivityLifecycleCallbacks(
+                        TrackingStrategy.FragmentsTrackingStrategy
+                    )
+                else -> { // Do Nothing }
+                }
             }
         } else {
             devLogger.e(
