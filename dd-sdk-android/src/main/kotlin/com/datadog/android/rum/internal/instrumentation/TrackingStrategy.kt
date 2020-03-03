@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 
 internal sealed class TrackingStrategy : Application.ActivityLifecycleCallbacks {
 
@@ -35,8 +36,18 @@ internal sealed class TrackingStrategy : Application.ActivityLifecycleCallbacks 
         // No Op
     }
 
-    // TODO RUMM-242
-    internal object GesturesTrackingStrategy : TrackingStrategy()
+    internal class GesturesTrackingStrategy(private val gesturesTracker: GesturesTracker) :
+        TrackingStrategy() {
+        override fun onActivityResumed(activity: Activity) {
+            super.onActivityResumed(activity)
+            gesturesTracker.startTracking(activity)
+        }
+
+        override fun onActivityPaused(activity: Activity) {
+            super.onActivityPaused(activity)
+            gesturesTracker.stopTracking(activity)
+        }
+    }
 
     internal object ActivityTrackingStrategy : TrackingStrategy() {
         override fun onActivityResumed(activity: Activity) {

@@ -37,7 +37,6 @@ internal abstract class TrackingStrategyTest {
         val mockActivity2 = mock<Test2Activity>()
         val mockActivity3 = mock<Test3Activity>()
         mockActivity = forge.anElementFrom(mockActivity1, mockActivity2, mockActivity3)
-        underTest = TrackingStrategy.ActivityTrackingStrategy
     }
 
     @AfterEach

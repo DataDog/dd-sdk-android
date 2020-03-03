@@ -481,7 +481,8 @@ internal class DatadogGesturesListenerTest {
         verify(mockRumMonitor).addUserAction(
             eq(DatadogGesturesListener.UI_TAP_ACTION_EVENT),
             argThat {
-                this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == target.javaClass.canonicalName &&
+                val targetClassName = target.javaClass.canonicalName
+                this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == targetClassName &&
                         this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
