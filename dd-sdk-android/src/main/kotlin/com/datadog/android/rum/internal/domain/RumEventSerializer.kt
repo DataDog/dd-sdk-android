@@ -119,6 +119,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         internal const val TAG_EVENT_CATEGORY = "evt.category"
         internal const val TAG_EVENT_NAME = "evt.name"
+        internal const val TAG_EVENT_UNSTOPPED = "evt.unstopped"
 
         internal const val TAG_RESOURCE_KIND = "resource.kind"
 
