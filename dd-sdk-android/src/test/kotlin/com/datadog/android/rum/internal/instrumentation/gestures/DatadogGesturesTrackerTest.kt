@@ -3,7 +3,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Activity
 import android.view.Window
 import androidx.core.view.GestureDetectorCompat
-import com.datadog.android.tracing.AndroidTracer
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
@@ -12,8 +11,6 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpan
-import datadog.opentracing.DDTracer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -34,21 +31,13 @@ internal class DatadogGesturesTrackerTest {
     lateinit var mockActivity: Activity
     @Mock
     lateinit var mockWindow: Window
-
-    @Mock
-    lateinit var mockRumTracer: AndroidTracer
-    @Mock
-    lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder
-    @Mock
-    lateinit var mockSpan: DDSpan
-
     @Mock
     lateinit var mockGestureDetector: GestureDetectorCompat
 
     @BeforeEach
     fun `set up`() {
         underTest =
-            DatadogGesturesTracker(mockRumTracer)
+            DatadogGesturesTracker()
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mock())
     }
