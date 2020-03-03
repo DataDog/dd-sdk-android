@@ -5,15 +5,12 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -27,7 +24,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal open class TrackingStrategiesTest {
+internal abstract class TrackingStrategyTest {
     lateinit var underTest: TrackingStrategy
     @Mock
     lateinit var mockRumMonitor: RumMonitor
@@ -52,36 +49,4 @@ internal open class TrackingStrategiesTest {
     internal class Test1Activity() : Activity()
     internal class Test2Activity() : Activity()
     internal class Test3Activity() : Activity()
-}
-
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
-internal class ActivityTrackingStrategyTest : TrackingStrategiesTest() {
-
-    @Test
-    fun `when resumed it will start a view event`(forge: Forge) {
-        // when
-        underTest.onActivityResumed(mockActivity)
-        // then
-        verify(mockRumMonitor).startView(
-            eq(mockActivity),
-            eq(mockActivity::class.java.canonicalName!!),
-            eq(emptyMap())
-        )
-    }
-
-    @Test
-    fun `when paused it will stop a view event`(forge: Forge) {
-        // when
-        underTest.onActivityPaused(mockActivity)
-        // then
-        verify(mockRumMonitor).stopView(
-            eq(mockActivity),
-            eq(emptyMap())
-        )
-    }
 }
