@@ -18,6 +18,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
@@ -28,6 +29,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.lang.ref.WeakReference
 import java.util.UUID
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
@@ -81,12 +83,71 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `stopView doesn't send anything without matching startView`(
+    fun `startView sends previous unstopped view Rum Event`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val key = forge.anAsciiString()
+        val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val attributes = forge.exhaustiveAttributes()
+        var viewId: UUID? = null
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        val duration = measureNanoTime {
+            testedMonitor.startView(key, name, attributes)
+            viewId = GlobalRum.getRumContext().viewId
+            testedMonitor.startView(
+                forge.anAsciiString(),
+                forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
+                emptyMap()
+            )
+        }
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasViewData {
+                    hasName(name.replace('.', '/'))
+                    hasDurationLowerThan(duration)
+                    hasVersion(2)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isNotNull()
+            .isNotEqualTo(viewId)
+    }
+
+    @Test
+    fun `stopView doesn't send anything without startView`(
         forge: Forge
     ) {
         val key = forge.anAsciiString()
 
         testedMonitor.stopView(key, emptyMap())
+
+        verifyZeroInteractions(mockWriter)
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isNull()
+    }
+
+    @Test
+    fun `stopView doesn't send anything without matching startView`(
+        forge: Forge
+    ) {
+        val startKey = forge.anAsciiString()
+        val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val stopKey = forge.anAsciiString()
+
+        testedMonitor.startView(startKey, name, emptyMap())
+        testedMonitor.stopView(stopKey, emptyMap())
 
         verifyZeroInteractions(mockWriter)
         assertThat(GlobalRum.getRumContext().viewId)
@@ -132,7 +193,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `stopView sends unclosed view Rum Event`(
+    fun `stopView sends unclosed view Rum Event with missing key`(
         forge: Forge
     ) {
         val timestamp = forge.aTimestamp()
@@ -146,7 +207,7 @@ internal class DatadogRumMonitorTest {
             testedMonitor.startView(key, name, attributes)
             viewId = GlobalRum.getRumContext().viewId
             key = forge.anAsciiString().toByteArray()
-            System.gc()
+            testedMonitor.setFieldValue("activeViewKey", WeakReference(null))
             testedMonitor.stopView(key, emptyMap())
         }
 
