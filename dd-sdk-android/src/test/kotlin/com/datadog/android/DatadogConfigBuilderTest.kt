@@ -585,6 +585,28 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `builder with all tracking instrumentation disabled`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME,
+                    trackGestures = false,
+                    trackActivitiesAsScreens = false,
+                    trackFragmentsAsScreens = false
+                )
+            )
+    }
+
+    @Test
     fun `builder with track gestures enabled`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
