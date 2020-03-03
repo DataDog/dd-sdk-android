@@ -600,8 +600,7 @@ class DatadogConfigBuilderTest {
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
                     trackGestures = false,
-                    trackActivitiesAsScreens = false,
-                    trackFragmentsAsScreens = false
+                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.NONE
                 )
             )
     }
@@ -628,11 +627,11 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with track activities as screens enabled`(forge: Forge) {
+    fun `builder with track activities as views enabled`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackActivitiesAsScreens()
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
             .build()
 
         assertThat(config.rumConfig)
@@ -643,17 +642,18 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    trackActivitiesAsScreens = true
+                    viewTrackerStrategy =
+                    DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
                 )
             )
     }
 
     @Test
-    fun `builder with track fragments as screens enabled`(forge: Forge) {
+    fun `builder with track fragments as views enabled`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackFragmentsAsScreens()
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS)
             .build()
 
         assertThat(config.rumConfig)
@@ -664,7 +664,7 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    trackFragmentsAsScreens = true
+                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
                 )
             )
     }
