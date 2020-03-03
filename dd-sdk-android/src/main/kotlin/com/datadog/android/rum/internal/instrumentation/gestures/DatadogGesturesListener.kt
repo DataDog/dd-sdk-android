@@ -7,13 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.rum.GlobalRum
 import java.lang.ref.WeakReference
 import java.util.LinkedList
-import java.util.concurrent.TimeUnit
 
 internal class DatadogGesturesListener(
-    private val rumTracer: AndroidTracer,
     private val decorViewReference: WeakReference<View>
 ) :
     GestureDetector.OnGestureListener {
@@ -72,18 +70,14 @@ internal class DatadogGesturesListener(
         if (decorView != null) {
             findTarget(decorView, e.x, e.y)?.let { target ->
                 // we just intercept but not steal the event
-                val spanBuilder = rumTracer
-                    .buildSpan(UI_TAP_ACTION_EVENT)
-                spanBuilder.withTag(TAG_TARGET_CLASS_NAME, target.javaClass.canonicalName)
                 val targetId: String = resolveTargetIdOrResourceName(target)
-                spanBuilder.withTag(
-                    TAG_TARGET_RESOURCE_ID,
-                    targetId
+                GlobalRum.get().addUserAction(
+                    UI_TAP_ACTION_EVENT,
+                    mapOf(
+                        TAG_TARGET_CLASS_NAME to target.javaClass.canonicalName,
+                        TAG_TARGET_RESOURCE_ID to targetId
+                    )
                 )
-
-                spanBuilder
-                    .start()
-                    .finish(DEFAULT_EVENT_DURATION)
             }
         }
     }
@@ -169,6 +163,5 @@ internal class DatadogGesturesListener(
         internal const val MSG_NO_TARGET = "We could not find a valid target for the TapEvent. " +
             "The DecorView was empty and either transparent or not clickable " +
             "for this Activity"
-        val DEFAULT_EVENT_DURATION = TimeUnit.MILLISECONDS.toMicros(16)
     }
 }
