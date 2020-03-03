@@ -37,8 +37,7 @@ private constructor(
         val serviceName: String,
         val envName: String,
         val trackGestures: Boolean = false,
-        val trackActivitiesAsScreens: Boolean = false,
-        val trackFragmentsAsScreens: Boolean = false
+        val viewTrackerStrategy: ViewTrackerStrategy = ViewTrackerStrategy.NONE
     )
 
     // region Builder
@@ -259,22 +258,15 @@ private constructor(
         }
 
         /**
-         * Enable the activities tracker. By enabling this feature the SDK will monitor the
-         * activities lifecycle and will automatically send them as RUM new View
-         * events for you.
+         * Sets the automatic view tracking strategy used by the SDK.
+         * By default this is NONE.
+         * @param strategy as the strategy to be used by the automatic view tracker.
+         * @see ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+         * @see ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
+         * @see ViewTrackerStrategy.NONE
          */
-        fun trackActivitiesAsScreens(): Builder {
-            rumConfig = rumConfig.copy(trackActivitiesAsScreens = true)
-            return this
-        }
-
-        /**
-         * Enable the fragments tracker. By enabling this feature the SDK will monitor the
-         * FragmentManager operations and will automatically send newly added fragments
-         * as RUM new View events for you.
-         */
-        fun trackFragmentsAsScreens(): Builder {
-            rumConfig = rumConfig.copy(trackFragmentsAsScreens = true)
+        fun trackViews(strategy: ViewTrackerStrategy): Builder {
+            rumConfig = rumConfig.copy(viewTrackerStrategy = strategy)
             return this
         }
 
@@ -283,6 +275,26 @@ private constructor(
                 needsClearTextHttp = true
             }
         }
+    }
+
+    /**
+     * The available strategies for the automatic View tracker.
+     */
+    enum class ViewTrackerStrategy {
+        /**
+         * The SDK will monitor the FragmentManager operations
+         * and will automatically start and stop RUM View for each resumed/paused fragment.
+         */
+        TRACK_ACTIVITIES_AS_VIEWS,
+        /**
+         * The SDK will monitor the FragmentManager operations
+         * and will automatically start and stop RUM View for each resumed/paused fragment.
+         */
+        TRACK_FRAGMENTS_AS_VIEWS,
+        /**
+         * The SDK will not use any automatic view tracking mechanism.
+         */
+        NONE
     }
 
     // endregion

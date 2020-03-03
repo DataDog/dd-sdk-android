@@ -9,10 +9,9 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.tracing.AndroidTracer
 import io.opentracing.util.GlobalTracer
 
 class SampleApplication : Application() {
@@ -32,7 +31,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin")
             .setEnvironmentName("staging")
-            .trackActivitiesAsScreens()
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
