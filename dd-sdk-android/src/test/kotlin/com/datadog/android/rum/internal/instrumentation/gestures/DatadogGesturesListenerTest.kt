@@ -7,18 +7,20 @@ import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.tracing.Tracer
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpan
-import datadog.opentracing.DDTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -50,36 +52,27 @@ internal class DatadogGesturesListenerTest {
     lateinit var underTest: DatadogGesturesListener
 
     @Mock
-    lateinit var mockRumTracer: Tracer
-    @Mock
-    lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder
-    @Mock
-    lateinit var mockSpan: DDSpan
+    lateinit var mockRumMonitor: RumMonitor
 
     lateinit var decorView: View
 
     @BeforeEach
     fun `set up`() {
-        mockRumTracer.apply {
-            whenever(buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT))
-                .thenReturn(mockSpanBuilder)
-        }
-        mockSpanBuilder.apply {
-            whenever(withTag(any(), any<String>())).thenReturn(this)
-            whenever(start()).thenReturn(mockSpan)
-        }
         Datadog.setVerbosity(Log.VERBOSE)
+        GlobalRum.registerIfAbsent(mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
         Datadog.setVerbosity(Integer.MAX_VALUE)
+        GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.isRegistered.set(false)
     }
 
     // region Tests
 
     @Test
-    fun `onTap creates the span when target deep in the View Hierarchy`(forge: Forge) {
+    fun `onTap dispatches an UserAction when target deep in the View Hierarchy`(forge: Forge) {
         // given
         val mockEvent = mockMotionEvent(forge)
         val container1: ViewGroup = mockView(
@@ -129,7 +122,6 @@ internal class DatadogGesturesListenerTest {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -137,20 +129,11 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            target.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            expectedResourceName
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(target, expectedResourceName)
     }
 
     @Test
-    fun `onTap creates the span if target is ViewGroup with no children`(forge: Forge) {
+    fun `onTap dispatches an UserAction if target is ViewGroup with no children`(forge: Forge) {
         // given
         val mockEvent = mockMotionEvent(forge)
         val target: ViewGroup = mockView(
@@ -187,7 +170,6 @@ internal class DatadogGesturesListenerTest {
         }
         whenever(target.resources).thenReturn(mockResources)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -195,20 +177,11 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            target.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            expectedResourceName
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(target, expectedResourceName)
     }
 
     @Test
-    fun `onTap ignores invisible or gone viewa`(forge: Forge) {
+    fun `onTap ignores invisible or gone views`(forge: Forge) {
         // given
         val mockEvent = mockMotionEvent(forge)
         val invalidTarget: View = mockView(
@@ -237,7 +210,6 @@ internal class DatadogGesturesListenerTest {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -245,16 +217,7 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            validTarget.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            expectedResourceName
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -287,7 +250,6 @@ internal class DatadogGesturesListenerTest {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -295,16 +257,7 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            validTarget.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            expectedResourceName
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -324,7 +277,6 @@ internal class DatadogGesturesListenerTest {
             whenever(it.childCount).thenReturn(0)
         }
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -332,11 +284,11 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyZeroInteractions(mockRumTracer)
+        verifyZeroInteractions(mockRumMonitor)
         if (BuildConfig.DEBUG) {
             val logMessages = systemOutStream.toString().trim().split("\n")
             Assertions.assertThat(logMessages[0]).matches(
-                "I/Datadog: DatadogGesturesTracker: We could not find a valid target " +
+                "I/Datadog: We could not find a valid target " +
                         "for the TapEvent. The DecorView was empty and either transparent " +
                         "or not clickable for this Activity"
             )
@@ -356,7 +308,6 @@ internal class DatadogGesturesListenerTest {
             whenever(it.childCount).thenReturn(0)
         }
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
         val expectedResourceName = forge.anAlphabeticalString()
@@ -370,16 +321,7 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            decorView.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            expectedResourceName
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(decorView, expectedResourceName)
     }
 
     @Test
@@ -408,7 +350,6 @@ internal class DatadogGesturesListenerTest {
         }
         whenever(validTarget.resources).thenReturn(mockResources)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -416,16 +357,7 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            validTarget.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            "0x${targetId.toString(16)}"
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
@@ -454,7 +386,6 @@ internal class DatadogGesturesListenerTest {
         }
         whenever(validTarget.resources).thenReturn(mockResources)
         underTest = DatadogGesturesListener(
-            mockRumTracer,
             WeakReference(decorView)
         )
 
@@ -462,29 +393,20 @@ internal class DatadogGesturesListenerTest {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumTracer).buildSpan(DatadogGesturesListener.UI_TAP_ACTION_EVENT)
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_CLASS_NAME,
-            validTarget.javaClass.canonicalName
-        )
-        verify(mockSpanBuilder).withTag(
-            DatadogGesturesListener.TAG_TARGET_RESOURCE_ID,
-            "0x${targetId.toString(16)}"
-        )
-        verify(mockSpan).finish(DatadogGesturesListener.DEFAULT_EVENT_DURATION)
+        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
     fun `will not send any span if decor view view reference is null`(forge: Forge) {
         // given
         val mockEvent = mockMotionEvent(forge)
-        underTest = DatadogGesturesListener(mockRumTracer, WeakReference<View>(null))
+        underTest = DatadogGesturesListener(WeakReference<View>(null))
 
         // when
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyZeroInteractions(mockRumTracer)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -551,6 +473,15 @@ internal class DatadogGesturesListenerTest {
             whenever(it.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
         }
         whenever(target.resources).thenReturn(mockResources)
+    }
+
+    private fun verifyUserAction(target: View, expectedResourceName: String) {
+        verify(mockRumMonitor).addUserAction(
+            eq(DatadogGesturesListener.UI_TAP_ACTION_EVENT),
+            argThat {
+                this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == target.javaClass.canonicalName &&
+                        this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+            })
     }
 
     // endregion
