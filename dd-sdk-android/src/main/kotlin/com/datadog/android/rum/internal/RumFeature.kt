@@ -32,7 +32,7 @@ import okhttp3.OkHttpClient
 
 internal object RumFeature {
 
-    internal val initialized = AtomicBoolean(false)
+    private val initialized = AtomicBoolean(false)
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.RUM_US
@@ -43,7 +43,7 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
-    val gesturesTracker: GesturesTracker by lazy {
+    private val gesturesTracker: GesturesTracker by lazy {
         DatadogGesturesTracker()
     }
 
