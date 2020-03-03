@@ -23,6 +23,8 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -41,6 +43,9 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
+    val gesturesTracker: GesturesTracker by lazy {
+        DatadogGesturesTracker()
+    }
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -109,7 +114,7 @@ internal object RumFeature {
         if (appContext is Application) {
             if (config.trackGestures) {
                 appContext.registerActivityLifecycleCallbacks(
-                    TrackingStrategy.GesturesTrackingStrategy
+                    TrackingStrategy.GesturesTrackingStrategy(gesturesTracker)
                 )
             }
 
