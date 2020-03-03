@@ -50,6 +50,11 @@ internal class DatadogRumMonitor(
         name: String,
         attributes: Map<String, Any?>
     ) {
+        val startedKey = activeViewKey.get()
+        if (startedKey != null) {
+            stopView(startedKey, emptyMap())
+        }
+
         val activeViewId = UUID.randomUUID()
         GlobalRum.updateViewId(activeViewId)
         val pathName = name.replace('.', '/')
@@ -75,17 +80,24 @@ internal class DatadogRumMonitor(
 
         when {
             startedEvent == null || startedEventData == null -> devLogger.w(
-                "Unable to end view with key <$key>. " +
+                "Unable to end view with key <$key> (missing start). " +
                     "This can mean that the view was not started or already ended."
             )
-            startedKey != key -> {
+            startedKey == null -> {
                 devLogger.e(
-                    "Unable to end view with key <$key>. The related data was inconsistent."
+                    "Unable to end view with key <$key> (missing key)." +
+                        "Closing previous view automatically."
                 )
                 sendCompleteView(
                     startedEvent,
                     startedEventData,
                     mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
+                )
+            }
+            startedKey != key -> {
+                devLogger.e(
+                    "Unable to end view with key <$key> (mismatched key). " +
+                        "Another view with key <$startedKey> has been started."
                 )
             }
             else -> sendCompleteView(startedEvent, startedEventData, attributes)
