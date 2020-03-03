@@ -13,6 +13,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
+import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -131,6 +132,47 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `stopView sends unclosed view Rum Event`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        var key = forge.anAsciiString().toByteArray()
+        val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val attributes = forge.exhaustiveAttributes()
+        var viewId: UUID? = null
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        val duration = measureNanoTime {
+            testedMonitor.startView(key, name, attributes)
+            viewId = GlobalRum.getRumContext().viewId
+            key = forge.anAsciiString().toByteArray()
+            System.gc()
+            testedMonitor.stopView(key, emptyMap())
+        }
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasViewData {
+                    hasName(name.replace('.', '/'))
+                    hasDurationLowerThan(duration)
+                    hasVersion(2)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isNull()
+    }
+
+    @Test
     fun `startResource doesn't send anything without stopResource`(
         forge: Forge
     ) {
@@ -199,6 +241,47 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `stopResource sends resource Rum Event automatically when key reference is null`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val viewKey = forge.anAsciiString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        var resourceKey: Any = forge.anAsciiString().toByteArray()
+        val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
+        val attributes = forge.exhaustiveAttributes()
+        val kind = forge.aValueFrom(RumResourceKind::class.java, listOf(RumResourceKind.UNKNOWN))
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        val viewId = GlobalRum.getRumContext().viewId
+        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        resourceKey = forge.anAsciiString().toByteArray()
+        System.gc()
+        testedMonitor.stopResource(resourceKey, kind, attributes)
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasResourceData {
+                    hasUrl(resourceUrl)
+                    hasKind(RumResourceKind.UNKNOWN)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(viewId)
+    }
+
+    @Test
     fun `stopResourceWithError doesn't send anything without startResource`(
         forge: Forge
     ) {
@@ -243,6 +326,49 @@ internal class DatadogRumMonitorTest {
                     hasOrigin(errorOrigin)
                     hasMessage(errorMessage)
                     hasThrowable(throwable)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(viewId)
+    }
+
+    @Test
+    fun `stopResourceWithError sends resource Rum Event automatically when key reference is null`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val viewKey = forge.anAsciiString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        var resourceKey: Any = forge.anAsciiString().toByteArray()
+        val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
+        val attributes = forge.exhaustiveAttributes()
+        val errorOrigin = forge.anAlphabeticalString()
+        val errorMessage = forge.anAlphabeticalString()
+        val throwable = forge.aThrowable()
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        val viewId = GlobalRum.getRumContext().viewId
+        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        resourceKey = forge.anAsciiString().toByteArray()
+        System.gc()
+        testedMonitor.stopResourceWithError(resourceKey, errorMessage, errorOrigin, throwable)
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasResourceData {
+                    hasUrl(resourceUrl)
+                    hasKind(RumResourceKind.UNKNOWN)
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)

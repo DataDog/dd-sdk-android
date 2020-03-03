@@ -14,6 +14,8 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.RumEventSerializer
+import java.lang.ref.WeakReference
 import java.util.UUID
 
 internal class DatadogRumMonitor(
@@ -21,8 +23,11 @@ internal class DatadogRumMonitor(
     private val writer: Writer<RumEvent>
 ) : RumMonitor {
 
-    private val activeView = mutableMapOf<Any, RumEvent>()
-    private val activeResources = mutableMapOf<Any, RumEvent>()
+    private var activeViewEvent: RumEvent? = null
+    private var activeViewData: RumEventData.View? = null
+    private var activeViewKey: WeakReference<Any?> = WeakReference(null)
+
+    private val activeResources = mutableMapOf<WeakReference<Any>, RumEvent>()
 
     // region RumMonitor
 
@@ -55,43 +60,37 @@ internal class DatadogRumMonitor(
             eventData,
             attributes
         )
-        activeView[key] = event
+        activeViewEvent = event
+        activeViewData = eventData
+        activeViewKey = WeakReference(key)
     }
 
     override fun stopView(
         key: Any,
         attributes: Map<String, Any?>
     ) {
-        val startedEvent = activeView.remove(key)
-        val startedEventData = startedEvent?.eventData as? RumEventData.View
+        val startedKey = activeViewKey.get()
+        val startedEvent = activeViewEvent
+        val startedEventData = activeViewData
 
         when {
-            startedEvent == null -> {
-                devLogger.w(
-                    "Unable to stop view with key <$key>. " +
-                        "This can mean that the view was not started or already stopped."
-                )
-            }
-            startedEventData == null -> {
+            startedEvent == null || startedEventData == null -> devLogger.w(
+                "Unable to end view with key <$key>. " +
+                    "This can mean that the view was not started or already ended."
+            )
+            startedKey != key -> {
                 devLogger.e(
-                    "Unable to stop view with key <$key>. " +
-                        "The related data was inconsistent."
+                    "Unable to end view with key <$key>. The related data was inconsistent."
+                )
+                sendCompleteView(
+                    startedEvent,
+                    startedEventData,
+                    mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
                 )
             }
-            else -> {
-                val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
-                val updatedEvent = startedEvent.copy(
-                    eventData = startedEventData.copy(
-                        durationNanoSeconds = updatedDurationNs,
-                        version = startedEventData.version + 1
-                    ),
-                    attributes = startedEvent.attributes.toMutableMap().apply {
-                        putAll(attributes)
-                    }
-                )
-                writer.write(updatedEvent)
-            }
+            else -> sendCompleteView(startedEvent, startedEventData, attributes)
         }
+
         GlobalRum.updateViewId(null)
     }
 
@@ -111,7 +110,7 @@ internal class DatadogRumMonitor(
             eventData,
             attributes
         )
-        activeResources[key] = event
+        activeResources[WeakReference(key)] = event
     }
 
     override fun stopResource(
@@ -119,35 +118,12 @@ internal class DatadogRumMonitor(
         kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
-        val startedEvent = activeResources.remove(key)
+        val keyRef = activeResources.keys.firstOrNull { it.get() == key }
+        val startedEvent = if (keyRef == null) null else activeResources.remove(keyRef)
         val startedEventData = startedEvent?.eventData as? RumEventData.Resource
 
-        when {
-            startedEvent == null -> {
-                devLogger.w(
-                    "Unable to end resource with key <$key>. " +
-                        "This can mean that the resource was not started or already ended."
-                )
-            }
-            startedEventData == null -> {
-                devLogger.e(
-                    "Unable to end resource with key <$key>. The related data was inconsistent."
-                )
-            }
-            else -> {
-                val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
-                val updatedEvent = startedEvent.copy(
-                    eventData = startedEventData.copy(
-                        kind = kind,
-                        durationNanoSeconds = updatedDurationNs
-                    ),
-                    attributes = startedEvent.attributes.toMutableMap().apply {
-                        putAll(attributes)
-                    }
-                )
-                writer.write(updatedEvent)
-            }
-        }
+        sendResource(key, startedEvent, startedEventData, kind, attributes)
+        sendUnclosedResources()
     }
 
     override fun stopResourceWithError(
@@ -156,32 +132,30 @@ internal class DatadogRumMonitor(
         origin: String,
         throwable: Throwable
     ) {
-        val startedEvent = activeResources.remove(key)
+        val keyRef = activeResources.keys.firstOrNull { it.get() == key }
+        val startedEvent = if (keyRef == null) null else activeResources.remove(keyRef)
         val startedEventData = startedEvent?.eventData as? RumEventData.Resource
 
         when {
-            startedEvent == null -> {
-                devLogger.w(
-                    "Unable to end resource with key <$key>. " +
-                        "This can mean that the resource was not started or already ended."
-                )
-            }
-            startedEventData == null -> {
-                devLogger.e(
-                    "Unable to end resource with key <$key>. The related data was inconsistent."
-                )
-            }
-            else -> {
-                val attributes = startedEvent.attributes.toMutableMap()
-                attributes["http.url"] = startedEventData.url
-                addError(
-                    message,
-                    origin,
-                    throwable,
-                    attributes
-                )
-            }
+            startedEvent == null -> devLogger.w(
+                "Unable to end resource with key <$key>. " +
+                    "This can mean that the resource was not started or already ended."
+            )
+            startedEventData == null -> devLogger.e(
+                "Unable to end resource with key <$key>. The related data was inconsistent."
+            )
+            else -> addError(
+                message,
+                origin,
+                throwable,
+                startedEvent.attributes
+                    .toMutableMap()
+                    .apply {
+                        set(RumEventSerializer.TAG_HTTP_URL, startedEventData.url)
+                    }
+            )
         }
+        sendUnclosedResources()
     }
 
     override fun addError(
@@ -198,6 +172,83 @@ internal class DatadogRumMonitor(
             attributes
         )
         writer.write(event)
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun sendCompleteView(
+        startedEvent: RumEvent,
+        startedEventData: RumEventData.View,
+        attributes: Map<String, Any?>
+    ) {
+        val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
+        val updatedEvent = startedEvent.copy(
+            eventData = startedEventData.copy(
+                durationNanoSeconds = updatedDurationNs,
+                version = startedEventData.version + 1
+            ),
+            attributes = startedEvent.attributes.toMutableMap().apply {
+                putAll(attributes)
+            }
+        )
+        writer.write(updatedEvent)
+    }
+
+    private fun sendResource(
+        key: Any?,
+        startedEvent: RumEvent?,
+        startedEventData: RumEventData.Resource?,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?>
+    ) {
+        when {
+            startedEvent == null -> devLogger.w(
+                "Unable to end resource with key <$key>. " +
+                    "This can mean that the resource was not started or already ended."
+            )
+            startedEventData == null -> devLogger.e(
+                "Unable to end resource with key <$key>. The related data was inconsistent."
+            )
+            else -> sendCompleteResource(startedEvent, startedEventData, kind, attributes)
+        }
+    }
+
+    private fun sendCompleteResource(
+        startedEvent: RumEvent,
+        startedEventData: RumEventData.Resource,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?>
+    ) {
+        val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
+        val updatedEvent = startedEvent.copy(
+            eventData = startedEventData.copy(
+                kind = kind,
+                durationNanoSeconds = updatedDurationNs
+            ),
+            attributes = startedEvent.attributes.toMutableMap().apply {
+                putAll(attributes)
+            }
+        )
+        writer.write(updatedEvent)
+    }
+
+    private fun sendUnclosedResources() {
+        activeResources.keys
+            .filter { it.get() == null }
+            .forEach {
+                val startedEvent = activeResources.remove(it)
+                val startedEventData = startedEvent?.eventData as? RumEventData.Resource
+
+                sendResource(
+                    null,
+                    startedEvent,
+                    startedEventData,
+                    RumResourceKind.UNKNOWN,
+                    mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
+                )
+            }
     }
 
     // endregion
