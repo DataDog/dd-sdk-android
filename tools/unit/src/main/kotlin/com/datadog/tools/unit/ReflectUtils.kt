@@ -29,6 +29,7 @@ fun createInstance(
  * @param fieldName the name of the field
  * @param fieldValue the value to set
  */
+@Suppress("SwallowedException")
 inline fun <reified T, R> Class<T>.setStaticValue(
     fieldName: String,
     fieldValue: R
@@ -39,9 +40,13 @@ inline fun <reified T, R> Class<T>.setStaticValue(
     field.isAccessible = true
 
     // Make it non final
-    val modifiersField = Field::class.java.getDeclaredField("modifiers")
-    modifiersField.isAccessible = true
-    modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+    try {
+        val modifiersField = Field::class.java.getDeclaredField("modifiers")
+        modifiersField.isAccessible = true
+        modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+    } catch (e: NoSuchFieldException) {
+        // do nothing
+    }
     field.set(null, fieldValue)
 }
 
@@ -200,7 +205,7 @@ private fun <T : Any> T.getDeclaredMethodRecursively(
             } else {
                 lookingInClass.declaredMethods.firstOrNull {
                     it.name == methodName &&
-                        it.parameterTypes.size == declarationParams.size
+                            it.parameterTypes.size == declarationParams.size
                 }
             }
         } catch (e: Throwable) {
