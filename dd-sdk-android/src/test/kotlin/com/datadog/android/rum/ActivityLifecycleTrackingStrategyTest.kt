@@ -1,16 +1,19 @@
-package com.datadog.android.rum.internal.instrumentation
+package com.datadog.android.rum
 
 import android.app.Activity
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import android.app.Application
+import android.content.Context
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -24,11 +27,15 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal abstract class TrackingStrategyTest {
-    lateinit var underTest: TrackingStrategy
+internal abstract class ActivityLifecycleTrackingStrategyTest {
+    lateinit var underTest: ActivityLifecycleTrackingStrategy
     @Mock
     lateinit var mockRumMonitor: RumMonitor
     lateinit var mockActivity: Activity
+    @Mock
+    lateinit var mockAppContext: Application
+    @Mock
+    lateinit var mockBadContext: Context
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
@@ -43,6 +50,42 @@ internal abstract class TrackingStrategyTest {
     open fun `tear down`() {
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.isRegistered.set(false)
+    }
+
+    @Test
+    fun `when register it will register as lifecycle callback`() {
+        // when
+        underTest.register(mockAppContext)
+
+        // verify
+        verify(mockAppContext).registerActivityLifecycleCallbacks(underTest)
+    }
+
+    @Test
+    fun `when unregister it will remove itself  as lifecycle callback`() {
+        // when
+        underTest.unregister(mockAppContext)
+
+        // verify
+        verify(mockAppContext).unregisterActivityLifecycleCallbacks(underTest)
+    }
+
+    @Test
+    fun `when register called with non application context will do nothing`() {
+        // when
+        underTest.register(mockBadContext)
+
+        // verify
+        verifyZeroInteractions(mockBadContext)
+    }
+
+    @Test
+    fun `when unregister called with non application context will do nothing`() {
+        // when
+        underTest.unregister(mockBadContext)
+
+        // verify
+        verifyZeroInteractions(mockBadContext)
     }
 
     internal class Test1Activity() : Activity()

@@ -26,11 +26,7 @@ class com.datadog.android.DatadogConfig
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
     fun trackGestures(): Builder
-    fun trackViews(ViewTrackingStrategy): Builder
-  enum ViewTrackingStrategy
-    - TRACK_ACTIVITIES_AS_VIEWS
-    - TRACK_FRAGMENTS_AS_VIEWS
-    - NONE
+    fun setViewTrackingStrategy(com.datadog.android.rum.TrackingStrategy): Builder
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
@@ -72,6 +68,16 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+abstract class com.datadog.android.rum.ActivityLifecycleTrackingStrategy : android.app.Application, ActivityLifecycleCallbacks, TrackingStrategy
+  override fun register(android.content.Context)
+  override fun unregister(android.content.Context)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityResumed(android.app.Activity)
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean
@@ -104,6 +110,12 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object
+class com.datadog.android.rum.TrackActivitiesAsViewsStrategy : ActivityLifecycleTrackingStrategy
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+interface com.datadog.android.rum.TrackingStrategy
+  fun register(android.content.Context)
+  fun unregister(android.content.Context)
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
