@@ -83,6 +83,9 @@ internal class FileReader(
         } catch (e: SecurityException) {
             sdkLogger.e("Couldn't access file ${file?.path}", e)
             ByteArray(0)
+        } catch (e: OutOfMemoryError) {
+            sdkLogger.e("Couldn't read file ${file?.path} (not enough memory)", e)
+            ByteArray(0)
         }
 
         return file to data
