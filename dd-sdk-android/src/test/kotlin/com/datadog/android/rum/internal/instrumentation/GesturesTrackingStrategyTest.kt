@@ -1,5 +1,6 @@
 package com.datadog.android.rum.internal.instrumentation
 
+import com.datadog.android.rum.ActivityLifecycleTrackingStrategyTest
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
@@ -21,7 +22,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class GesturesTrackingStrategyTest : TrackingStrategyTest() {
+internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
 
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
@@ -29,7 +30,7 @@ internal class GesturesTrackingStrategyTest : TrackingStrategyTest() {
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = TrackingStrategy.GesturesTrackingStrategy(mockGesturesTracker)
+        underTest = GesturesTrackingStrategy(mockGesturesTracker)
     }
 
     @Test
