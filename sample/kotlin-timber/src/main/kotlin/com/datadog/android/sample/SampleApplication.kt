@@ -30,7 +30,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin-timber")
             .setEnvironmentName("staging")
-            .trackViews(strategy = DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+            .trackViews(strategy = DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS)
             .trackGestures()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
