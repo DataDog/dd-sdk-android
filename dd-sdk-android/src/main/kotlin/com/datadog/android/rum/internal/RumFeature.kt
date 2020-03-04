@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal
 
-import android.app.Application
 import android.content.Context
 import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
@@ -18,11 +17,9 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
-import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
@@ -111,31 +108,8 @@ internal object RumFeature {
     }
 
     private fun setupTrackingStrategies(appContext: Context, config: DatadogConfig.RumConfig) {
-        if (appContext is Application) {
-            if (config.trackGestures) {
-                appContext.registerActivityLifecycleCallbacks(
-                    TrackingStrategy.GesturesTrackingStrategy(gesturesTracker)
-                )
-            }
-
-            when (config.viewTrackingStrategy) {
-                DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS ->
-                    appContext.registerActivityLifecycleCallbacks(
-                        TrackingStrategy.ActivityTrackingStrategy
-                    )
-                DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS ->
-                    appContext.registerActivityLifecycleCallbacks(
-                        TrackingStrategy.FragmentsTrackingStrategy
-                    )
-                else -> { // Do Nothing }
-                }
-            }
-        } else {
-            devLogger.e(
-                "In order to use the RUM automatic tracking feature you will have" +
-                        "to use the Application context when initializing the SDK"
-            )
-        }
+        config.trackGesturesStrategy?.register(appContext)
+        config.viewTrackingStrategy?.register(appContext)
     }
 
     // endregion
