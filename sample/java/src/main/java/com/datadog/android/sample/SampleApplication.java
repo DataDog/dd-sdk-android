@@ -34,6 +34,7 @@ public class SampleApplication extends Application {
 
         // Initialise Logger
         logger = new Logger.Builder()
+                .setLogcatLogsEnabled(true)
                 .setNetworkInfoEnabled(true)
                 .setServiceName("android-sample-java")
                 .setLoggerName("Application")

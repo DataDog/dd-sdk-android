@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.os.Handler
+import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
@@ -19,7 +20,8 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -49,7 +51,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -179,7 +181,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `no batch to send`(@SystemOutStream systemOutStream: ByteArrayOutputStream) {
+    fun `no batch to send`(@SystemOutStream outputStream: ByteArrayOutputStream) {
         whenever(mockReader.readNextBatch()) doReturn null
 
         testedRunnable.run()
@@ -189,9 +191,9 @@ internal class DataUploadRunnableTest {
         verifyZeroInteractions(mockDataUploader)
         verify(mockHandler).postDelayed(testedRunnable, DataUploadRunnable.MAX_DELAY)
         if (BuildConfig.DEBUG) {
-            val exptectedTag = resolveTagName(testedRunnable, "DD_LOG")
-            assertThat(systemOutStream.toString().trim())
-                .matches("I/$exptectedTag: .+")
+            val expectedTag = resolveTagName(testedRunnable, "DD_LOG")
+            assertThat(outputStream)
+                .hasLogLine(Log.INFO, expectedTag, "There was no batch to be sent")
         }
     }
 

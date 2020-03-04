@@ -10,12 +10,14 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
+import kotlin.math.min
 
 /**
  * Mocks T:Context with the minimal behavior to initialize the Datadog library.
@@ -52,9 +54,22 @@ inline fun <reified T : Context> mockContext(
  * (debug or release)
  */
 fun resolveTagName(caller: Any, defaultIfNotDebug: String? = null): String {
-    return if (Datadog.isDebug) {
-        caller.javaClass.simpleName
+    val tag = if (Datadog.isDebug) {
+        val javaClass = caller.javaClass
+        val strippedName = javaClass.simpleName.replace(Regex("(\\$\\d+)+$"), "")
+        if (javaClass.isAnonymousClass) {
+            javaClass.enclosingClass!!.simpleName.replace(Regex("(\\$\\d+)+$"), "")
+        } else if (javaClass.isLocalClass) {
+            javaClass.enclosingClass!!.simpleName + "$" + strippedName
+        } else {
+            strippedName
+        }
     } else {
         defaultIfNotDebug ?: "Datadog"
+    }
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        tag
+    } else {
+        tag.substring(0, min(tag.length, 23))
     }
 }

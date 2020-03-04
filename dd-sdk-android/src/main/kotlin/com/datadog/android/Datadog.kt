@@ -103,8 +103,8 @@ object Datadog {
     ) {
         if (initialized) {
             devLogger.w(
-                "The Datadog library has already been initialized.",
-                IllegalStateException("The Datadog library has already been initialized.")
+                MESSAGE_ALREADY_INITIALIZED,
+                IllegalStateException(MESSAGE_ALREADY_INITIALIZED)
             )
             return
         }
@@ -338,12 +338,14 @@ object Datadog {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
+    internal const val MESSAGE_ALREADY_INITIALIZED =
+        "The Datadog library has already been initialized."
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
-            "Please add the following code in your application's onCreate() method:\n" +
-            "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+        "Please add the following code in your application's onCreate() method:\n" +
+        "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
-            "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     internal const val SHUTDOWN_THREAD = "datadog_shutdown"
 

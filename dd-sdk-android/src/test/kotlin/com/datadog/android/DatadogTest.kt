@@ -28,12 +28,12 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -54,6 +54,7 @@ import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -70,7 +71,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -208,8 +209,8 @@ internal class DatadogTest {
         assertThat(networkInfoProvider).isSameAs(Datadog.getNetworkInfoProvider())
         assertThat(userInfoProvider).isSameAs(Datadog.getUserInfoProvider())
         assertThat(timeProvider).isSameAs(Datadog.getTimeProvider())
-        assertThat(outputStream.lastLine())
-            .isEqualTo("W/Datadog: The Datadog library has already been initialized.")
+        assertThat(outputStream)
+            .hasLogLine(AndroidLog.WARN, "Datadog", Datadog.MESSAGE_ALREADY_INITIALIZED)
     }
 
     @Test
@@ -236,11 +237,10 @@ internal class DatadogTest {
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_LOGS)
 
         verifyZeroInteractions(mockUploader, mockReader)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/Datadog: setEndpointUrl() has been deprecated. " +
-                        "If you need it, submit an issue at " +
-                        "https://github.com/DataDog/dd-sdk-android/issues/"
+        assertThat(outputStream)
+            .hasLogLine(
+                AndroidLog.WARN, "Datadog",
+                startsWith("setEndpointUrl() has been deprecated.")
             )
     }
 
@@ -261,11 +261,10 @@ internal class DatadogTest {
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_LOGS_TO_NEW_ENDPOINT)
 
         verifyZeroInteractions(mockUploader, mockReader)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/Datadog: setEndpointUrl() has been deprecated. " +
-                        "If you need it, submit an issue at " +
-                        "https://github.com/DataDog/dd-sdk-android/issues/"
+        assertThat(outputStream)
+            .hasLogLine(
+                AndroidLog.WARN, "Datadog",
+                startsWith("setEndpointUrl() has been deprecated.")
             )
     }
 

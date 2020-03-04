@@ -18,10 +18,10 @@ import org.junit.jupiter.api.extension.Extensions
 
 @Suppress("ReplaceJavaStaticMethodWithKotlinAnalog")
 @Extensions(
-    ExtendWith(SystemOutputExtension::class),
+    ExtendWith(SystemStreamExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-internal class SystemOutputExtensionTest {
+internal class SystemStreamExtensionTest {
 
     @Test
     fun `@SystemOutStream catches System#out stream`(

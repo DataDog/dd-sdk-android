@@ -12,7 +12,7 @@ import com.datadog.android.Datadog;
 import com.datadog.android.utils.DatadogExtKt;
 import com.datadog.tools.unit.ReflectUtilsKt;
 import com.datadog.tools.unit.annotations.SystemOutStream;
-import com.datadog.tools.unit.extensions.SystemOutputExtension;
+import com.datadog.tools.unit.extensions.SystemStreamExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,16 +29,17 @@ import fr.xgouchet.elmyr.Forge;
 import fr.xgouchet.elmyr.annotation.Forgery;
 import fr.xgouchet.elmyr.junit5.ForgeExtension;
 
-import static android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.assertThat;
+
 
 @Extensions(
         {@ExtendWith(MockitoExtension.class),
                 @ExtendWith(ForgeExtension.class),
-                @ExtendWith(SystemOutputExtension.class)})
+                @ExtendWith(SystemStreamExtension.class)})
 @MockitoSettings()
 class LoggerBuilderJavaTest {
 
@@ -78,8 +79,9 @@ class LoggerBuilderJavaTest {
         logger.v(fakeMessage);
         final String expectedTagName = DatadogExtKt.resolveTagName(this, fakeServiceName);
 
-        assertThat(outputStream.toString())
-                .isEqualTo(String.format("V/%s: %s\n", expectedTagName, fakeMessage));
+
+        assertThat(outputStream)
+                .hasLogLine(Log.VERBOSE, expectedTagName, fakeMessage, false);
     }
 
     @Test
@@ -98,8 +100,8 @@ class LoggerBuilderJavaTest {
         logger.v(fakeMessage);
         final String expectedTagName = DatadogExtKt.resolveTagName(this, fakeServiceName);
 
-        assertThat(outputStream.toString())
-                .isEqualTo(String.format("V/%s: %s\n", expectedTagName, fakeMessage));
+        assertThat(outputStream)
+                .hasLogLine(Log.VERBOSE, expectedTagName, fakeMessage, false);
     }
 
     private Context mockContext(String packageName) {

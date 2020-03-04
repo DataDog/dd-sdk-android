@@ -10,18 +10,11 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
-import java.util.regex.Pattern
 
 internal class LogcatLogHandler(
-    internal val serviceName: String,
-    nestedDepth: Int = 0
+    internal val serviceName: String
 ) : LogHandler {
 
-    private val callerNameStackIndex: Int
-
-    init {
-        callerNameStackIndex = DEFAULT_LOGGER_CALLER_STACK_INDEX + nestedDepth
-    }
     // region LogHandler
 
     override fun handleLog(
@@ -31,12 +24,14 @@ internal class LogcatLogHandler(
         attributes: Map<String, Any?>,
         tags: Set<String>
     ) {
-        val tag = resolveTag()
+        val stackElement = getCallerStackElement()
+        val tag = resolveTag(stackElement)
+        val suffix = resolveSuffix(stackElement)
         if (Build.MODEL == null) {
-            println("${levelPrefixes[level]}/$tag: $message")
+            println("${levelPrefixes[level]}/$tag: $message$suffix")
             throwable?.printStackTrace()
         } else {
-            Log.println(level, tag, message)
+            Log.println(level, tag, message + suffix)
             if (throwable != null) {
                 Log.println(
                     level,
@@ -47,50 +42,50 @@ internal class LogcatLogHandler(
         }
     }
 
-    private fun resolveTag(): String {
-        return if (Datadog.isDebug) {
-            return resolveTagFromCallerClassName()
-        } else {
+    // endregion
+
+    // region Internal
+
+    private fun resolveTag(stackTraceElement: StackTraceElement?): String {
+        val tag = if (stackTraceElement == null) {
             serviceName
-        }
-    }
-
-    private fun resolveTagFromCallerClassName(): String {
-        val className: String = tryAndSearchClassName() ?: return serviceName
-        var tag = stripAnonymousPart(className)
-        tag = tag.substring(tag.lastIndexOf('.') + 1)
-
-        return sanitizeTag(tag)
-    }
-
-    private fun tryAndSearchClassName(): String? {
-        val stackTrace = Throwable().stackTrace
-        // it might happen that when called from Java code the stack index to be ++
-        // due to the Java - Kotlin bridge method so we need an extra check here.
-        for (i in callerNameStackIndex until stackTrace.size) {
-            val className = stackTrace[i].className
-            if (className != LOGGER_CLASS_NAME)
-                return className
-        }
-        return null
-    }
-
-    private fun sanitizeTag(tag: String): String {
-        return if (tag.length < MAX_TAG_LENGTH || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            tag
         } else {
+            stackTraceElement.className
+                .replace(ANONYMOUS_CLASS, "")
+                .substringAfterLast('.')
+        }
+        return if (tag.length >= MAX_TAG_LENGTH && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             tag.substring(0, MAX_TAG_LENGTH)
+        } else {
+            tag
         }
     }
 
-    private fun stripAnonymousPart(className: String): String {
-        val matcher = ANONYMOUS_CLASS.matcher(className)
-        return matcher.replaceAll("")
+    private fun resolveSuffix(stackTraceElement: StackTraceElement?): String {
+        return if (stackTraceElement == null) {
+            ""
+        } else {
+            "\t| at .${stackTraceElement.methodName}" +
+                "(${stackTraceElement.fileName}:${stackTraceElement.lineNumber})"
+        }
+    }
+
+    private fun getCallerStackElement(): StackTraceElement? {
+        return if (Datadog.isDebug) {
+            val stackTrace = Throwable().stackTrace
+            stackTrace.firstOrNull {
+                it.className !in ignoredClassNames
+            }
+        } else {
+            null
+        }
     }
 
     // endregion
 
     companion object {
+
+        private const val MAX_TAG_LENGTH = 23
 
         private val levelPrefixes = mapOf(
             Log.VERBOSE to "V",
@@ -101,11 +96,13 @@ internal class LogcatLogHandler(
             Log.ASSERT to "A"
         )
 
-        private val ANONYMOUS_CLASS =
-            Pattern.compile("(\\$\\d+)+$")
-        private const val MAX_TAG_LENGTH = 23
-
-        private const val DEFAULT_LOGGER_CALLER_STACK_INDEX = 7
-        private val LOGGER_CLASS_NAME = Logger::class.java.canonicalName
+        private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
+        private val ignoredClassNames = arrayOf(
+            Logger::class.java.canonicalName,
+            LogcatLogHandler::class.java.canonicalName,
+            ConditionalLogHandler::class.java.canonicalName,
+            CombinedLogHandler::class.java.canonicalName,
+            DatadogLogHandler::class.java.canonicalName
+        )
     }
 }

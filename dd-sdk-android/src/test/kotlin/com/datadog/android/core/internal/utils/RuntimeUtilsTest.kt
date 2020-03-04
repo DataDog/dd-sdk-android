@@ -13,8 +13,9 @@ import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemErrorStream
 import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.Forge
@@ -32,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension
     ExtendWith(MockitoExtension::class),
     ExtendWith(EnableLogcatExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class),
+    ExtendWith(SystemStreamExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
 class RuntimeUtilsTest {
@@ -96,18 +97,16 @@ class RuntimeUtilsTest {
         devLogger.w(warning)
         devLogger.e(error)
         devLogger.wtf(wtf)
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/$expectedTagName: $verbose\n" +
-                        "D/$expectedTagName: $debug\n" +
-                        "I/$expectedTagName: $info\n" +
-                        "W/$expectedTagName: $warning\n" +
-                        "E/$expectedTagName: $error\n" +
-                        "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.VERBOSE, tagName, verbose)
+            .hasLogLine(Log.DEBUG, tagName, debug)
+            .hasLogLine(Log.INFO, tagName, info)
+            .hasLogLine(Log.WARN, tagName, warning)
+            .hasLogLine(Log.ERROR, tagName, error)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -124,17 +123,14 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "D/$expectedTagName: $debug\n" +
-                        "I/$expectedTagName: $info\n" +
-                        "W/$expectedTagName: $warning\n" +
-                        "E/$expectedTagName: $error\n" +
-                        "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.DEBUG, tagName, debug)
+            .hasLogLine(Log.INFO, tagName, info)
+            .hasLogLine(Log.WARN, tagName, warning)
+            .hasLogLine(Log.ERROR, tagName, error)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -151,16 +147,13 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "I/$expectedTagName: $info\n" +
-                        "W/$expectedTagName: $warning\n" +
-                        "E/$expectedTagName: $error\n" +
-                        "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.INFO, tagName, info)
+            .hasLogLine(Log.WARN, tagName, warning)
+            .hasLogLine(Log.ERROR, tagName, error)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -177,15 +170,12 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "W/$expectedTagName: $warning\n" +
-                        "E/$expectedTagName: $error\n" +
-                        "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.WARN, tagName, warning)
+            .hasLogLine(Log.ERROR, tagName, error)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -202,14 +192,11 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "E/$expectedTagName: $error\n" +
-                        "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.ERROR, tagName, error)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -226,13 +213,10 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        val expectedTagName = resolveTagName(this)
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "A/$expectedTagName: $wtf\n"
-            )
-        assertThat(errorStream.toString())
-            .isEmpty()
+        val tagName = resolveTagName(this)
+        assertThat(outputStream)
+            .hasLogLine(Log.ASSERT, tagName, wtf)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -249,10 +233,8 @@ class RuntimeUtilsTest {
         devLogger.e(error)
         devLogger.wtf(wtf)
 
-        assertThat(outputStream.toString())
-            .isEmpty()
-        assertThat(errorStream.toString())
-            .isEmpty()
+        assertThat(outputStream).isEmpty()
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -273,44 +255,15 @@ class RuntimeUtilsTest {
         underTest.logMessage(fakeMessage)
 
         // then
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/RuntimeUtilsTest\$LogCaller: $fakeMessage\n" +
-                        "D/RuntimeUtilsTest\$LogCaller: $fakeMessage\n" +
-                        "I/RuntimeUtilsTest\$LogCaller: $fakeMessage\n" +
-                        "W/RuntimeUtilsTest\$LogCaller: $fakeMessage\n" +
-                        "E/RuntimeUtilsTest\$LogCaller: $fakeMessage\n" +
-                        "A/RuntimeUtilsTest\$LogCaller: $fakeMessage\n"
-            )
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
-    fun `devLogger will cut caller name to max accepted tag length if below N`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream,
-        @SystemErrorStream errorStream: ByteArrayOutputStream
-    ) {
-
-        // given
-        val fakeMessage = forge.anAlphabeticalString()
-        Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.setFieldValue("isDebug", true)
-        val underTest = LogCaller()
-
-        // when
-        underTest.logMessage(fakeMessage)
-
-        // then
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/RuntimeUtilsTest\$LogCal: $fakeMessage\n" +
-                        "D/RuntimeUtilsTest\$LogCal: $fakeMessage\n" +
-                        "I/RuntimeUtilsTest\$LogCal: $fakeMessage\n" +
-                        "W/RuntimeUtilsTest\$LogCal: $fakeMessage\n" +
-                        "E/RuntimeUtilsTest\$LogCal: $fakeMessage\n" +
-                        "A/RuntimeUtilsTest\$LogCal: $fakeMessage\n"
-            )
+        val tagName = "RuntimeUtilsTest\$LogCaller"
+        assertThat(outputStream)
+            .hasLogLine(Log.VERBOSE, tagName, fakeMessage)
+            .hasLogLine(Log.DEBUG, tagName, fakeMessage)
+            .hasLogLine(Log.INFO, tagName, fakeMessage)
+            .hasLogLine(Log.WARN, tagName, fakeMessage)
+            .hasLogLine(Log.ERROR, tagName, fakeMessage)
+            .hasLogLine(Log.ASSERT, tagName, fakeMessage)
+        assertThat(errorStream).isEmpty()
     }
 
     @Test
@@ -335,12 +288,12 @@ class RuntimeUtilsTest {
         underTest.logMessage(fakeMessage)
 
         // then
-        assertThat(outputStream.toString())
-            .isEqualTo(
-                "V/RuntimeUtilsTest\$devLogger will strip " +
-                        "the anonymous part from caller name when " +
-                        "resolving the tag\$underTest: $fakeMessage\n"
-            )
+
+        val tagName = "RuntimeUtilsTest" +
+            "\$devLogger will strip the anonymous part from caller name when resolving the tag" +
+            "\$underTest"
+        assertThat(outputStream)
+            .hasLogLine(Log.VERBOSE, tagName, fakeMessage)
     }
 
     open class LogCaller : Caller {

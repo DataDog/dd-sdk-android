@@ -6,13 +6,13 @@
 
 package com.datadog.tools.unit.annotations
 
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import java.io.ByteArrayOutputStream
 
 /**
  * Marks a [ByteArrayOutputStream] parameter in a test method as the [System.err] stream receiver.
  *
- * @see [SystemOutputExtension]
+ * @see [SystemStreamExtension]
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)

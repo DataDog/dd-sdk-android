@@ -7,11 +7,13 @@
 package com.datadog.android.core.internal.net
 
 import android.os.Build
+import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.resolveTagName
 import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemOutputExtension
+import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -23,6 +25,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemOutputExtension::class)
+    ExtendWith(SystemStreamExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -285,7 +288,8 @@ internal class DataOkHttpUploaderTest {
             MockResponse()
                 .throttleBody(
                     THROTTLE_RATE,
-                    THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS)
+                    THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS
+                )
                 .setBody(
                     "{ 'success': 'ok', " +
                         "'message': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
@@ -328,7 +332,7 @@ internal class DataOkHttpUploaderTest {
     @Test
     fun `uploads with an exception will log an error message`(
         forge: Forge,
-        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+        @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         if (BuildConfig.DEBUG) {
             val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
@@ -337,16 +341,16 @@ internal class DataOkHttpUploaderTest {
             mockWebServer.enqueue(mockResponse(forge.anInt(1000)))
             val expectedTag = resolveTagName(testedUploader, "DD_LOG")
             testedUploader.upload(data)
-            val logMessages = systemOutputStream.toString().trim().split("\n")
-            assertThat(logMessages.last())
-                .isEqualTo("E/$expectedTag: unable to upload data")
+
+            assertThat(outputStream)
+                .hasLogLine(Log.ERROR, expectedTag, "unable to upload data")
         }
     }
 
     @Test
     fun `uploads with a response will log an info message`(
         forge: Forge,
-        @SystemOutStream systemOutputStream: ByteArrayOutputStream
+        @SystemOutStream outputStream: ByteArrayOutputStream
     ) {
         if (BuildConfig.DEBUG) {
             val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
@@ -357,9 +361,9 @@ internal class DataOkHttpUploaderTest {
             val expectedTag = resolveTagName(testedUploader, "DD_LOG")
 
             testedUploader.upload(data)
-            val logMessages = systemOutputStream.toString().trim().split("\n")
-            assertThat(logMessages.last())
-                .matches("I/$expectedTag: Response code:$code .+")
+
+            assertThat(outputStream)
+                .hasLogLine(Log.INFO, expectedTag, startsWith("Response code:$code"))
         }
     }
 
