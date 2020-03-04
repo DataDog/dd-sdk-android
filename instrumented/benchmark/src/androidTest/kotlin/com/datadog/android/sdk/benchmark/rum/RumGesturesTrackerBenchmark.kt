@@ -11,12 +11,16 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.sdk.benchmark.R
 import com.datadog.android.sdk.benchmark.mockResponse
-import com.datadog.android.tracing.Tracer
 import com.datadog.tools.unit.createInstance
+import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeGenericMethod
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setStaticValue
+import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -38,7 +42,6 @@ internal class RumGesturesTrackerBenchmark {
         ActivityTestRule(RumTrackedActivity::class.java)
 
     lateinit var datadogGesturesTracker: Any
-    lateinit var testedTracer: Tracer
     lateinit var mockWebServer: MockWebServer
 
     @Before
@@ -62,21 +65,23 @@ internal class RumGesturesTrackerBenchmark {
             .build()
         Datadog.initialize(context, config)
 
-        testedTracer = Tracer
-            .Builder()
-            .setPartialFlushThreshold(1)
-            .build()
         datadogGesturesTracker = createInstance(
-            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker",
-            testedTracer
+            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker"
         )
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 
     @After
     fun tearDown() {
         Datadog.invokeMethod("stop")
         mockWebServer.shutdown()
+        val noOpMonitor = createInstance(
+            "com.datadog.android.rum.internal.monitor.NoOpRumMonitor"
+        )
+        GlobalRum::class.java.setStaticValue("monitor", noOpMonitor)
+        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
+        isRegistered.set(false)
     }
 
     @Test
