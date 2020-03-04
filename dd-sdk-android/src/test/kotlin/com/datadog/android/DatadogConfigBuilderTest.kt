@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 class DatadogConfigBuilderTest {
 
     lateinit var fakeClientToken: String
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -600,7 +601,7 @@ class DatadogConfigBuilderTest {
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
                     trackGestures = false,
-                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.NONE
+                    viewTrackingStrategy = DatadogConfig.ViewTrackingStrategy.NONE
                 )
             )
     }
@@ -631,7 +632,7 @@ class DatadogConfigBuilderTest {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+            .trackViews(DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS)
             .build()
 
         assertThat(config.rumConfig)
@@ -642,8 +643,8 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    viewTrackerStrategy =
-                    DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+                    viewTrackingStrategy =
+                    DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
                 )
             )
     }
@@ -653,7 +654,7 @@ class DatadogConfigBuilderTest {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS)
+            .trackViews(DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS)
             .build()
 
         assertThat(config.rumConfig)
@@ -664,7 +665,8 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
+                    viewTrackingStrategy =
+                    DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
                 )
             )
     }
