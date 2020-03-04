@@ -184,7 +184,7 @@ internal class RumFeatureTest {
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString(),
             trackGestures = forge.aBool(),
-            viewTrackerStrategy = forge.aValueFrom(DatadogConfig.ViewTrackerStrategy::class.java)
+            viewTrackingStrategy = forge.aValueFrom(DatadogConfig.ViewTrackingStrategy::class.java)
         )
         RumFeature.initialize(
             mockAppContext,
@@ -251,8 +251,8 @@ internal class RumFeatureTest {
     fun `will use the right Strategy if track activities as screens enabled`() {
         // given
         fakeConfig = fakeConfig.copy(
-            viewTrackerStrategy =
-            DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+            viewTrackingStrategy =
+            DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
         )
 
         // when
@@ -273,8 +273,8 @@ internal class RumFeatureTest {
     @Test
     fun `will use the right Strategy if track fragments as screens enabled`() {
         // given
-        fakeConfig = fakeConfig.copy(viewTrackerStrategy =
-        DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS)
+        fakeConfig = fakeConfig.copy(viewTrackingStrategy =
+        DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS)
 
         // when
         RumFeature.initialize(

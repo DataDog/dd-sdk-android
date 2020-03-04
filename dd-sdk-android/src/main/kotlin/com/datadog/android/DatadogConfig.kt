@@ -37,7 +37,7 @@ private constructor(
         val serviceName: String,
         val envName: String,
         val trackGestures: Boolean = false,
-        val viewTrackerStrategy: ViewTrackerStrategy = ViewTrackerStrategy.NONE
+        val viewTrackingStrategy: ViewTrackingStrategy = ViewTrackingStrategy.NONE
     )
 
     // region Builder
@@ -261,12 +261,12 @@ private constructor(
          * Sets the automatic view tracking strategy used by the SDK.
          * By default this is NONE.
          * @param strategy as the strategy to be used by the automatic view tracker.
-         * @see ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
-         * @see ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
-         * @see ViewTrackerStrategy.NONE
+         * @see ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
+         * @see ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
+         * @see ViewTrackingStrategy.NONE
          */
-        fun trackViews(strategy: ViewTrackerStrategy): Builder {
-            rumConfig = rumConfig.copy(viewTrackerStrategy = strategy)
+        fun trackViews(strategy: ViewTrackingStrategy): Builder {
+            rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
             return this
         }
 
@@ -280,7 +280,7 @@ private constructor(
     /**
      * The available strategies for the automatic View tracker.
      */
-    enum class ViewTrackerStrategy {
+    enum class ViewTrackingStrategy {
         /**
          * The SDK will monitor the FragmentManager operations
          * and will automatically start and stop RUM View for each resumed/paused fragment.
