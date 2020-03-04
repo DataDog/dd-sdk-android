@@ -26,8 +26,8 @@ class com.datadog.android.DatadogConfig
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
     fun trackGestures(): Builder
-    fun trackViews(ViewTrackerStrategy): Builder
-  enum ViewTrackerStrategy
+    fun trackViews(ViewTrackingStrategy): Builder
+  enum ViewTrackingStrategy
     - TRACK_ACTIVITIES_AS_VIEWS
     - TRACK_FRAGMENTS_AS_VIEWS
     - NONE

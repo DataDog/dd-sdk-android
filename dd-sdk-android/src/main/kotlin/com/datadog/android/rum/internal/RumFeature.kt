@@ -118,12 +118,12 @@ internal object RumFeature {
                 )
             }
 
-            when (config.viewTrackerStrategy) {
-                DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS ->
+            when (config.viewTrackingStrategy) {
+                DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS ->
                     appContext.registerActivityLifecycleCallbacks(
                         TrackingStrategy.ActivityTrackingStrategy
                     )
-                DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS ->
+                DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS ->
                     appContext.registerActivityLifecycleCallbacks(
                         TrackingStrategy.FragmentsTrackingStrategy
                     )
