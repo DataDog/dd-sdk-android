@@ -19,7 +19,7 @@ private constructor(
     internal val logsConfig: FeatureConfig?,
     internal val tracesConfig: FeatureConfig?,
     internal val crashReportConfig: FeatureConfig?,
-    internal val rumConfig: FeatureConfig?
+    internal val rumConfig: RumConfig?
 ) {
 
     internal data class FeatureConfig(
@@ -28,6 +28,16 @@ private constructor(
         val endpointUrl: String,
         val serviceName: String,
         val envName: String
+    )
+
+    internal data class RumConfig(
+        val clientToken: String,
+        val applicationId: UUID,
+        val endpointUrl: String,
+        val serviceName: String,
+        val envName: String,
+        val trackGestures: Boolean = false,
+        val viewTrackerStrategy: ViewTrackerStrategy = ViewTrackerStrategy.NONE
     )
 
     // region Builder
@@ -45,7 +55,7 @@ private constructor(
          * @param clientToken your API key of type Client Token
          */
         constructor(clientToken: String) :
-            this(clientToken, UUID(0, 0))
+                this(clientToken, UUID(0, 0))
 
         /**
          * A Builder class for a [DatadogConfig].
@@ -53,7 +63,7 @@ private constructor(
          * @param applicationId your applicationId for RUM events
          */
         constructor(clientToken: String, applicationId: String) :
-            this(clientToken, UUID.fromString(applicationId))
+                this(clientToken, UUID.fromString(applicationId))
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
@@ -76,7 +86,7 @@ private constructor(
             DEFAULT_SERVICE_NAME,
             DEFAULT_ENV_NAME
         )
-        private var rumConfig: FeatureConfig = FeatureConfig(
+        private var rumConfig: RumConfig = RumConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.RUM_US,
@@ -238,11 +248,53 @@ private constructor(
             return this
         }
 
+        /**
+         * Enable the gestures auto tracker. By enabling this feature the SDK will intercept
+         * tap events and automatically send those as RUM UserActions for you.
+         */
+        fun trackGestures(): Builder {
+            rumConfig = rumConfig.copy(trackGestures = true)
+            return this
+        }
+
+        /**
+         * Sets the automatic view tracking strategy used by the SDK.
+         * By default this is NONE.
+         * @param strategy as the strategy to be used by the automatic view tracker.
+         * @see ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+         * @see ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
+         * @see ViewTrackerStrategy.NONE
+         */
+        fun trackViews(strategy: ViewTrackerStrategy): Builder {
+            rumConfig = rumConfig.copy(viewTrackerStrategy = strategy)
+            return this
+        }
+
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 needsClearTextHttp = true
             }
         }
+    }
+
+    /**
+     * The available strategies for the automatic View tracker.
+     */
+    enum class ViewTrackerStrategy {
+        /**
+         * The SDK will monitor the FragmentManager operations
+         * and will automatically start and stop RUM View for each resumed/paused fragment.
+         */
+        TRACK_ACTIVITIES_AS_VIEWS,
+        /**
+         * The SDK will monitor the FragmentManager operations
+         * and will automatically start and stop RUM View for each resumed/paused fragment.
+         */
+        TRACK_FRAGMENTS_AS_VIEWS,
+        /**
+         * The SDK will not use any automatic view tracking mechanism.
+         */
+        NONE
     }
 
     // endregion

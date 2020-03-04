@@ -18,9 +18,19 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val configBuilder = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val configBuilder =
+            if (BuildConfig.DD_RUM_APPLICATION_ID.isNotBlank()) {
+                DatadogConfig.Builder(
+                    BuildConfig.DD_CLIENT_TOKEN,
+                    BuildConfig.DD_RUM_APPLICATION_ID
+                )
+            } else {
+                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+            }
+        configBuilder
             .setServiceName("android-sample-kotlin-timber")
             .setEnvironmentName("staging")
+            .trackViews(strategy = DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
@@ -29,7 +39,9 @@ class SampleApplication : Application() {
         if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
             configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
         }
-
+        if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+        }
         // Initialise Datadog
         Datadog.initialize(this, configBuilder.build())
         Datadog.setVerbosity(Log.VERBOSE)

@@ -29,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 class DatadogConfigBuilderTest {
 
     lateinit var fakeClientToken: String
-    @Forgery lateinit var fakeApplicationId: UUID
+    @Forgery
+    lateinit var fakeApplicationId: UUID
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -114,7 +115,7 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -123,6 +124,7 @@ class DatadogConfigBuilderTest {
                 )
             )
     }
+
     @Test
     fun `builder returns sensible defaults with UUID applicationId`() {
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
@@ -161,7 +163,7 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -216,7 +218,7 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -272,7 +274,7 @@ class DatadogConfigBuilderTest {
 
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -328,7 +330,7 @@ class DatadogConfigBuilderTest {
 
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -397,7 +399,7 @@ class DatadogConfigBuilderTest {
 
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
@@ -449,7 +451,7 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_EU,
@@ -511,7 +513,7 @@ class DatadogConfigBuilderTest {
 
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     rumUrl,
@@ -572,12 +574,97 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.rumConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.RumConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME
+                )
+            )
+    }
+
+    @Test
+    fun `builder with all tracking instrumentation disabled`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME,
+                    trackGestures = false,
+                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.NONE
+                )
+            )
+    }
+
+    @Test
+    fun `builder with track gestures enabled`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .trackGestures()
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME,
+                    trackGestures = true
+                )
+            )
+    }
+
+    @Test
+    fun `builder with track activities as views enabled`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME,
+                    viewTrackerStrategy =
+                    DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+                )
+            )
+    }
+
+    @Test
+    fun `builder with track fragments as views enabled`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS)
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    rumUrl,
+                    DatadogConfig.DEFAULT_SERVICE_NAME,
+                    DatadogConfig.DEFAULT_ENV_NAME,
+                    viewTrackerStrategy = DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS
                 )
             )
     }

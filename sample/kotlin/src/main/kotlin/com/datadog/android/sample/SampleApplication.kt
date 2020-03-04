@@ -9,6 +9,8 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.tracing.Tracer
 import io.opentracing.util.GlobalTracer
 
@@ -17,9 +19,19 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val configBuilder = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val configBuilder =
+            if (BuildConfig.DD_RUM_APPLICATION_ID.isNotBlank()) {
+                DatadogConfig.Builder(
+                    BuildConfig.DD_CLIENT_TOKEN,
+                    BuildConfig.DD_RUM_APPLICATION_ID
+                )
+            } else {
+                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+            }
+        configBuilder
             .setServiceName("android-sample-kotlin")
             .setEnvironmentName("staging")
+            .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
@@ -28,6 +40,9 @@ class SampleApplication : Application() {
         if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
             configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
         }
+        if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+        }
 
         // Initialise Datadog
         Datadog.initialize(this, configBuilder.build())
@@ -35,5 +50,6 @@ class SampleApplication : Application() {
 
         // initialize the tracer here
         GlobalTracer.registerIfAbsent(Tracer.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 }

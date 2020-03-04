@@ -67,7 +67,7 @@ internal class RumGesturesTrackerBenchmark {
             .setPartialFlushThreshold(1)
             .build()
         datadogGesturesTracker = createInstance(
-            "com.datadog.android.rum.gestures.DatadogGesturesTracker",
+            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker",
             testedTracer
         )
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

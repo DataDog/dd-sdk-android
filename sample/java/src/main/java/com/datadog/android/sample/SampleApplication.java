@@ -12,7 +12,9 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
+
 import androidx.multidex.MultiDex;
+
 import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
@@ -23,6 +25,7 @@ import com.datadog.android.tracing.Tracer;
 import com.facebook.stetho.Stetho;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import io.opentracing.util.GlobalTracer;
 
 public class SampleApplication extends Application {
@@ -40,13 +43,22 @@ public class SampleApplication extends Application {
         super.onCreate();
         Stetho.initializeWithDefaults(this);
 
-        DatadogConfig.Builder configBuilder =
-                new DatadogConfig.Builder(
-                        BuildConfig.DD_CLIENT_TOKEN,
-                        BuildConfig.DD_RUM_APPLICATION_ID
-                )
-                        .setServiceName("android-sample-java")
-                        .setEnvironmentName("staging");
+        final DatadogConfig.Builder configBuilder;
+        if (BuildConfig.DD_RUM_APPLICATION_ID != null) {
+            configBuilder = new DatadogConfig.Builder(
+                    BuildConfig.DD_CLIENT_TOKEN,
+                    BuildConfig.DD_RUM_APPLICATION_ID
+            );
+
+        } else {
+            configBuilder = new DatadogConfig.Builder(
+                    BuildConfig.DD_CLIENT_TOKEN);
+        }
+
+        configBuilder.setServiceName("android-sample-java")
+                .trackViews(DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+                .setEnvironmentName("staging");
+
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);

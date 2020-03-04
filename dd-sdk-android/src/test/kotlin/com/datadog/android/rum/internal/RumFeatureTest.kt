@@ -16,12 +16,16 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.SystemOutputExtension
 import com.datadog.tools.unit.getFieldValue
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -64,7 +68,7 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
 
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.RumConfig
 
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
@@ -74,7 +78,7 @@ internal class RumFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
@@ -180,12 +184,14 @@ internal class RumFeatureTest {
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
 
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
-            envName = forge.anAlphabeticalString()
+            envName = forge.anAlphabeticalString(),
+            trackGestures = forge.aBool(),
+            viewTrackerStrategy = forge.aValueFrom(DatadogConfig.ViewTrackerStrategy::class.java)
         )
         RumFeature.initialize(
             mockAppContext,
@@ -205,5 +211,90 @@ internal class RumFeatureTest {
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
+
+        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
+            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
+        })
+    }
+
+    @Test
+    fun `will not register any callback if no instrumentation feature enabled`() {
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        // then
+        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
+            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
+        })
+    }
+
+    @Test
+    fun `will use the right Strategy when tracking gestures enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(trackGestures = true)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        // then
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.GesturesTrackingStrategy
+        })
+    }
+
+    @Test
+    fun `will use the right Strategy if track activities as screens enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(
+            viewTrackerStrategy =
+            DatadogConfig.ViewTrackerStrategy.TRACK_ACTIVITIES_AS_VIEWS
+        )
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        // then
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.ActivityTrackingStrategy
+        })
+    }
+
+    @Test
+    fun `will use the right Strategy if track fragments as screens enabled`() {
+        // given
+        fakeConfig = fakeConfig.copy(viewTrackerStrategy =
+        DatadogConfig.ViewTrackerStrategy.TRACK_FRAGMENTS_AS_VIEWS)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider
+        )
+
+        // then
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is TrackingStrategy.FragmentsTrackingStrategy
+        })
     }
 }

@@ -24,6 +24,12 @@ class com.datadog.android.DatadogConfig
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
+    fun trackGestures(): Builder
+    fun trackViews(ViewTrackerStrategy): Builder
+  enum ViewTrackerStrategy
+    - TRACK_ACTIVITIES_AS_VIEWS
+    - TRACK_FRAGMENTS_AS_VIEWS
+    - NONE
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
