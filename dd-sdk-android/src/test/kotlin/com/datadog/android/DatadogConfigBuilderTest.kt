@@ -6,6 +6,8 @@
 
 package com.datadog.android
 
+import com.datadog.android.rum.TrackActivitiesAsViewsStrategy
+import com.datadog.android.rum.assertj.RumConfigAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -592,18 +594,16 @@ class DatadogConfigBuilderTest {
             .useCustomRumEndpoint(rumUrl)
             .build()
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    DatadogConfig.DEFAULT_ENV_NAME,
-                    trackGestures = false,
-                    viewTrackingStrategy = DatadogConfig.ViewTrackingStrategy.NONE
-                )
-            )
+        val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
+        assertThat(rumConfig).isNotNull()
+        RumConfigAssert.assertThat(rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
+            .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
+            .doesNotHaveGesturesTrackingStrategy()
+            .doesNotHaveViewTrackingStrategy()
     }
 
     @Test
@@ -614,60 +614,35 @@ class DatadogConfigBuilderTest {
             .trackGestures()
             .build()
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    DatadogConfig.DEFAULT_ENV_NAME,
-                    trackGestures = true
-                )
-            )
+        val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
+        assertThat(rumConfig).isNotNull()
+        RumConfigAssert.assertThat(rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
+            .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
+            .hasGesturesTrackingStrategy()
+            .doesNotHaveViewTrackingStrategy()
     }
 
     @Test
-    fun `builder with track activities as views enabled`(forge: Forge) {
+    fun `builder with track activities as views tracking strategy`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val strategy = TrackActivitiesAsViewsStrategy()
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackViews(DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+            .setViewTrackingStrategy(strategy)
             .build()
-
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    DatadogConfig.DEFAULT_ENV_NAME,
-                    viewTrackingStrategy =
-                    DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
-                )
-            )
-    }
-
-    @Test
-    fun `builder with track fragments as views enabled`(forge: Forge) {
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
-            .useCustomRumEndpoint(rumUrl)
-            .trackViews(DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS)
-            .build()
-
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    DatadogConfig.DEFAULT_ENV_NAME,
-                    viewTrackingStrategy =
-                    DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
-                )
-            )
+        val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
+        assertThat(rumConfig).isNotNull()
+        RumConfigAssert.assertThat(rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
+            .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
+            .doesNotHaveGesturesTrackingStrategy()
+            .hasViewTrackingStrategy(strategy)
     }
 }

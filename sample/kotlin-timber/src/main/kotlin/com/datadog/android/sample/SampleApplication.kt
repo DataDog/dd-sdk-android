@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.TrackActivitiesAsViewsStrategy
 import com.datadog.android.timber.DatadogTree
 import timber.log.Timber
 
@@ -30,7 +31,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin-timber")
             .setEnvironmentName("staging")
-            .trackViews(strategy = DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS)
+            .setViewTrackingStrategy(TrackActivitiesAsViewsStrategy())
             .trackGestures()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {

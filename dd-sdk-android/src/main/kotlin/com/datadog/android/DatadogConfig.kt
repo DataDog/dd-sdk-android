@@ -6,6 +6,9 @@
 
 package com.datadog.android
 
+import com.datadog.android.rum.TrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import java.util.UUID
 
 /**
@@ -36,8 +39,8 @@ private constructor(
         val endpointUrl: String,
         val serviceName: String,
         val envName: String,
-        val trackGestures: Boolean = false,
-        val viewTrackingStrategy: ViewTrackingStrategy = ViewTrackingStrategy.NONE
+        val trackGesturesStrategy: TrackingStrategy? = null,
+        val viewTrackingStrategy: TrackingStrategy? = null
     )
 
     // region Builder
@@ -253,19 +256,19 @@ private constructor(
          * tap events and automatically send those as RUM UserActions for you.
          */
         fun trackGestures(): Builder {
-            rumConfig = rumConfig.copy(trackGestures = true)
+            rumConfig = rumConfig.copy(
+                trackGesturesStrategy = GesturesTrackingStrategy(DatadogGesturesTracker())
+            )
             return this
         }
 
         /**
          * Sets the automatic view tracking strategy used by the SDK.
-         * By default this is NONE.
-         * @param strategy as the strategy to be used by the automatic view tracker.
-         * @see ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
-         * @see ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
-         * @see ViewTrackingStrategy.NONE
+         * By default this is null.
+         * @param strategy as the [TrackingStrategy]
+         * (e.g. TrackActivitiesAsViewsStrategy, TrackFragmentsAsViewsStrategy)
          */
-        fun trackViews(strategy: ViewTrackingStrategy): Builder {
+        fun setViewTrackingStrategy(strategy: TrackingStrategy): Builder {
             rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
             return this
         }
@@ -275,26 +278,6 @@ private constructor(
                 needsClearTextHttp = true
             }
         }
-    }
-
-    /**
-     * The available strategies for the automatic View tracker.
-     */
-    enum class ViewTrackingStrategy {
-        /**
-         * The SDK will monitor the FragmentManager operations
-         * and will automatically start and stop RUM View for each resumed/paused fragment.
-         */
-        TRACK_ACTIVITIES_AS_VIEWS,
-        /**
-         * The SDK will monitor the FragmentManager operations
-         * and will automatically start and stop RUM View for each resumed/paused fragment.
-         */
-        TRACK_FRAGMENTS_AS_VIEWS,
-        /**
-         * The SDK will not use any automatic view tracking mechanism.
-         */
-        NONE
     }
 
     // endregion
