@@ -22,6 +22,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -236,6 +237,58 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `stopView sends unclosed resource Rum Event with missing key`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val viewKey = forge.anAsciiString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        var resourceKey = forge.anAsciiString(size = 32).toByteArray()
+        val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
+        val attributes = forge.exhaustiveAttributes()
+        var viewId: UUID? = null
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        testedMonitor.startView(viewKey, viewName, attributes)
+        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        resourceKey = forge.anAsciiString().toByteArray()
+        System.gc()
+        viewId = GlobalRum.getRumContext().viewId
+        testedMonitor.stopView(viewKey, emptyMap())
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+            assertThat(firstValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasResourceData {
+                    hasUrl(resourceUrl)
+                    hasKind(RumResourceKind.UNKNOWN)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isNull()
+    }
+
+    @Test
     fun `startResource doesn't send anything without stopResource`(
         forge: Forge
     ) {
@@ -304,7 +357,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `stopResource sends resource Rum Event automatically when key reference is null`(
+    fun `stopResource sends unclosed resource Rum Event automatically when key reference is null`(
         forge: Forge
     ) {
         val timestamp = forge.aTimestamp()

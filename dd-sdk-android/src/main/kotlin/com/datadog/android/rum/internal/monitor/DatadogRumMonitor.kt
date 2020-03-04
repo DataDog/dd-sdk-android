@@ -23,8 +23,13 @@ internal class DatadogRumMonitor(
     private val writer: Writer<RumEvent>
 ) : RumMonitor {
 
+    @Volatile
     private var activeViewEvent: RumEvent? = null
+
+    @Volatile
     private var activeViewData: RumEventData.View? = null
+
+    @Volatile
     private var activeViewKey: WeakReference<Any?> = WeakReference(null)
 
     private val activeResources = mutableMapOf<WeakReference<Any>, RumEvent>()
@@ -65,15 +70,20 @@ internal class DatadogRumMonitor(
             eventData,
             attributes
         )
-        activeViewEvent = event
-        activeViewData = eventData
-        activeViewKey = WeakReference(key)
+
+        synchronized(this) {
+            activeViewEvent = event
+            activeViewData = eventData
+            activeViewKey = WeakReference(key)
+        }
     }
 
     override fun stopView(
         key: Any,
         attributes: Map<String, Any?>
     ) {
+        sendUnclosedResources()
+
         val startedKey = activeViewKey.get()
         val startedEvent = activeViewEvent
         val startedEventData = activeViewData
