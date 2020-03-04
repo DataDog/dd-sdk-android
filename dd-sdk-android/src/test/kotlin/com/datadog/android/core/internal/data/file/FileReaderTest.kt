@@ -177,6 +177,27 @@ internal class FileReaderTest {
     }
 
     @Test
+    fun `returns null when orchestrator throws OutOfMemoryError`(
+        @SystemOutStream outputStream: ByteArrayOutputStream,
+        forge: Forge
+    ) {
+        // given
+        val exception = OutOfMemoryError(forge.anAlphabeticalString())
+        doThrow(exception).whenever(mockOrchestrator).getReadableFile(any())
+
+        // when
+        val nextBatch = testedReader.readNextBatch()
+
+        // then
+        assertThat(nextBatch).isNull()
+        if (BuildConfig.DEBUG) {
+            val expectedTag = resolveTagName(testedReader, "DD_LOG")
+            assertThat(outputStream)
+                .hasLogLine(Log.ERROR, expectedTag, startsWith("Couldn't read file"))
+        }
+    }
+
+    @Test
     fun `drops the batch if the file exists`(
         forge: Forge,
         @SystemOutStream outputStream: ByteArrayOutputStream
