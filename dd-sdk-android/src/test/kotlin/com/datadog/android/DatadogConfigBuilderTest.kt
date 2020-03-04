@@ -664,7 +664,8 @@ class DatadogConfigBuilderTest {
                     rumUrl,
                     DatadogConfig.DEFAULT_SERVICE_NAME,
                     DatadogConfig.DEFAULT_ENV_NAME,
-                    viewTrackingStrategy = DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
+                    viewTrackingStrategy =
+                    DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS
                 )
             )
     }
