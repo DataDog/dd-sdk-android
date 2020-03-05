@@ -57,6 +57,13 @@ internal class RumEventDataViewAssert(actual: RumEventData.View) :
         return this
     }
 
+    fun hasMeasures(assert: RumEventDataViewMeasuresAssert.() -> Unit): RumEventDataViewAssert {
+
+        RumEventDataViewMeasuresAssert(actual.measures).assert()
+
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L
