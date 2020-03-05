@@ -44,7 +44,8 @@ object Dependencies {
         const val Espresso = "3.1.1"
 
         // Sample Apps
-        const val AppCompatVersion = "1.1.0"
+        const val AppCompatAndroidXVersion = "1.1.0"
+        const val AppCompatSupportVersion = "28.0.0"
         const val ConstraintLayoutVersion = "2.0.0-beta4"
         const val GoogleMaterialVersion = "1.0.0"
 
@@ -74,7 +75,9 @@ object Dependencies {
         )
 
         val JetpackWorkManager = "androidx.work:work-runtime:${Versions.JetpackWorkManager}"
-        val JeptackAppCompat = "androidx.appcompat:appcompat:${Versions.AppCompatVersion}"
+        val JeptackAppCompat = "androidx.appcompat:appcompat:${Versions.AppCompatAndroidXVersion}"
+        val SupportFragmentsCompat =
+            "com.android.support:support-fragment:${Versions.AppCompatSupportVersion}"
 
         @JvmField
         val JUnit5 = arrayOf(
