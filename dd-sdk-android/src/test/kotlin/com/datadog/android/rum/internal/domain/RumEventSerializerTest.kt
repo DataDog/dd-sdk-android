@@ -27,7 +27,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-// TODO service and env name
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -91,6 +90,9 @@ internal class RumEventSerializerTest {
             .hasField(RumEventSerializer.TAG_RUM_DOC_VERSION, fakeView.version)
             .hasField(RumEventSerializer.TAG_VIEW_URL, fakeView.name)
             .hasField(RumEventSerializer.TAG_DURATION, fakeView.durationNanoSeconds)
+            .hasField(RumEventSerializer.TAG_MEASURES_ERRORS, fakeView.measures.errorCount)
+            .hasField(RumEventSerializer.TAG_MEASURES_RESOURCES, fakeView.measures.resourceCount)
+            .hasField(RumEventSerializer.TAG_MEASURES_ACTIONS, fakeView.measures.userActionCount)
     }
 
     @Test
