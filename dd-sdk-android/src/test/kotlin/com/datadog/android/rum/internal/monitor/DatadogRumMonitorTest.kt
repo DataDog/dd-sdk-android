@@ -56,6 +56,7 @@ internal class DatadogRumMonitorTest {
 
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
@@ -256,7 +257,7 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(3)).write(capture())
             assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
@@ -270,12 +271,34 @@ internal class DatadogRumMonitorTest {
                     hasViewId(viewId)
                 }
 
-            assertThat(lastValue)
+            assertThat(secondValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(3)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -314,7 +337,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `stopResource sends resource Rum Event`(
+    fun `stopResource sends resource Rum Event and updates view event`(
         forge: Forge
     ) {
         val timestamp = forge.aTimestamp()
@@ -335,15 +358,30 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter, times(2)).write(capture())
 
-            assertThat(lastValue)
+            assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasDurationLowerThan(duration)
                     hasKind(resourceKind)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -376,15 +414,31 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter, times(2)).write(capture())
 
-            assertThat(lastValue)
+            assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -410,7 +464,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `stopResourceWithError sends error Rum Event`(
+    fun `stopResourceWithError sends error Rum Event and updates view`(
         forge: Forge
     ) {
         val timestamp = forge.aTimestamp()
@@ -431,15 +485,31 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter, times(2)).write(capture())
 
-            assertThat(lastValue)
+            assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasErrorData {
                     hasOrigin(errorOrigin)
                     hasMessage(errorMessage)
                     hasThrowable(throwable)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -474,15 +544,83 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter, times(2)).write(capture())
 
-            assertThat(lastValue)
+            assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(viewId)
+    }
+
+    @Test
+    fun `addError sends error Rum Event and updates view`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val viewKey = forge.anAsciiString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val attributes = forge.exhaustiveAttributes()
+        val errorOrigin = forge.anAlphabeticalString()
+        val errorMessage = forge.anAlphabeticalString()
+        val throwable = forge.aThrowable()
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        val viewId = GlobalRum.getRumContext().viewId
+        testedMonitor.addError(errorMessage, errorOrigin, throwable, attributes)
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasErrorData {
+                    hasMessage(errorMessage)
+                    hasOrigin(errorOrigin)
+                    hasThrowable(throwable)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -510,13 +648,27 @@ internal class DatadogRumMonitorTest {
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter, times(2)).write(capture())
 
-            assertThat(lastValue)
+            assertThat(firstValue)
                 .hasTimestamp(timestamp)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionNAme)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasViewData {
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(1)
+                    }
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
