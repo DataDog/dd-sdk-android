@@ -10,15 +10,14 @@ import com.datadog.android.rum.internal.domain.RumEventData
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class RumEventDataViewForgeryFactory : ForgeryFactory<RumEventData.View> {
+internal class RumEventDataViewMeasureForgeryFactory : ForgeryFactory<RumEventData.View.Measures> {
 
-    override fun getForgery(forge: Forge): RumEventData.View {
+    override fun getForgery(forge: Forge): RumEventData.View.Measures {
 
-        return RumEventData.View(
-            name = forge.aStringMatching("[a-z]+(/[a-z]+)+"),
-            durationNanoSeconds = forge.aPositiveLong(),
-            measures = forge.getForgery(),
-            version = forge.aPositiveInt(strict = true)
+        return RumEventData.View.Measures(
+            errorCount = forge.anInt(0, forge.aSmallInt()),
+            resourceCount = forge.anInt(0, forge.aSmallInt()),
+            userActionCount = forge.anInt(0, forge.aSmallInt())
         )
     }
 }
