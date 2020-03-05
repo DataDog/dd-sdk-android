@@ -53,7 +53,7 @@ object Dependencies {
 
         // Internal APIs
 
-        const val TracingOt = "0.43.0"
+        const val TracingOt = "0.45.0"
     }
 
     object Libraries {
