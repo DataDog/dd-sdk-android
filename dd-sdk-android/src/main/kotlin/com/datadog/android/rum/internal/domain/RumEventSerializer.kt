@@ -40,7 +40,19 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         root.addProperty(TAG_DATE, formattedDate)
 
         // Data
-        val eventData = model.eventData
+        addEventData(model.eventData, root)
+
+        // custom attributes
+        addCustomAttributes(model, root)
+
+        return root.toString()
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun addEventData(eventData: RumEventData, root: JsonObject) {
         root.addProperty(TAG_EVENT_CATEGORY, eventData.category)
         when (eventData) {
             is RumEventData.Resource -> {
@@ -55,6 +67,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
                 root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
                 root.addProperty(TAG_VIEW_URL, eventData.name)
                 root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
+                root.addProperty(TAG_MEASURES_ERRORS, eventData.measures.errorCount)
+                root.addProperty(TAG_MEASURES_RESOURCES, eventData.measures.resourceCount)
+                root.addProperty(TAG_MEASURES_ACTIONS, eventData.measures.userActionCount)
             }
             is RumEventData.Error -> {
                 val sw = StringWriter()
@@ -66,16 +81,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
                 root.addProperty(TAG_ERROR_STACK, sw.toString())
             }
         }
-
-        // custom attributes
-        addCustomAttributes(model, root)
-
-        return root.toString()
     }
-
-    // endregion
-
-    // region Internal
 
     private fun addCustomAttributes(
         event: RumEvent,
@@ -116,6 +122,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         internal const val TAG_VIEW_ID = "view.id"
         internal const val TAG_VIEW_URL = "view.url"
+        internal const val TAG_MEASURES_ERRORS = "view.measures.error_count"
+        internal const val TAG_MEASURES_RESOURCES = "view.measures.resource_count"
+        internal const val TAG_MEASURES_ACTIONS = "view.measures.user_action_count"
 
         internal const val TAG_EVENT_CATEGORY = "evt.category"
         internal const val TAG_EVENT_NAME = "evt.name"
