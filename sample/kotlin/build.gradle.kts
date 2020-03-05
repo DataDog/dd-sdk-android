@@ -96,11 +96,18 @@ android {
             buildConfigField("String", "DD_RUM_APPLICATION_ID", "\"\"")
         }
     }
+    dexOptions {
+        javaMaxHeapSize = "4g"
+    }
 }
 
 dependencies {
 
     api(project(":dd-sdk-android"))
+
+    api(project(":dd-sdk-androidx-fragments")) {
+        exclude("com.google.guava", module = "listenablefuture")
+    }
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)

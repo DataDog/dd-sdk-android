@@ -82,6 +82,7 @@ object Dependencies {
         )
 
         val JetpackWorkManager = "androidx.work:work-runtime:${Versions.JetpackWorkManager}"
+        val JeptackAppCompat = "androidx.appcompat:appcompat:${Versions.AppCompatVersion}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -124,7 +125,7 @@ object Dependencies {
 
         @JvmField
         val AndroidxSupportBase = arrayOf(
-            "androidx.appcompat:appcompat:${Versions.AppCompatVersion}",
+            JeptackAppCompat,
             "androidx.constraintlayout:constraintlayout:${Versions.ConstraintLayoutVersion}",
             "com.google.android.material:material:${Versions.GoogleMaterialVersion}"
         )
