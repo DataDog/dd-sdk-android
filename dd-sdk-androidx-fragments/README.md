@@ -1,9 +1,9 @@
-# Datadog Integration for Timber
+# Datadog Integration to be able to use the TrackFragmentsAsViewsStrategy for AndroidX
 
 ## Getting Started 
 
-To include the Datadog integration for Timber in your project, simply add the
-following to your application's `build.gradle` file.
+To include the Datadog Fragments tracking strategy AndroidX implementation in your project, 
+simply add the following to your application's `build.gradle` file.
 
 ```
 repositories {
@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-timber:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-androidx-fragments:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
 }
 ```
@@ -30,23 +30,13 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN).build()
+        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                     .setViewTrackingStrategy(TrackFragmentsAsViewsStrategy)   
+                     .build()
         Datadog.initialize(this, config)
-
-        val  logger = Logger.Builder()
-                .setNetworkInfoEnabled(true)
-                .setLogcatLogsEnabled(true)
-                .setDatadogLogsEnabled(true)
-                .build();
-
-        // You can configure the logger's tags and attributes, as explained in the  [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android)
-
-        Timber.plant(DatadogTree(logger))
     }
 }
 ```
-
-That's it, now all your Timber logs will be sent to Datadog automatically.
 
 ## Contributing
 

@@ -9,6 +9,7 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.androidx.fragments.TrackFragmentsAsViewsStrategy
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.TrackActivitiesAsViewsStrategy
@@ -32,7 +33,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin")
             .setEnvironmentName("staging")
-            .setViewTrackingStrategy(TrackActivitiesAsViewsStrategy())
+            .setViewTrackingStrategy(TrackFragmentsAsViewsStrategy())
             .trackGestures()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
