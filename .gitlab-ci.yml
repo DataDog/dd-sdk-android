@@ -103,6 +103,17 @@ publish:release-timber:
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android-timber:bintrayUpload
 
+publish:release-androidx-fragments:
+  tags: [ "runner:docker", "size:large" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text > ./gradle.properties
+    - git fetch --depth=1 origin master
+    - ./gradlew :dd-sdk-androidx-fragments:bintrayUpload
+
 notify:release:
   extends: .slack-notifier-base
   stage: notify
