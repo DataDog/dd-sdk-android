@@ -1,0 +1,3 @@
+class com.datadog.android.androidx.fragments.TrackFragmentsAsViewsStrategy : com.datadog.android.rum.ActivityLifecycleTrackingStrategy
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
