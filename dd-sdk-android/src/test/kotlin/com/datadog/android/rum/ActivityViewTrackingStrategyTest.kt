@@ -20,12 +20,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TrackActivitiesAsViewsStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = TrackActivitiesAsViewsStrategy()
+        underTest = ActivityViewTrackingStrategy()
     }
 
     @Test

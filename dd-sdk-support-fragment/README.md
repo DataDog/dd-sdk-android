@@ -2,7 +2,7 @@
 
 ## Getting Started 
 
-To include the Datadog Fragments tracking strategy Android Support implementation in your project, 
+To include the Datadog's Fragment tracking strategy in your project (based on Android's Support Fragment library), 
 simply add the following to your application's `build.gradle` file.
 
 ```
@@ -15,6 +15,8 @@ dependencies {
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
 }
 ```
+
+**Note**: if you're using the AndroidX AppCompat library, use the [dd-sdk-androidx-fragment](dd-sdk-androidx-fragment) artifact instead.
 
 ### Initial Setup
 

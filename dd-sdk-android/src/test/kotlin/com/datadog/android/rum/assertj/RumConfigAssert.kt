@@ -70,7 +70,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     }
 
     fun doesNotHaveGesturesTrackingStrategy(): RumConfigAssert {
-        assertThat(actual.trackGesturesStrategy).isNull()
+        assertThat(actual.userActionTrackingStrategy).isNull()
         return this
     }
 
@@ -80,12 +80,12 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     }
 
     fun hasGesturesTrackingStrategy(): RumConfigAssert {
-        assertThat(actual.trackGesturesStrategy).isNotNull()
-        assertThat(actual.trackGesturesStrategy)
+        assertThat(actual.userActionTrackingStrategy).isNotNull()
+        assertThat(actual.userActionTrackingStrategy)
             .overridingErrorMessage(
                 "Expected the trackGesturesStrategy " +
                         "to be instance of ${GesturesTrackingStrategy::class.java.canonicalName}" +
-                        " but was ${actual.trackGesturesStrategy!!::class.java.canonicalName}"
+                        " but was ${actual.userActionTrackingStrategy!!::class.java.canonicalName}"
             )
             .isInstanceOf(GesturesTrackingStrategy::class.java)
         return this
