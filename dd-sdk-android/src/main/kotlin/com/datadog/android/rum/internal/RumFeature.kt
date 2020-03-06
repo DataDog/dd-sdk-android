@@ -108,7 +108,7 @@ internal object RumFeature {
     }
 
     private fun setupTrackingStrategies(appContext: Context, config: DatadogConfig.RumConfig) {
-        config.trackGesturesStrategy?.register(appContext)
+        config.userActionTrackingStrategy?.register(appContext)
         config.viewTrackingStrategy?.register(appContext)
     }
 

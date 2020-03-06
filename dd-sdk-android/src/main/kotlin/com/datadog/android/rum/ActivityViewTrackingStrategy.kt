@@ -6,7 +6,7 @@ import android.app.Activity
  * The SDK will monitor the Activity lifecycle events
  * and will automatically start and stop RUM View for each resumed/paused activity.
  */
-class TrackActivitiesAsViewsStrategy : ActivityLifecycleTrackingStrategy() {
+class ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         GlobalRum.monitor.startView(activity, activity.javaClass.canonicalName!!)
