@@ -101,7 +101,7 @@ publish:release-androidx-fragments:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text > ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-androidx-fragments:bintrayUpload
+    - ./gradlew :dd-sdk-androidx-fragment:bintrayUpload
 
 publish:release-support-fragments:
   tags: [ "runner:docker", "size:large" ]
@@ -112,7 +112,7 @@ publish:release-support-fragments:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text > ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-support-fragments:bintrayUpload
+    - ./gradlew :dd-sdk-support-fragment:bintrayUpload
 
 notify:release:
   extends: .slack-notifier-base

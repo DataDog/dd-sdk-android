@@ -107,7 +107,7 @@ dependencies {
         exclude("com.google.guava", module = "listenablefuture")
     }
 
-    api(project(":dd-sdk-androidx-fragments")) {
+    api(project(":dd-sdk-androidx-fragment")) {
         exclude("com.google.guava", module = "listenablefuture")
     }
 
