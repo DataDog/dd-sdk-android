@@ -20,7 +20,6 @@ internal open class TracesOkHttpUploader(
 
     companion object {
         internal const val UPLOAD_URL = "%s/v1/input/%s"
-        internal const val TAG = "TracesOkHttpUploader"
         private fun buildUrl(endpoint: String, token: String): String {
             return String.format(
                 Locale.US,
