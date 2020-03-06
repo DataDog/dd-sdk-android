@@ -1,11 +1,11 @@
-package com.datadog.android.androidx.fragment
+package com.datadog.android.support.fragment
 
 import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
+import android.support.v4.app.FragmentActivity
+import android.support.v4.app.FragmentManager
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.verify
@@ -25,14 +25,14 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class TrackFragmentsAsViewsStrategyTest {
-    lateinit var underTest: TrackFragmentsAsViewsStrategy
+class FragmentViewTrackingStrategyTest {
+    lateinit var underTest: FragmentViewTrackingStrategy
     @Mock
     lateinit var mockActivity: Activity
     @Mock
-    lateinit var mockAndroidxActivity: FragmentActivity
+    lateinit var mockAndroidSupportActivity: FragmentActivity
     @Mock
-    lateinit var mockAndroidxFragmentManager: FragmentManager
+    lateinit var mockAndroidSupportFragmentManager: FragmentManager
     @Mock
     lateinit var mockDefaultFragmentManager: android.app.FragmentManager
     @Mock
@@ -42,11 +42,11 @@ class TrackFragmentsAsViewsStrategyTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockAndroidxActivity.supportFragmentManager)
-            .thenReturn(mockAndroidxFragmentManager)
+        whenever(mockAndroidSupportActivity.supportFragmentManager)
+            .thenReturn(mockAndroidSupportFragmentManager)
         whenever(mockActivity.fragmentManager)
             .thenReturn(mockDefaultFragmentManager)
-        underTest = TrackFragmentsAsViewsStrategy()
+        underTest = FragmentViewTrackingStrategy()
     }
 
     @Test
@@ -86,23 +86,23 @@ class TrackFragmentsAsViewsStrategyTest {
     }
 
     @Test
-    fun `when androidx fragment activity resumed will register the right callback`() {
+    fun `when android support fragment activity resumed will register the right callback`() {
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityResumed(mockAndroidSupportActivity)
 
         // then
-        verify(mockAndroidxFragmentManager)
+        verify(mockAndroidSupportFragmentManager)
             .registerFragmentLifecycleCallbacks(CompatFragmentLifecycleCallbacks, true)
         verifyZeroInteractions(mockDefaultFragmentManager)
     }
 
     @Test
-    fun `when androidx fragment activity paused will unregister the right callback`() {
+    fun `when android support fragment activity paused will unregister the right callback`() {
         // when
-        underTest.onActivityPaused(mockAndroidxActivity)
+        underTest.onActivityPaused(mockAndroidSupportActivity)
 
         // then
-        verify(mockAndroidxFragmentManager)
+        verify(mockAndroidSupportFragmentManager)
             .unregisterFragmentLifecycleCallbacks(CompatFragmentLifecycleCallbacks)
         verifyZeroInteractions(mockDefaultFragmentManager)
     }
@@ -115,8 +115,8 @@ class TrackFragmentsAsViewsStrategyTest {
 
         // then
         verify(mockDefaultFragmentManager)
-            .registerFragmentLifecycleCallbacks(DefaultFragmentLifecycleCallbacks, true)
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+            .registerFragmentLifecycleCallbacks(OreoFragmentLifecycleCallbacks, true)
+        verifyZeroInteractions(mockAndroidSupportFragmentManager)
     }
 
     @Test
@@ -127,8 +127,8 @@ class TrackFragmentsAsViewsStrategyTest {
 
         // then
         verify(mockDefaultFragmentManager)
-            .unregisterFragmentLifecycleCallbacks(DefaultFragmentLifecycleCallbacks)
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+            .unregisterFragmentLifecycleCallbacks(OreoFragmentLifecycleCallbacks)
+        verifyZeroInteractions(mockAndroidSupportFragmentManager)
     }
 
     @Test
@@ -138,7 +138,7 @@ class TrackFragmentsAsViewsStrategyTest {
         underTest.onActivityResumed(mockActivity)
 
         // then
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyZeroInteractions(mockAndroidSupportFragmentManager)
         verifyZeroInteractions(mockDefaultFragmentManager)
     }
 
@@ -149,7 +149,7 @@ class TrackFragmentsAsViewsStrategyTest {
         underTest.onActivityPaused(mockActivity)
 
         // then
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyZeroInteractions(mockAndroidSupportFragmentManager)
         verifyZeroInteractions(mockDefaultFragmentManager)
     }
 }

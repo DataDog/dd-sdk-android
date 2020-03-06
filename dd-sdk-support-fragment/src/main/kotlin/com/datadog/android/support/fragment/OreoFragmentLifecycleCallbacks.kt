@@ -7,7 +7,7 @@ import android.support.annotation.RequiresApi
 import com.datadog.android.rum.GlobalRum
 
 @RequiresApi(Build.VERSION_CODES.O)
-internal object DefaultFragmentLifecycleCallbacks : FragmentManager.FragmentLifecycleCallbacks() {
+internal object OreoFragmentLifecycleCallbacks : FragmentManager.FragmentLifecycleCallbacks() {
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
