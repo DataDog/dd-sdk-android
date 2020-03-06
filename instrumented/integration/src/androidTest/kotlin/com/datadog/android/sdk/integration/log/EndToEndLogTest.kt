@@ -47,9 +47,9 @@ internal class EndToEndLogTest {
         val logObjects = mutableListOf<JsonObject>()
         requests.forEach { request ->
             assertThat(request.headers)
-                    .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
-                    .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
+                .isNotNull
+                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.JSON_CONTENT_TYPE)
+                .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
 
             request.jsonBody!!.asJsonArray.forEach {
                 Log.i("EndToEndLogTest", "adding log $it")
