@@ -69,7 +69,7 @@ internal class EndToEndTraceTest {
             .forEach { request ->
                 assertThat(request.headers)
                     .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.TEXT_PLAIN_CONTENT_TYPE)
                 val sentSpans =
                     if (request.textBody != null) tracesPayloadToJsonArray(request.textBody)
                     else JsonArray()
@@ -93,7 +93,7 @@ internal class EndToEndTraceTest {
             .forEach { request ->
                 assertThat(request.headers)
                     .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.JSON_CONTENT_TYPE)
                 request.jsonBody!!.asJsonArray.forEach {
                     Log.i("EndToEndTraceTest", "adding log $it")
                     logObjects.add(it.asJsonObject)

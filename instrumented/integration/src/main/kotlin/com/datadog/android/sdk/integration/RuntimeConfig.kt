@@ -9,11 +9,19 @@ package com.datadog.android.sdk.integration
 import android.os.Build
 import com.datadog.android.log.Logger
 import com.datadog.android.tracing.AndroidTracer
+import java.util.UUID
 
 internal object RuntimeConfig {
 
-    var logsEndpointUrl: String = "http://localhost"
-    var tracesEndpointUrl: String = "http://localhost"
+    const val DD_TOKEN = "MYTESTAPPTOKEN"
+    val APP_ID = UUID.randomUUID().toString()
+    const val JSON_CONTENT_TYPE = "application/json"
+    const val TEXT_PLAIN_CONTENT_TYPE = "text/plain;charset=UTF-8"
+    private const val LOCALHOST = "http://localhost"
+
+    var logsEndpointUrl: String = LOCALHOST
+    var tracesEndpointUrl: String = LOCALHOST
+    var rumEndpointUrl: String = LOCALHOST
 
     fun logger(): Logger {
         // Initialise Logger
@@ -67,7 +75,4 @@ internal object RuntimeConfig {
         putAll(stringAttributes)
         putAll(intAttribute)
     }
-
-    const val DD_TOKEN = "MYTESTAPPTOKEN"
-    const val DD_CONTENT_TYPE = "application/json"
 }

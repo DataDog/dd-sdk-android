@@ -11,12 +11,17 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.tools.unit.createInstance
+import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setStaticValue
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPInputStream
 import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
@@ -59,8 +64,9 @@ internal class MockServerActivityTestRule<T : Activity>(
         })
 
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        RuntimeConfig.logsEndpointUrl = "$fakeEndpoint/logs"
-        RuntimeConfig.tracesEndpointUrl = "$fakeEndpoint/traces"
+        RuntimeConfig.logsEndpointUrl = fakeEndpoint + "/$LOGS_URL_SUFFIX"
+        RuntimeConfig.tracesEndpointUrl = fakeEndpoint + "/$TRACES_URL_SUFFIX"
+        RuntimeConfig.rumEndpointUrl = fakeEndpoint + "/$RUM_URL_SUFFIX"
         super.beforeActivityLaunched()
     }
 
@@ -68,6 +74,12 @@ internal class MockServerActivityTestRule<T : Activity>(
         mockWebServer.shutdown()
         InstrumentationRegistry.getInstrumentation().context.filesDir?.deleteRecursively()
         Datadog.invokeMethod("stop")
+        val noOpMonitor = createInstance(
+            "com.datadog.android.rum.internal.monitor.NoOpRumMonitor"
+        )
+        GlobalRum::class.java.setStaticValue("monitor", noOpMonitor)
+        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
+        isRegistered.set(false)
         super.afterActivityFinished()
     }
 
@@ -141,5 +153,8 @@ internal class MockServerActivityTestRule<T : Activity>(
 
         const val HEADER_CONTENT_TYPE = "Content-Type"
         const val HEADER_CONTENT_ENCODING = "Content-Encoding"
+        const val LOGS_URL_SUFFIX = "logs"
+        const val TRACES_URL_SUFFIX = "traces"
+        const val RUM_URL_SUFFIX = "rum"
     }
 }
