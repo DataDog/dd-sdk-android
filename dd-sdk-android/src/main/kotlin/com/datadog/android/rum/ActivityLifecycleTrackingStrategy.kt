@@ -13,6 +13,8 @@ import com.datadog.android.core.internal.utils.devLogger
 abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
+    // region TrackingStrategy
+
     override fun register(context: Context) {
         if (context is Application) {
             context.registerActivityLifecycleCallbacks(this)
@@ -29,6 +31,10 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
             context.unregisterActivityLifecycleCallbacks(this)
         }
     }
+
+    // endregion
+
+    // region Application.ActivityLifecycleCallbacks
 
     override fun onActivityPaused(activity: Activity) {
         // No Op
@@ -57,4 +63,6 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
     override fun onActivityResumed(activity: Activity) {
         // No Op
     }
+
+    // endregion
 }

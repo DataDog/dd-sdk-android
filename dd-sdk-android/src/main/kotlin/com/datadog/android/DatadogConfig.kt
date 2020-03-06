@@ -6,7 +6,8 @@
 
 package com.datadog.android
 
-import com.datadog.android.rum.TrackingStrategy
+import com.datadog.android.rum.UserActionTrackingStrategy
+import com.datadog.android.rum.ViewTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import java.util.UUID
@@ -39,8 +40,8 @@ private constructor(
         val endpointUrl: String,
         val serviceName: String,
         val envName: String,
-        val trackGesturesStrategy: TrackingStrategy? = null,
-        val viewTrackingStrategy: TrackingStrategy? = null
+        val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
+        val viewTrackingStrategy: ViewTrackingStrategy? = null
     )
 
     // region Builder
@@ -257,7 +258,7 @@ private constructor(
          */
         fun trackGestures(): Builder {
             rumConfig = rumConfig.copy(
-                trackGesturesStrategy = GesturesTrackingStrategy(DatadogGesturesTracker())
+                userActionTrackingStrategy = GesturesTrackingStrategy(DatadogGesturesTracker())
             )
             return this
         }
@@ -265,10 +266,10 @@ private constructor(
         /**
          * Sets the automatic view tracking strategy used by the SDK.
          * By default this is null.
-         * @param strategy as the [TrackingStrategy]
-         * (e.g. TrackActivitiesAsViewsStrategy, TrackFragmentsAsViewsStrategy)
+         * @param strategy as the [ViewTrackingStrategy]
+         * (e.g. FragmentViewTrackingStrategy, ActivityViewTrackingStrategy)
          */
-        fun setViewTrackingStrategy(strategy: TrackingStrategy): Builder {
+        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
             rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
             return this
         }

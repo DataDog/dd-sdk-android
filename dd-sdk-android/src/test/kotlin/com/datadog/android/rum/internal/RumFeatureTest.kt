@@ -15,6 +15,8 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.TrackingStrategy
+import com.datadog.android.rum.UserActionTrackingStrategy
+import com.datadog.android.rum.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -184,7 +186,7 @@ internal class RumFeatureTest {
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString(),
-            trackGesturesStrategy = mock(),
+            userActionTrackingStrategy = mock(),
             viewTrackingStrategy = mock()
         )
         RumFeature.initialize(
@@ -231,8 +233,8 @@ internal class RumFeatureTest {
     @Test
     fun `will register the strategy when tracking gestures enabled`() {
         // given
-        val trackGesturesStrategy: TrackingStrategy = mock()
-        fakeConfig = fakeConfig.copy(trackGesturesStrategy = trackGesturesStrategy)
+        val trackGesturesStrategy: UserActionTrackingStrategy = mock()
+        fakeConfig = fakeConfig.copy(userActionTrackingStrategy = trackGesturesStrategy)
 
         // when
         RumFeature.initialize(
@@ -250,7 +252,7 @@ internal class RumFeatureTest {
     @Test
     fun `will register the strategy when track screen strategy provided`() {
         // given
-        val viewTrackingStrategy: TrackingStrategy = mock()
+        val viewTrackingStrategy: ViewTrackingStrategy = mock()
         fakeConfig = fakeConfig.copy(
             viewTrackingStrategy =
             viewTrackingStrategy

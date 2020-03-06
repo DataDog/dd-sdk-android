@@ -1,4 +1,4 @@
-package com.datadog.android.support.fragment
+package com.datadog.android.androidx.fragment
 
 import android.app.Fragment
 import com.nhaarman.mockitokotlin2.eq
@@ -18,8 +18,8 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DefaultFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() {
-    lateinit var underTest: DefaultFragmentLifecycleCallbacks
+internal class OreoFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() {
+    lateinit var underTest: OreoFragmentLifecycleCallbacks
 
     @Mock
     lateinit var mockFragment: TestFragment1
@@ -27,7 +27,7 @@ internal class DefaultFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = DefaultFragmentLifecycleCallbacks
+        underTest = OreoFragmentLifecycleCallbacks
     }
 
     @Test

@@ -6,7 +6,7 @@
 
 package com.datadog.android
 
-import com.datadog.android.rum.TrackActivitiesAsViewsStrategy
+import com.datadog.android.rum.ActivityViewTrackingStrategy
 import com.datadog.android.rum.assertj.RumConfigAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -629,10 +629,10 @@ class DatadogConfigBuilderTest {
     @Test
     fun `builder with track activities as views tracking strategy`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val strategy = TrackActivitiesAsViewsStrategy()
+        val strategy = ActivityViewTrackingStrategy()
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .setViewTrackingStrategy(strategy)
+            .useViewTrackingStrategy(strategy)
             .build()
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()

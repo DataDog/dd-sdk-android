@@ -20,7 +20,7 @@ import com.datadog.android.DatadogConfig;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
 import com.datadog.android.rum.RumMonitor;
-import com.datadog.android.rum.TrackActivitiesAsViewsStrategy;
+import com.datadog.android.rum.ActivityViewTrackingStrategy;
 import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.tracing.AndroidTracer;
 import com.facebook.stetho.Stetho;
@@ -57,7 +57,7 @@ public class SampleApplication extends Application {
         }
 
         configBuilder.setServiceName("android-sample-java")
-                .setViewTrackingStrategy(new TrackActivitiesAsViewsStrategy())
+                .useViewTrackingStrategy(new ActivityViewTrackingStrategy())
                 .trackGestures()
                 .setEnvironmentName("staging");
 

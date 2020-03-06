@@ -1,15 +1,16 @@
-package com.datadog.android.support.fragment
+package com.datadog.android.androidx.fragment
 
 import android.app.Activity
 import android.os.Build
-import android.support.v4.app.FragmentActivity
+import androidx.fragment.app.FragmentActivity
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategy
+import com.datadog.android.rum.ViewTrackingStrategy
 
 /**
  * The SDK will monitor the FragmentManager lifecycle events
  * and will automatically start and stop RUM View for each resumed/paused fragment.
  */
-class TrackFragmentsAsViewsStrategy : ActivityLifecycleTrackingStrategy() {
+class FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
@@ -22,7 +23,7 @@ class TrackFragmentsAsViewsStrategy : ActivityLifecycleTrackingStrategy() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 activity
                     .fragmentManager
-                    .registerFragmentLifecycleCallbacks(DefaultFragmentLifecycleCallbacks, true)
+                    .registerFragmentLifecycleCallbacks(OreoFragmentLifecycleCallbacks, true)
             }
         }
     }
@@ -38,7 +39,7 @@ class TrackFragmentsAsViewsStrategy : ActivityLifecycleTrackingStrategy() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 activity
                     .fragmentManager
-                    .unregisterFragmentLifecycleCallbacks(DefaultFragmentLifecycleCallbacks)
+                    .unregisterFragmentLifecycleCallbacks(OreoFragmentLifecycleCallbacks)
             }
         }
     }
