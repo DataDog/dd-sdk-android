@@ -168,8 +168,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-androidx-fragments:jacocoTestDebugUnitTestReport",
         ":dd-sdk-androidx-fragments:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-androidx-support:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-androidx-support:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-support-fragments:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-support-fragments:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"

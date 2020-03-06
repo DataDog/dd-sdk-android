@@ -32,7 +32,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     fun hasApplicationId(applicationId: UUID): RumConfigAssert {
         assertThat(actual.applicationId)
             .overridingErrorMessage(
-                "Expected event to have client token $applicationId " +
+                "Expected event to have application id $applicationId " +
                         "but was ${actual.applicationId}"
             )
             .isEqualTo(applicationId)
