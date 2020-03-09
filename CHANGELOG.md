@@ -1,3 +1,7 @@
+# 1.4.0 / ???
+
+* [FEATURE] Global: Update the SDK initialization code
+* [FEATURE] Trace: Implement OpenTracing specifications
 
 # 1.3.0 / 2020-03-02
 
