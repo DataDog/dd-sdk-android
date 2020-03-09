@@ -46,8 +46,6 @@ gitDiffTask("unitTestChanged") {
         "dd-sdk-android/.*",
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
-        ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
         ":sample:java:assembleDebug",
         ":sample:kotlin:assembleDebug",
         ":sample:kotlin-timber:assembleDebug"
@@ -57,6 +55,16 @@ gitDiffTask("unitTestChanged") {
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
         ":sample:kotlin-timber:assembleDebug"
+    )
+    dependsOnDiff(
+        "dd-sdk-androidx-fragment/.*",
+        ":dd-sdk-androidx-fragment:testDebugUnitTest",
+        ":dd-sdk-androidx-fragment:testReleaseUnitTest"
+    )
+    dependsOnDiff(
+        "dd-sdk-support-fragment/.*",
+        ":dd-sdk-support-fragment:testDebugUnitTest",
+        ":dd-sdk-support-fragment:testReleaseUnitTest"
     )
     dependsOnDiff(
         "tools/detekt/.*",
@@ -85,10 +93,14 @@ gitDiffTask("unitTestAll") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
-        ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug",
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
+        ":dd-sdk-androidx-fragments:testDebugUnitTest",
+        ":dd-sdk-androidx-fragments:testReleaseUnitTest",
+        ":dd-sdk-support-fragments:testDebugUnitTest",
+        ":dd-sdk-support-fragments:testReleaseUnitTest",
+        ":sample:java:assembleDebug",
+        ":sample:kotlin:assembleDebug",
         ":sample:kotlin-timber:assembleDebug",
         ":tools:detekt:test",
         ":tools:unit:testDebugUnitTest",
@@ -114,6 +126,8 @@ tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
+        ":dd-sdk-androidx-fragment:ktlintCheck",
+        ":dd-sdk-support-fragment:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -126,7 +140,11 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android:lintDebug",
         ":dd-sdk-android:lintRelease",
         ":dd-sdk-android-timber:lintDebug",
-        ":dd-sdk-android-timber:lintRelease"
+        ":dd-sdk-android-timber:lintRelease",
+        ":dd-sdk-androidx-fragment:lintDebug",
+        ":dd-sdk-androidx-fragment:lintRelease",
+        ":dd-sdk-support-fragment:lintDebug",
+        ":dd-sdk-support-fragment:lintRelease"
     )
 }
 
@@ -134,6 +152,8 @@ tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
         ":dd-sdk-android-timber:detekt",
+        ":dd-sdk-androidx-fragment:detekt",
+        ":dd-sdk-support-fragment:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
@@ -146,6 +166,10 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-androidx-fragment:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-androidx-fragment:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-support-fragment:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-support-fragment:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"

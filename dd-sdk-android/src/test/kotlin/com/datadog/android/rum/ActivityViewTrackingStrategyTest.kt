@@ -1,4 +1,4 @@
-package com.datadog.android.rum.internal.instrumentation
+package com.datadog.android.rum
 
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.eq
@@ -20,12 +20,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class ActivityTrackingStrategyTest : TrackingStrategyTest() {
+internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = TrackingStrategy.ActivityTrackingStrategy
+        underTest = ActivityViewTrackingStrategy()
     }
 
     @Test

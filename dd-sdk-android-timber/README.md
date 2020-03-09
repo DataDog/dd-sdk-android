@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-timber:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
 }
 ```

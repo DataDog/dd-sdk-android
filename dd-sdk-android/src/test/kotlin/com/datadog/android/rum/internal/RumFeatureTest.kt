@@ -14,13 +14,16 @@ import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrate
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.instrumentation.TrackingStrategy
+import com.datadog.android.rum.TrackingStrategy
+import com.datadog.android.rum.UserActionTrackingStrategy
+import com.datadog.android.rum.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -183,8 +186,8 @@ internal class RumFeatureTest {
             endpointUrl = forge.getForgery<URL>().toString(),
             serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString(),
-            trackGestures = forge.aBool(),
-            viewTrackingStrategy = forge.aValueFrom(DatadogConfig.ViewTrackingStrategy::class.java)
+            userActionTrackingStrategy = mock(),
+            viewTrackingStrategy = mock()
         )
         RumFeature.initialize(
             mockAppContext,
@@ -228,9 +231,10 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `will use the right Strategy when tracking gestures enabled`() {
+    fun `will register the strategy when tracking gestures enabled`() {
         // given
-        fakeConfig = fakeConfig.copy(trackGestures = true)
+        val trackGesturesStrategy: UserActionTrackingStrategy = mock()
+        fakeConfig = fakeConfig.copy(userActionTrackingStrategy = trackGesturesStrategy)
 
         // when
         RumFeature.initialize(
@@ -242,17 +246,16 @@ internal class RumFeatureTest {
         )
 
         // then
-        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
-            this is TrackingStrategy.GesturesTrackingStrategy
-        })
+        verify(trackGesturesStrategy).register(mockAppContext)
     }
 
     @Test
-    fun `will use the right Strategy if track activities as screens enabled`() {
+    fun `will register the strategy when track screen strategy provided`() {
         // given
+        val viewTrackingStrategy: ViewTrackingStrategy = mock()
         fakeConfig = fakeConfig.copy(
             viewTrackingStrategy =
-            DatadogConfig.ViewTrackingStrategy.TRACK_ACTIVITIES_AS_VIEWS
+            viewTrackingStrategy
         )
 
         // when
@@ -265,29 +268,6 @@ internal class RumFeatureTest {
         )
 
         // then
-        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
-            this is TrackingStrategy.ActivityTrackingStrategy
-        })
-    }
-
-    @Test
-    fun `will use the right Strategy if track fragments as screens enabled`() {
-        // given
-        fakeConfig = fakeConfig.copy(viewTrackingStrategy =
-        DatadogConfig.ViewTrackingStrategy.TRACK_FRAGMENTS_AS_VIEWS)
-
-        // when
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider
-        )
-
-        // then
-        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
-            this is TrackingStrategy.FragmentsTrackingStrategy
-        })
+        verify(viewTrackingStrategy).register(mockAppContext)
     }
 }

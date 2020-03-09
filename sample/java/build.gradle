@@ -56,6 +56,9 @@ android {
             buildConfigField("String", "DD_RUM_APPLICATION_ID", "null")
         }
     }
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
 }
 
 repositories {
