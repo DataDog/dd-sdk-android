@@ -2,6 +2,10 @@ package com.datadog.android.tracing.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -117,6 +121,33 @@ internal class AndroidTracerTest {
         val traceId = subSpan.traceId
         assertThat(traceId)
             .isEqualTo(expectedTraceId)
+    }
+
+    @Test
+    fun `buildSpan will inject RumContext if RumMonitor is Set`(
+        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        forge: Forge
+    ) {
+        val rumContext = forge.getForgery<RumContext>()
+        GlobalRum.registerIfAbsent(mock<RumMonitor>())
+        GlobalRum.updateContext(rumContext)
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        val span = tracer.buildSpan(operationName).start() as DDSpan
+        val meta = span.meta
+        assertThat(meta[RumEventSerializer.TAG_APPLICATION_ID])
+            .isEqualTo(rumContext.applicationId.toString())
+        assertThat(meta[RumEventSerializer.TAG_SESSION_ID])
+            .isEqualTo(rumContext.sessionId.toString())
+        val viewId = rumContext.viewId
+        if (viewId == null) {
+            assertThat(meta.containsKey(RumEventSerializer.TAG_VIEW_ID))
+                .isFalse()
+        } else {
+            assertThat(meta[RumEventSerializer.TAG_VIEW_ID])
+                .isEqualTo(viewId.toString())
+        }
     }
 
     @Test
