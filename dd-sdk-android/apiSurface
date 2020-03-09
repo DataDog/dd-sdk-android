@@ -126,6 +126,7 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun build(): AndroidTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
   companion object
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
