@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -24,6 +25,9 @@ internal class DatadogRumMonitor(
 ) : RumMonitor {
 
     @Volatile
+    private var activeViewStartNanos: Long = 0L
+
+    @Volatile
     private var activeViewEvent: RumEvent? = null
 
     @Volatile
@@ -36,6 +40,7 @@ internal class DatadogRumMonitor(
 
     // region RumMonitor
 
+    @Synchronized
     override fun addUserAction(
         action: String,
         attributes: Map<String, Any?>
@@ -48,8 +53,10 @@ internal class DatadogRumMonitor(
             attributes
         )
         writer.write(event)
+        updateAndSendView { it.incrementUserActionCount() }
     }
 
+    @Synchronized
     override fun startView(
         key: Any,
         name: String,
@@ -63,7 +70,7 @@ internal class DatadogRumMonitor(
         val activeViewId = UUID.randomUUID()
         GlobalRum.updateViewId(activeViewId)
         val pathName = name.replace('.', '/')
-        val eventData = RumEventData.View(pathName, System.nanoTime())
+        val eventData = RumEventData.View(pathName, 0)
         val event = RumEvent(
             GlobalRum.getRumContext(),
             timeProvider.getServerTimestamp(),
@@ -71,13 +78,13 @@ internal class DatadogRumMonitor(
             attributes
         )
 
-        synchronized(this) {
-            activeViewEvent = event
-            activeViewData = eventData
-            activeViewKey = WeakReference(key)
-        }
+        activeViewStartNanos = System.nanoTime()
+        activeViewEvent = event
+        activeViewData = eventData
+        activeViewKey = WeakReference(key)
     }
 
+    @Synchronized
     override fun stopView(
         key: Any,
         attributes: Map<String, Any?>
@@ -98,9 +105,7 @@ internal class DatadogRumMonitor(
                     "Unable to end view with key <$key> (missing key)." +
                         "Closing previous view automatically."
                 )
-                sendCompleteView(
-                    startedEvent,
-                    startedEventData,
+                updateAndSendView(
                     mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
                 )
             }
@@ -110,12 +115,13 @@ internal class DatadogRumMonitor(
                         "Another view with key <$startedKey> has been started."
                 )
             }
-            else -> sendCompleteView(startedEvent, startedEventData, attributes)
+            else -> updateAndSendView(attributes)
         }
 
         GlobalRum.updateViewId(null)
     }
 
+    @Synchronized
     override fun startResource(
         key: Any,
         url: String,
@@ -135,6 +141,7 @@ internal class DatadogRumMonitor(
         activeResources[WeakReference(key)] = event
     }
 
+    @Synchronized
     override fun stopResource(
         key: Any,
         kind: RumResourceKind,
@@ -148,6 +155,7 @@ internal class DatadogRumMonitor(
         sendUnclosedResources()
     }
 
+    @Synchronized
     override fun stopResourceWithError(
         key: Any,
         message: String,
@@ -180,6 +188,7 @@ internal class DatadogRumMonitor(
         sendUnclosedResources()
     }
 
+    @Synchronized
     override fun addError(
         message: String,
         origin: String,
@@ -194,28 +203,41 @@ internal class DatadogRumMonitor(
             attributes
         )
         writer.write(event)
+        updateAndSendView { it.incrementErrorCount() }
     }
 
     // endregion
 
     // region Internal
 
-    private fun sendCompleteView(
-        startedEvent: RumEvent,
-        startedEventData: RumEventData.View,
-        attributes: Map<String, Any?>
+    private fun updateAndSendView(
+        attributes: Map<String, Any?> = emptyMap(),
+        update: (RumEventData.View) -> RumEventData.View = { it }
     ) {
-        val updatedDurationNs = System.nanoTime() - startedEventData.durationNanoSeconds
+        val startedEvent = activeViewEvent
+        val startedEventData = activeViewData
+
+        if (startedEvent == null || startedEventData == null) {
+            sdkLogger.w("Unable to update view, none was started")
+            return
+        }
+
+        val updatedDurationNs = System.nanoTime() - activeViewStartNanos
+        val updatedData = update(startedEventData).copy(
+            durationNanoSeconds = updatedDurationNs,
+            version = startedEventData.version + 1
+        )
         val updatedEvent = startedEvent.copy(
-            eventData = startedEventData.copy(
-                durationNanoSeconds = updatedDurationNs,
-                version = startedEventData.version + 1
-            ),
-            attributes = startedEvent.attributes.toMutableMap().apply {
-                putAll(attributes)
-            }
+            eventData = updatedData,
+            attributes = startedEvent.attributes
+                .toMutableMap()
+                .apply {
+                    putAll(attributes)
+                }
         )
         writer.write(updatedEvent)
+        activeViewEvent = updatedEvent
+        activeViewData = updatedData
     }
 
     private fun sendResource(
@@ -254,6 +276,7 @@ internal class DatadogRumMonitor(
             }
         )
         writer.write(updatedEvent)
+        updateAndSendView { it.incrementResourceCount() }
     }
 
     private fun sendUnclosedResources() {
