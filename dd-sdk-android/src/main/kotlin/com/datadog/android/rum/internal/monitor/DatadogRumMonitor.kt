@@ -117,7 +117,9 @@ internal class DatadogRumMonitor(
             }
             else -> updateAndSendView(attributes)
         }
-
+        activeViewKey = WeakReference(null)
+        activeViewData = null
+        activeViewEvent = null
         GlobalRum.updateViewId(null)
     }
 
