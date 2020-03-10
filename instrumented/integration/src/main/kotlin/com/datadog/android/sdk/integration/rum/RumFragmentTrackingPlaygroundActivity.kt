@@ -1,0 +1,54 @@
+package com.datadog.android.sdk.integration.rum
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentPagerAdapter
+import androidx.viewpager.widget.ViewPager
+import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
+import com.datadog.android.androidx.fragment.FragmentViewTrackingStrategy
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.sdk.integration.R
+import com.datadog.android.sdk.integration.RuntimeConfig
+
+internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
+    lateinit var viewPager: ViewPager
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.fragment_tracking_layout)
+        viewPager = findViewById(R.id.pager)
+        viewPager.apply {
+            adapter = ViewPagerAdapter(supportFragmentManager)
+        }
+
+        // attach the fragment view tracking strategy
+        val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN, RuntimeConfig.APP_ID)
+            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
+            .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
+            .useViewTrackingStrategy(FragmentViewTrackingStrategy())
+            .build()
+
+        Datadog.initialize(this, config)
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    }
+
+    internal inner class ViewPagerAdapter(fragmentManager: FragmentManager) :
+        FragmentPagerAdapter(fragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
+        override fun getItem(position: Int): Fragment {
+            return when (position) {
+                0 -> FragmentA()
+                1 -> FragmentB()
+                else -> FragmentC()
+            }
+        }
+
+        override fun getCount(): Int {
+            return 3
+        }
+    }
+}

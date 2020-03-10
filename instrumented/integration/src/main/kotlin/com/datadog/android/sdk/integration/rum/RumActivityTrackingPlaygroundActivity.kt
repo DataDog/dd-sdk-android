@@ -14,7 +14,7 @@ internal class RumActivityTrackingPlaygroundActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.gestures_tracking_layout)
+        setContentView(R.layout.fragment_tracking_layout)
 
         // use the activity view tracking strategy
         val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN, RuntimeConfig.APP_ID)
