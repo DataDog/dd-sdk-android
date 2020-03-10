@@ -11,17 +11,13 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.tools.unit.createInstance
-import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setStaticValue
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.atomic.AtomicBoolean
+import java.io.File
 import java.util.zip.GZIPInputStream
 import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
@@ -29,7 +25,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
-internal class MockServerActivityTestRule<T : Activity>(
+internal open class MockServerActivityTestRule<T : Activity>(
     activityClass: Class<T>,
     val keepRequests: Boolean = false
 ) : ActivityTestRule<T>(activityClass) {
@@ -49,6 +45,12 @@ internal class MockServerActivityTestRule<T : Activity>(
     // region ActivityTestRule
 
     override fun beforeActivityLaunched() {
+        InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .filesDir.deleteRecursively {
+                println("Before activity finished deleting file $it")
+            }
         requests.clear()
         mockWebServer.start()
         mockWebServer.setDispatcher(object : Dispatcher() {
@@ -72,14 +74,13 @@ internal class MockServerActivityTestRule<T : Activity>(
 
     override fun afterActivityFinished() {
         mockWebServer.shutdown()
-        InstrumentationRegistry.getInstrumentation().context.filesDir?.deleteRecursively()
         Datadog.invokeMethod("stop")
-        val noOpMonitor = createInstance(
-            "com.datadog.android.rum.internal.monitor.NoOpRumMonitor"
-        )
-        GlobalRum::class.java.setStaticValue("monitor", noOpMonitor)
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .filesDir.deleteRecursively {
+            println("After activity finished deleting file $it")
+        }
         super.afterActivityFinished()
     }
 
@@ -144,6 +145,14 @@ internal class MockServerActivityTestRule<T : Activity>(
         }
 
         return String(byteOutputStream.toByteArray(), Charsets.UTF_8)
+    }
+
+    private fun File.deleteRecursively(onFileDeleted: (fileName: String) -> Unit) {
+        walkBottomUp()
+            .forEach {
+                it.delete()
+                onFileDeleted(it.canonicalPath)
+            }
     }
 
     // endregion
