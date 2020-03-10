@@ -16,6 +16,11 @@ import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.RumEventSerializer
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -24,6 +29,7 @@ import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -35,6 +41,8 @@ import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -107,6 +115,8 @@ internal class DatadogLogHandlerTest {
     fun `tear down`() {
         GlobalTracer.get().setFieldValue("isRegistered", false)
         GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
+        GlobalRum::class.java.setStaticValue("isRegistered", AtomicBoolean(false))
+        GlobalRum::class.java.setStaticValue("monitor", NoOpRumMonitor())
     }
 
     @Test
@@ -283,9 +293,9 @@ internal class DatadogLogHandlerTest {
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue)
-                .hasTraceId(tracer.traceId)
-                .hasSpanId(tracer.spanId)
+            assertThat(lastValue.attributes)
+                .containsEntry(DatadogLogHandler.TAG_TRACE_ID, tracer.traceId)
+                .containsEntry(DatadogLogHandler.TAG_SPAN_ID, tracer.spanId)
         }
         Datadog.invokeMethod("stop")
     }
@@ -305,10 +315,43 @@ internal class DatadogLogHandlerTest {
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue)
-                .hasTraceId(null)
-                .hasSpanId(null)
+            assertThat(lastValue.attributes)
+                .doesNotContainKey(DatadogLogHandler.TAG_TRACE_ID)
+                .doesNotContainKey(DatadogLogHandler.TAG_SPAN_ID)
         }
+    }
+
+    @Test
+    fun `it will add the Rum context`(forge: Forge) {
+        // given
+        val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
+        Datadog.initialize(mockContext(), config)
+        val rumContext = forge.getForgery<RumContext>()
+        GlobalRum.registerIfAbsent(mock<RumMonitor>())
+        GlobalRum.updateContext(rumContext)
+
+        // when
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags
+        )
+
+        // then
+        argumentCaptor<Log>().apply {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue.attributes)
+                .containsEntry(
+                    RumEventSerializer.TAG_APPLICATION_ID,
+                    rumContext.applicationId.toString()
+                )
+                .containsEntry(RumEventSerializer.TAG_SESSION_ID, rumContext.sessionId.toString())
+                .containsEntry(RumEventSerializer.TAG_VIEW_ID, rumContext.viewId?.toString())
+        }
+        Datadog.invokeMethod("stop")
     }
 
     @Test
@@ -336,9 +379,9 @@ internal class DatadogLogHandlerTest {
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue)
-                .hasTraceId(null)
-                .hasSpanId(null)
+            assertThat(lastValue.attributes)
+                .doesNotContainKey(DatadogLogHandler.TAG_TRACE_ID)
+                .doesNotContainKey(DatadogLogHandler.TAG_SPAN_ID)
         }
     }
 }

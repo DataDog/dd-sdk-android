@@ -54,6 +54,7 @@ class com.datadog.android.log.Logger
     fun setNetworkInfoEnabled(Boolean): Builder
     fun setLoggerName(String): Builder
     fun setBundleWithTraceEnabled(Boolean): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
   fun addAttribute(String, Boolean)
   fun addAttribute(String, Int)
   fun addAttribute(String, Long)
@@ -124,6 +125,7 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun build(): AndroidTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
   companion object
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response

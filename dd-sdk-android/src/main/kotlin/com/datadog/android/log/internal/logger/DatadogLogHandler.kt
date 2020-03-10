@@ -11,8 +11,10 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.tracing.internal.utils.spanId
-import com.datadog.android.tracing.internal.utils.traceId
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_APPLICATION_ID
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_SESSION_ID
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_VIEW_ID
 import io.opentracing.util.GlobalTracer
 
 internal class DatadogLogHandler(
@@ -22,7 +24,8 @@ internal class DatadogLogHandler(
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val timeProvider: TimeProvider,
     internal val userInfoProvider: UserInfoProvider,
-    internal val bundleWithTraces: Boolean = true
+    internal val bundleWithTraces: Boolean = true,
+    internal val bundleWithRum: Boolean = true
 ) : LogHandler {
 
     // region LogHandler
@@ -53,13 +56,20 @@ internal class DatadogLogHandler(
         tags: Set<String>,
         timestamp: Long
     ): Log {
-
-        var traceId: String? = null
-        var spanId: String? = null
+        val combinedAttributes = attributes.toMutableMap()
         if (bundleWithTraces && GlobalTracer.isRegistered()) {
             val tracer = GlobalTracer.get()
-            traceId = tracer.traceId()
-            spanId = tracer.spanId()
+            val activeContext = tracer.activeSpan()?.context()
+            if (activeContext != null) {
+                combinedAttributes[TAG_TRACE_ID] = activeContext.toTraceId()
+                combinedAttributes[TAG_SPAN_ID] = activeContext.toSpanId()
+            }
+        }
+        if (bundleWithRum && GlobalRum.isRegistered()) {
+            val activeContext = GlobalRum.getRumContext()
+            combinedAttributes[TAG_APPLICATION_ID] = activeContext.applicationId.toString()
+            combinedAttributes[TAG_SESSION_ID] = activeContext.sessionId.toString()
+            combinedAttributes[TAG_VIEW_ID] = activeContext.viewId?.toString()
         }
         return Log(
             serviceName = serviceName,
@@ -67,16 +77,19 @@ internal class DatadogLogHandler(
             message = message,
             timestamp = timestamp,
             throwable = throwable,
-            attributes = attributes,
+            attributes = combinedAttributes,
             tags = tags.toList(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             userInfo = userInfoProvider.getUserInfo(),
             loggerName = loggerName,
-            threadName = Thread.currentThread().name,
-            traceId = traceId,
-            spanId = spanId
+            threadName = Thread.currentThread().name
         )
     }
 
     // endregion
+
+    companion object {
+        internal const val TAG_TRACE_ID = "dd.trace_id"
+        internal const val TAG_SPAN_ID = "dd.span_id"
+    }
 }

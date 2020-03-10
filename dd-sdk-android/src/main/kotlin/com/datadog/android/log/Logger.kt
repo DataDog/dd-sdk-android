@@ -173,6 +173,7 @@ internal constructor(private val handler: LogHandler) {
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
+        private var bundleWithRumEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
 
         /**
@@ -188,9 +189,8 @@ internal constructor(private val handler: LogHandler) {
                     )
                 }
                 datadogLogsEnabled -> buildDatadogHandler()
-                logcatLogsEnabled ->
-                    buildLogcatHandler()
-                else -> NoOpLogHandler
+                logcatLogsEnabled -> buildLogcatHandler()
+                else -> NoOpLogHandler()
             }
 
             return Logger(handler)
@@ -253,6 +253,17 @@ internal constructor(private val handler: LogHandler) {
             return this
         }
 
+        /**
+         * Enables the logs bundling with the current active View. If this feature is enabled all
+         * the logs from this moment on will be bundled with the current view information and you
+         * will be able to see all the logs sent during a specific view in the Rum Explorer.
+         * @param enabled true by default
+         */
+        fun setBundleWithRumEnabled(enabled: Boolean): Builder {
+            bundleWithRumEnabled = enabled
+            return this
+        }
+
         // region Internal
 
         private fun buildLogcatHandler(): LogHandler {
@@ -262,7 +273,7 @@ internal constructor(private val handler: LogHandler) {
         private fun buildDatadogHandler(): LogHandler {
             return if (!LogsFeature.isInitialized()) {
                 devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
-                NoOpLogHandler
+                NoOpLogHandler()
             } else {
                 val netInfoProvider = if (networkInfoEnabled) {
                     CoreFeature.networkInfoProvider
@@ -276,7 +287,8 @@ internal constructor(private val handler: LogHandler) {
                     networkInfoProvider = netInfoProvider,
                     timeProvider = CoreFeature.timeProvider,
                     userInfoProvider = CoreFeature.userInfoProvider,
-                    bundleWithTraces = bundleWithTraceEnabled
+                    bundleWithTraces = bundleWithTraceEnabled,
+                    bundleWithRum = bundleWithRumEnabled
                 )
             }
         }

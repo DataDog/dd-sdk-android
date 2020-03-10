@@ -7,6 +7,10 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_APPLICATION_ID
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_SESSION_ID
+import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_VIEW_ID
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
@@ -31,8 +35,9 @@ import java.util.Random
 class AndroidTracer internal constructor(
     config: Config,
     writer: TraceWriter,
-    val logsHandler: LogHandler,
-    private val random: Random
+    private val logsHandler: LogHandler,
+    private val random: Random,
+    private val bundleWithRum: Boolean
 ) : DDTracer(config, writer) {
 
     override fun buildSpan(operationName: String): DDSpanBuilder {
@@ -51,6 +56,7 @@ class AndroidTracer internal constructor(
         return DDSpanBuilder(operationName, scopeManager())
             .withLogHandler(logsHandler)
             .asChildOf(parentContext)
+            .withRumContext()
     }
 
     /**
@@ -59,6 +65,7 @@ class AndroidTracer internal constructor(
      */
     class Builder {
 
+        private var bundleWithRumEnabled: Boolean = true
         private var serviceName: String = TracesFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
@@ -79,7 +86,8 @@ class AndroidTracer internal constructor(
                 config(),
                 TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
                 logsHandler,
-                random
+                random,
+                bundleWithRumEnabled
             )
         }
 
@@ -100,6 +108,17 @@ class AndroidTracer internal constructor(
          */
         fun setPartialFlushThreshold(threshold: Int): Builder {
             this.partialFlushThreshold = threshold
+            return this
+        }
+
+        /**
+         * Enables the trace bundling with the current active View. If this feature is enabled all
+         * the spans from this moment on will be bundled with the current view information and you
+         * will be able to see all the traces sent during a specific view in the Rum Explorer.
+         * @param enabled true by default
+         */
+        fun setBundleWithRumEnabled(enabled: Boolean): Builder {
+            bundleWithRumEnabled = enabled
             return this
         }
 
@@ -128,6 +147,21 @@ class AndroidTracer internal constructor(
 
         // endregion
     }
+
+    // region Internal
+
+    private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
+        return if (bundleWithRum) {
+            val rumContext = GlobalRum.getRumContext()
+            withTag(TAG_APPLICATION_ID, rumContext.applicationId.toString())
+                .withTag(TAG_SESSION_ID, rumContext.sessionId.toString())
+                .withTag(TAG_VIEW_ID, rumContext.viewId?.toString())
+        } else {
+            this
+        }
+    }
+
+    // endregion
 
     companion object {
         // the minimum closed spans required for triggering a flush and deliver

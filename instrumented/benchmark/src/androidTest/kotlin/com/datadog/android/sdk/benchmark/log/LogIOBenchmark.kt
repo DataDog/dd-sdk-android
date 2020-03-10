@@ -119,8 +119,6 @@ class LogIOBenchmark {
             forge.anAlphabeticalString(),
             forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com")
         )
-        val spanId = forge.anAlphaNumericalString()
-        val traceId = forge.anAlphaNumericalString()
 
         return createInstance(
             "com.datadog.android.log.internal.domain.Log",
@@ -134,9 +132,7 @@ class LogIOBenchmark {
             networkInfo,
             userInfo,
             loggerName,
-            threadName,
-            spanId,
-            traceId
+            threadName
         )
     }
 
