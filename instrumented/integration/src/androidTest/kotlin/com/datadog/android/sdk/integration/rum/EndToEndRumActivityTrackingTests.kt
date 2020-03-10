@@ -6,14 +6,10 @@
 
 package com.datadog.android.sdk.integration.rum
 
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.assertj.HeadersAssert
-import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
@@ -25,23 +21,30 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class EndToEndRumGesturesTrackingTests {
+internal class EndToEndRumActivityTrackingTests {
+
+    private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
 
     @get:Rule
     val mockServerRule = RumMockServerActivityTestRule(
-        RumGesturesTrackingPlaygroundActivity::class.java,
+        RumActivityTrackingPlaygroundActivity::class.java,
         keepRequests = true
     )
 
     @Test
-    fun verifyTrackedGestures() {
+    fun verifyViewEvents() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val viewUrl = mockServerRule.activity.javaClass.canonicalName!!.replace(
+            '.',
+            '/'
+        )
         instrumentation.waitForIdleSync()
-
-        onView(withId(R.id.button)).perform(click())
-        instrumentation.waitForIdleSync()
-        onView(withId(R.id.textView)).perform(click())
-
+        expectedEvents.add(ExpectedViewEvent(viewUrl, docVersion = 2))
+        // activity on pause
+        instrumentation.runOnMainSync {
+            instrumentation
+                .callActivityOnPause(mockServerRule.activity)
+        }
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)
 
@@ -63,30 +66,11 @@ internal class EndToEndRumGesturesTrackingTests {
                     sentGestureEvents += rumPayloadToJsonList(request.textBody)
                 }
             }
-        val expectedGestures = expectedEvents()
-        sentGestureEvents.forEach {
-            println("Gesture event: $it")
-        }
-        sentGestureEvents.assertMatches(expectedGestures)
-    }
-
-    private fun expectedEvents(): List<ExpectedEvent> {
-        return listOf(
-            ExpectedGestureEvent(
-                Gesture.TAP,
-                "${mockServerRule.activity.button.javaClass.canonicalName}",
-                "button"
-            ),
-            ExpectedGestureEvent(
-                Gesture.TAP,
-                "${mockServerRule.activity.textView.javaClass.canonicalName}",
-                "textView"
-            )
-        )
+        sentGestureEvents.assertMatches(expectedEvents)
     }
 
     // endregion
     companion object {
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
+        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }
 }

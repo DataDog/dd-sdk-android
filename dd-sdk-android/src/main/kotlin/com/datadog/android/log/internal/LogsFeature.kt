@@ -75,7 +75,7 @@ internal object LogsFeature {
 
     fun stop() {
         if (initialized.get()) {
-            uploadHandlerThread.quitSafely()
+            uploadHandlerThread.quit()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploadHandlerThread = HandlerThread("NoOp")

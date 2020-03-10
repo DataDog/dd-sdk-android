@@ -20,8 +20,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
-import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,9 +39,6 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
-    private val gesturesTracker: GesturesTracker by lazy {
-        DatadogGesturesTracker()
-    }
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -75,14 +71,17 @@ internal object RumFeature {
 
     fun stop() {
         if (initialized.get()) {
-            uploadHandlerThread.quitSafely()
+            uploadHandlerThread.quit()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploadHandlerThread = HandlerThread("NoOp")
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
-
+            // reset rum monitor to NoOp and reset the flag
+            GlobalRum.isRegistered.set(false)
+            GlobalRum.registerIfAbsent(NoOpRumMonitor())
+            GlobalRum.isRegistered.set(false)
             initialized.set(false)
         }
     }

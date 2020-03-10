@@ -6,5 +6,6 @@
     <string name="activity_traces_end_to_end">Traces (End to End)</string>
     <string name="activity_logs_profiling">Logs (Profiling)</string>
     <string name="button1">Button1</string>
-    <string name="activity_rum_gestures_end_to_end">Rum Gestures (End to End)</string>
+    <string name="rum_gestures_tracking_end_to_end">Rum Gestures (End to End)</string>
+    <string name="rum_activity_view_tracking_end_to_end">Rum Activity View (End to End)</string>
 </resources>

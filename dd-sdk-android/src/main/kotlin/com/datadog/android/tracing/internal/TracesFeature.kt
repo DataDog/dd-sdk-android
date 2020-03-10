@@ -70,14 +70,13 @@ internal object TracesFeature {
 
     fun stop() {
         if (initialized.get()) {
-            uploadHandlerThread.quitSafely()
+            uploadHandlerThread.quit()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploadHandlerThread = HandlerThread("Test")
             clientToken = ""
             endpointUrl = DatadogEndpoint.TRACES_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
-
             initialized.set(false)
         }
     }
