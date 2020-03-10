@@ -45,6 +45,7 @@ internal class DatadogRumMonitor(
         action: String,
         attributes: Map<String, Any?>
     ) {
+        GlobalRum.addUserInteraction()
         val eventData = RumEventData.UserAction(action)
         val event = RumEvent(
             GlobalRum.getRumContext(),
@@ -62,6 +63,7 @@ internal class DatadogRumMonitor(
         name: String,
         attributes: Map<String, Any?>
     ) {
+        GlobalRum.addUserInteraction()
         val startedKey = activeViewKey.get()
         if (startedKey != null) {
             stopView(startedKey, emptyMap())

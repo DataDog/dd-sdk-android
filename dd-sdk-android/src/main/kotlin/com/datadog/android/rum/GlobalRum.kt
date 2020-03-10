@@ -8,11 +8,14 @@ package com.datadog.android.rum
 
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum.get
+import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import java.util.UUID
 import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -26,6 +29,11 @@ import java.util.concurrent.atomic.AtomicReference
  * You can then retrieve the active [RumMonitor] using the [get] method.
  */
 object GlobalRum {
+
+    private val SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
+    private val SESSION_MAX_NS = TimeUnit.HOURS.toNanos(4)
+    private val sessionStartNs = AtomicLong(0L)
+    private val lastUserInteractionNs = AtomicLong(0L)
 
     internal val isRegistered = AtomicBoolean(false)
     internal var monitor: RumMonitor = NoOpRumMonitor()
@@ -107,6 +115,14 @@ object GlobalRum {
 
     // region Internal
 
+    internal fun addUserInteraction() {
+        val nanoTime = System.nanoTime()
+
+        if (!isSessionInactive(nanoTime)) {
+            lastUserInteractionNs.set(System.nanoTime())
+        }
+    }
+
     internal fun updateApplicationId(applicationId: UUID) {
         updateRumContext { context ->
             context.copy(applicationId = applicationId)
@@ -119,15 +135,41 @@ object GlobalRum {
         }
     }
 
-    // Used only for internal tests
+    // Only used internally for tests purposes
     internal fun updateContext(rumContext: RumContext) {
+        val nanoTime = System.nanoTime()
+        sessionStartNs.set(nanoTime)
+        lastUserInteractionNs.set(nanoTime)
         updateRumContext {
             rumContext.copy()
         }
     }
 
     internal fun getRumContext(): RumContext {
+        updateSessionIdIfNeeded()
         return activeContext.get()
+    }
+
+    @Synchronized
+    private fun updateSessionIdIfNeeded() {
+        val currentContext = activeContext.get()
+        val nanoTime = System.nanoTime()
+        val isFirstSession = currentContext.sessionId == UUID(0, 0)
+        val sessionLength = nanoTime - sessionStartNs.get()
+        val isInactiveSession = isSessionInactive(nanoTime)
+        val isLongSession = sessionLength >= SESSION_MAX_NS
+
+        if (isFirstSession || isInactiveSession || isLongSession) {
+            sessionStartNs.set(nanoTime)
+            lastUserInteractionNs.set(nanoTime)
+            updateRumContext { context ->
+                context.copy(sessionId = UUID.randomUUID())
+            }
+        }
+    }
+
+    private fun isSessionInactive(nanoTime: Long): Boolean {
+        return (nanoTime - lastUserInteractionNs.get()) >= SESSION_INACTIVITY_NS
     }
 
     private fun updateRumContext(update: (RumContext) -> RumContext) {
