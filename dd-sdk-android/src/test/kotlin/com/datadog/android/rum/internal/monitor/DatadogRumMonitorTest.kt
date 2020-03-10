@@ -195,6 +195,45 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `stopView sends view Rum Event only once`(
+        forge: Forge
+    ) {
+        val timestamp = forge.aTimestamp()
+        val key = forge.anAsciiString()
+        val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val attributes = forge.exhaustiveAttributes()
+        var viewId: UUID? = null
+        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+
+        val duration = measureNanoTime {
+            testedMonitor.startView(key, name, attributes)
+            viewId = GlobalRum.getRumContext().viewId
+            testedMonitor.stopView(key, emptyMap())
+            testedMonitor.stopView(key, emptyMap())
+        }
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasTimestamp(timestamp)
+                .hasAttributes(attributes)
+                .hasViewData {
+                    hasName(name.replace('.', '/'))
+                    hasDurationLowerThan(duration)
+                    hasVersion(2)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isNull()
+    }
+
+    @Test
     fun `stopView sends unclosed view Rum Event with missing key`(
         forge: Forge
     ) {
