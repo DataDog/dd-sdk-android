@@ -4,5 +4,5 @@
 
 ## Docs
 
-/docs/ @DataDog/baklava @DataDog/rum-mobile
-*README.md @DataDog/baklava @DataDog/rum-mobile
+/docs/ @DataDog/documentation @DataDog/rum-mobile
+*README.md @DataDog/documentation @DataDog/rum-mobile
