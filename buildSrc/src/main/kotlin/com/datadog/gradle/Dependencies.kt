@@ -11,10 +11,10 @@ object Dependencies {
     object Versions {
         // Commons
         const val Kotlin = "1.3.61"
-        const val AndroidToolsPlugin = "3.5.3"
+        const val AndroidToolsPlugin = "3.6.1"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
-        const val JetpackWorkManager = "2.2.0"
+        const val JetpackWorkManager = "2.3.3"
         const val AndroidXMultidex = "2.0.1"
 
         // JUnit
@@ -31,7 +31,7 @@ object Dependencies {
         const val JetpackBenchmark = "1.0.0"
 
         // Tools
-        const val Detekt = "1.2.1"
+        const val Detekt = "1.6.0"
         const val KtLint = "8.2.0"
         const val DependencyVersion = "0.27.0"
         const val Dokka = "0.10.0"
@@ -41,11 +41,11 @@ object Dependencies {
         const val AndroidJunitRunner = "1.2.0"
         const val AndroidExtJunit = "1.1.1"
         const val AndroidJunitCore = "1.2.0"
-        const val Espresso = "3.1.0"
+        const val Espresso = "3.1.1"
 
         // Sample Apps
         const val AppCompatVersion = "1.1.0"
-        const val ConstraintLayoutVersion = "2.0.0-beta3"
+        const val ConstraintLayoutVersion = "2.0.0-beta4"
         const val GoogleMaterialVersion = "1.0.0"
 
         // Integrations
