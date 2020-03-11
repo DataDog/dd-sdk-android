@@ -142,5 +142,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         internal const val TAG_HTTP_URL = "http.url"
         internal const val TAG_HTTP_METHOD = "http.method"
         internal const val TAG_HTTP_STATUS_CODE = "http.status_code"
+
+        internal const val TAG_NETWORK_BYTES_WRITTEN = "network.bytes_written"
     }
 }
