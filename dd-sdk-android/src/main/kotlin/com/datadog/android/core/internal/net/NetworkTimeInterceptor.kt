@@ -43,7 +43,9 @@ internal class NetworkTimeInterceptor(
 
         val serverDateStr = response.header("date").orEmpty()
         val serverDate = try {
-            formatter.parse(serverDateStr)
+            synchronized(formatter) {
+                formatter.parse(serverDateStr)
+            }
         } catch (e: ParseException) {
             sdkLogger.w("invalid date received \"$serverDateStr\"")
             null
