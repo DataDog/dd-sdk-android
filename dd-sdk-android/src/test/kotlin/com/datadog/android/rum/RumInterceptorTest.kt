@@ -24,6 +24,7 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.ResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +47,7 @@ internal class RumInterceptorTest {
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
+
     @Mock
     lateinit var mockChain: Interceptor.Chain
 
@@ -75,7 +77,7 @@ internal class RumInterceptorTest {
         @IntForgery(min = 200, max = 299) statusCode: Int,
         forge: Forge
     ) {
-        setupFakeResponse(statusCode, "GET")
+        setupFakeResponse(statusCode, "GET", forge.anAsciiString())
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -88,7 +90,11 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.fromMimeType(fakeMimeType!!),
-                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
+                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                        (fakeResponse.body()?.contentLength() ?: 0)
+                )
             )
         }
         assertThat(response).isSameAs(fakeResponse)
@@ -100,7 +106,7 @@ internal class RumInterceptorTest {
         forge: Forge
     ) {
         fakeMimeType = null
-        setupFakeResponse(statusCode, "GET")
+        setupFakeResponse(statusCode, "GET", forge.anAsciiString())
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -113,7 +119,11 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.UNKNOWN,
-                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
+                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                        (fakeResponse.body()?.contentLength() ?: 0)
+                )
             )
         }
         assertThat(response).isSameAs(fakeResponse)
@@ -124,7 +134,7 @@ internal class RumInterceptorTest {
         @IntForgery(min = 200, max = 299) statusCode: Int,
         forge: Forge
     ) {
-        setupFakeResponse(statusCode, "POST")
+        setupFakeResponse(statusCode, "POST", forge.anAsciiString())
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -137,7 +147,11 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
-                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
+                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                        (fakeResponse.body()?.contentLength() ?: 0)
+                )
             )
         }
         assertThat(response).isSameAs(fakeResponse)
@@ -148,7 +162,7 @@ internal class RumInterceptorTest {
         @IntForgery(min = 200, max = 299) statusCode: Int,
         forge: Forge
     ) {
-        setupFakeResponse(statusCode, "PUT")
+        setupFakeResponse(statusCode, "PUT", forge.anAsciiString())
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -161,7 +175,11 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
-                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
+                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                        (fakeResponse.body()?.contentLength() ?: 0)
+                )
             )
         }
         assertThat(response).isSameAs(fakeResponse)
@@ -172,7 +190,7 @@ internal class RumInterceptorTest {
         @IntForgery(min = 200, max = 299) statusCode: Int,
         forge: Forge
     ) {
-        setupFakeResponse(statusCode, "DELETE")
+        setupFakeResponse(statusCode, "DELETE", forge.anAsciiString())
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -185,7 +203,11 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
-                mapOf(RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
+                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                        (fakeResponse.body()?.contentLength() ?: 0)
+                )
             )
         }
         assertThat(response).isSameAs(fakeResponse)
@@ -195,7 +217,11 @@ internal class RumInterceptorTest {
     fun `sends a Rum Error event around request throwing exception`(
         forge: Forge
     ) {
-        setupFakeResponse(200, forge.anElementFrom("GET", "POST", "PUT", "DELETE"))
+        setupFakeResponse(
+            200,
+            forge.anElementFrom("GET", "POST", "PUT", "DELETE"),
+            forge.anAsciiString()
+        )
         val throwable = forge.aThrowable()
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
@@ -227,7 +253,8 @@ internal class RumInterceptorTest {
 
     private fun setupFakeResponse(
         statusCode: Int,
-        method: String
+        method: String,
+        response: String
     ) {
         fakeRequest = Request.Builder()
             .url(fakeUrl)
@@ -245,7 +272,8 @@ internal class RumInterceptorTest {
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
             .code(statusCode)
-            .message("{}")
+            .body(ResponseBody.create(null, response.toByteArray()))
+            .message("STATUS $statusCode")
             .apply {
                 fakeMimeType?.let { header("Content-Type", it) }
             }

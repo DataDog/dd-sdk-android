@@ -119,6 +119,7 @@ object GlobalRum {
         }
     }
 
+    // Used only for internal tests
     internal fun updateContext(rumContext: RumContext) {
         updateRumContext {
             rumContext.copy()
