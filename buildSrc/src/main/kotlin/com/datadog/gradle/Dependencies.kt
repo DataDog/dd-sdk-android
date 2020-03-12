@@ -14,7 +14,8 @@ object Dependencies {
         const val AndroidToolsPlugin = "3.6.1"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
-        const val JetpackWorkManager = "2.3.3"
+        const val AndroidXWorkManager = "2.3.3"
+        const val AndroidXCore = "1.2.0"
         const val AndroidXMultidex = "2.0.1"
 
         // JUnit
@@ -44,10 +45,10 @@ object Dependencies {
         const val Espresso = "3.1.1"
 
         // Sample Apps
-        const val AppCompatAndroidXVersion = "1.1.0"
-        const val AppCompatSupportVersion = "28.0.0"
-        const val ConstraintLayoutVersion = "2.0.0-beta4"
-        const val GoogleMaterialVersion = "1.0.0"
+        const val AndroidXAppCompat = "1.1.0"
+        const val SupportFragmentsCompat = "28.0.0"
+        const val ConstraintLayout = "2.0.0-beta4"
+        const val GoogleMaterial = "1.0.0"
 
         // Integrations
         const val Timber = "4.7.1"
@@ -74,10 +75,11 @@ object Dependencies {
             "androidx.test.ext:junit:1.1.1"
         )
 
-        val JetpackWorkManager = "androidx.work:work-runtime:${Versions.JetpackWorkManager}"
-        val JeptackAppCompat = "androidx.appcompat:appcompat:${Versions.AppCompatAndroidXVersion}"
+        val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
+        val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
+        val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
         val SupportFragmentsCompat =
-            "com.android.support:support-fragment:${Versions.AppCompatSupportVersion}"
+            "com.android.support:support-fragment:${Versions.SupportFragmentsCompat}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -120,9 +122,9 @@ object Dependencies {
 
         @JvmField
         val AndroidxSupportBase = arrayOf(
-            JeptackAppCompat,
-            "androidx.constraintlayout:constraintlayout:${Versions.ConstraintLayoutVersion}",
-            "com.google.android.material:material:${Versions.GoogleMaterialVersion}"
+            AndroidXAppCompat,
+            "androidx.constraintlayout:constraintlayout:${Versions.ConstraintLayout}",
+            "com.google.android.material:material:${Versions.GoogleMaterial}"
         )
 
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
