@@ -14,9 +14,5 @@ internal class NoOpDataUploader : DataUploader {
         return UploadStatus.SUCCESS
     }
 
-    override fun setEndpoint(endpoint: String) {
-        // No Op
-    }
-
     // endregion
 }
