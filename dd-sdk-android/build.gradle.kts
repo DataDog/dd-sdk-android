@@ -107,7 +107,8 @@ dependencies {
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
-    implementation(Dependencies.Libraries.JetpackWorkManager)
+    implementation(Dependencies.Libraries.AndroidXWorkManager)
+    implementation(Dependencies.Libraries.AndroidXCore)
     api(Dependencies.Libraries.TracingOt)
 
     testImplementation(project(":tools:unit"))
