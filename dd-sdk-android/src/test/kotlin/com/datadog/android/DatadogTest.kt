@@ -26,6 +26,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -37,7 +38,6 @@ import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
@@ -103,10 +103,9 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `fails if stop called without initialize`() {
-        assertThrows<IllegalStateException> {
-            Datadog.invokeMethod("stop")
-        }
+    fun `stop called without initialize will do nothing`() {
+        Datadog.invokeMethod("stop")
+        verifyZeroInteractions(mockAppContext)
     }
 
     @Test

@@ -187,13 +187,14 @@ object Datadog {
     // Stop all Datadog work (for test purposes).
     @Suppress("unused")
     private fun stop() {
-        checkInitialized()
-        LogsFeature.stop()
-        TracesFeature.stop()
-        CrashReportsFeature.stop()
-        CoreFeature.stop()
-        isDebug = false
-        initialized.set(false)
+        if (initialized.get()) {
+            LogsFeature.stop()
+            TracesFeature.stop()
+            CrashReportsFeature.stop()
+            CoreFeature.stop()
+            isDebug = false
+            initialized.set(false)
+        }
     }
 
     /**
@@ -229,11 +230,6 @@ object Datadog {
 
     // region Internal Initialization
 
-    @Suppress("CheckInternal")
-    private fun checkInitialized() {
-        check(initialized.get()) { MESSAGE_NOT_INITIALIZED }
-    }
-
     private fun setupLifecycleMonitorCallback(appContext: Context) {
         if (appContext is Application) {
             val callback = ProcessLifecycleCallback(CoreFeature.networkInfoProvider, appContext)
@@ -248,11 +244,11 @@ object Datadog {
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
-        "Please add the following code in your application's onCreate() method:\n" +
-        "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+            "Please add the following code in your application's onCreate() method:\n" +
+            "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
-        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+            "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     internal const val SHUTDOWN_THREAD = "datadog_shutdown"
 
