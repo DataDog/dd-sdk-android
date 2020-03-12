@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -20,8 +21,8 @@ import java.lang.ref.WeakReference
 import java.util.UUID
 
 internal class DatadogRumMonitor(
-    private val timeProvider: TimeProvider,
-    private val writer: Writer<RumEvent>
+    private val writer: Writer<RumEvent>,
+    private val timeProvider: TimeProvider = NoOpTimeProvider()
 ) : RumMonitor {
 
     @Volatile
@@ -49,7 +50,7 @@ internal class DatadogRumMonitor(
         val eventData = RumEventData.UserAction(action)
         val event = RumEvent(
             GlobalRum.getRumContext(),
-            timeProvider.getServerTimestamp(),
+            timeProvider.getDeviceTimestamp(),
             eventData,
             attributes
         )
@@ -75,7 +76,7 @@ internal class DatadogRumMonitor(
         val eventData = RumEventData.View(pathName, 0)
         val event = RumEvent(
             GlobalRum.getRumContext(),
-            timeProvider.getServerTimestamp(),
+            timeProvider.getDeviceTimestamp(),
             eventData,
             attributes
         )
@@ -100,12 +101,12 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null || startedEventData == null -> devLogger.w(
                 "Unable to end view with key <$key> (missing start). " +
-                    "This can mean that the view was not started or already ended."
+                        "This can mean that the view was not started or already ended."
             )
             startedKey == null -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (missing key)." +
-                        "Closing previous view automatically."
+                            "Closing previous view automatically."
                 )
                 updateAndSendView(
                     mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
@@ -114,7 +115,7 @@ internal class DatadogRumMonitor(
             startedKey != key -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (mismatched key). " +
-                        "Another view with key <$startedKey> has been started."
+                            "Another view with key <$startedKey> has been started."
                 )
             }
             else -> updateAndSendView(attributes)
@@ -138,7 +139,7 @@ internal class DatadogRumMonitor(
         )
         val event = RumEvent(
             GlobalRum.getRumContext(),
-            timeProvider.getServerTimestamp(),
+            timeProvider.getDeviceTimestamp(),
             eventData,
             attributes
         )
@@ -173,7 +174,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                    "This can mean that the resource was not started or already ended."
+                        "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
@@ -202,7 +203,7 @@ internal class DatadogRumMonitor(
         val eventData = RumEventData.Error(message, origin, throwable)
         val event = RumEvent(
             GlobalRum.getRumContext(),
-            timeProvider.getServerTimestamp(),
+            timeProvider.getDeviceTimestamp(),
             eventData,
             attributes
         )
@@ -254,7 +255,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                    "This can mean that the resource was not started or already ended."
+                        "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
