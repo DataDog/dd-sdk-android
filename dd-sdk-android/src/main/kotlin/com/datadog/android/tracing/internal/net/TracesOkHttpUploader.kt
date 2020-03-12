@@ -16,6 +16,10 @@ internal open class TracesOkHttpUploader(
         super.setEndpoint(buildUrl(endpoint, token))
     }
 
+    override fun buildQueryParams(): Map<String, Any> {
+        return emptyMap()
+    }
+
     // endregion
 
     companion object {
