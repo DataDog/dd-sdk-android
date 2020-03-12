@@ -19,11 +19,7 @@ internal abstract class DataOkHttpUploader(
     internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 
-    // region LogUploader
-
-    override fun setEndpoint(endpoint: String) {
-        this.url = endpoint
-    }
+    // region DataUploader
 
     @Suppress("TooGenericExceptionCaught")
     override fun upload(data: ByteArray): UploadStatus {
@@ -33,11 +29,11 @@ internal abstract class DataOkHttpUploader(
             val call = client.newCall(request)
             val response = call.execute()
             sdkLogger.i(
-                    "Response " +
-                            "from ${url.substring(0, 32)}… " +
-                            "code:${response.code()} " +
-                            "body:${response.body()?.string()} " +
-                            "headers:${response.headers()}"
+                "Response " +
+                        "from ${url.substring(0, 32)}… " +
+                        "code:${response.code()} " +
+                        "body:${response.body()?.string()} " +
+                        "headers:${response.headers()}"
             )
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
@@ -45,6 +41,16 @@ internal abstract class DataOkHttpUploader(
             UploadStatus.NETWORK_ERROR
         }
     }
+
+    // endregion
+
+    // region DataOkHttpUploader
+
+    open fun setEndpoint(endpoint: String) {
+        this.url = endpoint
+    }
+
+    abstract fun buildQueryParams(): Map<String, Any>
 
     // endregion
 
@@ -60,23 +66,40 @@ internal abstract class DataOkHttpUploader(
     private val userAgent = System.getProperty(SYSTEM_UA).let {
         if (it.isNullOrBlank()) {
             "Datadog/${BuildConfig.VERSION_NAME} " +
-                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                    "${Build.MODEL} Build/${Build.ID})"
         } else {
             it
         }
     }
 
     private fun buildRequest(data: ByteArray): Request {
-        sdkLogger.d("Sending data to POST $url")
+        // add query params
+        val urlWithQueryParams = urlWithQueryParams()
+        sdkLogger.d("Sending data to POST $urlWithQueryParams")
         val builder = Request.Builder()
-            .url(url)
+            .url(urlWithQueryParams)
             .post(RequestBody.create(null, data))
         headers().forEach {
             builder.addHeader(it.key, it.value)
             sdkLogger.d("$TAG: ${it.key}: ${it.value}")
         }
         return builder.build()
+    }
+
+    private fun urlWithQueryParams(): String {
+        val baseUrl = url
+        var firstAdded = false
+        return buildQueryParams()
+            .asSequence()
+            .fold(baseUrl, { url, entry ->
+                if (firstAdded) {
+                    "$url&${entry.key}=${entry.value}"
+                } else {
+                    firstAdded = true
+                    "$url?${entry.key}=${entry.value}"
+                }
+            })
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {
@@ -95,7 +118,7 @@ internal abstract class DataOkHttpUploader(
     companion object {
         internal const val CONTENT_TYPE_JSON = "application/json"
         internal const val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8"
-
+        internal const val BATCH_TIME = "batch_time"
         private const val HEADER_CT = "Content-Type"
         private const val HEADER_UA = "User-Agent"
         const val SYSTEM_UA = "http.agent"
