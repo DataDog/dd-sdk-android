@@ -74,6 +74,7 @@ internal class RumEventSerializerTest {
         assertThat(jsonObject)
             .hasField(RumEventSerializer.TAG_EVENT_NAME, fakeAction.name)
             .hasField(RumEventSerializer.TAG_EVENT_ID, fakeAction.id.toString())
+            .hasField(RumEventSerializer.TAG_DURATION, fakeAction.durationNanoSeconds)
     }
 
     @Test

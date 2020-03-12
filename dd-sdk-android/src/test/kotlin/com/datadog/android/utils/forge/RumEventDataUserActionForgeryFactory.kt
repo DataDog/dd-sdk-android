@@ -15,7 +15,8 @@ internal class RumEventDataUserActionForgeryFactory :
     override fun getForgery(forge: Forge): RumEventData.UserAction {
         return RumEventData.UserAction(
             name = forge.anAlphabeticalString(),
-            id = forge.getForgery()
+            id = forge.getForgery(),
+            durationNanoSeconds = forge.aPositiveLong()
         )
     }
 }
