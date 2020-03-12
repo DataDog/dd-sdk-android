@@ -183,6 +183,10 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_APP_VERSION_NAME = "application.version"
         internal const val TAG_APP_PACKAGE_NAME = "application.package"
 
+        // TRACE
+        internal const val TAG_TRACE_ID = "dd.trace_id"
+        internal const val TAG_SPAN_ID = "dd.span_id"
+
         // NETWORK TAGS
         internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
         internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
