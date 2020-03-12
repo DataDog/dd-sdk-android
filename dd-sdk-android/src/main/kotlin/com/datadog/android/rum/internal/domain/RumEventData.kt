@@ -19,7 +19,8 @@ internal sealed class RumEventData(val category: String) {
 
     internal data class UserAction(
         val name: String,
-        val id : UUID
+        val id: UUID,
+        val durationNanoSeconds: Long
     ) : RumEventData("user_action")
 
     internal data class View(

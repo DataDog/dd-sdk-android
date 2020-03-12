@@ -63,6 +63,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             is RumEventData.UserAction -> {
                 root.addProperty(TAG_EVENT_NAME, eventData.name)
                 root.addProperty(TAG_EVENT_ID, eventData.id.toString())
+                root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
             }
             is RumEventData.View -> {
                 root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
