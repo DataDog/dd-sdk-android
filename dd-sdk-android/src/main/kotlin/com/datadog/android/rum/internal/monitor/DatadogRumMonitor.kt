@@ -47,7 +47,7 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         GlobalRum.addUserInteraction()
-        val eventData = RumEventData.UserAction(action)
+        val eventData = RumEventData.UserAction(action, UUID.randomUUID())
         val event = RumEvent(
             GlobalRum.getRumContext(),
             timeProvider.getDeviceTimestamp(),
