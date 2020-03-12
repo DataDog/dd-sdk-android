@@ -69,7 +69,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.JeptackAppCompat)
+    implementation(Dependencies.Libraries.AndroidXAppCompat)
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
