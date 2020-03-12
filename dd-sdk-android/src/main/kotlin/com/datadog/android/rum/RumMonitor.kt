@@ -9,7 +9,6 @@ package com.datadog.android.rum
 import android.app.Activity
 import android.app.Fragment
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -138,7 +137,6 @@ interface RumMonitor {
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
-                    timeProvider = CoreFeature.timeProvider,
                     writer = RumFeature.persistenceStrategy.getWriter()
                 )
             }
