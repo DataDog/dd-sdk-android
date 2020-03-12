@@ -73,6 +73,7 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
             .hasField(RumEventSerializer.TAG_EVENT_NAME, fakeAction.name)
+            .hasField(RumEventSerializer.TAG_EVENT_ID, fakeAction.id.toString())
     }
 
     @Test
