@@ -7,7 +7,8 @@
 package com.datadog.android.sdk.integration.rum
 
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.swipeLeft
+import androidx.test.espresso.action.ViewActions.swipeRight
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -25,24 +26,53 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class EndToEndRumGesturesTrackingTests {
+internal class EndToEndRumFragmentTrackingTests {
+
+    private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
 
     @get:Rule
     val mockServerRule = RumMockServerActivityTestRule(
-        RumGesturesTrackingPlaygroundActivity::class.java,
+        RumFragmentTrackingPlaygroundActivity::class.java,
         keepRequests = true
     )
 
     @Test
-    fun verifyTrackedGestures() {
+    fun verifyViewEvents() {
+
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
+        val fragmentAViewUrl = FragmentA::class.java.canonicalName!!.replace(
+            '.',
+            '/'
+        )
+        // add the first expected event
+        expectedEvents.add(ExpectedViewEvent(fragmentAViewUrl, 2))
 
-        onView(withId(R.id.button)).perform(click())
+        // swipe to change the fragment
+        onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
-        onView(withId(R.id.textView)).perform(click())
+        Thread.sleep(200) // give time to the view id to update
+        val fragmentBViewUrl = FragmentB::class.java.canonicalName!!.replace(
+            '.',
+            '/'
+        )
+        expectedEvents.add(ExpectedViewEvent(fragmentBViewUrl, 2))
 
+        // swipe to close the view
+        onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
+        Thread.sleep(200) // give time to the view id to update
+
+        val fragmentCViewUrl = FragmentC::class.java.canonicalName!!.replace(
+            '.',
+            '/'
+        )
+        expectedEvents.add(ExpectedViewEvent(fragmentCViewUrl, 2))
+
+        // swipe to close the view
+        onView(withId(R.id.tab_layout)).perform(swipeRight())
+        instrumentation.waitForIdleSync()
+
         Thread.sleep(INITIAL_WAIT_MS)
 
         // Check sent requests
@@ -63,27 +93,11 @@ internal class EndToEndRumGesturesTrackingTests {
                     sentGestureEvents += rumPayloadToJsonList(request.textBody)
                 }
             }
-        val expectedGestures = expectedEvents()
-        sentGestureEvents.assertMatches(expectedGestures)
-    }
-
-    private fun expectedEvents(): List<ExpectedEvent> {
-        return listOf(
-            ExpectedGestureEvent(
-                Gesture.TAP,
-                "${mockServerRule.activity.button.javaClass.canonicalName}",
-                "button"
-            ),
-            ExpectedGestureEvent(
-                Gesture.TAP,
-                "${mockServerRule.activity.textView.javaClass.canonicalName}",
-                "textView"
-            )
-        )
+        sentGestureEvents.assertMatches(expectedEvents)
     }
 
     // endregion
     companion object {
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
+        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }
 }
