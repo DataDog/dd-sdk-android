@@ -22,13 +22,20 @@ internal open class RumOkHttpUploader(
         super.setEndpoint(buildUrl(endpoint, token))
     }
 
+    override fun buildQueryParams(): MutableMap<String, Any> {
+        return mutableMapOf(
+            BATCH_TIME to System.currentTimeMillis(),
+            QP_SOURCE to DD_SOURCE_MOBILE
+        )
+    }
+
     // endregion
 
     companion object {
         private const val QP_SOURCE = "ddsource"
         private const val DD_SOURCE_MOBILE = "mobile"
         internal const val UPLOAD_URL =
-            "%s/v1/input/%s?$QP_SOURCE=$DD_SOURCE_MOBILE"
+            "%s/v1/input/%s"
 
         private fun buildUrl(endpoint: String, token: String): String {
             return String.format(

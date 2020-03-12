@@ -22,4 +22,8 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
     override fun urlFormat(): String {
         return LogsOkHttpUploader.UPLOAD_URL
     }
+
+    override fun expectedPathRegex(): String {
+        return "\\/v1\\/input/${fakeToken}\\?ddsource=mobile$"
+    }
 }

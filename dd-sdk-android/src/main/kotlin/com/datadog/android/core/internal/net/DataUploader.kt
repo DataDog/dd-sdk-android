@@ -8,7 +8,5 @@ package com.datadog.android.core.internal.net
 
 internal interface DataUploader {
 
-    fun setEndpoint(endpoint: String)
-
     fun upload(data: ByteArray): UploadStatus
 }
