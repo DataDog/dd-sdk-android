@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import android.os.Handler
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
@@ -16,10 +15,12 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 internal class DataUploadRunnable(
-    private val handler: Handler,
+    private val threadPoolExecutor: ScheduledThreadPoolExecutor,
     private val reader: Reader,
     private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
@@ -63,11 +64,8 @@ internal class DataUploadRunnable(
         sdkLogger.i("There was no batch to be sent")
         currentDelayInterval =
             DEFAULT_DELAY
-        handler.removeCallbacks(this)
-        handler.postDelayed(
-            this,
-            MAX_DELAY
-        )
+        threadPoolExecutor.remove(this)
+        threadPoolExecutor.schedule(this, MAX_DELAY, TimeUnit.MILLISECONDS)
     }
 
     private fun consumeBatch(batch: Batch) {
@@ -81,7 +79,7 @@ internal class DataUploadRunnable(
             reader.releaseBatch(batchId)
         }
         currentDelayInterval = decreaseInterval()
-        handler.postDelayed(this, currentDelayInterval)
+        threadPoolExecutor.schedule(this, currentDelayInterval, TimeUnit.MILLISECONDS)
     }
 
     private fun decreaseInterval(): Long {

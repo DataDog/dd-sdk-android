@@ -9,7 +9,7 @@ package com.datadog.android.error.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -61,6 +62,8 @@ internal class CrashReportsFeatureTest {
     lateinit var mockSystemInfoProvider: SystemInfoProvider
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+    @Mock
+    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
@@ -102,7 +105,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
@@ -120,16 +124,17 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val uploader = CrashReportsFeature.uploader
-        val uploadHandlerThread = CrashReportsFeature.uploadHandlerThread
+        val dataUploadScheduler = CrashReportsFeature.dataUploadScheduler
 
         assertThat(uploader)
             .isInstanceOf(DataOkHttpUploader::class.java)
-        assertThat(uploadHandlerThread)
-            .isInstanceOf(DataUploadHandlerThread::class.java)
+        assertThat(dataUploadScheduler)
+            .isInstanceOf(DataUploadScheduler::class.java)
     }
 
     @Test
@@ -141,7 +146,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val clientToken = CrashReportsFeature.clientToken
@@ -162,7 +168,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -184,7 +191,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
         CrashReportsFeature.stop()
 
@@ -204,7 +212,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
         val uploader = CrashReportsFeature.uploader
@@ -226,7 +235,8 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
         val persistenceStrategy2 = CrashReportsFeature.persistenceStrategy
         val uploader2 = CrashReportsFeature.uploader

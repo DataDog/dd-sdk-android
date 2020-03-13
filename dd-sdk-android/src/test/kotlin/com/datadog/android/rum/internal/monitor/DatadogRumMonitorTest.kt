@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -18,10 +19,8 @@ import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -35,7 +34,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.lang.ref.WeakReference
 import java.util.UUID
 import kotlin.system.measureNanoTime
@@ -52,8 +50,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -67,6 +64,8 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    lateinit var mockDevLogHandler : LogHandler
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -75,6 +74,7 @@ internal class DatadogRumMonitorTest {
 
     @BeforeEach
     fun `set up`() {
+        mockDevLogHandler = mockDevLogHandler()
         Datadog.setVerbosity(Log.VERBOSE)
         GlobalRum.updateApplicationId(fakeApplicationId)
         whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
@@ -1546,8 +1546,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `addUserAction ignored if previous action recent`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
 
         val viewKey = forge.anAlphabeticalString()
@@ -1614,18 +1613,15 @@ internal class DatadogRumMonitorTest {
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
 
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                "Datadog",
-                "User action $actionName2 was ignored: previous action still active."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "User action $actionName2 was ignored: previous action still active."
+        )
     }
 
     @Test
     fun `addUserAction ignored if previous action active (unclosed resources)`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
 
         val viewKey = forge.anAlphabeticalString()
@@ -1723,12 +1719,10 @@ internal class DatadogRumMonitorTest {
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
 
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                "Datadog",
-                "User action $actionName2 was ignored: previous action still active."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "User action $actionName2 was ignored: previous action still active."
+        )
     }
 
     // endregion
