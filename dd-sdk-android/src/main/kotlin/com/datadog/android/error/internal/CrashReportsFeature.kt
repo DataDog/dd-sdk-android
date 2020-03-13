@@ -7,13 +7,12 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
+import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -21,6 +20,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
@@ -45,8 +45,8 @@ internal object CrashReportsFeature {
         private set
 
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
+    internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
+    internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -56,7 +56,8 @@ internal object CrashReportsFeature {
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
         timeProvider: TimeProvider,
-        systemInfoProvider: SystemInfoProvider
+        systemInfoProvider: SystemInfoProvider,
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
 
         if (initialized.get()) {
@@ -69,7 +70,13 @@ internal object CrashReportsFeature {
         envName = config.envName
 
         persistenceStrategy = CrashLogFileStrategy(appContext)
-        setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
+        setupUploader(
+            endpointUrl,
+            okHttpClient,
+            networkInfoProvider,
+            systemInfoProvider,
+            dataUploadThreadPoolExecutor
+        )
         setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
 
         initialized.set(true)
@@ -78,11 +85,11 @@ internal object CrashReportsFeature {
     fun stop() {
         if (initialized.get()) {
             Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
-            uploadHandlerThread.quitSafely()
+            dataUploadScheduler.stop()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploader = NoOpDataUploader()
-            uploadHandlerThread = HandlerThread("NoOp")
+            dataUploadScheduler = NoOpDataUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.LOGS_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
@@ -97,17 +104,18 @@ internal object CrashReportsFeature {
         endpointUrl: String,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider
+        systemInfoProvider: SystemInfoProvider,
+        scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
         uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-        uploadHandlerThread = DataUploadHandlerThread(
-            CRASH_REPORTS_UPLOAD_THREAD_NAME,
+        dataUploadScheduler = com.datadog.android.core.internal.data.upload.DataUploadScheduler(
             persistenceStrategy.getReader(),
             uploader,
             networkInfoProvider,
-            systemInfoProvider
+            systemInfoProvider,
+            scheduledThreadPoolExecutor
         )
-        uploadHandlerThread.start()
+        dataUploadScheduler.startScheduling()
     }
 
     private fun setupExceptionHandler(

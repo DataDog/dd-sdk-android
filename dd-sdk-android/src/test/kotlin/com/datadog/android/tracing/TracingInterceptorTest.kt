@@ -83,7 +83,6 @@ internal class TracingInterceptorTest {
     lateinit var mockSpan: Span
     @Mock
     lateinit var mockChain: Interceptor.Chain
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
     lateinit var fakeSpanId: String
@@ -128,7 +127,16 @@ internal class TracingInterceptorTest {
 
         fakeRequest = builder.build()
         testedInterceptor = TracingInterceptor()
-        TracesFeature.initialize(mockAppContext, fakeConfig, mock(), mock(), mock(), mock(), mock())
+        TracesFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock()
+        )
         GlobalTracer.registerIfAbsent(mockTracer)
     }
 

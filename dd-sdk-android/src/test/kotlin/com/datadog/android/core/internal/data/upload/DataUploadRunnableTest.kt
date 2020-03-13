@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import android.os.Handler
 import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.data.Reader
@@ -26,6 +25,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
@@ -38,6 +38,8 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -58,7 +60,7 @@ import org.mockito.quality.Strictness
 internal class DataUploadRunnableTest {
 
     @Mock
-    lateinit var mockHandler: Handler
+    lateinit var mockThreadPoolExecutor: ScheduledThreadPoolExecutor
     @Mock
     lateinit var mockReader: Reader
     @Mock
@@ -88,7 +90,7 @@ internal class DataUploadRunnableTest {
 
         testedRunnable =
             DataUploadRunnable(
-                mockHandler,
+                mockThreadPoolExecutor,
                 mockReader,
                 mockDataUploader,
                 mockNetworkInfoProvider,
@@ -109,7 +111,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader, never()).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -132,7 +138,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(anyOrNull())
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader, never()).upload(anyOrNull())
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -156,7 +166,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(anyOrNull())
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader, never()).upload(anyOrNull())
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -177,7 +191,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -189,7 +207,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(anyOrNull())
         verify(mockReader, never()).releaseBatch(anyOrNull())
         verifyZeroInteractions(mockDataUploader)
-        verify(mockHandler).postDelayed(testedRunnable, DataUploadRunnable.MAX_DELAY)
+        verify(mockThreadPoolExecutor).schedule(
+            testedRunnable,
+            DataUploadRunnable.MAX_DELAY,
+            TimeUnit.MILLISECONDS
+        )
         if (BuildConfig.DEBUG) {
             val expectedTag = resolveTagName(testedRunnable, "DD_LOG")
             assertThat(outputStream)
@@ -207,7 +229,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -220,7 +246,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(batch.id)
         verify(mockReader).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -237,7 +267,11 @@ internal class DataUploadRunnableTest {
         verify(mockDataUploader, times(runCount)).upload(batch.data)
         verify(mockReader, never()).dropBatch(batch.id)
         verify(mockReader, times(runCount)).releaseBatch(batch.id)
-        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor, times(runCount)).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -250,7 +284,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -263,7 +301,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -276,7 +318,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).dropBatch(batch.id)
         verify(mockReader).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -294,7 +340,11 @@ internal class DataUploadRunnableTest {
         verify(mockDataUploader, times(runCount)).upload(batch.data)
         verify(mockReader, never()).dropBatch(batch.id)
         verify(mockReader, times(runCount)).releaseBatch(batch.id)
-        verify(mockHandler, times(runCount)).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor, times(runCount)).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -307,7 +357,11 @@ internal class DataUploadRunnableTest {
         verify(mockReader).dropBatch(batch.id)
         verify(mockReader, never()).releaseBatch(batch.id)
         verify(mockDataUploader).upload(batch.data)
-        verify(mockHandler).postDelayed(same(testedRunnable), any())
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -322,8 +376,8 @@ internal class DataUploadRunnableTest {
         }
 
         val captor = argumentCaptor<Long>()
-        verify(mockHandler, times(5))
-            .postDelayed(same(testedRunnable), captor.capture())
+        verify(mockThreadPoolExecutor, times(5))
+            .schedule(same(testedRunnable), captor.capture(), eq(TimeUnit.MILLISECONDS))
         captor.allValues.reduce { previous, next ->
             assertThat(next).isLessThan(previous)
             next
@@ -342,8 +396,8 @@ internal class DataUploadRunnableTest {
         }
 
         val captor = argumentCaptor<Long>()
-        verify(mockHandler, times(30))
-            .postDelayed(same(testedRunnable), captor.capture())
+        verify(mockThreadPoolExecutor, times(30))
+            .schedule(same(testedRunnable), captor.capture(), eq(TimeUnit.MILLISECONDS))
         captor.allValues.reduce { previous, next ->
             assertThat(next).isGreaterThanOrEqualTo(DataUploadRunnable.MIN_DELAY_MS)
             assertThat(next).isLessThan(DataUploadRunnable.DEFAULT_DELAY)
@@ -365,9 +419,9 @@ internal class DataUploadRunnableTest {
         }
 
         val captor = argumentCaptor<Long>()
-        verify(mockHandler, times(2))
-            .postDelayed(same(testedRunnable), captor.capture())
-        verify(mockHandler).removeCallbacks(same(testedRunnable))
+        verify(mockThreadPoolExecutor, times(2))
+            .schedule(same(testedRunnable), captor.capture(), eq(TimeUnit.MILLISECONDS))
+        verify(mockThreadPoolExecutor).remove(same(testedRunnable))
         assertThat(captor.lastValue).isEqualTo(DataUploadRunnable.MAX_DELAY)
     }
 }
