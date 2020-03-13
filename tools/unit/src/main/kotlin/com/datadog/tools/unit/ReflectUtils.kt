@@ -46,6 +46,8 @@ inline fun <reified T, R> Class<T>.setStaticValue(
         modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
     } catch (e: NoSuchFieldException) {
         // do nothing
+        @Suppress("PrintStackTrace")
+        e.printStackTrace()
     }
     field.set(null, fieldValue)
 }

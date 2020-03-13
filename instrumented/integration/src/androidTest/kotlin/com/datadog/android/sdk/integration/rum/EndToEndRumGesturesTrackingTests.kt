@@ -40,7 +40,11 @@ internal class EndToEndRumGesturesTrackingTests {
 
         onView(withId(R.id.button)).perform(click())
         instrumentation.waitForIdleSync()
+        Thread.sleep(500)
         onView(withId(R.id.textView)).perform(click())
+        instrumentation.waitForIdleSync()
+        Thread.sleep(500)
+        onView(withId(R.id.textView)).perform(click()) // last one won't be sent (yet)
 
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)

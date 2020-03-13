@@ -16,8 +16,11 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,12 +41,16 @@ internal class GlobalRumTest {
     fun `set up`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
+        GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
     }
 
     @AfterEach
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
+        GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
     }
 
     @Test
@@ -98,8 +105,6 @@ internal class GlobalRumTest {
 
     @Test
     fun `getRumContext updates sessionId if last interaction too old`() {
-        GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
         Thread.sleep(INACTIVITY_MS * 2)
@@ -112,8 +117,6 @@ internal class GlobalRumTest {
 
     @Test
     fun `getRumContext updates sessionId if duration is too long`() {
-        GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
         Thread.sleep(INACTIVITY_MS * 2)
@@ -126,8 +129,6 @@ internal class GlobalRumTest {
 
     @Test
     fun `addUserInteraction updates sessionId if last interaction too old`() {
-        GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
         Thread.sleep(INACTIVITY_MS * 2)
@@ -141,8 +142,6 @@ internal class GlobalRumTest {
 
     @Test
     fun `getRumContext keeps sessionId if last interaction is recent`() {
-        GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
         Thread.sleep(INACTIVITY_MS / 3)
@@ -162,9 +161,6 @@ internal class GlobalRumTest {
     fun `updateContext resets the last interaction timestamp`(
         @Forgery injectedContext: RumContext
     ) {
-        GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-        GlobalRum::class.java.setStaticValue("SESSION_MAX_NS", MAXIMUM_NS)
-
         GlobalRum.updateContext(injectedContext)
         for (i in 0..16) {
             Thread.sleep(INACTIVITY_MS / 3)
@@ -180,5 +176,25 @@ internal class GlobalRumTest {
         private const val INACTIVITY_MS = 100L
         private val INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(INACTIVITY_MS)
         private val MAXIMUM_NS = TimeUnit.MILLISECONDS.toNanos(INACTIVITY_MS * 4)
+
+        @JvmStatic
+        @BeforeAll
+        fun `set up constants`() {
+            GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
+            GlobalRum::class.java.setStaticValue("SESSION_MAX_NS", MAXIMUM_NS)
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun `tear down constants`() {
+            GlobalRum::class.java.setStaticValue(
+                "SESSION_INACTIVITY_NS",
+                TimeUnit.MINUTES.toNanos(15)
+            )
+            GlobalRum::class.java.setStaticValue(
+                "SESSION_MAX_NS",
+                TimeUnit.HOURS.toNanos(4)
+            )
+        }
     }
 }

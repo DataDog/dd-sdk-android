@@ -8,6 +8,8 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.RumEventSerializer
+import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -30,6 +32,36 @@ internal class RumEventAssert(actual: RumEvent) :
     fun hasAttributes(attributes: Map<String, Any?>): RumEventAssert {
         assertThat(actual.attributes)
             .containsAllEntriesOf(attributes)
+        return this
+    }
+
+    fun hasUserActionAttribute(): RumEventAssert {
+        assertThat(actual.attributes)
+            .containsKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+
+        val actionId = actual.attributes[RumEventSerializer.TAG_EVENT_USER_ACTION_ID] as? String
+        assertThat(actionId)
+            .isNotNull()
+            .matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
+
+        return this
+    }
+
+    fun hasUserActionAttribute(expected: UUID): RumEventAssert {
+        assertThat(actual.attributes)
+            .containsKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+
+        val actionId = actual.attributes[RumEventSerializer.TAG_EVENT_USER_ACTION_ID] as? String
+        assertThat(actionId)
+            .isEqualTo(expected.toString())
+
+        return this
+    }
+
+    fun hasNoUserActionAttribute(): RumEventAssert {
+        assertThat(actual.attributes)
+            .doesNotContainKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+
         return this
     }
 
