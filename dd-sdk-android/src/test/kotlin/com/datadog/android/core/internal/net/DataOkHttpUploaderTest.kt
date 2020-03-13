@@ -19,7 +19,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -33,13 +32,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(SystemStreamExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
@@ -64,13 +64,14 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         fakeToken = forge.anHexadecimalString()
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
         System.setProperty("http.agent", fakeUserAgent)
-
         testedUploader = uploader()
     }
 
     abstract fun uploader(): T
 
     abstract fun urlFormat(): String
+
+    abstract fun expectedPathRegex(): String
 
     @AfterEach
     fun `tear down`() {
@@ -394,12 +395,8 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         request: RecordedRequest,
         data: String
     ) {
-
-        val fullPath = String.format(Locale.US, urlFormat(), fakeEndpoint, fakeToken)
-        val expectedPath = fullPath.substring(fakeEndpoint.length)
         assertHeaders(request)
-        assertThat(request.path)
-            .isEqualTo(expectedPath)
+        assertThat(request.path).matches(expectedPathRegex())
         assertThat(request.body.readUtf8())
             .isEqualTo(data)
     }

@@ -66,7 +66,7 @@ internal class DatadogRumMonitorTest {
     @BeforeEach
     fun `set up`() {
         GlobalRum.updateApplicationId(fakeApplicationId)
-        testedMonitor = DatadogRumMonitor(mockTimeProvider, mockWriter)
+        testedMonitor = DatadogRumMonitor(mockWriter, mockTimeProvider)
     }
 
     @Test
@@ -93,7 +93,7 @@ internal class DatadogRumMonitorTest {
         val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         val duration = measureNanoTime {
             testedMonitor.startView(key, name, attributes)
@@ -165,7 +165,7 @@ internal class DatadogRumMonitorTest {
         val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         val duration = measureNanoTime {
             testedMonitor.startView(key, name, attributes)
@@ -203,7 +203,7 @@ internal class DatadogRumMonitorTest {
         val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         val duration = measureNanoTime {
             testedMonitor.startView(key, name, attributes)
@@ -242,7 +242,7 @@ internal class DatadogRumMonitorTest {
         val name = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         val duration = measureNanoTime {
             testedMonitor.startView(key, name, attributes)
@@ -285,7 +285,7 @@ internal class DatadogRumMonitorTest {
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, attributes)
         testedMonitor.startResource(resourceKey, resourceUrl, attributes)
@@ -386,7 +386,7 @@ internal class DatadogRumMonitorTest {
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
@@ -442,7 +442,7 @@ internal class DatadogRumMonitorTest {
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val attributes = forge.exhaustiveAttributes()
         val kind = forge.aValueFrom(RumResourceKind::class.java, listOf(RumResourceKind.UNKNOWN))
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
@@ -515,7 +515,7 @@ internal class DatadogRumMonitorTest {
         val errorMessage = forge.anAlphabeticalString()
         val throwable = forge.aThrowable()
         val attributes = forge.exhaustiveAttributes()
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
@@ -572,7 +572,7 @@ internal class DatadogRumMonitorTest {
         val errorOrigin = forge.anAlphabeticalString()
         val errorMessage = forge.anAlphabeticalString()
         val throwable = forge.aThrowable()
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
@@ -629,7 +629,7 @@ internal class DatadogRumMonitorTest {
         val errorOrigin = forge.anAlphabeticalString()
         val errorMessage = forge.anAlphabeticalString()
         val throwable = forge.aThrowable()
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
@@ -679,7 +679,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAsciiString()
         val attributes = forge.exhaustiveAttributes()
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn timestamp
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn timestamp
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId

@@ -21,4 +21,8 @@ internal class TracesOkHttpUploaderTest : DataOkHttpUploaderTest<TracesOkHttpUpl
     override fun urlFormat(): String {
         return TracesOkHttpUploader.UPLOAD_URL
     }
+
+    override fun expectedPathRegex(): String {
+        return "\\/v1\\/input\\/$fakeToken$"
+    }
 }
