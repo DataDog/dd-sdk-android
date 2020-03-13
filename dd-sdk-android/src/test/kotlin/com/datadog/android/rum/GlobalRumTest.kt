@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -49,6 +50,7 @@ internal class GlobalRumTest {
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.updateContext(RumContext())
         GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
         GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
     }

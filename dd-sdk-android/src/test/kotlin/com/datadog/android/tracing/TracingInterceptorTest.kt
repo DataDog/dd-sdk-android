@@ -130,7 +130,16 @@ internal class TracingInterceptorTest {
 
         fakeRequest = builder.build()
         testedInterceptor = TracingInterceptor()
-        TracesFeature.initialize(mockAppContext, fakeConfig, mock(), mock(), mock(), mock(), mock())
+        TracesFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock()
+        )
         GlobalTracer.registerIfAbsent(mockTracer)
     }
 
