@@ -22,6 +22,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     dependencies {
         implementation "com.datadoghq:dd-sdk-android:x.x.x" {
             exclude group: "com.google.guava", module: "listenablefuture"
+            exclude group: "com.lmax", module: "disruptor"
         }
     }
     ```
@@ -37,6 +38,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .setServiceName("<SERVICE_NAME>")
                         .build()
         Datadog.initialize(this, config)
     }
@@ -52,6 +54,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                        .setServiceName("<SERVICE_NAME>")
                         .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
@@ -81,7 +84,6 @@ When writing your application, you can enable development logs. All internal mes
     ```kotlin
     val logger = Logger.Builder()
         .setNetworkInfoEnabled(true)
-        .setServiceName("<SERVICE_NAME>")
         .setLogcatLogsEnabled(true)
         .setDatadogLogsEnabled(true)
         .setBundleWithTraceEnabled(true)
