@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -32,6 +32,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -63,6 +64,8 @@ internal class RumFeatureTest {
 
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+    @Mock
+    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 
     lateinit var fakeConfig: DatadogConfig.RumConfig
 
@@ -102,7 +105,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val context = GlobalRum.getRumContext()
@@ -116,7 +120,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val persistenceStrategy = RumFeature.persistenceStrategy
@@ -136,13 +141,14 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
-        val uploadHandlerThread = RumFeature.uploadHandlerThread
+        val dataUploadScheduler = RumFeature.dataUploadScheduler
 
-        assertThat(uploadHandlerThread)
-            .isInstanceOf(DataUploadHandlerThread::class.java)
+        assertThat(dataUploadScheduler)
+            .isInstanceOf(DataUploadScheduler::class.java)
     }
 
     @Test
@@ -152,7 +158,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         val clientToken = RumFeature.clientToken
@@ -172,10 +179,11 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
         val persistenceStrategy = RumFeature.persistenceStrategy
-        val uploadHandlerThread = RumFeature.uploadHandlerThread
+        val dataUploadScheduler = RumFeature.dataUploadScheduler
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
@@ -194,16 +202,17 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
         val persistenceStrategy2 = RumFeature.persistenceStrategy
-        val uploadHandlerThread2 = RumFeature.uploadHandlerThread
+        val dataUploadScheduler2 = RumFeature.dataUploadScheduler
         val clientToken2 = RumFeature.clientToken
         val endpointUrl2 = RumFeature.endpointUrl
         val serviceName2 = RumFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
-        assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
+        assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
@@ -221,7 +230,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         // then
@@ -242,7 +252,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         // then
@@ -264,7 +275,8 @@ internal class RumFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
         )
 
         // then

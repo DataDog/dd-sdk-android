@@ -24,6 +24,7 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import java.lang.ref.WeakReference
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.ConnectionSpec
@@ -45,6 +46,9 @@ internal object CoreFeature {
     internal var packageName: String = ""
     internal var packageVersion: String = ""
 
+    internal var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor =
+        ScheduledThreadPoolExecutor(1)
+
     fun initialize(
         appContext: Context,
         needsClearTextHttp: Boolean
@@ -60,7 +64,7 @@ internal object CoreFeature {
         setupInfoProviders(appContext)
 
         setupOkHttpClient(needsClearTextHttp)
-
+        dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(1)
         initialized.set(true)
     }
 
@@ -76,7 +80,8 @@ internal object CoreFeature {
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
             userInfoProvider = NoOpUserInfoProvider()
-
+            dataUploadScheduledExecutor.shutdownNow()
+            dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(1)
             initialized.set(false)
         }
     }
