@@ -24,16 +24,6 @@ import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 interface RumMonitor {
 
     /**
-     * Notifies that a User Action happened.
-     * @param action the action identifier
-     * @param attributes additional custom attributes to attach to the action
-     */
-    fun addUserAction(
-        action: String,
-        attributes: Map<String, Any?> = emptyMap()
-    )
-
-    /**
      * Notifies that a View is being shown to the user, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
      * [Activity] or [Fragment] instance).
@@ -57,6 +47,16 @@ interface RumMonitor {
      */
     fun stopView(
         key: Any,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
+     * Notifies that a User Action happened.
+     * @param action the action identifier
+     * @param attributes additional custom attributes to attach to the action
+     */
+    fun addUserAction(
+        action: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
