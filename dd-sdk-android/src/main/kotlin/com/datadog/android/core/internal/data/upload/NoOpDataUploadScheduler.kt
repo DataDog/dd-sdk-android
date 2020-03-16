@@ -4,7 +4,7 @@ internal class NoOpDataUploadScheduler : UploadScheduler {
     override fun startScheduling() {
         // No Op
     }
-    override fun stop() {
+    override fun stopScheduling() {
         // No Op
     }
 }

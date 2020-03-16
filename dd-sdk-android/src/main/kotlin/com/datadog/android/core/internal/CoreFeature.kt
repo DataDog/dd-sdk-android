@@ -24,7 +24,10 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import java.lang.ref.WeakReference
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.ConnectionSpec
@@ -32,6 +35,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 
 internal object CoreFeature {
+
+    // region Constants
+
+    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
+    private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5) // 5 seconds
+    private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+
+    // endregion
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
@@ -46,8 +57,8 @@ internal object CoreFeature {
     internal var packageName: String = ""
     internal var packageVersion: String = ""
 
-    internal var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor =
-        ScheduledThreadPoolExecutor(1)
+    internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
+    internal lateinit var dataPersistenceExecutorService: ExecutorService
 
     fun initialize(
         appContext: Context,
@@ -64,7 +75,15 @@ internal object CoreFeature {
         setupInfoProviders(appContext)
 
         setupOkHttpClient(needsClearTextHttp)
-        dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(1)
+        dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
+        dataPersistenceExecutorService =
+            ThreadPoolExecutor(
+                CORE_DEFAULT_POOL_SIZE,
+                Runtime.getRuntime().availableProcessors(),
+                THREAD_POOL_MAX_KEEP_ALIVE_MS,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingDeque()
+            )
         initialized.set(true)
     }
 
@@ -80,13 +99,17 @@ internal object CoreFeature {
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
             userInfoProvider = NoOpUserInfoProvider()
-            dataUploadScheduledExecutor.shutdownNow()
-            dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(1)
+            shutDownExecutors()
             initialized.set(false)
         }
     }
 
     // region Internal
+
+    private fun shutDownExecutors() {
+        dataUploadScheduledExecutor.shutdownNow()
+        dataPersistenceExecutorService.shutdownNow()
+    }
 
     private fun readApplicationInformation(
         appContext: Context
@@ -133,12 +156,6 @@ internal object CoreFeature {
             .connectionSpecs(listOf(connectionSpec))
             .build()
     }
-
-    // endregion
-
-    // region Constants
-
-    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
 
     // endregion
 }
