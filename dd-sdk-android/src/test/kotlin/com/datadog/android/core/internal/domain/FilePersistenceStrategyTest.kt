@@ -13,7 +13,6 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.threading.DeferredHandler
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -34,6 +33,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.ExecutorService
 import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.endsWith
@@ -63,22 +63,23 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     lateinit var testedWriter: Writer<T>
     lateinit var testedReader: Reader
-    @Mock(lenient = true)
-    lateinit var mockDeferredHandler: DeferredHandler
+
     @TempDir
     lateinit var tempDir: File
 
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
     // region Setup
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    open fun `set up`(forge: Forge) {
         mockContext = mockContext()
         whenever(mockContext.filesDir) doReturn tempDir
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            val runnable = it.arguments[0] as Runnable
-            runnable.run()
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            (it.arguments[0] as Runnable).run()
+            null
         }
         Datadog.initialize(mockContext, forge.anHexadecimalString())
         val persistingStrategy = getStrategy()
@@ -181,7 +182,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     fun `don't write model if size is too big`(forge: Forge) {
         val bigModel = bigModel(forge)
         testedWriter.write(bigModel)
-            waitForNextBatch()
+        waitForNextBatch()
         val batch = testedReader.readNextBatch()
 
         assertThat(batch)

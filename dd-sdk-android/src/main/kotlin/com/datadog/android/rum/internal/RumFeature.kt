@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
@@ -48,7 +49,8 @@ internal object RumFeature {
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService
     ) {
         if (initialized.get()) {
             return
@@ -60,13 +62,16 @@ internal object RumFeature {
         serviceName = config.serviceName
         envName = config.envName
 
-        persistenceStrategy = RumFileStrategy(appContext)
+        persistenceStrategy = RumFileStrategy(
+            appContext,
+            dataPersistenceExecutorService = dataPersistenceExecutor
+        )
         setupUploader(
             endpointUrl,
             okHttpClient,
             networkInfoProvider,
             systemInfoProvider,
-            dataUploadThreadPoolExecutor
+            dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
         )
         setupTrackingStrategies(appContext, config)
 
@@ -79,7 +84,7 @@ internal object RumFeature {
 
     fun stop() {
         if (initialized.get()) {
-            dataUploadScheduler.stop()
+            dataUploadScheduler.stopScheduling()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpDataUploadScheduler()

@@ -99,7 +99,8 @@ object Datadog {
                 okHttpClient = CoreFeature.okHttpClient,
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor
+                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
             )
         }
 
@@ -112,7 +113,8 @@ object Datadog {
                 timeProvider = CoreFeature.timeProvider,
                 userInfoProvider = CoreFeature.userInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor
+                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
             )
         }
 
@@ -123,7 +125,8 @@ object Datadog {
                 okHttpClient = CoreFeature.okHttpClient,
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor
+                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
             )
         }
 

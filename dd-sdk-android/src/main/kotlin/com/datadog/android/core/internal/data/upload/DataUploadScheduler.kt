@@ -38,7 +38,7 @@ internal class DataUploadScheduler(
         )
     }
 
-    override fun stop() {
+    override fun stopScheduling() {
         scheduledThreadPoolExecutor.remove(runnable)
     }
 }
