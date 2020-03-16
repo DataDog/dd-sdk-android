@@ -32,6 +32,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
@@ -66,6 +67,8 @@ internal class RumFeatureTest {
     lateinit var mockOkHttpClient: OkHttpClient
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
 
     lateinit var fakeConfig: DatadogConfig.RumConfig
 
@@ -106,7 +109,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val context = GlobalRum.getRumContext()
@@ -121,7 +125,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = RumFeature.persistenceStrategy
@@ -142,7 +147,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val dataUploadScheduler = RumFeature.dataUploadScheduler
@@ -159,7 +165,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val clientToken = RumFeature.clientToken
@@ -180,7 +187,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy = RumFeature.persistenceStrategy
         val dataUploadScheduler = RumFeature.dataUploadScheduler
@@ -203,7 +211,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy2 = RumFeature.persistenceStrategy
         val dataUploadScheduler2 = RumFeature.dataUploadScheduler
@@ -231,7 +240,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         // then
@@ -253,7 +263,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         // then
@@ -276,7 +287,8 @@ internal class RumFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         // then

@@ -23,6 +23,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
@@ -56,6 +57,8 @@ internal class LogsFeatureTest {
     lateinit var mockOkHttpClient: OkHttpClient
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
@@ -97,7 +100,8 @@ internal class LogsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = LogsFeature.persistenceStrategy
@@ -114,7 +118,8 @@ internal class LogsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -131,7 +136,8 @@ internal class LogsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val clientToken = LogsFeature.clientToken
@@ -152,7 +158,8 @@ internal class LogsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy = LogsFeature.persistenceStrategy
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -173,7 +180,8 @@ internal class LogsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy2 = LogsFeature.persistenceStrategy
         val dataUploadScheduler2 = LogsFeature.dataUploadScheduler

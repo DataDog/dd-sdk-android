@@ -85,7 +85,7 @@ internal object CrashReportsFeature {
     fun stop() {
         if (initialized.get()) {
             Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
-            dataUploadScheduler.stop()
+            dataUploadScheduler.stopScheduling()
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploader = NoOpDataUploader()

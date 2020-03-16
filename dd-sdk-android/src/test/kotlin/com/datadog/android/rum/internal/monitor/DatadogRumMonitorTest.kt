@@ -64,7 +64,7 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
-    lateinit var mockDevLogHandler : LogHandler
+    lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
     lateinit var fakeApplicationId: UUID

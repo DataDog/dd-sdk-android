@@ -33,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -59,6 +60,19 @@ internal class TracingFileStrategyTest :
 
     // region LogStrategyTest
 
+    @BeforeEach
+    override fun `set up`(forge: Forge) {
+        // add fake data into the old data directory
+        val oldDir = File(tempDir, TracingFileStrategy.DATA_FOLDER_ROOT)
+        oldDir.mkdirs()
+        val file1 = File(oldDir, "file1")
+        val file2 = File(oldDir, "file2")
+        file1.createNewFile()
+        file2.createNewFile()
+        assertThat(oldDir).exists()
+        super.`set up`(forge)
+    }
+
     override fun getStrategy(): PersistenceStrategy<DDSpan> {
         return TracingFileStrategy(
             context = mockContext,
@@ -68,27 +82,19 @@ internal class TracingFileStrategyTest :
             recentDelayMs = RECENT_DELAY_MS,
             maxBatchSize = MAX_BATCH_SIZE,
             maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE
+            maxDiskSpace = MAX_DISK_SPACE,
+            dataPersistenceExecutorService = mockExecutorService
         )
     }
 
     override fun setUp(writer: Writer<DDSpan>, reader: Reader) {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-
-        // add fake data into the old data directory
-        val oldDir = File(tempDir, TracingFileStrategy.DATA_FOLDER_ROOT)
-        oldDir.mkdirs()
-        val file1 = File(oldDir, "file1")
-        val file2 = File(oldDir, "file2")
-        file1.createNewFile()
-        file2.createNewFile()
-        assertThat(oldDir).exists()
-        (testedWriter as DeferredWriter<DDSpan>).deferredHandler = mockDeferredHandler
         (testedWriter as DeferredWriter<DDSpan>).invokeMethod(
-            "consumeQueue"
+            "tryToConsumeQueue"
         ) // consume all the queued messages
     }
+
     // endregion
 
     // region utils
