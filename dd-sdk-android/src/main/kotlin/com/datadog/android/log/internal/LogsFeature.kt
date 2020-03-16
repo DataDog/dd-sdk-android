@@ -21,6 +21,7 @@ import com.datadog.android.error.internal.CrashReportsFeature.envTag
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
@@ -55,7 +56,8 @@ internal object LogsFeature {
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService
     ) {
         if (initialized.get()) {
             return
@@ -66,7 +68,10 @@ internal object LogsFeature {
         serviceName = config.serviceName
         envName = config.envName
 
-        persistenceStrategy = LogFileStrategy(appContext)
+        persistenceStrategy = LogFileStrategy(
+            appContext,
+            dataPersistenceExecutorService = dataPersistenceExecutor
+        )
         setupUploader(
             endpointUrl,
             okHttpClient,
@@ -84,7 +89,7 @@ internal object LogsFeature {
 
     fun stop() {
         if (initialized.get()) {
-            dataUploadScheduler.stop()
+            dataUploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpDataUploadScheduler()
             clientToken = ""

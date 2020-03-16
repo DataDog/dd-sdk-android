@@ -138,6 +138,7 @@ internal class TracingInterceptorTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             mock()
         )
         GlobalTracer.registerIfAbsent(mockTracer)

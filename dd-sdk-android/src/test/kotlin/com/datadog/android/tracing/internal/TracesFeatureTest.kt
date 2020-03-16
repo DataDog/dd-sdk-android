@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
@@ -53,16 +54,24 @@ internal class TracesFeatureTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
@@ -105,7 +114,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
@@ -127,7 +137,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
@@ -148,7 +159,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val dataUploadScheduler = TracesFeature.dataUploadScheduler
@@ -167,7 +179,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val clientToken = TracesFeature.clientToken
@@ -190,7 +203,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy = TracesFeature.persistenceStrategy
         val dataUploadScheduler = TracesFeature.dataUploadScheduler
@@ -213,7 +227,8 @@ internal class TracesFeatureTest {
             mockUserInfoProvider,
             mockSystemInfoProvider,
             mockTimeProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy2 = TracesFeature.persistenceStrategy
         val dataUploadScheduler2 = TracesFeature.dataUploadScheduler

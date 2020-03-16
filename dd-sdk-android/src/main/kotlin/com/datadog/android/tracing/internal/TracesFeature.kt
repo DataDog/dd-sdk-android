@@ -22,6 +22,7 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
@@ -47,7 +48,8 @@ internal object TracesFeature {
         userInfoProvider: UserInfoProvider,
         systemInfoProvider: SystemInfoProvider,
         timeProvider: TimeProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService
     ) {
         if (initialized.get()) {
             return
@@ -63,7 +65,8 @@ internal object TracesFeature {
             timeProvider,
             networkInfoProvider,
             userInfoProvider,
-            envSuffix = envSuffix
+            envSuffix = envSuffix,
+            dataPersistenceExecutorService = dataPersistenceExecutor
         )
         setupUploader(
             endpointUrl,
@@ -78,7 +81,7 @@ internal object TracesFeature {
 
     fun stop() {
         if (initialized.get()) {
-            dataUploadScheduler.stop()
+            dataUploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpDataUploadScheduler()
             clientToken = ""

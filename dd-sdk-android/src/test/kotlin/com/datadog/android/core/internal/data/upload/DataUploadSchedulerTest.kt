@@ -57,7 +57,7 @@ internal class DataUploadSchedulerTest {
         dataUploadScheduler.startScheduling()
 
         // when
-        dataUploadScheduler.stop()
+        dataUploadScheduler.stopScheduling()
 
         // then
         val argumentCaptor = argumentCaptor<Runnable>()

@@ -34,6 +34,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
@@ -186,9 +187,11 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `stop will shutdown and reinitialize the data upload scheduledThreadPoolExecutor`() {
+    fun `stop will shutdown the executors`() {
         // given
         CoreFeature.initialize(mockAppContext, true)
+        val mockedThreadPoolExecutor: ThreadPoolExecutor = mock()
+        CoreFeature.dataPersistenceExecutorService = mockedThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
         CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
 
@@ -196,9 +199,7 @@ internal class CoreFeatureTest {
         CoreFeature.stop()
 
         // then
+        verify(mockedThreadPoolExecutor).shutdownNow()
         verify(mockScheduledThreadPoolExecutor).shutdownNow()
-        assertThat(CoreFeature.dataUploadScheduledExecutor).isNotNull()
-        assertThat(mockScheduledThreadPoolExecutor)
-            .isNotEqualTo(CoreFeature.dataUploadScheduledExecutor)
     }
 }

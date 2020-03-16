@@ -3,22 +3,28 @@ package com.datadog.android.core.internal.data.file
 import android.os.Build
 import com.datadog.android.core.internal.data.DataMigrator
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -26,6 +32,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -33,35 +40,34 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
-@MockitoSettings
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class DeferredWriterTest {
 
     lateinit var underTest: DeferredWriter<String>
+
     @Mock
     lateinit var mockDelegate: Writer<String>
-    @Mock
-    lateinit var mockDeferredHandler: AndroidDeferredHandler
 
     @Mock
     lateinit var mockDataMigrator: DataMigrator
+
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
 
     lateinit var threadName: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         threadName = forge.anAlphabeticalString()
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            val runnable = it.arguments[0] as Runnable
-            runnable.run()
+        whenever(mockExecutorService.submit(any())).doAnswer {
+            (it.arguments[0] as Runnable).run()
+            mock()
         }
         underTest = DeferredWriter(
-            threadName,
             mockDelegate,
+            mockExecutorService,
             mockDataMigrator
         )
-        underTest.deferredHandler = mockDeferredHandler
-        // force the lazy handler thread to consume all the queued messages
-        underTest.invokeMethod("consumeQueue")
     }
 
     @Test
@@ -78,34 +84,103 @@ internal class DeferredWriterTest {
     }
 
     @Test
+    fun `migrates the data before doing anything else in multi thread`(forge: Forge) {
+        val model1 = forge.anAlphabeticalString()
+        val model2 = forge.anAlphabeticalString()
+        val model3 = forge.anAlphabeticalString()
+
+        val countDownLatch = CountDownLatch(3)
+
+        // when
+        Thread {
+            underTest.write(model1)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            underTest.write(model2)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            underTest.write(model3)
+            countDownLatch.countDown()
+        }.start()
+
+        countDownLatch.await(3000, TimeUnit.SECONDS)
+
+        // then
+        inOrder(mockDataMigrator, mockDelegate) {
+            verify(mockDataMigrator).migrateData()
+            argumentCaptor<String>() {
+                verify(mockDelegate, times(3)).write(capture())
+                assertThat(allValues).containsExactlyInAnyOrder(model1, model2, model3)
+            }
+        }
+    }
+
+    @Test
+    fun `handles the data correctly even when write was called before migration`(forge: Forge) {
+        val model1 = forge.anAlphabeticalString()
+        val model2 = forge.anAlphabeticalString()
+        val model3 = forge.anAlphabeticalString()
+
+        val countDownLatch = CountDownLatch(3)
+        val dataMigrated: AtomicBoolean = underTest.getFieldValue("dataMigrated")
+        dataMigrated.set(false)
+
+        // when
+        Thread {
+            underTest.write(model1)
+            countDownLatch.countDown()
+        }.start()
+
+        Thread {
+            underTest.write(model2)
+            countDownLatch.countDown()
+        }.start()
+
+        // simulate data migration finalized
+        dataMigrated.set(true)
+
+        Thread {
+            underTest.write(model3)
+            countDownLatch.countDown()
+        }.start()
+
+        countDownLatch.await(3000, TimeUnit.SECONDS)
+
+        // then
+        inOrder(mockDataMigrator, mockDelegate) {
+            verify(mockDataMigrator).migrateData()
+            argumentCaptor<String>() {
+                verify(mockDelegate, times(3)).write(capture())
+                assertThat(allValues).containsExactlyInAnyOrder(model1, model2, model3)
+            }
+        }
+    }
+
+    @Test
     fun `if no data migrator provided will not perform the migration step`(forge: Forge) {
         val model = forge.anAlphabeticalString()
+        reset(mockExecutorService)
         underTest = DeferredWriter(
-            threadName,
-            mockDelegate
+            mockDelegate,
+            mockExecutorService
         )
         // when
         underTest.write(model)
 
         // then
-        verify(mockDeferredHandler, times(1)).handle(any())
-        verifyNoMoreInteractions(mockDeferredHandler)
+        verify(mockExecutorService, times(1)).submit(any())
+        verifyNoMoreInteractions(mockExecutorService)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `run delegate in deferred handler when writing a model`(forge: Forge) {
         val model = forge.anAlphabeticalString()
-        var runnable = Runnable {}
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            runnable = it.arguments[0] as Runnable
-            Unit
-        }
 
         underTest.write(model)
-        verifyZeroInteractions(mockDelegate)
 
-        runnable.run()
         verify(mockDelegate).write(model)
     }
 
@@ -113,16 +188,9 @@ internal class DeferredWriterTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `run delegate in deferred handler when writing a models list`(forge: Forge) {
         val models: List<String> = forge.aList(size = 10) { forge.anAlphabeticalString() }
-        var runnable = Runnable {}
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            runnable = it.arguments[0] as Runnable
-            Unit
-        }
 
         underTest.write(models)
-        verifyZeroInteractions(mockDelegate)
 
-        runnable.run()
         verify(mockDelegate).write(models)
     }
 }
