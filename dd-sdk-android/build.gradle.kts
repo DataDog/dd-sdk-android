@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.api
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
@@ -30,6 +31,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("apiSurface")
+    id("cloneDependencies")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     jacoco
@@ -106,9 +108,7 @@ dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.JetpackWorkManager)
-    api(Dependencies.Libraries.TracingOt) {
-        exclude("com.lmax")
-    }
+    api(Dependencies.Libraries.TracingOt)
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
@@ -117,6 +117,47 @@ dependencies {
 
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)
+}
+
+cloneDependencies {
+
+    clone(
+        "https://github.com/DataDog/dd-trace-java.git",
+        "dd-trace-ot",
+        listOf(
+            "dd-trace-ot.gradle",
+            "README.md",
+            "jfr-openjdk/",
+            "src/jmh/", // JVM based benchmark, not relevant for ART/Dalvik
+            "src/traceAgentTest/",
+            "src/ot33CompatabilityTest/",
+            "src/ot31CompatabilityTest/",
+            "src/test/resources/",
+            "src/main/java/datadog/trace/common/sampling/RuleBasedSampler.java",
+            "src/main/java/datadog/trace/common/serialization",
+            "src/main/java/datadog/trace/common/writer/unixdomainsockets",
+            "src/main/java/datadog/trace/common/writer/ddagent",
+            "src/main/java/datadog/trace/common/writer/DDAgentWriter.java",
+            "src/main/java/datadog/opentracing/resolver",
+            "src/main/java/datadog/opentracing/ContainerInfo.java",
+            "src/test"
+        )
+    )
+    clone(
+        "https://github.com/DataDog/dd-trace-java.git",
+        "dd-trace-api",
+        listOf(
+            "dd-trace-api.gradle",
+            "src/test"
+        )
+    )
+    clone(
+        "https://github.com/DataDog/dd-trace-java.git",
+        "utils/thread-utils",
+        listOf(
+            "thread-utils.gradle"
+        )
+    )
 }
 
 kotlinConfig()

@@ -8,6 +8,12 @@ package com.datadog.gradle
 
 import org.gradle.api.artifacts.dsl.DependencyHandler
 
+fun DependencyHandler.api(dependencies: Array<String>) {
+    dependencies.forEach {
+        add("api", it)
+    }
+}
+
 fun DependencyHandler.compile(dependencies: Array<String>) {
     dependencies.forEach {
         add("compile", it)

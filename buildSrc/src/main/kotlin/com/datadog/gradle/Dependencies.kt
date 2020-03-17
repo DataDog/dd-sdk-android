@@ -17,6 +17,9 @@ object Dependencies {
         const val JetpackWorkManager = "2.3.3"
         const val AndroidXMultidex = "2.0.1"
 
+        // DD-TRACE-OT
+        const val OpenTracing = "0.32.0"
+
         // JUnit
         const val JUnitJupiter = "5.5.2"
         const val JUnitPlatform = "1.5.2"
@@ -58,7 +61,12 @@ object Dependencies {
 
     object Libraries {
 
-        const val TracingOt = "com.datadoghq:dd-trace-ot:${Versions.TracingOt}"
+        @JvmField
+        val TracingOt = arrayOf(
+            "io.opentracing:opentracing-api:${Versions.OpenTracing}",
+            "io.opentracing:opentracing-noop:${Versions.OpenTracing}",
+            "io.opentracing:opentracing-util:${Versions.OpenTracing}"
+        )
         const val Kotlin = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.Kotlin}"
         const val KotlinReflect = "org.jetbrains.kotlin:kotlin-reflect:${Versions.Kotlin}"
 
