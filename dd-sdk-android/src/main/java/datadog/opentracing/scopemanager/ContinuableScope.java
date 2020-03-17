@@ -95,10 +95,6 @@ public class ContinuableScope implements DDScope, TraceScope {
         }
       }
     } else {
-      log.debug(
-          "Tried to close {} scope when {} is on top. Ignoring!",
-          this,
-          scopeManager.tlsScope.get());
     }
   }
 
@@ -162,8 +158,6 @@ public class ContinuableScope implements DDScope, TraceScope {
                 scopeManager, openCount, this, spanUnderScope, finishOnClose, eventFactory);
         return scope;
       } else {
-        log.debug(
-            "Failed to activate continuation. Reusing a continuation not allowed.  Returning a new scope. Spans will not be linked.");
         return new ContinuableScope(
             scopeManager, new AtomicInteger(1), null, spanUnderScope, finishOnClose, eventFactory);
       }

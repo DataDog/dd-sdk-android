@@ -20,24 +20,8 @@ public interface Sampler {
     public static Sampler forConfig(final Config config) {
       Sampler sampler;
       if (config != null) {
-        final Map<String, String> serviceRules = config.getTraceSamplingServiceRules();
-        final Map<String, String> operationRules = config.getTraceSamplingOperationRules();
 
-        if ((serviceRules != null && !serviceRules.isEmpty())
-            || (operationRules != null && !operationRules.isEmpty())
-            || config.getTraceSampleRate() != null) {
-
-          try {
-            sampler =
-                RuleBasedSampler.build(
-                    serviceRules,
-                    operationRules,
-                    config.getTraceSampleRate(),
-                    config.getTraceRateLimit());
-          } catch (final IllegalArgumentException e) {
-            sampler = new AllSampler();
-          }
-        } else if (config.isPrioritySamplingEnabled()) {
+        if (config.isPrioritySamplingEnabled()) {
           sampler = new RateByServiceSampler();
         } else {
           sampler = new AllSampler();

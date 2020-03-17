@@ -82,9 +82,6 @@ public class PendingTrace extends ConcurrentLinkedDeque<DDSpan> {
 
   public void registerSpan(final DDSpan span) {
     if (traceId == null || span.context() == null) {
-      log.error(
-          "Failed to register span ({}) due to null PendingTrace traceId or null span context",
-          span);
       return;
     }
     if (!traceId.equals(span.context().getTraceId())) {
@@ -103,8 +100,6 @@ public class PendingTrace extends ConcurrentLinkedDeque<DDSpan> {
 
   private void expireSpan(final DDSpan span) {
     if (traceId == null || span.context() == null) {
-      log.error(
-          "Failed to expire span ({}) due to null PendingTrace traceId or null span context", span);
       return;
     }
     if (!traceId.equals(span.context().getTraceId())) {
@@ -126,8 +121,6 @@ public class PendingTrace extends ConcurrentLinkedDeque<DDSpan> {
       return;
     }
     if (traceId == null || span.context() == null) {
-      log.error(
-          "Failed to add span ({}) due to null PendingTrace traceId or null span context", span);
       return;
     }
     if (!traceId.equals(span.getTraceId())) {
@@ -157,8 +150,6 @@ public class PendingTrace extends ConcurrentLinkedDeque<DDSpan> {
             new WeakReference<ContinuableScope.Continuation>(continuation, referenceQueue);
         weakReferences.add(continuation.ref);
         final int count = pendingReferenceCount.incrementAndGet();
-        log.debug(
-            "traceId: {} -- registered continuation {}. count = {}", traceId, continuation, count);
       } else {
       }
     }
@@ -227,10 +218,6 @@ public class PendingTrace extends ConcurrentLinkedDeque<DDSpan> {
     }
     if (count > 0) {
       // TODO attempt to flatten and report if top level spans are finished. (for accurate metrics)
-      log.debug(
-          "trace {} : {} unfinished spans garbage collected. Trace will not report.",
-          traceId,
-          count);
     }
     return count > 0;
   }

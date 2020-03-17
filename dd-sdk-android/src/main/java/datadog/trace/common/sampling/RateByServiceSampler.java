@@ -5,8 +5,6 @@ import static java.util.Collections.unmodifiableMap;
 
 import datadog.opentracing.DDSpan;
 import datadog.trace.api.sampling.PrioritySampling;
-import datadog.trace.common.writer.ddagent.DDAgentResponseListener;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -14,7 +12,7 @@ import java.util.Map;
  *
  * <p>The configuration of (serviceName,env)->rate is configured by the core agent.
  */
-public class RateByServiceSampler implements Sampler, PrioritySampler, DDAgentResponseListener {
+public class RateByServiceSampler implements Sampler, PrioritySampler {
   public static final String SAMPLING_AGENT_RATE = "_dd.agent_psr";
 
   /** Key for setting the default/baseline rate */
@@ -64,24 +62,6 @@ public class RateByServiceSampler implements Sampler, PrioritySampler, DDAgentRe
     return null == span.getTags().get("env") ? "" : String.valueOf(span.getTags().get("env"));
   }
 
-  @Override
-  public void onResponse(
-      final String endpoint, final Map<String, Map<String, Number>> responseJson) {
-    final Map<String, Number> newServiceRates = responseJson.get("rate_by_service");
-    if (null != newServiceRates) {
-      final Map<String, RateSampler> updatedServiceRates = new HashMap<>();
-      for (final Map.Entry<String, Number> entry : newServiceRates.entrySet()) {
-        if (entry.getValue() != null) {
-          updatedServiceRates.put(
-              entry.getKey(), createRateSampler(entry.getValue().doubleValue()));
-        }
-      }
-      if (!updatedServiceRates.containsKey(DEFAULT_KEY)) {
-        updatedServiceRates.put(DEFAULT_KEY, createRateSampler(DEFAULT_RATE));
-      }
-      serviceRates = unmodifiableMap(updatedServiceRates);
-    }
-  }
 
   private RateSampler createRateSampler(final double sampleRate) {
     final double sanitizedRate;

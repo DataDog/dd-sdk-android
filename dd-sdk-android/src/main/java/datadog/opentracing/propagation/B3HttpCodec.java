@@ -45,8 +45,6 @@ class B3HttpCodec {
               SAMPLING_PRIORITY_KEY, convertSamplingPriority(context.getSamplingPriority()));
         }
       } catch (final NumberFormatException e) {
-        log.debug(
-            "Cannot parse context id(s): {} {}", context.getTraceId(), context.getSpanId(), e);
       }
     }
 

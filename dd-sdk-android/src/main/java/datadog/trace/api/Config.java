@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
  * <p>System properties are {@link Config#PREFIX}'ed. Environment variables are the same as the
  * system property, but uppercased with '.' -> '_'.
  */
-@ToString(includeFieldNames = true)
 public class Config {
   /** Config keys below */
   private static final String PREFIX = "dd.";
@@ -207,83 +206,83 @@ public class Config {
    * this is a random UUID that gets generated on JVM start up and is attached to every root span
    * and every JMX metric that is sent out.
    */
-  @Getter private final String runtimeId;
+  private final String runtimeId;
 
-  @Getter private final String serviceName;
-  @Getter private final boolean traceEnabled;
-  @Getter private final boolean integrationsEnabled;
-  @Getter private final String writerType;
-  @Getter private final String agentHost;
-  @Getter private final int agentPort;
-  @Getter private final String agentUnixDomainSocket;
-  @Getter private final boolean prioritySamplingEnabled;
-  @Getter private final boolean traceResolverEnabled;
-  @Getter private final Map<String, String> serviceMapping;
+  private final String serviceName;
+  private final boolean traceEnabled;
+  private final boolean integrationsEnabled;
+  private final String writerType;
+  private final String agentHost;
+  private final int agentPort;
+  private final String agentUnixDomainSocket;
+  private final boolean prioritySamplingEnabled;
+  private final boolean traceResolverEnabled;
+  private final Map<String, String> serviceMapping;
   private final Map<String, String> tags;
   @Deprecated private final Map<String, String> globalTags;
   private final Map<String, String> spanTags;
   private final Map<String, String> jmxTags;
-  @Getter private final List<String> excludedClasses;
-  @Getter private final Map<String, String> headerTags;
-  @Getter private final Set<Integer> httpServerErrorStatuses;
-  @Getter private final Set<Integer> httpClientErrorStatuses;
-  @Getter private final boolean httpServerTagQueryString;
-  @Getter private final boolean httpClientTagQueryString;
-  @Getter private final boolean httpClientSplitByDomain;
-  @Getter private final boolean dbClientSplitByInstance;
-  @Getter private final Set<String> splitByTags;
-  @Getter private final Integer scopeDepthLimit;
-  @Getter private final Integer partialFlushMinSpans;
-  @Getter private final long spanDurationAboveAverageStacktraceNanos;
-  @Getter private final boolean runtimeContextFieldInjection;
-  @Getter private final Set<PropagationStyle> propagationStylesToExtract;
-  @Getter private final Set<PropagationStyle> propagationStylesToInject;
+  private final List<String> excludedClasses;
+  private final Map<String, String> headerTags;
+  private final Set<Integer> httpServerErrorStatuses;
+  private final Set<Integer> httpClientErrorStatuses;
+  private final boolean httpServerTagQueryString;
+  private final boolean httpClientTagQueryString;
+  private final boolean httpClientSplitByDomain;
+  private final boolean dbClientSplitByInstance;
+  private final Set<String> splitByTags;
+  private final Integer scopeDepthLimit;
+  private final Integer partialFlushMinSpans;
+  private final long spanDurationAboveAverageStacktraceNanos;
+  private final boolean runtimeContextFieldInjection;
+  private final Set<PropagationStyle> propagationStylesToExtract;
+  private final Set<PropagationStyle> propagationStylesToInject;
 
-  @Getter private final boolean jmxFetchEnabled;
-  @Getter private final String jmxFetchConfigDir;
-  @Getter private final List<String> jmxFetchConfigs;
-  @Deprecated @Getter private final List<String> jmxFetchMetricsConfigs;
-  @Getter private final Integer jmxFetchCheckPeriod;
-  @Getter private final Integer jmxFetchRefreshBeansPeriod;
-  @Getter private final String jmxFetchStatsdHost;
-  @Getter private final Integer jmxFetchStatsdPort;
+  private final boolean jmxFetchEnabled;
+  private final String jmxFetchConfigDir;
+  private final List<String> jmxFetchConfigs;
+  @Deprecated private final List<String> jmxFetchMetricsConfigs;
+  private final Integer jmxFetchCheckPeriod;
+  private final Integer jmxFetchRefreshBeansPeriod;
+  private final String jmxFetchStatsdHost;
+  private final Integer jmxFetchStatsdPort;
 
   // These values are default-ed to those of jmx fetch values as needed
-  @Getter private final boolean healthMetricsEnabled;
-  @Getter private final String healthMetricsStatsdHost;
-  @Getter private final Integer healthMetricsStatsdPort;
+  private final boolean healthMetricsEnabled;
+  private final String healthMetricsStatsdHost;
+  private final Integer healthMetricsStatsdPort;
 
-  @Getter private final boolean logsInjectionEnabled;
-  @Getter private final boolean reportHostName;
+  private final boolean logsInjectionEnabled;
+  private final boolean reportHostName;
 
-  @Getter private final String traceAnnotations;
+  private final String traceAnnotations;
 
-  @Getter private final String traceMethods;
+  private final String traceMethods;
 
-  @Getter private final boolean traceExecutorsAll;
-  @Getter private final List<String> traceExecutors;
+  private final boolean traceExecutorsAll;
+  private final List<String> traceExecutors;
 
-  @Getter private final boolean traceAnalyticsEnabled;
+  private final boolean traceAnalyticsEnabled;
 
-  @Getter private final Map<String, String> traceSamplingServiceRules;
-  @Getter private final Map<String, String> traceSamplingOperationRules;
-  @Getter private final Double traceSampleRate;
-  @Getter private final Double traceRateLimit;
+  private final Map<String, String> traceSamplingServiceRules;
+  private final Map<String, String> traceSamplingOperationRules;
+  private final Double traceSampleRate;
+  private final Double traceRateLimit;
 
-  @Getter private final boolean profilingEnabled;
-  @Getter private final String profilingUrl;
-  @Getter private final String profilingApiKey;
+  private final boolean profilingEnabled;
+  private final String profilingUrl;
+  private final String profilingApiKey;
   private final Map<String, String> profilingTags;
-  @Getter private final int profilingStartDelay;
-  @Getter private final boolean profilingStartForceFirst;
-  @Getter private final int profilingUploadPeriod;
-  @Getter private final String profilingTemplateOverrideFile;
-  @Getter private final int profilingUploadTimeout;
-  @Getter private final String profilingUploadCompression;
-  @Getter private final String profilingProxyHost;
-  @Getter private final int profilingProxyPort;
-  @Getter private final String profilingProxyUsername;
-  @Getter private final String profilingProxyPassword;
+  private final int profilingStartDelay;
+  private final boolean profilingStartForceFirst;
+  private final int profilingUploadPeriod;
+  private final String profilingTemplateOverrideFile;
+  private final int profilingUploadTimeout;
+  private final String profilingUploadCompression;
+  private final String profilingProxyHost;
+  private final int profilingProxyPort;
+  private final String profilingProxyUsername;
+  private final String profilingProxyPassword;
 
   // Values from an optionally provided properties file
   private static Properties propertiesFromConfigFile;
@@ -1066,8 +1065,6 @@ public class Config {
       return Collections.emptyMap();
     }
     if (!str.matches("(([^,:]+:[^,:]*,)*([^,:]+:[^,:]*),?)?")) {
-      log.warn(
-          "Invalid config for {}: '{}'. Must match 'key1:value1,key2:value2'.", settingName, str);
       return Collections.emptyMap();
     }
 
@@ -1093,10 +1090,6 @@ public class Config {
     assert str != null;
     str = str.replaceAll("\\s", "");
     if (!str.matches("\\d{3}(?:-\\d{3})?(?:,\\d{3}(?:-\\d{3})?)*")) {
-      log.warn(
-          "Invalid config for {}: '{}'. Must be formatted like '400-403,405,410-499'.",
-          settingName,
-          str);
       throw new NumberFormatException();
     }
 
@@ -1199,8 +1192,6 @@ public class Config {
       properties.load(fileReader);
     } catch (final FileNotFoundException fnf) {
     } catch (final IOException ioe) {
-      log.error(
-          "Configuration file '{}' cannot be accessed or correctly parsed.", configurationFilePath);
     }
 
     return properties;
@@ -1258,5 +1249,322 @@ public class Config {
     } else {
       return new Config(properties, INSTANCE);
     }
+  }
+
+  // GENERATED GETTERS
+
+  public String getRuntimeId() {
+    return runtimeId;
+  }
+
+  public String getServiceName() {
+    return serviceName;
+  }
+
+  public boolean isTraceEnabled() {
+    return traceEnabled;
+  }
+
+  public boolean isIntegrationsEnabled() {
+    return integrationsEnabled;
+  }
+
+  public String getWriterType() {
+    return writerType;
+  }
+
+  public String getAgentHost() {
+    return agentHost;
+  }
+
+  public int getAgentPort() {
+    return agentPort;
+  }
+
+  public String getAgentUnixDomainSocket() {
+    return agentUnixDomainSocket;
+  }
+
+  public boolean isPrioritySamplingEnabled() {
+    return prioritySamplingEnabled;
+  }
+
+  public boolean isTraceResolverEnabled() {
+    return traceResolverEnabled;
+  }
+
+  public Map<String, String> getServiceMapping() {
+    return serviceMapping;
+  }
+
+  public List<String> getExcludedClasses() {
+    return excludedClasses;
+  }
+
+  public Map<String, String> getHeaderTags() {
+    return headerTags;
+  }
+
+  public Set<Integer> getHttpServerErrorStatuses() {
+    return httpServerErrorStatuses;
+  }
+
+  public Set<Integer> getHttpClientErrorStatuses() {
+    return httpClientErrorStatuses;
+  }
+
+  public boolean isHttpServerTagQueryString() {
+    return httpServerTagQueryString;
+  }
+
+  public boolean isHttpClientTagQueryString() {
+    return httpClientTagQueryString;
+  }
+
+  public boolean isHttpClientSplitByDomain() {
+    return httpClientSplitByDomain;
+  }
+
+  public boolean isDbClientSplitByInstance() {
+    return dbClientSplitByInstance;
+  }
+
+  public Set<String> getSplitByTags() {
+    return splitByTags;
+  }
+
+  public Integer getScopeDepthLimit() {
+    return scopeDepthLimit;
+  }
+
+  public Integer getPartialFlushMinSpans() {
+    return partialFlushMinSpans;
+  }
+
+  public long getSpanDurationAboveAverageStacktraceNanos() {
+    return spanDurationAboveAverageStacktraceNanos;
+  }
+
+  public boolean isRuntimeContextFieldInjection() {
+    return runtimeContextFieldInjection;
+  }
+
+  public Set<Config.PropagationStyle> getPropagationStylesToExtract() {
+    return propagationStylesToExtract;
+  }
+
+  public Set<Config.PropagationStyle> getPropagationStylesToInject() {
+    return propagationStylesToInject;
+  }
+
+  public boolean isJmxFetchEnabled() {
+    return jmxFetchEnabled;
+  }
+
+  public String getJmxFetchConfigDir() {
+    return jmxFetchConfigDir;
+  }
+
+  public List<String> getJmxFetchConfigs() {
+    return jmxFetchConfigs;
+  }
+
+  public List<String> getJmxFetchMetricsConfigs() {
+    return jmxFetchMetricsConfigs;
+  }
+
+  public Integer getJmxFetchCheckPeriod() {
+    return jmxFetchCheckPeriod;
+  }
+
+  public Integer getJmxFetchRefreshBeansPeriod() {
+    return jmxFetchRefreshBeansPeriod;
+  }
+
+  public String getJmxFetchStatsdHost() {
+    return jmxFetchStatsdHost;
+  }
+
+  public Integer getJmxFetchStatsdPort() {
+    return jmxFetchStatsdPort;
+  }
+
+  public boolean isHealthMetricsEnabled() {
+    return healthMetricsEnabled;
+  }
+
+  public String getHealthMetricsStatsdHost() {
+    return healthMetricsStatsdHost;
+  }
+
+  public Integer getHealthMetricsStatsdPort() {
+    return healthMetricsStatsdPort;
+  }
+
+  public boolean isLogsInjectionEnabled() {
+    return logsInjectionEnabled;
+  }
+
+  public boolean isReportHostName() {
+    return reportHostName;
+  }
+
+  public String getTraceAnnotations() {
+    return traceAnnotations;
+  }
+
+  public boolean isTraceExecutorsAll() {
+    return traceExecutorsAll;
+  }
+
+  public List<String> getTraceExecutors() {
+    return traceExecutors;
+  }
+
+  public boolean isTraceAnalyticsEnabled() {
+    return traceAnalyticsEnabled;
+  }
+
+  public Map<String, String> getTraceSamplingServiceRules() {
+    return traceSamplingServiceRules;
+  }
+
+  public Map<String, String> getTraceSamplingOperationRules() {
+    return traceSamplingOperationRules;
+  }
+
+  public Double getTraceSampleRate() {
+    return traceSampleRate;
+  }
+
+  public Double getTraceRateLimit() {
+    return traceRateLimit;
+  }
+
+  public boolean isProfilingEnabled() {
+    return profilingEnabled;
+  }
+
+  public String getProfilingUrl() {
+    return profilingUrl;
+  }
+
+  public String getProfilingApiKey() {
+    return profilingApiKey;
+  }
+
+  public int getProfilingStartDelay() {
+    return profilingStartDelay;
+  }
+
+  public boolean isProfilingStartForceFirst() {
+    return profilingStartForceFirst;
+  }
+
+  public int getProfilingUploadPeriod() {
+    return profilingUploadPeriod;
+  }
+
+  public String getProfilingTemplateOverrideFile() {
+    return profilingTemplateOverrideFile;
+  }
+
+  public int getProfilingUploadTimeout() {
+    return profilingUploadTimeout;
+  }
+
+  public String getProfilingUploadCompression() {
+    return profilingUploadCompression;
+  }
+
+  public String getProfilingProxyHost() {
+    return profilingProxyHost;
+  }
+
+  public int getProfilingProxyPort() {
+    return profilingProxyPort;
+  }
+
+  public String getProfilingProxyUsername() {
+    return profilingProxyUsername;
+  }
+
+  public String getProfilingProxyPassword() {
+    return profilingProxyPassword;
+  }
+
+  // GENERATED TOSTRING
+
+
+  @Override
+  public String toString() {
+    return "Config{" +
+            "runtimeId='" + runtimeId + '\'' +
+            ", serviceName='" + serviceName + '\'' +
+            ", traceEnabled=" + traceEnabled +
+            ", integrationsEnabled=" + integrationsEnabled +
+            ", writerType='" + writerType + '\'' +
+            ", agentHost='" + agentHost + '\'' +
+            ", agentPort=" + agentPort +
+            ", agentUnixDomainSocket='" + agentUnixDomainSocket + '\'' +
+            ", prioritySamplingEnabled=" + prioritySamplingEnabled +
+            ", traceResolverEnabled=" + traceResolverEnabled +
+            ", serviceMapping=" + serviceMapping +
+            ", tags=" + tags +
+            ", globalTags=" + globalTags +
+            ", spanTags=" + spanTags +
+            ", jmxTags=" + jmxTags +
+            ", excludedClasses=" + excludedClasses +
+            ", headerTags=" + headerTags +
+            ", httpServerErrorStatuses=" + httpServerErrorStatuses +
+            ", httpClientErrorStatuses=" + httpClientErrorStatuses +
+            ", httpServerTagQueryString=" + httpServerTagQueryString +
+            ", httpClientTagQueryString=" + httpClientTagQueryString +
+            ", httpClientSplitByDomain=" + httpClientSplitByDomain +
+            ", dbClientSplitByInstance=" + dbClientSplitByInstance +
+            ", splitByTags=" + splitByTags +
+            ", scopeDepthLimit=" + scopeDepthLimit +
+            ", partialFlushMinSpans=" + partialFlushMinSpans +
+            ", spanDurationAboveAverageStacktraceNanos=" + spanDurationAboveAverageStacktraceNanos +
+            ", runtimeContextFieldInjection=" + runtimeContextFieldInjection +
+            ", propagationStylesToExtract=" + propagationStylesToExtract +
+            ", propagationStylesToInject=" + propagationStylesToInject +
+            ", jmxFetchEnabled=" + jmxFetchEnabled +
+            ", jmxFetchConfigDir='" + jmxFetchConfigDir + '\'' +
+            ", jmxFetchConfigs=" + jmxFetchConfigs +
+            ", jmxFetchMetricsConfigs=" + jmxFetchMetricsConfigs +
+            ", jmxFetchCheckPeriod=" + jmxFetchCheckPeriod +
+            ", jmxFetchRefreshBeansPeriod=" + jmxFetchRefreshBeansPeriod +
+            ", jmxFetchStatsdHost='" + jmxFetchStatsdHost + '\'' +
+            ", jmxFetchStatsdPort=" + jmxFetchStatsdPort +
+            ", healthMetricsEnabled=" + healthMetricsEnabled +
+            ", healthMetricsStatsdHost='" + healthMetricsStatsdHost + '\'' +
+            ", healthMetricsStatsdPort=" + healthMetricsStatsdPort +
+            ", logsInjectionEnabled=" + logsInjectionEnabled +
+            ", reportHostName=" + reportHostName +
+            ", traceAnnotations='" + traceAnnotations + '\'' +
+            ", traceMethods='" + traceMethods + '\'' +
+            ", traceExecutorsAll=" + traceExecutorsAll +
+            ", traceExecutors=" + traceExecutors +
+            ", traceAnalyticsEnabled=" + traceAnalyticsEnabled +
+            ", traceSamplingServiceRules=" + traceSamplingServiceRules +
+            ", traceSamplingOperationRules=" + traceSamplingOperationRules +
+            ", traceSampleRate=" + traceSampleRate +
+            ", traceRateLimit=" + traceRateLimit +
+            ", profilingEnabled=" + profilingEnabled +
+            ", profilingUrl='" + profilingUrl + '\'' +
+            ", profilingApiKey='" + profilingApiKey + '\'' +
+            ", profilingTags=" + profilingTags +
+            ", profilingStartDelay=" + profilingStartDelay +
+            ", profilingStartForceFirst=" + profilingStartForceFirst +
+            ", profilingUploadPeriod=" + profilingUploadPeriod +
+            ", profilingTemplateOverrideFile='" + profilingTemplateOverrideFile + '\'' +
+            ", profilingUploadTimeout=" + profilingUploadTimeout +
+            ", profilingUploadCompression='" + profilingUploadCompression + '\'' +
+            ", profilingProxyHost='" + profilingProxyHost + '\'' +
+            ", profilingProxyPort=" + profilingProxyPort +
+            ", profilingProxyUsername='" + profilingProxyUsername + '\'' +
+            ", profilingProxyPassword='" + profilingProxyPassword + '\'' +
+            '}';
   }
 }

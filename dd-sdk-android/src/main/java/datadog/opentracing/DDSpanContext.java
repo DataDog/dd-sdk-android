@@ -213,10 +213,6 @@ public class DDSpanContext implements io.opentracing.SpanContext {
     // sync with lockSamplingPriority
     synchronized (this) {
       if (samplingPriorityLocked) {
-        log.debug(
-            "samplingPriority locked at {}. Refusing to set to {}",
-            getMetrics().get(PRIORITY_SAMPLING_KEY),
-            newPriority);
         return false;
       } else {
         setMetric(PRIORITY_SAMPLING_KEY, newPriority);
@@ -256,8 +252,6 @@ public class DDSpanContext implements io.opentracing.SpanContext {
       if (getMetrics().get(PRIORITY_SAMPLING_KEY) == null) {
       } else if (samplingPriorityLocked == false) {
         samplingPriorityLocked = true;
-        log.debug(
-            "{} : locked samplingPriority to {}", this, getMetrics().get(PRIORITY_SAMPLING_KEY));
       }
       return samplingPriorityLocked;
     }
@@ -337,10 +331,6 @@ public class DDSpanContext implements io.opentracing.SpanContext {
         try {
           addTag &= decorator.shouldSetTag(this, tag, value);
         } catch (final Throwable ex) {
-          log.debug(
-              "Could not decorate the span decorator={}: {}",
-              decorator.getClass().getSimpleName(),
-              ex.getMessage());
         }
       }
     }
