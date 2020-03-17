@@ -63,8 +63,10 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     lateinit var testedWriter: Writer<T>
     lateinit var testedReader: Reader
+
     @Mock(lenient = true)
     lateinit var mockDeferredHandler: DeferredHandler
+
     @TempDir
     lateinit var tempDir: File
 
@@ -181,7 +183,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     fun `don't write model if size is too big`(forge: Forge) {
         val bigModel = bigModel(forge)
         testedWriter.write(bigModel)
-            waitForNextBatch()
+        waitForNextBatch()
         val batch = testedReader.readNextBatch()
 
         assertThat(batch)
@@ -302,6 +304,16 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
         assertThat(batch2)
             .isNull()
+    }
+
+    @Test
+    fun `it will create and share one single writer instance`() {
+        // given
+        val persistenceStrategy = getStrategy()
+        val currentWriter = persistenceStrategy.getWriter()
+
+        // then
+        assertThat(persistenceStrategy.getWriter()).isSameAs(currentWriter)
     }
 
     // endregion
