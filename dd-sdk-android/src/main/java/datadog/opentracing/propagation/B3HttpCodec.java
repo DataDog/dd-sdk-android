@@ -10,6 +10,7 @@ import io.opentracing.propagation.TextMapInject;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -37,8 +38,8 @@ class B3HttpCodec {
     @Override
     public void inject(final DDSpanContext context, final TextMapInject carrier) {
       try {
-        carrier.put(TRACE_ID_KEY, context.getTraceId().toString(HEX_RADIX).toLowerCase());
-        carrier.put(SPAN_ID_KEY, context.getSpanId().toString(HEX_RADIX).toLowerCase());
+        carrier.put(TRACE_ID_KEY, context.getTraceId().toString(HEX_RADIX).toLowerCase(Locale.US));
+        carrier.put(SPAN_ID_KEY, context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US));
 
         if (context.lockSamplingPriority()) {
           carrier.put(
@@ -60,7 +61,7 @@ class B3HttpCodec {
     public Extractor(final Map<String, String> taggedHeaders) {
       this.taggedHeaders = new HashMap<>();
       for (final Map.Entry<String, String> mapping : taggedHeaders.entrySet()) {
-        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(), mapping.getValue());
+        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(Locale.US), mapping.getValue());
       }
     }
 
@@ -73,7 +74,7 @@ class B3HttpCodec {
         int samplingPriority = PrioritySampling.UNSET;
 
         for (final Map.Entry<String, String> entry : carrier) {
-          final String key = entry.getKey().toLowerCase();
+          final String key = entry.getKey().toLowerCase(Locale.US);
           final String value = entry.getValue();
 
           if (value == null) {

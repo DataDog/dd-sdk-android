@@ -9,12 +9,12 @@ import io.opentracing.Span;
 import io.opentracing.noop.NoopScopeManager;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class ContextualScopeManager implements ScopeManager {
   static final ThreadLocal<DDScope> tlsScope = new ThreadLocal<>();
-  final Deque<ScopeContext> scopeContexts = new ConcurrentLinkedDeque<>();
+  final Deque<ScopeContext> scopeContexts = new LinkedBlockingDeque<>();
   final List<ScopeListener> scopeListeners = new CopyOnWriteArrayList<>();
 
   private final int depthLimit;

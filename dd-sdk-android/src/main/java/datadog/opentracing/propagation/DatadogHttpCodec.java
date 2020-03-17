@@ -10,6 +10,7 @@ import io.opentracing.propagation.TextMapInject;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /** A codec designed for HTTP transport via headers using Datadog headers */
@@ -51,7 +52,7 @@ class DatadogHttpCodec {
     public Extractor(final Map<String, String> taggedHeaders) {
       this.taggedHeaders = new HashMap<>();
       for (final Map.Entry<String, String> mapping : taggedHeaders.entrySet()) {
-        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(), mapping.getValue());
+        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(Locale.US), mapping.getValue());
       }
     }
 
@@ -66,7 +67,7 @@ class DatadogHttpCodec {
         String origin = null;
 
         for (final Map.Entry<String, String> entry : carrier) {
-          final String key = entry.getKey().toLowerCase();
+          final String key = entry.getKey().toLowerCase(Locale.US);
           final String value = entry.getValue();
 
           if (value == null) {

@@ -30,17 +30,8 @@ import io.opentracing.tag.Tag;
 import java.io.Closeable;
 import java.lang.ref.WeakReference;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.SortedSet;
+import java.security.SecureRandom;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ThreadLocalRandom;
@@ -93,6 +84,9 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, datadog.trace
   private final HttpCodec.Injector injector;
   private final HttpCodec.Extractor extractor;
 
+  // --- ALTERNATIVE ThreadLocalRandom (unavailable before API 21)
+
+  private final Random random = new SecureRandom();
 
   protected DDTracer(final Config config, final Writer writer) {
     this(
@@ -544,7 +538,9 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, datadog.trace
       // case
       BigInteger value;
       do {
-        value = new StringCachingBigInteger(63, ThreadLocalRandom.current());
+        synchronized (random) {
+          value = new StringCachingBigInteger(63, random);
+        }
       } while (value.signum() == 0);
 
       return value;

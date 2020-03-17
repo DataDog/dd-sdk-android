@@ -11,18 +11,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -427,31 +416,11 @@ public class Config {
     // Note: We do not want APiKey to be loaded from property for security reasons
     // Note: we do not use defined default here
     // FIXME: We should use better authentication mechanism
-    final String profilingApiKeyFile = getSettingFromEnvironment(PROFILING_API_KEY_FILE, null);
     String tmpProfilingApiKey =
         System.getenv(propertyNameToEnvironmentVariableName(PROFILING_API_KEY));
-    if (profilingApiKeyFile != null) {
-      try {
-        tmpProfilingApiKey =
-            new String(Files.readAllBytes(Paths.get(profilingApiKeyFile)), StandardCharsets.UTF_8)
-                .trim();
-      } catch (final IOException e) {
-      }
-    }
     if (tmpProfilingApiKey == null) {
-      final String oldProfilingApiKeyFile =
-          getSettingFromEnvironment(PROFILING_API_KEY_FILE_OLD, null);
       tmpProfilingApiKey =
           System.getenv(propertyNameToEnvironmentVariableName(PROFILING_API_KEY_OLD));
-      if (oldProfilingApiKeyFile != null) {
-        try {
-          tmpProfilingApiKey =
-              new String(
-                      Files.readAllBytes(Paths.get(oldProfilingApiKeyFile)), StandardCharsets.UTF_8)
-                  .trim();
-        } catch (final IOException e) {
-        }
-      }
     }
     profilingApiKey = tmpProfilingApiKey;
 
@@ -783,7 +752,7 @@ public class Config {
 
   public boolean isDecoratorEnabled(final String name) {
     return getBooleanSettingFromEnvironment("trace." + name + ".enabled", true)
-        && getBooleanSettingFromEnvironment("trace." + name.toLowerCase() + ".enabled", true);
+        && getBooleanSettingFromEnvironment("trace." + name.toLowerCase(Locale.US) + ".enabled", true);
   }
 
   /**
@@ -989,7 +958,7 @@ public class Config {
    */
   private static String propertyNameToEnvironmentVariableName(final String setting) {
     return ENV_REPLACEMENT
-        .matcher(propertyNameToSystemPropertyName(setting).toUpperCase())
+        .matcher(propertyNameToSystemPropertyName(setting).toUpperCase(Locale.US))
         .replaceAll("_");
   }
 
@@ -1150,7 +1119,7 @@ public class Config {
     final Set<V> result = new LinkedHashSet<>();
     for (final String value : input) {
       try {
-        result.add(Enum.valueOf(clazz, value.toUpperCase()));
+        result.add(Enum.valueOf(clazz, value.toUpperCase(Locale.US)));
       } catch (final IllegalArgumentException e) {
       }
     }

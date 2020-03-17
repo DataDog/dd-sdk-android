@@ -10,6 +10,7 @@ import io.opentracing.propagation.TextMapInject;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -49,7 +50,7 @@ public class HaystackHttpCodec {
     public Extractor(final Map<String, String> taggedHeaders) {
       this.taggedHeaders = new HashMap<>();
       for (final Map.Entry<String, String> mapping : taggedHeaders.entrySet()) {
-        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(), mapping.getValue());
+        this.taggedHeaders.put(mapping.getKey().trim().toLowerCase(Locale.US), mapping.getValue());
       }
     }
 
@@ -64,7 +65,7 @@ public class HaystackHttpCodec {
         final String origin = null; // Always null
 
         for (final Map.Entry<String, String> entry : carrier) {
-          final String key = entry.getKey().toLowerCase();
+          final String key = entry.getKey().toLowerCase(Locale.US);
           final String value = entry.getValue();
 
           if (value == null) {
@@ -75,11 +76,11 @@ public class HaystackHttpCodec {
             traceId = validateUInt64BitsID(value, 10);
           } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
             spanId = validateUInt64BitsID(value, 10);
-          } else if (key.startsWith(OT_BAGGAGE_PREFIX.toLowerCase())) {
+          } else if (key.startsWith(OT_BAGGAGE_PREFIX.toLowerCase(Locale.US))) {
             if (baggage.isEmpty()) {
               baggage = new HashMap<>();
             }
-            baggage.put(key.replace(OT_BAGGAGE_PREFIX.toLowerCase(), ""), HttpCodec.decode(value));
+            baggage.put(key.replace(OT_BAGGAGE_PREFIX.toLowerCase(Locale.US), ""), HttpCodec.decode(value));
           }
 
           if (taggedHeaders.containsKey(key)) {
