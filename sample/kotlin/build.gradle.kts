@@ -88,9 +88,7 @@ android {
 
 dependencies {
 
-    api(project(":dd-sdk-android")) {
-        exclude("com.google.guava", module = "listenablefuture")
-    }
+    api(project(":dd-sdk-android"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)

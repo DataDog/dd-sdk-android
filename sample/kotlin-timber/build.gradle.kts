@@ -88,12 +88,8 @@ android {
 
 dependencies {
 
-    api(project(":dd-sdk-android")) {
-        exclude("com.google.guava")
-    }
-    api(project(":dd-sdk-android-timber")) {
-        exclude("com.google.guava")
-    }
+    api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-timber"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
