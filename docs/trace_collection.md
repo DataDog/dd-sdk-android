@@ -71,7 +71,7 @@ class SampleApplication : Application() {
     io.opentracing.util.GlobalTracer.registerIfAbsent(tracer)
     ```
 
-4. (Optional) - Set the partial flush threshold. You can optimize the workload of the SDK if you create a lot of spans in your application, or on the contrary very few of them. The library will wait until the number of finished spans gets above the threshold to write them on disk. A value of 1 will write each span as soon as its finished.
+4. (Optional) - Set the partial flush threshold. You can optimize the workload of the SDK if you create a lot of spans in your application, or on the contrary very few of them. The library waits until the number of finished spans gets above the threshold to write them on disk. A value of `1` writes each span as soon as its finished.
 
     ```kotlin
     val tracer = AndroidTracer.Builder()
