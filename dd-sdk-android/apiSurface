@@ -91,9 +91,9 @@ class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
   companion object
 interface com.datadog.android.rum.RumMonitor
-  fun addUserAction(String, Map<String, Any?> = emptyMap())
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
+  fun addUserAction(String, Map<String, Any?> = emptyMap())
   fun startResource(Any, String, Map<String, Any?> = emptyMap())
   fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(Any, String, String, Throwable)

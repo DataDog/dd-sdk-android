@@ -53,6 +53,7 @@ internal class EndToEndRumActivityTrackingTests {
     }
 
     // region Internal
+
     private fun checkSentRequests() {
         val requests = mockServerRule.getRequests()
         val sentGestureEvents = mutableListOf<JsonObject>()
@@ -70,6 +71,7 @@ internal class EndToEndRumActivityTrackingTests {
     }
 
     // endregion
+
     companion object {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }

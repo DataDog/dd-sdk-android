@@ -62,6 +62,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             }
             is RumEventData.UserAction -> {
                 root.addProperty(TAG_EVENT_NAME, eventData.name)
+                root.addProperty(TAG_EVENT_ID, eventData.id.toString())
+                root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
             }
             is RumEventData.View -> {
                 root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
@@ -127,8 +129,10 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         internal const val TAG_MEASURES_ACTIONS = "view.measures.user_action_count"
 
         internal const val TAG_EVENT_CATEGORY = "evt.category"
+        internal const val TAG_EVENT_ID = "evt.id"
         internal const val TAG_EVENT_NAME = "evt.name"
         internal const val TAG_EVENT_UNSTOPPED = "evt.unstopped"
+        internal const val TAG_EVENT_USER_ACTION_ID = "evt.user_action_id"
 
         internal const val TAG_RESOURCE_KIND = "resource.kind"
 
