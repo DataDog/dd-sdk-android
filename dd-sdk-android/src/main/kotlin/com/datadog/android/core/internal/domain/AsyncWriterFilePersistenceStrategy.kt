@@ -35,11 +35,15 @@ internal abstract class AsyncWriterFilePersistenceStrategy<T : Any>(
     payloadSuffix
 ) {
 
-    override fun getWriter(): Writer<T> {
-        return DeferredWriter(
+    val deferredWriter: DeferredWriter<T> by lazy {
+        DeferredWriter(
             writerThreadName,
             fileWriter,
             dataMigrator
         )
+    }
+
+    override fun getWriter(): Writer<T> {
+        return deferredWriter
     }
 }
