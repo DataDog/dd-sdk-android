@@ -8,6 +8,8 @@ package com.datadog.android.log.internal.logger
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -22,7 +24,8 @@ internal class DatadogLogHandler(
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val timeProvider: TimeProvider,
     internal val userInfoProvider: UserInfoProvider,
-    internal val bundleWithTraces: Boolean = true
+    internal val bundleWithTraces: Boolean = true,
+    internal val sampler: Sampler = RateBasedSampler(1.0f)
 ) : LogHandler {
 
     // region LogHandler
@@ -36,8 +39,10 @@ internal class DatadogLogHandler(
         timestamp: Long?
     ) {
         val resolvedTimeStamp = timestamp ?: timeProvider.getServerTimestamp()
-        val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
-        writer.write(log)
+        if (sampler.sample()) {
+            val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
+            writer.write(log)
+        }
     }
 
     // endregion

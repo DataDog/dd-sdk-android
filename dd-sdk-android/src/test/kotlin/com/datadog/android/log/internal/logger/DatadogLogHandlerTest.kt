@@ -11,6 +11,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
@@ -25,6 +26,7 @@ import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -65,19 +67,27 @@ internal class DatadogLogHandlerTest {
 
     @Forgery
     lateinit var fakeThrowable: Throwable
+
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
+
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
     @Mock
     lateinit var mockWriter: Writer<Log>
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockSampler: Sampler
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -339,6 +349,75 @@ internal class DatadogLogHandlerTest {
             assertThat(lastValue)
                 .hasTraceId(null)
                 .hasSpanId(null)
+        }
+    }
+
+    @Test
+    fun `it will sample out the logs when required`() {
+        // given
+        whenever(mockSampler.sample()).thenReturn(false)
+        testedHandler = DatadogLogHandler(
+            fakeServiceName,
+            fakeLoggerName,
+            mockWriter,
+            mockNetworkInfoProvider,
+            mockTimeProvider,
+            mockUserInfoProvider,
+            bundleWithTraces = false,
+            sampler = mockSampler
+        )
+
+        // when
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags
+        )
+
+        // then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `it will sample in the logs when required`() {
+        // given
+        whenever(mockSampler.sample()).thenReturn(true)
+        testedHandler = DatadogLogHandler(
+            fakeServiceName,
+            fakeLoggerName,
+            mockWriter,
+            mockNetworkInfoProvider,
+            mockTimeProvider,
+            mockUserInfoProvider,
+            bundleWithTraces = false,
+            sampler = mockSampler
+        )
+
+        // when
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags
+        )
+
+        // then
+        argumentCaptor<Log>().apply {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasServiceName(fakeServiceName)
+                .hasLoggerName(fakeLoggerName)
+                .hasLevel(fakeLevel)
+                .hasMessage(fakeMessage)
+                .hasTimestamp(fakeServerDate)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasTags(fakeTags)
         }
     }
 }

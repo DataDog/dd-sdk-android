@@ -9,6 +9,7 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -99,6 +100,8 @@ internal class LoggerBuilderTest {
         assertThat(handler.timeProvider).isNotNull()
         assertThat(handler.writer).isNotNull()
         assertThat(handler.bundleWithTraces).isTrue()
+        assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
     }
 
     @Test
@@ -200,5 +203,17 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.bundleWithTraces).isFalse()
+    }
+
+    @Test
+    fun `builder can set a sampling rate`(@Forgery forge: Forge) {
+        val expectedSampleRate = forge.aFloat(min = 0.0f, max = 1.0f)
+
+        val logger = Logger.Builder().setSampleRate(expectedSampleRate).build()
+
+        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val sampler = handler.sampler
+        assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
+        assertThat((sampler as RateBasedSampler).sampleRate).isEqualTo(expectedSampleRate)
     }
 }

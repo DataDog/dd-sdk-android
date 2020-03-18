@@ -7,8 +7,10 @@
 package com.datadog.android.log
 
 import android.util.Log as AndroidLog
+import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -174,6 +176,7 @@ internal constructor(private val handler: LogHandler) {
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
+        private var sampleRate: Float = 1.0f
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -253,6 +256,17 @@ internal constructor(private val handler: LogHandler) {
             return this
         }
 
+        /**
+         * Sets the sample rate for this Logger.
+         * @param rate the sampling rate, in percent.
+         * A value of `0.3` means we'll send 30% of the logs.
+         * Default is 1.0 (ie: all logs are sent).
+         */
+        fun setSampleRate(@FloatRange(from = 0.0, to = 1.0) rate: Float): Builder {
+            sampleRate = rate
+            return this
+        }
+
         // region Internal
 
         private fun buildLogcatHandler(): LogHandler {
@@ -276,7 +290,8 @@ internal constructor(private val handler: LogHandler) {
                     networkInfoProvider = netInfoProvider,
                     timeProvider = CoreFeature.timeProvider,
                     userInfoProvider = CoreFeature.userInfoProvider,
-                    bundleWithTraces = bundleWithTraceEnabled
+                    bundleWithTraces = bundleWithTraceEnabled,
+                    sampler = RateBasedSampler(sampleRate)
                 )
             }
         }
