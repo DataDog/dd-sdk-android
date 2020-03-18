@@ -37,7 +37,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         // Timestamp
         val formattedDate = simpleDateFormat.format(Date(model.timestamp))
-        root.addProperty(TAG_DATE, formattedDate)
+        root.addProperty(TAG_DATE, model.timestamp)
 
         // Data
         addEventData(model.eventData, root)
