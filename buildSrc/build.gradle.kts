@@ -72,6 +72,10 @@ gradlePlugin {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
         }
+        register("cloneDependencies") {
+            id = "cloneDependencies" // the alias
+            implementationClass = "com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin"
+        }
     }
 }
 
