@@ -49,6 +49,7 @@ internal class GlobalRumTest {
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.updateContext(RumContext())
         GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
         GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
     }

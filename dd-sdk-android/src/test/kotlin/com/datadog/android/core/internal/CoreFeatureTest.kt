@@ -26,6 +26,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -33,6 +34,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
@@ -183,5 +186,22 @@ internal class CoreFeatureTest {
             .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
         assertThat(okHttpClient.connectionSpecs())
             .containsExactly(ConnectionSpec.CLEARTEXT)
+    }
+
+    @Test
+    fun `stop will shutdown the executors`() {
+        // given
+        CoreFeature.initialize(mockAppContext, true)
+        val mockedThreadPoolExecutor: ThreadPoolExecutor = mock()
+        CoreFeature.dataPersistenceExecutorService = mockedThreadPoolExecutor
+        val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
+        CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
+
+        // when
+        CoreFeature.stop()
+
+        // then
+        verify(mockedThreadPoolExecutor).shutdownNow()
+        verify(mockScheduledThreadPoolExecutor).shutdownNow()
     }
 }

@@ -9,7 +9,7 @@ package com.datadog.android.log.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -24,6 +24,8 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -55,6 +57,10 @@ internal class LogsFeatureTest {
     lateinit var mockSystemInfoProvider: SystemInfoProvider
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+    @Mock
+    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
@@ -94,7 +100,9 @@ internal class LogsFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = LogsFeature.persistenceStrategy
@@ -110,13 +118,15 @@ internal class LogsFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
-        val uploadHandlerThread = LogsFeature.uploadHandlerThread
+        val dataUploadScheduler = LogsFeature.dataUploadScheduler
 
-        assertThat(uploadHandlerThread)
-            .isInstanceOf(DataUploadHandlerThread::class.java)
+        assertThat(dataUploadScheduler)
+            .isInstanceOf(DataUploadScheduler::class.java)
     }
 
     @Test
@@ -126,7 +136,9 @@ internal class LogsFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val clientToken = LogsFeature.clientToken
@@ -146,10 +158,12 @@ internal class LogsFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy = LogsFeature.persistenceStrategy
-        val uploadHandlerThread = LogsFeature.uploadHandlerThread
+        val dataUploadScheduler = LogsFeature.dataUploadScheduler
         val clientToken = LogsFeature.clientToken
         val endpointUrl = LogsFeature.endpointUrl
         val serviceName = LogsFeature.serviceName
@@ -166,16 +180,18 @@ internal class LogsFeatureTest {
             fakeConfig,
             mockOkHttpClient,
             mockNetworkInfoProvider,
-            mockSystemInfoProvider
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy2 = LogsFeature.persistenceStrategy
-        val uploadHandlerThread2 = LogsFeature.uploadHandlerThread
+        val dataUploadScheduler2 = LogsFeature.dataUploadScheduler
         val clientToken2 = LogsFeature.clientToken
         val endpointUrl2 = LogsFeature.endpointUrl
         val serviceName2 = LogsFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
-        assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
+        assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)

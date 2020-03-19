@@ -7,13 +7,13 @@
 package com.datadog.android.rum.internal
 
 import android.content.Context
-import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
+import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -23,6 +23,8 @@ import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
@@ -37,8 +39,8 @@ internal object RumFeature {
     internal var applicationId: UUID = UUID(0, 0)
 
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
+    internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
+    internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -46,7 +48,9 @@ internal object RumFeature {
         config: DatadogConfig.RumConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider
+        systemInfoProvider: SystemInfoProvider,
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService
     ) {
         if (initialized.get()) {
             return
@@ -58,8 +62,17 @@ internal object RumFeature {
         serviceName = config.serviceName
         envName = config.envName
 
-        persistenceStrategy = RumFileStrategy(appContext)
-        setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
+        persistenceStrategy = RumFileStrategy(
+            appContext,
+            dataPersistenceExecutorService = dataPersistenceExecutor
+        )
+        setupUploader(
+            endpointUrl,
+            okHttpClient,
+            networkInfoProvider,
+            systemInfoProvider,
+            dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
+        )
         setupTrackingStrategies(appContext, config)
 
         initialized.set(true)
@@ -71,10 +84,10 @@ internal object RumFeature {
 
     fun stop() {
         if (initialized.get()) {
-            uploadHandlerThread.quit()
+            dataUploadScheduler.stopScheduling()
 
             persistenceStrategy = NoOpPersistenceStrategy()
-            uploadHandlerThread = HandlerThread("NoOp")
+            dataUploadScheduler = NoOpDataUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
@@ -92,18 +105,19 @@ internal object RumFeature {
         endpointUrl: String,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider
+        systemInfoProvider: SystemInfoProvider,
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
         uploader = RumOkHttpUploader(endpointUrl, clientToken, okHttpClient)
 
-        uploadHandlerThread = DataUploadHandlerThread(
-            RUM_UPLOAD_THREAD_NAME,
+        dataUploadScheduler = DataUploadScheduler(
             persistenceStrategy.getReader(),
             uploader,
             networkInfoProvider,
-            systemInfoProvider
+            systemInfoProvider,
+            dataUploadThreadPoolExecutor
         )
-        uploadHandlerThread.start()
+        dataUploadScheduler.startScheduling()
     }
 
     private fun setupTrackingStrategies(appContext: Context, config: DatadogConfig.RumConfig) {

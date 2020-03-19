@@ -29,6 +29,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 @ForgeConfiguration(Configurator::class)
@@ -37,17 +38,8 @@ internal class LogFileStrategyTest :
 
     // region LogStrategyTest
 
-    override fun getStrategy(): PersistenceStrategy<Log> {
-        return LogFileStrategy(
-            context = mockContext,
-            recentDelayMs = RECENT_DELAY_MS,
-            maxBatchSize = MAX_BATCH_SIZE,
-            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE
-        )
-    }
-
-    override fun setUp(writer: Writer<Log>, reader: Reader) {
+    @BeforeEach
+    override fun `set up`(forge: Forge) {
         // add fake data into the old data directory
         val oldDir = File(tempDir, LogFileStrategy.DATA_FOLDER_ROOT)
         oldDir.mkdirs()
@@ -56,10 +48,25 @@ internal class LogFileStrategyTest :
         file1.createNewFile()
         file2.createNewFile()
         assertThat(oldDir).exists()
-        (testedWriter as DeferredWriter<Log>).deferredHandler = mockDeferredHandler
+        super.`set up`(forge)
+    }
 
-        // consume all the queued messages
-        (testedWriter as DeferredWriter<Log>).invokeMethod("consumeQueue")
+    override fun getStrategy(): PersistenceStrategy<Log> {
+        return LogFileStrategy(
+            context = mockContext,
+            recentDelayMs = RECENT_DELAY_MS,
+            maxBatchSize = MAX_BATCH_SIZE,
+            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
+            maxDiskSpace = MAX_DISK_SPACE,
+            dataPersistenceExecutorService = mockExecutorService
+        )
+    }
+
+    override fun setUp(writer: Writer<Log>, reader: Reader) {
+        // add fake data into the old data directory
+        (testedWriter as DeferredWriter<Log>).invokeMethod(
+            "tryToConsumeQueue"
+        ) // consume all the queued messages
     }
 
     @Test

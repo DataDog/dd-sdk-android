@@ -9,7 +9,7 @@ package com.datadog.android.tracing.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -27,6 +27,8 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -54,14 +56,24 @@ internal class TracesFeatureTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+
+    @Mock
+    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
 
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
@@ -103,7 +115,9 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
@@ -124,7 +138,9 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
@@ -144,13 +160,15 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
-        val uploadHandlerThread = TracesFeature.uploadHandlerThread
+        val dataUploadScheduler = TracesFeature.dataUploadScheduler
 
-        assertThat(uploadHandlerThread)
-            .isInstanceOf(DataUploadHandlerThread::class.java)
+        assertThat(dataUploadScheduler)
+            .isInstanceOf(DataUploadScheduler::class.java)
     }
 
     @Test
@@ -162,7 +180,9 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
 
         val clientToken = TracesFeature.clientToken
@@ -184,10 +204,12 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy = TracesFeature.persistenceStrategy
-        val uploadHandlerThread = TracesFeature.uploadHandlerThread
+        val dataUploadScheduler = TracesFeature.dataUploadScheduler
         val clientToken = TracesFeature.clientToken
         val endpointUrl = TracesFeature.endpointUrl
         val serviceName = TracesFeature.serviceName
@@ -206,16 +228,18 @@ internal class TracesFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
         )
         val persistenceStrategy2 = TracesFeature.persistenceStrategy
-        val uploadHandlerThread2 = TracesFeature.uploadHandlerThread
+        val dataUploadScheduler2 = TracesFeature.dataUploadScheduler
         val clientToken2 = TracesFeature.clientToken
         val endpointUrl2 = TracesFeature.endpointUrl
         val serviceName2 = TracesFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
-        assertThat(uploadHandlerThread).isSameAs(uploadHandlerThread2)
+        assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)

@@ -7,13 +7,13 @@
 package com.datadog.android.tracing.internal
 
 import android.content.Context
-import android.os.HandlerThread
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
-import com.datadog.android.core.internal.data.upload.DataUploadHandlerThread
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
+import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -22,6 +22,8 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
@@ -34,8 +36,8 @@ internal object TracesFeature {
     internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
 
     internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var uploadHandlerThread: HandlerThread = HandlerThread("NoOp")
+    internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
+    internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -45,7 +47,9 @@ internal object TracesFeature {
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
         systemInfoProvider: SystemInfoProvider,
-        timeProvider: TimeProvider
+        timeProvider: TimeProvider,
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService
     ) {
         if (initialized.get()) {
             return
@@ -61,19 +65,25 @@ internal object TracesFeature {
             timeProvider,
             networkInfoProvider,
             userInfoProvider,
-            envSuffix = envSuffix
+            envSuffix = envSuffix,
+            dataPersistenceExecutorService = dataPersistenceExecutor
         )
-        setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
+        setupUploader(
+            endpointUrl,
+            okHttpClient,
+            networkInfoProvider,
+            systemInfoProvider,
+            dataUploadThreadPoolExecutor
+        )
 
         initialized.set(true)
     }
 
     fun stop() {
         if (initialized.get()) {
-            uploadHandlerThread.quit()
-
+            dataUploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
-            uploadHandlerThread = HandlerThread("Test")
+            dataUploadScheduler = NoOpDataUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.TRACES_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
@@ -87,18 +97,19 @@ internal object TracesFeature {
         endpointUrl: String,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider
+        systemInfoProvider: SystemInfoProvider,
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
         uploader = TracesOkHttpUploader(endpointUrl, clientToken, okHttpClient)
 
-        uploadHandlerThread = DataUploadHandlerThread(
-            TRACES_UPLOAD_THREAD_NAME,
+        dataUploadScheduler = DataUploadScheduler(
             persistenceStrategy.getReader(),
             uploader,
             networkInfoProvider,
-            systemInfoProvider
+            systemInfoProvider,
+            dataUploadThreadPoolExecutor
         )
-        uploadHandlerThread.start()
+        dataUploadScheduler.startScheduling()
     }
 
     // endregion
