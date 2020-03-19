@@ -10,6 +10,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
 import com.google.gson.JsonArray
@@ -27,7 +28,7 @@ import java.util.TimeZone
  * The Logging feature implementation of the [Serializer] interface.
  */
 internal class LogSerializer(private val logConstraints: LogConstraints = DatadogLogConstraints()) :
-    Serializer<Log> {
+        Serializer<Log> {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
@@ -133,7 +134,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         val tags = logConstraints.validateTags(log.tags)
-            .joinToString(",")
+                .joinToString(",")
         jsonLog.addProperty(TAG_DATADOG_TAGS, tags)
     }
 
@@ -142,24 +143,24 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         logConstraints.validateAttributes(log.attributes)
-            .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
-            .forEach {
-                val value = it.value
-                val jsonValue = when (value) {
-                    null -> JsonNull.INSTANCE
-                    is Boolean -> JsonPrimitive(value)
-                    is Int -> JsonPrimitive(value)
-                    is Long -> JsonPrimitive(value)
-                    is Float -> JsonPrimitive(value)
-                    is Double -> JsonPrimitive(value)
-                    is String -> JsonPrimitive(value)
-                    is Date -> JsonPrimitive(value.time)
-                    is JsonObject -> value
-                    is JsonArray -> value
-                    else -> JsonPrimitive(value.toString())
+                .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
+                .forEach {
+                    val value = it.value
+                    val jsonValue = when (value) {
+                        NULL_MAP_VALUE -> JsonNull.INSTANCE
+                        is Boolean -> JsonPrimitive(value)
+                        is Int -> JsonPrimitive(value)
+                        is Long -> JsonPrimitive(value)
+                        is Float -> JsonPrimitive(value)
+                        is Double -> JsonPrimitive(value)
+                        is String -> JsonPrimitive(value)
+                        is Date -> JsonPrimitive(value.time)
+                        is JsonObject -> value
+                        is JsonArray -> value
+                        else -> JsonPrimitive(value.toString())
+                    }
+                    jsonLog.add(it.key, jsonValue)
                 }
-                jsonLog.add(it.key, jsonValue)
-            }
     }
 
     private fun addTraceInfo(log: Log, jsonLog: JsonObject) {
@@ -217,15 +218,15 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_SPAN_ID = "dd.span_id"
 
         internal val reservedAttributes = arrayOf(
-            TAG_HOST,
-            TAG_MESSAGE,
-            TAG_STATUS,
-            TAG_SERVICE_NAME,
-            TAG_SOURCE,
-            TAG_ERROR_KIND,
-            TAG_ERROR_MESSAGE,
-            TAG_ERROR_STACK,
-            TAG_DATADOG_TAGS
+                TAG_HOST,
+                TAG_MESSAGE,
+                TAG_STATUS,
+                TAG_SERVICE_NAME,
+                TAG_SOURCE,
+                TAG_ERROR_KIND,
+                TAG_ERROR_MESSAGE,
+                TAG_ERROR_STACK,
+                TAG_DATADOG_TAGS
         )
 
         internal fun resolveLogLevelStatus(level: Int): String {
