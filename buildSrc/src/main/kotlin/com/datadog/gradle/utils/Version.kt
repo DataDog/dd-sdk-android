@@ -10,8 +10,33 @@ data class Version(
     val major: Int,
     val minor: Int,
     val hotfix: Int,
-    val suffix: String = ""
+    val type: Type = Type.Release
 ) {
+
+    // region Type
+
+    sealed class Type {
+
+        abstract val suffix: String
+
+        object Release : Type() {
+            override val suffix: String = ""
+        }
+
+        data class ReleaseCandidate(val number: Int) : Type() {
+            override val suffix: String = "-rc$number"
+        }
+
+        data class Beta(val number: Int) : Type() {
+            override val suffix: String = "-beta$number"
+        }
+
+        data class Alpha(val number: Int) : Type() {
+            override val suffix: String = "-alpha$number"
+        }
+    }
+
+    // endregion
 
     init {
         require(major < MAX_MAJOR) { "The minor component must be smaller than $MAX_MAJOR" }
@@ -26,14 +51,7 @@ data class Version(
      */
     val name: String
         get() {
-            return if (suffix.isBlank()) {
-                "$major.$minor.$hotfix"
-            } else {
-                val sanitized = suffix.trim()
-                    .toLowerCase()
-                    .replace(Regex("[^a-z0-9]"), "-")
-                "$major.$minor.$hotfix-$sanitized"
-            }
+            return "$major.$minor.$hotfix${type.suffix}"
         }
 
     /**
