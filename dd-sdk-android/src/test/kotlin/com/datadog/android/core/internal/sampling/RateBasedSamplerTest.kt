@@ -1,0 +1,97 @@
+package com.datadog.android.core.internal.sampling
+
+import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Random
+import kotlin.math.pow
+import kotlin.math.sqrt
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
+internal class RateBasedSamplerTest {
+
+    lateinit var underTest: RateBasedSampler
+    private var randomSampleRate: Float = 0.0f
+
+    // region Unit tests
+
+    @BeforeEach
+    fun `set up`(forge: Forge) {
+        randomSampleRate = Random().nextFloat()
+        underTest = RateBasedSampler(randomSampleRate)
+    }
+
+    @Test
+    fun `the sampler will sample the values based on the sample rate`(forge: Forge) {
+        val dataSize = 1000
+        val testRepeats = 100
+        val computedSamplingRates = mutableListOf<Double>()
+        repeat(testRepeats) {
+            var validated = 0
+            repeat(dataSize) {
+                val isValid = if (underTest.sample()) 1 else 0
+                validated += isValid
+            }
+            val computedSamplingRate = validated.toDouble() / dataSize.toDouble()
+            computedSamplingRates.add(computedSamplingRate)
+        }
+        val samplingRateMean = computedSamplingRates.sum().div(computedSamplingRates.size)
+        val variance = computedSamplingRates
+            .map { (samplingRateMean.minus(it)).pow(2) }
+            .sum()
+            .div(computedSamplingRates.size)
+        val deviation = sqrt(variance)
+
+        assertThat(samplingRateMean).isCloseTo(
+            randomSampleRate.toDouble(),
+            Offset.offset(deviation)
+        )
+    }
+
+    @Test
+    fun `when sample rate is 0 all values will be dropped`(forge: Forge) {
+        underTest = RateBasedSampler(0.0f)
+
+        var validated = 0
+        val dataSize = 10
+
+        repeat(dataSize) {
+            val isValid = if (underTest.sample()) 1 else 0
+            validated += isValid
+        }
+
+        assertThat(validated).isEqualTo(0)
+    }
+
+    @Test
+    fun `when sample rate is 1 all values will pass`(forge: Forge) {
+        underTest = RateBasedSampler(1.0f)
+
+        var validated = 0
+        val dataSize = 10
+
+        repeat(dataSize) {
+            val isValid = if (underTest.sample()) 1 else 0
+            validated += isValid
+        }
+
+        assertThat(validated).isEqualTo(dataSize)
+    }
+
+    // endregion
+}
