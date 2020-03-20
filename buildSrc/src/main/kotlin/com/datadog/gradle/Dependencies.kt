@@ -11,12 +11,16 @@ object Dependencies {
     object Versions {
         // Commons
         const val Kotlin = "1.3.61"
-        const val AndroidToolsPlugin = "3.6.1"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
-        const val AndroidXWorkManager = "2.3.3"
+
+        // Android
+        const val AndroidToolsPlugin = "3.6.1"
+        const val AndroidXAppCompat = "1.1.0"
         const val AndroidXCore = "1.2.0"
         const val AndroidXMultidex = "2.0.1"
+        const val AndroidXNavigation = "2.2.0-rc02"
+        const val AndroidXWorkManager = "2.3.3"
 
         // JUnit
         const val JUnitJupiter = "5.5.2"
@@ -37,6 +41,8 @@ object Dependencies {
         const val DependencyVersion = "0.27.0"
         const val Dokka = "0.10.0"
         const val Bintray = "1.8.4"
+        const val Unmock = "0.7.5"
+        const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
         // AndroidJunit
         const val AndroidJunitRunner = "1.2.0"
@@ -45,7 +51,6 @@ object Dependencies {
         const val Espresso = "3.1.1"
 
         // Sample Apps
-        const val AndroidXAppCompat = "1.1.0"
         const val SupportFragmentsCompat = "28.0.0"
         const val ConstraintLayout = "2.0.0-beta4"
         const val GoogleMaterial = "1.0.0"
@@ -54,7 +59,6 @@ object Dependencies {
         const val Timber = "4.7.1"
 
         // Internal APIs
-
         const val TracingOt = "0.45.0"
     }
 
@@ -78,6 +82,11 @@ object Dependencies {
         val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
         val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
         val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
+        val AndroidXNavigation = arrayOf(
+            "androidx.navigation:navigation-fragment-ktx:${Versions.AndroidXNavigation}",
+            "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",
+            "androidx.navigation:navigation-runtime-ktx:${Versions.AndroidXNavigation}"
+        )
         val SupportFragmentsCompat =
             "com.android.support:support-fragment:${Versions.SupportFragmentsCompat}"
 
@@ -134,6 +143,7 @@ object Dependencies {
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
 
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
+        const val Robolectric = "org.robolectric:android-all:${Versions.Robolectric}"
     }
 
     object ClassPaths {
@@ -144,6 +154,7 @@ object Dependencies {
             "androidx.benchmark:benchmark-gradle-plugin:${Versions.JetpackBenchmark}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
         const val Bintray = "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.Bintray}"
+        const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
     }
 
     object Repositories {
@@ -162,6 +173,7 @@ object Dependencies {
         const val KotlinAndroid = "org.jetbrains.kotlin.android"
         const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
         const val Bintray = "com.jfrog.bintray"
+        const val Unmock = "de.mobilej.unmock"
     }
 
     object PluginNamespaces {
