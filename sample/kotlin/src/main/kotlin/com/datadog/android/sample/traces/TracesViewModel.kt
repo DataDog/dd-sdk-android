@@ -20,17 +20,17 @@ class TracesViewModel : ViewModel() {
     }
 
     private class Task(val onDone: () -> Unit) : AsyncTask<Unit, Unit, Unit>() {
-        lateinit var activeSpanInMainThread: Span
+        var activeSpanInMainThread: Span? = null
+
         override fun onPreExecute() {
             super.onPreExecute()
             activeSpanInMainThread = GlobalTracer.get().activeSpan()
         }
 
         override fun doInBackground(vararg params: Unit?) {
-            // make the main thread active span the active span on this thread
-            GlobalTracer.get().activateSpan(activeSpanInMainThread)
             val span = GlobalTracer.get()
                 .buildSpan("AsyncOperation")
+                .asChildOf(activeSpanInMainThread)
                 .start()
             if (isCancelled) {
                 return
