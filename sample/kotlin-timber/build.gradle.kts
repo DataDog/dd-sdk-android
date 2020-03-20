@@ -15,7 +15,6 @@ import com.datadog.gradle.config.ktLintConfig
 
 plugins {
     id("com.android.application")
-    id("androidx.benchmark")
     kotlin("android")
     kotlin("android.extensions")
     `maven-publish`
