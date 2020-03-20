@@ -37,7 +37,7 @@ pluginManagement {
 
 include(":dd-sdk-android")
 include(":dd-sdk-android-timber")
-include(":dd-sdk-androidx-fragment")
+include(":dd-sdk-android-androidx-fragment")
 include(":dd-sdk-support-fragment")
 include(":dd-sdk-android-navigation")
 
