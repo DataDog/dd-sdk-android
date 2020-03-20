@@ -49,6 +49,8 @@ class FragmentViewTrackingStrategyTest {
         underTest = FragmentViewTrackingStrategy()
     }
 
+    // region ActivityLifecycleTrackingStrategy
+
     @Test
     fun `when register it will register as lifecycle callback`() {
         // when
@@ -84,6 +86,10 @@ class FragmentViewTrackingStrategyTest {
         // verify
         verifyZeroInteractions(mockBadContext)
     }
+
+    // endregion
+
+    // region FragmentViewTrackingStrategy
 
     @Test
     fun `when android support fragment activity resumed will register the right callback`() {
@@ -152,4 +158,6 @@ class FragmentViewTrackingStrategyTest {
         verifyZeroInteractions(mockAndroidSupportFragmentManager)
         verifyZeroInteractions(mockDefaultFragmentManager)
     }
+
+    // endregion
 }

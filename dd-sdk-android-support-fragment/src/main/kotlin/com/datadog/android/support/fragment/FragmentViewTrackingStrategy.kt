@@ -2,15 +2,23 @@ package com.datadog.android.support.fragment
 
 import android.app.Activity
 import android.os.Build
+import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategy
 import com.datadog.android.rum.ViewTrackingStrategy
 
 /**
- * The SDK will monitor the FragmentManager lifecycle events
- * and will automatically start and stop RUM View for each resumed/paused fragment.
+ * A [ViewTrackingStrategy] that will track [Fragment]s as RUM views.
+ *
+ * Each fragment's lifecycle will be monitored to start and stop RUM views when relevant.
+ *
+ * **Note**: This version of the [FragmentViewTrackingStrategy] is compatible with
+ * the AppCompat Support Library.
  */
+@Suppress("DEPRECATION")
 class FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
+
+    // region ActivityLifecycleTrackingStrategy
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
@@ -43,4 +51,6 @@ class FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTr
             }
         }
     }
+
+    // endregion
 }
