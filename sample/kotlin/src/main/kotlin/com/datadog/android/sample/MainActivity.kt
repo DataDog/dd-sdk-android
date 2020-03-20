@@ -18,16 +18,10 @@ import com.datadog.android.sample.webview.WebFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.opentracing.Scope
-import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
-
-    lateinit var mainScope: Scope
-    lateinit var mainSpan: Span
-    private lateinit var resumePauseSpan: Span
 
     private val logger: Logger by lazy {
         Logger.Builder()
@@ -80,11 +74,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStart() {
-        val tracer = GlobalTracer.get()
-        mainSpan = tracer
-            .buildSpan("MainActivity").start()
-        mainScope = tracer.activateSpan(mainSpan)
         super.onStart()
+        logger.d("MainActivity/onStart")
     }
 
     override fun onRestart() {
@@ -93,10 +84,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
-        resumePauseSpan = GlobalTracer.get()
-            .buildSpan("onResumeOnPause")
-            .asChildOf(mainSpan)
-            .start()
         super.onResume()
         logger.d("MainActivity/onResume")
     }
@@ -104,14 +91,11 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         logger.d("MainActivity/onPause")
-        resumePauseSpan.finish()
     }
 
     override fun onStop() {
         super.onStop()
         logger.d("MainActivity/onStop")
-        mainScope.close()
-        mainSpan.finish()
     }
 
     override fun onDestroy() {

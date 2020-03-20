@@ -27,18 +27,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
-import com.datadog.android.sample.MainActivity
 import com.datadog.android.sample.R
-import io.opentracing.Scope
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 
 class WebFragment : Fragment() {
+
     private lateinit var viewModel: WebViewModel
     private lateinit var webView: WebView
-
-    lateinit var mainScope: Scope
-    lateinit var mainSpan: Span
 
     private val logger: Logger by lazy {
         Logger.Builder()
@@ -75,21 +71,6 @@ class WebFragment : Fragment() {
     override fun onStart() {
         super.onStart()
         webView.loadUrl(viewModel.url)
-    }
-
-    override fun onResume() {
-        val tracer = GlobalTracer.get()
-        val mainActivitySpan = (activity as MainActivity).mainSpan
-        mainSpan = tracer
-            .buildSpan("WebViewFragment").asChildOf(mainActivitySpan).start()
-        mainScope = tracer.activateSpan(mainSpan)
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        mainScope.close()
-        mainSpan.finish()
     }
 
     // endregion
