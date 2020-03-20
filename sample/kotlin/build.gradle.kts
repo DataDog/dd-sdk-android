@@ -12,10 +12,10 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.implementation
 
 plugins {
     id("com.android.application")
-    id("androidx.benchmark")
     kotlin("android")
     kotlin("android.extensions")
     `maven-publish`
@@ -107,12 +107,13 @@ dependencies {
         exclude("com.google.guava", module = "listenablefuture")
     }
 
-    api(project(":dd-sdk-androidx-fragment")) {
+    api(project(":dd-sdk-android-navigation")) {
         exclude("com.google.guava", module = "listenablefuture")
     }
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
+    implementation(Dependencies.Libraries.AndroidXNavigation)
     implementation("androidx.appcompat:appcompat:1.1.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta4")
     implementation("com.google.android.material:material:1.0.0")

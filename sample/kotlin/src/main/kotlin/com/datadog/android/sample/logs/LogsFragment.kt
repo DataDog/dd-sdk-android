@@ -13,11 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
-import com.datadog.android.sample.MainActivity
 import com.datadog.android.sample.R
-import io.opentracing.Scope
-import io.opentracing.Span
-import io.opentracing.util.GlobalTracer
 
 class LogsFragment :
     Fragment(),
@@ -25,9 +21,6 @@ class LogsFragment :
 
     private var interactionsCount = 0
     private lateinit var viewModel: LogsViewModel
-
-    lateinit var mainScope: Scope
-    lateinit var mainSpan: Span
 
     private val logger: Logger by lazy {
         Logger.Builder()
@@ -58,21 +51,6 @@ class LogsFragment :
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(LogsViewModel::class.java)
-    }
-
-    override fun onResume() {
-        val tracer = GlobalTracer.get()
-        val mainActivitySpan = (activity as MainActivity).mainSpan
-        mainSpan = tracer
-            .buildSpan("LogsFragment").asChildOf(mainActivitySpan).start()
-        mainScope = tracer.activateSpan(mainSpan)
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        mainScope.close()
-        mainSpan.finish()
     }
 
     // endregion
