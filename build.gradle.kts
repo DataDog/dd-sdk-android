@@ -58,9 +58,9 @@ gitDiffTask("unitTestChanged") {
         ":sample:kotlin-timber:assembleDebug"
     )
     dependsOnDiff(
-        "dd-sdk-androidx-fragment/.*",
-        ":dd-sdk-androidx-fragment:testDebugUnitTest",
-        ":dd-sdk-androidx-fragment:testReleaseUnitTest"
+        "dd-sdk-android-androidx-fragment/.*",
+        ":dd-sdk-android-androidx-fragment:testDebugUnitTest",
+        ":dd-sdk-android-androidx-fragment:testReleaseUnitTest"
     )
     dependsOnDiff(
         "dd-sdk-support-fragment/.*",
@@ -101,8 +101,8 @@ gitDiffTask("unitTestAll") {
         ":dd-sdk-android:testReleaseUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-androidx-fragment:testDebugUnitTest",
-        ":dd-sdk-androidx-fragment:testReleaseUnitTest",
+        ":dd-sdk-android-androidx-fragment:testDebugUnitTest",
+        ":dd-sdk-android-androidx-fragment:testReleaseUnitTest",
         ":dd-sdk-support-fragment:testDebugUnitTest",
         ":dd-sdk-support-fragment:testReleaseUnitTest",
         ":dd-sdk-android-navigation:testDebugUnitTest",
@@ -134,7 +134,7 @@ tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
-        ":dd-sdk-androidx-fragment:ktlintCheck",
+        ":dd-sdk-android-androidx-fragment:ktlintCheck",
         ":dd-sdk-support-fragment:ktlintCheck",
         ":dd-sdk-android-navigation:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
@@ -150,8 +150,8 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android:lintRelease",
         ":dd-sdk-android-timber:lintDebug",
         ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-androidx-fragment:lintDebug",
-        ":dd-sdk-androidx-fragment:lintRelease",
+        ":dd-sdk-android-androidx-fragment:lintDebug",
+        ":dd-sdk-android-androidx-fragment:lintRelease",
         ":dd-sdk-support-fragment:lintDebug",
         ":dd-sdk-support-fragment:lintRelease"
         ":dd-sdk-android-navigation:lintDebug",
@@ -163,7 +163,7 @@ tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
         ":dd-sdk-android-timber:detekt",
-        ":dd-sdk-androidx-fragment:detekt",
+        ":dd-sdk-android-androidx-fragment:detekt",
         ":dd-sdk-support-fragment:detekt",
         ":dd-sdk-android-navigation:detekt",
         ":instrumented:integration:detekt",
@@ -178,8 +178,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-androidx-fragment:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-androidx-fragment:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-androidx-fragment:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-androidx-fragment:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-support-fragment:jacocoTestDebugUnitTestReport",
         ":dd-sdk-support-fragment:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-navigation:jacocoTestDebugUnitTestReport",
