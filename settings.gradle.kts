@@ -18,6 +18,7 @@ pluginManagement {
                 Dependencies.PluginIds.DependencyVersion -> Dependencies.Versions.DependencyVersion
                 Dependencies.PluginIds.KtLint -> Dependencies.Versions.KtLint
                 Dependencies.PluginIds.Bintray -> Dependencies.Versions.Bintray
+                Dependencies.PluginIds.Unmock -> Dependencies.Versions.Unmock
 
                 else -> {
                     if (
@@ -38,6 +39,7 @@ include(":dd-sdk-android")
 include(":dd-sdk-android-timber")
 include(":dd-sdk-androidx-fragment")
 include(":dd-sdk-support-fragment")
+include(":dd-sdk-android-navigation")
 
 include(":instrumented:benchmark")
 include(":instrumented:integration")

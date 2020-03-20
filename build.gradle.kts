@@ -21,6 +21,7 @@ buildscript {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Dokka)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Bintray)
+        classpath(com.datadog.gradle.Dependencies.ClassPaths.Unmock)
     }
 }
 
@@ -67,6 +68,11 @@ gitDiffTask("unitTestChanged") {
         ":dd-sdk-support-fragment:testReleaseUnitTest"
     )
     dependsOnDiff(
+        "dd-sdk-android-navigation/.*",
+        ":dd-sdk-android-navigation:testDebugUnitTest",
+        ":dd-sdk-android-navigation:testReleaseUnitTest"
+    )
+    dependsOnDiff(
         "tools/detekt/.*",
         ":tools:detekt:test"
     )
@@ -99,6 +105,8 @@ gitDiffTask("unitTestAll") {
         ":dd-sdk-androidx-fragment:testReleaseUnitTest",
         ":dd-sdk-support-fragment:testDebugUnitTest",
         ":dd-sdk-support-fragment:testReleaseUnitTest",
+        ":dd-sdk-android-navigation:testDebugUnitTest",
+        ":dd-sdk-android-navigation:testReleaseUnitTest",
         ":sample:java:assembleDebug",
         ":sample:kotlin:assembleDebug",
         ":sample:kotlin-timber:assembleDebug",
@@ -128,6 +136,7 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-timber:ktlintCheck",
         ":dd-sdk-androidx-fragment:ktlintCheck",
         ":dd-sdk-support-fragment:ktlintCheck",
+        ":dd-sdk-android-navigation:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -145,6 +154,8 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-androidx-fragment:lintRelease",
         ":dd-sdk-support-fragment:lintDebug",
         ":dd-sdk-support-fragment:lintRelease"
+        ":dd-sdk-android-navigation:lintDebug",
+        ":dd-sdk-android-navigation:lintRelease"
     )
 }
 
@@ -154,6 +165,7 @@ tasks.register("detektAll") {
         ":dd-sdk-android-timber:detekt",
         ":dd-sdk-androidx-fragment:detekt",
         ":dd-sdk-support-fragment:detekt",
+        ":dd-sdk-android-navigation:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
@@ -170,6 +182,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-androidx-fragment:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-support-fragment:jacocoTestDebugUnitTestReport",
         ":dd-sdk-support-fragment:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-navigation:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-navigation:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"
