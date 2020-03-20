@@ -67,7 +67,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-androidx-fragment")) {
+    implementation(project(":dd-sdk-android-androidx-fragment")) {
         exclude("com.google.guava", "listenablefuture")
     }
     implementation(project(":dd-sdk-android")) {
