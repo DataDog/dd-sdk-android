@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
@@ -33,17 +34,18 @@ import org.junit.jupiter.api.Test
 
 @ForgeConfiguration(Configurator::class)
 internal class LogFileStrategyTest :
-    FilePersistenceStrategyTest<Log>(LogFileStrategy.LOGS_FOLDER, modelClass = Log::class.java) {
+        FilePersistenceStrategyTest<Log>(LogFileStrategy.LOGS_FOLDER,
+                modelClass = Log::class.java) {
 
     // region LogStrategyTest
 
     override fun getStrategy(): PersistenceStrategy<Log> {
         return LogFileStrategy(
-            context = mockContext,
-            recentDelayMs = RECENT_DELAY_MS,
-            maxBatchSize = MAX_BATCH_SIZE,
-            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE
+                context = mockContext,
+                recentDelayMs = RECENT_DELAY_MS,
+                maxBatchSize = MAX_BATCH_SIZE,
+                maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
+                maxDiskSpace = MAX_DISK_SPACE
         )
     }
 
@@ -78,45 +80,45 @@ internal class LogFileStrategyTest :
 
     override fun minimalCopy(of: Log): Log {
         return of.copy(
-            throwable = null,
-            networkInfo = null,
-            attributes = emptyMap(),
-            tags = emptyList()
+                throwable = null,
+                networkInfo = null,
+                attributes = emptyMap(),
+                tags = emptyList()
         )
     }
 
     override fun lightModel(forge: Forge): Log {
         return forge.getForgery<Log>().copy(
-            serviceName = forge.anAlphabeticalString(size = forge.aTinyInt()),
-            message = forge.anAlphabeticalString(size = forge.aTinyInt()),
-            throwable = null,
-            networkInfo = null,
-            attributes = emptyMap(),
-            tags = emptyList()
+                serviceName = forge.anAlphabeticalString(size = forge.aTinyInt()),
+                message = forge.anAlphabeticalString(size = forge.aTinyInt()),
+                throwable = null,
+                networkInfo = null,
+                attributes = emptyMap(),
+                tags = emptyList()
         )
     }
 
     override fun bigModel(forge: Forge): Log {
         return Log(
-            level = android.util.Log.ASSERT,
-            serviceName = forge.anAlphabeticalString(size = 65536),
-            message = forge.anAlphabeticalString(size = 131072),
-            tags = forge.aList(size = 256) { forge.anAlphabeticalString(size = 128) },
-            attributes = forge.aMap(size = 256) {
-                forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
-                    size = 128
-                )
-            },
-            networkInfo = NetworkInfo(
-                connectivity = NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-                carrierId = forge.aHugeInt(),
-                carrierName = forge.anAlphabeticalString(size = 256)
-            ),
-            userInfo = UserInfo(), // TODO !!!
-            throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
-            timestamp = forge.aLong(),
-            loggerName = forge.anAlphabeticalString(),
-            threadName = forge.anAlphabeticalString()
+                level = android.util.Log.ASSERT,
+                serviceName = forge.anAlphabeticalString(size = 65536),
+                message = forge.anAlphabeticalString(size = 131072),
+                tags = forge.aList(size = 256) { forge.anAlphabeticalString(size = 128) },
+                attributes = forge.aMap(size = 256) {
+                    forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
+                            size = 128
+                    )
+                },
+                networkInfo = NetworkInfo(
+                        connectivity = NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+                        carrierId = forge.aHugeInt(),
+                        carrierName = forge.anAlphabeticalString(size = 256)
+                ),
+                userInfo = UserInfo(), // TODO !!!
+                throwable = ArrayIndexOutOfBoundsException(forge.anAlphabeticalString()),
+                timestamp = forge.aLong(),
+                loggerName = forge.anAlphabeticalString(),
+                threadName = forge.anAlphabeticalString()
         )
     }
 
@@ -134,16 +136,16 @@ internal class LogFileStrategyTest :
 
     override fun assertMatches(jsonObject: JsonObject, model: Log) {
         assertThat(jsonObject)
-            .hasField(LogSerializer.TAG_MESSAGE, model.message)
-            .hasField(LogSerializer.TAG_SERVICE_NAME, model.serviceName)
-            .hasField(LogSerializer.TAG_STATUS, levels[model.level])
-            .hasField(LogSerializer.TAG_LOGGER_NAME, model.loggerName)
-            .hasField(LogSerializer.TAG_THREAD_NAME, model.threadName)
+                .hasField(LogSerializer.TAG_MESSAGE, model.message)
+                .hasField(LogSerializer.TAG_SERVICE_NAME, model.serviceName)
+                .hasField(LogSerializer.TAG_STATUS, levels[model.level])
+                .hasField(LogSerializer.TAG_LOGGER_NAME, model.loggerName)
+                .hasField(LogSerializer.TAG_THREAD_NAME, model.threadName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(
-            LogSerializer.TAG_DATE,
-            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
+                LogSerializer.TAG_DATE,
+                "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
 
         assertNetworkInfoMatches(model, jsonObject)
@@ -171,34 +173,34 @@ internal class LogFileStrategyTest :
             }
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(LogSerializer.TAG_NETWORK_CONNECTIVITY)
-                .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
-                .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
+                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CONNECTIVITY)
+                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
+                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
         }
     }
 
     private fun assertFieldsMatch(log: Log, jsonObject: JsonObject) {
         log.attributes
-            .filter { it.key.isNotBlank() }
-            .forEach {
-                val value = it.value
-                when (value) {
-                    null -> assertThat(jsonObject).hasNullField(it.key)
-                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                    is Int -> assertThat(jsonObject).hasField(it.key, value)
-                    is Long -> assertThat(jsonObject).hasField(it.key, value)
-                    is Float -> assertThat(jsonObject).hasField(it.key, value)
-                    is Double -> assertThat(jsonObject).hasField(it.key, value)
-                    is String -> assertThat(jsonObject).hasField(it.key, value)
-                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
-                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
-                    else -> assertThat(jsonObject).hasField(
-                        it.key,
-                        value.toString()
-                    )
+                .filter { it.key.isNotBlank() }
+                .forEach {
+                    val value = it.value
+                    when (value) {
+                        NULL_MAP_VALUE -> assertThat(jsonObject).hasNullField(it.key)
+                        is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                        is Int -> assertThat(jsonObject).hasField(it.key, value)
+                        is Long -> assertThat(jsonObject).hasField(it.key, value)
+                        is Float -> assertThat(jsonObject).hasField(it.key, value)
+                        is Double -> assertThat(jsonObject).hasField(it.key, value)
+                        is String -> assertThat(jsonObject).hasField(it.key, value)
+                        is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                        is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
+                        is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
+                        else -> assertThat(jsonObject).hasField(
+                                it.key,
+                                value.toString()
+                        )
+                    }
                 }
-            }
     }
 
     private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
@@ -206,14 +208,14 @@ internal class LogFileStrategyTest :
 
         if (jsonTagString.isNullOrBlank()) {
             assertThat(log.tags)
-                .isEmpty()
+                    .isEmpty()
         } else {
             val tags = jsonTagString
-                .split(',')
-                .toList()
+                    .split(',')
+                    .toList()
 
             assertThat(tags)
-                .containsExactlyInAnyOrder(*log.tags.toTypedArray())
+                    .containsExactlyInAnyOrder(*log.tags.toTypedArray())
         }
     }
 
@@ -224,14 +226,14 @@ internal class LogFileStrategyTest :
             throwable.printStackTrace(PrintWriter(sw))
 
             assertThat(jsonObject)
-                .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
-                .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
-                .hasField(LogSerializer.TAG_ERROR_STACK, sw.toString())
+                    .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
+                    .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
+                    .hasField(LogSerializer.TAG_ERROR_STACK, sw.toString())
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
-                .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
-                .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)
+                    .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
+                    .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
+                    .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)
         }
     }
 
@@ -241,8 +243,8 @@ internal class LogFileStrategyTest :
         private const val RECENT_DELAY_MS = 150L
         private const val MAX_DISK_SPACE = 16 * 32 * 1024L
         private val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
-            "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
+                "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
+                "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
         )
     }
 }

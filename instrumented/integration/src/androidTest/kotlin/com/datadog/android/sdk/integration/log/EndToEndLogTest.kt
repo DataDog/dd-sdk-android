@@ -31,8 +31,8 @@ internal class EndToEndLogTest {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(
-        ActivityLifecycleLogs::class.java,
-        keepRequests = true
+            ActivityLifecycleLogs::class.java,
+            keepRequests = true
     )
 
     @Test
@@ -47,9 +47,9 @@ internal class EndToEndLogTest {
         val logObjects = mutableListOf<JsonObject>()
         requests.forEach { request ->
             assertThat(request.headers)
-                .isNotNull
-                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
-                .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
+                    .isNotNull
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
+                    .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
 
             request.jsonBody!!.asJsonArray.forEach {
                 Log.i("EndToEndLogTest", "adding log $it")
@@ -66,12 +66,12 @@ internal class EndToEndLogTest {
         messagesSent.forEachIndexed { i, m ->
             val log = logObjects[i]
             assertThat(log)
-                .hasField(TAG_STATUS, levels[m.first])
-                .hasField(TAG_MESSAGE, m.second)
-                .hasField(TAG_SERVICE, "android")
-                .hasField(TAG_LOGGER_NAME, expectedLoggerName())
-                .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
-                .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
+                    .hasField(TAG_STATUS, levels[m.first])
+                    .hasField(TAG_MESSAGE, m.second)
+                    .hasField(TAG_SERVICE, "android")
+                    .hasField(TAG_LOGGER_NAME, expectedLoggerName())
+                    .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
+                    .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
             assertThat(tags).containsOnlyElementsOf(globalTags)
@@ -99,16 +99,16 @@ internal class EndToEndLogTest {
 
     private fun expectedLoggerName(): String {
         return InstrumentationRegistry
-            .getInstrumentation()
-            .targetContext.packageName
+                .getInstrumentation()
+                .targetContext.packageName
     }
 
     private fun expectedUserAgent(): String {
         return System.getProperty("http.agent").let {
             if (it.isNullOrBlank()) {
                 "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
+                        "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                        "${Build.MODEL} Build/${Build.ID})"
             } else {
                 it
             }
@@ -124,14 +124,13 @@ internal class EndToEndLogTest {
         private const val TAG_DDTAGS = "ddtags"
 
         internal const val TAG_LOGGER_NAME = "logger.name"
-        internal const val TAG_THREAD_NAME = "logger.thread_name"
         internal const val TAG_VERSION_NAME = "logger.version"
         internal const val TAG_APP_VERSION_NAME = "application.version"
 
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
 
         internal val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+                "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )
     }
 }

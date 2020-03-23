@@ -11,6 +11,7 @@ import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -21,6 +22,8 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * A class enabling Datadog logging features.
@@ -34,8 +37,8 @@ import java.util.Date
 class Logger
 internal constructor(private val handler: LogHandler) {
 
-    private val attributes = mutableMapOf<String, Any?>()
-    private val tags = mutableSetOf<String>()
+    private val attributes = ConcurrentHashMap<String, Any?>()
+    private val tags = CopyOnWriteArraySet<String>()
 
     // region Log
 
@@ -186,8 +189,8 @@ internal constructor(private val handler: LogHandler) {
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(),
-                        buildLogcatHandler()
+                            buildDatadogHandler(),
+                            buildLogcatHandler()
                     )
                 }
                 datadogLogsEnabled -> buildDatadogHandler()
@@ -284,14 +287,14 @@ internal constructor(private val handler: LogHandler) {
                     null
                 }
                 DatadogLogHandler(
-                    writer = LogsFeature.persistenceStrategy.getWriter(),
-                    serviceName = serviceName,
-                    loggerName = loggerName,
-                    networkInfoProvider = netInfoProvider,
-                    timeProvider = CoreFeature.timeProvider,
-                    userInfoProvider = CoreFeature.userInfoProvider,
-                    bundleWithTraces = bundleWithTraceEnabled,
-                    sampler = RateBasedSampler(sampleRate)
+                        writer = LogsFeature.persistenceStrategy.getWriter(),
+                        serviceName = serviceName,
+                        loggerName = loggerName,
+                        networkInfoProvider = netInfoProvider,
+                        timeProvider = CoreFeature.timeProvider,
+                        userInfoProvider = CoreFeature.userInfoProvider,
+                        bundleWithTraces = bundleWithTraceEnabled,
+                        sampler = RateBasedSampler(sampleRate)
                 )
             }
         }
@@ -354,7 +357,7 @@ internal constructor(private val handler: LogHandler) {
      * @param value the (nullable) String value of this attribute
      */
     fun addAttribute(key: String, value: String?) {
-        attributes[key] = value
+        safelyAddAttribute(key, value)
     }
 
     /**
@@ -363,7 +366,7 @@ internal constructor(private val handler: LogHandler) {
      * @param value the (nullable) [Date] value of this attribute
      */
     fun addAttribute(key: String, value: Date?) {
-        attributes[key] = value
+        safelyAddAttribute(key, value)
     }
 
     /**
@@ -372,7 +375,7 @@ internal constructor(private val handler: LogHandler) {
      * @param value the (nullable) [JsonObject] value of this attribute
      */
     fun addAttribute(key: String, value: JsonObject?) {
-        attributes[key] = value
+        safelyAddAttribute(key, value)
     }
 
     /**
@@ -381,7 +384,7 @@ internal constructor(private val handler: LogHandler) {
      * @param value the (nullable) [JsonArray] value of this attribute
      */
     fun addAttribute(key: String, value: JsonArray?) {
-        attributes[key] = value
+        safelyAddAttribute(key, value)
     }
 
     /**
@@ -444,7 +447,7 @@ internal constructor(private val handler: LogHandler) {
      */
     fun removeTagsWithKey(key: String) {
         val prefix = "$key:"
-        tags.removeAll {
+        safelyRemoveTagsWithKey {
             it.startsWith(prefix)
         }
     }
@@ -479,6 +482,17 @@ internal constructor(private val handler: LogHandler) {
 
     private fun removeTagInternal(tag: String) {
         tags.remove(tag)
+    }
+
+    private fun safelyAddAttribute(key: String, value: Any?) {
+        val attributeValue = value ?: NULL_MAP_VALUE
+        attributes[key] = attributeValue
+    }
+
+    private fun safelyRemoveTagsWithKey(keyFilter: (String) -> Boolean) {
+        // we first gather all the objects we want to remove based on a copy
+        val toRemove = tags.toTypedArray().filter(keyFilter)
+        tags.removeAll(toRemove)
     }
 
     // endregion
