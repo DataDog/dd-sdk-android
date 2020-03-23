@@ -126,7 +126,8 @@ object Datadog {
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
                 dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
+                userInfoProvider = CoreFeature.userInfoProvider
             )
         }
 
