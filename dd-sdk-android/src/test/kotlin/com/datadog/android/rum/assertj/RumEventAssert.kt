@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
 import com.datadog.android.rum.internal.domain.RumEventSerializer
@@ -103,6 +104,16 @@ internal class RumEventAssert(actual: RumEvent) :
 
         RumEventDataErrorAssert(actual.eventData as RumEventData.Error).assert()
 
+        return this
+    }
+
+    fun hasUserInfo(expected: UserInfo?): RumEventAssert {
+        assertThat(actual.userInfo)
+                .overridingErrorMessage(
+                        "Expected log to have userInfo $expected " +
+                                "but was ${actual.userInfo}"
+                )
+                .isEqualTo(expected)
         return this
     }
 

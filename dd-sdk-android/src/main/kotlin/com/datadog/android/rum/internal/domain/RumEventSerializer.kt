@@ -39,6 +39,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         val formattedDate = simpleDateFormat.format(Date(model.timestamp))
         root.addProperty(TAG_DATE, formattedDate)
 
+        // User Info
+        addUserInfo(model, root)
+
         // Data
         addEventData(model.eventData, root)
 
@@ -51,6 +54,22 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // endregion
 
     // region Internal
+
+    private fun addUserInfo(model: RumEvent, root: JsonObject) {
+        val email = model.userInfo.email
+        val id = model.userInfo.id
+        val name = model.userInfo.name
+
+        if (!email.isNullOrEmpty()) {
+            root.addProperty(TAG_USER_EMAIL, email)
+        }
+        if (!id.isNullOrEmpty()) {
+            root.addProperty(TAG_USER_ID, id)
+        }
+        if (!name.isNullOrEmpty()) {
+            root.addProperty(TAG_USER_NAME, name)
+        }
+    }
 
     private fun addEventData(eventData: RumEventData, root: JsonObject) {
         root.addProperty(TAG_EVENT_CATEGORY, eventData.category)
@@ -118,6 +137,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         internal const val TAG_ENV = "env"
         internal const val TAG_SERVICE = "service"
         internal const val TAG_MESSAGE = "message"
+        internal const val TAG_USER_ID = "user.id"
+        internal const val TAG_USER_EMAIL = "user.email"
+        internal const val TAG_USER_NAME = "user.name"
 
         internal const val TAG_APPLICATION_ID = "application_id"
         internal const val TAG_SESSION_ID = "session_id"

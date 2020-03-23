@@ -11,6 +11,8 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -25,7 +27,8 @@ import kotlin.math.max
 
 internal class DatadogRumMonitor(
     private val writer: Writer<RumEvent>,
-    private val timeProvider: TimeProvider = NoOpTimeProvider()
+    private val timeProvider: TimeProvider = NoOpTimeProvider(),
+    private val userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
 ) : RumMonitor {
 
     @Volatile
@@ -70,12 +73,7 @@ internal class DatadogRumMonitor(
         GlobalRum.updateViewId(activeViewId)
         val pathName = name.replace('.', '/')
         val eventData = RumEventData.View(pathName, 0)
-        val event = RumEvent(
-            GlobalRum.getRumContext(),
-            timeProvider.getDeviceTimestamp(),
-            eventData,
-            attributes
-        )
+        val event = rumEvent(eventData, attributes)
 
         activeViewStartNanos = System.nanoTime()
         activeViewEvent = event
@@ -98,12 +96,12 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null || startedEventData == null -> devLogger.w(
                 "Unable to end view with key <$key> (missing start). " +
-                    "This can mean that the view was not started or already ended."
+                        "This can mean that the view was not started or already ended."
             )
             startedKey == null -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (missing key)." +
-                        "Closing previous view automatically."
+                            "Closing previous view automatically."
                 )
                 updateAndSendView(
                     mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
@@ -112,7 +110,7 @@ internal class DatadogRumMonitor(
             startedKey != key -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (mismatched key). " +
-                        "Another view with key <$startedKey> has been started."
+                            "Another view with key <$startedKey> has been started."
                 )
             }
             else -> updateAndSendView(attributes)
@@ -139,12 +137,8 @@ internal class DatadogRumMonitor(
             UUID.randomUUID(),
             nanoTime
         )
-        val event = RumEvent(
-            GlobalRum.getRumContext(),
-            timeProvider.getDeviceTimestamp(),
-            eventData,
-            attributes
-        )
+
+        val event = rumEvent(eventData, attributes)
         lastActionRelatedEventNs.set(nanoTime)
         activeActionEvent = event
         activeActionData = eventData
@@ -162,12 +156,7 @@ internal class DatadogRumMonitor(
             url,
             System.nanoTime()
         )
-        val event = RumEvent(
-            GlobalRum.getRumContext(),
-            timeProvider.getDeviceTimestamp(),
-            eventData,
-            updatedAttributes
-        )
+        val event = rumEvent(eventData, updatedAttributes)
         activeResources[WeakReference(key)] = event
         ongoingUserActionResources.add(WeakReference(key))
     }
@@ -202,7 +191,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                    "This can mean that the resource was not started or already ended."
+                        "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
@@ -230,12 +219,7 @@ internal class DatadogRumMonitor(
     ) {
         val updatedAttributes = updateAttributesWithActionId(attributes)
         val eventData = RumEventData.Error(message, origin, throwable)
-        val event = RumEvent(
-            GlobalRum.getRumContext(),
-            timeProvider.getDeviceTimestamp(),
-            eventData,
-            updatedAttributes
-        )
+        val event = rumEvent(eventData, updatedAttributes)
         writer.write(event)
         updateAndSendView { it.incrementErrorCount() }
     }
@@ -243,6 +227,16 @@ internal class DatadogRumMonitor(
     // endregion
 
     // region Internal
+
+    private fun rumEvent(eventData: RumEventData, attributes: Map<String, Any?>): RumEvent {
+        return RumEvent(
+            GlobalRum.getRumContext(),
+            timeProvider.getDeviceTimestamp(),
+            eventData,
+            userInfoProvider.getUserInfo(),
+            attributes
+        )
+    }
 
     private fun updateAttributesWithActionId(
         attributes: Map<String, Any?>
@@ -351,7 +345,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                    "This can mean that the resource was not started or already ended."
+                        "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
@@ -405,7 +399,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end user action. " +
-                    "This can mean that the action was not started or already ended."
+                        "This can mean that the action was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end user action. The related data was inconsistent."
