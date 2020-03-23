@@ -3,10 +3,14 @@ package com.datadog.android.rum
 import android.app.Activity
 
 /**
- * The SDK will monitor the Activity lifecycle events
- * and will automatically start and stop RUM View for each resumed/paused activity.
+ * A [ViewTrackingStrategy] that will track [Activity] as RUM views.
+ *
+ * Each activity's lifecycle will be monitored to start and stop RUM views when relevant.
  */
 class ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
+
+    // region ActivityLifecycleTrackingStrategy
+
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         GlobalRum.monitor.startView(activity, activity.javaClass.canonicalName!!)
@@ -16,4 +20,6 @@ class ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTr
         super.onActivityPaused(activity)
         GlobalRum.monitor.stopView(activity)
     }
+
+    // endregion
 }

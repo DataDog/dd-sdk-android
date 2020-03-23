@@ -22,7 +22,6 @@ import com.datadog.gradle.testImplementation
 
 plugins {
     id("com.android.library")
-    id("androidx.benchmark")
     kotlin("android")
     kotlin("android.extensions")
     `maven-publish`
