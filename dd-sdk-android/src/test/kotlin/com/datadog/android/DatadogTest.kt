@@ -55,6 +55,7 @@ import org.mockito.quality.Strictness
 internal class DatadogTest {
 
     lateinit var mockAppContext: Application
+
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var mockDevLogHandler: LogHandler

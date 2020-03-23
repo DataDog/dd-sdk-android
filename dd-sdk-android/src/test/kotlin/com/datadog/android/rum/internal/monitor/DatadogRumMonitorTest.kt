@@ -11,6 +11,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -66,6 +68,11 @@ internal class DatadogRumMonitorTest {
 
     lateinit var mockDevLogHandler : LogHandler
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    lateinit var mockedUserInfo: UserInfo
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -73,12 +80,18 @@ internal class DatadogRumMonitorTest {
     var fakeTimestamp: Long = 0L
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         mockDevLogHandler = mockDevLogHandler()
         Datadog.setVerbosity(Log.VERBOSE)
         GlobalRum.updateApplicationId(fakeApplicationId)
+        mockedUserInfo = UserInfo(
+            forge.aString(),
+            forge.aString(),
+            forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com")
+        )
+        whenever(mockUserInfoProvider.getUserInfo()).thenReturn(mockedUserInfo)
         whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
-        testedMonitor = DatadogRumMonitor(mockWriter, mockTimeProvider)
+        testedMonitor = DatadogRumMonitor(mockWriter, mockTimeProvider, mockUserInfoProvider)
     }
 
     // region View
@@ -189,6 +202,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(name.replace('.', '/'))
@@ -226,6 +240,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(name.replace('.', '/'))
@@ -264,6 +279,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasViewData {
@@ -303,6 +319,7 @@ internal class DatadogRumMonitorTest {
             verify(mockWriter, times(3)).write(capture())
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
@@ -316,6 +333,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -333,6 +351,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -407,6 +426,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasResourceData {
                     hasUrl(resourceUrl)
@@ -419,6 +439,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -461,6 +482,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
@@ -474,6 +496,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -530,6 +553,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
                     hasOrigin(errorOrigin)
@@ -543,6 +567,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -587,6 +612,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
@@ -643,6 +669,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
                     hasMessage(errorMessage)
@@ -715,6 +742,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasResourceData {
@@ -727,6 +755,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -771,6 +800,7 @@ internal class DatadogRumMonitorTest {
             verify(mockWriter, times(4)).write(capture())
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionName)
@@ -784,6 +814,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasMeasures {
                         hasErrorCount(0)
@@ -798,6 +829,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasNoUserActionAttribute()
                 .hasResourceData {
@@ -812,6 +844,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(3)
@@ -856,6 +889,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasResourceData {
@@ -868,6 +902,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -916,6 +951,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasResourceData {
@@ -928,6 +964,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -943,6 +980,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionNAme)
@@ -956,6 +994,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(allValues[3])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasVersion(3)
                     hasMeasures {
@@ -971,6 +1010,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(allValues[4])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasNoUserActionAttribute()
                 .hasErrorData {
@@ -985,6 +1025,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasVersion(4)
                     hasMeasures {
@@ -1030,6 +1071,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasErrorData {
@@ -1043,6 +1085,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -1098,6 +1141,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasErrorData {
@@ -1111,6 +1155,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -1126,6 +1171,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionNAme)
@@ -1139,6 +1185,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(allValues[3])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasVersion(3)
                     hasMeasures {
@@ -1154,6 +1201,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(allValues[4])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasNoUserActionAttribute()
                 .hasErrorData {
@@ -1168,6 +1216,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasVersion(4)
                     hasMeasures {
@@ -1212,6 +1261,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasErrorData {
@@ -1225,6 +1275,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
                     hasVersion(2)
@@ -1266,6 +1317,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionAttribute()
                 .hasErrorData {
@@ -1280,6 +1332,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasVersion(2)
                     hasMeasures {
@@ -1320,6 +1373,7 @@ internal class DatadogRumMonitorTest {
             verify(mockWriter, times(4)).write(capture())
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionNAme)
@@ -1333,6 +1387,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasViewData {
                     hasMeasures {
                         hasErrorCount(0)
@@ -1347,6 +1402,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasNoUserActionAttribute()
                 .hasErrorData {
@@ -1398,6 +1454,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionName)
@@ -1410,6 +1467,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1426,6 +1484,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1469,6 +1528,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionName1)
@@ -1481,6 +1541,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1497,6 +1558,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionName2)
@@ -1509,6 +1571,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(allValues[3])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1525,6 +1588,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1567,6 +1631,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasUserActionData {
                     hasName(actionName1)
@@ -1579,6 +1644,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1595,6 +1661,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1647,6 +1714,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(resourceKind)
@@ -1657,6 +1725,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(secondValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1674,6 +1743,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(thirdValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasUserActionData {
                     hasName(actionName1)
                     hasNonDefaultId()
@@ -1685,6 +1755,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(allValues[3])
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
@@ -1701,6 +1772,7 @@ internal class DatadogRumMonitorTest {
                 }
             assertThat(lastValue)
                 .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
                 .hasViewData {
                     hasName(viewName.replace('.', '/'))
