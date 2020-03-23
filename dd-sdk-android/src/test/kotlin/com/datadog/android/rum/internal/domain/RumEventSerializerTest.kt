@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.log.internal.domain.LogSerializer
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -58,6 +59,9 @@ internal class RumEventSerializerTest {
             .hasField(RumEventSerializer.TAG_DURATION, fakeResource.durationNanoSeconds)
             .hasField(RumEventSerializer.TAG_RESOURCE_KIND, fakeResource.kind.value)
             .hasField(RumEventSerializer.TAG_HTTP_URL, fakeResource.url)
+            .hasField(RumEventSerializer.TAG_USER_NAME, event.userInfo.name)
+            .hasField(RumEventSerializer.TAG_USER_EMAIL, event.userInfo.email)
+            .hasField(RumEventSerializer.TAG_USER_ID, event.userInfo.id)
     }
 
     @Test
@@ -116,6 +120,26 @@ internal class RumEventSerializerTest {
             .hasField(RumEventSerializer.TAG_ERROR_KIND, fakeError.throwable.javaClass.simpleName)
             .hasField(RumEventSerializer.TAG_ERROR_MESSAGE, fakeError.throwable.message)
             .hasField(RumEventSerializer.TAG_ERROR_STACK, sw.toString())
+    }
+
+    @Test
+    fun `if user info is missing will not be serialized`(
+        @Forgery fakeEvent: RumEvent,
+        @Forgery fakeResource: RumEventData.Resource
+    ) {
+        val event = fakeEvent.copy(eventData = fakeResource, userInfo = UserInfo())
+
+        val serialized = underTest.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertEventMatches(jsonObject, event)
+        assertThat(jsonObject)
+            .hasField(RumEventSerializer.TAG_DURATION, fakeResource.durationNanoSeconds)
+            .hasField(RumEventSerializer.TAG_RESOURCE_KIND, fakeResource.kind.value)
+            .hasField(RumEventSerializer.TAG_HTTP_URL, fakeResource.url)
+            .doesNotHaveField(RumEventSerializer.TAG_USER_ID)
+            .doesNotHaveField(RumEventSerializer.TAG_USER_EMAIL)
+            .doesNotHaveField(RumEventSerializer.TAG_USER_NAME)
     }
 
     // region Internal

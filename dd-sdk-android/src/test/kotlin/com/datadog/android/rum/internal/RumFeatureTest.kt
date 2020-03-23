@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.TrackingStrategy
 import com.datadog.android.rum.UserActionTrackingStrategy
@@ -60,15 +61,21 @@ internal class RumFeatureTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
 
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
+
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
 
     lateinit var fakeConfig: DatadogConfig.RumConfig
 
@@ -110,7 +117,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         val context = GlobalRum.getRumContext()
@@ -126,7 +134,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         val persistenceStrategy = RumFeature.persistenceStrategy
@@ -148,13 +157,30 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         val dataUploadScheduler = RumFeature.dataUploadScheduler
 
         assertThat(dataUploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
+    }
+
+    @Test
+    fun `initializes the userInfoProvider`() {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+
+        assertThat(RumFeature.userInfoProvider).isEqualTo(mockUserInfoProvider)
     }
 
     @Test
@@ -166,7 +192,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         val clientToken = RumFeature.clientToken
@@ -188,13 +215,15 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
         val persistenceStrategy = RumFeature.persistenceStrategy
         val dataUploadScheduler = RumFeature.dataUploadScheduler
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
         val serviceName = RumFeature.serviceName
+        val userInfoProvider = RumFeature.userInfoProvider
 
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
@@ -212,7 +241,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
         val persistenceStrategy2 = RumFeature.persistenceStrategy
         val dataUploadScheduler2 = RumFeature.dataUploadScheduler
@@ -225,6 +255,7 @@ internal class RumFeatureTest {
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
+        assertThat(userInfoProvider).isSameAs(RumFeature.userInfoProvider)
 
         verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
             TrackingStrategy::class.java.isAssignableFrom(this::class.java)
@@ -241,7 +272,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         // then
@@ -264,7 +296,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         // then
@@ -288,7 +321,8 @@ internal class RumFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
         )
 
         // then

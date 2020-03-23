@@ -17,6 +17,8 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
@@ -41,6 +43,7 @@ internal object RumFeature {
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
+    internal var userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -50,7 +53,8 @@ internal object RumFeature {
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService
+        dataPersistenceExecutor: ExecutorService,
+        userInfoProvider: UserInfoProvider
     ) {
         if (initialized.get()) {
             return
@@ -74,7 +78,7 @@ internal object RumFeature {
             dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
         )
         setupTrackingStrategies(appContext, config)
-
+        this.userInfoProvider = userInfoProvider
         initialized.set(true)
     }
 
@@ -124,12 +128,6 @@ internal object RumFeature {
         config.userActionTrackingStrategy?.register(appContext)
         config.viewTrackingStrategy?.register(appContext)
     }
-
-    // endregion
-
-    // region Constants
-
-    internal const val RUM_UPLOAD_THREAD_NAME = "ddog-rum-upload"
 
     // endregion
 }

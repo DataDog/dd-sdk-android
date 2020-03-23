@@ -137,7 +137,8 @@ interface RumMonitor {
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
-                    writer = RumFeature.persistenceStrategy.getWriter()
+                        writer = RumFeature.persistenceStrategy.getWriter(),
+                        userInfoProvider = RumFeature.userInfoProvider
                 )
             }
         }

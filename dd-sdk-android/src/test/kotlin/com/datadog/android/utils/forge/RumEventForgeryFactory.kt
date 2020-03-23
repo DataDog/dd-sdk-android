@@ -16,17 +16,18 @@ internal class RumEventForgeryFactory : ForgeryFactory<RumEvent> {
 
     override fun getForgery(forge: Forge): RumEvent {
         val eventData = forge.anElementFrom(
-            forge.getForgery<RumEventData.Resource>(),
-            forge.getForgery<RumEventData.UserAction>(),
-            forge.getForgery<RumEventData.View>(),
-            forge.getForgery<RumEventData.Error>()
+                forge.getForgery<RumEventData.Resource>(),
+                forge.getForgery<RumEventData.UserAction>(),
+                forge.getForgery<RumEventData.View>(),
+                forge.getForgery<RumEventData.Error>()
         )
 
         return RumEvent(
-            context = forge.getForgery(),
-            timestamp = forge.aTimestamp(),
-            eventData = eventData,
-            attributes = forge.exhaustiveAttributes()
+                context = forge.getForgery(),
+                timestamp = forge.aTimestamp(),
+                eventData = eventData,
+                attributes = forge.exhaustiveAttributes(),
+                userInfo = forge.getForgery()
         )
     }
 }
