@@ -101,6 +101,12 @@ ktLintConfig()
 
 reviewBenchmark {
 
+    // Global Benchmarks
+    addThreshold(
+        "benchmark_initialize",
+        TimeUnit.MILLISECONDS.toNanos(8)
+    )
+
     // Logs Benchmarks
     addThreshold(
         "benchmark_create_one_log",
@@ -141,8 +147,7 @@ reviewBenchmark {
         TimeUnit.MILLISECONDS.toNanos(250)
     )
 
-    // LogIo Benchmarks
-
+    // Logs I/O Benchmarks
     addThreshold(
         "benchmark_write_logs_on_disk",
         TimeUnit.MILLISECONDS.toNanos(60)
