@@ -98,7 +98,7 @@ interface com.datadog.android.rum.RumMonitor
   fun startResource(Any, String, Map<String, Any?> = emptyMap())
   fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(Any, String, String, Throwable)
-  fun addError(String, String, Throwable, Map<String, Any?>)
+  fun addError(String, String, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
 enum com.datadog.android.rum.RumResourceKind
