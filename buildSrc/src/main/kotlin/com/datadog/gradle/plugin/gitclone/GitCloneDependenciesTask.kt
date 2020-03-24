@@ -68,9 +68,8 @@ open class GitCloneDependenciesTask : DefaultTask() {
         val srcPath = "${src.absolutePath}${File.separator}"
         val destPath = "${dest.absolutePath}${File.separator}"
         src.walkBottomUp()
-            .forEach {
-                copyFile(it, srcPath, destPath, excludedPrefixes)
-            }
+            .filter { it.isFile }
+            .forEach { copyFile(it, srcPath, destPath, excludedPrefixes) }
 
         println(" --- Copied")
     }
