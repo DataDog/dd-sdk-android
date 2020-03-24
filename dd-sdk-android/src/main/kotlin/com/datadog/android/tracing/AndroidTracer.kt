@@ -15,6 +15,8 @@ import datadog.opentracing.LogHandler
 import datadog.opentracing.propagation.ExtractedContext
 import datadog.trace.api.Config
 import datadog.trace.api.sampling.PrioritySampling
+import io.opentracing.Span
+import io.opentracing.log.Fields
 import java.math.BigInteger
 import java.security.SecureRandom
 import java.util.Properties
@@ -137,5 +139,30 @@ class AndroidTracer internal constructor(
         internal const val TRACE_LOGGER_NAME = "trace"
 
         internal const val TRACE_ID_BIT_SIZE = 63
+
+        /**
+         * Helper method to attach a Throwable to a specific Span.
+         * The Throwable information (class name, message and stacktrace) will be added to the
+         * provided Span as standard Error Tags.
+         * @param span the active Span
+         * @param throwable the Throwable you wan to log
+         */
+        @JvmStatic
+        fun logThrowable(span: Span, throwable: Throwable) {
+            val fieldsMap = mapOf(Fields.ERROR_OBJECT to throwable)
+            span.log(fieldsMap)
+        }
+
+        /**
+         * Helper method to attach an error message to a specific Span.
+         * The error message will be added to the provided Span as a standard Error Tag.
+         * @param span the active Span
+         * @param message the error message you want to attach
+         */
+        @JvmStatic
+        fun logErrorMessage(span: Span, message: String) {
+            val fieldsMap = mapOf(Fields.MESSAGE to message)
+            span.log(fieldsMap)
+        }
     }
 }
