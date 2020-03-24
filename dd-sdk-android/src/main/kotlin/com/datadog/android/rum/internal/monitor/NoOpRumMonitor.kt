@@ -61,7 +61,7 @@ internal class NoOpRumMonitor : RumMonitor {
     override fun addError(
         message: String,
         origin: String,
-        throwable: Throwable,
+        throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
         // No Op
