@@ -85,6 +85,7 @@ dependencies {
     // latest release maven artifact either local or live
     // (e.g. "com.datadoghq:dd-sdk-android:1.0.0")
     implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android-androidx-fragment"))
 
     implementation "com.facebook.stetho:stetho:1.5.1"
     implementation "com.facebook.stetho:stetho-okhttp3:1.5.1"
