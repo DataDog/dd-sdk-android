@@ -74,33 +74,57 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     private fun addEventData(eventData: RumEventData, root: JsonObject) {
         root.addProperty(TAG_EVENT_CATEGORY, eventData.category)
         when (eventData) {
-            is RumEventData.Resource -> {
-                root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
-                root.addProperty(TAG_RESOURCE_KIND, eventData.kind.value)
-                root.addProperty(TAG_HTTP_URL, eventData.url)
-            }
-            is RumEventData.UserAction -> {
-                root.addProperty(TAG_EVENT_NAME, eventData.name)
-                root.addProperty(TAG_EVENT_ID, eventData.id.toString())
-                root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
-            }
-            is RumEventData.View -> {
-                root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
-                root.addProperty(TAG_VIEW_URL, eventData.name)
-                root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
-                root.addProperty(TAG_MEASURES_ERRORS, eventData.measures.errorCount)
-                root.addProperty(TAG_MEASURES_RESOURCES, eventData.measures.resourceCount)
-                root.addProperty(TAG_MEASURES_ACTIONS, eventData.measures.userActionCount)
-            }
-            is RumEventData.Error -> {
-                val sw = StringWriter()
-                eventData.throwable.printStackTrace(PrintWriter(sw))
-                root.addProperty(TAG_MESSAGE, eventData.message)
-                root.addProperty(TAG_ERROR_ORIGIN, eventData.origin)
-                root.addProperty(TAG_ERROR_KIND, eventData.throwable.javaClass.simpleName)
-                root.addProperty(TAG_ERROR_MESSAGE, eventData.throwable.message)
-                root.addProperty(TAG_ERROR_STACK, sw.toString())
-            }
+            is RumEventData.Resource -> addResourceData(eventData, root)
+            is RumEventData.UserAction -> addUserActionData(eventData, root)
+            is RumEventData.View -> addViewData(eventData, root)
+            is RumEventData.Error -> addErrorData(root, eventData)
+        }
+    }
+
+    private fun addViewData(
+        eventData: RumEventData.View,
+        root: JsonObject
+    ) {
+        root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
+        root.addProperty(TAG_VIEW_URL, eventData.name)
+        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
+        root.addProperty(TAG_MEASURES_ERRORS, eventData.measures.errorCount)
+        root.addProperty(TAG_MEASURES_RESOURCES, eventData.measures.resourceCount)
+        root.addProperty(TAG_MEASURES_ACTIONS, eventData.measures.userActionCount)
+    }
+
+    private fun addUserActionData(
+        eventData: RumEventData.UserAction,
+        root: JsonObject
+    ) {
+        root.addProperty(TAG_EVENT_NAME, eventData.name)
+        root.addProperty(TAG_EVENT_ID, eventData.id.toString())
+        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
+    }
+
+    private fun addResourceData(
+        eventData: RumEventData.Resource,
+        root: JsonObject
+    ) {
+        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
+        root.addProperty(TAG_RESOURCE_KIND, eventData.kind.value)
+        root.addProperty(TAG_HTTP_URL, eventData.url)
+    }
+
+    private fun addErrorData(
+        root: JsonObject,
+        eventData: RumEventData.Error
+    ) {
+        root.addProperty(TAG_MESSAGE, eventData.message)
+        root.addProperty(TAG_ERROR_ORIGIN, eventData.origin)
+
+        val throwable = eventData.throwable
+        if (throwable != null) {
+            val sw = StringWriter()
+            throwable.printStackTrace(PrintWriter(sw))
+            root.addProperty(TAG_ERROR_KIND, throwable.javaClass.simpleName)
+            root.addProperty(TAG_ERROR_MESSAGE, throwable.message)
+            root.addProperty(TAG_ERROR_STACK, sw.toString())
         }
     }
 

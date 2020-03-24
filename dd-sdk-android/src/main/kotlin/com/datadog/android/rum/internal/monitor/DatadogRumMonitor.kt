@@ -214,7 +214,7 @@ internal class DatadogRumMonitor(
     override fun addError(
         message: String,
         origin: String,
-        throwable: Throwable,
+        throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
         val updatedAttributes = updateAttributesWithActionId(attributes)

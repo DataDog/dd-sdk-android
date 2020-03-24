@@ -111,7 +111,8 @@ internal class RumEventSerializerTest {
         val serialized = underTest.serialize(event)
 
         val sw = StringWriter()
-        fakeError.throwable.printStackTrace(PrintWriter(sw))
+        val throwable = fakeError.throwable!!
+        throwable.printStackTrace(PrintWriter(sw))
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
@@ -140,6 +141,25 @@ internal class RumEventSerializerTest {
             .doesNotHaveField(RumEventSerializer.TAG_USER_ID)
             .doesNotHaveField(RumEventSerializer.TAG_USER_EMAIL)
             .doesNotHaveField(RumEventSerializer.TAG_USER_NAME)
+    }
+
+    @Test
+    fun `serializes error rum event without throwable`(
+        @Forgery fakeEvent: RumEvent,
+        @Forgery fakeError: RumEventData.Error
+    ) {
+        val event = fakeEvent.copy(eventData = fakeError.copy(throwable = null))
+
+        val serialized = underTest.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertEventMatches(jsonObject, event)
+        assertThat(jsonObject)
+            .hasField(RumEventSerializer.TAG_MESSAGE, fakeError.message)
+            .hasField(RumEventSerializer.TAG_ERROR_ORIGIN, fakeError.origin)
+            .doesNotHaveField(RumEventSerializer.TAG_ERROR_KIND)
+            .doesNotHaveField(RumEventSerializer.TAG_ERROR_MESSAGE)
+            .doesNotHaveField(RumEventSerializer.TAG_ERROR_STACK)
     }
 
     // region Internal
