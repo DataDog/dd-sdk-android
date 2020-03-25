@@ -80,7 +80,10 @@ abstract class com.datadog.android.rum.ActivityLifecycleTrackingStrategy : andro
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityResumed(android.app.Activity)
+  protected fun asRumAttributes(android.os.Bundle?): Map<String, Any?>
+  companion object
 class com.datadog.android.rum.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean)
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
 object com.datadog.android.rum.GlobalRum

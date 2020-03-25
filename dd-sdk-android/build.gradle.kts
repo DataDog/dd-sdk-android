@@ -33,6 +33,7 @@ plugins {
     id("cloneDependencies")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
+    id("de.mobilej.unmock")
     jacoco
 }
 
@@ -115,6 +116,8 @@ dependencies {
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
 
+    unmock(Dependencies.Libraries.Robolectric)
+
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)
 }
@@ -158,6 +161,13 @@ cloneDependencies {
             "thread-utils.gradle"
         )
     )
+}
+
+unMock {
+    keep("android.os.Bundle")
+    keep("android.os.Parcel")
+    keepStartingWith("android.util.")
+    keep("android.content.ComponentName")
 }
 
 kotlinConfig()

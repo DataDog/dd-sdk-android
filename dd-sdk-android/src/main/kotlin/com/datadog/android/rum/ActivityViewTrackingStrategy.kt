@@ -6,15 +6,24 @@ import android.app.Activity
  * A [ViewTrackingStrategy] that will track [Activity] as RUM views.
  *
  * Each activity's lifecycle will be monitored to start and stop RUM views when relevant.
+ * @param trackExtras whether to track Activity Intent extras
  */
-class ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
+class ActivityViewTrackingStrategy(private val trackExtras: Boolean) :
+    ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
 
     // region ActivityLifecycleTrackingStrategy
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         val javaClass = activity.javaClass
-        GlobalRum.monitor.startView(activity, javaClass.canonicalName ?: javaClass.simpleName)
+        val vieName = javaClass.canonicalName ?: javaClass.simpleName
+        val attributes =
+            if (trackExtras) asRumAttributes(activity.intent?.extras) else emptyMap()
+        GlobalRum.monitor.startView(
+            activity,
+            vieName,
+            attributes
+        )
     }
 
     override fun onActivityPaused(activity: Activity) {
