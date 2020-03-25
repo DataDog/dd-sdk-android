@@ -1,9 +1,12 @@
-package com.datadog.android.androidx.fragment
+package com.datadog.android.androidx.fragment.internal
 
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,16 +21,26 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class CompatFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() {
+internal class CompatFragmentLifecycleCallbacksTest : RumMonitorBasedTest() {
     lateinit var underTest: CompatFragmentLifecycleCallbacks
 
     @Mock
     lateinit var mockFragment: TestFragment1
 
+    @Mock
+    lateinit var mockFragmentActivity: FragmentActivity
+
+    @Mock
+    lateinit var mockFragmentManager: FragmentManager
+
+    lateinit var attributesMap: Map<String, Any?>
+
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = CompatFragmentLifecycleCallbacks
+        whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
+        attributesMap = forge.aMap { forge.aString() to forge.aString() }
+        underTest = CompatFragmentLifecycleCallbacks { attributesMap }
     }
 
     @Test
@@ -37,8 +50,8 @@ internal class CompatFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() {
         // then
         verify(mockRumMonitor).startView(
             eq(mockFragment),
-            eq(mockFragment::class.java.canonicalName!!),
-            eq(emptyMap())
+            eq(mockFragment.resolveViewName()),
+            eq(attributesMap)
         )
     }
 
@@ -51,6 +64,24 @@ internal class CompatFragmentLifecycleCallbacksTest : LifecycleCallbacksTest() {
             eq(mockFragment),
             eq(emptyMap())
         )
+    }
+
+    @Test
+    fun `will register the callback to fragment manager when required`() {
+        // when
+        underTest.register(mockFragmentActivity)
+
+        // then
+        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(underTest, true)
+    }
+
+    @Test
+    fun `will unregister the callback from the fragment manager when required`() {
+        // when
+        underTest.unregister(mockFragmentActivity)
+
+        // then
+        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(underTest)
     }
 
     internal open class TestFragment1 : Fragment()

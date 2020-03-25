@@ -65,4 +65,28 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
     }
 
     // endregion
+
+    // region Utils
+
+    /**
+     * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
+     * @param bundle the Bundle we need to transform. Returns an empty Map if this is null.
+     */
+    protected fun asRumAttributes(bundle: Bundle?): Map<String, Any?> {
+        if (bundle == null) return emptyMap()
+
+        val attributes = mutableMapOf<String, Any?>()
+
+        bundle.keySet().forEach {
+            attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
+        }
+
+        return attributes
+    }
+
+    // endregion
+
+    companion object {
+        internal const val ARGUMENT_TAG = "view.arguments"
+    }
 }
