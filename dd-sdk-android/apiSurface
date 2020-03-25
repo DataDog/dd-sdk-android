@@ -98,7 +98,7 @@ interface com.datadog.android.rum.RumMonitor
   fun startResource(Any, String, Map<String, Any?> = emptyMap())
   fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(Any, String, String, Throwable)
-  fun addError(String, String, Throwable, Map<String, Any?>)
+  fun addError(String, String, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
 enum com.datadog.android.rum.RumResourceKind
@@ -114,6 +114,18 @@ enum com.datadog.android.rum.RumResourceKind
   - CSS
   - MEDIA
   - OTHER
+  companion object
+open class com.datadog.android.rum.RumWebChromeClient : android.webkit.WebChromeClient
+  constructor()
+  override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
+  companion object
+open class com.datadog.android.rum.RumWebViewClient : android.webkit.WebViewClient
+  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
+  override fun onPageFinished(android.webkit.WebView?, String?)
+  override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
+  override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
+  override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
+  override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
   companion object
 interface com.datadog.android.rum.TrackingStrategy
   fun register(android.content.Context)

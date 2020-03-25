@@ -17,6 +17,7 @@ import androidx.multidex.MultiDex;
 
 import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
+import com.datadog.android.androidx.fragment.FragmentViewTrackingStrategy;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
 import com.datadog.android.rum.RumMonitor;
@@ -57,7 +58,7 @@ public class SampleApplication extends Application {
         }
 
         configBuilder.setServiceName("android-sample-java")
-                .useViewTrackingStrategy(new ActivityViewTrackingStrategy())
+                .useViewTrackingStrategy(new FragmentViewTrackingStrategy())
                 .trackGestures()
                 .setEnvironmentName("staging");
 
