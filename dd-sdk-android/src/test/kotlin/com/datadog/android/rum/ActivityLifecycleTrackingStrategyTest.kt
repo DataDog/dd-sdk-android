@@ -3,11 +3,13 @@ package com.datadog.android.rum
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,10 +32,14 @@ import org.mockito.quality.Strictness
 internal abstract class ActivityLifecycleTrackingStrategyTest {
     lateinit var underTest: ActivityLifecycleTrackingStrategy
     @Mock
+    lateinit var mockIntent: Intent
+    @Mock
     lateinit var mockRumMonitor: RumMonitor
     lateinit var mockActivity: Activity
+
     @Mock
     lateinit var mockAppContext: Application
+
     @Mock
     lateinit var mockBadContext: Context
 
@@ -44,6 +50,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
         val mockActivity2 = mock<Test2Activity>()
         val mockActivity3 = mock<Test3Activity>()
         mockActivity = forge.anElementFrom(mockActivity1, mockActivity2, mockActivity3)
+        whenever(mockActivity.intent).thenReturn(mockIntent)
     }
 
     @AfterEach

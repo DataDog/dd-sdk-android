@@ -201,7 +201,7 @@ internal class NavigationViewTrackingStrategyTest {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
             arguments.putString(key, value)
-            expectedAttrs["${NavigationViewTrackingStrategy.ARGUMENT_TAG}.$key"] = value
+            expectedAttrs["view.arguments.$key"] = value
         }
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
