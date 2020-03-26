@@ -18,7 +18,6 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockDevLogHandler
@@ -281,7 +280,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasViewData {
                     hasName(name.replace('.', '/'))
                     hasDurationLowerThan(duration)
@@ -321,7 +320,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)
@@ -484,7 +483,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)
@@ -614,7 +613,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)

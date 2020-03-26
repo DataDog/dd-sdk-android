@@ -7,9 +7,9 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -38,9 +38,9 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
 
-        val actionId = actual.attributes[RumEventSerializer.TAG_EVENT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
         assertThat(actionId)
             .isNotNull()
             .matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
@@ -50,9 +50,9 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasUserActionAttribute(expected: UUID): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
 
-        val actionId = actual.attributes[RumEventSerializer.TAG_EVENT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
         assertThat(actionId)
             .isEqualTo(expected.toString())
 
@@ -61,7 +61,7 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasNoUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .doesNotContainKey(RumEventSerializer.TAG_EVENT_USER_ACTION_ID)
+            .doesNotContainKey(RumAttributes.EVT_USER_ACTION_ID)
 
         return this
     }
@@ -109,11 +109,11 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasUserInfo(expected: UserInfo?): RumEventAssert {
         assertThat(actual.userInfo)
-                .overridingErrorMessage(
-                        "Expected log to have userInfo $expected " +
-                                "but was ${actual.userInfo}"
-                )
-                .isEqualTo(expected)
+            .overridingErrorMessage(
+                "Expected log to have userInfo $expected " +
+                    "but was ${actual.userInfo}"
+            )
+            .isEqualTo(expected)
         return this
     }
 

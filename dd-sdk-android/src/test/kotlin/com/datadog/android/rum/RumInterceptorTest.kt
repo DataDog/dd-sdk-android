@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
@@ -85,14 +84,14 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.fromMimeType(fakeMimeType!!),
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -114,14 +113,14 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.UNKNOWN,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -142,14 +141,14 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "POST")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -170,14 +169,14 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "PUT")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -198,14 +197,14 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "DELETE")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -237,7 +236,7 @@ internal class RumInterceptorTest {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to fakeRequest.method())
+                emptyMap()
             )
             verify(mockRumMonitor).stopResourceWithError(
                 fakeRequest,
