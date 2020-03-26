@@ -64,10 +64,6 @@ gradlePlugin {
             id = "thirdPartyLicences" // the alias
             implementationClass = "com.datadog.gradle.plugin.checklicenses.ThirdPartyLicensesPlugin"
         }
-        register("gitDiffConditional") {
-            id = "gitDiffConditional" // the alias
-            implementationClass = "com.datadog.gradle.plugin.gitdiff.GitConditionalDependencyPlugin"
-        }
         register("apiSurface") {
             id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
