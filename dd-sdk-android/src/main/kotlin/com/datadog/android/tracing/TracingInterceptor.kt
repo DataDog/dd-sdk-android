@@ -33,14 +33,14 @@ import okhttp3.Response
  * information in the request header to link it with backend spans.
  *
  * If you use multiple Interceptors, make sure that this one is called first.
- * If you also use the [RumInterceptor], make it is called before this one.
+ * If you also use the [RumInterceptor], make it is called after this one.
  *
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
+ *       .addInterceptor(new TracingInterceptor())
  *       // Optional RUM integration
  *       .addInterceptor(new RumInterceptor())
- *       .addInterceptor(new TracingInterceptor())
  *       .build();
  * ```
  */
