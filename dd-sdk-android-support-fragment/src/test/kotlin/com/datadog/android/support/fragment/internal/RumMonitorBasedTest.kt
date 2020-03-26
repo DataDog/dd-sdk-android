@@ -1,4 +1,4 @@
-package com.datadog.android.support.fragment
+package com.datadog.android.support.fragment.internal
 
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
@@ -22,7 +22,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal abstract class LifecycleCallbacksTest {
+internal abstract class RumMonitorBasedTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 

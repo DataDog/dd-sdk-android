@@ -1,0 +1,91 @@
+package com.datadog.android.androidx.fragment.internal
+
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentActivity
+import android.support.v4.app.FragmentManager
+import com.datadog.android.support.fragment.internal.CompatFragmentLifecycleCallbacks
+import com.datadog.android.support.fragment.internal.RumMonitorBasedTest
+import com.datadog.android.support.fragment.internal.resolveViewName
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+internal class CompatFragmentLifecycleCallbacksTest : RumMonitorBasedTest() {
+    lateinit var underTest: CompatFragmentLifecycleCallbacks
+
+    @Mock
+    lateinit var mockFragment: TestFragment1
+
+    @Mock
+    lateinit var mockFragmentActivity: FragmentActivity
+
+    @Mock
+    lateinit var mockFragmentManager: FragmentManager
+
+    lateinit var attributesMap: Map<String, Any?>
+
+    @BeforeEach
+    override fun `set up`(forge: Forge) {
+        super.`set up`(forge)
+        whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
+        attributesMap = forge.aMap { forge.aString() to forge.aString() }
+        underTest = CompatFragmentLifecycleCallbacks { attributesMap }
+    }
+
+    @Test
+    fun `when fragment resumed it will start a view event`(forge: Forge) {
+        // when
+        underTest.onFragmentResumed(mock(), mockFragment)
+        // then
+        verify(mockRumMonitor).startView(
+            eq(mockFragment),
+            eq(mockFragment.resolveViewName()),
+            eq(attributesMap)
+        )
+    }
+
+    @Test
+    fun `when fragment paused it will stop a view event`(forge: Forge) {
+        // when
+        underTest.onFragmentPaused(mock(), mockFragment)
+        // then
+        verify(mockRumMonitor).stopView(
+            eq(mockFragment),
+            eq(emptyMap())
+        )
+    }
+
+    @Test
+    fun `will register the callback to fragment manager when required`() {
+        // when
+        underTest.register(mockFragmentActivity)
+
+        // then
+        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(underTest, true)
+    }
+
+    @Test
+    fun `will unregister the callback from the fragment manager when required`() {
+        // when
+        underTest.unregister(mockFragmentActivity)
+
+        // then
+        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(underTest)
+    }
+
+    internal open class TestFragment1 : Fragment()
+}
