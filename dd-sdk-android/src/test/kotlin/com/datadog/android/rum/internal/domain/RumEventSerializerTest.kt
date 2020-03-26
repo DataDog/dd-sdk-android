@@ -59,6 +59,7 @@ internal class RumEventSerializerTest {
             .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
             .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
             .hasField(RumAttributes.HTTP_URL, fakeResource.url)
+            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
             .hasField(RumAttributes.USER_NAME, event.userInfo.name)
             .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
             .hasField(RumAttributes.USER_ID, event.userInfo.id)

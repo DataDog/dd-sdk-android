@@ -41,7 +41,12 @@ class RumInterceptor : Interceptor {
         val url = request.url().toString()
         val method = request.method()
 
-        GlobalRum.get().startResource(request, url, mapOf("http.method" to method))
+        GlobalRum.get().startResource(
+            request,
+            method,
+            url,
+            emptyMap()
+        )
 
         try {
             val response = chain.proceed(request)

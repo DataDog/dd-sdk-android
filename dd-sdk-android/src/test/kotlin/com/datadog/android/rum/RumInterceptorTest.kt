@@ -83,6 +83,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "GET",
                 fakeUrl,
                 emptyMap()
             )
@@ -112,6 +113,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "GET",
                 fakeUrl,
                 emptyMap()
             )
@@ -140,6 +142,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "POST",
                 fakeUrl,
                 emptyMap()
             )
@@ -168,6 +171,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "PUT",
                 fakeUrl,
                 emptyMap()
             )
@@ -196,6 +200,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "DELETE",
                 fakeUrl,
                 emptyMap()
             )
@@ -235,6 +240,7 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                fakeRequest.method(),
                 fakeUrl,
                 emptyMap()
             )
