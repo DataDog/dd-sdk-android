@@ -30,7 +30,7 @@ internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
             .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .useViewTrackingStrategy(FragmentViewTrackingStrategy())
+            .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
             .build()
 
         Datadog.initialize(this, config)
