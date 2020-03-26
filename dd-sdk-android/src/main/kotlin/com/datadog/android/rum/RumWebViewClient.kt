@@ -16,7 +16,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.RequiresApi
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
@@ -62,7 +61,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error $errorCode: $description",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to failingUrl)
+            mapOf(RumAttributes.HTTP_URL to failingUrl)
         )
     }
 
@@ -78,7 +77,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${error?.errorCode}: ${error?.description}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -94,7 +93,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -109,7 +108,7 @@ open class RumWebViewClient : WebViewClient() {
             "SSL Error ${error?.primaryError}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to error?.url)
+            mapOf(RumAttributes.HTTP_URL to error?.url)
         )
     }
 

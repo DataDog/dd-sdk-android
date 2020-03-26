@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.tracing.TracingInterceptor
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -56,8 +55,8 @@ class RumInterceptor : Interceptor {
                 request,
                 kind,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to response.code(),
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to response.code(),
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (response.body()?.contentLength() ?: 0)
                 )
             )
