@@ -31,10 +31,8 @@ open class RumWebViewClient : WebViewClient() {
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
         if (url != null) {
-            GlobalRum.get().startResource(
-                url,
-                url
-            )
+            val key = url
+            GlobalRum.get().startResource(key, METHOD_GET, url)
         }
     }
 
@@ -42,10 +40,8 @@ open class RumWebViewClient : WebViewClient() {
     override fun onPageFinished(view: WebView?, url: String?) {
         super.onPageFinished(view, url)
         if (url != null) {
-            GlobalRum.get().stopResource(
-                url,
-                RumResourceKind.DOCUMENT
-            )
+            val key = url
+            GlobalRum.get().stopResource(key, RumResourceKind.DOCUMENT)
         }
     }
 
@@ -116,5 +112,6 @@ open class RumWebViewClient : WebViewClient() {
 
     companion object {
         internal const val ORIGIN = "WebViewClient"
+        internal const val METHOD_GET = "GET"
     }
 }

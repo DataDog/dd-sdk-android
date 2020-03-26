@@ -147,12 +147,14 @@ internal class DatadogRumMonitor(
     @Synchronized
     override fun startResource(
         key: Any,
+        method: String,
         url: String,
         attributes: Map<String, Any?>
     ) {
         val updatedAttributes = updateAttributesWithActionId(attributes)
         val eventData = RumEventData.Resource(
             RumResourceKind.OTHER,
+            method,
             url,
             System.nanoTime()
         )
@@ -240,10 +242,10 @@ internal class DatadogRumMonitor(
 
     private fun updateAttributesWithActionId(
         attributes: Map<String, Any?>
-    ): Map<String, Any?> {
+    ): MutableMap<String, Any?> {
         val actionId = getActiveActionId()
         return if (actionId == null) {
-            attributes
+            attributes.toMutableMap()
         } else {
             attributes.toMutableMap()
                 .apply {
