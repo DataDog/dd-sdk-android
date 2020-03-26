@@ -166,6 +166,7 @@ cloneDependencies {
 unMock {
     keep("android.os.Bundle")
     keep("android.os.Parcel")
+    keepStartingWith("com.android.internal.util.")
     keepStartingWith("android.util.")
     keep("android.content.ComponentName")
 }
