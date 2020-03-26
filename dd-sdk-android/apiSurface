@@ -38,6 +38,50 @@ object com.datadog.android.DatadogEndpoint
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
+object com.datadog.android.log.LogAttributes
+  const val APPLICATION_PACKAGE: String
+  const val APPLICATION_VERSION: String
+  const val DATE: String
+  const val DB_INSTANCE: String
+  const val DB_OPERATION: String
+  const val DB_STATEMENT: String
+  const val DB_USER: String
+  const val DD_SPAN_ID: String
+  const val DD_TRACE_ID: String
+  const val DURATION: String
+  const val ERROR_KIND: String
+  const val ERROR_MESSAGE: String
+  const val ERROR_STACK: String
+  const val HOST: String
+  const val HTTP_METHOD: String
+  const val HTTP_REFERRER: String
+  const val HTTP_REQUEST_ID: String
+  const val HTTP_STATUS_CODE: String
+  const val HTTP_URL: String
+  const val HTTP_USERAGENT: String
+  const val HTTP_VERSION: String
+  const val LOGGER_METHOD_NAME: String
+  const val LOGGER_NAME: String
+  const val LOGGER_THREAD_NAME: String
+  const val LOGGER_VERSION: String
+  const val MESSAGE: String
+  const val NETWORK_CARRIER_ID: String
+  const val NETWORK_CARRIER_NAME: String
+  const val NETWORK_CLIENT_IP: String
+  const val NETWORK_CLIENT_PORT: String
+  const val NETWORK_CONNECTIVITY: String
+  const val NETWORK_DOWN_KBPS: String
+  const val NETWORK_SIGNAL_STRENGTH: String
+  const val NETWORK_UP_KBPS: String
+  const val RUM_APPLICATION_ID: String
+  const val RUM_SESSION_ID: String
+  const val RUM_VIEW_ID: String
+  const val SERVICE_NAME: String
+  const val SOURCE: String
+  const val STATUS: String
+  const val USR_EMAIL: String
+  const val USR_ID: String
+  const val USR_NAME: String
 class com.datadog.android.log.Logger
   fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
   fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
@@ -88,6 +132,54 @@ object com.datadog.android.rum.GlobalRum
   fun registerIfAbsent(RumMonitor): Boolean
   fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
   fun get(): RumMonitor
+object com.datadog.android.rum.RumAttributes
+  const val APPLICATION_ID: String
+  const val APPLICATION_PACKAGE: String
+  const val APPLICATION_VERSION: String
+  const val DATE: String
+  const val DURATION: String
+  const val ERROR_KIND: String
+  const val ERROR_MESSAGE: String
+  const val ERROR_ORIGIN: String
+  const val ERROR_STACK: String
+  const val EVT_CATEGORY: String
+  const val EVT_ID: String
+  const val EVT_NAME: String
+  const val EVT_USER_ACTION_ID: String
+  const val HTTP_METHOD: String
+  const val HTTP_PERFORMANCE_CONNECT_DURATION: String
+  const val HTTP_PERFORMANCE_CONNECT_START: String
+  const val HTTP_PERFORMANCE_DNS_DURATION: String
+  const val HTTP_PERFORMANCE_DNS_START: String
+  const val HTTP_PERFORMANCE_DOWNLOAD_DURATION: String
+  const val HTTP_PERFORMANCE_DOWNLOAD_START: String
+  const val HTTP_PERFORMANCE_FIRST_BYTE_DURATION: String
+  const val HTTP_PERFORMANCE_FIRST_BYTE_START: String
+  const val HTTP_PERFORMANCE_REDIRECT_DURATION: String
+  const val HTTP_PERFORMANCE_REDIRECT_START: String
+  const val HTTP_PERFORMANCE_SSL_DURATION: String
+  const val HTTP_PERFORMANCE_SSL_START: String
+  const val HTTP_REFERRER: String
+  const val HTTP_STATUS_CODE: String
+  const val HTTP_URL: String
+  const val HTTP_USERAGENT: String
+  const val HTTP_VERSION: String
+  const val NETWORK_BYTES_READ: String
+  const val NETWORK_BYTES_WRITTEN: String
+  const val RESOURCE_KIND: String
+  const val RUM_DOCUMENT_VERSION: String
+  const val SESSION_ID: String
+  const val SOURCE: String
+  const val TRACE_ID: String
+  const val USER_EMAIL: String
+  const val USER_ID: String
+  const val USER_NAME: String
+  const val VIEW_ID: String
+  const val VIEW_MEASURES_ERROR_COUNT: String
+  const val VIEW_MEASURES_RESOURCE_COUNT: String
+  const val VIEW_MEASURES_USER_ACTION_COUNT: String
+  const val VIEW_REFERRER: String
+  const val VIEW_URL: String
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
   companion object
