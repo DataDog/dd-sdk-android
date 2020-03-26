@@ -7,7 +7,8 @@ import com.datadog.android.rum.GlobalRum
 internal object CompatFragmentLifecycleCallbacks : FragmentManager.FragmentLifecycleCallbacks() {
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        GlobalRum.get().startView(f, f.javaClass.canonicalName!!)
+        val javaClass = f.javaClass
+        GlobalRum.get().startView(f, javaClass.canonicalName ?: javaClass.simpleName)
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
