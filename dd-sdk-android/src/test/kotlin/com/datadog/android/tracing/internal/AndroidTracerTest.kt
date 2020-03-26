@@ -8,7 +8,10 @@ import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import datadog.opentracing.DDSpan
 import datadog.opentracing.LogHandler
 import datadog.opentracing.scopemanager.ContextualScopeManager
@@ -19,6 +22,8 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
+import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
 import java.math.BigInteger
 import java.util.Random
@@ -46,6 +51,7 @@ internal class AndroidTracerTest {
     lateinit var mockAppContext: Application
     lateinit var fakeToken: String
     lateinit var fakeServiceName: String
+
     @Mock
     lateinit var mockLogsHandler: LogHandler
 
@@ -73,6 +79,8 @@ internal class AndroidTracerTest {
             ContextualScopeManager::class.java.getStaticValue("tlsScope")
         tlsScope.remove()
     }
+
+    // region Tracer
 
     @Test
     fun `buildSpan will inject a parent context`(
@@ -167,4 +175,48 @@ internal class AndroidTracerTest {
         inOrder.verify(mockLogsHandler).log(logMaps, span)
         inOrder.verify(mockLogsHandler).log(logTimestamp, logMaps, span)
     }
+
+    // endregion
+
+    // region Helpers
+
+    @Test
+    fun `it will delegate to the right fields when logging a throwable for a span`(forge: Forge) {
+        // given
+        val aThrowable: Throwable = forge.getForgery()
+        val mockSpan: Span = mock()
+
+        // when
+        AndroidTracer.logThrowable(mockSpan, aThrowable)
+
+        // then
+        argumentCaptor<Map<String, Any>>().apply {
+            verify(mockSpan).log(capture())
+            assertThat(firstValue)
+                .containsEntry(Fields.ERROR_OBJECT, aThrowable)
+                .containsOnlyKeys(Fields.ERROR_OBJECT)
+        }
+    }
+
+    @Test
+    fun `it will delegate to the right fields when logging an error message for a span`(
+        forge: Forge
+    ) {
+        // given
+        val anErrorMessage: String = forge.aString()
+        val mockSpan: Span = mock()
+
+        // when
+        AndroidTracer.logErrorMessage(mockSpan, anErrorMessage)
+
+        // then
+        argumentCaptor<Map<String, Any>>().apply {
+            verify(mockSpan).log(capture())
+            assertThat(firstValue)
+                .containsEntry(Fields.MESSAGE, anErrorMessage)
+                .containsOnlyKeys(Fields.MESSAGE)
+        }
+    }
+
+    // endregion
 }

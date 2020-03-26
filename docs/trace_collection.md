@@ -92,6 +92,24 @@ class SampleApplication : Application() {
     ```kotlin
     span.setTag("http.url", url)
     ```
+7. (Optional) Attach an error information to a Span:
+
+    If you want to mark a span as having an error, you can do so by logging it using the official OpenTracing tags
+
+    ```kotlin
+    span.log(mapOf(Fields.ERROR_OBJECT to throwable))
+    ```
+    ```kotlin
+    span.log(mapOf(Fields.MESSAGE to errorMessage))
+    ```
+    You can also use one of the following helper method in AndroidTracer
+
+    ```kotlin
+    AndroidTracer.logThrowable(span, throwable)
+    ```
+    ```kotlin
+    AndroidTracer.logErrorMessage(span, message)
+    ```
 
 ## Integrations
 
