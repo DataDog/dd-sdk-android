@@ -7,8 +7,13 @@
 package com.datadog.android.rum
 
 import com.datadog.android.tracing.TracingInterceptor
+import datadog.opentracing.propagation.ExtractedContext
+import io.opentracing.propagation.Format
+import io.opentracing.propagation.TextMapExtract
+import io.opentracing.util.GlobalTracer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 
 /**
@@ -18,14 +23,14 @@ import okhttp3.Response
  * (url, method, status code, optional error).
  *
  * If you use multiple Interceptors, make sure that this one is called first.
- * If you also use the [TracingInterceptor], make it is called after this one.
+ * If you also use the [TracingInterceptor], make sure it is called before this one.
  *
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new RumInterceptor())
  *       // Optional APM Traces integration
  *       .addInterceptor(new TracingInterceptor())
+ *       .addInterceptor(new RumInterceptor())
  *       .build();
  * ```
  */
@@ -40,12 +45,13 @@ class RumInterceptor : Interceptor {
         val request = chain.request()
         val url = request.url().toString()
         val method = request.method()
+        val traceId = extractTraceId(request)
 
         GlobalRum.get().startResource(
             request,
             method,
             url,
-            emptyMap()
+            if (traceId != null) mapOf(RumAttributes.TRACE_ID to traceId) else emptyMap()
         )
 
         try {
@@ -70,6 +76,24 @@ class RumInterceptor : Interceptor {
             GlobalRum.get().stopResourceWithError(request, "OkHttp error on $method", "network", t)
             throw t
         }
+    }
+
+    private fun extractTraceId(request: Request): String? {
+        val extractedContext = GlobalTracer.get()
+            .extract(
+                Format.Builtin.TEXT_MAP_EXTRACT,
+                TextMapExtract {
+                    request.headers()
+                        .toMultimap()
+                        .map { it.key to it.value.joinToString(";") }
+                        .toMap()
+                        .toMutableMap()
+                        .iterator()
+                }
+            )
+
+        val traceId = (extractedContext as? ExtractedContext)?.traceId?.toString()
+        return traceId
     }
 
     // endregion
