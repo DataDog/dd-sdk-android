@@ -4,8 +4,6 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-import com.datadog.gradle.plugin.gitdiff.gitDiffTask
-
 buildscript {
     repositories {
         google()
@@ -25,10 +23,6 @@ buildscript {
     }
 }
 
-plugins {
-    id("gitDiffConditional")
-}
-
 allprojects {
     repositories {
         google()
@@ -42,60 +36,7 @@ task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
 
-gitDiffTask("unitTestChanged") {
-    dependsOnDiff(
-        "dd-sdk-android/.*",
-        ":dd-sdk-android:testDebugUnitTest",
-        ":dd-sdk-android:testReleaseUnitTest",
-        ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug",
-        ":sample:kotlin-timber:assembleDebug"
-    )
-    dependsOnDiff(
-        "dd-sdk-android-timber/.*",
-        ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":sample:kotlin-timber:assembleDebug"
-    )
-    dependsOnDiff(
-        "dd-sdk-android-androidx-fragment/.*",
-        ":dd-sdk-android-androidx-fragment:testDebugUnitTest",
-        ":dd-sdk-android-androidx-fragment:testReleaseUnitTest"
-    )
-    dependsOnDiff(
-        "dd-sdk-android-support-fragment/.*",
-        ":dd-sdk-android-support-fragment:testDebugUnitTest",
-        ":dd-sdk-android-support-fragment:testReleaseUnitTest"
-    )
-    dependsOnDiff(
-        "dd-sdk-android-navigation/.*",
-        ":dd-sdk-android-navigation:testDebugUnitTest",
-        ":dd-sdk-android-navigation:testReleaseUnitTest"
-    )
-    dependsOnDiff(
-        "tools/detekt/.*",
-        ":tools:detekt:test"
-    )
-    dependsOnDiff(
-        "tools/unit/.*",
-        ":tools:unit:testDebugUnitTest",
-        ":tools:unit:testReleaseUnitTest"
-    )
-    dependsOnDiff(
-        "sample/java/.*",
-        ":sample:java:assembleDebug"
-    )
-    dependsOnDiff(
-        "sample/kotlin/.*",
-        ":sample:kotlin:assembleDebug"
-    )
-    dependsOnDiff(
-        "sample/kotlin/.*",
-        ":sample:kotlin-timber:assembleDebug"
-    )
-}
-
-gitDiffTask("unitTestAll") {
+tasks.register("unitTestAll") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
