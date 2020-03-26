@@ -1,3 +1,4 @@
 class com.datadog.android.support.fragment.FragmentViewTrackingStrategy : com.datadog.android.rum.ActivityLifecycleTrackingStrategy, com.datadog.android.rum.ViewTrackingStrategy
+  constructor(Boolean)
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
