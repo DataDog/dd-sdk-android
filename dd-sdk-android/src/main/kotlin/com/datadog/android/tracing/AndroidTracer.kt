@@ -6,11 +6,9 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_APPLICATION_ID
-import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_SESSION_ID
-import com.datadog.android.rum.internal.domain.RumEventSerializer.Companion.TAG_VIEW_ID
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
@@ -155,9 +153,9 @@ class AndroidTracer internal constructor(
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
         return if (bundleWithRum) {
             val rumContext = GlobalRum.getRumContext()
-            withTag(TAG_APPLICATION_ID, rumContext.applicationId.toString())
-                .withTag(TAG_SESSION_ID, rumContext.sessionId.toString())
-                .withTag(TAG_VIEW_ID, rumContext.viewId?.toString())
+            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId.toString())
+                .withTag(LogAttributes.RUM_SESSION_ID, rumContext.sessionId.toString())
+                .withTag(LogAttributes.RUM_VIEW_ID, rumContext.viewId?.toString())
         } else {
             this
         }

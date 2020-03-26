@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
 import com.google.gson.JsonArray
@@ -41,20 +42,20 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         val jsonLog = JsonObject()
 
         // Mandatory info
-        jsonLog.addProperty(TAG_MESSAGE, log.message)
-        jsonLog.addProperty(TAG_SERVICE_NAME, log.serviceName)
-        jsonLog.addProperty(TAG_STATUS, resolveLogLevelStatus(log.level))
-        jsonLog.addProperty(TAG_LOGGER_NAME, log.loggerName)
-        jsonLog.addProperty(TAG_THREAD_NAME, log.threadName)
-        jsonLog.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-        jsonLog.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
-        jsonLog.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
+        jsonLog.addProperty(LogAttributes.MESSAGE, log.message)
+        jsonLog.addProperty(LogAttributes.SERVICE_NAME, log.serviceName)
+        jsonLog.addProperty(LogAttributes.STATUS, resolveLogLevelStatus(log.level))
+        jsonLog.addProperty(LogAttributes.LOGGER_NAME, log.loggerName)
+        jsonLog.addProperty(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
+        jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
+        jsonLog.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+        jsonLog.addProperty(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         // Timestamp
         val formattedDate = synchronized(simpleDateFormat) {
             simpleDateFormat.format(Date(log.timestamp))
         }
-        jsonLog.addProperty(TAG_DATE, formattedDate)
+        jsonLog.addProperty(LogAttributes.DATE, formattedDate)
 
         // Network Info
         addLogNetworkInfo(log, jsonLog)
@@ -80,21 +81,21 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
     ) {
         val info = log.networkInfo
         if (info != null) {
-            jsonLog.addProperty(TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            jsonLog.addProperty(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
             if (!info.carrierName.isNullOrBlank()) {
-                jsonLog.addProperty(TAG_NETWORK_CARRIER_NAME, info.carrierName)
+                jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
             }
             if (info.carrierId >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_CARRIER_ID, info.carrierId)
+                jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
             }
             if (info.upKbps >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_UP_KBPS, info.upKbps)
+                jsonLog.addProperty(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
             }
             if (info.downKbps >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_DOWN_KBPS, info.downKbps)
+                jsonLog.addProperty(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
             }
             if (info.strength > Int.MIN_VALUE) {
-                jsonLog.addProperty(TAG_NETWORK_SIGNAL_STRENGTH, info.strength)
+                jsonLog.addProperty(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
             }
         }
     }
@@ -102,13 +103,13 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
     private fun addLogUserInfo(log: Log, jsonLog: JsonObject) {
         val userInfo = log.userInfo
         if (!userInfo.id.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_ID, userInfo.id)
+            jsonLog.addProperty(LogAttributes.USR_ID, userInfo.id)
         }
         if (!userInfo.name.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_NAME, userInfo.name)
+            jsonLog.addProperty(LogAttributes.USR_NAME, userInfo.name)
         }
         if (!userInfo.email.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_EMAIL, userInfo.email)
+            jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
     }
 
@@ -117,9 +118,9 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         log.throwable?.let {
-            jsonLog.addProperty(TAG_ERROR_KIND, it.javaClass.simpleName)
-            jsonLog.addProperty(TAG_ERROR_MESSAGE, it.message)
-            jsonLog.addProperty(TAG_ERROR_STACK, it.loggableStackTrace())
+            jsonLog.addProperty(LogAttributes.ERROR_KIND, it.javaClass.simpleName)
+            jsonLog.addProperty(LogAttributes.ERROR_MESSAGE, it.message)
+            jsonLog.addProperty(LogAttributes.ERROR_STACK, it.loggableStackTrace())
         }
     }
 
@@ -160,55 +161,17 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
     companion object {
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
-        // MAIN TAGS
-        internal const val TAG_HOST = "host"
-        internal const val TAG_MESSAGE = "message"
-        internal const val TAG_STATUS = "status"
-        internal const val TAG_SERVICE_NAME = "service"
-        internal const val TAG_SOURCE = "source"
-        internal const val TAG_DATE = "date"
-
-        // COMMON TAGS
         internal const val TAG_DATADOG_TAGS = "ddtags"
 
-        // ERROR TAGS
-        internal const val TAG_ERROR_KIND = "error.kind"
-        internal const val TAG_ERROR_MESSAGE = "error.message"
-        internal const val TAG_ERROR_STACK = "error.stack"
-
-        // LOGGER TAGS
-        internal const val TAG_LOGGER_NAME = "logger.name"
-        internal const val TAG_THREAD_NAME = "logger.thread_name"
-        internal const val TAG_VERSION_NAME = "logger.version"
-        internal const val TAG_APP_VERSION_NAME = "application.version"
-        internal const val TAG_APP_PACKAGE_NAME = "application.package"
-
-        // TRACE
-        internal const val TAG_TRACE_ID = "dd.trace_id"
-        internal const val TAG_SPAN_ID = "dd.span_id"
-
-        // NETWORK TAGS
-        internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
-        internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
-        internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
-        internal const val TAG_NETWORK_UP_KBPS = "network.client.uplink_kbps"
-        internal const val TAG_NETWORK_DOWN_KBPS = "network.client.downlink_kbps"
-        internal const val TAG_NETWORK_SIGNAL_STRENGTH = "network.client.signal_strength"
-
-        // USER TAGS
-        internal const val TAG_USER_ID = "usr.id"
-        internal const val TAG_USER_NAME = "usr.name"
-        internal const val TAG_USER_EMAIL = "usr.email"
-
         internal val reservedAttributes = arrayOf(
-                TAG_HOST,
-                TAG_MESSAGE,
-                TAG_STATUS,
-                TAG_SERVICE_NAME,
-                TAG_SOURCE,
-                TAG_ERROR_KIND,
-                TAG_ERROR_MESSAGE,
-                TAG_ERROR_STACK,
+                LogAttributes.HOST,
+                LogAttributes.MESSAGE,
+                LogAttributes.STATUS,
+                LogAttributes.SERVICE_NAME,
+                LogAttributes.SOURCE,
+                LogAttributes.ERROR_KIND,
+                LogAttributes.ERROR_MESSAGE,
+                LogAttributes.ERROR_STACK,
                 TAG_DATADOG_TAGS
         )
 
