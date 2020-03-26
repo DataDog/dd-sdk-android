@@ -35,6 +35,7 @@ internal class NoOpRumMonitor : RumMonitor {
 
     override fun startResource(
         key: Any,
+        method: String,
         url: String,
         attributes: Map<String, Any?>
     ) {

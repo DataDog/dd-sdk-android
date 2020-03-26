@@ -16,6 +16,7 @@ internal class RumEventDataResourceForgeryFactory :
     override fun getForgery(forge: Forge): RumEventData.Resource {
         return RumEventData.Resource(
             kind = forge.aValueFrom(RumResourceKind::class.java),
+            method = forge.anElementFrom("GET", "PUT", "POST", "DELETE", "PATCH"),
             durationNanoSeconds = forge.aPositiveLong(),
             url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+")
         )

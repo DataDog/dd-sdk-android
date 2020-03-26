@@ -115,6 +115,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     ) {
         root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
         root.addProperty(RumAttributes.RESOURCE_KIND, eventData.kind.value)
+        root.addProperty(RumAttributes.HTTP_METHOD, eventData.method)
         root.addProperty(RumAttributes.HTTP_URL, eventData.url)
     }
 

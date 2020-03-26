@@ -81,6 +81,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).startResource(
             fakeUrl,
+            "GET",
             fakeUrl,
             emptyMap()
         )
