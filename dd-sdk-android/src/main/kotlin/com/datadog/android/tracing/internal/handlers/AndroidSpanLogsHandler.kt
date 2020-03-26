@@ -2,8 +2,8 @@ package com.datadog.android.tracing.internal.handlers
 
 import android.util.Log
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.LogSerializer
 import datadog.opentracing.DDSpan
 import datadog.opentracing.LogHandler
 import datadog.trace.api.DDTags
@@ -58,8 +58,8 @@ internal class AndroidSpanLogsHandler(
         timestampMicroseconds: Long? = null
     ) {
         val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
-        fields[LogSerializer.TAG_TRACE_ID] = span.traceId.toString()
-        fields[LogSerializer.TAG_SPAN_ID] = span.spanId.toString()
+        fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()
+        fields[LogAttributes.DD_SPAN_ID] = span.spanId.toString()
         logger.internalLog(
             Log.VERBOSE,
             message,

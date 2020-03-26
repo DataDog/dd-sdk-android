@@ -4,6 +4,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
@@ -26,8 +27,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-        ExtendWith(MockitoExtension::class),
-        ExtendWith(ForgeExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
@@ -49,11 +50,11 @@ internal class LogSerializerTest {
     @Test
     fun `serializes minimal log as json`(@Forgery fakeLog: Log) {
         val minimalLog = fakeLog.copy(
-                throwable = null,
-                networkInfo = null,
-                userInfo = UserInfo(),
-                attributes = emptyMap(),
-                tags = emptyList()
+            throwable = null,
+            networkInfo = null,
+            userInfo = UserInfo(),
+            attributes = emptyMap(),
+            tags = emptyList()
         )
 
         val serialized = underTest.serialize(minimalLog)
@@ -123,19 +124,19 @@ internal class LogSerializerTest {
     ) {
         val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
         assertThat(jsonObject)
-                .hasField(LogSerializer.TAG_MESSAGE, log.message)
-                .hasField(LogSerializer.TAG_SERVICE_NAME, log.serviceName)
-                .hasField(LogSerializer.TAG_STATUS, levels[log.level])
-                .hasField(LogSerializer.TAG_LOGGER_NAME, log.loggerName)
-                .hasField(LogSerializer.TAG_THREAD_NAME, log.threadName)
-                .hasField(LogSerializer.TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-                .hasField(LogSerializer.TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
-                .hasField(LogSerializer.TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
+            .hasField(LogAttributes.MESSAGE, log.message)
+            .hasField(LogAttributes.SERVICE_NAME, log.serviceName)
+            .hasField(LogAttributes.STATUS, levels[log.level])
+            .hasField(LogAttributes.LOGGER_NAME, log.loggerName)
+            .hasField(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
+            .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
+            .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+            .hasField(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(
-                LogSerializer.TAG_DATE,
-                "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
+            LogAttributes.DATE,
+            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
 
         assertNetworkInfoMatches(log, jsonObject)
@@ -150,60 +151,60 @@ internal class LogSerializerTest {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject).apply {
-                hasField(LogSerializer.TAG_NETWORK_CONNECTIVITY, info.connectivity.serialized)
+                hasField(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
                 if (!info.carrierName.isNullOrBlank()) {
-                    hasField(LogSerializer.TAG_NETWORK_CARRIER_NAME, info.carrierName)
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
                 } else {
-                    doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }
                 if (info.carrierId >= 0) {
-                    hasField(LogSerializer.TAG_NETWORK_CARRIER_ID, info.carrierId)
+                    hasField(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
                 } else {
-                    doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
                 }
                 if (info.upKbps >= 0) {
-                    hasField(LogSerializer.TAG_NETWORK_UP_KBPS, info.upKbps)
+                    hasField(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
                 } else {
-                    doesNotHaveField(LogSerializer.TAG_NETWORK_UP_KBPS)
+                    doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
                 }
                 if (info.downKbps >= 0) {
-                    hasField(LogSerializer.TAG_NETWORK_DOWN_KBPS, info.downKbps)
+                    hasField(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
                 } else {
-                    doesNotHaveField(LogSerializer.TAG_NETWORK_DOWN_KBPS)
+                    doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
                 }
                 if (info.strength > Int.MIN_VALUE) {
-                    hasField(LogSerializer.TAG_NETWORK_SIGNAL_STRENGTH, info.strength)
+                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
                 } else {
-                    doesNotHaveField(LogSerializer.TAG_NETWORK_SIGNAL_STRENGTH)
+                    doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
                 }
             }
         } else {
             assertThat(jsonObject)
-                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CONNECTIVITY)
-                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_NAME)
-                    .doesNotHaveField(LogSerializer.TAG_NETWORK_CARRIER_ID)
+                .doesNotHaveField(LogAttributes.NETWORK_CONNECTIVITY)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
         }
     }
 
     private fun assertAttributesMatch(log: Log, jsonObject: JsonObject) {
         log.attributes
-                .filter { it.key.isNotBlank() }
-                .forEach {
-                    val value = it.value
-                    when (value) {
-                        NULL_MAP_VALUE -> assertThat(jsonObject).hasNullField(it.key)
-                        is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                        is Int -> assertThat(jsonObject).hasField(it.key, value)
-                        is Long -> assertThat(jsonObject).hasField(it.key, value)
-                        is Float -> assertThat(jsonObject).hasField(it.key, value)
-                        is Double -> assertThat(jsonObject).hasField(it.key, value)
-                        is String -> assertThat(jsonObject).hasField(it.key, value)
-                        is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                        is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
-                        is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
-                        else -> assertThat(jsonObject).hasField(it.key, value.toString())
-                    }
+            .filter { it.key.isNotBlank() }
+            .forEach {
+                val value = it.value
+                when (value) {
+                    NULL_MAP_VALUE -> assertThat(jsonObject).hasNullField(it.key)
+                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
+                    is Int -> assertThat(jsonObject).hasField(it.key, value)
+                    is Long -> assertThat(jsonObject).hasField(it.key, value)
+                    is Float -> assertThat(jsonObject).hasField(it.key, value)
+                    is Double -> assertThat(jsonObject).hasField(it.key, value)
+                    is String -> assertThat(jsonObject).hasField(it.key, value)
+                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
+                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
+                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
+                    else -> assertThat(jsonObject).hasField(it.key, value.toString())
                 }
+            }
     }
 
     private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
@@ -211,14 +212,14 @@ internal class LogSerializerTest {
 
         if (jsonTagString.isNullOrBlank()) {
             Assertions.assertThat(log.tags)
-                    .isEmpty()
+                .isEmpty()
         } else {
             val tags = jsonTagString
-                    .split(',')
-                    .toList()
+                .split(',')
+                .toList()
 
             Assertions.assertThat(tags)
-                    .containsExactlyInAnyOrder(*log.tags.toTypedArray())
+                .containsExactlyInAnyOrder(*log.tags.toTypedArray())
         }
     }
 
@@ -226,14 +227,14 @@ internal class LogSerializerTest {
         val throwable = log.throwable
         if (throwable != null) {
             assertThat(jsonObject)
-                    .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
-                    .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
-                    .hasField(LogSerializer.TAG_ERROR_STACK, throwable.loggableStackTrace())
+                .hasField(LogAttributes.ERROR_KIND, throwable.javaClass.simpleName)
+                .hasField(LogAttributes.ERROR_MESSAGE, throwable.message)
+                .hasField(LogAttributes.ERROR_STACK, throwable.loggableStackTrace())
         } else {
             assertThat(jsonObject)
-                    .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
-                    .doesNotHaveField(LogSerializer.TAG_ERROR_MESSAGE)
-                    .doesNotHaveField(LogSerializer.TAG_ERROR_STACK)
+                .doesNotHaveField(LogAttributes.ERROR_KIND)
+                .doesNotHaveField(LogAttributes.ERROR_MESSAGE)
+                .doesNotHaveField(LogAttributes.ERROR_STACK)
         }
     }
 
@@ -241,27 +242,27 @@ internal class LogSerializerTest {
         val info = log.userInfo
         assertThat(jsonObject).apply {
             if (info.id.isNullOrEmpty()) {
-                doesNotHaveField(LogSerializer.TAG_USER_ID)
+                doesNotHaveField(LogAttributes.USR_ID)
             } else {
-                hasField(LogSerializer.TAG_USER_ID, info.id)
+                hasField(LogAttributes.USR_ID, info.id)
             }
             if (info.name.isNullOrEmpty()) {
-                doesNotHaveField(LogSerializer.TAG_USER_NAME)
+                doesNotHaveField(LogAttributes.USR_NAME)
             } else {
-                hasField(LogSerializer.TAG_USER_NAME, info.name)
+                hasField(LogAttributes.USR_NAME, info.name)
             }
             if (info.email.isNullOrEmpty()) {
-                doesNotHaveField(LogSerializer.TAG_USER_EMAIL)
+                doesNotHaveField(LogAttributes.USR_EMAIL)
             } else {
-                hasField(LogSerializer.TAG_USER_EMAIL, info.email)
+                hasField(LogAttributes.USR_EMAIL, info.email)
             }
         }
     }
 
     companion object {
         internal val levels = arrayOf(
-                "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
-                "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN",
+            "ERROR", "CRITICAL", "DEBUG", "EMERGENCY"
         )
     }
 }
