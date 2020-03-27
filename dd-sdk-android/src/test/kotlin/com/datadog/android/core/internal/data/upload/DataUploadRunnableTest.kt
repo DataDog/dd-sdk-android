@@ -7,8 +7,6 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.os.Handler
-import android.util.Log
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.net.DataUploader
@@ -18,10 +16,6 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -37,7 +31,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,8 +43,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -59,12 +51,16 @@ internal class DataUploadRunnableTest {
 
     @Mock
     lateinit var mockHandler: Handler
+
     @Mock
     lateinit var mockReader: Reader
+
     @Mock
     lateinit var mockDataUploader: DataUploader
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
 
@@ -181,7 +177,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `no batch to send`(@SystemOutStream outputStream: ByteArrayOutputStream) {
+    fun `no batch to send`() {
         whenever(mockReader.readNextBatch()) doReturn null
 
         testedRunnable.run()
@@ -190,11 +186,6 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).releaseBatch(anyOrNull())
         verifyZeroInteractions(mockDataUploader)
         verify(mockHandler).postDelayed(testedRunnable, DataUploadRunnable.MAX_DELAY)
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedRunnable, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.INFO, expectedTag, "There was no batch to be sent")
-        }
     }
 
     @Test

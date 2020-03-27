@@ -8,15 +8,13 @@ package com.datadog.android.core.internal.net
 
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemStreamExtension
-import com.datadog.tools.unit.lastLine
+import com.datadog.android.utils.mockDevLogHandler
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,105 +25,101 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class UploadStatusTest {
 
     lateinit var fakeContext: String
+    lateinit var mockDevLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockDevLogHandler = mockDevLogHandler()
         fakeContext = forge.anAlphabeticalString()
         Datadog.setVerbosity(Log.VERBOSE)
     }
 
     @Test
-    fun `logStatus SUCCESS`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus SUCCESS`() {
         UploadStatus.SUCCESS.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo("V/Datadog: Batch sent successfully ($fakeContext).")
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.VERBOSE,
+                "Batch sent successfully ($fakeContext)."
+            )
     }
 
     @Test
-    fun `logStatus NETWORK_ERROR`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus NETWORK_ERROR`() {
         UploadStatus.NETWORK_ERROR.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/Datadog: Unable to send batch ($fakeContext) because of a network error; " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Unable to send batch ($fakeContext) because of a network error; " +
                     "we will retry later."
             )
     }
 
     @Test
-    fun `logStatus INVALID_TOKEN_ERROR`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus INVALID_TOKEN_ERROR`() {
         UploadStatus.INVALID_TOKEN_ERROR.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/Datadog: Unable to send batch ($fakeContext) because your token is invalid. " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Unable to send batch ($fakeContext) because your token is invalid. " +
                     "Make sure that the provided token still exists."
             )
     }
 
     @Test
-    fun `logStatus HTTP_REDIRECTION`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus HTTP_REDIRECTION`() {
         UploadStatus.HTTP_REDIRECTION.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/Datadog: Unable to send batch ($fakeContext) because of a network error; " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                "Unable to send batch ($fakeContext) because of a network error; " +
                     "we will retry later."
             )
     }
 
     @Test
-    fun `logStatus HTTP_CLIENT_ERROR`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus HTTP_CLIENT_ERROR`() {
         UploadStatus.HTTP_CLIENT_ERROR.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/Datadog: Unable to send batch ($fakeContext) because of a processing error " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Unable to send batch ($fakeContext) because of a processing error " +
                     "(possibly because of invalid data); the batch was dropped."
             )
     }
 
     @Test
-    fun `logStatus HTTP_SERVER_ERROR`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus HTTP_SERVER_ERROR`() {
         UploadStatus.HTTP_SERVER_ERROR.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/Datadog: Unable to send batch ($fakeContext) because of a " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Unable to send batch ($fakeContext) because of a " +
                     "server processing error; we will retry later."
             )
     }
 
     @Test
-    fun `logStatus UNKNOWN_ERROR`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `logStatus UNKNOWN_ERROR`() {
         UploadStatus.UNKNOWN_ERROR.logStatus(fakeContext)
 
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/Datadog: Unable to send batch ($fakeContext) because of an unknown error; " +
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Unable to send batch ($fakeContext) because of an unknown error; " +
                     "we will retry later."
             )
     }

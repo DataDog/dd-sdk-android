@@ -32,10 +32,14 @@ internal fun buildSdkLogger(): Logger {
 internal val devLogger: Logger = buildDevLogger()
 
 private fun buildDevLogger(): Logger {
+    return Logger(buildDevLogHandler())
+}
+
+internal fun buildDevLogHandler(): ConditionalLogHandler {
     val handler = ConditionalLogHandler(
         LogcatLogHandler(DEV_LOG_PREFIX)
     ) { i, _ ->
         i >= Datadog.libraryVerbosity
     }
-    return Logger(handler)
+    return handler
 }

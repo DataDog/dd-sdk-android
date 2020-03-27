@@ -13,6 +13,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -72,4 +75,12 @@ fun resolveTagName(caller: Any, defaultIfNotDebug: String? = null): String {
     } else {
         tag.substring(0, min(tag.length, 23))
     }
+}
+
+internal fun mockDevLogHandler(): LogHandler {
+    val mockHandler: LogHandler = mock()
+
+    devLogger.setFieldValue("handler", mockHandler)
+
+    return mockHandler
 }

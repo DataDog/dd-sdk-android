@@ -11,25 +11,24 @@ import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,8 +40,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
 internal class LoggerBuilderTest {
@@ -74,9 +72,8 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder returns no op if SDK is not initialized`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `builder returns no op if SDK is not initialized`() {
+        val mockDevLogHandler = mockDevLogHandler()
         Datadog.invokeMethod("stop") // simulate non initialized SDK
         val logger = Logger.Builder()
             .build()
@@ -84,8 +81,8 @@ internal class LoggerBuilderTest {
         val handler: LogHandler = logger.getFieldValue("handler")
 
         assertThat(handler).isSameAs(NoOpLogHandler)
-        assertThat(outputStream)
-            .hasLogLine(AndroidLog.ERROR, "Datadog", startsWith("Datadog has not been initialized"))
+        verify(mockDevLogHandler)
+            .handleLog(AndroidLog.ERROR, Datadog.MESSAGE_NOT_INITIALIZED)
     }
 
     @Test
@@ -130,31 +127,27 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can enable logcat logs`(
-        @Forgery forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        @Forgery forge: Forge
     ) {
         val logcatLogsEnabled = true
-        val fakeMessage = forge.anAlphabeticalString()
-        val fakeServiceName = forge.anAlphaNumericalString()
 
         val logger = Logger.Builder()
             .setLogcatLogsEnabled(logcatLogsEnabled)
-            .setServiceName(fakeServiceName)
             .build()
-        logger.v(fakeMessage)
-        val expectedTagName = resolveTagName(this, fakeServiceName)
 
-        assertThat(outputStream)
-            .hasLogLine(AndroidLog.VERBOSE, expectedTagName, fakeMessage)
+        val handler: LogHandler = logger.getFieldValue("handler")
+        assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
+        val handlers = (handler as CombinedLogHandler).handlers
+        assertThat(handlers)
+            .hasAtLeastOneElementOfType(LogcatLogHandler::class.java)
+            .hasAtLeastOneElementOfType(DatadogLogHandler::class.java)
     }
 
     @Test
     fun `builder can enable only logcat logs`(
-        @Forgery forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        @Forgery forge: Forge
     ) {
         val logcatLogsEnabled = true
-        val fakeMessage = forge.anAlphabeticalString()
         val fakeServiceName = forge.anAlphaNumericalString()
 
         val logger = Logger.Builder()
@@ -162,11 +155,11 @@ internal class LoggerBuilderTest {
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .setServiceName(fakeServiceName)
             .build()
-        logger.v(fakeMessage)
-        val expectedTagName = resolveTagName(this, fakeServiceName)
 
-        assertThat(outputStream)
-            .hasLogLine(AndroidLog.VERBOSE, expectedTagName, fakeMessage)
+        val handler: LogHandler = logger.getFieldValue("handler")
+        assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
+        assertThat((handler as LogcatLogHandler).serviceName)
+            .isEqualTo(fakeServiceName)
     }
 
     @Test
@@ -195,8 +188,6 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `buider can disable the bundle with trace feature`(@Forgery forge: Forge) {
-        val loggerName = forge.anAlphabeticalString()
-
         val logger = Logger.Builder()
             .setBundleWithTraceEnabled(false)
             .build()
