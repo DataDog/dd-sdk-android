@@ -3,14 +3,17 @@ package com.datadog.android.androidx.fragment.internal
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentManager
+import com.datadog.android.androidx.fragment.internal.utils.mockRumMonitor
+import com.datadog.android.androidx.fragment.internal.utils.resetRumMonitorToDefaults
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.support.fragment.internal.CompatFragmentLifecycleCallbacks
-import com.datadog.android.support.fragment.internal.RumMonitorBasedTest
 import com.datadog.android.support.fragment.internal.resolveViewName
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -24,7 +27,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class CompatFragmentLifecycleCallbacksTest : RumMonitorBasedTest() {
+internal class CompatFragmentLifecycleCallbacksTest {
     lateinit var underTest: CompatFragmentLifecycleCallbacks
 
     @Mock
@@ -38,12 +41,19 @@ internal class CompatFragmentLifecycleCallbacksTest : RumMonitorBasedTest() {
 
     lateinit var attributesMap: Map<String, Any?>
 
+    lateinit var mockRumMonitor: RumMonitor
+
     @BeforeEach
-    override fun `set up`(forge: Forge) {
-        super.`set up`(forge)
+    fun `set up`(forge: Forge) {
+        mockRumMonitor = mockRumMonitor()
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         attributesMap = forge.aMap { forge.aString() to forge.aString() }
         underTest = CompatFragmentLifecycleCallbacks { attributesMap }
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        resetRumMonitorToDefaults()
     }
 
     @Test

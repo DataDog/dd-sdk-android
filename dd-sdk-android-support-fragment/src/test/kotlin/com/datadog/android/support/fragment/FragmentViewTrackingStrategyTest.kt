@@ -8,8 +8,10 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentManager
+import com.datadog.android.androidx.fragment.internal.utils.mockRumMonitor
+import com.datadog.android.androidx.fragment.internal.utils.resetRumMonitorToDefaults
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.support.fragment.internal.OreoFragmentLifecycleCallbacks
-import com.datadog.android.support.fragment.internal.RumMonitorBasedTest
 import com.datadog.android.support.fragment.internal.resolveViewName
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -24,6 +26,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,7 +41,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class FragmentViewTrackingStrategyTest : RumMonitorBasedTest() {
+internal class FragmentViewTrackingStrategyTest {
     lateinit var underTest: FragmentViewTrackingStrategy
 
     @Mock
@@ -59,16 +62,23 @@ internal class FragmentViewTrackingStrategyTest : RumMonitorBasedTest() {
     @Mock
     lateinit var mockBadContext: Context
 
+    lateinit var mockRumMonitor: RumMonitor
+
     // region Strategy tests
 
     @BeforeEach
-    override fun `set up`(forge: Forge) {
-        super.`set up`(forge)
+    fun `set up`(forge: Forge) {
+        mockRumMonitor = mockRumMonitor()
         whenever(mockAndroidxActivity.supportFragmentManager)
             .thenReturn(mockAndroidxFragmentManager)
         whenever(mockActivity.fragmentManager)
             .thenReturn(mockDefaultFragmentManager)
         underTest = FragmentViewTrackingStrategy(true)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        resetRumMonitorToDefaults()
     }
 
     @Test

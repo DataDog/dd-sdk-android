@@ -39,7 +39,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         // then
         verify(mockRumMonitor).startView(
             eq(mockActivity),
-            eq(mockActivity.asViewName()),
+            eq(mockActivity.resolveViewName()),
             eq(emptyMap())
         )
     }
@@ -76,7 +76,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
 
         verify(mockRumMonitor).startView(
             eq(mockActivity),
-            eq(mockActivity.asViewName()),
+            eq(mockActivity.resolveViewName()),
             eq(expectedAttrs)
         )
     }
@@ -101,7 +101,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
 
         verify(mockRumMonitor).startView(
             eq(mockActivity),
-            eq(mockActivity.asViewName()),
+            eq(mockActivity.resolveViewName()),
             eq(emptyMap())
         )
     }
@@ -110,7 +110,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
 
     // region internal
 
-    private fun Any.asViewName(): String {
+    private fun Any.resolveViewName(): String {
         return javaClass.canonicalName ?: javaClass.simpleName
     }
 
