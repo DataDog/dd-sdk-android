@@ -65,7 +65,7 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
-    lateinit var mockDevLogHandler : LogHandler
+    lateinit var mockDevLogHandler: LogHandler
 
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
@@ -1632,7 +1632,6 @@ internal class DatadogRumMonitorTest {
     fun `addUserAction ignored if previous action recent`(
         forge: Forge
     ) {
-
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionName1 = forge.anAlphabeticalString()
@@ -1699,7 +1698,6 @@ internal class DatadogRumMonitorTest {
         }
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
-
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
             "User action $actionName2 was ignored: previous action still active."
@@ -1710,7 +1708,6 @@ internal class DatadogRumMonitorTest {
     fun `addUserAction ignored if previous action active (unclosed resources)`(
         forge: Forge
     ) {
-
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
@@ -1812,7 +1809,6 @@ internal class DatadogRumMonitorTest {
         }
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
-
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
             "User action $actionName2 was ignored: previous action still active."

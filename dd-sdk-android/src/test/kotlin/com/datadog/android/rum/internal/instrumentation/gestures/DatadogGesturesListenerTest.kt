@@ -23,10 +23,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.lang.ref.WeakReference
 import kotlin.math.abs
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -266,6 +264,7 @@ internal class DatadogGesturesListenerTest {
         forge: Forge
     ) {
         // given
+        val mockDevLogHandler = mockDevLogHandler()
         val mockEvent = mockMotionEvent(forge)
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -478,7 +477,7 @@ internal class DatadogGesturesListenerTest {
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                        this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                    this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 
