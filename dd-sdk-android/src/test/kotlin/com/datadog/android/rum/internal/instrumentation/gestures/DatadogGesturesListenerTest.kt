@@ -264,6 +264,7 @@ internal class DatadogGesturesListenerTest {
         forge: Forge
     ) {
         // given
+        val mockDevLogHandler = mockDevLogHandler()
         val mockEvent = mockMotionEvent(forge)
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -476,7 +477,7 @@ internal class DatadogGesturesListenerTest {
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                        this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                    this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 

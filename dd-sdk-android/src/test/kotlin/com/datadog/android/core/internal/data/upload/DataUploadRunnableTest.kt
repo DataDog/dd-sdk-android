@@ -53,6 +53,7 @@ internal class DataUploadRunnableTest {
 
     @Mock
     lateinit var mockThreadPoolExecutor: ScheduledThreadPoolExecutor
+
     @Mock
     lateinit var mockReader: Reader
 

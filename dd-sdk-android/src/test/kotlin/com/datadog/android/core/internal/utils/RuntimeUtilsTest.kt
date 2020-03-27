@@ -53,25 +53,16 @@ class RuntimeUtilsTest {
         val logger = buildSdkLogger()
         val handler: LogHandler = logger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
-        val logcatLogHandler = handler as LogcatLogHandler
-        assertThat(logcatLogHandler.serviceName)
+        assertThat((handler as LogcatLogHandler).serviceName)
             .isEqualTo(SDK_LOG_PREFIX)
-        assertThat(logcatLogHandler.useClassnameAsTag)
-            .isEqualTo(true)
     }
 
     @Test
     fun `the dev logger should always be enabled`() {
         val handler: LogHandler = devLogger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
-        val conditionalLogHandler = handler as ConditionalLogHandler
-        assertThat(conditionalLogHandler.delegateHandler)
+        assertThat((handler as ConditionalLogHandler).delegateHandler)
             .isInstanceOf(LogcatLogHandler::class.java)
-        val logcatLogHandler = conditionalLogHandler.delegateHandler as LogcatLogHandler
-        assertThat(logcatLogHandler.serviceName)
-            .isEqualTo(DEV_LOG_PREFIX)
-        assertThat(logcatLogHandler.useClassnameAsTag)
-            .isEqualTo(false)
     }
 
     @Test
@@ -82,8 +73,7 @@ class RuntimeUtilsTest {
         val handler: LogHandler = devLogger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
 
-        val conditionalLogHandler = handler as ConditionalLogHandler
-        val condition = conditionalLogHandler.condition
+        val condition = (handler as ConditionalLogHandler).condition
 
         for (i in 0..10) {
             if (i >= level) {
