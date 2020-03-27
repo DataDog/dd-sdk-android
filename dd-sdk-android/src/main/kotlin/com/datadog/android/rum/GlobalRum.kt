@@ -30,8 +30,12 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object GlobalRum {
 
-    private val SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
-    private val SESSION_MAX_NS = TimeUnit.HOURS.toNanos(4)
+    internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
+    internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+
+    internal var sessionInactivityNanos = DEFAULT_SESSION_INACTIVITY_NS
+    internal var sessionMaxDurationNanos = DEFAULT_SESSION_MAX_DURATION_NS
+
     private val sessionStartNs = AtomicLong(0L)
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -118,7 +122,8 @@ object GlobalRum {
     internal fun addUserInteraction() {
         val nanoTime = System.nanoTime()
 
-        if (!isSessionInactive(nanoTime)) {
+        val duration = nanoTime - lastUserInteractionNs.get()
+        if (!(duration >= sessionInactivityNanos)) {
             lastUserInteractionNs.set(System.nanoTime())
         }
     }
@@ -156,8 +161,9 @@ object GlobalRum {
         val nanoTime = System.nanoTime()
         val isFirstSession = currentContext.sessionId == UUID(0, 0)
         val sessionLength = nanoTime - sessionStartNs.get()
-        val isInactiveSession = isSessionInactive(nanoTime)
-        val isLongSession = sessionLength >= SESSION_MAX_NS
+        val duration = nanoTime - lastUserInteractionNs.get()
+        val isInactiveSession = duration >= sessionInactivityNanos
+        val isLongSession = sessionLength >= sessionMaxDurationNanos
 
         if (isFirstSession || isInactiveSession || isLongSession) {
             sessionStartNs.set(nanoTime)
@@ -166,10 +172,6 @@ object GlobalRum {
                 context.copy(sessionId = UUID.randomUUID())
             }
         }
-    }
-
-    private fun isSessionInactive(nanoTime: Long): Boolean {
-        return (nanoTime - lastUserInteractionNs.get()) >= SESSION_INACTIVITY_NS
     }
 
     private fun updateRumContext(update: (RumContext) -> RumContext) {

@@ -108,7 +108,7 @@ internal class GlobalRumTest {
     fun `getRumContext updates sessionId if last interaction too old`() {
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
-        Thread.sleep(INACTIVITY_MS * 2)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val context = GlobalRum.getRumContext()
 
         assertThat(context.sessionId)
@@ -120,7 +120,7 @@ internal class GlobalRumTest {
     fun `getRumContext updates sessionId if duration is too long`() {
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
-        Thread.sleep(INACTIVITY_MS * 2)
+        Thread.sleep(TEST_MAX_DURATION_MS)
         val context = GlobalRum.getRumContext()
 
         assertThat(context.sessionId)
@@ -132,7 +132,7 @@ internal class GlobalRumTest {
     fun `addUserInteraction updates sessionId if last interaction too old`() {
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
-        Thread.sleep(INACTIVITY_MS * 2)
+        Thread.sleep(TEST_INACTIVITY_MS)
         GlobalRum.addUserInteraction()
         val context = GlobalRum.getRumContext()
 
@@ -143,15 +143,14 @@ internal class GlobalRumTest {
 
     @Test
     fun `getRumContext keeps sessionId if last interaction is recent`() {
+        val repeatCount = (TEST_INACTIVITY_MS / TEST_SLEEP_MS) + 1
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
-        Thread.sleep(INACTIVITY_MS / 3)
-        GlobalRum.addUserInteraction()
-        Thread.sleep(INACTIVITY_MS / 3)
-        GlobalRum.addUserInteraction()
-        Thread.sleep(INACTIVITY_MS / 3)
-        GlobalRum.addUserInteraction()
-        Thread.sleep(INACTIVITY_MS / 3)
+        for (i in 0..repeatCount) {
+            GlobalRum.addUserInteraction()
+            Thread.sleep(TEST_SLEEP_MS)
+            GlobalRum.addUserInteraction()
+        }
         val context = GlobalRum.getRumContext()
 
         assertThat(context.sessionId)
@@ -159,43 +158,59 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `updateContext resets the last interaction timestamp`(
-        @Forgery injectedContext: RumContext
-    ) {
-        GlobalRum.updateContext(injectedContext)
-        for (i in 0..16) {
-            Thread.sleep(INACTIVITY_MS / 3)
+    fun `getRumContext updates sessionId if duration is too long with updates`() {
+        val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
+        val firstSessionId = GlobalRum.getRumContext().sessionId
+
+        for (i in 0..repeatCount) {
+            GlobalRum.addUserInteraction()
+            Thread.sleep(TEST_SLEEP_MS)
             GlobalRum.addUserInteraction()
         }
         val context = GlobalRum.getRumContext()
 
         assertThat(context.sessionId)
-            .isNotEqualTo(injectedContext.sessionId)
+            .isNotEqualTo(UUID(0, 0))
+            .isNotEqualTo(firstSessionId)
+    }
+
+    @Test
+    fun `updateContext resets the last interaction timestamp`(
+        @Forgery injectedContext: RumContext
+    ) {
+        val firstSessionId = GlobalRum.getRumContext().sessionId
+        Thread.sleep(TEST_SLEEP_MS)
+
+        GlobalRum.updateContext(injectedContext)
+        Thread.sleep(TEST_INACTIVITY_MS - TEST_SLEEP_MS)
+        val context = GlobalRum.getRumContext()
+
+        assertThat(context.sessionId)
+            .isNotEqualTo(firstSessionId)
+            .isEqualTo(injectedContext.sessionId)
     }
 
     companion object {
-        private const val INACTIVITY_MS = 100L
-        private val INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(INACTIVITY_MS)
-        private val MAXIMUM_NS = TimeUnit.MILLISECONDS.toNanos(INACTIVITY_MS * 4)
+
+        private const val TEST_SLEEP_MS = 1000L
+        private const val TEST_INACTIVITY_MS = TEST_SLEEP_MS * 3
+        private const val TEST_MAX_DURATION_MS = TEST_SLEEP_MS * 10
+
+        private val TEST_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS)
+        private val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
         @JvmStatic
         @BeforeAll
         fun `set up constants`() {
-            GlobalRum::class.java.setStaticValue("SESSION_INACTIVITY_NS", INACTIVITY_NS)
-            GlobalRum::class.java.setStaticValue("SESSION_MAX_NS", MAXIMUM_NS)
+            GlobalRum.sessionInactivityNanos = TEST_INACTIVITY_NS
+            GlobalRum.sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         }
 
         @JvmStatic
         @AfterAll
         fun `tear down constants`() {
-            GlobalRum::class.java.setStaticValue(
-                "SESSION_INACTIVITY_NS",
-                TimeUnit.MINUTES.toNanos(15)
-            )
-            GlobalRum::class.java.setStaticValue(
-                "SESSION_MAX_NS",
-                TimeUnit.HOURS.toNanos(4)
-            )
+            GlobalRum.sessionInactivityNanos = GlobalRum.DEFAULT_SESSION_INACTIVITY_NS
+            GlobalRum.sessionMaxDurationNanos = GlobalRum.DEFAULT_SESSION_MAX_DURATION_NS
         }
     }
 }
