@@ -13,14 +13,14 @@ import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.tools.unit.annotations.SystemOutStream
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -31,10 +31,9 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,8 +48,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -60,6 +58,7 @@ internal class DatadogTest {
 
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
+    lateinit var mockDevLogHandler: LogHandler
 
     lateinit var fakeToken: String
 
@@ -75,6 +74,7 @@ internal class DatadogTest {
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
+        mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(rootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
@@ -92,15 +92,17 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `ignores if initialize called more than once`(
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignores if initialize called more than once`() {
         Datadog.initialize(mockAppContext, fakeToken)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.initialize(mockAppContext, fakeToken)
-        assertThat(outputStream)
-            .hasLogLine(AndroidLog.WARN, "Datadog", Datadog.MESSAGE_ALREADY_INITIALIZED)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                AndroidLog.WARN,
+                Datadog.MESSAGE_ALREADY_INITIALIZED
+            )
     }
 
     @Test
@@ -111,8 +113,7 @@ internal class DatadogTest {
 
     @Test
     fun `does nothing on setEndpointUrl with Discard strategy`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -120,17 +121,16 @@ internal class DatadogTest {
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
 
-        assertThat(outputStream)
-            .hasLogLine(
-                AndroidLog.WARN, "Datadog",
-                startsWith("setEndpointUrl() has been deprecated.")
+        verify(mockDevLogHandler)
+            .handleLog(
+                AndroidLog.WARN,
+                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
             )
     }
 
     @Test
     fun `does nothing on setEndpointUrl with Update strategy`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
         Datadog.initialize(mockAppContext, fakeToken)
@@ -138,10 +138,10 @@ internal class DatadogTest {
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
 
-        assertThat(outputStream)
-            .hasLogLine(
-                AndroidLog.WARN, "Datadog",
-                startsWith("setEndpointUrl() has been deprecated.")
+        verify(mockDevLogHandler)
+            .handleLog(
+                AndroidLog.WARN,
+                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
             )
     }
 

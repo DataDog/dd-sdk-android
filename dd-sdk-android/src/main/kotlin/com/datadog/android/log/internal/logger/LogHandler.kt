@@ -18,9 +18,9 @@ internal interface LogHandler {
     fun handleLog(
         level: Int,
         message: String,
-        throwable: Throwable?,
-        attributes: Map<String, Any?>,
-        tags: Set<String>,
+        throwable: Throwable? = null,
+        attributes: Map<String, Any?> = emptyMap(),
+        tags: Set<String> = emptySet(),
         timestamp: Long? = null
     )
 }

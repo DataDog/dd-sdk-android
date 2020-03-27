@@ -20,10 +20,7 @@ import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -37,7 +34,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.lang.ref.WeakReference
 import java.util.UUID
 import kotlin.system.measureNanoTime
@@ -54,8 +50,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -1610,10 +1605,8 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `addUserAction ignored if previous action recent`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
-
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionName1 = forge.anAlphabeticalString()
@@ -1680,21 +1673,12 @@ internal class DatadogRumMonitorTest {
         }
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
-
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                "Datadog",
-                "User action $actionName2 was ignored: previous action still active."
-            )
     }
 
     @Test
     fun `addUserAction ignored if previous action active (unclosed resources)`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
-
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
@@ -1794,13 +1778,6 @@ internal class DatadogRumMonitorTest {
         }
         assertThat(GlobalRum.getRumContext().viewId)
             .isNull()
-
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                "Datadog",
-                "User action $actionName2 was ignored: previous action still active."
-            )
     }
 
     // endregion
