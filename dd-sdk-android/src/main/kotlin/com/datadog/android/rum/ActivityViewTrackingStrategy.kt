@@ -18,7 +18,7 @@ class ActivityViewTrackingStrategy(private val trackExtras: Boolean) :
         val javaClass = activity.javaClass
         val vieName = javaClass.canonicalName ?: javaClass.simpleName
         val attributes =
-            if (trackExtras) asRumAttributes(activity.intent?.extras) else emptyMap()
+            if (trackExtras) convertToRumAttributes(activity.intent?.extras) else emptyMap()
         GlobalRum.monitor.startView(
             activity,
             vieName,
