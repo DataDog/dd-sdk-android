@@ -29,14 +29,14 @@ class FragmentViewTrackingStrategy(private val trackArguments: Boolean) :
     private val compatLifecycleCallbacks: LifecycleCallbacks<FragmentActivity>
             by lazy {
                 CompatFragmentLifecycleCallbacks {
-                    if (trackArguments) asRumAttributes(it.arguments) else emptyMap()
+                    if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                 }
             }
     private val oreoLifecycleCallbacks: LifecycleCallbacks<Activity>
             by lazy {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     OreoFragmentLifecycleCallbacks {
-                        if (trackArguments) asRumAttributes(it.arguments) else emptyMap()
+                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                     }
                 } else {
                     NoOpLifecycleCallback
