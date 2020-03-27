@@ -13,7 +13,8 @@ class ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy(), ViewTr
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        GlobalRum.monitor.startView(activity, activity.javaClass.canonicalName!!)
+        val javaClass = activity.javaClass
+        GlobalRum.monitor.startView(activity, javaClass.canonicalName ?: javaClass.simpleName)
     }
 
     override fun onActivityPaused(activity: Activity) {
