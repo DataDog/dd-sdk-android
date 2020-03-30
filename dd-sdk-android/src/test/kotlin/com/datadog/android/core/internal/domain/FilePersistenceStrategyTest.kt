@@ -8,20 +8,14 @@ package com.datadog.android.core.internal.domain
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -31,12 +25,10 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.ExecutorService
 import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.endsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,8 +42,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings()
@@ -107,7 +98,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `writes full message as json`(forge: Forge) {
-        val fakeModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
@@ -117,7 +108,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `writes minimal model as json`(forge: Forge) {
-        val fakeModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
         val minimalModel = minimalCopy(fakeModel)
         testedWriter.write(minimalModel)
         waitForNextBatch()
@@ -128,7 +119,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `writes batch of models`(forge: Forge) {
-        val fakeModels = fakeModels(forge)
+        val fakeModels = forge.aList { forge.getForgery(modelClass) }
         val sentModels = mutableListOf<T>()
         val logCount = min(maxMessagesPerPath, fakeModels.size)
         for (i in 0 until logCount) {
@@ -148,8 +139,8 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `writes in new batch if delay passed`(forge: Forge) {
-        val fakeModel = fakeModel(forge)
-        val nextModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
+        val nextModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         waitForNextBatch()
 
@@ -161,7 +152,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `writes batch of models from mutliple threads`(forge: Forge) {
-        val fakeModels = fakeModels(forge)
+        val fakeModels = forge.aList { forge.getForgery(modelClass) }
         val runnables = fakeModels.map {
             Runnable { testedWriter.write(it) }
         }
@@ -218,7 +209,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `read returns null when first batch is already sent`(forge: Forge) {
-        val fakeModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
@@ -233,7 +224,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `read returns null when first batch is too recent`(forge: Forge) {
-        val fakeModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         val batch = testedReader.readNextBatch()
         assertThat(batch)
@@ -253,8 +244,8 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     fun `read returns null when drop all was called`(
         forge: Forge
     ) {
-        val firstModels = fakeModels(forge)
-        val secondModels = fakeModels(forge)
+        val firstModels = forge.aList { forge.getForgery(modelClass) }
+        val secondModels = forge.aList { forge.getForgery(modelClass) }
         firstModels.forEach { testedWriter.write(it) }
         waitForNextBatch()
         secondModels.forEach { testedWriter.write(it) }
@@ -268,28 +259,18 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `fails gracefully if sent batch with unknown id`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
-        val expectedTag = resolveTagName(testedReader, "DD_LOG")
         val batchId = forge.aNumericalString()
 
         testedReader.dropBatch(batchId)
-
-        if (BuildConfig.DEBUG) {
-            assertThat(outputStream)
-                .hasLogLine(
-                    Log.WARN, expectedTag,
-                    endsWith("/$dataFolderName/$batchId does not exist")
-                )
-        }
     }
 
     @Test
     fun `read returns null when 1st batch is already sent but file still present`(
         forge: Forge
     ) {
-        val fakeModel = fakeModel(forge)
+        val fakeModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
@@ -317,7 +298,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     // endregion
 
-    // region utils
+    // region Abstract
 
     abstract fun minimalCopy(of: T): T
     abstract fun lightModel(forge: Forge): T
@@ -332,16 +313,6 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         jsonObject: JsonObject,
         model: T
     )
-
-    private fun fakeModel(forge: Forge): T {
-        return forge.getForgery(modelClass)
-    }
-
-    private fun fakeModels(forge: Forge): List<T> {
-        return forge.aList {
-            forge.getForgery(modelClass)
-        }
-    }
 
     // endregion
 

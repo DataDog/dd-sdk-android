@@ -5,16 +5,12 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.SystemStreamExtension
+import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -26,10 +22,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.lang.ref.WeakReference
 import kotlin.math.abs
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,8 +37,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(
         MockitoExtension::class,
-        ForgeExtension::class,
-        SystemStreamExtension::class
+        ForgeExtension::class
     )
 )
 @ForgeConfiguration(Configurator::class)
@@ -263,11 +256,9 @@ internal class DatadogGesturesListenerTest {
     }
 
     @Test
-    fun `onTap does nothing if no children present and decor view not clickable`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `onTap does nothing if no children present and decor view not clickable`(forge: Forge) {
         // given
+        val mockDevLogHandler = mockDevLogHandler()
         val mockEvent = mockMotionEvent(forge)
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -287,14 +278,13 @@ internal class DatadogGesturesListenerTest {
 
         // then
         verifyZeroInteractions(mockRumMonitor)
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(this)
-            assertThat(outputStream)
-                .hasLogLine(
-                    Log.INFO, expectedTag,
-                    startsWith("We could not find a valid target for the TapEvent")
-                )
-        }
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.INFO,
+                "We could not find a valid target for the TapEvent. " +
+                    "The DecorView was empty and either transparent " +
+                    "or not clickable for this Activity."
+            )
     }
 
     @Test
@@ -483,7 +473,7 @@ internal class DatadogGesturesListenerTest {
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                        this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                    this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 

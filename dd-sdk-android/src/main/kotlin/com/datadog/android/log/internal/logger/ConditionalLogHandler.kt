@@ -7,8 +7,8 @@
 package com.datadog.android.log.internal.logger
 
 internal class ConditionalLogHandler(
-    private val delegateHandler: LogHandler,
-    private val condition: (Int, Throwable?) -> Boolean
+    internal val delegateHandler: LogHandler,
+    internal val condition: (Int, Throwable?) -> Boolean
 ) : LogHandler {
     override fun handleLog(
         level: Int,

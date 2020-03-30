@@ -33,7 +33,7 @@ internal class CombinedLogHandlerTest {
 
     lateinit var testedHandler: LogHandler
 
-    lateinit var mockHandlers: Array<LogHandler>
+    lateinit var mockDevLogHandlers: Array<LogHandler>
 
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
@@ -48,7 +48,7 @@ internal class CombinedLogHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockHandlers = forge.aList { mock<LogHandler>() }.toTypedArray()
+        mockDevLogHandlers = forge.aList { mock<LogHandler>() }.toTypedArray()
         fakeServiceName = forge.anAlphabeticalString()
         fakeLoggerName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
@@ -56,7 +56,7 @@ internal class CombinedLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
-        testedHandler = CombinedLogHandler(*mockHandlers)
+        testedHandler = CombinedLogHandler(*mockDevLogHandlers)
     }
 
     @Test
@@ -69,7 +69,7 @@ internal class CombinedLogHandlerTest {
             fakeTags
         )
 
-        mockHandlers.forEach {
+        mockDevLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, fakeThrowable, fakeAttributes, fakeTags)
         }
     }
@@ -92,7 +92,7 @@ internal class CombinedLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        mockHandlers.forEach {
+        mockDevLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, fakeThrowable, fakeAttributes, fakeTags)
         }
     }
@@ -107,7 +107,7 @@ internal class CombinedLogHandlerTest {
             emptySet()
         )
 
-        mockHandlers.forEach {
+        mockDevLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, null, emptyMap(), emptySet())
         }
     }

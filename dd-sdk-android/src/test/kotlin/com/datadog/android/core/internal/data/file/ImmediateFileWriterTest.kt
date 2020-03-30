@@ -1,29 +1,23 @@
 package com.datadog.android.core.internal.data.file
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.BuildConfig
-import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +32,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
@@ -145,8 +138,7 @@ internal class ImmediateFileWriterTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `does nothing when SecurityException was thrown while providing a file`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         val modelValue = forge.anAlphabeticalString()
         val exception = SecurityException(forge.anAlphabeticalString())
@@ -154,17 +146,12 @@ internal class ImmediateFileWriterTest {
 
         underTest.write(modelValue)
 
-        if (BuildConfig.DEBUG) {
-            val expectedLogcatTag = resolveTagName(underTest, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedLogcatTag, startsWith("Couldn't access file"))
-        }
+        verifyZeroInteractions(mockDeferredHandler)
     }
 
     @Test
     fun `does nothing when FileOrchestrator returns a null file`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         val modelValue = forge.anAlphabeticalString()
         whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(null)
@@ -173,10 +160,6 @@ internal class ImmediateFileWriterTest {
         underTest.write(modelValue)
 
         // then
-        if (BuildConfig.DEBUG) {
-            val expectedLogcatTag = resolveTagName(underTest, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedLogcatTag, "Could not get a valid file")
-        }
+        verifyZeroInteractions(mockDeferredHandler)
     }
 }

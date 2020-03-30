@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import android.util.Log
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
@@ -26,6 +27,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,7 +40,7 @@ import org.mockito.junit.jupiter.MockitoSettings
         ExtendWith(MockitoExtension::class),
         ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings
 @ForgeConfiguration(Configurator::class)
 internal class LoggerTest {
 
@@ -51,9 +53,14 @@ internal class LoggerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        LogsFeature.envName = ""
+        LogsFeature.envName = DatadogConfig.DEFAULT_ENV_NAME
         fakeMessage = forge.anAlphabeticalString()
         testedLogger = Logger(mockLogHandler)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        LogsFeature.envName = DatadogConfig.DEFAULT_ENV_NAME
     }
 
     // region Log

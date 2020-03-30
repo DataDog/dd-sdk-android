@@ -111,8 +111,8 @@ internal class DatadogGesturesListener(
 
         devLogger.i(
             "We could not find a valid target for the TapEvent. " +
-                    "The DecorView was empty and either transparent or not clickable " +
-                    "for this Activity"
+                "The DecorView was empty and either transparent " +
+                "or not clickable for this Activity."
         )
         return null
     }

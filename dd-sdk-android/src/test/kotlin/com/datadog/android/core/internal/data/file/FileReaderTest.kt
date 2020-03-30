@@ -1,16 +1,10 @@
 package com.datadog.android.core.internal.data.file
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.BuildConfig
-import com.datadog.tools.unit.annotations.SystemOutStream
 import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -21,10 +15,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,7 +29,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
@@ -162,7 +153,6 @@ internal class FileReaderTest {
 
     @Test
     fun `returns null when orchestrator throws SecurityException`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         forge: Forge
     ) {
         // given
@@ -174,16 +164,10 @@ internal class FileReaderTest {
 
         // then
         assertThat(nextBatch).isNull()
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedReader, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedTag, startsWith("Couldn't access file"))
-        }
     }
 
     @Test
     fun `returns null when orchestrator throws OutOfMemoryError`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         forge: Forge
     ) {
         // given
@@ -195,17 +179,11 @@ internal class FileReaderTest {
 
         // then
         assertThat(nextBatch).isNull()
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedReader, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedTag, startsWith("Couldn't read file"))
-        }
     }
 
     @Test
     fun `drops the batch if the file exists`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         // given
         val fileName = forge.anAlphabeticalString()
@@ -218,21 +196,14 @@ internal class FileReaderTest {
         val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedReader, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.INFO, expectedTag, "dropBatch $fileName")
-        }
     }
 
     @Test
     fun `does nothing when trying to drop a batch for a file that doesn't exist`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         // given
         val fileName = forge.anAlphabeticalString()
-        val notExistingFile = File(rootDir, fileName)
 
         // when
         testedReader.dropBatch(fileName)
@@ -241,21 +212,10 @@ internal class FileReaderTest {
         val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).contains(fileName)
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedReader, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(
-                    Log.WARN, expectedTag,
-                    startsWith("file ${notExistingFile.path} does not exist")
-                )
-        }
     }
 
     @Test
-    fun `cleans the folder when dropping all batches`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `cleans the folder when dropping all batches`(forge: Forge) {
         // given
         val fileName1 = forge.anAlphabeticalString()
         val fileName2 = forge.anAlphabeticalString()
@@ -270,11 +230,6 @@ internal class FileReaderTest {
         val sentBatches: MutableSet<String> = testedReader.getFieldValue("sentBatches")
         assertThat(rootDir.listFiles()).isEmpty()
         assertThat(sentBatches).isEmpty()
-        if (BuildConfig.DEBUG) {
-            val expectedTag = resolveTagName(testedReader, "DD_LOG")
-            assertThat(outputStream)
-                .hasLogLine(Log.INFO, expectedTag, startsWith("dropAllBatches"))
-        }
     }
 
     private fun generateFile(fileName: String): File {

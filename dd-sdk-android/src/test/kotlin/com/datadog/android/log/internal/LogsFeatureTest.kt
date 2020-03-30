@@ -16,7 +16,6 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -42,8 +41,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -91,6 +89,7 @@ internal class LogsFeatureTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
+        LogsFeature.envName = DatadogConfig.DEFAULT_ENV_NAME
     }
 
     @Test
