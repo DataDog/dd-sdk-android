@@ -29,6 +29,7 @@ plugins {
     id("apiSurface")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
+    id("de.mobilej.unmock")
     jacoco
 }
 
@@ -75,8 +76,19 @@ dependencies {
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
 
+    unmock(Dependencies.Libraries.Robolectric)
+
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)
+}
+
+unMock {
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+    keep("android.os.Parcel")
+    keepStartingWith("com.android.internal.util.")
+    keepStartingWith("android.util.")
+    keep("android.content.ComponentName")
 }
 
 kotlinConfig()
