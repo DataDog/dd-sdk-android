@@ -20,6 +20,12 @@ When you open your console in Datadog, navigate to the Logs section. In the sear
 
 ![Datadog Mobile Logs](docs/images/screenshot.png)
 
+## Troubleshooting
+
+If you encounter any issue when using the Datadog SDK for Android, please take a look at 
+the [troubleshooting checklist](docs/TROUBLESHOOTING.md), or at 
+the existing [issues](https://github.com/DataDog/dd-sdk-android/issues?q=is%3Aissue).
+
 ## Contributing
 
 Pull requests are welcome. First, open an issue to discuss what you would like to change. For more information, read the [Contributing Guide](CONTRIBUTING.md).
