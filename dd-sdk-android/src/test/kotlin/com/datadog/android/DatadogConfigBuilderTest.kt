@@ -629,7 +629,7 @@ class DatadogConfigBuilderTest {
     @Test
     fun `builder with track activities as views tracking strategy`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val strategy = ActivityViewTrackingStrategy()
+        val strategy = ActivityViewTrackingStrategy(true)
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
             .useViewTrackingStrategy(strategy)

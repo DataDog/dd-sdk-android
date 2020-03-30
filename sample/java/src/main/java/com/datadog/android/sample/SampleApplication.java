@@ -58,7 +58,7 @@ public class SampleApplication extends Application {
         }
 
         configBuilder.setServiceName("android-sample-java")
-                .useViewTrackingStrategy(new FragmentViewTrackingStrategy())
+                .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true))
                 .trackGestures()
                 .setEnvironmentName("staging");
 

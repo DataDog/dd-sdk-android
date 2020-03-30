@@ -163,6 +163,8 @@ public class MainActivity extends AppCompatActivity {
         addSpanInScope(spanName, new Runnable() {
             @Override
             public void run() {
+                final Bundle args = new Bundle();
+                args.putInt("id", id);
                 FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
                 ft.replace(R.id.fragment_host, fragmentToUse);
                 ft.commit();

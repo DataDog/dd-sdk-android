@@ -69,7 +69,7 @@ class NavigationViewTrackingStrategy(
     ) {
         controller.currentDestination?.let { GlobalRum.get().stopView(it) }
 
-        val attributes = if (trackArguments) arguments.asRumAttributes() else emptyMap()
+        val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
         val name = destination.getRumViewName()
 
         GlobalRum.get().startView(destination, name, attributes)
@@ -90,18 +90,6 @@ class NavigationViewTrackingStrategy(
         }
     }
 
-    private fun Bundle?.asRumAttributes(): Map<String, Any?> {
-        if (this == null) return emptyMap()
-
-        val attributes = mutableMapOf<String, Any?>()
-
-        keySet().forEach {
-            attributes["$ARGUMENT_TAG.$it"] = get(it)
-        }
-
-        return attributes
-    }
-
     private fun NavDestination.getRumViewName(): String {
         return when (this) {
             is FragmentNavigator.Destination -> className
@@ -117,6 +105,5 @@ class NavigationViewTrackingStrategy(
 
     companion object {
         internal const val UNKNOWN_DESTINATION_NAME = "Unknown"
-        internal const val ARGUMENT_TAG = "view.arguments"
     }
 }
