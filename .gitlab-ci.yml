@@ -77,7 +77,7 @@ publish:release:
   image: $CI_IMAGE_DOCKER
   stage: publish
   script:
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text > ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android:bintrayUpload
 
@@ -88,7 +88,7 @@ publish:release-timber:
   image: $CI_IMAGE_DOCKER
   stage: publish
   script:
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text > ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android-timber:bintrayUpload
 
