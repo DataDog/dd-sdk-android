@@ -64,8 +64,8 @@ public class TracesViewModel extends ViewModel {
         }
 
         private OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(new RumInterceptor())
                 .addInterceptor(new TracingInterceptor())
+                .addInterceptor(new RumInterceptor())
                 .addNetworkInterceptor(new StethoInterceptor())
                 .build();
 

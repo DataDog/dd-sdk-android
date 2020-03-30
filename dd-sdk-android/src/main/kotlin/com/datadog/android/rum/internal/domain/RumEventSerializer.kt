@@ -6,7 +6,9 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.rum.RumAttributes
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -29,15 +31,19 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     override fun serialize(model: RumEvent): String {
         val root = JsonObject()
 
+        // App Context
+        root.addProperty(RumAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+        root.addProperty(RumAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
+
         // Event Context
         val context = model.context
-        root.addProperty(TAG_APPLICATION_ID, context.applicationId.toString())
-        root.addProperty(TAG_SESSION_ID, context.sessionId.toString())
-        root.addProperty(TAG_VIEW_ID, context.viewId.toString())
+        root.addProperty(RumAttributes.APPLICATION_ID, context.applicationId.toString())
+        root.addProperty(RumAttributes.SESSION_ID, context.sessionId.toString())
+        root.addProperty(RumAttributes.VIEW_ID, context.viewId.toString())
 
         // Timestamp
         val formattedDate = simpleDateFormat.format(Date(model.timestamp))
-        root.addProperty(TAG_DATE, formattedDate)
+        root.addProperty(RumAttributes.DATE, formattedDate)
 
         // User Info
         addUserInfo(model, root)
@@ -61,18 +67,18 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         val name = model.userInfo.name
 
         if (!email.isNullOrEmpty()) {
-            root.addProperty(TAG_USER_EMAIL, email)
+            root.addProperty(RumAttributes.USER_EMAIL, email)
         }
         if (!id.isNullOrEmpty()) {
-            root.addProperty(TAG_USER_ID, id)
+            root.addProperty(RumAttributes.USER_ID, id)
         }
         if (!name.isNullOrEmpty()) {
-            root.addProperty(TAG_USER_NAME, name)
+            root.addProperty(RumAttributes.USER_NAME, name)
         }
     }
 
     private fun addEventData(eventData: RumEventData, root: JsonObject) {
-        root.addProperty(TAG_EVENT_CATEGORY, eventData.category)
+        root.addProperty(RumAttributes.EVT_CATEGORY, eventData.category)
         when (eventData) {
             is RumEventData.Resource -> addResourceData(eventData, root)
             is RumEventData.UserAction -> addUserActionData(eventData, root)
@@ -85,46 +91,47 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.View,
         root: JsonObject
     ) {
-        root.addProperty(TAG_RUM_DOC_VERSION, eventData.version)
-        root.addProperty(TAG_VIEW_URL, eventData.name)
-        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
-        root.addProperty(TAG_MEASURES_ERRORS, eventData.measures.errorCount)
-        root.addProperty(TAG_MEASURES_RESOURCES, eventData.measures.resourceCount)
-        root.addProperty(TAG_MEASURES_ACTIONS, eventData.measures.userActionCount)
+        root.addProperty(RumAttributes.RUM_DOCUMENT_VERSION, eventData.version)
+        root.addProperty(RumAttributes.VIEW_URL, eventData.name)
+        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        val measures = eventData.measures
+        root.addProperty(RumAttributes.VIEW_MEASURES_ERROR_COUNT, measures.errorCount)
+        root.addProperty(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, measures.resourceCount)
+        root.addProperty(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
     }
 
     private fun addUserActionData(
         eventData: RumEventData.UserAction,
         root: JsonObject
     ) {
-        root.addProperty(TAG_EVENT_NAME, eventData.name)
-        root.addProperty(TAG_EVENT_ID, eventData.id.toString())
-        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.EVT_NAME, eventData.name)
+        root.addProperty(RumAttributes.EVT_ID, eventData.id.toString())
+        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
     }
 
     private fun addResourceData(
         eventData: RumEventData.Resource,
         root: JsonObject
     ) {
-        root.addProperty(TAG_DURATION, eventData.durationNanoSeconds)
-        root.addProperty(TAG_RESOURCE_KIND, eventData.kind.value)
-        root.addProperty(TAG_HTTP_URL, eventData.url)
+        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.RESOURCE_KIND, eventData.kind.value)
+        root.addProperty(RumAttributes.HTTP_METHOD, eventData.method)
+        root.addProperty(RumAttributes.HTTP_URL, eventData.url)
     }
 
     private fun addErrorData(
         root: JsonObject,
         eventData: RumEventData.Error
     ) {
-        root.addProperty(TAG_MESSAGE, eventData.message)
-        root.addProperty(TAG_ERROR_ORIGIN, eventData.origin)
+        root.addProperty(RumAttributes.ERROR_MESSAGE, eventData.message)
+        root.addProperty(RumAttributes.ERROR_ORIGIN, eventData.origin)
 
         val throwable = eventData.throwable
         if (throwable != null) {
             val sw = StringWriter()
             throwable.printStackTrace(PrintWriter(sw))
-            root.addProperty(TAG_ERROR_KIND, throwable.javaClass.simpleName)
-            root.addProperty(TAG_ERROR_MESSAGE, throwable.message)
-            root.addProperty(TAG_ERROR_STACK, sw.toString())
+            root.addProperty(RumAttributes.ERROR_KIND, throwable.javaClass.simpleName)
+            root.addProperty(RumAttributes.ERROR_STACK, sw.toString())
         }
     }
 
@@ -155,44 +162,5 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
     companion object {
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-
-        internal const val TAG_DATE = "date"
-        internal const val TAG_DURATION = "duration"
-        internal const val TAG_ENV = "env"
-        internal const val TAG_SERVICE = "service"
-        internal const val TAG_MESSAGE = "message"
-        internal const val TAG_USER_ID = "user.id"
-        internal const val TAG_USER_EMAIL = "user.email"
-        internal const val TAG_USER_NAME = "user.name"
-
-        internal const val TAG_APPLICATION_ID = "application_id"
-        internal const val TAG_SESSION_ID = "session_id"
-
-        internal const val TAG_VIEW_ID = "view.id"
-        internal const val TAG_VIEW_URL = "view.url"
-        internal const val TAG_MEASURES_ERRORS = "view.measures.error_count"
-        internal const val TAG_MEASURES_RESOURCES = "view.measures.resource_count"
-        internal const val TAG_MEASURES_ACTIONS = "view.measures.user_action_count"
-
-        internal const val TAG_EVENT_CATEGORY = "evt.category"
-        internal const val TAG_EVENT_ID = "evt.id"
-        internal const val TAG_EVENT_NAME = "evt.name"
-        internal const val TAG_EVENT_UNSTOPPED = "evt.unstopped"
-        internal const val TAG_EVENT_USER_ACTION_ID = "evt.user_action_id"
-
-        internal const val TAG_RESOURCE_KIND = "resource.kind"
-
-        internal const val TAG_ERROR_ORIGIN = "error.origin"
-        internal const val TAG_ERROR_KIND = "error.kind"
-        internal const val TAG_ERROR_MESSAGE = "error.message"
-        internal const val TAG_ERROR_STACK = "error.stack"
-
-        internal const val TAG_RUM_DOC_VERSION = "rum.document_version"
-
-        internal const val TAG_HTTP_URL = "http.url"
-        internal const val TAG_HTTP_METHOD = "http.method"
-        internal const val TAG_HTTP_STATUS_CODE = "http.status_code"
-
-        internal const val TAG_NETWORK_BYTES_WRITTEN = "network.bytes_written"
     }
 }

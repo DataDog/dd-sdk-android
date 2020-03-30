@@ -64,6 +64,7 @@ interface RumMonitor {
      * Notify that a new Resource is being loaded, linked with the [key] instance.
      * @param key the instance that represents the resource being loaded (usually your
      * request or network call instance).
+     * @param method the method used to load the resource (E.g., for network: "GET" or "POST")
      * @param url the url or local path of the resource being loaded
      * @param attributes additional custom attributes to attach to the resource
      * @see [stopResource]
@@ -71,6 +72,7 @@ interface RumMonitor {
      */
     fun startResource(
         key: Any,
+        method: String,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
     )

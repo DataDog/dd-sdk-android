@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
@@ -20,7 +21,6 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
@@ -304,8 +304,8 @@ internal class DatadogLogHandlerTest {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue.attributes)
-                .containsEntry(DatadogLogHandler.TAG_TRACE_ID, tracer.traceId)
-                .containsEntry(DatadogLogHandler.TAG_SPAN_ID, tracer.spanId)
+                .containsEntry(LogAttributes.DD_TRACE_ID, tracer.traceId)
+                .containsEntry(LogAttributes.DD_SPAN_ID, tracer.spanId)
         }
         Datadog.invokeMethod("stop")
     }
@@ -326,8 +326,8 @@ internal class DatadogLogHandlerTest {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue.attributes)
-                .doesNotContainKey(DatadogLogHandler.TAG_TRACE_ID)
-                .doesNotContainKey(DatadogLogHandler.TAG_SPAN_ID)
+                .doesNotContainKey(LogAttributes.DD_TRACE_ID)
+                .doesNotContainKey(LogAttributes.DD_SPAN_ID)
         }
     }
 
@@ -355,11 +355,11 @@ internal class DatadogLogHandlerTest {
 
             assertThat(lastValue.attributes)
                 .containsEntry(
-                    RumEventSerializer.TAG_APPLICATION_ID,
+                    LogAttributes.RUM_APPLICATION_ID,
                     rumContext.applicationId.toString()
                 )
-                .containsEntry(RumEventSerializer.TAG_SESSION_ID, rumContext.sessionId.toString())
-                .containsEntry(RumEventSerializer.TAG_VIEW_ID, rumContext.viewId?.toString())
+                .containsEntry(LogAttributes.RUM_SESSION_ID, rumContext.sessionId.toString())
+                .containsEntry(LogAttributes.RUM_VIEW_ID, rumContext.viewId?.toString())
         }
         Datadog.invokeMethod("stop")
     }
@@ -390,8 +390,8 @@ internal class DatadogLogHandlerTest {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue.attributes)
-                .doesNotContainKey(DatadogLogHandler.TAG_TRACE_ID)
-                .doesNotContainKey(DatadogLogHandler.TAG_SPAN_ID)
+                .doesNotContainKey(LogAttributes.DD_TRACE_ID)
+                .doesNotContainKey(LogAttributes.DD_SPAN_ID)
         }
     }
 

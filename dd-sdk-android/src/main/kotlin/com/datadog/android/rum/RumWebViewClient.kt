@@ -16,7 +16,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.RequiresApi
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
@@ -32,10 +31,8 @@ open class RumWebViewClient : WebViewClient() {
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
         if (url != null) {
-            GlobalRum.get().startResource(
-                url,
-                url
-            )
+            val key = url
+            GlobalRum.get().startResource(key, METHOD_GET, url)
         }
     }
 
@@ -43,10 +40,8 @@ open class RumWebViewClient : WebViewClient() {
     override fun onPageFinished(view: WebView?, url: String?) {
         super.onPageFinished(view, url)
         if (url != null) {
-            GlobalRum.get().stopResource(
-                url,
-                RumResourceKind.DOCUMENT
-            )
+            val key = url
+            GlobalRum.get().stopResource(key, RumResourceKind.DOCUMENT)
         }
     }
 
@@ -62,7 +57,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error $errorCode: $description",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to failingUrl)
+            mapOf(RumAttributes.HTTP_URL to failingUrl)
         )
     }
 
@@ -78,7 +73,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${error?.errorCode}: ${error?.description}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -94,7 +89,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -109,7 +104,7 @@ open class RumWebViewClient : WebViewClient() {
             "SSL Error ${error?.primaryError}",
             ORIGIN,
             null,
-            mapOf(RumEventSerializer.TAG_HTTP_URL to error?.url)
+            mapOf(RumAttributes.HTTP_URL to error?.url)
         )
     }
 
@@ -117,5 +112,6 @@ open class RumWebViewClient : WebViewClient() {
 
     companion object {
         internal const val ORIGIN = "WebViewClient"
+        internal const val METHOD_GET = "GET"
     }
 }

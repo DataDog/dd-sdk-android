@@ -35,6 +35,15 @@ internal class RumEventDataResourceAssert(actual: RumEventData.Resource) :
         return this
     }
 
+    fun hasMethod(expected: String): RumEventDataResourceAssert {
+        assertThat(actual.method)
+            .overridingErrorMessage(
+                "Expected event data to have method $expected but was ${actual.method}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasDuration(
         expected: Long,
         offset: Long = DURATION_THRESHOLD_NANOS

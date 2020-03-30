@@ -14,11 +14,11 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -104,7 +104,7 @@ internal class DatadogRumMonitor(
                             "Closing previous view automatically."
                 )
                 updateAndSendView(
-                    mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
+                    mapOf(TAG_EVENT_UNSTOPPED to true)
                 )
             }
             startedKey != key -> {
@@ -147,12 +147,14 @@ internal class DatadogRumMonitor(
     @Synchronized
     override fun startResource(
         key: Any,
+        method: String,
         url: String,
         attributes: Map<String, Any?>
     ) {
         val updatedAttributes = updateAttributesWithActionId(attributes)
         val eventData = RumEventData.Resource(
             RumResourceKind.OTHER,
+            method,
             url,
             System.nanoTime()
         )
@@ -203,7 +205,7 @@ internal class DatadogRumMonitor(
                 startedEvent.attributes
                     .toMutableMap()
                     .apply {
-                        set(RumEventSerializer.TAG_HTTP_URL, startedEventData.url)
+                        set(RumAttributes.HTTP_URL, startedEventData.url)
                     }
             )
         }
@@ -240,14 +242,14 @@ internal class DatadogRumMonitor(
 
     private fun updateAttributesWithActionId(
         attributes: Map<String, Any?>
-    ): Map<String, Any?> {
+    ): MutableMap<String, Any?> {
         val actionId = getActiveActionId()
         return if (actionId == null) {
-            attributes
+            attributes.toMutableMap()
         } else {
             attributes.toMutableMap()
                 .apply {
-                    put(RumEventSerializer.TAG_EVENT_USER_ACTION_ID, actionId.toString())
+                    put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
                 }
         }
     }
@@ -386,7 +388,7 @@ internal class DatadogRumMonitor(
                     startedEvent,
                     startedEventData,
                     RumResourceKind.UNKNOWN,
-                    mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true)
+                    mapOf(TAG_EVENT_UNSTOPPED to true)
                 )
             }
     }
@@ -428,5 +430,7 @@ internal class DatadogRumMonitor(
     companion object {
         internal const val ACTION_INACTIVITY_MS = 100L
         internal val ACTION_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_INACTIVITY_MS)
+
+        internal const val TAG_EVENT_UNSTOPPED = "evt.unstopped"
     }
 }

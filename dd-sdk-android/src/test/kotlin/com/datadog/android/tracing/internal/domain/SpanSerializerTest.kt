@@ -1,10 +1,10 @@
 package com.datadog.android.tracing.internal.domain
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.toHexString
@@ -41,8 +41,10 @@ internal class SpanSerializerTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
@@ -50,6 +52,7 @@ internal class SpanSerializerTest {
 
     @Forgery
     lateinit var fakeUserInfo: UserInfo
+
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
@@ -110,9 +113,8 @@ internal class SpanSerializerTest {
 
     private fun assertGlobalInfoMatches(jsonObject: JsonObject) {
         assertThat(jsonObject)
-            .hasField(SpanSerializer.TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-            .hasField(SpanSerializer.TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
-            .hasField(SpanSerializer.TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
+            .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+            .hasField(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
     }
 
     private fun assertSpanMatches(
@@ -147,68 +149,68 @@ internal class SpanSerializerTest {
         if (networkInfo != null) {
             assertThat(jsonObject).apply {
                 hasField(
-                    SpanSerializer.TAG_NETWORK_CONNECTIVITY,
+                    LogAttributes.NETWORK_CONNECTIVITY,
                     networkInfo.connectivity.serialized
                 )
                 if (!networkInfo.carrierName.isNullOrBlank()) {
-                    hasField(SpanSerializer.TAG_NETWORK_CARRIER_NAME, networkInfo.carrierName)
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, networkInfo.carrierName)
                 } else {
-                    doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_NAME)
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }
                 if (networkInfo.carrierId >= 0) {
                     hasField(
-                        SpanSerializer.TAG_NETWORK_CARRIER_ID,
+                        LogAttributes.NETWORK_CARRIER_ID,
                         networkInfo.carrierId.toString()
                     )
                 } else {
-                    doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_ID)
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
                 }
                 if (networkInfo.upKbps >= 0) {
-                    hasField(SpanSerializer.TAG_NETWORK_UP_KBPS, networkInfo.upKbps.toString())
+                    hasField(LogAttributes.NETWORK_UP_KBPS, networkInfo.upKbps.toString())
                 } else {
-                    doesNotHaveField(SpanSerializer.TAG_NETWORK_UP_KBPS)
+                    doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
                 }
                 if (networkInfo.downKbps >= 0) {
                     hasField(
-                        SpanSerializer.TAG_NETWORK_DOWN_KBPS,
+                        LogAttributes.NETWORK_DOWN_KBPS,
                         networkInfo.downKbps.toString()
                     )
                 } else {
-                    doesNotHaveField(SpanSerializer.TAG_NETWORK_DOWN_KBPS)
+                    doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
                 }
                 if (networkInfo.strength > Int.MIN_VALUE) {
                     hasField(
-                        SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH,
+                        LogAttributes.NETWORK_SIGNAL_STRENGTH,
                         networkInfo.strength.toString()
                     )
                 } else {
-                    doesNotHaveField(SpanSerializer.TAG_NETWORK_SIGNAL_STRENGTH)
+                    doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
                 }
             }
         } else {
             assertThat(jsonObject)
-                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CONNECTIVITY)
-                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_NAME)
-                .doesNotHaveField(SpanSerializer.TAG_NETWORK_CARRIER_ID)
+                .doesNotHaveField(LogAttributes.NETWORK_CONNECTIVITY)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
         }
     }
 
     private fun assertUserInfoMatches(userInfo: UserInfo, jsonObject: JsonObject) {
         assertThat(jsonObject).apply {
             if (userInfo.id.isNullOrEmpty()) {
-                doesNotHaveField(SpanSerializer.TAG_USER_ID)
+                doesNotHaveField(LogAttributes.USR_ID)
             } else {
-                hasField(SpanSerializer.TAG_USER_ID, userInfo.id)
+                hasField(LogAttributes.USR_ID, userInfo.id)
             }
             if (userInfo.name.isNullOrEmpty()) {
-                doesNotHaveField(SpanSerializer.TAG_USER_NAME)
+                doesNotHaveField(LogAttributes.USR_NAME)
             } else {
-                hasField(SpanSerializer.TAG_USER_NAME, userInfo.name)
+                hasField(LogAttributes.USR_NAME, userInfo.name)
             }
             if (userInfo.email.isNullOrEmpty()) {
-                doesNotHaveField(SpanSerializer.TAG_USER_EMAIL)
+                doesNotHaveField(LogAttributes.USR_EMAIL)
             } else {
-                hasField(SpanSerializer.TAG_USER_EMAIL, userInfo.email)
+                hasField(LogAttributes.USR_EMAIL, userInfo.email)
             }
         }
     }

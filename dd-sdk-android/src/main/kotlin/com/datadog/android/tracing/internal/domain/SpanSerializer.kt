@@ -1,11 +1,11 @@
 package com.datadog.android.tracing.internal.domain
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.google.gson.JsonObject
@@ -43,9 +43,10 @@ internal class SpanSerializer(
         }
 
         metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_MOBILE)
-        metaObject.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
-        metaObject.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
-        metaObject.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
+
+        metaObject.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+        metaObject.addProperty(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
+
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
         addLogUserInfo(userInfoProvider.getUserInfo(), metaObject)
 
@@ -69,34 +70,52 @@ internal class SpanSerializer(
         jsonLog: JsonObject
     ) {
         if (networkInfo != null) {
-            jsonLog.addProperty(TAG_NETWORK_CONNECTIVITY, networkInfo.connectivity.serialized)
+            jsonLog.addProperty(
+                LogAttributes.NETWORK_CONNECTIVITY,
+                networkInfo.connectivity.serialized
+            )
             if (!networkInfo.carrierName.isNullOrBlank()) {
-                jsonLog.addProperty(TAG_NETWORK_CARRIER_NAME, networkInfo.carrierName)
+                jsonLog.addProperty(
+                    LogAttributes.NETWORK_CARRIER_NAME,
+                    networkInfo.carrierName
+                )
             }
             if (networkInfo.carrierId >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_CARRIER_ID, networkInfo.carrierId.toString())
+                jsonLog.addProperty(
+                    LogAttributes.NETWORK_CARRIER_ID,
+                    networkInfo.carrierId.toString()
+                )
             }
             if (networkInfo.upKbps >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_UP_KBPS, networkInfo.upKbps.toString())
+                jsonLog.addProperty(
+                    LogAttributes.NETWORK_UP_KBPS,
+                    networkInfo.upKbps.toString()
+                )
             }
             if (networkInfo.downKbps >= 0) {
-                jsonLog.addProperty(TAG_NETWORK_DOWN_KBPS, networkInfo.downKbps.toString())
+                jsonLog.addProperty(
+                    LogAttributes.NETWORK_DOWN_KBPS,
+                    networkInfo.downKbps.toString()
+                )
             }
             if (networkInfo.strength > Int.MIN_VALUE) {
-                jsonLog.addProperty(TAG_NETWORK_SIGNAL_STRENGTH, networkInfo.strength.toString())
+                jsonLog.addProperty(
+                    LogAttributes.NETWORK_SIGNAL_STRENGTH,
+                    networkInfo.strength.toString()
+                )
             }
         }
     }
 
     private fun addLogUserInfo(userInfo: UserInfo, jsonLog: JsonObject) {
         if (!userInfo.id.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_ID, userInfo.id)
+            jsonLog.addProperty(LogAttributes.USR_ID, userInfo.id)
         }
         if (!userInfo.name.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_NAME, userInfo.name)
+            jsonLog.addProperty(LogAttributes.USR_NAME, userInfo.name)
         }
         if (!userInfo.email.isNullOrEmpty()) {
-            jsonLog.addProperty(TAG_USER_EMAIL, userInfo.email)
+            jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
     }
 
@@ -120,23 +139,5 @@ internal class SpanSerializer(
         internal const val TAG_METRICS = "metrics"
         internal const val TAG_METRICS_TOP_LEVEL = "_top_level"
         internal const val TAG_DD_SOURCE = "_dd.source"
-
-        // GLOBAL TAGS
-        internal const val TAG_VERSION_NAME = "logger.version"
-        internal const val TAG_APP_VERSION_NAME = "application.version"
-        internal const val TAG_APP_PACKAGE_NAME = "application.package"
-
-        // NETWORK TAGS
-        internal const val TAG_NETWORK_CONNECTIVITY = "network.client.connectivity"
-        internal const val TAG_NETWORK_CARRIER_NAME = "network.client.sim_carrier.name"
-        internal const val TAG_NETWORK_CARRIER_ID = "network.client.sim_carrier.id"
-        internal const val TAG_NETWORK_UP_KBPS = "network.client.uplink_kbps"
-        internal const val TAG_NETWORK_DOWN_KBPS = "network.client.downlink_kbps"
-        internal const val TAG_NETWORK_SIGNAL_STRENGTH = "network.client.signal_strength"
-
-        // USER TAGS
-        internal const val TAG_USER_ID = "usr.id"
-        internal const val TAG_USER_NAME = "usr.name"
-        internal const val TAG_USER_EMAIL = "usr.email"
     }
 }

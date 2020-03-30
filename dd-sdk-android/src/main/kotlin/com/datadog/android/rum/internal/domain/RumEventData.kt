@@ -13,6 +13,7 @@ internal sealed class RumEventData(val category: String) {
 
     internal data class Resource(
         val kind: RumResourceKind,
+        val method: String,
         val url: String,
         val durationNanoSeconds: Long
     ) : RumEventData("resource")

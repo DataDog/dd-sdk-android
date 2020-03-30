@@ -17,7 +17,6 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.annotations.SystemOutStream
@@ -281,7 +280,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasViewData {
                     hasName(name.replace('.', '/'))
                     hasDurationLowerThan(duration)
@@ -303,12 +302,13 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         var resourceKey = forge.anAlphabeticalString(size = 32).toByteArray()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val attributes = forge.exhaustiveAttributes()
         var viewId: UUID? = null
 
         testedMonitor.startView(viewKey, viewName, attributes)
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         resourceKey = forge.anAlphabeticalString().toByteArray()
         System.gc()
         viewId = GlobalRum.getRumContext().viewId
@@ -321,9 +321,10 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasKind(RumResourceKind.UNKNOWN)
                 }
                 .hasContext {
@@ -382,10 +383,11 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
-        testedMonitor.startResource(resourceKey, resourceUrl, emptyMap())
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, emptyMap())
 
         verifyZeroInteractions(mockWriter)
     }
@@ -409,6 +411,7 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
@@ -416,7 +419,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
         val duration = measureNanoTime {
-            testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+            testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
             testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
         }
 
@@ -432,6 +435,7 @@ internal class DatadogRumMonitorTest {
                     hasUrl(resourceUrl)
                     hasDurationLowerThan(duration)
                     hasKind(resourceKind)
+                    hasMethod(resourceMethod)
                 }
                 .hasContext {
                     hasApplicationId(fakeApplicationId)
@@ -465,13 +469,14 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         var resourceKey: Any = forge.anAlphabeticalString().toByteArray()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val attributes = forge.exhaustiveAttributes()
         val kind = forge.aValueFrom(RumResourceKind::class.java, listOf(RumResourceKind.UNKNOWN))
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         resourceKey = forge.anAlphabeticalString().toByteArray()
         System.gc()
         testedMonitor.stopResource(resourceKey, kind, attributes)
@@ -484,9 +489,10 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasKind(RumResourceKind.UNKNOWN)
                 }
                 .hasContext {
@@ -536,6 +542,7 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val errorOrigin = forge.anAlphabeticalString()
         val errorMessage = forge.anAlphabeticalString()
@@ -544,7 +551,7 @@ internal class DatadogRumMonitorTest {
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         testedMonitor.stopResourceWithError(resourceKey, errorMessage, errorOrigin, throwable)
 
         checkNotNull(viewId)
@@ -593,6 +600,7 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         var resourceKey: Any = forge.anAlphabeticalString().toByteArray()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val attributes = forge.exhaustiveAttributes()
         val errorOrigin = forge.anAlphabeticalString()
@@ -601,7 +609,7 @@ internal class DatadogRumMonitorTest {
 
         testedMonitor.startView(viewKey, viewName, emptyMap())
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         resourceKey = forge.anAlphabeticalString().toByteArray()
         System.gc()
         testedMonitor.stopResourceWithError(resourceKey, errorMessage, errorOrigin, throwable)
@@ -614,7 +622,7 @@ internal class DatadogRumMonitorTest {
                 .hasTimestamp(fakeTimestamp)
                 .hasUserInfo(mockedUserInfo)
                 .hasAttributes(attributes)
-                .hasAttributes(mapOf(RumEventSerializer.TAG_EVENT_UNSTOPPED to true))
+                .hasAttributes(mapOf(DatadogRumMonitor.TAG_EVENT_UNSTOPPED to true))
                 .hasResourceData {
                     hasUrl(resourceUrl)
                     hasKind(RumResourceKind.UNKNOWN)
@@ -726,6 +734,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
@@ -733,7 +742,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
 
         checkNotNull(viewId)
@@ -747,6 +756,7 @@ internal class DatadogRumMonitorTest {
                 .hasUserActionAttribute()
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasKind(resourceKind)
                 }
                 .hasContext {
@@ -782,6 +792,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionName = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
@@ -791,7 +802,7 @@ internal class DatadogRumMonitorTest {
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS)
         val viewId = GlobalRum.getRumContext().viewId
         val duration = measureNanoTime {
-            testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+            testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
             testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
         }
 
@@ -834,6 +845,7 @@ internal class DatadogRumMonitorTest {
                 .hasNoUserActionAttribute()
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasDurationLowerThan(duration)
                     hasKind(resourceKind)
                 }
@@ -871,6 +883,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val attributes = forge.exhaustiveAttributes()
@@ -878,10 +891,11 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS * 5)
         testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
-        testedMonitor.startResource(forge.anAlphabeticalString(), resourceUrl, attributes)
+        val resourceKey2 = forge.anAlphabeticalString()
+        testedMonitor.startResource(resourceKey2, resourceMethod, resourceUrl, attributes)
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
@@ -894,6 +908,7 @@ internal class DatadogRumMonitorTest {
                 .hasUserActionAttribute()
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasKind(resourceKind)
                 }
                 .hasContext {
@@ -929,6 +944,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val errorOrigin = forge.anAlphabeticalString()
@@ -939,7 +955,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS * 5)
         testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS)
@@ -1051,6 +1067,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val errorOrigin = forge.anAlphabeticalString()
         val errorMessage = forge.anAlphabeticalString()
@@ -1060,10 +1077,11 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS * 5)
         testedMonitor.stopResourceWithError(resourceKey, errorMessage, errorOrigin, errorThrowable)
-        testedMonitor.startResource(forge.anAlphabeticalString(), resourceUrl, attributes)
+        val resourceKey2 = forge.anAlphabeticalString()
+        testedMonitor.startResource(resourceKey2, resourceMethod, resourceUrl, attributes)
 
         checkNotNull(viewId)
         argumentCaptor<RumEvent> {
@@ -1112,6 +1130,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resErrorOrigin = forge.anAlphabeticalString()
         val resErrorMessage = forge.anAlphabeticalString()
@@ -1124,7 +1143,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS * 5)
         testedMonitor.stopResourceWithError(
             resourceKey,
@@ -1242,6 +1261,7 @@ internal class DatadogRumMonitorTest {
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val actionNAme = forge.anAlphabeticalString()
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val errorOrigin = forge.anAlphabeticalString()
         val errorMessage = forge.anAlphabeticalString()
@@ -1251,7 +1271,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, emptyMap())
         testedMonitor.addUserAction(actionNAme, attributes)
         val viewId = GlobalRum.getRumContext().viewId
-        testedMonitor.startResource(resourceKey, resourceUrl, attributes)
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
         Thread.sleep(DatadogRumMonitor.ACTION_INACTIVITY_MS * 5)
         testedMonitor.addError(errorMessage, errorOrigin, throwable, attributes)
 
@@ -1698,6 +1718,7 @@ internal class DatadogRumMonitorTest {
         val viewKey = forge.anAlphabeticalString()
         val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
         val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
         val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
         val actionName1 = forge.anAlphabeticalString()
@@ -1707,7 +1728,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(viewKey, viewName, attributes)
         val viewId = GlobalRum.getRumContext().viewId
         testedMonitor.addUserAction(actionName1, attributes)
-        testedMonitor.startResource(resourceKey, resourceUrl, emptyMap())
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, emptyMap())
         testedMonitor.addUserAction(actionName2, attributes)
         testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
         testedMonitor.stopView(viewKey, emptyMap())
@@ -1721,6 +1742,7 @@ internal class DatadogRumMonitorTest {
                 .hasUserInfo(mockedUserInfo)
                 .hasResourceData {
                     hasUrl(resourceUrl)
+                    hasMethod(resourceMethod)
                     hasKind(resourceKind)
                 }
                 .hasContext {

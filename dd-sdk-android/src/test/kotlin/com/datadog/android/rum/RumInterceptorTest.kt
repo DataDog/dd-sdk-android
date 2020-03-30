@@ -6,19 +6,28 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.rum.internal.domain.RumEventSerializer
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import datadog.opentracing.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Tracer
+import io.opentracing.propagation.TextMapExtract
+import io.opentracing.util.GlobalTracer
+import java.math.BigInteger
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -49,6 +58,9 @@ internal class RumInterceptorTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
+    lateinit var mockTracer: Tracer
+
+    @Mock
     lateinit var mockChain: Interceptor.Chain
 
     lateinit var fakeUrl: String
@@ -64,12 +76,14 @@ internal class RumInterceptorTest {
         testedInterceptor = RumInterceptor()
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalTracer.registerIfAbsent(mockTracer)
     }
 
     @AfterEach
     fun `tear down`() {
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.isRegistered.set(false)
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
     @Test
@@ -84,15 +98,16 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "GET",
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.fromMimeType(fakeMimeType!!),
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -113,15 +128,16 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "GET",
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "GET")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.UNKNOWN,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -141,15 +157,16 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "POST",
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "POST")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -169,15 +186,16 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "PUT",
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "PUT")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -197,15 +215,16 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                "DELETE",
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to "DELETE")
+                emptyMap()
             )
             verify(mockRumMonitor).stopResource(
                 fakeRequest,
                 RumResourceKind.XHR,
                 mapOf(
-                    RumEventSerializer.TAG_HTTP_STATUS_CODE to statusCode,
-                    RumEventSerializer.TAG_NETWORK_BYTES_WRITTEN to
+                    RumAttributes.HTTP_STATUS_CODE to statusCode,
+                    RumAttributes.NETWORK_BYTES_WRITTEN to
                         (fakeResponse.body()?.contentLength() ?: 0)
                 )
             )
@@ -236,8 +255,9 @@ internal class RumInterceptorTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 fakeRequest,
+                fakeRequest.method(),
                 fakeUrl,
-                mapOf(RumEventSerializer.TAG_HTTP_METHOD to fakeRequest.method())
+                emptyMap()
             )
             verify(mockRumMonitor).stopResourceWithError(
                 fakeRequest,
@@ -247,6 +267,49 @@ internal class RumInterceptorTest {
             )
         }
         assertThat(error).isSameAs(throwable)
+    }
+
+    @Test
+    fun `extract the trace ID if any`(
+        @IntForgery(min = 200, max = 299) statusCode: Int,
+        @LongForgery traceId: Long,
+        forge: Forge
+    ) {
+        val method = forge.anElementFrom("GET", "POST", "PUT", "DELETE")
+        setupFakeResponse(statusCode, method, forge.anAsciiString())
+        doAnswer {
+            return@doAnswer ExtractedContext(
+                BigInteger.valueOf(traceId),
+                BigInteger.ZERO,
+                0, "origin", emptyMap(), emptyMap()
+            )
+        }.whenever(mockTracer).extract<TextMapExtract>(any(), any())
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                fakeRequest,
+                method,
+                fakeUrl,
+                mapOf(
+                    RumAttributes.TRACE_ID to traceId.toString()
+                )
+            )
+            verify(mockRumMonitor).stopResource(
+                eq(fakeRequest),
+                any(),
+                eq(
+                    mapOf(
+                        RumAttributes.HTTP_STATUS_CODE to statusCode,
+                        RumAttributes.NETWORK_BYTES_WRITTEN to
+                            (fakeResponse.body()?.contentLength() ?: 0)
+                    )
+                )
+            )
+        }
+        assertThat(response).isSameAs(fakeResponse)
+        verifyNoMoreInteractions(mockRumMonitor)
     }
 
     // region Internal
