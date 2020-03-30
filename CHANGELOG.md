@@ -1,3 +1,11 @@
+# 1.4.0 / ???
+
+* [FEATURE] Global: Update the SDK initialization code
+* [FEATURE] Trace: Implement OpenTracing specifications
+* [FEATURE] Trace: Add helper methods to attach an error to a span
+* [FEATURE] Logs: Add sampling option in the Logger
+* [IMPROVEMENT] Logs: Make the log operations thread safe
+* [BUGFIX] Logs: Fix rare crash on upload requests
 
 # 1.3.0 / 2020-03-02
 
