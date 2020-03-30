@@ -68,7 +68,7 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-androidx-fragment"))
+    implementation(project(":dd-sdk-android-androidx"))
 
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
