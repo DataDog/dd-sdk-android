@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
+import com.datadog.android.androidx.fragment.internal.utils.mockRumMonitor
 import com.datadog.android.androidx.fragment.internal.utils.resetRumMonitorToDefaults
 import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -14,6 +15,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
+    ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class),
     ExtendWith(ApiLevelExtension::class)
 )
@@ -47,6 +50,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockRumMonitor = mockRumMonitor()
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         attributesMap = forge.aMap { forge.aString() to forge.aString() }
         underTest = OreoFragmentLifecycleCallbacks { attributesMap }
