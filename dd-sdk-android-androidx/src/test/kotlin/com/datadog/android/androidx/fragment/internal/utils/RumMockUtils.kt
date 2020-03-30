@@ -15,11 +15,11 @@ fun mockRumMonitor(): RumMonitor {
 }
 
 fun resetRumMonitorToDefaults() {
+    val isRegistered: AtomicBoolean =
+        GlobalRum::class.java.getStaticValue("isRegistered")
+    isRegistered.set(false)
     val noOpMonitor = createInstance(
         "com.datadog.android.rum.internal.monitor.NoOpRumMonitor"
     )
     GlobalRum::class.java.setStaticValue("monitor", noOpMonitor)
-    val isRegistered: AtomicBoolean =
-        GlobalRum::class.java.getStaticValue("isRegistered")
-    isRegistered.set(false)
 }
