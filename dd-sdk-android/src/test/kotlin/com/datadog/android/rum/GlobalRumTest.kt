@@ -9,14 +9,12 @@ package com.datadog.android.rum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -41,8 +39,8 @@ internal class GlobalRumTest {
     fun `set up`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
-        GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
+        GlobalRum.sessionStartNs.set(0L)
+        GlobalRum.lastUserInteractionNs.set(0L)
     }
 
     @AfterEach
@@ -50,8 +48,8 @@ internal class GlobalRumTest {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.updateContext(RumContext())
-        GlobalRum::class.java.setStaticValue("sessionStartNs", AtomicLong(0L))
-        GlobalRum::class.java.setStaticValue("lastUserInteractionNs", AtomicLong(0L))
+        GlobalRum.sessionStartNs.set(0L)
+        GlobalRum.lastUserInteractionNs.set(0L)
     }
 
     @Test
@@ -163,7 +161,6 @@ internal class GlobalRumTest {
         val firstSessionId = GlobalRum.getRumContext().sessionId
 
         for (i in 0..repeatCount) {
-            GlobalRum.addUserInteraction()
             Thread.sleep(TEST_SLEEP_MS)
             GlobalRum.addUserInteraction()
         }
@@ -192,7 +189,7 @@ internal class GlobalRumTest {
 
     companion object {
 
-        private const val TEST_SLEEP_MS = 1000L
+        private const val TEST_SLEEP_MS = 200L
         private const val TEST_INACTIVITY_MS = TEST_SLEEP_MS * 3
         private const val TEST_MAX_DURATION_MS = TEST_SLEEP_MS * 10
 
