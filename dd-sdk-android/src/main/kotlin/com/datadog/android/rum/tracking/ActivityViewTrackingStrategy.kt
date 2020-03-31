@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.tracking
 
 import android.app.Activity
+import com.datadog.android.rum.GlobalRum
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] as RUM views.
@@ -15,7 +16,8 @@ import android.app.Activity
  * @param trackExtras whether to track Activity Intent extras
  */
 class ActivityViewTrackingStrategy(private val trackExtras: Boolean) :
-    ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
+    ActivityLifecycleTrackingStrategy(),
+    ViewTrackingStrategy {
 
     // region ActivityLifecycleTrackingStrategy
 
