@@ -33,17 +33,20 @@ import org.mockito.quality.Strictness
 internal class DatadogGesturesTrackerTest {
 
     lateinit var underTest: DatadogGesturesTracker
+
     @Mock
     lateinit var mockActivity: Activity
+
     @Mock
     lateinit var mockWindow: Window
+
     @Mock
     lateinit var mockGestureDetector: GestureDetectorCompat
 
     @BeforeEach
     fun `set up`() {
         underTest =
-            DatadogGesturesTracker()
+            DatadogGesturesTracker(emptyArray())
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mock())
     }
