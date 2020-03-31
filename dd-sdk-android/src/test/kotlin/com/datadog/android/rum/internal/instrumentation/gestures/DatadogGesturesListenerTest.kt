@@ -14,8 +14,10 @@ import android.view.ViewGroup
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
@@ -411,6 +413,60 @@ internal class DatadogGesturesListenerTest {
         verifyZeroInteractions(mockRumMonitor)
     }
 
+    @Test
+    fun `applies the extra attributes from the attributes providers`(forge: Forge) {
+        val mockEvent = mockMotionEvent(forge)
+        val targetId = forge.anInt()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        )
+        decorView = mockView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        val mockResources = mock<Resources> {
+            whenever(it.getResourceEntryName(validTarget.id))
+                .thenReturn(expectedResourceName)
+        }
+        whenever(validTarget.resources).thenReturn(mockResources)
+        var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+            RumAttributes.TAG_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName
+        )
+        val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
+            mock {
+                whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+                    val map = it.arguments[1] as MutableMap<String, Any?>
+                    map[forge.aString()] = forge.aString()
+                    expectedAttributes = map
+                    null
+                }
+            }
+        }
+
+        underTest = DatadogGesturesListener(
+            WeakReference(decorView),
+            providers
+        )
+        // when
+        underTest.onSingleTapUp(mockEvent)
+
+        // then
+        verify(mockRumMonitor).addUserAction(
+            DatadogGesturesListener.UI_TAP_ACTION_EVENT,
+            expectedAttributes
+        )
+    }
+
     // endregion
 
     // region Internal
@@ -482,8 +538,8 @@ internal class DatadogGesturesListenerTest {
             eq(DatadogGesturesListener.UI_TAP_ACTION_EVENT),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
-                this[DatadogGesturesListener.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                    this[DatadogGesturesListener.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 

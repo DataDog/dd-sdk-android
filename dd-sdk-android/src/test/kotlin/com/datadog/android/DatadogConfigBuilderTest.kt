@@ -8,7 +8,9 @@ package com.datadog.android
 
 import com.datadog.android.rum.assertj.RumConfigAssert
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -609,11 +611,14 @@ class DatadogConfigBuilderTest {
     @Test
     fun `builder with track gestures enabled`(forge: Forge) {
         val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val touchTargetExtraAttributesProviders =
+            Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
+                mock()
+            }
         val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackGestures()
+            .trackGestures(touchTargetExtraAttributesProviders)
             .build()
-
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()
         RumConfigAssert.assertThat(rumConfig!!)
@@ -622,7 +627,7 @@ class DatadogConfigBuilderTest {
             .hasEndpointUrl(rumUrl)
             .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
             .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
-            .hasGesturesTrackingStrategy()
+            .hasGesturesTrackingStrategy(touchTargetExtraAttributesProviders)
             .doesNotHaveViewTrackingStrategy()
     }
 
