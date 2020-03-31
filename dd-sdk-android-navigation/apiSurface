@@ -1,4 +1,4 @@
-class com.datadog.android.androidx.navigation.NavigationViewTrackingStrategy : com.datadog.android.rum.ActivityLifecycleTrackingStrategy, com.datadog.android.rum.ViewTrackingStrategy, androidx.navigation.NavController, OnDestinationChangedListener
+class com.datadog.android.androidx.navigation.NavigationViewTrackingStrategy : com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy, com.datadog.android.rum.tracking.ViewTrackingStrategy, androidx.navigation.NavController, OnDestinationChangedListener
   constructor(Int, Boolean)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)

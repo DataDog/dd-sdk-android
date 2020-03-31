@@ -7,8 +7,8 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.DatadogConfig
-import com.datadog.android.rum.TrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
+import com.datadog.android.rum.tracking.TrackingStrategy
 import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat

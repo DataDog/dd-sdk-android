@@ -6,10 +6,10 @@
 
 package com.datadog.android
 
-import com.datadog.android.rum.UserActionTrackingStrategy
-import com.datadog.android.rum.ViewTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
 
 /**

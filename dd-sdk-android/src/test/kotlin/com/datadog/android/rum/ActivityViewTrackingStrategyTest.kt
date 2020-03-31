@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import android.os.Bundle
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -35,7 +36,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = ActivityViewTrackingStrategy(true)
+        underTest =
+            ActivityViewTrackingStrategy(true)
     }
 
     @Test
@@ -92,7 +94,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         forge: Forge
     ) {
         // given
-        underTest = ActivityViewTrackingStrategy(false)
+        underTest =
+            ActivityViewTrackingStrategy(false)
         val arguments = Bundle()
         for (i in 0..10) {
             val key = forge.anAlphabeticalString()

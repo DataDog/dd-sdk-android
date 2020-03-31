@@ -26,7 +26,7 @@ class com.datadog.android.DatadogConfig
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
     fun trackGestures(): Builder
-    fun useViewTrackingStrategy(com.datadog.android.rum.ViewTrackingStrategy): Builder
+    fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
   companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
@@ -114,22 +114,6 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
-abstract class com.datadog.android.rum.ActivityLifecycleTrackingStrategy : android.app.Application, ActivityLifecycleCallbacks, TrackingStrategy
-  override fun register(android.content.Context)
-  override fun unregister(android.content.Context)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
-  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityResumed(android.app.Activity)
-  protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  companion object
-class com.datadog.android.rum.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean)
-  override fun onActivityResumed(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean
@@ -210,11 +194,32 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object
-open class com.datadog.android.rum.RumWebChromeClient : android.webkit.WebChromeClient
+abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application, ActivityLifecycleCallbacks, TrackingStrategy
+  override fun register(android.content.Context)
+  override fun unregister(android.content.Context)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityResumed(android.app.Activity)
+  protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
+  companion object
+class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+interface com.datadog.android.rum.tracking.TrackingStrategy
+  fun register(android.content.Context)
+  fun unregister(android.content.Context)
+interface com.datadog.android.rum.tracking.UserActionTrackingStrategy : TrackingStrategy
+interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
+open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
   companion object
-open class com.datadog.android.rum.RumWebViewClient : android.webkit.WebViewClient
+open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
   override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
   override fun onPageFinished(android.webkit.WebView?, String?)
   override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
@@ -222,11 +227,6 @@ open class com.datadog.android.rum.RumWebViewClient : android.webkit.WebViewClie
   override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
   companion object
-interface com.datadog.android.rum.TrackingStrategy
-  fun register(android.content.Context)
-  fun unregister(android.content.Context)
-interface com.datadog.android.rum.UserActionTrackingStrategy : TrackingStrategy
-interface com.datadog.android.rum.ViewTrackingStrategy : TrackingStrategy
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
