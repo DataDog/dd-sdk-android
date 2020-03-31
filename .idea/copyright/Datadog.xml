@@ -1,0 +1,8 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="allowReplaceRegexp" value="Copyright.*Datadog, Inc." />
+    <option name="keyword" value="Copyright.*Datadog" />
+    <option name="notice" value="Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.&#10;This product includes software developed at Datadog (https://www.datadoghq.com/).&#10;Copyright 2016-Present Datadog, Inc." />
+    <option name="myName" value="Datadog" />
+  </copyright>
+</component>
