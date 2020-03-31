@@ -9,6 +9,7 @@ package com.datadog.android
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
 
@@ -255,10 +256,20 @@ private constructor(
         /**
          * Enable the gestures auto tracker. By enabling this feature the SDK will intercept
          * tap events and automatically send those as RUM UserActions for you.
+         * @param touchTargetExtraAttributesProviders an array with your own implementation of the
+         * target attributes provider.
+         * @see [ViewAttributesProvider]
          */
-        fun trackGestures(): Builder {
+        @JvmOverloads
+        fun trackGestures(
+            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
+        ): Builder {
             rumConfig = rumConfig.copy(
-                userActionTrackingStrategy = GesturesTrackingStrategy(DatadogGesturesTracker())
+                userActionTrackingStrategy = GesturesTrackingStrategy(
+                    DatadogGesturesTracker(
+                        touchTargetExtraAttributesProviders
+                    )
+                )
             )
             return this
         }

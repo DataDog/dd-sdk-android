@@ -266,4 +266,40 @@ object RumAttributes {
      * The Url of the view. (String)
      */
     const val VIEW_URL: String = "view.url"
+
+    /**
+     * The touch target class name. (String)
+     */
+    const val TAG_TARGET_CLASS_NAME: String = "target.classname"
+
+    /**
+     * The touch target resource id. (String)
+     * In case the resource id is missing we will provide the
+     * target id in a Hexa String format (e.g. 0x1A2B1)
+     */
+    const val TAG_TARGET_RESOURCE_ID: String = "target.resourceId"
+
+    /**
+     * The position of the touch target in the scrollable container adapter. (Integer)
+     * Provided only in cases where the parent of the target is a scrollable component.
+     * For now we only support the RecyclerView component.
+     */
+    const val TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER: String =
+        "target.scrollableContainer.position"
+
+    /**
+     * The class name of the target container in case this is a scrollable component. (String)
+     * For now we only support the RecyclerView component.
+     */
+    const val TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME: String =
+        "target.scrollableContainer.classname"
+
+    /**
+     * The resource id of the target container in case this is a scrollable component. (String)
+     * In case the resource id is missing we will provide the
+     * container id in a Hexa String format (e.g. 0x1A2B1)
+     * For now we only support the RecyclerView component.
+     */
+    const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String =
+        "target.scrollableContainer.resourceId"
 }

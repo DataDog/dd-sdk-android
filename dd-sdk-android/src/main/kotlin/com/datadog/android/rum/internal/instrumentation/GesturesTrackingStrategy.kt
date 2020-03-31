@@ -11,7 +11,9 @@ import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.rum.tracking.UserActionTrackingStrategy
 
-internal class GesturesTrackingStrategy(private val gesturesTracker: GesturesTracker) :
+internal class GesturesTrackingStrategy(
+    internal val gesturesTracker: GesturesTracker
+) :
     ActivityLifecycleTrackingStrategy(),
     UserActionTrackingStrategy {
     override fun onActivityResumed(activity: Activity) {

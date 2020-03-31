@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.androidx.navigation.NavigationViewTrackingStrategy
+import com.datadog.android.androidx.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.tracing.AndroidTracer
@@ -33,7 +34,7 @@ class SampleApplication : Application() {
             .setServiceName("android-sample-kotlin")
             .setEnvironmentName("staging")
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
-            .trackGestures()
+            .trackGestures(arrayOf(JetpackViewAttributesProvider()))
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
