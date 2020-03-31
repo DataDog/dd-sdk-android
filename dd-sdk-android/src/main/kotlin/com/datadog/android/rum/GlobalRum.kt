@@ -36,8 +36,8 @@ object GlobalRum {
     internal var sessionInactivityNanos = DEFAULT_SESSION_INACTIVITY_NS
     internal var sessionMaxDurationNanos = DEFAULT_SESSION_MAX_DURATION_NS
 
-    private val sessionStartNs = AtomicLong(0L)
-    private val lastUserInteractionNs = AtomicLong(0L)
+    internal val sessionStartNs = AtomicLong(0L)
+    internal val lastUserInteractionNs = AtomicLong(0L)
 
     internal val isRegistered = AtomicBoolean(false)
     internal var monitor: RumMonitor = NoOpRumMonitor()
