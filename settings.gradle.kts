@@ -37,8 +37,7 @@ pluginManagement {
 
 include(":dd-sdk-android")
 include(":dd-sdk-android-timber")
-include(":dd-sdk-android-androidx-fragment")
-include(":dd-sdk-android-support-fragment")
+include(":dd-sdk-android-androidx")
 include(":dd-sdk-android-navigation")
 
 include(":instrumented:benchmark")
