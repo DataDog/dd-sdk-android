@@ -10,7 +10,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
 import fr.xgouchet.elmyr.jvm.useJvmFactories
 
-class Configurator :
+internal class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(LogForgeryFactory())

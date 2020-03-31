@@ -14,6 +14,7 @@ internal class AndroidSpanLogsHandler(
 ) : LogHandler {
 
     // region Span
+
     override fun log(timestampMicroseconds: Long, fields: Map<String, *>, span: DDSpan) {
         extractError(fields, span)
         logFields(fields, toMilliseconds(timestampMicroseconds))
@@ -60,9 +61,6 @@ internal class AndroidSpanLogsHandler(
         }
     }
 
-    // endregion
-
-    // region Internal
     private fun extractError(
         map: Map<String, *>,
         span: DDSpan
@@ -78,6 +76,7 @@ internal class AndroidSpanLogsHandler(
     }
 
     // endregion
+
     companion object {
         internal const val TRACE_LOG_MESSAGE = "Span log"
     }

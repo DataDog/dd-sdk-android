@@ -17,6 +17,7 @@ import datadog.opentracing.LogHandler
 import datadog.opentracing.scopemanager.ContextualScopeManager
 import datadog.trace.api.Config
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -181,19 +182,20 @@ internal class AndroidTracerTest {
     // region Helpers
 
     @Test
-    fun `it will delegate to the right fields when logging a throwable for a span`(forge: Forge) {
+    fun `it will delegate to the right fields when logging a throwable for a span`(
+        @Forgery throwable: Throwable
+    ) {
         // given
-        val aThrowable: Throwable = forge.getForgery()
         val mockSpan: Span = mock()
 
         // when
-        AndroidTracer.logThrowable(mockSpan, aThrowable)
+        AndroidTracer.logThrowable(mockSpan, throwable)
 
         // then
         argumentCaptor<Map<String, Any>>().apply {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
-                .containsEntry(Fields.ERROR_OBJECT, aThrowable)
+                .containsEntry(Fields.ERROR_OBJECT, throwable)
                 .containsOnlyKeys(Fields.ERROR_OBJECT)
         }
     }

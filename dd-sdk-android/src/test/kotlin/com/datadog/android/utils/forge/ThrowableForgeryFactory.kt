@@ -6,30 +6,13 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.ForgeryException
 import fr.xgouchet.elmyr.ForgeryFactory
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InvalidObjectException
-import java.lang.IllegalStateException
-import java.lang.NullPointerException
-import java.lang.UnsupportedOperationException
 
 class ThrowableForgeryFactory :
     ForgeryFactory<Throwable> {
     override fun getForgery(forge: Forge): Throwable {
-        val message = forge.anAlphabeticalString()
-        return forge.anElementFrom(
-            IOException(message),
-            IllegalStateException(message),
-            UnknownError(message),
-            ArrayIndexOutOfBoundsException(message),
-            NullPointerException(message),
-            ForgeryException(message),
-            InvalidObjectException(message),
-            UnsupportedOperationException(message),
-            FileNotFoundException(message)
-        )
+        return forge.aThrowable()
     }
 }
