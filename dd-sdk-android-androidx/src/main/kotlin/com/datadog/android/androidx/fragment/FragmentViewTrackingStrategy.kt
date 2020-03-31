@@ -8,8 +8,8 @@ import com.datadog.android.androidx.fragment.internal.CompatFragmentLifecycleCal
 import com.datadog.android.androidx.fragment.internal.LifecycleCallbacks
 import com.datadog.android.androidx.fragment.internal.NoOpLifecycleCallback
 import com.datadog.android.androidx.fragment.internal.OreoFragmentLifecycleCallbacks
-import com.datadog.android.rum.ActivityLifecycleTrackingStrategy
-import com.datadog.android.rum.ViewTrackingStrategy
+import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
+import com.datadog.android.rum.tracking.ViewTrackingStrategy
 
 /**
  * A [ViewTrackingStrategy] that will track [Fragment]s as RUM views.
@@ -21,7 +21,8 @@ import com.datadog.android.rum.ViewTrackingStrategy
  * @param trackArguments whether we track Fragment arguments
  */
 class FragmentViewTrackingStrategy(private val trackArguments: Boolean) :
-    ActivityLifecycleTrackingStrategy(), ViewTrackingStrategy {
+    ActivityLifecycleTrackingStrategy(),
+    ViewTrackingStrategy {
 
     // region ActivityLifecycleTrackingStrategy
 

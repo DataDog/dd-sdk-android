@@ -10,9 +10,9 @@ import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.rum.ActivityViewTrackingStrategy
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 
@@ -27,7 +27,11 @@ internal class RumActivityTrackingPlaygroundActivity : Activity() {
             .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .useViewTrackingStrategy(
+                ActivityViewTrackingStrategy(
+                    true
+                )
+            )
             .build()
 
         Datadog.initialize(this, config)

@@ -9,7 +9,7 @@ package com.datadog.android.sdk.rules
 import android.app.Activity
 import android.app.Application
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.rum.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.tools.unit.getFieldValue
 import kotlin.collections.ArrayList
 
