@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.webview
 
 import android.graphics.Bitmap
 import android.net.http.SslError
@@ -16,6 +16,9 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.RequiresApi
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumResourceKind
 
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
@@ -32,7 +35,8 @@ open class RumWebViewClient : WebViewClient() {
         super.onPageStarted(view, url, favicon)
         if (url != null) {
             val key = url
-            GlobalRum.get().startResource(key, METHOD_GET, url)
+            GlobalRum.get().startResource(key,
+                METHOD_GET, url)
         }
     }
 
@@ -41,7 +45,9 @@ open class RumWebViewClient : WebViewClient() {
         super.onPageFinished(view, url)
         if (url != null) {
             val key = url
-            GlobalRum.get().stopResource(key, RumResourceKind.DOCUMENT)
+            GlobalRum.get().stopResource(key,
+                RumResourceKind.DOCUMENT
+            )
         }
     }
 

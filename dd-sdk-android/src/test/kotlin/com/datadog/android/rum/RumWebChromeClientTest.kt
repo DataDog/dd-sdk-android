@@ -12,6 +12,7 @@ import android.webkit.WebChromeClient
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.android.rum.webview.RumWebChromeClient
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
@@ -68,7 +69,9 @@ internal class RumWebChromeClientTest {
         whenever(mockConsoleMessage.lineNumber()) doReturn fakeLine
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
-        testedClient = RumWebChromeClient(Logger(mockLogHandler))
+        testedClient = RumWebChromeClient(
+            Logger(mockLogHandler)
+        )
     }
 
     @AfterEach

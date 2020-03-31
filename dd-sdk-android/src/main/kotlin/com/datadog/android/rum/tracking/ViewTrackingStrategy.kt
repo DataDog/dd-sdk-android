@@ -3,10 +3,10 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-
-package com.datadog.android.rum
+package com.datadog.android.rum.tracking
 
 /**
  * A TrackingStrategy dedicated to views tracking.
  */
-interface ViewTrackingStrategy : TrackingStrategy
+interface ViewTrackingStrategy :
+    TrackingStrategy
