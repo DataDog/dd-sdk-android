@@ -196,7 +196,6 @@ class JetpackViewAttributesProviderTest {
         whenever(mockedTarget.parent).thenReturn(mockedParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
-
         // when
         underTest.extractAttributes(mockedTarget, attributes)
 

@@ -13,20 +13,23 @@
     <fragment
         android:id="@+id/fragment_logs"
         android:name="com.datadog.android.sample.logs.LogsFragment"
-        android:label="@string/title_logs">
-    </fragment>
+        android:label="@string/title_logs" />
 
 
     <fragment
         android:id="@+id/fragment_trace"
         android:name="com.datadog.android.sample.traces.TracesFragment"
-        android:label="@string/title_traces">
-    </fragment>
+        android:label="@string/title_traces" />
 
 
     <fragment
         android:id="@+id/fragment_webview"
         android:name="com.datadog.android.sample.webview.WebFragment"
         android:label="@string/title_webview" />
+
+    <fragment
+        android:id="@+id/fragment_data_list"
+        android:name="com.datadog.android.sample.datalist.DataListFragment"
+        android:label="@string/title_data_list" />
 
 </navigation>
