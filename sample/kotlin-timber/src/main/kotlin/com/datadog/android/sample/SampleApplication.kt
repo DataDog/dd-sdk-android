@@ -31,11 +31,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin-timber")
             .setEnvironmentName("staging")
-            .useViewTrackingStrategy(
-                ActivityViewTrackingStrategy(
-                    true
-                )
-            )
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .trackGestures()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
