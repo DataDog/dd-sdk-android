@@ -70,6 +70,7 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidXAppCompat)
+    implementation(Dependencies.Libraries.AndroidXRecyclerView)
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)

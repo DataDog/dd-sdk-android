@@ -27,11 +27,7 @@ internal class RumActivityTrackingPlaygroundActivity : Activity() {
             .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .useViewTrackingStrategy(
-                ActivityViewTrackingStrategy(
-                    true
-                )
-            )
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
 
         Datadog.initialize(this, config)
