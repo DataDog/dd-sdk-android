@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
+import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.sampling.RateBasedSampler
@@ -43,6 +44,10 @@ internal class DatadogLogHandler(
         if (sampler.sample()) {
             val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
             writer.write(log)
+        }
+
+        if (level >= AndroidLog.ERROR) {
+            GlobalRum.get().addError(message, loggerName, throwable, attributes)
         }
     }
 
