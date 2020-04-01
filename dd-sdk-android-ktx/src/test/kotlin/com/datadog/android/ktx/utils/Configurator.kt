@@ -4,7 +4,7 @@
  * Copyright 2016-2020 Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.android.ktx.utils
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
@@ -13,16 +13,7 @@ import fr.xgouchet.elmyr.jvm.useJvmFactories
 internal class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
-        forge.addFactory(LogForgeryFactory())
-        forge.addFactory(BatchForgeryFactory())
         forge.addFactory(ThrowableForgeryFactory())
-        forge.addFactory(NetworkInfoForgeryFactory())
-        forge.addFactory(UserInfoForgeryFactory())
-        forge.addFactory(WorkerParametersForgeryFactory())
-        forge.addFactory(JsonObjectForgeryFactory())
-        forge.addFactory(JsonPrimitiveForgeryFactory())
-        forge.addFactory(JsonArrayForgeryFactory())
-        forge.addFactory(SpanForgeryFactory())
         forge.useJvmFactories()
     }
 }
