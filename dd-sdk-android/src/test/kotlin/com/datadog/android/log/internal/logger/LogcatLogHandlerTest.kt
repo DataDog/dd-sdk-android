@@ -27,7 +27,7 @@ internal class LogcatLogHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        testedHandler = LogcatLogHandler(fakeServiceName)
+        testedHandler = LogcatLogHandler(fakeServiceName, true)
     }
 
     @AfterEach
@@ -38,6 +38,17 @@ internal class LogcatLogHandlerTest {
     @Test
     fun `resolves stack trace element null if in release mode`() {
         Datadog.isDebug = false
+
+        val element = testedHandler.getCallerStackElement()
+
+        assertThat(element)
+            .isNull()
+    }
+
+    @Test
+    fun `resolves stack trace element null if useClassnameAsTag=false`() {
+        testedHandler = LogcatLogHandler(fakeServiceName, false)
+        Datadog.isDebug = true
 
         val element = testedHandler.getCallerStackElement()
 

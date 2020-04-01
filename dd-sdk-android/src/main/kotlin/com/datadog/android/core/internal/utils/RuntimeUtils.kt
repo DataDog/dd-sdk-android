@@ -18,7 +18,7 @@ internal val sdkLogger: Logger = buildSdkLogger()
 
 internal fun buildSdkLogger(): Logger {
     val handler = if (BuildConfig.LOGCAT_ENABLED) {
-        LogcatLogHandler(SDK_LOG_PREFIX)
+        LogcatLogHandler(SDK_LOG_PREFIX, true)
     } else {
         NoOpLogHandler
     }
@@ -36,10 +36,9 @@ private fun buildDevLogger(): Logger {
 }
 
 internal fun buildDevLogHandler(): ConditionalLogHandler {
-    val handler = ConditionalLogHandler(
-        LogcatLogHandler(DEV_LOG_PREFIX)
+    return ConditionalLogHandler(
+        LogcatLogHandler(DEV_LOG_PREFIX, false)
     ) { i, _ ->
         i >= Datadog.libraryVerbosity
     }
-    return handler
 }

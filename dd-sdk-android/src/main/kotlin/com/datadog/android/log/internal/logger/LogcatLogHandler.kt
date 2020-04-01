@@ -12,7 +12,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 
 internal class LogcatLogHandler(
-    internal val serviceName: String
+    internal val serviceName: String,
+    internal val useClassnameAsTag: Boolean
 ) : LogHandler {
 
     // region LogHandler
@@ -67,7 +68,7 @@ internal class LogcatLogHandler(
     }
 
     internal fun getCallerStackElement(): StackTraceElement? {
-        return if (Datadog.isDebug) {
+        return if (Datadog.isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
             stackTrace.firstOrNull {
                 it.className !in ignoredClassNames

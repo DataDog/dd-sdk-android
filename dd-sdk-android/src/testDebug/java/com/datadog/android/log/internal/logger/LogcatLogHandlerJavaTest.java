@@ -29,7 +29,7 @@ public class LogcatLogHandlerJavaTest {
 
     @BeforeEach
     void setUp() {
-        testedHandler = new LogcatLogHandler(fakeServiceName);
+        testedHandler = new LogcatLogHandler(fakeServiceName, true);
     }
 
     @AfterEach
@@ -40,6 +40,17 @@ public class LogcatLogHandlerJavaTest {
     @Test
     void resolves_stack_trace_element_null_if_in_release_mode() {
         Datadog.INSTANCE.setDebug$dd_sdk_android_debug(false);
+
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
+
+        assertThat(element)
+                .isNull();
+    }
+
+    @Test
+    void resolves_stack_trace_element_null_if_useClassnameAsTag_is_false() {
+        testedHandler = new LogcatLogHandler(fakeServiceName, false);
+        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(true);
 
         StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
 

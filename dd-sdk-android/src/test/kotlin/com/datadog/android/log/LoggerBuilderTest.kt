@@ -158,8 +158,11 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.getFieldValue("handler")
         assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
-        assertThat((handler as LogcatLogHandler).serviceName)
+        val logcatLogHandler = handler as LogcatLogHandler
+        assertThat(logcatLogHandler.serviceName)
             .isEqualTo(fakeServiceName)
+        assertThat(logcatLogHandler.useClassnameAsTag)
+            .isTrue()
     }
 
     @Test
