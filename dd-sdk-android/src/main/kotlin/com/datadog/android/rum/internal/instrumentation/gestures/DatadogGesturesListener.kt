@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -97,10 +96,10 @@ internal class DatadogGesturesListener(
     }
 
     private fun resolveTargetIdOrResourceName(target: View): String {
+        @Suppress("SwallowedException")
         return try {
             target.resources.getResourceEntryName(target.id) ?: targetIdAsHexa(target)
         } catch (e: Resources.NotFoundException) {
-            sdkLogger.e("Could not find resource name for target:${target.id}", e)
             targetIdAsHexa(target)
         }
     }
@@ -147,13 +146,7 @@ internal class DatadogGesturesListener(
     }
 
     private fun isValidTarget(view: View): Boolean {
-        if (!(view.isClickable && view.visibility == View.VISIBLE)) {
-            return false
-        }
-        if (view is ViewGroup) {
-            return (view.childCount == 0)
-        }
-        return true
+        return view.isClickable && view.visibility == View.VISIBLE
     }
 
     private fun hitTest(
