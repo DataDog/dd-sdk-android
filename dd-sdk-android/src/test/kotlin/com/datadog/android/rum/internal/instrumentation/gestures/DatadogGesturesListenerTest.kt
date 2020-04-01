@@ -89,13 +89,16 @@ internal class DatadogGesturesListenerTest {
             forge = forge
         )
         val target: View = mockView(
-            id = forge.anInt(), forEvent = mockEvent, hitTest = true, forge = forge
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
         )
         val notClickableInvalidTarget: View = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            clickable = false,
             forge = forge
         )
         val notVisibleInvalidTarget: View = mockView(
@@ -140,22 +143,15 @@ internal class DatadogGesturesListenerTest {
     }
 
     @Test
-    fun `onTap dispatches an UserAction if target is ViewGroup with no children`(forge: Forge) {
+    fun `onTap dispatches an UserAction if target is ViewGroup and clickable`(forge: Forge) {
         // given
         val mockEvent = mockMotionEvent(forge)
         val target: ViewGroup = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
-        ) {
-            whenever(it.childCount).thenReturn(0)
-        }
-        val container2: ViewGroup = mockView(
-            id = forge.anInt(),
-            forEvent = mockEvent,
-            hitTest = false,
-            forge = forge
+            forge = forge,
+            clickable = true
         ) {
             whenever(it.childCount).thenReturn(2)
             whenever(it.getChildAt(0)).thenReturn(mock())
@@ -167,9 +163,8 @@ internal class DatadogGesturesListenerTest {
             hitTest = true,
             forge = forge
         ) {
-            whenever(it.childCount).thenReturn(2)
+            whenever(it.childCount).thenReturn(1)
             whenever(it.getChildAt(0)).thenReturn(target)
-            whenever(it.getChildAt(1)).thenReturn(container2)
         }
         val expectedResourceName = forge.anAlphabeticalString()
         val mockResources = mock<Resources> {
@@ -196,13 +191,15 @@ internal class DatadogGesturesListenerTest {
             forEvent = mockEvent,
             hitTest = true,
             visible = false,
+            clickable = true,
             forge = forge
         )
         val validTarget: View = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         )
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -242,7 +239,8 @@ internal class DatadogGesturesListenerTest {
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         )
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -278,7 +276,6 @@ internal class DatadogGesturesListenerTest {
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            clickable = false,
             forge = forge
         ) {
             whenever(it.childCount).thenReturn(0)
@@ -297,6 +294,7 @@ internal class DatadogGesturesListenerTest {
                 DatadogGesturesListener.MSG_NO_TARGET
             )
         verifyZeroInteractions(mockRumMonitor)
+
     }
 
     @Test
@@ -307,7 +305,8 @@ internal class DatadogGesturesListenerTest {
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         ) {
             whenever(it.childCount).thenReturn(0)
         }
@@ -337,7 +336,8 @@ internal class DatadogGesturesListenerTest {
             id = targetId,
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         )
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -373,7 +373,8 @@ internal class DatadogGesturesListenerTest {
             id = targetId,
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         )
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -421,7 +422,8 @@ internal class DatadogGesturesListenerTest {
             id = targetId,
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         )
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
@@ -482,7 +484,7 @@ internal class DatadogGesturesListenerTest {
         id: Int,
         forEvent: MotionEvent,
         hitTest: Boolean,
-        clickable: Boolean = true,
+        clickable: Boolean = false,
         visible: Boolean = true,
         forge: Forge,
         applyOthers: (T) -> Unit = {}
