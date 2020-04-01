@@ -30,10 +30,8 @@ class WebFragment : Fragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web, container, false)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient =
-            RumWebViewClient()
-        webView.webChromeClient =
-            RumWebChromeClient()
+        webView.webViewClient = RumWebViewClient()
+        webView.webChromeClient = RumWebChromeClient()
         return rootView
     }
 

@@ -42,6 +42,7 @@ class NavActivity : AppCompatActivity() {
             R.id.navigation_logs -> navController.navigate(R.id.fragment_logs, arguments)
             R.id.navigation_webview -> navController.navigate(R.id.fragment_webview, arguments)
             R.id.navigation_traces -> navController.navigate(R.id.fragment_trace, arguments)
+            R.id.navigation_data_list -> navController.navigate(R.id.fragment_data_list, arguments)
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
