@@ -78,10 +78,7 @@ object Datadog {
         config: DatadogConfig
     ) {
         if (initialized.get()) {
-            devLogger.w(
-                MESSAGE_ALREADY_INITIALIZED,
-                IllegalStateException(MESSAGE_ALREADY_INITIALIZED)
-            )
+            devLogger.w(MESSAGE_ALREADY_INITIALIZED)
             return
         }
 

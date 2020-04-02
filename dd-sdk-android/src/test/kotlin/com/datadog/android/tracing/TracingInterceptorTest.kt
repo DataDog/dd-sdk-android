@@ -10,14 +10,13 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.extensions.SystemStreamExtension
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -39,7 +38,6 @@ import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
-import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.net.URL
@@ -64,8 +62,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -75,14 +72,19 @@ internal class TracingInterceptorTest {
 
     @Mock
     lateinit var mockTracer: Tracer
+
     @Mock
     lateinit var mockSpanBuilder: Tracer.SpanBuilder
+
     @Mock
     lateinit var mockSpanContext: DDSpanContext
+
     @Mock
     lateinit var mockSpan: Span
+
     @Mock
     lateinit var mockChain: Interceptor.Chain
+    lateinit var mockDevLogHandler: LogHandler
 
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
@@ -95,6 +97,7 @@ internal class TracingInterceptorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockDevLogHandler = mockDevLogHandler()
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             endpointUrl = forge.getForgery<URL>().toString(),
@@ -202,7 +205,6 @@ internal class TracingInterceptorTest {
 
     @Test
     fun `warns the user if no tracer registered and TracingFeature not initialized`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
@@ -218,16 +220,16 @@ internal class TracingInterceptorTest {
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/Datadog: You added the TracingInterceptor to your OkHttpClient " +
-                        "but you did not enable the TracesFeature."
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                "You added the TracingInterceptor to your OkHttpClient " +
+                    "but you did not enable the TracesFeature."
             )
     }
 
     @Test
     fun `uses the local tracer if no tracer is registered`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         // given
@@ -249,18 +251,19 @@ internal class TracingInterceptorTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/Datadog: You added the TracingInterceptor to your OkHttpClient, " +
-                        "but you didn't register any Tracer. " +
-                        "We automatically created a local tracer for you. " +
-                        "If you choose to register a GlobalTracer we will do the switch for you."
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                "You added the TracingInterceptor to your OkHttpClient, " +
+                    "but you didn't register any Tracer. " +
+                    "We automatically created a local tracer for you. " +
+                    "If you choose to register a GlobalTracer we will do the switch for you."
             )
     }
 
     @Test
     fun `when registering a global tracer the local tracer will be dropped`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         // given
@@ -284,7 +287,6 @@ internal class TracingInterceptorTest {
 
     @Test
     fun `when called from multiple threads will only create one local tracer`(
-        @SystemOutStream outputStream: ByteArrayOutputStream,
         @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         // given

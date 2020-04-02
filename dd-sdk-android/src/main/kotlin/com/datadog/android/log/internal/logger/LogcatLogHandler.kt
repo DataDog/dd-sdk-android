@@ -12,7 +12,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 
 internal class LogcatLogHandler(
-    internal val serviceName: String
+    internal val serviceName: String,
+    internal val useClassnameAsTag: Boolean
 ) : LogHandler {
 
     // region LogHandler
@@ -28,18 +29,13 @@ internal class LogcatLogHandler(
         val stackElement = getCallerStackElement()
         val tag = resolveTag(stackElement)
         val suffix = resolveSuffix(stackElement)
-        if (Build.MODEL == null) {
-            println("${levelPrefixes[level]}/$tag: $message$suffix")
-            throwable?.printStackTrace()
-        } else {
-            Log.println(level, tag, message + suffix)
-            if (throwable != null) {
-                Log.println(
-                    level,
-                    tag,
-                    Log.getStackTraceString(throwable)
-                )
-            }
+        Log.println(level, tag, message + suffix)
+        if (throwable != null) {
+            Log.println(
+                level,
+                tag,
+                Log.getStackTraceString(throwable)
+            )
         }
     }
 
@@ -47,7 +43,7 @@ internal class LogcatLogHandler(
 
     // region Internal
 
-    private fun resolveTag(stackTraceElement: StackTraceElement?): String {
+    internal fun resolveTag(stackTraceElement: StackTraceElement?): String {
         val tag = if (stackTraceElement == null) {
             serviceName
         } else {
@@ -71,8 +67,8 @@ internal class LogcatLogHandler(
         }
     }
 
-    private fun getCallerStackElement(): StackTraceElement? {
-        return if (Datadog.isDebug) {
+    internal fun getCallerStackElement(): StackTraceElement? {
+        return if (Datadog.isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
             stackTrace.firstOrNull {
                 it.className !in ignoredClassNames
@@ -87,15 +83,6 @@ internal class LogcatLogHandler(
     companion object {
 
         private const val MAX_TAG_LENGTH = 23
-
-        private val levelPrefixes = mapOf(
-            Log.VERBOSE to "V",
-            Log.DEBUG to "D",
-            Log.INFO to "I",
-            Log.WARN to "W",
-            Log.ERROR to "E",
-            Log.ASSERT to "A"
-        )
 
         private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
         private val ignoredClassNames = arrayOf(

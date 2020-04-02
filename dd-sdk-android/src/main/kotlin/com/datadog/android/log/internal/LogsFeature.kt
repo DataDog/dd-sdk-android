@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.error.internal.CrashReportsFeature.envTag
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader

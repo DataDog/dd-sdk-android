@@ -7,25 +7,18 @@
 package com.datadog.android.core.internal.net
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.SystemStreamExtension
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.CoreMatchers.startsWith
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,8 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -286,10 +278,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     }
 
     @Test
-    fun `uploads with IOException (timeout)`(
-        forge: Forge,
-        @SystemOutStream systemOutputStream: ByteArrayOutputStream
-    ) {
+    fun `uploads with IOException (timeout)`(forge: Forge) {
         val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
         mockWebServer.enqueue(
             MockResponse()
@@ -299,8 +288,8 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
                 )
                 .setBody(
                     "{ 'success': 'ok', 'message': 'Lorem ipsum dolor sit amet, " +
-                            "consectetur adipiscing elit, " +
-                            "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
+                        "consectetur adipiscing elit, " +
+                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
                 )
         )
 
@@ -337,44 +326,6 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     }
 
     @Test
-    fun `uploads with an exception will log an error message`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
-        if (BuildConfig.DEBUG) {
-            val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-            // we need to set the Build.MODEL to null, to override the setup
-            Build::class.java.setStaticValue("MODEL", null)
-            mockWebServer.enqueue(mockResponse(forge.anInt(1000)))
-            val expectedTag = resolveTagName(testedUploader, "DD_LOG")
-            testedUploader.upload(data)
-
-            assertThat(outputStream)
-                .hasLogLine(Log.ERROR, expectedTag, "unable to upload data")
-        }
-    }
-
-    @Test
-    fun `uploads with a response will log an info message`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
-        if (BuildConfig.DEBUG) {
-            val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-            // we need to set the Build.MODEL to null, to override the setup
-            Build::class.java.setStaticValue("MODEL", null)
-            val code = forge.anInt(500, 599)
-            mockWebServer.enqueue(mockResponse(code))
-            val expectedTag = resolveTagName(testedUploader, "DD_LOG")
-
-            testedUploader.upload(data)
-
-            assertThat(outputStream)
-                .hasLogLine(Log.INFO, expectedTag, startsWith("Response code:$code"))
-        }
-    }
-
-    @Test
     fun `uploads with updated endpoint`(forge: Forge) {
         val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
         mockWebServer.shutdown()
@@ -404,13 +355,13 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             .isEqualTo(data)
     }
 
-    fun assertHeaders(request: RecordedRequest) {
+    private fun assertHeaders(request: RecordedRequest) {
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo(testedUploader.contentType)
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
             "Datadog/${BuildConfig.VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
+                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                "${Build.MODEL} Build/${Build.ID})"
         } else {
             fakeUserAgent
         }

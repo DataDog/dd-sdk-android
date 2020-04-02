@@ -35,7 +35,7 @@ internal class ConditionalLogHandlerTest {
     lateinit var testedHandler: LogHandler
 
     @Mock
-    lateinit var mockHandler: LogHandler
+    lateinit var mockDevLogHandler: LogHandler
 
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
@@ -59,7 +59,7 @@ internal class ConditionalLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
-        testedHandler = ConditionalLogHandler(mockHandler) { _, _ ->
+        testedHandler = ConditionalLogHandler(mockDevLogHandler) { _, _ ->
             condition
         }
     }
@@ -76,7 +76,7 @@ internal class ConditionalLogHandlerTest {
             fakeTags
         )
 
-        verify(mockHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             fakeThrowable,
@@ -104,7 +104,7 @@ internal class ConditionalLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        verify(mockHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             fakeThrowable,
@@ -125,7 +125,7 @@ internal class ConditionalLogHandlerTest {
             emptySet()
         )
 
-        verify(mockHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             fakeLevel,
             fakeMessage,
             null,
@@ -146,7 +146,7 @@ internal class ConditionalLogHandlerTest {
             fakeTags
         )
 
-        verifyZeroInteractions(mockHandler)
+        verifyZeroInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -168,7 +168,7 @@ internal class ConditionalLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        verifyZeroInteractions(mockHandler)
+        verifyZeroInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -183,6 +183,6 @@ internal class ConditionalLogHandlerTest {
             emptySet()
         )
 
-        verifyZeroInteractions(mockHandler)
+        verifyZeroInteractions(mockDevLogHandler)
     }
 }

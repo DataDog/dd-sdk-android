@@ -273,7 +273,7 @@ internal constructor(private val handler: LogHandler) {
         // region Internal
 
         private fun buildLogcatHandler(): LogHandler {
-            return LogcatLogHandler(serviceName)
+            return LogcatLogHandler(serviceName, true)
         }
 
         private fun buildDatadogHandler(): LogHandler {

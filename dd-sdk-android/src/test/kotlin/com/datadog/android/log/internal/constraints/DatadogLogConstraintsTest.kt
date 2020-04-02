@@ -8,21 +8,18 @@ package com.datadog.android.log.internal.constraints
 
 import android.os.Build
 import android.util.Log
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.resolveTagName
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.times
-import com.datadog.tools.unit.annotations.SystemOutStream
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.SystemStreamExtension
-import com.datadog.tools.unit.lastLine
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -34,8 +31,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(SystemStreamExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -43,11 +39,15 @@ internal class DatadogLogConstraintsTest {
 
     lateinit var testedConstraints: LogConstraints
 
+    lateinit var mockDevLogHandler: LogHandler
+
     @BeforeEach
     fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
         // we need to set the Build.MODEL to null, to override the setup
         Build::class.java.setStaticValue("MODEL", null)
+
+        mockDevLogHandler = mockDevLogHandler()
 
         testedConstraints = DatadogLogConstraints()
     }
@@ -55,23 +55,17 @@ internal class DatadogLogConstraintsTest {
     // region Tags
 
     @Test
-    fun `keep valid tag`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `keep valid tag`(forge: Forge) {
         val tag = forge.aStringMatching("[a-z]([a-z0-9_:./-]{0,198}[a-z0-9_./-])?")
 
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).containsOnly(tag)
-        assertThat(outputStream).isEmpty()
+        verifyZeroInteractions(mockDevLogHandler)
     }
 
     @Test
-    fun `ignore invalid tag - start with a letter`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignore invalid tag - start with a letter`(forge: Forge) {
         val key = forge.aStringMatching("\\d[a-z]+")
         val value = forge.aNumericalString()
         val tag = "$key:$value"
@@ -79,16 +73,12 @@ internal class DatadogLogConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).isEmpty()
-        val expectedTag = resolveTagName(testedConstraints)
-        assertThat(outputStream)
-            .hasLogLine(Log.ERROR, expectedTag, "\"$tag\" is an invalid tag, and was ignored.")
+        verify(mockDevLogHandler)
+            .handleLog(Log.ERROR, "\"$tag\" is an invalid tag, and was ignored.")
     }
 
     @Test
-    fun `replace illegal characters`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `replace illegal characters`(forge: Forge) {
         val validPart = forge.anAlphabeticalString(size = 3)
         val invalidPart = forge.aString {
             anElementFrom(',', '?', '%', '(', ')', '[', ']', '{', '}')
@@ -99,149 +89,108 @@ internal class DatadogLogConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         val converted = '_' * invalidPart.length
-        val expectedTag = resolveTagName(testedConstraints)
         val expectedCorrectedTag = "$validPart$converted:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                expectedTag,
-                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+        )
     }
 
     @Test
-    fun `convert uppercase key to lowercase`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `convert uppercase key to lowercase`(forge: Forge) {
         val key = forge.anAlphabeticalString(case = Case.UPPER)
         val value = forge.aNumericalString()
         val tag = "$key:$value"
 
         val result = testedConstraints.validateTags(listOf(tag))
-        val expectedTag = resolveTagName(testedConstraints)
+
         val expectedCorrectedTag = "${key.toLowerCase(Locale.US)}:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                expectedTag,
-                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+        )
     }
 
     @Test
-    fun `trim tags over 200 characters`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `trim tags over 200 characters`(forge: Forge) {
         val tag = forge.anAlphabeticalString(size = forge.aSmallInt() + 200)
 
         val result = testedConstraints.validateTags(listOf(tag))
-        val expectedTag = resolveTagName(testedConstraints)
+
         val expectedCorrectedTag = tag.substring(0, 200)
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.WARN,
-                expectedTag,
-                "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
+        )
     }
 
     @Test
-    fun `trim tags ending with a colon`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
-
-        val expectedTag = resolveTagName(testedConstraints)
+    fun `trim tags ending with a colon`(forge: Forge) {
         val expectedCorrectedTag = forge.anAlphabeticalString()
 
         val result = testedConstraints.validateTags(listOf("$expectedCorrectedTag:"))
 
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        if (BuildConfig.DEBUG) {
-            assertThat(outputStream)
-                .hasLogLine(
-                    Log.WARN,
-                    expectedTag,
-                    "tag \"$expectedCorrectedTag:\" was modified to \"$expectedCorrectedTag\" " +
-                        "to match our constraints."
-                )
-        }
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "tag \"$expectedCorrectedTag:\" was modified to " +
+                "\"$expectedCorrectedTag\" to match our constraints."
+        )
     }
 
     @Test
-    fun `ignore reserved tag keys`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignore reserved tag keys`(forge: Forge) {
         val key = forge.anElementFrom("host", "device", "source", "service")
         val value = forge.aNumericalString()
-        val expectedTag = resolveTagName(testedConstraints)
         val invalidTag = "$key:$value"
 
         val result = testedConstraints.validateTags(listOf(invalidTag))
 
         assertThat(result)
             .isEmpty()
-
-        assertThat(outputStream)
-            .hasLogLine(
-                Log.ERROR,
-                expectedTag,
-                "\"$invalidTag\" is an invalid tag, and was ignored."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            "\"$invalidTag\" is an invalid tag, and was ignored."
+        )
     }
 
     @Test
-    fun `ignore reserved tag keys (workaround)`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignore reserved tag keys (workaround)`(forge: Forge) {
         val key = forge.randomizeCase { anElementFrom("host", "device", "source", "service") }
         val value = forge.aNumericalString()
-        val expectedInnerTag = "$key:$value"
-        val expectedLogcatTag = resolveTagName(testedConstraints)
+        val invalidTag = "$key:$value"
 
-        val result = testedConstraints.validateTags(listOf(expectedInnerTag))
+        val result = testedConstraints.validateTags(listOf(invalidTag))
 
         assertThat(result)
             .isEmpty()
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "E/$expectedLogcatTag: \"$expectedInnerTag\" " +
-                    "is an invalid tag," +
-                    " and was ignored."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            "\"$invalidTag\" is an invalid tag, and was ignored."
+        )
     }
 
     @Test
-    fun `ignore tag if adding more than 100`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignore tag if adding more than 100`(forge: Forge) {
         val tags = forge.aList(128) { aStringMatching("[a-z]{1,8}:[0-9]{1,8}") }
         val firstTags = tags.take(100)
 
         val result = testedConstraints.validateTags(tags)
 
-        val expectedLogcatTag = resolveTagName(testedConstraints)
         val discardedCount = tags.size - 100
         assertThat(result)
             .containsExactlyElementsOf(firstTags)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: too many tags were added, " +
-                    "$discardedCount had to be discarded."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "too many tags were added, $discardedCount had to be discarded."
+        )
     }
 
     //endregion
@@ -250,8 +199,7 @@ internal class DatadogLogConstraintsTest {
 
     @Test
     fun `keep valid attribute`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
+        forge: Forge
     ) {
         val key = forge.anAlphabeticalString()
         val value = forge.aNumericalString()
@@ -260,15 +208,11 @@ internal class DatadogLogConstraintsTest {
 
         assertThat(result)
             .containsEntry(key, value)
-        assertThat(outputStream.lastLine())
-            .isNull()
+        verifyZeroInteractions(mockDevLogHandler)
     }
 
     @Test
-    fun `convert nested attribute keys over 10 levels`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `convert nested attribute keys over 10 levels`(forge: Forge) {
         val topLevels = forge.aList(10) { anAlphabeticalString() }
         val lowerLevels = forge.aList { anAlphabeticalString() }
         val key = (topLevels + lowerLevels).joinToString(".")
@@ -279,19 +223,14 @@ internal class DatadogLogConstraintsTest {
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
             .containsEntry(expectedKey, value)
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: attribute \"$key\" " +
-                    "was modified to \"$expectedKey\" to match our constraints."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "attribute \"$key\" was modified to \"$expectedKey\" to match our constraints."
+        )
     }
 
     @Test
-    fun `ignore attribute if adding more than 256`(
-        forge: Forge,
-        @SystemOutStream outputStream: ByteArrayOutputStream
-    ) {
+    fun `ignore attribute if adding more than 256`(forge: Forge) {
         val attributes = forge.aList(300) { anAlphabeticalString() to anInt() }.toMap()
         val firstAttributes = attributes.toList().take(256).toMap()
 
@@ -301,13 +240,10 @@ internal class DatadogLogConstraintsTest {
         assertThat(result)
             .hasSize(256)
             .containsAllEntriesOf(firstAttributes)
-        val expectedLogcatTag = resolveTagName(testedConstraints)
-        assertThat(outputStream.lastLine())
-            .isEqualTo(
-                "W/$expectedLogcatTag: too many " +
-                    "attributes were added, " +
-                    "$discardedCount had to be discarded."
-            )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "too many attributes were added, $discardedCount had to be discarded."
+        )
     }
 
     // endregion
