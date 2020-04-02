@@ -22,6 +22,9 @@ import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -76,6 +79,9 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockLogWriter: Writer<Log>
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
+    @Mock
+    lateinit var mockRumMonitor: RumMonitor
+
     @Forgery
     lateinit var fakeThrowable: Throwable
     @Forgery
@@ -93,6 +99,7 @@ internal class DatadogExceptionHandlerTest {
 
         val mockContext: Application = mockContext()
         Datadog.initialize(mockContext, forge.anHexadecimalString())
+        GlobalRum.registerIfAbsent(mockRumMonitor)
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
@@ -111,6 +118,8 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.invokeMethod("stop")
+        GlobalRum.isRegistered.set(false)
+        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     @Test
@@ -135,6 +144,12 @@ internal class DatadogExceptionHandlerTest {
                 .hasTimestamp(fakeTime.time)
                 .hasTags(listOf("env:$envName"))
         }
+        verify(mockRumMonitor).addError(
+            "Application crash detected",
+            "crash",
+            fakeThrowable,
+            emptyMap()
+        )
         verifyZeroInteractions(mockPreviousHandler)
     }
 
