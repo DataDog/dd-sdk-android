@@ -236,4 +236,3 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
