@@ -35,6 +35,7 @@ object com.datadog.android.DatadogEndpoint
   const val TRACES_EU: String
   const val RUM_US: String
   const val RUM_EU: String
+class com.datadog.android.DatadogInterceptor : okhttp3.Interceptor
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
