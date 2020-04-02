@@ -234,4 +234,3 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun setBundleWithRumEnabled(Boolean): Builder
   companion object
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
