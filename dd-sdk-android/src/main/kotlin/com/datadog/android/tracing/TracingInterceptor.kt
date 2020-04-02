@@ -6,23 +6,12 @@
 
 package com.datadog.android.tracing
 
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.net.CombinedInterceptor
 import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.tracing.internal.TracesFeature
-import datadog.trace.api.DDTags
-import datadog.trace.api.interceptor.MutableSpan
+import com.datadog.android.tracing.internal.net.TracingRequestInterceptor
 import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.propagation.Format.Builtin.TEXT_MAP_INJECT
-import io.opentracing.propagation.TextMapInject
-import io.opentracing.tag.Tags
-import io.opentracing.util.GlobalTracer
-import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 
 /**
  * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -43,121 +32,5 @@ import okhttp3.Response
  *       .build();
  * ```
  */
-class TracingInterceptor : Interceptor {
-
-    private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
-
-    // region Interceptor
-
-    /** @inheritdoc */
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = resolveTracer()
-        return if (tracer != null) {
-            val span = tracer.buildSpan("okhttp.request")
-                .start()
-            updateAndProceedSafely(chain, tracer, span)
-        } else {
-            chain.proceed(chain.request())
-        }
-    }
-
-    // endregion
-
-    // region Internal
-
-    private fun resolveTracer(): Tracer? {
-        if (GlobalTracer.isRegistered()) {
-            // clear the localTracer reference if any
-            localTracerReference.set(null)
-            return GlobalTracer.get()
-        } else {
-            if (!TracesFeature.initialized.get()) {
-                devLogger.w(
-                    "You added the TracingInterceptor to your OkHttpClient " +
-                            "but you did not enable the TracesFeature."
-                )
-                return null
-            }
-
-            // we check if we already have a local tracer if not we instantiate one
-            return resolveLocalTracer()
-        }
-    }
-
-    private fun resolveLocalTracer(): Tracer {
-        if (localTracerReference.get() == null) {
-            // only register once
-            localTracerReference.compareAndSet(null, buildLocalTracer())
-            devLogger.w(
-                "You added the TracingInterceptor to your OkHttpClient, " +
-                        "but you didn't register any Tracer. " +
-                        "We automatically created a local tracer for you. " +
-                        "If you choose to register a GlobalTracer we will do the switch for you."
-            )
-        }
-        return localTracerReference.get()
-    }
-
-    internal fun buildLocalTracer(): Tracer = AndroidTracer.Builder().build()
-
-    @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
-    private fun updateAndProceedSafely(
-        chain: Interceptor.Chain,
-        tracer: Tracer,
-        span: Span
-    ): Response {
-        try {
-            val updatedRequest = updateRequest(chain.request(), tracer, span)
-            val response: Response = try {
-                chain.proceed(updatedRequest)
-            } catch (e: Throwable) {
-                handleThrowable(span, e)
-                throw e
-            }
-
-            handleResponse(span, response)
-
-            return response
-        } finally {
-            span.finish()
-        }
-    }
-
-    private fun handleResponse(span: Span, response: Response) {
-        val statusCode = response.code()
-        span.setTag(Tags.HTTP_STATUS.key, statusCode)
-        if (statusCode >= 400) {
-            (span as? MutableSpan)?.isError = true
-        }
-    }
-
-    private fun handleThrowable(span: Span, error: Throwable) {
-        (span as? MutableSpan)?.isError = true
-        span.setTag(DDTags.ERROR_MSG, error.message)
-        span.setTag(DDTags.ERROR_TYPE, error.javaClass.name)
-        span.setTag(DDTags.ERROR_STACK, error.loggableStackTrace())
-    }
-
-    private fun updateRequest(
-        request: Request,
-        tracer: Tracer,
-        span: Span
-    ): Request {
-        span.setTag(Tags.HTTP_URL.key, request.url().toString())
-        span.setTag(Tags.HTTP_METHOD.key, request.method())
-
-        val tracedRequestBuilder = request.newBuilder()
-        tracer.inject(
-            span.context(),
-            TEXT_MAP_INJECT,
-            TextMapInject { key, value ->
-                tracedRequestBuilder.addHeader(key, value)
-            }
-        )
-        tracedRequestBuilder.addHeader("x-datadog-sampled", "1")
-
-        return tracedRequestBuilder.build()
-    }
-
-    // endregion
-}
+class TracingInterceptor :
+    Interceptor by CombinedInterceptor(TracingRequestInterceptor())
