@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.view.MotionEvent
 import android.view.Window
-import androidx.core.view.GestureDetectorCompat
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -42,7 +41,7 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockCallback: Window.Callback
     @Mock
-    lateinit var mockGestureDetector: GestureDetectorCompat
+    lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
     fun `set up`() {

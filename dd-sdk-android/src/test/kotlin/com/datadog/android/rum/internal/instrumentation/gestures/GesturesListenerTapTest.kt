@@ -18,10 +18,8 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -31,7 +29,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
-import kotlin.math.abs
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,14 +47,12 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DatadogGesturesListenerTest {
-
-    lateinit var underTest: DatadogGesturesListener
+internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
-    lateinit var decorView: View
+    // region Tests
 
     @BeforeEach
     fun `set up`() {
@@ -72,12 +67,10 @@ internal class DatadogGesturesListenerTest {
         GlobalRum.isRegistered.set(false)
     }
 
-    // region Tests
-
     @Test
     fun `onTap dispatches an UserAction when target deep in the View Hierarchy`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val container1: ViewGroup = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -127,7 +120,7 @@ internal class DatadogGesturesListenerTest {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -141,7 +134,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap dispatches an UserAction if target is ViewGroup and clickable`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val target: ViewGroup = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -167,7 +160,7 @@ internal class DatadogGesturesListenerTest {
             whenever(it.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
         }
         whenever(target.resources).thenReturn(mockResources)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -181,7 +174,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap ignores invisible or gone views`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val invalidTarget: View = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -209,7 +202,7 @@ internal class DatadogGesturesListenerTest {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -223,7 +216,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap ignores not clickable targets`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val invalidTarget: View = mockView(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -250,7 +243,7 @@ internal class DatadogGesturesListenerTest {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -264,8 +257,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap does nothing if no children present and decor view not clickable`(forge: Forge) {
         // given
-        val mockDevLogHandler = mockDevLogHandler()
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -274,7 +266,7 @@ internal class DatadogGesturesListenerTest {
         ) {
             whenever(it.childCount).thenReturn(0)
         }
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -288,7 +280,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap keeps decorView as target if visible and clickable`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         decorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
@@ -298,7 +290,7 @@ internal class DatadogGesturesListenerTest {
         ) {
             whenever(it.childCount).thenReturn(0)
         }
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
         val expectedResourceName = forge.anAlphabeticalString()
@@ -318,7 +310,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap adds the target id hexa if NFE while requesting resource id`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val targetId = forge.anInt()
         val validTarget: View = mockView(
             id = targetId,
@@ -341,7 +333,7 @@ internal class DatadogGesturesListenerTest {
                 .thenThrow(Resources.NotFoundException(forge.anAlphabeticalString()))
         }
         whenever(validTarget.resources).thenReturn(mockResources)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -355,7 +347,7 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `onTap adds the target id hexa when getResourceEntryName returns null`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val targetId = forge.anInt()
         val validTarget: View = mockView(
             id = targetId,
@@ -378,7 +370,7 @@ internal class DatadogGesturesListenerTest {
                 .thenReturn(null)
         }
         whenever(validTarget.resources).thenReturn(mockResources)
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView)
         )
 
@@ -392,8 +384,8 @@ internal class DatadogGesturesListenerTest {
     @Test
     fun `will not send any span if decor view view reference is null`(forge: Forge) {
         // given
-        val mockEvent = mockMotionEvent(forge)
-        underTest = DatadogGesturesListener(WeakReference<View>(null))
+        val mockEvent: MotionEvent = forge.getForgery()
+        underTest = GesturesListener(WeakReference<View>(null))
 
         // when
         underTest.onSingleTapUp(mockEvent)
@@ -404,7 +396,7 @@ internal class DatadogGesturesListenerTest {
 
     @Test
     fun `applies the extra attributes from the attributes providers`(forge: Forge) {
-        val mockEvent = mockMotionEvent(forge)
+        val mockEvent: MotionEvent = forge.getForgery()
         val targetId = forge.anInt()
         val validTarget: View = mockView(
             id = targetId,
@@ -443,7 +435,7 @@ internal class DatadogGesturesListenerTest {
             }
         }
 
-        underTest = DatadogGesturesListener(
+        underTest = GesturesListener(
             WeakReference(decorView),
             providers
         )
@@ -452,80 +444,14 @@ internal class DatadogGesturesListenerTest {
 
         // then
         verify(mockRumMonitor).addUserAction(
-            DatadogGesturesListener.UI_TAP_ACTION_EVENT,
+            GesturesListener.TAP_EVENT,
             expectedAttributes
         )
     }
 
-    // endregion
-
-    // region Internal
-
-    private fun mockMotionEvent(forge: Forge): MotionEvent {
-        return mock {
-            whenever(it.x).thenReturn(forge.aFloat(min = 0f, max = XY_MAX_VALUE))
-            whenever(it.y).thenReturn(forge.aFloat(min = 0f, max = XY_MAX_VALUE))
-        }
-    }
-
-    private inline fun <reified T : View> mockView(
-        id: Int,
-        forEvent: MotionEvent,
-        hitTest: Boolean,
-        clickable: Boolean = false,
-        visible: Boolean = true,
-        forge: Forge,
-        applyOthers: (T) -> Unit = {}
-    ): T {
-
-        val failHitTestBecauseOfXY = forge.aBool()
-        val failHitTestBecauseOfWidthHeight = !failHitTestBecauseOfXY
-        val locationOnScreenArray = IntArray(2)
-        if (!hitTest && failHitTestBecauseOfXY) {
-            locationOnScreenArray[0] = (forEvent.x).toInt() + forge.anInt(min = 1, max = 10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() + forge.anInt(min = 1, max = 10)
-        } else {
-            locationOnScreenArray[0] = (forEvent.x).toInt() - forge.anInt(min = 1, max = 10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() - forge.anInt(min = 1, max = 10)
-        }
-        val mockedView: T = mock {
-            whenever(it.id).thenReturn(id)
-            whenever(it.isClickable).thenReturn(clickable)
-            whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
-
-            whenever(it.getLocationOnScreen(any())).doAnswer {
-                val array = it.arguments[0] as IntArray
-                array[0] = locationOnScreenArray[0]
-                array[1] = locationOnScreenArray[1]
-                null
-            }
-
-            val diffPosX = abs(forEvent.x - locationOnScreenArray[0]).toInt()
-            val diffPosY = abs(forEvent.y - locationOnScreenArray[1]).toInt()
-            if (!hitTest && failHitTestBecauseOfWidthHeight) {
-                whenever(it.width).thenReturn(diffPosX - forge.anInt(min = 1, max = 10))
-                whenever(it.height).thenReturn(diffPosY - forge.anInt(min = 1, max = 10))
-            } else {
-                whenever(it.width).thenReturn(diffPosX + forge.anInt(min = 1, max = 10))
-                whenever(it.height).thenReturn(diffPosY + forge.anInt(min = 1, max = 10))
-            }
-
-            applyOthers(this.mock)
-        }
-
-        return mockedView
-    }
-
-    private fun mockResourcesForTarget(target: View, expectedResourceName: String) {
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
-        }
-        whenever(target.resources).thenReturn(mockResources)
-    }
-
     private fun verifyUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
-            eq(DatadogGesturesListener.UI_TAP_ACTION_EVENT),
+            eq(GesturesListener.TAP_EVENT),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
@@ -534,8 +460,4 @@ internal class DatadogGesturesListenerTest {
     }
 
     // endregion
-
-    companion object {
-        const val XY_MAX_VALUE = 1000f
-    }
 }
