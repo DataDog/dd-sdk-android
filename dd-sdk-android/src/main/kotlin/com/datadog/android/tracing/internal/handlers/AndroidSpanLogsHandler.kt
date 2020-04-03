@@ -1,12 +1,13 @@
 package com.datadog.android.tracing.internal.handlers
 
 import android.util.Log
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.domain.LogSerializer
 import datadog.opentracing.DDSpan
 import datadog.opentracing.LogHandler
 import datadog.trace.api.DDTags
-import io.opentracing.log.Fields.ERROR_OBJECT
-import io.opentracing.log.Fields.MESSAGE
+import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 
 internal class AndroidSpanLogsHandler(
@@ -15,69 +16,83 @@ internal class AndroidSpanLogsHandler(
 
     // region Span
 
-    override fun log(timestampMicroseconds: Long, fields: Map<String, *>, span: DDSpan) {
-        extractError(fields, span)
-        logFields(fields, toMilliseconds(timestampMicroseconds))
-    }
-
     override fun log(event: String, span: DDSpan) {
-        logger.v(event)
-    }
-
-    override fun log(timestampMicroseconds: Long, event: String, span: DDSpan) {
-        logger.internalLog(
-            Log.VERBOSE,
-            event,
-            null,
-            emptyMap(),
-            timestamp = toMilliseconds(timestampMicroseconds)
+        logFields(
+            span,
+            mutableMapOf(Fields.EVENT to event),
+            null
         )
     }
 
-    override fun log(map: Map<String, *>, span: DDSpan) {
-        extractError(map, span)
-        logFields(map)
+    override fun log(timestampMicroseconds: Long, event: String, span: DDSpan) {
+        logFields(
+            span,
+            mutableMapOf(Fields.EVENT to event),
+            timestampMicroseconds
+        )
+    }
+
+    override fun log(fields: Map<String, *>, span: DDSpan) {
+        val mutableMap = fields.toMutableMap()
+        extractError(mutableMap, span)
+        logFields(span, mutableMap)
+    }
+
+    override fun log(timestampMicroseconds: Long, fields: Map<String, *>, span: DDSpan) {
+        val mutableMap = fields.toMutableMap()
+        extractError(mutableMap, span)
+        logFields(span, mutableMap, timestampMicroseconds)
     }
 
     // endregion
 
     // region Internal
 
-    private fun toMilliseconds(timestampMicroseconds: Long): Long {
-        return TimeUnit.MILLISECONDS.toSeconds(timestampMicroseconds)
+    private fun toMilliseconds(timestampMicroseconds: Long?): Long? {
+        return timestampMicroseconds?.let { TimeUnit.MILLISECONDS.toSeconds(it) }
     }
 
-    private fun logFields(fields: Map<String, *>, timestamp: Long? = null) {
-        if (timestamp != null) {
-            logger.internalLog(
-                Log.VERBOSE,
-                TRACE_LOG_MESSAGE,
-                null,
-                localAttributes = fields,
-                timestamp = timestamp
-            )
-        } else {
-            logger.v(TRACE_LOG_MESSAGE, attributes = fields)
-        }
+    private fun logFields(
+        span: DDSpan,
+        fields: MutableMap<String, Any?>,
+        timestampMicroseconds: Long? = null
+    ) {
+        val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
+        fields[LogSerializer.TAG_TRACE_ID] = span.traceId.toString()
+        fields[LogSerializer.TAG_SPAN_ID] = span.spanId.toString()
+        logger.internalLog(
+            Log.VERBOSE,
+            message,
+            null,
+            fields,
+            toMilliseconds(timestampMicroseconds)
+        )
     }
 
     private fun extractError(
-        map: Map<String, *>,
+        map: MutableMap<String, *>,
         span: DDSpan
     ) {
-        val throwable = map[ERROR_OBJECT] as? Throwable
-        if (throwable != null) {
-            span.setErrorMeta(throwable)
-        } else {
-            (map[MESSAGE] as? String)?.let {
-                span.setTag(DDTags.ERROR_MSG, it)
-            }
+        val throwable = map.remove(Fields.ERROR_OBJECT) as? Throwable
+        val kind = map.remove(Fields.ERROR_KIND)
+        val errorType = kind?.toString() ?: throwable?.javaClass?.name
+
+        if (errorType != null) {
+            val stackField = map.remove(Fields.STACK)
+            val msgField = map.remove(Fields.MESSAGE)
+            val stack = stackField?.toString() ?: throwable?.loggableStackTrace()
+            val message = msgField?.toString() ?: throwable?.message
+
+            span.setError(true)
+            span.setTag(DDTags.ERROR_TYPE, errorType)
+            span.setTag(DDTags.ERROR_MSG, message)
+            span.setTag(DDTags.ERROR_STACK, stack)
         }
     }
 
     // endregion
 
     companion object {
-        internal const val TRACE_LOG_MESSAGE = "Span log"
+        internal const val DEFAULT_EVENT_MESSAGE = "Span event"
     }
 }
