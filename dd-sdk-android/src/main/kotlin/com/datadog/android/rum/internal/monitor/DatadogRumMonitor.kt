@@ -51,6 +51,7 @@ internal class DatadogRumMonitor(
     @Volatile
     private var activeActionData: RumEventData.UserAction? = null
 
+    private var isWaitingForManualClosing: Boolean = false
     private var ongoingUserActionResources = mutableListOf<WeakReference<Any>>()
 
     private val lastActionRelatedEventNs = AtomicLong(0L)
@@ -86,6 +87,9 @@ internal class DatadogRumMonitor(
         key: Any,
         attributes: Map<String, Any?>
     ) {
+        // invalidate the pending waiting for close action flag
+        isWaitingForManualClosing = false
+
         sendUnclosedResources()
         sendUnclosedAction()
 
@@ -130,18 +134,42 @@ internal class DatadogRumMonitor(
             devLogger.w("User action $action was ignored: previous action still active.")
             return
         }
-        sendUnclosedAction()
-        val nanoTime = System.nanoTime()
-        val eventData = RumEventData.UserAction(
-            action,
-            UUID.randomUUID(),
-            nanoTime
-        )
+        registerUserAction(action, attributes)
+    }
 
-        val event = rumEvent(eventData, attributes)
-        lastActionRelatedEventNs.set(nanoTime)
-        activeActionEvent = event
-        activeActionData = eventData
+    @Synchronized
+    internal fun startUserAction() {
+
+        if (isWithinActionScope()) {
+            devLogger.w("User action was ignored: previous action still active.")
+            return
+        }
+
+        registerUserAction("", emptyMap())
+        // mark this action as waiting for being manually closed
+        isWaitingForManualClosing = true
+    }
+
+    @Synchronized
+    internal fun stopUserAction(action: String, attributes: Map<String, Any?>) {
+        if (!isWaitingForManualClosing) {
+            return
+        }
+        // invalidate the pending waiting for close action flag
+        isWaitingForManualClosing = false
+
+        // update the last event with the attributes and action
+        val currentActionData = activeActionData
+        val currentActionEvent = activeActionEvent
+        if (currentActionData == null || currentActionEvent == null) {
+            devLogger.e("Unable to close the started user action event")
+            return
+        }
+        activeActionData = currentActionData.copy(name = action)
+        activeActionEvent = currentActionEvent.copy(attributes = attributes)
+        // update the lastActionRelateEvent in order to properly compute the event duration
+        // and extend the scope
+        lastActionRelatedEventNs.set(System.nanoTime())
     }
 
     @Synchronized
@@ -257,7 +285,7 @@ internal class DatadogRumMonitor(
     private fun getActiveActionId(): UUID? {
         val actionEvent = activeActionEvent
         val actionData = activeActionData
-        val isWithinActionScope = isWithinActionScope()
+        val isWithinActionScope = isWithinActionScope() || isWaitingForManualClosing
 
         return if (
             actionEvent != null &&
@@ -283,6 +311,9 @@ internal class DatadogRumMonitor(
     }
 
     private fun sendUnclosedAction() {
+        if (isWaitingForManualClosing) {
+            return
+        }
         val lastAction = lastActionRelatedEventNs.get()
         val actionEvent = activeActionEvent
         val actionData = activeActionData
@@ -423,6 +454,27 @@ internal class DatadogRumMonitor(
         )
         writer.write(updatedEvent)
         updateAndSendView { it.incrementUserActionCount() }
+    }
+
+    private fun registerUserAction(
+        action: String,
+        attributes: Map<String, Any?>
+    ) {
+        // invalidate the previous pending closeable action flag in order to make it ready for
+        // being closed
+        isWaitingForManualClosing = false
+        sendUnclosedAction()
+        val nanoTime = System.nanoTime()
+        val eventData = RumEventData.UserAction(
+            action,
+            UUID.randomUUID(),
+            nanoTime
+        )
+
+        val event = rumEvent(eventData, attributes)
+        lastActionRelatedEventNs.set(nanoTime)
+        activeActionEvent = event
+        activeActionData = eventData
     }
 
     // endregion
