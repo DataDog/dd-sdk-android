@@ -8,13 +8,12 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.view.MotionEvent
 import android.view.Window
-import androidx.core.view.GestureDetectorCompat
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.lang.Exception
 
 internal class WindowCallbackWrapper(
     val wrappedCallback: Window.Callback,
-    val gesturesDetector: GestureDetectorCompat
+    val gesturesDetector: GesturesDetectorWrapper
 ) : Window.Callback by wrappedCallback {
 
     // region Window.Callback

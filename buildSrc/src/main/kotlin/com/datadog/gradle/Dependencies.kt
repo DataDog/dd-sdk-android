@@ -20,7 +20,7 @@ object Dependencies {
         const val AndroidXCore = "1.2.0"
         const val AndroidXMultidex = "2.0.1"
         const val AndroidXNavigation = "2.2.0-rc02"
-        const val AndroidXRecyclerView = "1.0.0"
+        const val AndroidXRecyclerView = "1.1.0"
         const val AndroidXWorkManager = "2.3.3"
 
         // DD-TRACE-OT
@@ -90,8 +90,6 @@ object Dependencies {
         val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
         val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
         val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
-        val AndroidXRecyclerView =
-            "androidx.recyclerview:recyclerview:${Versions.AndroidXAppCompat}"
         val AndroidXNavigation = arrayOf(
             "androidx.navigation:navigation-fragment-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",

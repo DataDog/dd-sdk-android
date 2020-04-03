@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Activity
-import androidx.core.view.GestureDetectorCompat
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 
@@ -51,9 +50,9 @@ internal class DatadogGesturesTracker(
     // region Internal
 
     internal fun generateGestureDetector(activity: Activity) =
-        GestureDetectorCompat(
+        GesturesDetectorWrapper(
             activity,
-            DatadogGesturesListener(
+            GesturesListener(
                 WeakReference(activity.window.decorView),
                 targetAttributesProviders
             )

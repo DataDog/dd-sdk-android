@@ -8,12 +8,7 @@ package com.datadog.android.sample.datalist
 import androidx.lifecycle.ViewModel
 
 class DataListViewModel : ViewModel() {
-    val data = arrayOf(
-        "Item 1",
-        "Item 2",
-        "Item 3",
-        "Item 4",
-        "Item 5",
-        "Item 6"
-    )
+    val data = Array(30) {
+        "Item $it"
+    }
 }
