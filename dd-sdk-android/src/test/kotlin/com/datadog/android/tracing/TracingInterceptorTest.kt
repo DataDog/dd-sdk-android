@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
@@ -38,8 +39,6 @@ import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -185,13 +184,11 @@ internal class TracingInterceptorTest {
         val throwable = RuntimeException(forge.anAlphabeticalString())
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
-        val sw = StringWriter()
 
         try {
             testedInterceptor.intercept(mockChain)
             throw IllegalStateException("Should have failed !")
         } catch (e: Throwable) {
-            e.printStackTrace(PrintWriter(sw))
             assertThat(e).isSameAs(throwable)
         }
 
@@ -199,7 +196,7 @@ internal class TracingInterceptorTest {
         verify(mockSpan).setTag("http.method", fakeRequest.method())
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
-        verify(mockSpan).setTag("error.stack", sw.toString())
+        verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).finish()
     }
 

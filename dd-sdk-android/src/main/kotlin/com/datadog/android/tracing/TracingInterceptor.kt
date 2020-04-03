@@ -7,6 +7,7 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
@@ -16,8 +17,6 @@ import io.opentracing.propagation.Format.Builtin.TEXT_MAP_INJECT
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.tag.Tags
 import io.opentracing.util.GlobalTracer
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -132,9 +131,7 @@ class TracingInterceptor : Interceptor {
         (span as? MutableSpan)?.isError = true
         span.setTag(DDTags.ERROR_MSG, error.message)
         span.setTag(DDTags.ERROR_TYPE, error.javaClass.name)
-        val sw = StringWriter()
-        error.printStackTrace(PrintWriter(sw))
-        span.setTag(DDTags.ERROR_STACK, sw.toString())
+        span.setTag(DDTags.ERROR_STACK, error.loggableStackTrace())
     }
 
     private fun updateRequest(
