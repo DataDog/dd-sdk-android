@@ -302,4 +302,9 @@ object RumAttributes {
      */
     const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String =
         "target.scrollableContainer.resourceId"
+
+    /**
+     * The gesture event direction.
+     */
+    internal const val TAG_GESTURE_DIRECTION = "gesture.direction"
 }

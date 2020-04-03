@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Activity
 import android.view.Window
-import androidx.core.view.GestureDetectorCompat
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
@@ -41,7 +40,7 @@ internal class DatadogGesturesTrackerTest {
     lateinit var mockWindow: Window
 
     @Mock
-    lateinit var mockGestureDetector: GestureDetectorCompat
+    lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
     fun `set up`() {
