@@ -20,6 +20,7 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
@@ -27,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.math.BigInteger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -64,6 +66,7 @@ internal class SpanSerializerTest {
 
     @BeforeEach
     fun `set up`() {
+        SpanForgeryFactory.TEST_TRACER.activeSpan()?.finish()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         underTest = SpanSerializer(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
@@ -87,15 +90,21 @@ internal class SpanSerializerTest {
         assertUserInfoMatches(fakeUserInfo, metaObj)
         assertNetworkInfoMatches(fakeNetworkInfo, metaObj)
         assertGlobalInfoMatches(metaObj)
+
+        // close the span
+        span.finish()
     }
 
     @Test
     fun `it will only add the metrics key top level for the top span`(forge: Forge) {
         // given
         val parentSpan =
-            SpanForgeryFactory.TEST_TRACER
-                .buildSpan(forge.anAlphabeticalString())
-                .start() as DDSpan
+            spy(
+                SpanForgeryFactory.TEST_TRACER
+                    .buildSpan(forge.anAlphabeticalString())
+                    .start() as DDSpan
+            )
+        doReturn(BigInteger.valueOf(0)).whenever(parentSpan).parentId
         val childSpan =
             SpanForgeryFactory.TEST_TRACER
                 .buildSpan(forge.anAlphabeticalString())
@@ -113,6 +122,10 @@ internal class SpanSerializerTest {
         assertThat(serializedChild).hasField(SpanSerializer.TAG_METRICS) {
             doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
         }
+
+        // close the spans
+        parentSpan.finish()
+        childSpan.finish()
     }
 
     // region Internal
