@@ -16,6 +16,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.android.rum.webview.RumWebViewClient
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension

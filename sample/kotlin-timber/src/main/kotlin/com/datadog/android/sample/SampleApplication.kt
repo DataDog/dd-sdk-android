@@ -10,7 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.timber.DatadogTree
 import timber.log.Timber
 

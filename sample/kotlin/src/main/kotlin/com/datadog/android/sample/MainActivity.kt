@@ -12,6 +12,7 @@ import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.datadog.android.log.Logger
+import com.datadog.android.sample.datalist.DataListFragment
 import com.datadog.android.sample.logs.LogsFragment
 import com.datadog.android.sample.traces.TracesFragment
 import com.datadog.android.sample.webview.WebFragment
@@ -121,10 +122,15 @@ class MainActivity : AppCompatActivity() {
                 spanName = "SwitchingToWebViewFragment"
                 fragmentToUse = WebFragment.newInstance()
             }
-            else -> {
+            R.id.navigation_traces -> {
                 logger.i("Switching to fragment: Traces")
                 spanName = "SwitchingToTracesFragment"
                 fragmentToUse = TracesFragment.newInstance()
+            }
+            else -> {
+                logger.i("Switching to fragment: DataList")
+                spanName = "SwitchingToDataListFragment"
+                fragmentToUse = DataListFragment.newInstance()
             }
         }
 

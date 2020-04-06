@@ -12,13 +12,16 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 
 internal class DatadogGesturesListener(
-    private val decorViewReference: WeakReference<View>
+    private val decorViewReference: WeakReference<View>,
+    private val attributesProviders: Array<ViewAttributesProvider> = emptyArray()
+
 ) :
     GestureDetector.OnGestureListener {
 
@@ -77,22 +80,26 @@ internal class DatadogGesturesListener(
             findTarget(decorView, e.x, e.y)?.let { target ->
                 // we just intercept but not steal the event
                 val targetId: String = resolveTargetIdOrResourceName(target)
+                val attributes = mutableMapOf<String, Any?>(
+                    RumAttributes.TAG_TARGET_CLASS_NAME to target.javaClass.canonicalName,
+                    RumAttributes.TAG_TARGET_RESOURCE_ID to targetId
+                )
+                attributesProviders.forEach {
+                    it.extractAttributes(target, attributes)
+                }
                 GlobalRum.get().addUserAction(
                     UI_TAP_ACTION_EVENT,
-                    mapOf(
-                        TAG_TARGET_CLASS_NAME to target.javaClass.canonicalName,
-                        TAG_TARGET_RESOURCE_ID to targetId
-                    )
+                    attributes
                 )
             }
         }
     }
 
     private fun resolveTargetIdOrResourceName(target: View): String {
+        @Suppress("SwallowedException")
         return try {
             target.resources.getResourceEntryName(target.id) ?: targetIdAsHexa(target)
         } catch (e: Resources.NotFoundException) {
-            sdkLogger.e("Could not find resource name for target:${target.id}", e)
             targetIdAsHexa(target)
         }
     }
@@ -117,8 +124,8 @@ internal class DatadogGesturesListener(
 
         devLogger.i(
             "We could not find a valid target for the TapEvent. " +
-                "The DecorView was empty and either transparent " +
-                "or not clickable for this Activity."
+                    "The DecorView was empty and either transparent " +
+                    "or not clickable for this Activity."
         )
         return null
     }
@@ -139,13 +146,7 @@ internal class DatadogGesturesListener(
     }
 
     private fun isValidTarget(view: View): Boolean {
-        if (!(view.isClickable && view.visibility == View.VISIBLE)) {
-            return false
-        }
-        if (view is ViewGroup) {
-            return (view.childCount == 0)
-        }
-        return true
+        return view.isClickable && view.visibility == View.VISIBLE
     }
 
     private fun hitTest(
@@ -167,7 +168,5 @@ internal class DatadogGesturesListener(
 
     companion object {
         internal const val UI_TAP_ACTION_EVENT = "TapEvent"
-        internal const val TAG_TARGET_CLASS_NAME = "target.classname"
-        internal const val TAG_TARGET_RESOURCE_ID = "target.resourceId"
     }
 }

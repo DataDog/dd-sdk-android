@@ -54,7 +54,6 @@ object Dependencies {
         const val Espresso = "3.1.1"
 
         // Sample Apps
-        const val SupportFragmentsCompat = "28.0.0"
         const val ConstraintLayout = "2.0.0-beta4"
         const val GoogleMaterial = "1.0.0"
 
@@ -90,14 +89,13 @@ object Dependencies {
         val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
         val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
         val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
+        val AndroidXRecyclerView =
+            "androidx.recyclerview:recyclerview:${Versions.AndroidXAppCompat}"
         val AndroidXNavigation = arrayOf(
             "androidx.navigation:navigation-fragment-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-runtime-ktx:${Versions.AndroidXNavigation}"
         )
-        val SupportFragmentsCompat =
-            "com.android.support:support-fragment:${Versions.SupportFragmentsCompat}"
-
         @JvmField
         val JUnit5 = arrayOf(
             "org.junit.platform:junit-platform-launcher:${Versions.JUnitPlatform}",

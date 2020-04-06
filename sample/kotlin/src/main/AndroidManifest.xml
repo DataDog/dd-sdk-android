@@ -22,18 +22,6 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
-            android:name=".MainActivity"
-            android:label="@string/activity_main"
-            android:windowSoftInputMode="adjustResize"
-            android:enabled="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".NavActivity"
             android:label="@string/activity_nav">
             <intent-filter>

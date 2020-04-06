@@ -12,8 +12,8 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.datadog.android.rum.RumWebChromeClient
-import com.datadog.android.rum.RumWebViewClient
+import com.datadog.android.rum.webview.RumWebChromeClient
+import com.datadog.android.rum.webview.RumWebViewClient
 import com.datadog.android.sample.R
 
 class WebFragment : Fragment() {
@@ -29,8 +29,10 @@ class WebFragment : Fragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web, container, false)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = RumWebViewClient()
-        webView.webChromeClient = RumWebChromeClient()
+        webView.webViewClient =
+            RumWebViewClient()
+        webView.webChromeClient =
+            RumWebChromeClient()
         return rootView
     }
 

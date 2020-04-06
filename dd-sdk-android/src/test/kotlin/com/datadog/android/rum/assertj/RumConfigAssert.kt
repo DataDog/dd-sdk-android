@@ -7,8 +7,10 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.DatadogConfig
-import com.datadog.android.rum.TrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -79,15 +81,22 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         return this
     }
 
-    fun hasGesturesTrackingStrategy(): RumConfigAssert {
-        assertThat(actual.userActionTrackingStrategy).isNotNull()
-        assertThat(actual.userActionTrackingStrategy)
+    fun hasGesturesTrackingStrategy(
+        extraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
+    ): RumConfigAssert {
+        val userActionTrackingStrategy = actual.userActionTrackingStrategy
+        assertThat(userActionTrackingStrategy).isNotNull()
+        assertThat(userActionTrackingStrategy)
             .overridingErrorMessage(
                 "Expected the trackGesturesStrategy " +
                         "to be instance of ${GesturesTrackingStrategy::class.java.canonicalName}" +
-                        " but was ${actual.userActionTrackingStrategy!!::class.java.canonicalName}"
+                        " but was ${userActionTrackingStrategy!!::class.java.canonicalName}"
             )
             .isInstanceOf(GesturesTrackingStrategy::class.java)
+        val gesturesTracker =
+            (userActionTrackingStrategy as GesturesTrackingStrategy).gesturesTracker
+                    as DatadogGesturesTracker
+        assertThat(gesturesTracker.targetAttributesProviders).isEqualTo(extraAttributesProviders)
         return this
     }
 

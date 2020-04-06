@@ -8,9 +8,12 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Activity
 import androidx.core.view.GestureDetectorCompat
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 
-internal class DatadogGesturesTracker :
+internal class DatadogGesturesTracker(
+    internal val targetAttributesProviders: Array<ViewAttributesProvider>
+) :
     GesturesTracker {
 
     // region GesturesTracker
@@ -51,7 +54,8 @@ internal class DatadogGesturesTracker :
         GestureDetectorCompat(
             activity,
             DatadogGesturesListener(
-                WeakReference(activity.window.decorView)
+                WeakReference(activity.window.decorView),
+                targetAttributesProviders
             )
         )
 

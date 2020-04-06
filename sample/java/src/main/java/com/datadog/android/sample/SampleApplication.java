@@ -21,7 +21,6 @@ import com.datadog.android.androidx.fragment.FragmentViewTrackingStrategy;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
 import com.datadog.android.rum.RumMonitor;
-import com.datadog.android.rum.ActivityViewTrackingStrategy;
 import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.tracing.AndroidTracer;
 import com.facebook.stetho.Stetho;
