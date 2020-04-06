@@ -104,7 +104,8 @@ internal class EndToEndTraceTest {
             val toMatch = logObjects.removeFirst()
             assertThat(toMatch)
                 .hasField(TAG_STATUS, levels[it.first])
-                .hasField(TAG_MESSAGE, it.second)
+                .hasField(TAG_EVENT, it.second)
+                .hasField(TAG_MESSAGE, "Span event")
                 .hasField(TAG_LOGGER_NAME, "trace")
         }
     }
@@ -147,6 +148,7 @@ internal class EndToEndTraceTest {
 
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"
+        private const val TAG_EVENT = "event"
         private const val TAG_LOGGER_NAME = "logger.name"
         private val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"

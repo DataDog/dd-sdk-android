@@ -11,14 +11,13 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -121,11 +120,9 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         log.throwable?.let {
-            val sw = StringWriter()
-            it.printStackTrace(PrintWriter(sw))
             jsonLog.addProperty(TAG_ERROR_KIND, it.javaClass.simpleName)
             jsonLog.addProperty(TAG_ERROR_MESSAGE, it.message)
-            jsonLog.addProperty(TAG_ERROR_STACK, sw.toString())
+            jsonLog.addProperty(TAG_ERROR_STACK, it.loggableStackTrace())
         }
     }
 

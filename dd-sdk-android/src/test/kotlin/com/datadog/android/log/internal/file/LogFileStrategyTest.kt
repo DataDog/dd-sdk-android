@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.domain.LogSerializer
@@ -26,8 +27,6 @@ import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -222,13 +221,10 @@ internal class LogFileStrategyTest :
     private fun assertThrowableMatches(log: Log, jsonObject: JsonObject) {
         val throwable = log.throwable
         if (throwable != null) {
-            val sw = StringWriter()
-            throwable.printStackTrace(PrintWriter(sw))
-
             assertThat(jsonObject)
                     .hasField(LogSerializer.TAG_ERROR_KIND, throwable.javaClass.simpleName)
                     .hasField(LogSerializer.TAG_ERROR_MESSAGE, throwable.message)
-                    .hasField(LogSerializer.TAG_ERROR_STACK, sw.toString())
+                    .hasField(LogSerializer.TAG_ERROR_STACK, throwable.loggableStackTrace())
         } else {
             assertThat(jsonObject)
                     .doesNotHaveField(LogSerializer.TAG_ERROR_KIND)
