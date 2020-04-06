@@ -35,6 +35,7 @@ object com.datadog.android.DatadogEndpoint
   const val TRACES_EU: String
   const val RUM_US: String
   const val RUM_EU: String
+class com.datadog.android.DatadogInterceptor : okhttp3.Interceptor
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -184,8 +185,6 @@ object com.datadog.android.rum.RumAttributes
   const val VIEW_REFERRER: String
   const val VIEW_URL: String
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
-  override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
-  companion object
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -236,4 +235,3 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun setBundleWithRumEnabled(Boolean): Builder
   companion object
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  override fun intercept(okhttp3.Interceptor, Chain): okhttp3.Response
