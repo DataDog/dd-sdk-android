@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumEventData
 import java.lang.ref.WeakReference
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.max
@@ -30,6 +31,8 @@ internal class DatadogRumMonitor(
     private val timeProvider: TimeProvider = NoOpTimeProvider(),
     private val userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
 ) : RumMonitor {
+
+    private val allViewEvents = ConcurrentHashMap<UUID, RumEvent>()
 
     @Volatile
     private var activeViewStartNanos: Long = 0L
@@ -100,24 +103,24 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null || startedEventData == null -> devLogger.w(
                 "Unable to end view with key <$key> (missing start). " +
-                        "This can mean that the view was not started or already ended."
+                    "This can mean that the view was not started or already ended."
             )
             startedKey == null -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (missing key)." +
-                            "Closing previous view automatically."
+                        "Closing previous view automatically."
                 )
                 updateAndSendView(
-                    mapOf(TAG_EVENT_UNSTOPPED to true)
+                    attributes = mapOf(TAG_EVENT_UNSTOPPED to true)
                 )
             }
             startedKey != key -> {
                 devLogger.e(
                     "Unable to end view with key <$key> (mismatched key). " +
-                            "Another view with key <$startedKey> has been started."
+                        "Another view with key <$startedKey> has been started."
                 )
             }
-            else -> updateAndSendView(attributes)
+            else -> updateAndSendView(attributes = attributes)
         }
         activeViewKey = WeakReference(null)
         activeViewData = null
@@ -221,7 +224,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                        "This can mean that the resource was not started or already ended."
+                    "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
@@ -339,11 +342,16 @@ internal class DatadogRumMonitor(
     }
 
     private fun updateAndSendView(
+        targetViewId: UUID? = null,
         attributes: Map<String, Any?> = emptyMap(),
         update: (RumEventData.View) -> RumEventData.View = { it }
     ) {
-        val startedEvent = activeViewEvent
-        val startedEventData = activeViewData
+        val startedEvent = if (targetViewId != null) {
+            (allViewEvents[targetViewId] ?: activeViewEvent)
+        } else {
+            activeViewEvent
+        }
+        val startedEventData = startedEvent?.eventData as? RumEventData.View
 
         if (startedEvent == null || startedEventData == null) {
             sdkLogger.w("Unable to update view, none was started")
@@ -364,8 +372,14 @@ internal class DatadogRumMonitor(
                 }
         )
         writer.write(updatedEvent)
-        activeViewEvent = updatedEvent
-        activeViewData = updatedData
+        val viewId = startedEvent.context.viewId
+        if (viewId != null) {
+            allViewEvents[viewId] = updatedEvent
+            if (viewId == activeViewEvent?.context?.viewId) {
+                activeViewEvent = updatedEvent
+                activeViewData = updatedData
+            }
+        }
     }
 
     private fun sendResource(
@@ -378,7 +392,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end resource with key <$key>. " +
-                        "This can mean that the resource was not started or already ended."
+                    "This can mean that the resource was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end resource with key <$key>. The related data was inconsistent."
@@ -404,7 +418,7 @@ internal class DatadogRumMonitor(
             }
         )
         writer.write(updatedEvent)
-        updateAndSendView { it.incrementResourceCount() }
+        updateAndSendView(startedEvent.context.viewId) { it.incrementResourceCount() }
     }
 
     private fun sendUnclosedResources() {
@@ -432,7 +446,7 @@ internal class DatadogRumMonitor(
         when {
             startedEvent == null -> devLogger.w(
                 "Unable to end user action. " +
-                        "This can mean that the action was not started or already ended."
+                    "This can mean that the action was not started or already ended."
             )
             startedEventData == null -> devLogger.e(
                 "Unable to end user action. The related data was inconsistent."

@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
@@ -55,7 +54,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogRumMonitorTest {
 
-    lateinit var testedMonitor: RumMonitor
+    lateinit var testedMonitor: DatadogRumMonitor
 
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
@@ -451,6 +450,97 @@ internal class DatadogRumMonitorTest {
         }
         assertThat(GlobalRum.getRumContext().viewId)
             .isEqualTo(viewId)
+    }
+
+    @Test
+    fun `stopResource updates relevant view if resource stopped after new view started`(
+        forge: Forge
+    ) {
+        val viewKey = forge.anAlphabeticalString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val viewKey2 = forge.anAlphabeticalString()
+        val viewName2 = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val resourceKey = forge.anAlphabeticalString()
+        val resourceMethod = forge.anElementFrom("GET", "PUT", "POST", "DELETE")
+        val resourceUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+")
+        val resourceKind = forge.aValueFrom(RumResourceKind::class.java)
+        val attributes = forge.exhaustiveAttributes()
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        val viewId = GlobalRum.getRumContext().viewId
+        testedMonitor.startResource(resourceKey, resourceMethod, resourceUrl, attributes)
+        testedMonitor.startView(viewKey2, viewName2, emptyMap())
+        val viewId2 = GlobalRum.getRumContext().viewId
+        testedMonitor.stopResource(resourceKey, resourceKind, emptyMap())
+        testedMonitor.stopView(viewKey2, emptyMap())
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(4)).write(capture())
+            assertThat(firstValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(secondValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasAttributes(attributes)
+                .hasResourceData {
+                    hasUrl(resourceUrl)
+                    hasKind(resourceKind)
+                    hasMethod(resourceMethod)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(thirdValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(3)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasViewData {
+                    hasName(viewName2.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId2)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(null)
     }
 
     @Test
