@@ -68,7 +68,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
-    fun `onTap dispatches an UserAction when target deep in the View Hierarchy`(forge: Forge) {
+    fun `onTap sends the right target when the ViewGroup and its child are both clickable`(
+        forge: Forge
+    ) {
         // given
         val mockEvent: MotionEvent = forge.getForgery()
         val container1: ViewGroup = mockView(
@@ -101,7 +103,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
-            forge = forge
+            forge = forge,
+            clickable = true
         ) {
             whenever(it.childCount).thenReturn(3)
             whenever(it.getChildAt(0)).thenReturn(notClickableInvalidTarget)
