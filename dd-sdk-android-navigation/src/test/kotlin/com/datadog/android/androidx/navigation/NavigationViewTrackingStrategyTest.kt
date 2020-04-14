@@ -228,19 +228,7 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
-    fun `starts view onDestinationChanged with unknown destination type`() {
-        mockNavDestination = mock()
-        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
-
-        verify(mockRumMonitor).startView(
-            mockNavDestination,
-            NavigationViewTrackingStrategy.UNKNOWN_DESTINATION_NAME,
-            emptyMap()
-        )
-    }
-
-    @Test
-    fun `stops previous view onDestinationChanged`(
+    fun `start new view onDestinationChanged`(
         forge: Forge,
         @StringForgery(StringForgeryType.ALPHABETICAL) newDestinationName: String
     ) {
@@ -251,7 +239,6 @@ internal class NavigationViewTrackingStrategyTest {
 
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, emptyMap())
-            verify(mockRumMonitor).stopView(mockNavDestination, emptyMap())
             verify(mockRumMonitor).startView(newDestination, newDestinationName, emptyMap())
         }
     }
