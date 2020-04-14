@@ -67,11 +67,8 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
-        controller.currentDestination?.let { GlobalRum.get().stopView(it) }
-
         val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
         val name = destination.getRumViewName()
-
         GlobalRum.get().startView(destination, name, attributes)
     }
 
