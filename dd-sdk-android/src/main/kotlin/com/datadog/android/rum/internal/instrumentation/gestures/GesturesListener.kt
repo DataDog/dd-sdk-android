@@ -185,38 +185,39 @@ internal class GesturesListener(
     private fun targetIdAsHexa(target: View) = "0x${target.id.toString(16)}"
 
     private fun findTargetForTap(decorView: View, x: Float, y: Float): View? {
-        val stack = LinkedList<View>()
-        stack.addFirst(decorView)
+        val queue = LinkedList<View>()
+        queue.addFirst(decorView)
+        var target: View? = null
 
-        while (stack.isNotEmpty()) {
-            val view = stack.removeFirst()
+        while (queue.isNotEmpty()) {
+            val view = queue.removeFirst()
 
             if (isValidTapTarget(view)) {
-                return view
+                target = view
             }
 
             if (view is ViewGroup) {
-                handleViewGroup(view, x, y, stack, coordinatesContainer)
+                handleViewGroup(view, x, y, queue, coordinatesContainer)
             }
         }
 
         devLogger.i(MSG_NO_TARGET)
-        return null
+        return target
     }
 
     private fun findTargetForScroll(decorView: View, x: Float, y: Float): View? {
-        val stack = LinkedList<View>()
-        stack.addFirst(decorView)
+        val queue = LinkedList<View>()
+        queue.add(decorView)
 
-        while (stack.isNotEmpty()) {
-            val view = stack.removeFirst()
+        while (queue.isNotEmpty()) {
+            val view = queue.removeFirst()
 
             if (isValidScrollableTarget(view)) {
                 return view
             }
 
             if (view is ViewGroup) {
-                handleViewGroup(view, x, y, stack, coordinatesContainer)
+                handleViewGroup(view, x, y, queue, coordinatesContainer)
             }
         }
         devLogger.i(
