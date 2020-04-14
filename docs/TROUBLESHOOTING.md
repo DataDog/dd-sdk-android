@@ -30,13 +30,44 @@ implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
 
 If you encounter another issue when building your application with the Datadog SDK for Android, open an issue on the [DataDog/dd-sdk-android Github repository](https://github.com/DataDog/dd-sdk-android/issues/new?assignees=&labels=bug&template=bug_report.md&title=) with as many details as you can.
 
+## Runtime Issues
+
+### Crash with `java.lang.NoSuchMethodError: No virtual method setInitialDelay`
+
+If your application crashes with a similar message, this is most likely due to a conflict in the Android WorkManager dependency. The `dd-sdk-android` library uses the AndroidX `androidx.work:work-runtime` artifact with a version above `2.2.0`. There was a change in the signature of the `WorkRequest.Builder` class, that make modules built with a previous version incompatible. Make sure your modules and dependency target the same version of the `androidx.work:work-runtime` library.
+
+You can check which version your dependencies are using by typing the following command in a shell prompt:
+
+```shell script
+./gradlew :app:dependencies
+```
+
+### Crash with `java.lang.NoSuchMethodError: No static method metafactory(…)` or `java.lang.BootstrapMethodError: Exception from call site #1 bootstrap method`
+
+If you're using OkHttp version `3.13.0` or above, you may run into this crash when initializing the SDK. This happens because from this version on, OkHttp uses Java 1.8, including the Java lambda features, which are not available in Android.
+
+You can fix this issue by forcing the Android compiler to use Java 8 compatibility when building your application. To do so, add the following code to your application's `build.gradle` script.
+
+```groovy
+android {
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+// optionally if you're using Kotlin  
+kotlinOptions {
+    jvmTarget = "1.8"
+}
+```
 
 ## Feature issues
 
 ### Foreword
 
 If you think the SDK does not behave as it should, make sure you set the library's verbosity to `VERBOSE` before running your application, as follow. It prints relevant error messages in the Logcat that can help you locate the source of the problem.
-
+``
 ```kotlin
     Datadog.setVerbosity(Log.VERBOSE)
 ```
