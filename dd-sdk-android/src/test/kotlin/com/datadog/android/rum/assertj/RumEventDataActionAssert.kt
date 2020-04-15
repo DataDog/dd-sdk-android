@@ -58,6 +58,16 @@ internal class RumEventDataActionAssert(actual: RumEventData.UserAction) :
         return this
     }
 
+    fun hasDurationGreaterThan(lowerBound: Long): RumEventDataActionAssert {
+        assertThat(actual.durationNanoSeconds)
+            .overridingErrorMessage(
+                "Expected event data to have duration greater than $lowerBound " +
+                    "but was ${actual.durationNanoSeconds}"
+            )
+            .isGreaterThanOrEqualTo(lowerBound)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: RumEventData.UserAction): RumEventDataActionAssert =
