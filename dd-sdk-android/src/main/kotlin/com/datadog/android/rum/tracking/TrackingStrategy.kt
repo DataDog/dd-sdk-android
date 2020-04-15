@@ -23,5 +23,5 @@ interface TrackingStrategy {
      * This method will unregister the tracking strategy from the current Context.
      * @param context as [Context]
      */
-    fun unregister(context: Context)
+    fun unregister(context: Context?)
 }
