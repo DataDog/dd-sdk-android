@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStrategyTest() {
 
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
@@ -37,13 +37,13 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = GesturesTrackingStrategy(mockGesturesTracker)
+        underTest = GesturesTrackingStrategyApi29(mockGesturesTracker)
     }
 
     @Test
-    fun `when activity created it will start tracking gestures`(forge: Forge) {
+    fun `when activity pre created it will start tracking gestures`(forge: Forge) {
         // when
-        underTest.onActivityCreated(mockActivity, mock())
+        underTest.onActivityPreCreated(mockActivity, mock())
         // then
         verify(mockGesturesTracker).startTracking(mockActivity)
     }

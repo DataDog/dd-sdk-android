@@ -6,9 +6,11 @@
 
 package com.datadog.android
 
+import android.os.Build
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
@@ -265,10 +267,8 @@ private constructor(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
             rumConfig = rumConfig.copy(
-                userActionTrackingStrategy = GesturesTrackingStrategy(
-                    DatadogGesturesTracker(
-                        touchTargetExtraAttributesProviders
-                    )
+                userActionTrackingStrategy = provideUserTrackingStrategy(
+                    touchTargetExtraAttributesProviders
                 )
             )
             return this
@@ -288,6 +288,23 @@ private constructor(
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 needsClearTextHttp = true
+            }
+        }
+
+        private fun provideUserTrackingStrategy(attributesProviders: Array<ViewAttributesProvider>):
+                UserActionTrackingStrategy {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                GesturesTrackingStrategyApi29(
+                    DatadogGesturesTracker(
+                        attributesProviders
+                    )
+                )
+            } else {
+                GesturesTrackingStrategy(
+                    DatadogGesturesTracker(
+                        attributesProviders
+                    )
+                )
             }
         }
     }

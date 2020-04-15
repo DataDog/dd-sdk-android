@@ -8,7 +8,9 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
+import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.util.UUID
@@ -20,6 +22,8 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         actual,
         RumConfigAssert::class.java
     ) {
+
+    // region Assertions
 
     fun hasClientToken(clientToken: String): RumConfigAssert {
         assertThat(actual.clientToken)
@@ -81,21 +85,21 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         return this
     }
 
+    fun hasGesturesTrackingStrategyApi29(
+        extraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
+    ): RumConfigAssert {
+        val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategyApi29>()
+        val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
+        assertThat(gesturesTracker.targetAttributesProviders).isEqualTo(extraAttributesProviders)
+
+        return this
+    }
+
     fun hasGesturesTrackingStrategy(
         extraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
     ): RumConfigAssert {
-        val userActionTrackingStrategy = actual.userActionTrackingStrategy
-        assertThat(userActionTrackingStrategy).isNotNull()
-        assertThat(userActionTrackingStrategy)
-            .overridingErrorMessage(
-                "Expected the trackGesturesStrategy " +
-                        "to be instance of ${GesturesTrackingStrategy::class.java.canonicalName}" +
-                        " but was ${userActionTrackingStrategy!!::class.java.canonicalName}"
-            )
-            .isInstanceOf(GesturesTrackingStrategy::class.java)
-        val gesturesTracker =
-            (userActionTrackingStrategy as GesturesTrackingStrategy).gesturesTracker
-                    as DatadogGesturesTracker
+        val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategy>()
+        val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
         assertThat(gesturesTracker.targetAttributesProviders).isEqualTo(extraAttributesProviders)
         return this
     }
@@ -110,6 +114,25 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
             .isEqualTo(viewTrackingStrategy)
         return this
     }
+
+    // endregion
+
+    // region Internal
+
+    private inline fun <reified Strategy : UserActionTrackingStrategy> isInstanceOf(): Strategy {
+        val userActionTrackingStrategy = actual.userActionTrackingStrategy as? Strategy
+        assertThat(userActionTrackingStrategy).isNotNull()
+        assertThat(userActionTrackingStrategy)
+            .overridingErrorMessage(
+                "Expected the trackGesturesStrategy " +
+                        "to be instance of ${Strategy::class.java.canonicalName}" +
+                        " but was ${userActionTrackingStrategy!!::class.java.canonicalName}"
+            )
+            .isInstanceOf(Strategy::class.java)
+        return userActionTrackingStrategy
+    }
+
+    // endregion
 
     companion object {
 
