@@ -12,13 +12,13 @@ import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 
-internal class GesturesTrackingStrategy(
+internal class GesturesTrackingStrategyApi29(
     internal val gesturesTracker: GesturesTracker
 ) : ActivityLifecycleTrackingStrategy(),
     UserActionTrackingStrategy {
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+    override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
         gesturesTracker.startTracking(activity)
-        super.onActivityCreated(activity, savedInstanceState)
+        super.onActivityPreCreated(activity, savedInstanceState)
     }
 }

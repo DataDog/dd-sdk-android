@@ -3,10 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.rum.tracking
+package com.datadog.android.rum.internal.tracking
+
+import com.datadog.android.rum.tracking.TrackingStrategy
 
 /**
  * A TrackingStrategy dedicated to user actions tracking.
  */
-interface UserActionTrackingStrategy :
+internal interface UserActionTrackingStrategy :
     TrackingStrategy

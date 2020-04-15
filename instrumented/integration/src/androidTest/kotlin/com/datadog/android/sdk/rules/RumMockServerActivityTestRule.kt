@@ -13,7 +13,7 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.tools.unit.getFieldValue
 import kotlin.collections.ArrayList
 
-internal class RumMockServerActivityTestRule<T : Activity>(
+internal open class RumMockServerActivityTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false
 ) : MockServerActivityTestRule<T>(activityClass, keepRequests) {

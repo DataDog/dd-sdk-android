@@ -6,10 +6,13 @@
 
 package com.datadog.android
 
+import android.os.Build
 import com.datadog.android.rum.assertj.RumConfigAssert
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -26,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -627,7 +631,35 @@ class DatadogConfigBuilderTest {
             .hasEndpointUrl(rumUrl)
             .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
             .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
-            .hasGesturesTrackingStrategy(touchTargetExtraAttributesProviders)
+            .hasGesturesTrackingStrategy(
+                touchTargetExtraAttributesProviders
+            )
+            .doesNotHaveViewTrackingStrategy()
+    }
+
+    @TestTargetApi(value = Build.VERSION_CODES.Q)
+    @Test
+    fun `builder with track gestures enabled for Android Q`(forge: Forge) {
+        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
+        val touchTargetExtraAttributesProviders =
+            Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
+                mock()
+            }
+        val config = DatadogConfig.Builder(fakeClientToken, fakeApplicationId)
+            .useCustomRumEndpoint(rumUrl)
+            .trackGestures(touchTargetExtraAttributesProviders)
+            .build()
+        val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
+        assertThat(rumConfig).isNotNull()
+        RumConfigAssert.assertThat(rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
+            .hasEnvName(DatadogConfig.DEFAULT_ENV_NAME)
+            .hasGesturesTrackingStrategyApi29(
+                touchTargetExtraAttributesProviders
+            )
             .doesNotHaveViewTrackingStrategy()
     }
 
