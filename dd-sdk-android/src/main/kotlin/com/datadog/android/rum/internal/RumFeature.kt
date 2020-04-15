@@ -27,9 +27,9 @@ import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.NoOpViewTrackingStrategy
+import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
-import com.datadog.android.rum.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
 import java.util.concurrent.ExecutorService
