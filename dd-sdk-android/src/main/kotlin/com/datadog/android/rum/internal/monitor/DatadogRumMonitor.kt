@@ -198,7 +198,7 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         removeUserActionResource(key)
-        val keyRef = activeResources.keys.firstOrNull { it.get() == key }
+        val keyRef = s.keys.firstOrNull { it.get() == key }
         val startedEvent = if (keyRef == null) null else activeResources.remove(keyRef)
         val startedEventData = startedEvent?.eventData as? RumEventData.Resource
 
