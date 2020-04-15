@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumEvent
@@ -55,7 +54,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogRumMonitorTest {
 
-    lateinit var testedMonitor: RumMonitor
+    lateinit var testedMonitor: DatadogRumMonitor
 
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
@@ -764,6 +763,59 @@ internal class DatadogRumMonitorTest {
                         hasErrorCount(0)
                         hasResourceCount(1)
                         hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(viewId)
+    }
+
+    @Test
+    fun `view tree changes started within userAction scope extends it`(
+        forge: Forge
+    ) {
+        val viewKey = forge.anAlphabeticalString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val actionName = forge.anAlphabeticalString()
+        val attributes = forge.exhaustiveAttributes()
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        testedMonitor.addUserAction(actionName, attributes)
+        val viewId = GlobalRum.getRumContext().viewId
+        Thread.sleep(10)
+        testedMonitor.viewTreeChanged()
+        Thread.sleep(300)
+        testedMonitor.addUserAction(actionName + "2", attributes)
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasAttributes(attributes)
+                .hasUserActionData {
+                    hasDurationGreaterThan(10)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(1)
                     }
                 }
                 .hasContext {

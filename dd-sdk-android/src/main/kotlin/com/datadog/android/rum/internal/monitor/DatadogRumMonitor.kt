@@ -130,6 +130,7 @@ internal class DatadogRumMonitor(
         action: String,
         attributes: Map<String, Any?>
     ) {
+        GlobalRum.addUserInteraction()
         if (isWithinActionScope()) {
             devLogger.w("User action $action was ignored: previous action still active.")
             return
@@ -139,7 +140,7 @@ internal class DatadogRumMonitor(
 
     @Synchronized
     internal fun startUserAction() {
-
+        GlobalRum.addUserInteraction()
         if (isWithinActionScope()) {
             devLogger.w("User action was ignored: previous action still active.")
             return
@@ -170,6 +171,12 @@ internal class DatadogRumMonitor(
         // update the lastActionRelateEvent in order to properly compute the event duration
         // and extend the scope
         lastActionRelatedEventNs.set(System.nanoTime())
+    }
+
+    internal fun viewTreeChanged() {
+        if (isWithinActionScope()) {
+            lastActionRelatedEventNs.set(System.nanoTime())
+        }
     }
 
     @Synchronized
