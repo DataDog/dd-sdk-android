@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal
 import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -24,6 +25,12 @@ import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
+import com.datadog.android.rum.internal.tracking.NoOpActionTrackingStrategy
+import com.datadog.android.rum.internal.tracking.NoOpViewTrackingStrategy
+import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.android.rum.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -44,6 +51,12 @@ internal object RumFeature {
     internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
     internal var userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
+
+    internal var viewTrackingStrategy: ViewTrackingStrategy =
+        NoOpViewTrackingStrategy()
+    internal var actionTrackingStrategy: UserActionTrackingStrategy = NoOpActionTrackingStrategy()
+    internal var viewTreeTrackingStrategy: TrackingStrategy =
+        ViewTreeChangeTrackingStrategy()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -66,6 +79,9 @@ internal object RumFeature {
         serviceName = config.serviceName
         envName = config.envName
 
+        viewTrackingStrategy = config.viewTrackingStrategy ?: NoOpViewTrackingStrategy()
+        actionTrackingStrategy = config.userActionTrackingStrategy ?: NoOpActionTrackingStrategy()
+
         persistenceStrategy = RumFileStrategy(
             appContext,
             dataPersistenceExecutorService = dataPersistenceExecutor
@@ -77,7 +93,7 @@ internal object RumFeature {
             systemInfoProvider,
             dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
         )
-        setupTrackingStrategies(appContext, config)
+        registerTrackingStrategies(appContext)
         this.userInfoProvider = userInfoProvider
         initialized.set(true)
     }
@@ -89,6 +105,8 @@ internal object RumFeature {
     fun stop() {
         if (initialized.get()) {
             dataUploadScheduler.stopScheduling()
+
+            unregisterTrackingStrategies(CoreFeature.contextRef.get())
 
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpDataUploadScheduler()
@@ -124,9 +142,16 @@ internal object RumFeature {
         dataUploadScheduler.startScheduling()
     }
 
-    private fun setupTrackingStrategies(appContext: Context, config: DatadogConfig.RumConfig) {
-        config.userActionTrackingStrategy?.register(appContext)
-        config.viewTrackingStrategy?.register(appContext)
+    private fun registerTrackingStrategies(appContext: Context) {
+        actionTrackingStrategy.register(appContext)
+        viewTrackingStrategy.register(appContext)
+        viewTreeTrackingStrategy.register(appContext)
+    }
+
+    private fun unregisterTrackingStrategies(appContext: Context?) {
+        actionTrackingStrategy.unregister(appContext)
+        viewTrackingStrategy.unregister(appContext)
+        viewTreeTrackingStrategy.unregister(appContext)
     }
 
     // endregion
