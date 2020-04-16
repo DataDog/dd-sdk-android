@@ -6,9 +6,15 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.app.Application
 import android.content.res.Resources
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -17,9 +23,13 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.ref.WeakReference
 import kotlin.math.abs
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -37,6 +47,31 @@ internal abstract class AbstractGesturesListenerTest {
     lateinit var underTest: GesturesListener
 
     lateinit var decorView: View
+
+    @Mock
+    lateinit var mockAppContext: Application
+
+    @Mock
+    lateinit var mockResources: Resources
+
+    // region Tests
+
+    @BeforeEach
+    open fun `set up`() {
+        Datadog.setVerbosity(Log.VERBOSE)
+        whenever(mockAppContext.resources).thenReturn(mockResources)
+        CoreFeature.contextRef = WeakReference(mockAppContext)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.setVerbosity(Integer.MAX_VALUE)
+        GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.isRegistered.set(false)
+        CoreFeature.contextRef = WeakReference(null)
+    }
+
+    // endregion
 
     // region Internal
 
@@ -89,10 +124,7 @@ internal abstract class AbstractGesturesListenerTest {
     }
 
     protected fun mockResourcesForTarget(target: View, expectedResourceName: String) {
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
-        }
-        whenever(target.resources).thenReturn(mockResources)
+        whenever(mockResources.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
     }
 
     // endregion

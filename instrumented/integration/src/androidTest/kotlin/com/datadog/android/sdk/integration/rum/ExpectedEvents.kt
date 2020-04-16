@@ -36,7 +36,7 @@ internal interface ExpectedEvent {
 }
 
 internal enum class Gesture(val gestureName: String) {
-    TAP("TapEvent")
+    TAP("Tap")
 }
 
 private fun rumContextValues(): Triple<String, String, String> {
