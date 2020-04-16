@@ -11,12 +11,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
@@ -31,7 +29,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -57,17 +54,10 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     lateinit var mockDevLogHandler: LogHandler
 
     @BeforeEach
-    fun `set up`() {
+    override fun `set up`() {
+        super.`set up`()
         mockDevLogHandler = mockDevLogHandler()
-        Datadog.setVerbosity(Log.VERBOSE)
         GlobalRum.registerIfAbsent(mockRumMonitor)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.setVerbosity(Integer.MAX_VALUE)
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -162,10 +152,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(target)
         }
         val expectedResourceName = forge.anAlphabeticalString()
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(target.id)).thenReturn(expectedResourceName)
-        }
-        whenever(target.resources).thenReturn(mockResources)
+        mockResourcesForTarget(target, expectedResourceName)
         underTest = GesturesListener(
             WeakReference(decorView)
         )
@@ -285,10 +272,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         verify(mockDevLogHandler)
             .handleLog(
                 Log.INFO,
-                GesturesListener.MSG_NO_TARGET
+                GesturesListener.MSG_NO_TARGET_TAP
             )
         verifyZeroInteractions(mockRumMonitor)
-
     }
 
     @Test
@@ -308,11 +294,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(decorView)
         )
         val expectedResourceName = forge.anAlphabeticalString()
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(decorView.id))
-                .thenReturn(expectedResourceName)
-        }
-        whenever(decorView.resources).thenReturn(mockResources)
+        mockResourcesForTarget(decorView, expectedResourceName)
 
         // when
         underTest.onSingleTapUp(mockEvent)
@@ -342,11 +324,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(1)
             whenever(it.getChildAt(0)).thenReturn(validTarget)
         }
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(validTarget.id))
-                .thenThrow(Resources.NotFoundException(forge.anAlphabeticalString()))
-        }
-        whenever(validTarget.resources).thenReturn(mockResources)
+        whenever(mockResources.getResourceEntryName(validTarget.id)).thenThrow(
+            Resources.NotFoundException(
+                forge.anAlphabeticalString()
+            )
+        )
         underTest = GesturesListener(
             WeakReference(decorView)
         )
@@ -379,11 +361,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(1)
             whenever(it.getChildAt(0)).thenReturn(validTarget)
         }
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(validTarget.id))
-                .thenReturn(null)
-        }
-        whenever(validTarget.resources).thenReturn(mockResources)
+        whenever(mockResources.getResourceEntryName(validTarget.id)).thenReturn(null)
         underTest = GesturesListener(
             WeakReference(decorView)
         )
@@ -429,11 +407,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(validTarget)
         }
         val expectedResourceName = forge.anAlphabeticalString()
-        val mockResources = mock<Resources> {
-            whenever(it.getResourceEntryName(validTarget.id))
-                .thenReturn(expectedResourceName)
-        }
-        whenever(validTarget.resources).thenReturn(mockResources)
+        mockResourcesForTarget(validTarget, expectedResourceName)
         var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
             RumAttributes.TAG_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
             RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName
@@ -458,19 +432,18 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // then
         verify(mockRumMonitor).addUserAction(
-            GesturesListener.TAP_EVENT,
+            Gesture.TAP.actionName,
             expectedAttributes
         )
     }
 
     private fun verifyUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
-            eq(GesturesListener.TAP_EVENT),
+            eq(Gesture.TAP.actionName),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
                         this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
-
 }
