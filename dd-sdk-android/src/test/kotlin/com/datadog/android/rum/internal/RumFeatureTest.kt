@@ -15,7 +15,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
@@ -256,10 +256,6 @@ internal class RumFeatureTest {
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(serviceName).isSameAs(serviceName2)
         assertThat(userInfoProvider).isSameAs(RumFeature.userInfoProvider)
-
-        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
-            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
-        })
     }
 
     @Test
@@ -278,7 +274,7 @@ internal class RumFeatureTest {
 
         // then
         verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
-            TrackingStrategy::class.java.isAssignableFrom(this::class.java)
+            this is ViewTrackingStrategy || this is UserActionTrackingStrategy
         })
     }
 
@@ -308,10 +304,7 @@ internal class RumFeatureTest {
     fun `will register the strategy when track screen strategy provided`() {
         // given
         val viewTrackingStrategy: ViewTrackingStrategy = mock()
-        fakeConfig = fakeConfig.copy(
-            viewTrackingStrategy =
-            viewTrackingStrategy
-        )
+        fakeConfig = fakeConfig.copy(viewTrackingStrategy = viewTrackingStrategy)
 
         // when
         RumFeature.initialize(
@@ -327,5 +320,25 @@ internal class RumFeatureTest {
 
         // then
         verify(viewTrackingStrategy).register(mockAppContext)
+    }
+
+    @Test
+    fun `will always register the viewTree strategy`() {
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+
+        // then
+        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
+            this is ViewTreeChangeTrackingStrategy
+        })
     }
 }

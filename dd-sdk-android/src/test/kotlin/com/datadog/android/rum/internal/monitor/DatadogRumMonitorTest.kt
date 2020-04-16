@@ -866,6 +866,59 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `view tree changes started within userAction scope extends it`(
+        forge: Forge
+    ) {
+        val viewKey = forge.anAlphabeticalString()
+        val viewName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+        val actionName = forge.anAlphabeticalString()
+        val attributes = forge.exhaustiveAttributes()
+
+        testedMonitor.startView(viewKey, viewName, emptyMap())
+        testedMonitor.addUserAction(actionName, attributes)
+        val viewId = GlobalRum.getRumContext().viewId
+        Thread.sleep(10)
+        testedMonitor.viewTreeChanged()
+        Thread.sleep(300)
+        testedMonitor.addUserAction(actionName + "2", attributes)
+
+        checkNotNull(viewId)
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasAttributes(attributes)
+                .hasUserActionData {
+                    hasDurationGreaterThan(10)
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimestamp)
+                .hasUserInfo(mockedUserInfo)
+                .hasViewData {
+                    hasName(viewName.replace('.', '/'))
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(1)
+                    }
+                }
+                .hasContext {
+                    hasApplicationId(fakeApplicationId)
+                    hasViewId(viewId)
+                }
+        }
+        assertThat(GlobalRum.getRumContext().viewId)
+            .isEqualTo(viewId)
+    }
+
+    @Test
     fun `resource started outside userAction scope has no action and sends action`(
         forge: Forge
     ) {

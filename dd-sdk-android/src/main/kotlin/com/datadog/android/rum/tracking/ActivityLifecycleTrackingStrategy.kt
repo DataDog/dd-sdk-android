@@ -32,7 +32,7 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
         }
     }
 
-    override fun unregister(context: Context) {
+    override fun unregister(context: Context?) {
         if (context is Application) {
             context.unregisterActivityLifecycleCallbacks(this)
         }

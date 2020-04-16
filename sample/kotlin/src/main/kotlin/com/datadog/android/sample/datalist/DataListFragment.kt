@@ -7,17 +7,31 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.sample.R
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class DataListFragment : Fragment() {
 
     lateinit var viewModel: DataListViewModel
     lateinit var recyclerView: RecyclerView
+    lateinit var fab: FloatingActionButton
+
+    internal val adapter = Adapter()
 
     // region Fragment
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel = ViewModelProviders.of(this).get(DataListViewModel::class.java)
+
+        viewModel.observeLiveData().observe(viewLifecycleOwner, Observer {
+            adapter.updateData(it)
+        })
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,8 +41,9 @@ class DataListFragment : Fragment() {
         val rootView = inflater.inflate(R.layout.fragment_data_list, container, false)
         recyclerView = rootView.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        viewModel = ViewModelProviders.of(this).get(DataListViewModel::class.java)
-        recyclerView.adapter = Adapter(viewModel.data)
+        recyclerView.adapter = adapter
+        fab = rootView.findViewById(R.id.fab)
+        fab.setOnClickListener { viewModel.onAddData() }
         return rootView
     }
 
@@ -36,8 +51,10 @@ class DataListFragment : Fragment() {
 
     // region adapter
 
-    internal inner class Adapter(val data: Array<String>) :
+    internal inner class Adapter :
         RecyclerView.Adapter<Adapter.ViewHolder>() {
+
+        private val data: MutableList<String> = mutableListOf()
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val itemView = LayoutInflater.from(parent.context).inflate(
@@ -56,6 +73,12 @@ class DataListFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             holder.render(data[position])
+        }
+
+        internal fun updateData(newData: List<String>) {
+            data.clear()
+            data.addAll(newData)
+            notifyDataSetChanged()
         }
 
         internal inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
