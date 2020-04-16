@@ -5,10 +5,21 @@
  */
 package com.datadog.android.sample.datalist
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 class DataListViewModel : ViewModel() {
-    val data = Array(30) {
-        "Item $it"
+
+    val data = mutableListOf<String>()
+    val liveData = MutableLiveData<List<String>>()
+
+    fun onAddData() {
+        data.add("Item ${data.size}")
+        liveData.value = data.toList()
+    }
+
+    fun observeLiveData(): LiveData<List<String>> {
+        return liveData
     }
 }
