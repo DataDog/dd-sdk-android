@@ -36,16 +36,23 @@ task<Delete>("clean") {
     delete(rootProject.buildDir)
 }
 
+tasks.register("checkAll") {
+    dependsOn(
+        "ktlintCheckAll",
+        "detektAll",
+        "lintCheckAll",
+        "unitTestAll",
+        "jacocoReportAll",
+        "instrumentTestAll"
+    )
+}
+
 tasks.register("unitTestAll") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:testReleaseUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-android-androidx:testDebugUnitTest",
-        ":dd-sdk-android-androidx:testReleaseUnitTest",
-        ":dd-sdk-android-navigation:testDebugUnitTest",
-        ":dd-sdk-android-navigation:testReleaseUnitTest",
         ":sample:java:assembleDebug",
         ":sample:kotlin:assembleDebug",
         ":sample:kotlin-timber:assembleDebug",
@@ -58,23 +65,10 @@ tasks.register("unitTestAll") {
     )
 }
 
-tasks.register("checkAll") {
-    dependsOn(
-        "ktlintCheckAll",
-        "detektAll",
-        "lintCheckAll",
-        "unitTestAll",
-        "jacocoReportAll",
-        "instrumentTestAll"
-    )
-}
-
 tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
-        ":dd-sdk-android-androidx:ktlintCheck",
-        ":dd-sdk-android-navigation:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -87,11 +81,7 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android:lintDebug",
         ":dd-sdk-android:lintRelease",
         ":dd-sdk-android-timber:lintDebug",
-        ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-android-androidx:lintDebug",
-        ":dd-sdk-android-androidx:lintRelease",
-        ":dd-sdk-android-navigation:lintDebug",
-        ":dd-sdk-android-navigation:lintRelease"
+        ":dd-sdk-android-timber:lintRelease"
     )
 }
 
@@ -99,8 +89,6 @@ tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
         ":dd-sdk-android-timber:detekt",
-        ":dd-sdk-android-androidx:detekt",
-        ":dd-sdk-android-navigation:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
@@ -113,10 +101,6 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-androidx:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-androidx:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-navigation:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-navigation:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
         ":tools:unit:jacocoTestReleaseUnitTestReport"

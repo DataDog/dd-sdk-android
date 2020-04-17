@@ -1,8 +1,10 @@
-package com.datadog.android.androidx.fragment.internal
+package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
 
-internal object NoOpLifecycleCallback : LifecycleCallbacks<Activity> {
+internal class NoOpLifecycleCallback :
+    FragmentLifecycleCallbacks<Activity> {
+
     override fun register(activity: Activity) {
         // No Op
     }

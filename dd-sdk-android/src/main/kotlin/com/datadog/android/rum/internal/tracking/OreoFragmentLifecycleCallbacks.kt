@@ -1,16 +1,18 @@
-package com.datadog.android.androidx.fragment.internal
+package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
 import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.rum.GlobalRum
 
+@Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)
 internal class OreoFragmentLifecycleCallbacks(
     private val argumentsProvider: (Fragment) -> Map<String, Any?>
-) : LifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
+) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)

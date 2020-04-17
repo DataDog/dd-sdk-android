@@ -1,4 +1,10 @@
-package com.datadog.android.androidx.fragment
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.app.Application
@@ -8,11 +14,11 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
-import com.datadog.android.androidx.fragment.internal.OreoFragmentLifecycleCallbacks
-import com.datadog.android.androidx.fragment.internal.resolveViewName
-import com.datadog.android.androidx.fragment.internal.utils.mockRumMonitor
-import com.datadog.android.androidx.fragment.internal.utils.resetRumMonitorToDefaults
+import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -44,6 +50,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class FragmentViewTrackingStrategyTest {
+
     lateinit var underTest: FragmentViewTrackingStrategy
 
     @Mock
@@ -64,13 +71,14 @@ internal class FragmentViewTrackingStrategyTest {
     @Mock
     lateinit var mockBadContext: Context
 
+    @Mock
     lateinit var mockRumMonitor: RumMonitor
 
     // region Strategy tests
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockRumMonitor = mockRumMonitor()
+        GlobalRum.registerIfAbsent(mockRumMonitor)
         whenever(mockAndroidxActivity.supportFragmentManager)
             .thenReturn(mockAndroidxFragmentManager)
         whenever(mockActivity.fragmentManager)
@@ -80,7 +88,8 @@ internal class FragmentViewTrackingStrategyTest {
 
     @AfterEach
     fun `tear down`() {
-        resetRumMonitorToDefaults()
+        GlobalRum.isRegistered.set(false)
+        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     @Test
