@@ -9,8 +9,13 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.content.Context
 import android.view.Window
 
-internal interface GesturesTracker {
+internal class NoOpGesturesTracker : GesturesTracker {
 
-    fun startTracking(window: Window?, context: Context)
-    fun stopTracking(window: Window?, context: Context)
+    override fun startTracking(window: Window?, context: Context) {
+        // No Op
+    }
+
+    override fun stopTracking(window: Window?, context: Context) {
+        // No Op
+    }
 }
