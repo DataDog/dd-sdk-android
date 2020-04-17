@@ -23,6 +23,8 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
+import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpActionTrackingStrategy
@@ -52,6 +54,7 @@ internal object RumFeature {
     internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
     internal var userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
 
+    internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     internal var viewTrackingStrategy: ViewTrackingStrategy =
         NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy = NoOpActionTrackingStrategy()
@@ -79,6 +82,7 @@ internal object RumFeature {
         serviceName = config.serviceName
         envName = config.envName
 
+        gesturesTracker = config.gesturesTracker ?: NoOpGesturesTracker()
         viewTrackingStrategy = config.viewTrackingStrategy ?: NoOpViewTrackingStrategy()
         actionTrackingStrategy = config.userActionTrackingStrategy ?: NoOpActionTrackingStrategy()
 
