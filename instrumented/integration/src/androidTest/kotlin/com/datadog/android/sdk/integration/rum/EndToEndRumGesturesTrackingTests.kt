@@ -15,7 +15,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
+import com.datadog.android.sdk.rules.RumGesturesTrackingActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
@@ -28,7 +28,7 @@ import org.junit.runner.RunWith
 internal class EndToEndRumGesturesTrackingTests {
 
     @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
+    val mockServerRule = RumGesturesTrackingActivityTestRule(
         RumGesturesTrackingPlaygroundActivity::class.java,
         keepRequests = true
     )
