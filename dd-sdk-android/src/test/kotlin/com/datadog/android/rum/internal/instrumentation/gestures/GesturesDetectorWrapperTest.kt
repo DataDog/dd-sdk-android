@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-import android.app.Activity
 import android.view.MotionEvent
 import androidx.core.view.GestureDetectorCompat
 import com.datadog.android.utils.forge.Configurator
@@ -45,13 +44,9 @@ internal class GesturesDetectorWrapperTest {
     @Mock
     lateinit var mockGesturesDetectorCompat: GestureDetectorCompat
 
-    @Mock
-    lateinit var mockActivity: Activity
-
     @BeforeEach
     fun `set up`() {
         underTest = GesturesDetectorWrapper(
-            mockActivity,
             mockGesturesDetectorListener,
             mockGesturesDetectorCompat
         )

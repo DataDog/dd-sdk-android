@@ -6,15 +6,49 @@
 
 package com.datadog.android.rum.internal.tracking
 
+import android.os.Bundle
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 
 internal class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
+
+    // region FragmentLifecycleCallbacks
+
+    override fun register(activity: FragmentActivity) {
+        activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, true)
+    }
+
+    override fun unregister(activity: FragmentActivity) {
+        activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(this)
+    }
+
+    // endregion
+
+    // region FragmentManager.FragmentLifecycleCallbacks
+
+    override fun onFragmentActivityCreated(
+        fm: FragmentManager,
+        f: Fragment,
+        savedInstanceState: Bundle?
+    ) {
+        super.onFragmentActivityCreated(fm, f, savedInstanceState)
+
+        val context = f.context
+
+        if (f is DialogFragment && context != null) {
+            val window = f.dialog?.window
+            val gesturesTracker = RumFeature.gesturesTracker
+            gesturesTracker.startTracking(window, context)
+        }
+    }
+
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         GlobalRum.get()
@@ -30,11 +64,5 @@ internal class AndroidXFragmentLifecycleCallbacks(
         GlobalRum.get().stopView(f)
     }
 
-    override fun register(activity: FragmentActivity) {
-        activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, true)
-    }
-
-    override fun unregister(activity: FragmentActivity) {
-        activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(this)
-    }
+    // endregion
 }

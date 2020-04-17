@@ -7,15 +7,21 @@
 package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
+import android.app.Dialog
+import android.app.DialogFragment
 import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
+import android.view.Window
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -33,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@Suppress("DEPRECATION")
 @Extensions(
     ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class),
@@ -43,10 +50,16 @@ internal class OreoFragmentLifecycleCallbacksTest {
     lateinit var underTest: OreoFragmentLifecycleCallbacks
 
     @Mock
-    lateinit var mockFragment: TestFragment1
+    lateinit var mockFragment: Fragment
 
     @Mock
     lateinit var mockActivity: Activity
+
+    @Mock
+    lateinit var mockWindow: Window
+
+    @Mock
+    lateinit var mockDialog: Dialog
 
     @Mock
     lateinit var mockFragmentManager: FragmentManager
@@ -56,11 +69,17 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockGesturesTracker: GesturesTracker
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         GlobalRum.registerIfAbsent(mockRumMonitor)
+        RumFeature.gesturesTracker = mockGesturesTracker
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
+        whenever(mockActivity.window).thenReturn(mockWindow)
+
         attributesMap = forge.aMap { forge.aString() to forge.aString() }
         underTest = OreoFragmentLifecycleCallbacks { attributesMap }
     }
@@ -69,6 +88,29 @@ internal class OreoFragmentLifecycleCallbacksTest {
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+    }
+
+    @Test
+    fun `when fragment activity created on DialogFragment, it will register a Window Callback`(
+        forge: Forge
+    ) {
+        val mockDialogFragment: DialogFragment = mock()
+        whenever(mockDialogFragment.context) doReturn mockActivity
+        whenever(mockDialogFragment.dialog) doReturn mockDialog
+        whenever(mockDialog.window) doReturn mockWindow
+
+        underTest.onFragmentActivityCreated(mock(), mockDialogFragment, null)
+
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
+    }
+
+    @Test
+    fun `when fragment activity created on Fragment, registers nothing`(forge: Forge) {
+        whenever(mockFragment.context) doReturn mockActivity
+
+        underTest.onFragmentActivityCreated(mock(), mockFragment, null)
+
+        verifyZeroInteractions(mockGesturesTracker)
     }
 
     @Test
@@ -133,6 +175,4 @@ internal class OreoFragmentLifecycleCallbacksTest {
         // then
         verifyZeroInteractions(mockFragmentManager)
     }
-
-    internal open class TestFragment1 : Fragment()
 }

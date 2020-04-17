@@ -10,10 +10,10 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.view.Window
 import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -37,12 +37,18 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal abstract class ActivityLifecycleTrackingStrategyTest {
+
     lateinit var underTest: ActivityLifecycleTrackingStrategy
     @Mock
     lateinit var mockIntent: Intent
+
     @Mock
     lateinit var mockRumMonitor: RumMonitor
+
+    @Mock
     lateinit var mockActivity: Activity
+    @Mock
+    lateinit var mockWindow: Window
 
     @Mock
     lateinit var mockAppContext: Application
@@ -53,11 +59,8 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
     @BeforeEach
     open fun `set up`(forge: Forge) {
         GlobalRum.registerIfAbsent(mockRumMonitor)
-        val mockActivity1 = mock<Test1Activity>()
-        val mockActivity2 = mock<Test2Activity>()
-        val mockActivity3 = mock<Test3Activity>()
-        mockActivity = forge.anElementFrom(mockActivity1, mockActivity2, mockActivity3)
         whenever(mockActivity.intent).thenReturn(mockIntent)
+        whenever(mockActivity.window).thenReturn(mockWindow)
     }
 
     @AfterEach
@@ -101,8 +104,4 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
         // verify
         verifyZeroInteractions(mockBadContext)
     }
-
-    internal class Test1Activity() : Activity()
-    internal class Test2Activity() : Activity()
-    internal class Test3Activity() : Activity()
 }

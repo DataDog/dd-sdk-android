@@ -10,6 +10,7 @@ import android.os.Build
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -43,6 +44,7 @@ private constructor(
         val endpointUrl: String,
         val serviceName: String,
         val envName: String,
+        val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
         val viewTrackingStrategy: ViewTrackingStrategy? = null
     )
@@ -62,7 +64,7 @@ private constructor(
          * @param clientToken your API key of type Client Token
          */
         constructor(clientToken: String) :
-                this(clientToken, UUID(0, 0))
+            this(clientToken, UUID(0, 0))
 
         /**
          * A Builder class for a [DatadogConfig].
@@ -70,7 +72,7 @@ private constructor(
          * @param applicationId your applicationId for RUM events
          */
         constructor(clientToken: String, applicationId: String) :
-                this(clientToken, UUID.fromString(applicationId))
+            this(clientToken, UUID.fromString(applicationId))
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
@@ -266,9 +268,13 @@ private constructor(
         fun trackGestures(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
+            val gesturesTracker = DatadogGesturesTracker(
+                touchTargetExtraAttributesProviders
+            )
             rumConfig = rumConfig.copy(
+                gesturesTracker = gesturesTracker,
                 userActionTrackingStrategy = provideUserTrackingStrategy(
-                    touchTargetExtraAttributesProviders
+                    gesturesTracker
                 )
             )
             return this
@@ -291,20 +297,14 @@ private constructor(
             }
         }
 
-        private fun provideUserTrackingStrategy(attributesProviders: Array<ViewAttributesProvider>):
-                UserActionTrackingStrategy {
+        private fun provideUserTrackingStrategy(
+            gesturesTracker: GesturesTracker
+        ):
+            UserActionTrackingStrategy {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                GesturesTrackingStrategyApi29(
-                    DatadogGesturesTracker(
-                        attributesProviders
-                    )
-                )
+                GesturesTrackingStrategyApi29(gesturesTracker)
             } else {
-                GesturesTrackingStrategy(
-                    DatadogGesturesTracker(
-                        attributesProviders
-                    )
-                )
+                GesturesTrackingStrategy(gesturesTracker)
             }
         }
     }

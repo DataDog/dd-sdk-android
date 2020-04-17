@@ -44,7 +44,7 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
         // when
         underTest.onActivityResumed(mockActivity)
         // then
-        verify(mockGesturesTracker).startTracking(mockActivity)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
     }
 
     @Test
@@ -52,6 +52,6 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
         // when
         underTest.onActivityPaused(mockActivity)
         // then
-        verify(mockGesturesTracker).stopTracking(mockActivity)
+        verify(mockGesturesTracker).stopTracking(mockWindow, mockActivity)
     }
 }
