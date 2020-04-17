@@ -18,7 +18,7 @@ You also need to set the `android.useAndroidX` and `android.enableJetifier` prop
 
 This issue can occur if your dependencies rely on different Guava artifacts as the Datadog SDK for Android. The SDK uses AndroidX's WorkManager, which depends on a specific Guava dependency.
 
-Solve this issue by excluding the conflicting module from your dependency, eg: 
+Solve this issue by excluding the conflicting module from your dependency, eg:
 
 ```
 implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
@@ -61,7 +61,15 @@ kotlinOptions {
     jvmTarget = "1.8"
 }
 ```
+### Crash with `java.lang.NoSuchMethodError: No static method wrap(Landroid/view/WindowInsets)` in class `Landroidx/core/view/WindowInsetsCompat`
 
+If you are using the `androidx.core:core-ktx` have in mind that Datadog SDK is also using this dependency and the build tools sometimes are handling badly the dependencies conflicts. In short you can end up with a compiled app which is using classes from version X of `androidx.core:core-ktx` and some classes from version Y of `androidx.core:core-ktx` in which some methods called from X classes may no longer exists. The workaround is to drop the `androidx.core:core-ktx` transitive dependency when adding our SDK.
+
+```
+implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
+    exclude group: 'androidx.core', module: 'core-ktx'
+}
+```
 ## Feature issues
 
 ### Foreword
@@ -74,7 +82,7 @@ If you think the SDK does not behave as it should, make sure you set the library
 
 ### Logs/Traces are not appearing in your dashboard.
 
-Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens). 
+Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens).
 Otherwise, if the library's logs are enabled, you should see the following message in the Logcat :
- 
+
 > Unable to send batch because your token is invalid. Make sure that the provided token still exists.
