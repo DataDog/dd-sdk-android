@@ -1,14 +1,25 @@
-package com.datadog.android.androidx.fragment.internal
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
 
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
-import com.datadog.android.androidx.fragment.internal.utils.mockRumMonitor
-import com.datadog.android.androidx.fragment.internal.utils.resetRumMonitorToDefaults
+package com.datadog.android.rum.internal.tracking
+
+import android.app.Activity
+import android.app.Fragment
+import android.app.FragmentManager
+import android.os.Build
+import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -24,36 +35,40 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(ForgeExtension::class),
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class CompatFragmentLifecycleCallbacksTest {
-    lateinit var underTest: CompatFragmentLifecycleCallbacks
+internal class OreoFragmentLifecycleCallbacksTest {
+    lateinit var underTest: OreoFragmentLifecycleCallbacks
 
     @Mock
     lateinit var mockFragment: TestFragment1
 
     @Mock
-    lateinit var mockFragmentActivity: FragmentActivity
+    lateinit var mockActivity: Activity
 
     @Mock
     lateinit var mockFragmentManager: FragmentManager
 
     lateinit var attributesMap: Map<String, Any?>
 
+    @Mock
     lateinit var mockRumMonitor: RumMonitor
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockRumMonitor = mockRumMonitor()
-        whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         attributesMap = forge.aMap { forge.aString() to forge.aString() }
-        underTest = CompatFragmentLifecycleCallbacks { attributesMap }
+        underTest = OreoFragmentLifecycleCallbacks { attributesMap }
     }
 
     @AfterEach
     fun `tear down`() {
-        resetRumMonitorToDefaults()
+        GlobalRum.isRegistered.set(false)
+        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     @Test
@@ -80,21 +95,43 @@ internal class CompatFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `will register the callback to fragment manager when required`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `it will register the callback to fragment manager on O`() {
         // when
-        underTest.register(mockFragmentActivity)
+        underTest.register(mockActivity)
 
         // then
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(underTest, true)
     }
 
     @Test
-    fun `will unregister the callback from the fragment manager when required`() {
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `it will unregister the callback from fragment manager on O`() {
         // when
-        underTest.unregister(mockFragmentActivity)
+        underTest.unregister(mockActivity)
 
         // then
         verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(underTest)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.M)
+    fun `it will do nothing when calling register on M`() {
+        // when
+        underTest.register(mockActivity)
+
+        // then
+        verifyZeroInteractions(mockFragmentManager)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.M)
+    fun `it will do nothing when calling unregister on M`() {
+        // when
+        underTest.unregister(mockActivity)
+
+        // then
+        verifyZeroInteractions(mockFragmentManager)
     }
 
     internal open class TestFragment1 : Fragment()

@@ -214,6 +214,19 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   constructor(Boolean)
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
+class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+class com.datadog.android.rum.tracking.JetpackViewAttributesProvider : ViewAttributesProvider
+  override fun extractAttributes(android.view.View, MutableMap<String, Any?>)
+class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController, OnDestinationChangedListener
+  constructor(Int, Boolean)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
+  companion object
 interface com.datadog.android.rum.tracking.TrackingStrategy
   fun register(android.content.Context)
   fun unregister(android.content.Context?)

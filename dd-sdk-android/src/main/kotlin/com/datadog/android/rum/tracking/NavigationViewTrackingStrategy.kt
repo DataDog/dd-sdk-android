@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.androidx.navigation
+package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.os.Bundle
@@ -17,8 +17,6 @@ import androidx.navigation.findNavController
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
-import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.lang.IllegalStateException
 
 /**

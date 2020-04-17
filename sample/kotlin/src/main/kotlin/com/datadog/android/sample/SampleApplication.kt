@@ -9,10 +9,10 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.androidx.navigation.NavigationViewTrackingStrategy
-import com.datadog.android.androidx.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.tracing.AndroidTracer
 import io.opentracing.util.GlobalTracer
 

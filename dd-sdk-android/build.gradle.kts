@@ -108,8 +108,13 @@ dependencies {
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
+
     implementation(Dependencies.Libraries.AndroidXWorkManager)
     implementation(Dependencies.Libraries.AndroidXCore)
+    implementation(Dependencies.Libraries.AndroidXAppCompat)
+    implementation(Dependencies.Libraries.AndroidXRecyclerView)
+    implementation(Dependencies.Libraries.AndroidXNavigation)
+
     api(Dependencies.Libraries.TracingOt)
 
     testImplementation(project(":tools:unit"))

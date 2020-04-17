@@ -1,4 +1,10 @@
-package com.datadog.android.androidx.tracking
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.tracking
 
 import android.content.res.Resources
 import android.view.View
@@ -85,11 +91,11 @@ class JetpackViewAttributesProviderTest {
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to
-                        expectedAdapterPosition,
+                    expectedAdapterPosition,
                 RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
-                        mockedRecyclerView.javaClass.canonicalName,
+                    mockedRecyclerView.javaClass.canonicalName,
                 RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
-                        expectedParentResourceId
+                    expectedParentResourceId
             )
         )
     }
@@ -133,11 +139,11 @@ class JetpackViewAttributesProviderTest {
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to
-                        expectedAdapterPosition,
+                    expectedAdapterPosition,
                 RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
-                        mockedRecyclerView.javaClass.canonicalName,
+                    mockedRecyclerView.javaClass.canonicalName,
                 RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
-                        expectedParentResourceId
+                    expectedParentResourceId
             )
         )
     }

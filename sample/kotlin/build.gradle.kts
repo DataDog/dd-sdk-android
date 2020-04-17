@@ -104,10 +104,6 @@ android {
 dependencies {
 
     api(project(":dd-sdk-android"))
-    api(project(":dd-sdk-android-androidx"))
-    api(project(":dd-sdk-android-navigation")) {
-        exclude("com.google.guava", module = "listenablefuture")
-    }
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
