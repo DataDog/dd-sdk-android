@@ -8,23 +8,22 @@ package com.datadog.android.sample;
 
 import android.os.Bundle;
 import android.view.MenuItem;
-
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
 import com.datadog.android.rum.RumMonitor;
+import com.datadog.android.sample.dialog.SampleDialogFragment;
 import com.datadog.android.sample.logs.LogsFragment;
 import com.datadog.android.sample.traces.TracesFragment;
 import com.datadog.android.sample.user.UserFragment;
 import com.datadog.android.sample.webview.WebFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
@@ -133,32 +132,28 @@ public class MainActivity extends AppCompatActivity {
                     put("fragment_id", Integer.toString(id));
                 }});
         final Fragment fragmentToUse;
-        final String spanName;
         switch (id) {
             case R.id.navigation_logs:
-                mLogger.i("Switching to fragment: Logs");
-                spanName = "SwitchingToLogsFragment";
                 fragmentToUse = LogsFragment.newInstance();
                 break;
             case R.id.navigation_webview:
-                mLogger.i("Switching to fragment: Web");
-                spanName = "SwitchingToWebViewFragment";
                 fragmentToUse = WebFragment.newInstance();
                 break;
             case R.id.navigation_traces:
-                mLogger.i("Switching to fragment: Traces");
-                spanName = "SwitchingToTracesFragment";
                 fragmentToUse = TracesFragment.newInstance();
                 break;
             case R.id.navigation_user:
-                mLogger.i("Switching to fragment: User");
-                spanName = "SwitchingToUserFragment";
                 fragmentToUse = UserFragment.newInstance();
+                break;
+            case R.id.navigation_dialog:
+                fragmentToUse = SampleDialogFragment.newInstance();
                 break;
             default:
                 mLogger.e("Switching to unknown fragment " + id);
                 throw new IllegalStateException("Unknown fragment " + id);
         }
+        final String spanName = fragmentToUse.getClass().getSimpleName();
+        mLogger.i("Switching to fragment: " + spanName);
 
         addSpanInScope(spanName, new Runnable() {
             @Override
@@ -166,8 +161,12 @@ public class MainActivity extends AppCompatActivity {
                 final Bundle args = new Bundle();
                 args.putInt("id", id);
                 FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-                ft.replace(R.id.fragment_host, fragmentToUse);
-                ft.commit();
+                if (fragmentToUse instanceof DialogFragment) {
+                    ((DialogFragment) fragmentToUse).show(ft, "dialog");
+                } else {
+                    ft.replace(R.id.fragment_host, fragmentToUse);
+                    ft.commit();
+                }
             }
         });
 
