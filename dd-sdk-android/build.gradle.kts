@@ -148,6 +148,8 @@ cloneDependencies {
         "dd-trace-api",
         listOf(
             "dd-trace-api.gradle",
+            "src/main/java/datadog/trace/api/GlobalTracer.java",
+            "src/main/java/datadog/trace/api/CorrelationIdentifier.java",
             "src/test"
         )
     )
