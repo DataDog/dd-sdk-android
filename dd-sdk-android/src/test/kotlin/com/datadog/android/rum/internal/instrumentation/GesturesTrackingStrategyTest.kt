@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.instrumentation
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategyTest
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -41,10 +40,18 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
     }
 
     @Test
-    fun `when activity created it will start tracking gestures`(forge: Forge) {
+    fun `when activity resumed it will start tracking gestures`(forge: Forge) {
         // when
-        underTest.onActivityCreated(mockActivity, mock())
+        underTest.onActivityResumed(mockActivity)
         // then
         verify(mockGesturesTracker).startTracking(mockActivity)
+    }
+
+    @Test
+    fun `when activity paused it will stop tracking gestures`(forge: Forge) {
+        // when
+        underTest.onActivityPaused(mockActivity)
+        // then
+        verify(mockGesturesTracker).stopTracking(mockActivity)
     }
 }

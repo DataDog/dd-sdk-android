@@ -34,6 +34,17 @@ internal class DatadogGesturesTracker(
         )
     }
 
+    override fun stopTracking(activity: Activity) {
+        val currentCallback = activity.window.callback
+        if (currentCallback is WindowCallbackWrapper) {
+            if (currentCallback.wrappedCallback !is NoOpWindowCallback) {
+                activity.window.callback = currentCallback.wrappedCallback
+            } else {
+                activity.window.callback = null
+            }
+        }
+    }
+
     // endregion
 
     // region Internal
