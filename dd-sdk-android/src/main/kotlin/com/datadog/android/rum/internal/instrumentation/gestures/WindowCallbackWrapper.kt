@@ -6,9 +6,12 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import java.lang.Exception
 
 internal class WindowCallbackWrapper(
@@ -33,6 +36,16 @@ internal class WindowCallbackWrapper(
             copy.recycle()
         }
         return wrappedCallback.dispatchTouchEvent(event)
+    }
+
+    override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+        val attributes = mutableMapOf<String, Any?>(
+            RumAttributes.TAG_TARGET_CLASS_NAME to item.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
+            RumAttributes.TAG_TARGET_TITLE to item.title
+        )
+        GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
+        return false
     }
 
     // endregion

@@ -6,10 +6,9 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-import android.app.Activity
-
-internal interface GesturesTracker {
-
-    fun startTracking(activity: Activity)
-    fun stopTracking(activity: Activity)
+internal enum class Gesture(val actionName: String) {
+    TAP("Tap"),
+    SWIPE("Swipe"),
+    SCROLL("Scroll"),
+    NONE("")
 }

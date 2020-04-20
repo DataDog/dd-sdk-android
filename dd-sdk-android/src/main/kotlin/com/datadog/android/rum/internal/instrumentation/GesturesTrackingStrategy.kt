@@ -7,18 +7,22 @@
 package com.datadog.android.rum.internal.instrumentation
 
 import android.app.Activity
-import android.os.Bundle
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 
 internal class GesturesTrackingStrategy(
     internal val gesturesTracker: GesturesTracker
-) : ActivityLifecycleTrackingStrategy(),
+) :
+    ActivityLifecycleTrackingStrategy(),
     UserActionTrackingStrategy {
-
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+    override fun onActivityResumed(activity: Activity) {
+        super.onActivityResumed(activity)
         gesturesTracker.startTracking(activity)
-        super.onActivityCreated(activity, savedInstanceState)
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        super.onActivityPaused(activity)
+        gesturesTracker.stopTracking(activity)
     }
 }

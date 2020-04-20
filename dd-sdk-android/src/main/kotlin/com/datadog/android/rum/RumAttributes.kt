@@ -304,6 +304,12 @@ object RumAttributes {
         "target.scrollableContainer.resourceId"
 
     /**
+     * The value of the target title attribute. We are usually adding this as an extra information
+     * for the Tapped Menu items.
+     */
+    internal const val TAG_TARGET_TITLE = "target.title"
+
+    /**
      * The gesture event direction.
      */
     internal const val TAG_GESTURE_DIRECTION = "gesture.direction"

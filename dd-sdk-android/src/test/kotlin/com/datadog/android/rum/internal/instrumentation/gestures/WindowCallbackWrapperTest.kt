@@ -6,10 +6,20 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.app.Application
+import android.content.res.Resources
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
@@ -17,7 +27,9 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.ref.WeakReference
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,10 +50,21 @@ import org.mockito.quality.Strictness
 internal class WindowCallbackWrapperTest {
 
     lateinit var underTest: WindowCallbackWrapper
+
     @Mock
     lateinit var mockCallback: Window.Callback
+
     @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
+
+    @Mock
+    lateinit var mockAppContext: Application
+
+    @Mock
+    lateinit var mockResources: Resources
+
+    @Mock
+    lateinit var mockRumMonitor: RumMonitor
 
     @BeforeEach
     fun `set up`() {
@@ -49,6 +72,16 @@ internal class WindowCallbackWrapperTest {
             mockCallback,
             mockGestureDetector
         )
+        whenever(mockAppContext.resources).thenReturn(mockResources)
+        CoreFeature.contextRef = WeakReference(mockAppContext)
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        CoreFeature.contextRef = WeakReference(null)
+        GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -82,5 +115,31 @@ internal class WindowCallbackWrapperTest {
         // then
         verify(mockGestureDetector).onTouchEvent(copyMotionEvent)
         verify(copyMotionEvent).recycle()
+    }
+
+    @Test
+    fun `menu item selection will trigger a Rum UserActionEvent`(forge: Forge) {
+        // given
+        val itemTitle = forge.aString()
+        val itemId = forge.anInt()
+        val itemResourceName = forge.aString()
+        whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
+        }
+
+        // when
+        assertThat(underTest.onMenuItemSelected(forge.anInt(), menuItem)).isEqualTo(false)
+
+        // then
+        verify(mockRumMonitor).addUserAction(
+            eq(Gesture.TAP.actionName),
+            argThat {
+                val targetClassName = menuItem.javaClass.canonicalName
+                this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.TAG_TARGET_RESOURCE_ID] == itemResourceName &&
+                        this[RumAttributes.TAG_TARGET_TITLE] == itemTitle
+            })
     }
 }
