@@ -79,8 +79,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
             .getInstrumentation()
             .targetContext
             .filesDir.deleteRecursively {
-            println("After activity finished deleting file $it")
-        }
+                println("After activity finished deleting file $it")
+            }
         super.afterActivityFinished()
     }
 

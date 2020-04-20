@@ -8,14 +8,17 @@ package com.datadog.android.sdk.rules
 
 import android.app.Activity
 import android.app.Application
+import android.content.Intent
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.sdk.utils.addExtras
 import com.datadog.tools.unit.getFieldValue
 import kotlin.collections.ArrayList
 
 internal open class RumMockServerActivityTestRule<T : Activity>(
-    activityClass: Class<T>,
-    keepRequests: Boolean = false
+    private val activityClass: Class<T>,
+    keepRequests: Boolean = false,
+    private val intentExtras: Map<String, Any?> = emptyMap()
 ) : MockServerActivityTestRule<T>(activityClass, keepRequests) {
 
     // region ActivityTestRule
@@ -28,6 +31,11 @@ internal open class RumMockServerActivityTestRule<T : Activity>(
     override fun afterActivityFinished() {
         removeRumCallbacks()
         super.afterActivityFinished()
+    }
+
+    override fun getActivityIntent(): Intent {
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        return Intent(targetContext, activityClass).apply { addExtras(intentExtras) }
     }
 
     // endregion

@@ -20,6 +20,7 @@ internal const val VIEW_ID = "view.id"
 
 internal const val VIEW_URL = "view.url"
 internal const val RUM_DOC_VERSION = "rum.document_version"
+internal const val VIEW_ARGUMENTS_PREFIX = "view.arguments."
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
     return payload.split(Regex("\n"))
@@ -60,6 +61,7 @@ private fun JsonObject.assertMatches(event: ExpectedViewEvent) {
     JsonObjectAssert.assertThat(this)
         .hasField(VIEW_URL, event.viewUrl)
         .hasField(RUM_DOC_VERSION, event.docVersion)
+    JsonObjectAssert.assertThat(this).bundlesMap(event.extras, VIEW_ARGUMENTS_PREFIX)
 }
 
 private fun JsonObject.assertMatchesRoot(event: ExpectedEvent) {
