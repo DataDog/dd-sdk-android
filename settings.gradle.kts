@@ -48,3 +48,4 @@ include(":sample:kotlin-timber")
 
 include(":tools:detekt")
 include(":tools:unit")
+include(":tools:noopfactory")
