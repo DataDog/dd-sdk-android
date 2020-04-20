@@ -6,6 +6,9 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 internal interface MutableTimeProvider : TimeProvider {
 
     /**

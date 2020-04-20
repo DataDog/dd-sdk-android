@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit

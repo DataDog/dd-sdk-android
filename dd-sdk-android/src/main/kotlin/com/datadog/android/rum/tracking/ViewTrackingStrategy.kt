@@ -5,8 +5,11 @@
  */
 package com.datadog.android.rum.tracking
 
+import com.datadog.tools.annotation.NoOpImplementation
+
 /**
  * A TrackingStrategy dedicated to views tracking.
  */
+@NoOpImplementation
 interface ViewTrackingStrategy :
     TrackingStrategy

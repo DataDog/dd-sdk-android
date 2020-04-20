@@ -8,7 +8,9 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
 import android.view.Window
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface GesturesTracker {
 
     fun startTracking(window: Window?, context: Context)
