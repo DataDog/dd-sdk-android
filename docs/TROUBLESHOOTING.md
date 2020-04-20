@@ -82,7 +82,7 @@ If you think the SDK does not behave as it should, make sure you set the library
 
 ### Logs/Traces are not appearing in your dashboard.
 
-Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens).
+Initialize the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens).
 Otherwise, if the library's logs are enabled, you should see the following message in the Logcat :
 
 > Unable to send batch because your token is invalid. Make sure that the provided token still exists.
