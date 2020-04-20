@@ -411,8 +411,8 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     /**
-     *  Verifies that the actual Map of key -> value pairs is contained as a property -> value
-     *  equivalent inside the JsonObject
+     *  Verifies that the actual Map of key -> value pairs is contained as a
+     *  property -> value equivalent inside the JsonObject.
      *  @param map the Map to be asserted
      */
     fun bundlesMap(map: Map<String, Any?>, keysPrefix: String = ""): JsonObjectAssert {
