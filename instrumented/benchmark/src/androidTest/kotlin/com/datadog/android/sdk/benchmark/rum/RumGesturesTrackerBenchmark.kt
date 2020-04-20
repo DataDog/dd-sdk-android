@@ -83,7 +83,7 @@ internal class RumGesturesTrackerBenchmark {
         Datadog.invokeMethod("stop")
         mockWebServer.shutdown()
         val noOpMonitor = createInstance(
-            "com.datadog.android.rum.internal.monitor.NoOpRumMonitor"
+            "com.datadog.android.rum.NoOpRumMonitor"
         )
         GlobalRum::class.java.setStaticValue("monitor", noOpMonitor)
         val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")

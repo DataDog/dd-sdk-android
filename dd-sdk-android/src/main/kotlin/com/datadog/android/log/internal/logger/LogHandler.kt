@@ -6,6 +6,9 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 internal interface LogHandler {
 
     /**

@@ -8,7 +8,9 @@ package com.datadog.android.core.internal.domain
 
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface PersistenceStrategy<T : Any> {
 
     fun getWriter(): Writer<T>

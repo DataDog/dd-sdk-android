@@ -8,10 +8,10 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.core.internal.net.RequestInterceptor
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any

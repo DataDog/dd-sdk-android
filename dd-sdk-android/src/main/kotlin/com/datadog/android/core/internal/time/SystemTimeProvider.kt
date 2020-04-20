@@ -6,7 +6,10 @@
 
 package com.datadog.android.core.internal.time
 
-internal class NoOpTimeProvider : MutableTimeProvider {
+/**
+ * An implementation of [MutableTimeProvider] which always returns the system time.
+ */
+internal class SystemTimeProvider : MutableTimeProvider {
 
     // region MutableTimeProvider
 

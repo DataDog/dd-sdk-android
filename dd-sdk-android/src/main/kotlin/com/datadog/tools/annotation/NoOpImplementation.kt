@@ -4,15 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.net
+package com.datadog.tools.annotation
 
-internal class NoOpDataUploader : DataUploader {
-
-    // region DataUploader
-
-    override fun upload(data: ByteArray): UploadStatus {
-        return UploadStatus.SUCCESS
-    }
-
-    // endregion
-}
+/**
+ * Adding this annotation on an interface will generate a No-Op implementation class.
+ */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.BINARY)
+annotation class NoOpImplementation

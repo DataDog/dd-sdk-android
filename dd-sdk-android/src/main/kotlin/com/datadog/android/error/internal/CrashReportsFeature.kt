@@ -9,10 +9,11 @@ package com.datadog.android.error.internal
 import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
-import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -45,8 +46,8 @@ internal object CrashReportsFeature {
         private set
 
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
-    internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
+    internal var uploader: DataUploader = NoOpDataUploader()
+    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -89,7 +90,7 @@ internal object CrashReportsFeature {
 
             persistenceStrategy = NoOpPersistenceStrategy()
             uploader = NoOpDataUploader()
-            dataUploadScheduler = NoOpDataUploadScheduler()
+            dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.LOGS_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME

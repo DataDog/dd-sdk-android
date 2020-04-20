@@ -7,7 +7,9 @@
 package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface FragmentLifecycleCallbacks<T : Activity> {
 
     // region Lifecycle

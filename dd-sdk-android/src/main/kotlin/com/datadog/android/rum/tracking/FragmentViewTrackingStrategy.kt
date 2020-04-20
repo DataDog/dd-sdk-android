@@ -12,7 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.FragmentLifecycleCallbacks
-import com.datadog.android.rum.internal.tracking.NoOpLifecycleCallback
+import com.datadog.android.rum.internal.tracking.NoOpFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 
 /**
@@ -41,7 +41,7 @@ class FragmentViewTrackingStrategy(private val trackArguments: Boolean) :
                     if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                 }
             } else {
-                NoOpLifecycleCallback()
+                NoOpFragmentLifecycleCallbacks<Activity>()
             }
         }
 

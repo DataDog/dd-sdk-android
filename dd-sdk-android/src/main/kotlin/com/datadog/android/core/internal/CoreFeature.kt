@@ -19,10 +19,10 @@ import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.DatadogTimeProvider
 import com.datadog.android.core.internal.time.MutableTimeProvider
-import com.datadog.android.core.internal.time.NoOpTimeProvider
+import com.datadog.android.core.internal.time.NoOpMutableTimeProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -48,9 +48,9 @@ internal object CoreFeature {
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
-    internal var timeProvider: MutableTimeProvider = NoOpTimeProvider()
+    internal var timeProvider: MutableTimeProvider = NoOpMutableTimeProvider()
 
-    internal var userInfoProvider: MutableUserInfoProvider = NoOpUserInfoProvider()
+    internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
 
     internal var okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
 
@@ -95,10 +95,10 @@ internal object CoreFeature {
             }
             contextRef.clear()
 
-            timeProvider = NoOpTimeProvider()
+            timeProvider = NoOpMutableTimeProvider()
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
-            userInfoProvider = NoOpUserInfoProvider()
+            userInfoProvider = NoOpMutableUserInfoProvider()
             shutDownExecutors()
             initialized.set(false)
         }

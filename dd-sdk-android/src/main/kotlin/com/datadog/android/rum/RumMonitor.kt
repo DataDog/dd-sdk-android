@@ -12,7 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  *  A class enabling Datadog RUM features.
@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
  *
  *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
  */
+@NoOpImplementation
 interface RumMonitor {
 
     /**
