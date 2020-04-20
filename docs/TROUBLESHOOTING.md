@@ -63,7 +63,7 @@ kotlinOptions {
 ```
 ### Crash with `java.lang.NoSuchMethodError: No static method wrap(Landroid/view/WindowInsets)` in class `Landroidx/core/view/WindowInsetsCompat`
 
-If you are using the `androidx.core:core-ktx` have in mind that Datadog SDK is also using this dependency and the build tools sometimes are handling badly the dependencies conflicts. In short you can end up with a compiled app which is using classes from version X of `androidx.core:core-ktx` and some classes from version Y of `androidx.core:core-ktx` in which some methods called from X classes may no longer exists. The workaround is to drop the `androidx.core:core-ktx` transitive dependency when adding our SDK.
+Datadog SDK is using the dependency `androidx.core:core-ktx`. If you are also using this dependency, the build tools may have conflicts. For example, your compiled app could be using classes from version X and Y of `androidx.core:core-ktx` in which some methods called from X classes may no longer exist. The workaround is to drop the `androidx.core:core-ktx` transitive dependency when adding our SDK.
 
 ```
 implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
