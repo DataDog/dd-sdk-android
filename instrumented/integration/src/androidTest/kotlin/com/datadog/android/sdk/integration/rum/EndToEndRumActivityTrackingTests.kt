@@ -24,11 +24,17 @@ import org.junit.runner.RunWith
 internal class EndToEndRumActivityTrackingTests {
 
     private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
+    private val expectedExtras = mapOf<String, Any?>(
+        "key1" to "keyValue1",
+        "key2" to 1,
+        "key3" to 2.0f
+    )
 
     @get:Rule
     val mockServerRule = RumMockServerActivityTestRule(
         RumActivityTrackingPlaygroundActivity::class.java,
-        keepRequests = true
+        keepRequests = true,
+        intentExtras = expectedExtras
     )
 
     @Test
@@ -39,7 +45,13 @@ internal class EndToEndRumActivityTrackingTests {
             '/'
         )
         instrumentation.waitForIdleSync()
-        expectedEvents.add(ExpectedViewEvent(viewUrl, docVersion = 2))
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 2,
+                extras = expectedExtras
+            )
+        )
         // activity on pause
         instrumentation.runOnMainSync {
             instrumentation

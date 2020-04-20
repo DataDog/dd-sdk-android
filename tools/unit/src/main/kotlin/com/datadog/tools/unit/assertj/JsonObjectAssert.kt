@@ -406,18 +406,45 @@ class JsonObjectAssert(actual: JsonObject) :
             )
             .isTrue()
         val jsonObject = element as JsonObject
+        assertMapInJsonObject(map, jsonObject)
+        return this
+    }
+
+    /**
+     *  Verifies that the actual Map of key -> value pairs is contained as a property -> value
+     *  equivalent inside the JsonObject
+     *  @param map the Map to be asserted
+     */
+    fun bundlesMap(map: Map<String, Any?>, keysPrefix: String = ""): JsonObjectAssert {
+        assertMapInJsonObject(map, actual, keysPrefix)
+        return this
+    }
+
+    private fun assertMapInJsonObject(
+        map: Map<String, Any?>,
+        jsonObject: JsonObject,
+        keyPrefix: String = ""
+    ) {
         map.forEach {
             val keyValue = it.value
-            when (keyValue) {
-                is String -> assertThat(jsonObject).hasField(it.key, keyValue)
-                is Int -> assertThat(jsonObject).hasField(it.key, keyValue)
-                is Long -> assertThat(jsonObject).hasField(it.key, keyValue)
-                is Double -> assertThat(jsonObject).hasField(it.key, keyValue)
-                is Float -> assertThat(jsonObject).hasField(it.key, keyValue)
-                is BigInteger -> assertThat(jsonObject).hasField(it.key, keyValue)
-            }
+            val key = it.key
+            assertGenericValue("$keyPrefix$key", keyValue, jsonObject)
         }
-        return this
+    }
+
+    private fun assertGenericValue(
+        key: String,
+        keyValue: Any?,
+        jsonObject: JsonObject
+    ) {
+        when (keyValue) {
+            is String -> assertThat(jsonObject).hasField(key, keyValue)
+            is Int -> assertThat(jsonObject).hasField(key, keyValue)
+            is Long -> assertThat(jsonObject).hasField(key, keyValue)
+            is Double -> assertThat(jsonObject).hasField(key, keyValue)
+            is Float -> assertThat(jsonObject).hasField(key, keyValue)
+            is BigInteger -> assertThat(jsonObject).hasField(key, keyValue)
+        }
     }
 
     companion object {
