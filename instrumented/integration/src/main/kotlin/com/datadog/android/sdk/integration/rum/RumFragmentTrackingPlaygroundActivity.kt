@@ -38,7 +38,6 @@ internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
             .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
             .build()
-
         Datadog.initialize(this, config)
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
@@ -50,6 +49,12 @@ internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
                 0 -> FragmentA()
                 1 -> FragmentB()
                 else -> FragmentC()
+            }.apply {
+                val args = Bundle().apply {
+                    putString("fragmentClassName", this::class.java.simpleName)
+                    putInt("adapterPosition", position)
+                }
+                arguments = args
             }
         }
 
