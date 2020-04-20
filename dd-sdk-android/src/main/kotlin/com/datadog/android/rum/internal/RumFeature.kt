@@ -11,26 +11,27 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpDataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
-import com.datadog.android.rum.internal.tracking.NoOpActionTrackingStrategy
-import com.datadog.android.rum.internal.tracking.NoOpViewTrackingStrategy
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
@@ -50,14 +51,15 @@ internal object RumFeature {
     internal var applicationId: UUID = UUID(0, 0)
 
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
-    internal var uploader: com.datadog.android.core.internal.net.DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpDataUploadScheduler()
-    internal var userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
+    internal var uploader: DataUploader = NoOpDataUploader()
+    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    internal var userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     internal var viewTrackingStrategy: ViewTrackingStrategy =
         NoOpViewTrackingStrategy()
-    internal var actionTrackingStrategy: UserActionTrackingStrategy = NoOpActionTrackingStrategy()
+    internal var actionTrackingStrategy: UserActionTrackingStrategy =
+        NoOpUserActionTrackingStrategy()
     internal var viewTreeTrackingStrategy: TrackingStrategy =
         ViewTreeChangeTrackingStrategy()
 
@@ -82,9 +84,9 @@ internal object RumFeature {
         serviceName = config.serviceName
         envName = config.envName
 
-        gesturesTracker = config.gesturesTracker ?: NoOpGesturesTracker()
-        viewTrackingStrategy = config.viewTrackingStrategy ?: NoOpViewTrackingStrategy()
-        actionTrackingStrategy = config.userActionTrackingStrategy ?: NoOpActionTrackingStrategy()
+        config.gesturesTracker?.let { gesturesTracker = it }
+        config.viewTrackingStrategy?.let { viewTrackingStrategy = it }
+        config.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
 
         persistenceStrategy = RumFileStrategy(
             appContext,
@@ -113,7 +115,7 @@ internal object RumFeature {
             unregisterTrackingStrategies(CoreFeature.contextRef.get())
 
             persistenceStrategy = NoOpPersistenceStrategy()
-            dataUploadScheduler = NoOpDataUploadScheduler()
+            dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME

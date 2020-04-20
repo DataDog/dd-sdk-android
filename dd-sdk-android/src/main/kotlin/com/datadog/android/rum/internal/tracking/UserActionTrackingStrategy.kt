@@ -6,9 +6,11 @@
 package com.datadog.android.rum.internal.tracking
 
 import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * A TrackingStrategy dedicated to user actions tracking.
  */
+@NoOpImplementation
 internal interface UserActionTrackingStrategy :
     TrackingStrategy

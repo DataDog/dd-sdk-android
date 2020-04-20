@@ -18,7 +18,6 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn

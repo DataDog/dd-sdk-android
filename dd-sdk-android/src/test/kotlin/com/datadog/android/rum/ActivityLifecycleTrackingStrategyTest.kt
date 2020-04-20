@@ -11,7 +11,6 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.view.Window
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify

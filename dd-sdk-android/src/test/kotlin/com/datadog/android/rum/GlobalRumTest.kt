@@ -7,7 +7,6 @@
 package com.datadog.android.rum
 
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery

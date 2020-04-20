@@ -11,8 +11,8 @@ import android.util.Log
 import com.datadog.android.DatadogConfig
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext

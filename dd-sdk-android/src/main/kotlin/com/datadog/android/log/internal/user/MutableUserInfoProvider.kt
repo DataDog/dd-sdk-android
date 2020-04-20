@@ -6,6 +6,9 @@
 
 package com.datadog.android.log.internal.user
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 internal interface MutableUserInfoProvider : UserInfoProvider {
 
     fun setUserInfo(userInfo: UserInfo)

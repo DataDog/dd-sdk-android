@@ -7,11 +7,11 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.time.NoOpTimeProvider
+import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -28,8 +28,8 @@ import kotlin.math.max
 
 internal class DatadogRumMonitor(
     private val writer: Writer<RumEvent>,
-    private val timeProvider: TimeProvider = NoOpTimeProvider(),
-    private val userInfoProvider: UserInfoProvider = NoOpUserInfoProvider()
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
+    private val userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
 ) : RumMonitor {
 
     private val allViewEvents = ConcurrentHashMap<UUID, RumEvent>()
