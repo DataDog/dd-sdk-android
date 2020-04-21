@@ -20,6 +20,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
@@ -120,7 +121,9 @@ internal class WindowCallbackWrapperTest {
     @Test
     fun `menu item selection will trigger a Rum UserActionEvent`(forge: Forge) {
         // given
+        val returnValue = forge.aBool()
         val itemTitle = forge.aString()
+        val featureId = forge.anInt()
         val itemId = forge.anInt()
         val itemResourceName = forge.aString()
         whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
@@ -128,18 +131,21 @@ internal class WindowCallbackWrapperTest {
             whenever(it.itemId).thenReturn(itemId)
             whenever(it.title).thenReturn(itemTitle)
         }
+        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
 
         // when
-        assertThat(underTest.onMenuItemSelected(forge.anInt(), menuItem)).isEqualTo(false)
+        assertThat(underTest.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
 
         // then
-        verify(mockRumMonitor).addUserAction(
-            eq(Gesture.TAP.actionName),
-            argThat {
-                val targetClassName = menuItem.javaClass.canonicalName
-                this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.TAG_TARGET_RESOURCE_ID] == itemResourceName &&
-                        this[RumAttributes.TAG_TARGET_TITLE] == itemTitle
-            })
+        inOrder(mockCallback, mockRumMonitor) {
+            verify(mockRumMonitor).addUserAction(eq(Gesture.TAP.actionName),
+                argThat {
+                    val targetClassName = menuItem.javaClass.canonicalName
+                    this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
+                            this[RumAttributes.TAG_TARGET_RESOURCE_ID] == itemResourceName &&
+                            this[RumAttributes.TAG_TARGET_TITLE] == itemTitle
+                })
+            verify(mockCallback).onMenuItemSelected(featureId, menuItem)
+        }
     }
 }
