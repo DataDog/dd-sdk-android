@@ -32,8 +32,8 @@ internal class GesturesListener(
     private var scrollEventType: Gesture = Gesture.NONE
     private var gestureDirection = ""
     private var scrollTargetReference: WeakReference<View?> = WeakReference(null)
-    private var currentDownEvent: MotionEvent? = null
-
+    private var onTouchDownXPos = 0f
+    private var onTouchDownYPos = 0f
     // region GesturesListener
 
     override fun onShowPress(e: MotionEvent) {
@@ -48,7 +48,8 @@ internal class GesturesListener(
 
     override fun onDown(e: MotionEvent): Boolean {
         resetScrollEventParameters()
-        currentDownEvent = e
+        onTouchDownXPos = e.x
+        onTouchDownYPos = e.y
         return false
     }
 
@@ -134,11 +135,8 @@ internal class GesturesListener(
             RumAttributes.TAG_TARGET_CLASS_NAME to scrollTarget.javaClass.canonicalName,
             RumAttributes.TAG_TARGET_RESOURCE_ID to targetId
         )
-        val downEvent = currentDownEvent
-        downEvent?.let {
-            gestureDirection = resolveGestureDirection(it, onUpEvent)
-            attributes.put(RumAttributes.TAG_GESTURE_DIRECTION, gestureDirection)
-        }
+        gestureDirection = resolveGestureDirection(onUpEvent)
+        attributes.put(RumAttributes.TAG_GESTURE_DIRECTION, gestureDirection)
 
         attributesProviders.forEach {
             it.extractAttributes(scrollTarget, attributes)
@@ -150,7 +148,8 @@ internal class GesturesListener(
         scrollTargetReference.clear()
         scrollEventType = Gesture.NONE
         gestureDirection = ""
-        currentDownEvent = null
+        onTouchDownYPos = 0f
+        onTouchDownXPos = 0f
     }
 
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
@@ -255,9 +254,9 @@ internal class GesturesListener(
         return !(x < vx || x > vx + w || y < vy || y > vy + h)
     }
 
-    private fun resolveGestureDirection(startEvent: MotionEvent, endEvent: MotionEvent): String {
-        val diffX = endEvent.x - startEvent.x
-        val diffY = endEvent.y - startEvent.y
+    private fun resolveGestureDirection(endEvent: MotionEvent): String {
+        val diffX = endEvent.x - onTouchDownXPos
+        val diffY = endEvent.y - onTouchDownYPos
         return if (abs(diffX) > abs(diffY)) {
             if (diffX > 0) {
                 SCROLL_DIRECTION_LEFT
