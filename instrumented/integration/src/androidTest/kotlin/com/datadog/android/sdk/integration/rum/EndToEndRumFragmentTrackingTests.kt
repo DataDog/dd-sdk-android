@@ -6,6 +6,7 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import androidx.fragment.app.Fragment
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.swipeLeft
 import androidx.test.espresso.action.ViewActions.swipeRight
@@ -17,6 +18,7 @@ import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
+import com.datadog.android.sdk.utils.asMap
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
@@ -41,33 +43,43 @@ internal class EndToEndRumFragmentTrackingTests {
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
-        val fragmentAViewUrl = FragmentA::class.java.canonicalName!!.replace(
-            '.',
-            '/'
-        )
+        val fragmentAViewUrl = currentFragmentViewUrl()
         // add the first expected event
-        expectedEvents.add(ExpectedViewEvent(fragmentAViewUrl, 2))
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentAViewUrl,
+                2,
+                currentFragmentExtras()
+            )
+        )
 
         // swipe to change the fragment
         onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
         Thread.sleep(200) // give time to the view id to update
-        val fragmentBViewUrl = FragmentB::class.java.canonicalName!!.replace(
-            '.',
-            '/'
+        val fragmentBViewUrl = currentFragmentViewUrl()
+        mockServerRule.activity.supportFragmentManager.fragments
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentBViewUrl,
+                2,
+                currentFragmentExtras()
+            )
         )
-        expectedEvents.add(ExpectedViewEvent(fragmentBViewUrl, 2))
 
         // swipe to close the view
         onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
         Thread.sleep(200) // give time to the view id to update
 
-        val fragmentCViewUrl = FragmentC::class.java.canonicalName!!.replace(
-            '.',
-            '/'
+        val fragmentCViewUrl = currentFragmentViewUrl()
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentCViewUrl,
+                2,
+                currentFragmentExtras()
+            )
         )
-        expectedEvents.add(ExpectedViewEvent(fragmentCViewUrl, 2))
 
         // swipe to close the view
         onView(withId(R.id.tab_layout)).perform(swipeRight())
@@ -94,6 +106,24 @@ internal class EndToEndRumFragmentTrackingTests {
                 }
             }
         sentGestureEvents.assertMatches(expectedEvents)
+    }
+
+    private fun currentFragment(): Fragment? {
+        val activity = mockServerRule.activity
+        val viewPager = activity.viewPager
+        return activity.supportFragmentManager
+            .findFragmentByTag("android:switcher:${R.id.pager}:${viewPager.getCurrentItem()}")
+    }
+
+    private fun currentFragmentExtras(): Map<String, Any?> {
+        return currentFragment()?.arguments.asMap()
+    }
+
+    private fun currentFragmentViewUrl(): String {
+        return currentFragment()?.javaClass?.canonicalName?.replace(
+            '.',
+            '/'
+        ) ?: ""
     }
 
     // endregion
