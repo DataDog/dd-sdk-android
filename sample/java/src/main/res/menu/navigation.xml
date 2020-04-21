@@ -26,5 +26,9 @@
         android:id="@+id/navigation_user"
         android:icon="@drawable/ic_account_circle_black_24dp"
         android:title="@string/title_user" />
+    <item
+        android:id="@+id/navigation_dialog"
+        android:icon="@drawable/ic_chat_bubble_black_24dp"
+        android:title="@string/title_dialog" />
 
 </menu>

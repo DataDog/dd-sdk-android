@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Activity
+import android.view.View
 import android.view.Window
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -40,6 +41,9 @@ internal class DatadogGesturesTrackerTest {
     lateinit var mockWindow: Window
 
     @Mock
+    lateinit var mockDecorView: View
+
+    @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
@@ -47,15 +51,17 @@ internal class DatadogGesturesTrackerTest {
         underTest =
             DatadogGesturesTracker(emptyArray())
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(mockWindow.decorView).thenReturn(mock())
+        whenever(mockWindow.decorView).thenReturn(mockDecorView)
     }
 
     @Test
     fun `will start tracking the activity`() {
         // when
         val spyTest = spy(underTest)
-        doReturn(mockGestureDetector).whenever(spyTest).generateGestureDetector(mockActivity)
-        spyTest.startTracking(mockActivity)
+        doReturn(mockGestureDetector)
+            .whenever(spyTest)
+            .generateGestureDetector(mockActivity, mockDecorView)
+        spyTest.startTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow).callback = isA<WindowCallbackWrapper>()
@@ -73,7 +79,7 @@ internal class DatadogGesturesTrackerTest {
             )
 
         // when
-        underTest.stopTracking(mockActivity)
+        underTest.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow).callback = null
@@ -92,7 +98,7 @@ internal class DatadogGesturesTrackerTest {
             )
 
         // when
-        underTest.stopTracking(mockActivity)
+        underTest.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow).callback = previousCallback
@@ -101,7 +107,7 @@ internal class DatadogGesturesTrackerTest {
     @Test
     fun `stop will do nothing if the activity was not tracked`() {
         // when
-        underTest.stopTracking(mockActivity)
+        underTest.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow, never()).callback = any()

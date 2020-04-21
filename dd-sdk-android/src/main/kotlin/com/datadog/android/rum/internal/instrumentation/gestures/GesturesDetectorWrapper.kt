@@ -6,18 +6,22 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-import android.app.Activity
+import android.content.Context
 import android.view.MotionEvent
 import androidx.core.view.GestureDetectorCompat
 
 internal class GesturesDetectorWrapper(
-    activity: Activity,
     private val gestureListener: GesturesListener,
-    private val defaultGesturesDetector: GestureDetectorCompat = GestureDetectorCompat(
-        activity,
-        gestureListener
-    )
+    private val defaultGesturesDetector: GestureDetectorCompat
 ) {
+
+    constructor(
+        context: Context,
+        gestureListener: GesturesListener
+    ) : this(
+        gestureListener,
+        GestureDetectorCompat(context, gestureListener)
+    )
 
     fun onTouchEvent(event: MotionEvent) {
         defaultGesturesDetector.onTouchEvent(event)

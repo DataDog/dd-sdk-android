@@ -45,6 +45,6 @@ internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStra
         // when
         underTest.onActivityPreCreated(mockActivity, mock())
         // then
-        verify(mockGesturesTracker).startTracking(mockActivity)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
     }
 }

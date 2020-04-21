@@ -18,11 +18,11 @@ internal class GesturesTrackingStrategy(
     UserActionTrackingStrategy {
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        gesturesTracker.startTracking(activity)
+        gesturesTracker.startTracking(activity.window, activity)
     }
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        gesturesTracker.stopTracking(activity)
+        gesturesTracker.stopTracking(activity.window, activity)
     }
 }
