@@ -45,7 +45,7 @@ internal class WindowCallbackWrapper(
             RumAttributes.TAG_TARGET_TITLE to item.title
         )
         GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
-        return false
+        return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     // endregion
