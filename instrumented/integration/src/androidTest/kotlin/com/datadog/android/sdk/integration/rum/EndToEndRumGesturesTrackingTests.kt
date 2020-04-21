@@ -6,32 +6,56 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.ViewAction
+import androidx.test.espresso.action.ViewActions.swipeDown
+import androidx.test.espresso.action.ViewActions.swipeUp
+import androidx.test.espresso.action.ViewActions.swipeLeft
+import androidx.test.espresso.action.ViewActions.swipeRight
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumGesturesTrackingActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
+import org.junit.Before
 import java.util.concurrent.TimeUnit
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Random
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 internal class EndToEndRumGesturesTrackingTests {
+
+    lateinit var swipeActionBundle: Pair<ViewAction, String>
 
     @get:Rule
     val mockServerRule = RumGesturesTrackingActivityTestRule(
         RumGesturesTrackingPlaygroundActivity::class.java,
         keepRequests = true
     )
+
+    @Before
+    fun setUp() {
+        val random = Random().nextInt()
+        swipeActionBundle = when {
+            random < 0.25 -> Pair(swipeDown(), "down")
+            random < 0.5 -> Pair(swipeLeft(), "left")
+            random < 0.75 -> Pair(swipeRight(), "right")
+            else -> Pair(swipeUp(), "up")
+        }
+    }
 
     @Test
     fun verifyTrackedGestures() {
@@ -41,11 +65,24 @@ internal class EndToEndRumGesturesTrackingTests {
         onView(withId(R.id.button)).perform(click())
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
-        onView(withId(R.id.textView)).perform(click())
+        // perform a tap event on a RecyclerView item
+        onView(withId(R.id.recyclerView))
+            .perform(
+                actionOnItemAtPosition<RumGesturesTrackingPlaygroundActivity.Adapter.ViewHolder>(
+                    2,
+                    click()
+                )
+            )
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
-        onView(withId(R.id.textView)).perform(click()) // last one won't be sent (yet)
-
+        // perform a swipe event on the RecyclerView
+        onView(withId(R.id.recyclerView))
+            .perform(
+                swipeActionBundle.first
+            )
+        instrumentation.waitForIdleSync()
+        Thread.sleep(500)
+        onView(withId(R.id.button)).perform(click()) // last one won't be sent (yet)
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)
 
@@ -80,8 +117,23 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
-                "${mockServerRule.activity.textView.javaClass.canonicalName}",
-                "textView"
+                "${CardView::class.java.canonicalName}",
+                "recyclerViewRow",
+                extraAttributes = mapOf(
+                    RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to 2,
+                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
+                            mockServerRule.activity.recyclerView.javaClass.canonicalName,
+                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
+                            "recyclerView"
+                )
+            ),
+            ExpectedGestureEvent(
+                Gesture.SWIPE,
+                "${RecyclerView::class.java.canonicalName}",
+                "recyclerView",
+                extraAttributes = mapOf(
+                    RumAttributes.TAG_GESTURE_DIRECTION to swipeActionBundle.second
+                )
             )
         )
     }

@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.tracking.JetpackViewAttributesProvider
 import com.datadog.android.sdk.integration.RuntimeConfig
 
 internal class RumGesturesTrackingActivityTestRule<T : Activity>(
@@ -26,7 +27,7 @@ internal class RumGesturesTrackingActivityTestRule<T : Activity>(
             .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .trackGestures()
+            .trackGestures(arrayOf(JetpackViewAttributesProvider()))
             .build()
 
         Datadog.initialize(
