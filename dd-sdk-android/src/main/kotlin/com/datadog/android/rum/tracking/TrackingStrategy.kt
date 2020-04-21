@@ -7,10 +7,12 @@
 package com.datadog.android.rum.tracking
 
 import android.content.Context
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * The TrackingStrategy interface.
  */
+@NoOpImplementation
 interface TrackingStrategy {
 
     /**

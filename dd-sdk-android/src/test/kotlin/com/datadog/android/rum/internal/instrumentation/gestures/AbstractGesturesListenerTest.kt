@@ -14,7 +14,7 @@ import android.view.View
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.monitor.NoOpRumMonitor
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer

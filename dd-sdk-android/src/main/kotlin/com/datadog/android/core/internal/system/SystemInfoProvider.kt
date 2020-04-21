@@ -7,7 +7,9 @@
 package com.datadog.android.core.internal.system
 
 import android.content.Context
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface SystemInfoProvider {
     fun register(context: Context)
     fun unregister(context: Context)

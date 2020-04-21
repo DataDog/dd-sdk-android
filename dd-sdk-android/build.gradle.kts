@@ -20,11 +20,13 @@ import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
+import org.jetbrains.kotlin.kapt3.base.Kapt.kapt
 
 plugins {
     id("com.android.library")
     kotlin("android")
     kotlin("android.extensions")
+    kotlin("kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
@@ -116,6 +118,7 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidXNavigation)
 
     api(Dependencies.Libraries.TracingOt)
+    kapt(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)

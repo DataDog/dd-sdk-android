@@ -4,13 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.upload
+package com.datadog.tools.annotation
 
-internal class NoOpDataUploadScheduler : UploadScheduler {
-    override fun startScheduling() {
-        // No Op
-    }
-    override fun stopScheduling() {
-        // No Op
-    }
-}
+/**
+ * Adding this annotation on an interface will generate a No-Op implementation class.
+ */
+@Target(AnnotationTarget.CLASS)
+annotation class NoOpImplementation

@@ -7,7 +7,9 @@
 package com.datadog.android.core.internal.net.info
 
 import android.content.Context
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface NetworkInfoProvider {
     fun register(context: Context)
     fun unregister(context: Context)

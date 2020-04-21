@@ -7,11 +7,13 @@
 package com.datadog.android.core.internal.data
 
 import com.datadog.android.core.internal.domain.Batch
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * Reads logs from a persistent location, when they can be sent.
  * @see [Writer]
  */
+@NoOpImplementation
 internal interface Reader {
 
     fun readNextBatch(): Batch?

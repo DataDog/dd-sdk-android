@@ -88,7 +88,6 @@ internal class DatadogTimeProvider(
         internal const val PREF_OFFSET_MS = "server_timestamp_offset_ms"
         internal const val PREFERENCES_NAME = "datadog"
 
-        private const val TAG = "DatadogTimeProvider"
         private const val MAX_SAMPLES = 64
 
         // The Max allowed deviation, accounting for long transport in bad network conditions
