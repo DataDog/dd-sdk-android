@@ -8,20 +8,84 @@ package com.datadog.android.sdk.integration.rum
 
 import android.app.Activity
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.sdk.integration.R
 
 internal class RumGesturesTrackingPlaygroundActivity : Activity() {
 
     lateinit var button: Button
-    lateinit var textView: TextView
+    lateinit var recyclerView: RecyclerView
+    private var adapter = Adapter()
+    internal var adapterData: MutableList<String> = MutableList(100) {
+        "Item $it"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.gestures_tracking_layout)
 
         button = findViewById(R.id.button)
-        textView = findViewById(R.id.textView)
+        recyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+        adapter.updateData(adapterData)
     }
+
+    // region Adapter
+
+    internal inner class Adapter :
+        RecyclerView.Adapter<Adapter.ViewHolder>() {
+
+        private val data: MutableList<String> = mutableListOf()
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val itemView = LayoutInflater.from(parent.context).inflate(
+                R.layout.item_layout,
+                parent,
+                false
+            )
+            return ViewHolder(
+                itemView
+            )
+        }
+
+        override fun getItemCount(): Int {
+            return data.size
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.render(data[position])
+        }
+
+        internal fun updateData(newData: List<String>) {
+            data.clear()
+            data.addAll(newData)
+            notifyDataSetChanged()
+        }
+
+        internal inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+            lateinit var model: String
+
+            init {
+                view.setOnClickListener {
+                    Toast.makeText(view.context, "$model was clicked", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+
+            fun render(model: String) {
+                this.model = model
+                view.findViewById<TextView>(R.id.textView).setText(model)
+            }
+        }
+    }
+
+    // endregion
 }
