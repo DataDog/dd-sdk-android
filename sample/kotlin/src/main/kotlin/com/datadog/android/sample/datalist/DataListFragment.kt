@@ -99,6 +99,7 @@ class DataListFragment : Fragment() {
     }
 
     // endregion
+
     companion object {
         fun newInstance(): DataListFragment {
             return DataListFragment()

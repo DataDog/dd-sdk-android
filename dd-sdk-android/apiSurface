@@ -173,6 +173,8 @@ object com.datadog.android.rum.RumAttributes
   const val TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER: String
   const val TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME: String
   const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String
+  const val TAG_TARGET_TITLE: String
+  const val TAG_GESTURE_DIRECTION: String
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
