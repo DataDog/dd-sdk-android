@@ -213,9 +213,11 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
   companion object
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean)
+  constructor(Boolean, WhitelistPredicate<android.app.Activity> = ActivityWhitelistAcceptAll())
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
+class com.datadog.android.rum.tracking.ActivityWhitelistAcceptAll : WhitelistPredicate<android.app.Activity>
+  override fun accept(android.app.Activity): Boolean
 class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean)
   override fun onActivityResumed(android.app.Activity)
@@ -235,6 +237,8 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
+interface com.datadog.android.rum.tracking.WhitelistPredicate<T>
+  fun accept(T): Boolean
 open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
