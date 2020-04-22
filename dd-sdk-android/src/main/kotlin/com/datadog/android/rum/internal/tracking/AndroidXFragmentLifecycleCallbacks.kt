@@ -12,11 +12,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.tracking.ComponentPredicate
 
 internal class AndroidXFragmentLifecycleCallbacks(
-    internal val argumentsProvider: (Fragment) -> Map<String, Any?>
+    internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
+    private val componentPredicate: ComponentPredicate<Fragment>
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     // region FragmentLifecycleCallbacks
@@ -51,17 +54,19 @@ internal class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        GlobalRum.get()
-            .startView(
-                f,
-                f.resolveViewName(),
-                argumentsProvider(f)
-            )
+        componentPredicate.runIfValid(f) {
+            GlobalRum.get()
+                .startView(
+                    it,
+                    it.resolveViewName(),
+                    argumentsProvider(it)
+                )
+        }
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
-        GlobalRum.get().stopView(f)
+        componentPredicate.runIfValid(f) { GlobalRum.get().stopView(it) }
     }
 
     // endregion

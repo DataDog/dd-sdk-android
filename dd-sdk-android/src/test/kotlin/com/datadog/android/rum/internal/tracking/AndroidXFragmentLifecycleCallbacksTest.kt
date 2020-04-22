@@ -19,6 +19,8 @@ import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
+import com.datadog.android.rum.tracking.AcceptAllSupportFragments
+import com.datadog.android.rum.tracking.ComponentPredicate
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -79,7 +81,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         attributesMap = forge.aMap { forge.aString() to forge.aString() }
-        underTest = AndroidXFragmentLifecycleCallbacks { attributesMap }
+        underTest = AndroidXFragmentLifecycleCallbacks(
+            { attributesMap },
+            AcceptAllSupportFragments()
+        )
     }
 
     @AfterEach
@@ -132,6 +137,40 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             eq(mockFragment),
             eq(emptyMap())
         )
+    }
+
+    @Test
+    fun `when fragment resumed will do nothing if the fragment is not whitelisted`() {
+        // given
+        underTest = AndroidXFragmentLifecycleCallbacks({ attributesMap },
+            object : ComponentPredicate<Fragment> {
+                override fun accept(component: Fragment): Boolean {
+                    return false
+                }
+            })
+
+        // when
+        underTest.onFragmentResumed(mock(), mockFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `when fragment paused will do nothing if the fragment is not whitelisted`() {
+        // given
+        underTest = AndroidXFragmentLifecycleCallbacks({ attributesMap },
+            object : ComponentPredicate<Fragment> {
+                override fun accept(component: Fragment): Boolean {
+                    return false
+                }
+            })
+
+        // when
+        underTest.onFragmentPaused(mock(), mockFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test

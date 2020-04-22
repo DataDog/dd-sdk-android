@@ -9,7 +9,7 @@ package com.datadog.android.rum
 import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.rum.tracking.WhitelistPredicate
+import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -122,9 +122,9 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     fun `when resumed will do nothing if activity is not whitelisted`() {
         // given
         underTest = ActivityViewTrackingStrategy(trackExtras = false,
-            whitelistPredicate = object :
-                WhitelistPredicate<Activity> {
-                override fun accept(view: Activity): Boolean {
+            componentPredicate = object :
+                ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
                     return false
                 }
             })
@@ -140,9 +140,9 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     fun `when paused will do nothing if activity is not whitelisted`() {
         // given
         underTest = ActivityViewTrackingStrategy(trackExtras = false,
-            whitelistPredicate = object :
-                WhitelistPredicate<Activity> {
-                override fun accept(view: Activity): Boolean {
+            componentPredicate = object :
+                ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
                     return false
                 }
             })

@@ -166,6 +166,39 @@ internal class FragmentViewTrackingStrategyTest {
     }
 
     @Test
+    fun `it will do nothing if fragment is not whitelisted`(
+        forge: Forge
+    ) {
+        // given
+        val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
+        val mockFragment: Fragment = mockFragmentWithArguments(forge)
+        underTest = FragmentViewTrackingStrategy(trackArguments = true,
+            supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
+                override fun accept(component: Fragment): Boolean {
+                    return false
+                }
+            })
+
+        // when
+        underTest.onActivityResumed(mockAndroidxActivity)
+
+        // then
+        verify(mockAndroidxFragmentManager)
+            .registerFragmentLifecycleCallbacks(
+                argumentCaptor.capture(),
+                eq(true)
+            )
+        verifyZeroInteractions(mockDefaultFragmentManager)
+
+        // when
+        argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
     fun `will not attach fragment arguments as attributes if required so in a FragmentActivity`(
         forge: Forge
     ) {
@@ -305,6 +338,41 @@ internal class FragmentViewTrackingStrategyTest {
                 mockFragment
             )
         }
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `it will do nothing when fragment is not whitelisted`(
+        forge: Forge
+    ) {
+        // given
+        val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
+        underTest = FragmentViewTrackingStrategy(trackArguments = true,
+            defaultFragmentComponentPredicate = object : ComponentPredicate<android.app.Fragment> {
+                override fun accept(component: android.app.Fragment): Boolean {
+                    return false
+                }
+            })
+        val argumentCaptor =
+            argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
+
+        // when
+        underTest.onActivityResumed(mockActivity)
+
+        // then
+        verify(mockDefaultFragmentManager)
+            .registerFragmentLifecycleCallbacks(
+                argumentCaptor.capture(),
+                eq(true)
+            )
+        verifyZeroInteractions(mockAndroidxFragmentManager)
+
+        // when
+        argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
