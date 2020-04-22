@@ -7,7 +7,7 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
-import androidx.fragment.app.Fragment
+import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 
 /**
@@ -15,11 +15,12 @@ import com.datadog.android.rum.GlobalRum
  *
  * Each activity's lifecycle will be monitored to start and stop RUM views when relevant.
  * @param trackExtras whether to track Activity Intent extras
- * @param whitelistPredicate whether to track or not a specific Activity
+ * @param componentPredicate to accept the Activities that will be taken into account as
+ * valid RUM View events.
  */
-class ActivityViewTrackingStrategy(
+class ActivityViewTrackingStrategy @JvmOverloads constructor(
     private val trackExtras: Boolean,
-    private val whitelistPredicate: WhitelistPredicate<Activity> = ActivityWhitelistAcceptAll()
+    private val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
@@ -28,7 +29,7 @@ class ActivityViewTrackingStrategy(
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        validateActivityAndExecute(activity) {
+        componentPredicate.runIfValid(activity) {
             val javaClass = it.javaClass
             val vieName = javaClass.canonicalName ?: javaClass.simpleName
             val attributes =
@@ -43,17 +44,8 @@ class ActivityViewTrackingStrategy(
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        validateActivityAndExecute(activity) { GlobalRum.monitor.stopView(it) }
+        componentPredicate.runIfValid(activity) { GlobalRum.monitor.stopView(it) }
     }
 
-    // endregion
-
-    // region Internal
-
-    private fun validateActivityAndExecute(activity: Activity, operation: (Activity) -> Unit) {
-        if (whitelistPredicate.accept(activity)) {
-            operation(activity)
-        }
-    }
     // endregion
 }

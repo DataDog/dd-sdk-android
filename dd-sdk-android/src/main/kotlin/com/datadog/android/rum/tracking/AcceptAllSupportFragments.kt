@@ -6,15 +6,15 @@
 
 package com.datadog.android.rum.tracking
 
-import android.app.Activity
+import androidx.fragment.app.Fragment
 
 /**
- * A predefined [WhitelistPredicate] which whitelists all the Activities to be tracked as RUM View
- * events. This is the default behaviour of the [ActivityViewTrackingStrategy].
+ * A predefined [ComponentPredicate] which accepts all [Fragment] to be tracked as RUM View
+ * event. This is the default behaviour of the [FragmentViewTrackingStrategy].
  */
-class ActivityWhitelistAcceptAll : WhitelistPredicate<Activity> {
+class AcceptAllSupportFragments : ComponentPredicate<Fragment> {
 
-    override fun accept(view: Activity): Boolean {
+    override fun accept(component: Fragment): Boolean {
         return true
     }
 }

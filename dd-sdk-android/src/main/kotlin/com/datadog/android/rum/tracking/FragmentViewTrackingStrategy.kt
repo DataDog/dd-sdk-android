@@ -23,27 +23,43 @@ import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
  * **Note**: This version of the [FragmentViewTrackingStrategy] is compatible with
  * the AndroidX Compat Library.
  * @param trackArguments whether we track Fragment arguments
+ * @param supportFragmentComponentPredicate to accept the Androidx Fragments
+ * that will be taken into account as valid RUM View events.
+ * @param defaultFragmentComponentPredicate to accept the default Android Fragments
+ * that will be taken into account as valid RUM View events.
  */
-class FragmentViewTrackingStrategy(private val trackArguments: Boolean) :
+class FragmentViewTrackingStrategy @JvmOverloads constructor(
+    private val trackArguments: Boolean,
+    private val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
+        AcceptAllSupportFragments(),
+    private val defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment> =
+        AcceptAllDefaultFragment()
+) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
-        by lazy {
-            AndroidXFragmentLifecycleCallbacks {
-                if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+            by lazy {
+                AndroidXFragmentLifecycleCallbacks(
+                    argumentsProvider = {
+                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+                    },
+                    componentPredicate = supportFragmentComponentPredicate
+                )
             }
-        }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
-        by lazy {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                OreoFragmentLifecycleCallbacks {
-                    if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+            by lazy {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    OreoFragmentLifecycleCallbacks(
+                        argumentsProvider = {
+                            if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+                        },
+                        componentPredicate = defaultFragmentComponentPredicate
+                    )
+                } else {
+                    NoOpFragmentLifecycleCallbacks<Activity>()
                 }
-            } else {
-                NoOpFragmentLifecycleCallbacks<Activity>()
             }
-        }
 
     // region ActivityLifecycleTrackingStrategy
 
