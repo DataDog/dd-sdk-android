@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain
+package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.rum.internal.domain.RumContext
 
 internal data class RumEvent(
     val context: RumContext,

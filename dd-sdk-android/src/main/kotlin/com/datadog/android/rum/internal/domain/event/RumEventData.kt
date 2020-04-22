@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain
+package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.rum.RumResourceKind
 import java.util.UUID

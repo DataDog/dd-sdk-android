@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.internal.domain.RumEvent
-import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
