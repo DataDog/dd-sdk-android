@@ -89,6 +89,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
 
         val file = FileSpec.builder(packageName, typeSpec.name.orEmpty())
             .addType(typeSpec)
+            .indent("    ")
             .build()
 
         file.writeTo(File(kaptKotlinGeneratedDir))
