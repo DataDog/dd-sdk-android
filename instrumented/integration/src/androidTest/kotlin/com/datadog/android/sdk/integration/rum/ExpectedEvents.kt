@@ -22,7 +22,8 @@ internal data class ExpectedGestureEvent(
     val type: Gesture,
     val targetClassName: String,
     val targetResourceId: String,
-    override val rumContext: ExpectedRumContext = resolvedRumContext()
+    override val rumContext: ExpectedRumContext = resolvedRumContext(),
+    val extraAttributes: Map<String, Any?> = emptyMap()
 ) : ExpectedEvent
 
 internal data class ExpectedViewEvent(
@@ -37,7 +38,8 @@ internal interface ExpectedEvent {
 }
 
 internal enum class Gesture(val gestureName: String) {
-    TAP("Tap")
+    TAP("Tap"),
+    SWIPE("Swipe")
 }
 
 private fun rumContextValues(): Triple<String, String, String> {

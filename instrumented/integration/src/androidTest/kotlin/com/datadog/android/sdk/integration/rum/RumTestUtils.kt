@@ -54,6 +54,7 @@ private fun JsonObject.assertMatches(event: ExpectedGestureEvent) {
         .hasField(EVENT_NAME, event.type.gestureName)
         .hasField(TARGET_CLASS_NAME, event.targetClassName)
         .hasField(TARGET_RESOURCE_ID, event.targetResourceId)
+    JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
 }
 
 private fun JsonObject.assertMatches(event: ExpectedViewEvent) {
