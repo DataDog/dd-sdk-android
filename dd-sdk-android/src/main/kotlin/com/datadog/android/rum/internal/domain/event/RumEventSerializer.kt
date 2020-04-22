@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain
+package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer

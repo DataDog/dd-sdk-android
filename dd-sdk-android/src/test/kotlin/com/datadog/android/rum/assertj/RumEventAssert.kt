@@ -8,8 +8,8 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.domain.RumEvent
-import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat

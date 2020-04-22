@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.rum.assertj.RumEventDataViewAssert.Companion.assertThat
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
