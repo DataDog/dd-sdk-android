@@ -295,6 +295,24 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     }
 
     @Test
+    fun `reads null when batch already sent but was not able to delete the file`(
+        forge: Forge
+    ) {
+        val fakeModel = forge.getForgery(modelClass)
+        testedWriter.write(fakeModel)
+        waitForNextBatch()
+        val batch = testedReader.readNextBatch()
+        checkNotNull(batch)
+        // delete file before drop to simulate the "not able to delete" behaviour
+        File(tempDir, batch.id).delete()
+        testedReader.dropBatch(batch.id)
+        // generate the sent batch file again after dropBatch was called
+        File(tempDir, batch.id).createNewFile()
+        val batch2 = testedReader.readNextBatch()
+        assertThat(batch2).isNull()
+    }
+
+    @Test
     fun `it will create and share one single writer instance`() {
         // given
         val persistenceStrategy = getStrategy()
