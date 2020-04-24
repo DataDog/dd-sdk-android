@@ -67,6 +67,16 @@ internal class RumEventDataResourceAssert(actual: RumEventData.Resource) :
         return this
     }
 
+    fun hasDurationGreaterThan(upperBound: Long): RumEventDataResourceAssert {
+        assertThat(actual.durationNanoSeconds)
+            .overridingErrorMessage(
+                "Expected event data to have duration greater than $upperBound " +
+                    "but was ${actual.durationNanoSeconds}"
+            )
+            .isGreaterThanOrEqualTo(upperBound)
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

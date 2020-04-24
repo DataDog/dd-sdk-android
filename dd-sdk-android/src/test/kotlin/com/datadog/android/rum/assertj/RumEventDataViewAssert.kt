@@ -48,6 +48,16 @@ internal class RumEventDataViewAssert(actual: RumEventData.View) :
         return this
     }
 
+    fun hasDurationGreaterThan(upperBound: Long): RumEventDataViewAssert {
+        assertThat(actual.durationNanoSeconds)
+            .overridingErrorMessage(
+                "Expected event data to have duration greater than $upperBound " +
+                    "but was ${actual.durationNanoSeconds}"
+            )
+            .isGreaterThanOrEqualTo(upperBound)
+        return this
+    }
+
     fun hasVersion(expected: Int): RumEventDataViewAssert {
         assertThat(actual.version)
             .overridingErrorMessage(
