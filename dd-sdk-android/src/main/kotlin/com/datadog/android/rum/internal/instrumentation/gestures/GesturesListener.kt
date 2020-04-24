@@ -87,7 +87,7 @@ internal class GesturesListener(
             val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
-                rumMonitor.startUserAction()
+                rumMonitor.startUserAction(Gesture.NONE.actionName)
             } else {
                 return false
             }

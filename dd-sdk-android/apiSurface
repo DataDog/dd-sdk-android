@@ -180,6 +180,8 @@ interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addUserAction(String, Map<String, Any?> = emptyMap())
+  fun startUserAction(String, Map<String, Any?> = emptyMap())
+  fun stopUserAction(String, Map<String, Any?> = emptyMap())
   fun startResource(Any, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(Any, String, String, Throwable)

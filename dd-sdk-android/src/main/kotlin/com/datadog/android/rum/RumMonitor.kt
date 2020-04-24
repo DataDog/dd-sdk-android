@@ -53,10 +53,42 @@ interface RumMonitor {
 
     /**
      * Notifies that a User Action happened.
+     * This is used to track discrete user actions (e.g.: tap).
      * @param action the action identifier
      * @param attributes additional custom attributes to attach to the action
+     * @see [startUserAction]
+     * @see [stopUserAction]
      */
     fun addUserAction(
+        action: String,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
+     * Notifies that a User Action started.
+     * This is used to track long running user actions (e.g.: scroll). Such a user action must
+     * be stopped with [stopUserAction], and will be stopped automatically if it lasts more than
+     * 10 seconds.
+     * @param action the action identifier
+     * @param attributes additional custom attributes to attach to the action
+     * @see [stopUserAction]
+     * @see [addUserAction]
+     */
+    fun startUserAction(
+        action: String,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
+     * Notifies that a User Action stopped.
+     * This is used to stop tracking long running user actions (e.g.: scroll), started
+     * with [startUserAction].
+     * @param action the action identifier (overriding the last started action)
+     * @param attributes additional custom attributes to attach to the action
+     * @see [addUserAction]
+     * @see [startUserAction]
+     */
+    fun stopUserAction(
         action: String,
         attributes: Map<String, Any?> = emptyMap()
     )
@@ -140,8 +172,8 @@ interface RumMonitor {
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
-                        writer = RumFeature.persistenceStrategy.getWriter(),
-                        userInfoProvider = RumFeature.userInfoProvider
+                    applicationId = RumFeature.applicationId,
+                    writer = RumFeature.persistenceStrategy.getWriter()
                 )
             }
         }

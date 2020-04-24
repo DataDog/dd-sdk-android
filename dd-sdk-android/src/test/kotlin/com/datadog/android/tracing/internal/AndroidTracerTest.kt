@@ -136,7 +136,7 @@ internal class AndroidTracerTest {
     ) {
         val rumContext = forge.getForgery<RumContext>()
         GlobalRum.registerIfAbsent(mock<RumMonitor>())
-        GlobalRum.updateContext(rumContext)
+        GlobalRum.updateRumContext(rumContext)
         val tracer = AndroidTracer.Builder()
             .build()
 
