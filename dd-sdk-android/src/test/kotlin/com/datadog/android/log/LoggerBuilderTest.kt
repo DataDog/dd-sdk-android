@@ -57,7 +57,7 @@ internal class LoggerBuilderTest {
         mockContext = mockContext(packageName, "")
         whenever(mockContext.filesDir) doReturn rootDir
 
-        Datadog.initialize(mockContext, forge.anHexadecimalString())
+        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
         Datadog.setVerbosity(AndroidLog.VERBOSE)
     }
 

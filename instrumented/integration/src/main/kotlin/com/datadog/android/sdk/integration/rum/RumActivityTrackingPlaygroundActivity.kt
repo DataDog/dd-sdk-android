@@ -23,7 +23,11 @@ internal class RumActivityTrackingPlaygroundActivity : Activity() {
         setContentView(R.layout.fragment_tracking_layout)
 
         // use the activity view tracking strategy
-        val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN, RuntimeConfig.APP_ID)
+        val config = DatadogConfig.Builder(
+            RuntimeConfig.DD_TOKEN,
+            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
+            RuntimeConfig.APP_ID
+        )
             .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)

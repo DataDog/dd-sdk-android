@@ -54,53 +54,63 @@ private constructor(
     /**
      * A Builder class for a [DatadogConfig].
      * @param clientToken your API key of type Client Token
+     * @param envName the environment name special attribute that will be sent with each event.
+     * This can be used to filter your events on different environments
+     * (e.g. "staging" vs. "production").
      * @param applicationId your applicationId for RUM events
+
      */
     @Suppress("TooManyFunctions")
-    class Builder(clientToken: String, applicationId: UUID) {
+    class Builder(clientToken: String, envName: String, applicationId: UUID) {
 
         /**
          * A Builder class for a [DatadogConfig].
          * @param clientToken your API key of type Client Token
+         * @param envName the environment name special attribute that will be sent with each event.
+         * This can be used to filter your events on different environments
+         * (e.g. "staging" vs. "production").
          */
-        constructor(clientToken: String) :
-            this(clientToken, UUID(0, 0))
+        constructor(clientToken: String, envName: String) :
+                this(clientToken, envName, UUID(0, 0))
 
         /**
          * A Builder class for a [DatadogConfig].
          * @param clientToken your API key of type Client Token
+         * @param envName the environment name special attribute that will be sent with each event.
+         * This can be used to filter your events on different environments
+         * (e.g. "staging" vs. "production").
          * @param applicationId your applicationId for RUM events
          */
-        constructor(clientToken: String, applicationId: String) :
-            this(clientToken, UUID.fromString(applicationId))
+        constructor(clientToken: String, envName: String, applicationId: String) :
+                this(clientToken, envName, UUID.fromString(applicationId))
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.LOGS_US,
             DEFAULT_SERVICE_NAME,
-            DEFAULT_ENV_NAME
+            envName
         )
         private var tracesConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.TRACES_US,
             DEFAULT_SERVICE_NAME,
-            DEFAULT_ENV_NAME
+            envName
         )
         private var crashReportConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.LOGS_US,
             DEFAULT_SERVICE_NAME,
-            DEFAULT_ENV_NAME
+            envName
         )
         private var rumConfig: RumConfig = RumConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.RUM_US,
             DEFAULT_SERVICE_NAME,
-            DEFAULT_ENV_NAME
+            envName
         )
 
         private var logsEnabled: Boolean = true
@@ -181,9 +191,11 @@ private constructor(
 
         /**
          * Sets the environment name that will appear in your logs, traces and crash reports.
-         * This can be used to filter logs or traces and distinguish between your production and staging environment.
+         * This can be used to filter logs or traces and distinguish between your production
+         * and staging environment.
          * @param envName the environment name (default = "")
          */
+        @Deprecated("This property is now mandatory for initializing the SDK")
         fun setEnvironmentName(envName: String): Builder {
             val validEnvName = envName.replace(Regex("[\"']+"), "")
             logsConfig = logsConfig.copy(envName = validEnvName)
@@ -300,7 +312,7 @@ private constructor(
         private fun provideUserTrackingStrategy(
             gesturesTracker: GesturesTracker
         ):
-            UserActionTrackingStrategy {
+                UserActionTrackingStrategy {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 GesturesTrackingStrategyApi29(gesturesTracker)
             } else {
@@ -313,6 +325,5 @@ private constructor(
 
     companion object {
         internal const val DEFAULT_SERVICE_NAME = "android"
-        internal const val DEFAULT_ENV_NAME = ""
     }
 }

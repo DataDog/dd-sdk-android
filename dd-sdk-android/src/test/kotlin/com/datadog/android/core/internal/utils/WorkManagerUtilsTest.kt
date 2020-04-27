@@ -49,7 +49,11 @@ internal class WorkManagerUtilsTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockAppContext = mockContext()
-        Datadog.initialize(mockAppContext, forge.anHexadecimalString())
+        Datadog.initialize(
+            mockAppContext,
+            forge.anAlphabeticalString(),
+            forge.anHexadecimalString()
+        )
     }
 
     @AfterEach
@@ -93,7 +97,7 @@ internal class WorkManagerUtilsTest {
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
                 this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                    this.tags.contains(TAG_DATADOG_UPLOAD)
+                        this.tags.contains(TAG_DATADOG_UPLOAD)
             })
     }
 

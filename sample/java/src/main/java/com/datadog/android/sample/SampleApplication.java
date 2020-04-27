@@ -45,21 +45,21 @@ public class SampleApplication extends Application {
         Stetho.initializeWithDefaults(this);
 
         final DatadogConfig.Builder configBuilder;
+        final String environment = "staging";
         if (BuildConfig.DD_RUM_APPLICATION_ID != null) {
             configBuilder = new DatadogConfig.Builder(
                     BuildConfig.DD_CLIENT_TOKEN,
+                    environment,
                     BuildConfig.DD_RUM_APPLICATION_ID
             );
 
         } else {
-            configBuilder = new DatadogConfig.Builder(
-                    BuildConfig.DD_CLIENT_TOKEN);
+            configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN, environment);
         }
 
         configBuilder.setServiceName("android-sample-java")
                 .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true))
-                .trackGestures()
-                .setEnvironmentName("staging");
+                .trackGestures();
 
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null) {

@@ -61,6 +61,7 @@ internal class AndroidTracerTest {
     lateinit var underTest: AndroidTracer.Builder
     lateinit var mockAppContext: Application
     lateinit var fakeToken: String
+    lateinit var fakeEnvName: String
     lateinit var fakeServiceName: String
 
     @Mock
@@ -69,9 +70,10 @@ internal class AndroidTracerTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
+        fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         underTest = AndroidTracer.Builder()
         underTest.setFieldValue("logsHandler", mockLogsHandler)
     }

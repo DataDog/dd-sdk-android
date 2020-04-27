@@ -121,6 +121,7 @@ internal object RumFeature {
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
+            envName = ""
             // reset rum monitor to NoOp and reset the flag
             GlobalRum.isRegistered.set(false)
             GlobalRum.registerIfAbsent(NoOpRumMonitor())

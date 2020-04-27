@@ -20,19 +20,19 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
+        val environment = "staging"
         val configBuilder =
             if (BuildConfig.DD_RUM_APPLICATION_ID.isNotBlank()) {
                 DatadogConfig.Builder(
                     BuildConfig.DD_CLIENT_TOKEN,
+                    environment,
                     BuildConfig.DD_RUM_APPLICATION_ID
                 )
             } else {
-                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN, environment)
             }
         configBuilder
             .setServiceName("android-sample-kotlin")
-            .setEnvironmentName("staging")
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
             .trackGestures(arrayOf(JetpackViewAttributesProvider()))
 

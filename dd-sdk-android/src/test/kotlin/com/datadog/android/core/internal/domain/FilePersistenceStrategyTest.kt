@@ -74,7 +74,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
             (it.arguments[0] as Runnable).run()
             null
         }
-        Datadog.initialize(mockContext, forge.anHexadecimalString())
+        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
         val persistingStrategy = getStrategy()
 
         testedWriter = persistingStrategy.getWriter()

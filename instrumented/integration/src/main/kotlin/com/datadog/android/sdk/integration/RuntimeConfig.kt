@@ -13,10 +13,11 @@ import java.util.UUID
 
 internal object RuntimeConfig {
 
-    const val DD_TOKEN = "MYTESTAPPTOKEN"
     val APP_ID = UUID.randomUUID().toString()
     const val JSON_CONTENT_TYPE = "application/json"
     const val TEXT_PLAIN_CONTENT_TYPE = "text/plain;charset=UTF-8"
+    const val DD_TOKEN = "MYTESTAPPTOKEN"
+    const val INTEGRATION_TESTS_ENVIRONMENT = "integration-tests"
     private const val LOCALHOST = "http://localhost"
 
     var logsEndpointUrl: String = LOCALHOST
@@ -47,7 +48,8 @@ internal object RuntimeConfig {
     val keyValuePairsTags = mapOf(
         "flavor" to BuildConfig.FLAVOR,
         "build_type" to BuildConfig.BUILD_TYPE,
-        "blank" to ""
+        "blank" to "",
+        "env" to RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT
     )
 
     val singleValueTags = listOf(
