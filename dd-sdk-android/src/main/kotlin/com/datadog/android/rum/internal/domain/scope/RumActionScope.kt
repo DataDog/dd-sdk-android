@@ -33,6 +33,9 @@ internal class RumActionScope(
 
     internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
+    internal var resourcesCount: Int = 0
+    internal var viewTreeChangeCount: Int = 0
+
     private var sent = false
 
     // endregion
@@ -48,7 +51,10 @@ internal class RumActionScope(
         when {
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
-            event is RumRawEvent.ViewTreeChanged -> lastInteractionNanos = now
+            event is RumRawEvent.ViewTreeChanged -> {
+                lastInteractionNanos = now
+                viewTreeChangeCount++
+            }
             event is RumRawEvent.StopView -> {
                 ongoingResourceKeys.clear()
                 sendAction(now, writer)
@@ -60,6 +66,7 @@ internal class RumActionScope(
             }
             event is RumRawEvent.StartResource -> {
                 lastInteractionNanos = now
+                resourcesCount++
                 ongoingResourceKeys.add(WeakReference(event.key))
             }
             event is RumRawEvent.StopResource -> {
@@ -86,22 +93,25 @@ internal class RumActionScope(
         endNanos: Long,
         writer: Writer<RumEvent>
     ) {
-        val eventData = RumEventData.UserAction(
-            name,
-            actionId,
-            max(endNanos - startedNanos, 1L)
-        )
+        // TODO do not send same action twice
+        if (resourcesCount > 0 || viewTreeChangeCount > 0) {
+            val eventData = RumEventData.UserAction(
+                name,
+                actionId,
+                max(endNanos - startedNanos, 1L)
+            )
 
-        val event = RumEvent(
-            getRumContext(),
-            eventTimestamp,
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            attributes
-        )
+            val event = RumEvent(
+                getRumContext(),
+                eventTimestamp,
+                eventData,
+                RumFeature.userInfoProvider.getUserInfo(),
+                attributes
+            )
 
-        writer.write(event)
-        parentScope.handleEvent(RumRawEvent.SentAction(), writer)
+            writer.write(event)
+            parentScope.handleEvent(RumRawEvent.SentAction(), writer)
+        }
         sent = true
     }
 
