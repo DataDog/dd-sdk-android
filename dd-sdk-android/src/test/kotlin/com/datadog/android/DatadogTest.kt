@@ -64,6 +64,7 @@ internal class DatadogTest {
 
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
+    lateinit var fakeEnvName: String
 
     @TempDir
     lateinit var rootDir: File
@@ -73,6 +74,7 @@ internal class DatadogTest {
         fakeToken = forge.anHexadecimalString()
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
+        fakeEnvName = forge.anAlphabeticalString()
 
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
@@ -93,15 +95,16 @@ internal class DatadogTest {
 
     @Test
     fun `ignores if initialize called more than once`() {
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
 
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
-                Datadog.MESSAGE_ALREADY_INITIALIZED
+                Datadog.MESSAGE_ALREADY_INITIALIZED,
+                tags = setOf("env:$fakeEnvName")
             )
     }
 
@@ -116,7 +119,7 @@ internal class DatadogTest {
         forge: Forge
     ) {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
@@ -124,7 +127,8 @@ internal class DatadogTest {
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
+                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()"),
+                tags = setOf("env:$fakeEnvName")
             )
     }
 
@@ -133,7 +137,7 @@ internal class DatadogTest {
         forge: Forge
     ) {
         val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
@@ -141,7 +145,8 @@ internal class DatadogTest {
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
+                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()"),
+                tags = setOf("env:$fakeEnvName")
             )
     }
 
@@ -162,7 +167,7 @@ internal class DatadogTest {
     fun `it will initialize the LifecycleMonitor`() {
         // when
         val application = mockAppContext
-        Datadog.initialize(mockAppContext, fakeToken)
+        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
 
         // then
         argumentCaptor<Application.ActivityLifecycleCallbacks> {
@@ -174,6 +179,6 @@ internal class DatadogTest {
     @Test
     fun `it will not initialize the LifecycleMonitor if provided context is not App Context`() {
         val mockContext = mockContext<Context>()
-        Datadog.initialize(mockContext, fakeToken)
+        Datadog.initialize(mockContext, fakeToken, fakeEnvName)
     }
 }

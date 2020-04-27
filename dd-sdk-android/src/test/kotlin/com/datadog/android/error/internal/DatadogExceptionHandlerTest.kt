@@ -69,25 +69,34 @@ internal class DatadogExceptionHandlerTest {
 
     @Mock
     lateinit var mockPreviousHandler: Thread.UncaughtExceptionHandler
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockLogWriter: Writer<Log>
+
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
+
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
     @Forgery
     lateinit var fakeThrowable: Throwable
+
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
+
     @Forgery
     lateinit var fakeUserInfo: UserInfo
+
     @Forgery
     lateinit var fakeTime: Date
 
@@ -98,7 +107,7 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeTime.time
 
         val mockContext: Application = mockContext()
-        Datadog.initialize(mockContext, forge.anHexadecimalString())
+        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -168,7 +177,7 @@ internal class DatadogExceptionHandlerTest {
                 eq(ExistingWorkPolicy.REPLACE),
                 argThat<OneTimeWorkRequest> {
                     this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                        this.tags.contains(TAG_DATADOG_UPLOAD)
+                            this.tags.contains(TAG_DATADOG_UPLOAD)
                 })
     }
 

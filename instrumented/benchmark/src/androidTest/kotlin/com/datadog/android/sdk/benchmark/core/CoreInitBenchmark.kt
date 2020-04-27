@@ -26,7 +26,7 @@ class CoreInitBenchmark {
     fun benchmark_initialize() {
         val context = InstrumentationRegistry.getInstrumentation().context
         val config = DatadogConfig
-            .Builder("NO_TOKEN")
+            .Builder("NO_TOKEN", "benchmark")
             .setTracesEnabled(true)
             .setLogsEnabled(true)
             .setCrashReportsEnabled(true)

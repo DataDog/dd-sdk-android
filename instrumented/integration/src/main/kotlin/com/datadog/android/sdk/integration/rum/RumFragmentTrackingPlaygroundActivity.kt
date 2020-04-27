@@ -32,8 +32,11 @@ internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
         }
 
         // attach the fragment view tracking strategy
-        val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN, RuntimeConfig.APP_ID)
-            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+        val config = DatadogConfig.Builder(
+            RuntimeConfig.DD_TOKEN,
+            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
+            RuntimeConfig.APP_ID
+        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
             .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))

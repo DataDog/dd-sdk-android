@@ -2,23 +2,23 @@ object com.datadog.android.Datadog
   DEPRECATED const val DATADOG_US: String
   DEPRECATED const val DATADOG_EU: String
   fun initialize(android.content.Context, DatadogConfig)
-  DEPRECATED fun initialize(android.content.Context, String, String? = null)
+  DEPRECATED fun initialize(android.content.Context, String, String, String? = null)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
 class com.datadog.android.DatadogConfig
   class Builder
-    constructor(String, java.util.UUID)
-    constructor(String)
+    constructor(String, String, java.util.UUID)
     constructor(String, String)
+    constructor(String, String, String)
     fun build(): DatadogConfig
     fun setLogsEnabled(Boolean): Builder
     fun setTracesEnabled(Boolean): Builder
     fun setCrashReportsEnabled(Boolean): Builder
     fun setRumEnabled(Boolean): Builder
     fun setServiceName(String): Builder
-    fun setEnvironmentName(String): Builder
+    DEPRECATED fun setEnvironmentName(String): Builder
     fun useEUEndpoints(): Builder
     fun useUSEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder

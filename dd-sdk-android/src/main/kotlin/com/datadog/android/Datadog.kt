@@ -159,6 +159,8 @@ object Datadog {
      * Initializes the Datadog SDK.
      * @param context your application context
      * @param clientToken your API key of type Client Token
+     * @param envName the environment special attribute which will be sent with each event.
+     * (e.g. "staging" vs. "production")
      * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
      * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
      * @deprecated Use the [initialize] method with a [DatadogConfig] instance
@@ -169,9 +171,10 @@ object Datadog {
     fun initialize(
         context: Context,
         clientToken: String,
+        envName: String,
         endpointUrl: String? = null
     ) {
-        val config = DatadogConfig.Builder(clientToken)
+        val config = DatadogConfig.Builder(clientToken, envName)
             .useCustomLogsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
             .useCustomCrashReportsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
             .build()

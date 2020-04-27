@@ -89,7 +89,6 @@ internal class LogsFeatureTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
-        LogsFeature.envName = DatadogConfig.DEFAULT_ENV_NAME
     }
 
     @Test

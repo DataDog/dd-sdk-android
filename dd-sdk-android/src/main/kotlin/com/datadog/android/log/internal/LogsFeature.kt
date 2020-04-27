@@ -33,7 +33,7 @@ internal object LogsFeature {
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
     internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
-    internal var envName: String = DatadogConfig.DEFAULT_ENV_NAME
+    internal var envName: String = ""
         set(value) {
             field = value
             envTag = if (value.isEmpty()) {
@@ -93,6 +93,7 @@ internal object LogsFeature {
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
+            envName = ""
             endpointUrl = DatadogEndpoint.LOGS_US
             serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
 

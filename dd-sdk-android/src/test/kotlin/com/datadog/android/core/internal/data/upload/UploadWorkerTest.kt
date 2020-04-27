@@ -87,7 +87,7 @@ internal class UploadWorkerTest {
         whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReportsReader
 
         mockContext = mockContext()
-        Datadog.initialize(mockContext, "<CLIENT_TOKEN>")
+        Datadog.initialize(mockContext, "<CLIENT_TOKEN>", "<ENVIRONMENT>")
 
         LogsFeature.persistenceStrategy = mockLogsStrategy
         LogsFeature.uploader = mockLogsUploader

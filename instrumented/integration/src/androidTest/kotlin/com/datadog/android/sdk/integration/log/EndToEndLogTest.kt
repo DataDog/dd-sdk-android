@@ -31,8 +31,8 @@ internal class EndToEndLogTest {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(
-            ActivityLifecycleLogs::class.java,
-            keepRequests = true
+        ActivityLifecycleLogs::class.java,
+        keepRequests = true
     )
 
     @Test
@@ -66,12 +66,12 @@ internal class EndToEndLogTest {
         messagesSent.forEachIndexed { i, m ->
             val log = logObjects[i]
             assertThat(log)
-                    .hasField(TAG_STATUS, levels[m.first])
-                    .hasField(TAG_MESSAGE, m.second)
-                    .hasField(TAG_SERVICE, "android")
-                    .hasField(TAG_LOGGER_NAME, expectedLoggerName())
-                    .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
-                    .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
+                .hasField(TAG_STATUS, levels[m.first])
+                .hasField(TAG_MESSAGE, m.second)
+                .hasField(TAG_SERVICE, "android")
+                .hasField(TAG_LOGGER_NAME, expectedLoggerName())
+                .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
+                .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
             assertThat(tags).containsOnlyElementsOf(globalTags)
@@ -99,8 +99,8 @@ internal class EndToEndLogTest {
 
     private fun expectedLoggerName(): String {
         return InstrumentationRegistry
-                .getInstrumentation()
-                .targetContext.packageName
+            .getInstrumentation()
+            .targetContext.packageName
     }
 
     private fun expectedUserAgent(): String {
@@ -130,7 +130,7 @@ internal class EndToEndLogTest {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
 
         internal val levels = arrayOf(
-                "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
         )
     }
 }
