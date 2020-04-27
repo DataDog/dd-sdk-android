@@ -31,6 +31,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -194,8 +195,10 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `send action on stop view`() {
-
+    fun `send action on stop view with some viewTreeChanges`(
+        @IntForgery(1) count: Int
+    ) {
+        testedScope.viewTreeChangeCount = count
         mockEvent = RumRawEvent.StopView(Object(), emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -220,6 +223,157 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action on stop view with some resources`(
+        @IntForgery(1) count: Int
+    ) {
+        testedScope.resourcesCount = count
+        mockEvent = RumRawEvent.StopView(Object(), emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasUserActionData {
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `don't send action on stopView with no intermediate event`() {
+        testedScope.resourcesCount = 0
+        testedScope.viewTreeChangeCount = 0
+        mockEvent = RumRawEvent.StopView(Object(), emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action on random event with some viewTreeChanges`(
+        @IntForgery(1) count: Int
+    ) {
+        testedScope.viewTreeChangeCount = count
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasUserActionData {
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action on random event with some resources`(
+        @IntForgery(1) count: Int
+    ) {
+        testedScope.resourcesCount = count
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasUserActionData {
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action only once`(
+        @IntForgery(1) count: Int
+    ) {
+        testedScope.resourcesCount = count
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result2 = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(fakeAttributes)
+                .hasUserActionData {
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `don't send action on random event if no event occured`() {
+        testedScope = RumActionScope(mockParentScope, false, fakeName, fakeAttributes)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        verifyZeroInteractions(mockWriter, mockParentScope)
         assertThat(result).isNull()
     }
 
@@ -285,12 +439,13 @@ internal class RumActionScopeTest {
         )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        assertThat(result2).isSameAs(null)
+        assertThat(result2).isNull()
     }
 
     @Test
     fun `send action if a waiting for stop for too long`() {
         testedScope = RumActionScope(mockParentScope, true, fakeName, fakeAttributes)
+        testedScope.viewTreeChangeCount = 1
         Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
         mockEvent = mock()
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -316,7 +471,7 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(null)
+        assertThat(result).isNull()
     }
 
     @Test
@@ -328,6 +483,7 @@ internal class RumActionScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         testedScope = RumActionScope(mockParentScope, true, fakeName, fakeAttributes)
+        testedScope.viewTreeChangeCount = 1
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopAction(fakeName, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -353,7 +509,7 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(null)
+        assertThat(result).isNull()
     }
 
     @Test
@@ -366,6 +522,7 @@ internal class RumActionScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         testedScope = RumActionScope(mockParentScope, true, fakeName, fakeAttributes)
+        testedScope.viewTreeChangeCount = 1
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopAction(name, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -391,11 +548,12 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(null)
+        assertThat(result).isNull()
     }
 
     @Test
     fun `send action on event after threshold and notify parent`() {
+        testedScope.viewTreeChangeCount = 1
         Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -407,7 +565,7 @@ internal class RumActionScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
-                    hasDuration(1)
+                    hasDurationGreaterThan(1)
                 }
                 .hasContext {
                     hasViewId(fakeParentContext.viewId)
