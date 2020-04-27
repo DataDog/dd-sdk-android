@@ -20,10 +20,10 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
-import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.RoundEnvironment
 import javax.annotation.processing.SupportedAnnotationTypes
+import javax.annotation.processing.SupportedOptions
 import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
@@ -32,8 +32,10 @@ import javax.lang.model.element.TypeElement
 import javax.lang.model.type.NoType
 import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
+import javax.tools.StandardLocation
 import org.jetbrains.annotations.Nullable
 
+@SupportedOptions("org.gradle.annotation.processing.aggregating")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedAnnotationTypes("com.datadog.tools.annotation.NoOpImplementation")
 class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
@@ -58,7 +60,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
 
         for (element in annotatedElements) {
             val typeElement = element.toTypeElementOrNull() ?: continue
-            generateNoOpImplementation(typeElement, kaptKotlinGeneratedDir)
+            generateNoOpImplementation(typeElement)
         }
 
         return true
@@ -72,8 +74,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
      * Generates a File with the target NoOpImplementation
      */
     private fun generateNoOpImplementation(
-        typeElement: TypeElement,
-        kaptKotlinGeneratedDir: String
+        typeElement: TypeElement
     ) {
         if (typeElement.kind != ElementKind.INTERFACE) {
             processingEnv.messager.printMessage(
@@ -87,11 +88,22 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
         val packageName = typeElement.qualifiedName.toString().substringBeforeLast('.')
         val typeSpec = generateTypeSpec(typeElement, packageName)
 
-        val file = FileSpec.builder(packageName, typeSpec.name.orEmpty())
+        val className = typeSpec.name.orEmpty()
+        val file = FileSpec.builder(packageName, className)
             .addType(typeSpec)
+            .indent("    ")
             .build()
 
-        file.writeTo(File(kaptKotlinGeneratedDir))
+        val kotlinFileObject = processingEnv.filer
+            .createResource(
+                StandardLocation.SOURCE_OUTPUT,
+                packageName,
+                "$className.kt",
+                typeElement
+            )
+        val writer = kotlinFileObject.openWriter()
+        file.writeTo(writer)
+        writer.close()
 
         processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, "Generated ${file.name}")
     }
