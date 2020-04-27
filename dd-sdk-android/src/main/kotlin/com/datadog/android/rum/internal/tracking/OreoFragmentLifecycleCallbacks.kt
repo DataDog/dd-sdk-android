@@ -8,13 +8,16 @@ import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
 import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.tracking.ComponentPredicate
 
 @Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)
 internal class OreoFragmentLifecycleCallbacks(
-    private val argumentsProvider: (Fragment) -> Map<String, Any?>
+    private val argumentsProvider: (Fragment) -> Map<String, Any?>,
+    private val componentPredicate: ComponentPredicate<Fragment>
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     // region FragmentLifecycleCallbacks
@@ -53,17 +56,19 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        GlobalRum.get()
-            .startView(
-                f,
-                f.resolveViewName(),
-                argumentsProvider(f)
-            )
+        componentPredicate.runIfValid(f) {
+            GlobalRum.get()
+                .startView(
+                    it,
+                    it.resolveViewName(),
+                    argumentsProvider(it)
+                )
+        }
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
-        GlobalRum.get().stopView(f)
+        componentPredicate.runIfValid(f) { GlobalRum.get().stopView(it) }
     }
 
     // endregion

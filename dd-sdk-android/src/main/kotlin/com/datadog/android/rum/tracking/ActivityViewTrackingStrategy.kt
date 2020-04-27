@@ -7,6 +7,7 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
+import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 
 /**
@@ -14,8 +15,13 @@ import com.datadog.android.rum.GlobalRum
  *
  * Each activity's lifecycle will be monitored to start and stop RUM views when relevant.
  * @param trackExtras whether to track Activity Intent extras
+ * @param componentPredicate to accept the Activities that will be taken into account as
+ * valid RUM View events.
  */
-class ActivityViewTrackingStrategy(private val trackExtras: Boolean) :
+class ActivityViewTrackingStrategy @JvmOverloads constructor(
+    private val trackExtras: Boolean,
+    private val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
+) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
@@ -23,20 +29,22 @@ class ActivityViewTrackingStrategy(private val trackExtras: Boolean) :
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        val javaClass = activity.javaClass
-        val vieName = javaClass.canonicalName ?: javaClass.simpleName
-        val attributes =
-            if (trackExtras) convertToRumAttributes(activity.intent?.extras) else emptyMap()
-        GlobalRum.monitor.startView(
-            activity,
-            vieName,
-            attributes
-        )
+        componentPredicate.runIfValid(activity) {
+            val javaClass = it.javaClass
+            val vieName = javaClass.canonicalName ?: javaClass.simpleName
+            val attributes =
+                if (trackExtras) convertToRumAttributes(it.intent?.extras) else emptyMap()
+            GlobalRum.monitor.startView(
+                it,
+                vieName,
+                attributes
+            )
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        GlobalRum.monitor.stopView(activity)
+        componentPredicate.runIfValid(activity) { GlobalRum.monitor.stopView(it) }
     }
 
     // endregion

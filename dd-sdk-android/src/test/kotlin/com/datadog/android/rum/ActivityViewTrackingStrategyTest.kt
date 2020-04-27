@@ -6,11 +6,14 @@
 
 package com.datadog.android.rum
 
+import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -113,6 +116,42 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
             eq(mockActivity.resolveViewName()),
             eq(emptyMap())
         )
+    }
+
+    @Test
+    fun `when resumed will do nothing if activity is not whitelisted`() {
+        // given
+        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+            componentPredicate = object :
+                ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
+                    return false
+                }
+            })
+
+        // whenever
+        underTest.onActivityResumed(mockActivity)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `when paused will do nothing if activity is not whitelisted`() {
+        // given
+        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+            componentPredicate = object :
+                ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
+                    return false
+                }
+            })
+
+        // whenever
+        underTest.onActivityPaused(mockActivity)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     // endregion
