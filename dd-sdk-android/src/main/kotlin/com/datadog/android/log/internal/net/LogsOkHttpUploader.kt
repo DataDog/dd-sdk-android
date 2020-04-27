@@ -24,7 +24,7 @@ internal open class LogsOkHttpUploader(
 
     override fun buildQueryParams(): Map<String, Any> {
         return mutableMapOf(
-            QP_SOURCE to DD_SOURCE_MOBILE
+            QP_SOURCE to DD_SOURCE_ANDROID
         )
     }
 
@@ -32,7 +32,6 @@ internal open class LogsOkHttpUploader(
 
     companion object {
         private const val QP_SOURCE = "ddsource"
-        private const val DD_SOURCE_MOBILE = "mobile"
         internal const val UPLOAD_URL =
             "%s/v1/input/%s"
 
