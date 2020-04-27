@@ -50,7 +50,6 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                        .setServiceName("<SERVICE_NAME>")
                         .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
@@ -65,7 +64,7 @@ class SampleApplication : Application() {
 
     ```kotlin
     val tracer = AndroidTracer.Builder().build()
-    io.opentracing.util.GlobalTracer.registerIfAbsent(tracer)
+    GlobalTracer.registerIfAbsent(tracer)
     ```
 
 4. (Optional) - Set the partial flush threshold. You can optimize the workload of the SDK if you create a lot of spans in your application, or on the contrary very few of them. The library waits until the number of finished spans gets above the threshold to write them on disk. A value of `1` writes each span as soon as its finished.
@@ -121,7 +120,7 @@ If you want to trace your OkHttp requests, you can add the provided [Interceptor
 
 ```kotlin
 val okHttpClient =  OkHttpClient.Builder()
-    .addInterceptor(TracingInterceptor())
+    .addInterceptor(DatadogRumMonitor())
     .build()
 ```
 

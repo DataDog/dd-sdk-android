@@ -35,7 +35,6 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                        .setServiceName("<SERVICE_NAME>")
                         .build()
         Datadog.initialize(this, config)
     }
@@ -51,7 +50,6 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
-                        .setServiceName("<SERVICE_NAME>")
                         .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
