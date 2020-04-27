@@ -30,6 +30,6 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
     }
 
     override fun expectedPathRegex(): String {
-        return "\\/v1\\/input/${fakeToken}\\?ddsource=mobile$"
+        return "\\/v1\\/input/${fakeToken}\\?ddsource=android$"
     }
 }
