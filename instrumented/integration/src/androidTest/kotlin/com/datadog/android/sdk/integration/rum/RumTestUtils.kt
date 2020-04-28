@@ -62,7 +62,8 @@ private fun JsonObject.assertMatches(event: ExpectedViewEvent) {
     JsonObjectAssert.assertThat(this)
         .hasField(VIEW_URL, event.viewUrl)
         .hasField(RUM_DOC_VERSION, event.docVersion)
-    JsonObjectAssert.assertThat(this).bundlesMap(event.extras, VIEW_ARGUMENTS_PREFIX)
+    JsonObjectAssert.assertThat(this).bundlesMap(event.viewArguments, VIEW_ARGUMENTS_PREFIX)
+    JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
 }
 
 private fun JsonObject.assertMatchesRoot(event: ExpectedEvent) {

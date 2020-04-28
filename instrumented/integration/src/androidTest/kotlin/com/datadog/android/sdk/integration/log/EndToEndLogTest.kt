@@ -21,6 +21,7 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +37,7 @@ internal class EndToEndLogTest {
     )
 
     @Test
+    @Ignore
     fun verifyExpectedActivityLogs() {
 
         // Wait to make sure all batches are consumed

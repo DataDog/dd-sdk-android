@@ -14,7 +14,6 @@ import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrate
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -120,9 +119,6 @@ internal class RumFeatureTest {
             mockPersistenceExecutorService,
             mockUserInfoProvider
         )
-
-        val context = GlobalRum.getRumContext()
-        assertThat(context.applicationId).isEqualTo(fakeConfig.applicationId)
     }
 
     @Test

@@ -29,7 +29,8 @@ internal data class ExpectedGestureEvent(
 internal data class ExpectedViewEvent(
     val viewUrl: String,
     val docVersion: Int = 1,
-    val extras: Map<String, Any?> = mapOf(),
+    val viewArguments: Map<String, Any?> = mapOf(),
+    val extraAttributes: Map<String, Any?> = mapOf(),
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 

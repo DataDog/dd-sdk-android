@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
 internal class EndToEndRumActivityTrackingTests {
 
     private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
-    private val expectedExtras = mapOf<String, Any?>(
+    private val expectedViewArguments = mapOf<String, Any?>(
         "key1" to "keyValue1",
         "key2" to 1,
         "key3" to 2.0f
@@ -34,7 +34,7 @@ internal class EndToEndRumActivityTrackingTests {
     val mockServerRule = RumMockServerActivityTestRule(
         RumActivityTrackingPlaygroundActivity::class.java,
         keepRequests = true,
-        intentExtras = expectedExtras
+        intentExtras = expectedViewArguments
     )
 
     @Test
@@ -49,7 +49,7 @@ internal class EndToEndRumActivityTrackingTests {
             ExpectedViewEvent(
                 viewUrl,
                 docVersion = 2,
-                extras = expectedExtras
+                viewArguments = expectedViewArguments
             )
         )
         // activity on pause

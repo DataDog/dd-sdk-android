@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.domain.RumContext
-import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -127,59 +126,12 @@ object GlobalRum {
         }
     }
 
-    internal fun updateApplicationId(applicationId: UUID) {
-        updateRumContext { context ->
-            context.copy(applicationId = applicationId)
-        }
-    }
-
-    internal fun updateViewId(viewId: UUID?) {
-        updateRumContext { context ->
-            context.copy(viewId = viewId)
-        }
-    }
-
-    // Only used internally for tests purposes
-    internal fun updateContext(rumContext: RumContext) {
-        val nanoTime = System.nanoTime()
-        sessionStartNs.set(nanoTime)
-        lastUserInteractionNs.set(nanoTime)
-        updateRumContext {
-            rumContext.copy()
-        }
-    }
-
     internal fun getRumContext(): RumContext {
-        updateSessionIdIfNeeded()
         return activeContext.get()
     }
 
-    @Synchronized
-    private fun updateSessionIdIfNeeded() {
-        val currentContext = activeContext.get()
-        val nanoTime = System.nanoTime()
-        val isFirstSession = currentContext.sessionId == UUID(0, 0)
-        val sessionLength = nanoTime - sessionStartNs.get()
-        val duration = nanoTime - lastUserInteractionNs.get()
-        val isInactiveSession = duration >= sessionInactivityNanos
-        val isLongSession = sessionLength >= sessionMaxDurationNanos
-
-        if (isFirstSession || isInactiveSession || isLongSession) {
-            sessionStartNs.set(nanoTime)
-            lastUserInteractionNs.set(nanoTime)
-            updateRumContext { context ->
-                context.copy(sessionId = UUID.randomUUID())
-            }
-        }
-    }
-
-    private fun updateRumContext(update: (RumContext) -> RumContext) {
-        var oldContext: RumContext
-        var newContext: RumContext
-        do {
-            oldContext = activeContext.get()
-            newContext = update(oldContext)
-        } while (!activeContext.compareAndSet(oldContext, newContext))
+    internal fun updateRumContext(newContext: RumContext) {
+        activeContext.set(newContext)
     }
 
     // endregion

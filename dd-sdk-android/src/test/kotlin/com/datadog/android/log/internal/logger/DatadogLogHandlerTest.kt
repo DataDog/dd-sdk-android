@@ -429,7 +429,7 @@ internal class DatadogLogHandlerTest {
         val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
         Datadog.initialize(mockContext(), config)
         val rumContext = forge.getForgery<RumContext>()
-        GlobalRum.updateContext(rumContext)
+        GlobalRum.updateRumContext(rumContext)
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
         // when

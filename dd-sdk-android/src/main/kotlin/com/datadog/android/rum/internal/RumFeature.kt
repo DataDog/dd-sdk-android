@@ -19,12 +19,14 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.time.SystemTimeProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.domain.RumEvent
 import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
@@ -54,6 +56,7 @@ internal object RumFeature {
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
+    internal val timeProvider: TimeProvider = SystemTimeProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     internal var viewTrackingStrategy: ViewTrackingStrategy =
@@ -78,7 +81,6 @@ internal object RumFeature {
             return
         }
 
-        GlobalRum.updateApplicationId(config.applicationId)
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         serviceName = config.serviceName

@@ -9,6 +9,8 @@ package com.datadog.android.rum.internal.domain
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
+import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
 import java.util.concurrent.ExecutorService
 

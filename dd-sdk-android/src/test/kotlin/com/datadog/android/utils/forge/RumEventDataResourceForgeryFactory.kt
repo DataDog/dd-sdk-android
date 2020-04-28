@@ -7,7 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

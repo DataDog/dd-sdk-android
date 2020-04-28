@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.internal.domain.RumEventData
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -45,6 +45,16 @@ internal class RumEventDataViewAssert(actual: RumEventData.View) :
                     "but was ${actual.durationNanoSeconds}"
             )
             .isLessThanOrEqualTo(upperBound)
+        return this
+    }
+
+    fun hasDurationGreaterThan(upperBound: Long): RumEventDataViewAssert {
+        assertThat(actual.durationNanoSeconds)
+            .overridingErrorMessage(
+                "Expected event data to have duration greater than $upperBound " +
+                    "but was ${actual.durationNanoSeconds}"
+            )
+            .isGreaterThanOrEqualTo(upperBound)
         return this
     }
 
