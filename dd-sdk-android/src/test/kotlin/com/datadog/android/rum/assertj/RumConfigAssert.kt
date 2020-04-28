@@ -55,16 +55,6 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         return this
     }
 
-    fun hasServiceName(serviceName: String): RumConfigAssert {
-        assertThat(actual.serviceName)
-            .overridingErrorMessage(
-                "Expected event to have service name $serviceName" +
-                        " but was ${actual.serviceName}"
-            )
-            .isEqualTo(serviceName)
-        return this
-    }
-
     fun hasEnvName(envName: String): RumConfigAssert {
         assertThat(actual.envName)
             .overridingErrorMessage(

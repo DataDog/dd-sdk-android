@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
@@ -186,7 +187,7 @@ internal class AndroidTracerTest {
         val properties = underTest.properties()
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
-        assertThat(span.serviceName).isEqualTo(TracesFeature.serviceName)
+        assertThat(span.serviceName).isEqualTo(CoreFeature.serviceName)
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
             .isEqualTo(AndroidTracer.DEFAULT_PARTIAL_MIN_FLUSH)
     }

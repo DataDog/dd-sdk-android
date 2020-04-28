@@ -27,7 +27,6 @@ class com.datadog.android.DatadogConfig
     fun useCustomRumEndpoint(String): Builder
     fun trackGestures(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
-  companion object
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
   const val LOGS_EU: String

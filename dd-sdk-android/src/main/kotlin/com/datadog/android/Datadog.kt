@@ -87,7 +87,7 @@ object Datadog {
         val appContext = context.applicationContext
 
         // always initialize Core Features first
-        CoreFeature.initialize(appContext, config.needsClearTextHttp)
+        CoreFeature.initialize(appContext, config.coreConfig)
 
         config.logsConfig?.let { featureConfig ->
             LogsFeature.initialize(
