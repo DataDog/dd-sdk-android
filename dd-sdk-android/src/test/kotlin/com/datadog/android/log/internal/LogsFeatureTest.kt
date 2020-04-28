@@ -9,6 +9,7 @@ package com.datadog.android.log.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -51,12 +52,16 @@ internal class LogsFeatureTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
@@ -74,7 +79,6 @@ internal class LogsFeatureTest {
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
 
@@ -89,6 +93,7 @@ internal class LogsFeatureTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
+        CoreFeature.stop()
     }
 
     @Test
@@ -141,11 +146,9 @@ internal class LogsFeatureTest {
 
         val clientToken = LogsFeature.clientToken
         val endpointUrl = LogsFeature.endpointUrl
-        val serviceName = LogsFeature.serviceName
 
         assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-        assertThat(serviceName).isEqualTo(fakeConfig.serviceName)
     }
 
     @Test
@@ -164,13 +167,11 @@ internal class LogsFeatureTest {
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
         val clientToken = LogsFeature.clientToken
         val endpointUrl = LogsFeature.endpointUrl
-        val serviceName = LogsFeature.serviceName
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
         LogsFeature.initialize(
@@ -186,12 +187,10 @@ internal class LogsFeatureTest {
         val dataUploadScheduler2 = LogsFeature.dataUploadScheduler
         val clientToken2 = LogsFeature.clientToken
         val endpointUrl2 = LogsFeature.endpointUrl
-        val serviceName2 = LogsFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
-        assertThat(serviceName).isSameAs(serviceName2)
     }
 }

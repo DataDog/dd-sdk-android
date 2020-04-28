@@ -70,7 +70,7 @@ internal class EndToEndLogTest {
             assertThat(log)
                 .hasField(TAG_STATUS, levels[m.first])
                 .hasField(TAG_MESSAGE, m.second)
-                .hasField(TAG_SERVICE, "android")
+                .hasField(TAG_SERVICE, mockServerRule.activity.packageName)
                 .hasField(TAG_LOGGER_NAME, expectedLoggerName())
                 .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
                 .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
@@ -109,8 +109,8 @@ internal class EndToEndLogTest {
         return System.getProperty("http.agent").let {
             if (it.isNullOrBlank()) {
                 "Datadog/${BuildConfig.VERSION_NAME} " +
-                        "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                        "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
+                    "${Build.MODEL} Build/${Build.ID})"
             } else {
                 it
             }

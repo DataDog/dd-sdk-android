@@ -53,14 +53,18 @@ class DatadogConfigBuilderTest {
         val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -70,7 +74,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     UUID(0, 0),
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -80,7 +83,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -94,14 +96,18 @@ class DatadogConfigBuilderTest {
             DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId.toString())
                 .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -111,7 +117,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -121,7 +126,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -131,7 +135,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -142,14 +145,13 @@ class DatadogConfigBuilderTest {
         val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -159,7 +161,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -169,7 +170,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -179,7 +179,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -197,45 +196,10 @@ class DatadogConfigBuilderTest {
             .setServiceName(serviceName)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
-        assertThat(config.logsConfig)
+        assertThat(config.coreConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.LOGS_US,
-                    serviceName,
-                    fakeEnvName
-                )
-            )
-        assertThat(config.tracesConfig)
-            .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.TRACES_US,
-                    serviceName,
-                    fakeEnvName
-                )
-            )
-        assertThat(config.crashReportConfig)
-            .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.LOGS_US,
-                    serviceName,
-                    fakeEnvName
-                )
-            )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    serviceName,
-                    fakeEnvName
+                DatadogConfig.CoreConfig(
+                    serviceName = serviceName
                 )
             )
     }
@@ -252,14 +216,18 @@ class DatadogConfigBuilderTest {
             .setEnvironmentName(envName)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -269,7 +237,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -279,7 +246,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -290,8 +256,7 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    envName
+                    envName = envName
                 )
             )
     }
@@ -308,14 +273,18 @@ class DatadogConfigBuilderTest {
             .setEnvironmentName("\"'$envName'\"")
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -325,7 +294,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -335,7 +303,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     envName
                 )
             )
@@ -346,8 +313,7 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
-                    envName
+                    envName = envName
                 )
             )
     }
@@ -361,7 +327,12 @@ class DatadogConfigBuilderTest {
             .setRumEnabled(false)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig).isNull()
         assertThat(config.tracesConfig).isNull()
         assertThat(config.crashReportConfig).isNull()
@@ -377,14 +348,18 @@ class DatadogConfigBuilderTest {
             .setCrashReportsEnabled(true)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -394,7 +369,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -404,7 +378,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -415,7 +388,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_US,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -430,14 +402,18 @@ class DatadogConfigBuilderTest {
             .setCrashReportsEnabled(true)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -447,7 +423,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.TRACES_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -457,7 +432,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -467,7 +441,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     DatadogEndpoint.RUM_EU,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -491,14 +464,18 @@ class DatadogConfigBuilderTest {
             .setCrashReportsEnabled(true)
             .build()
 
-        assertThat(config.needsClearTextHttp).isFalse()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     logsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -508,7 +485,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     tracesUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -518,7 +494,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     crashReportsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -529,7 +504,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -553,14 +527,18 @@ class DatadogConfigBuilderTest {
             .setCrashReportsEnabled(true)
             .build()
 
-        assertThat(config.needsClearTextHttp).isTrue()
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = true
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
                     fakeClientToken,
                     fakeApplicationId,
                     logsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -570,7 +548,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     tracesUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -580,7 +557,6 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     crashReportsUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
@@ -590,29 +566,9 @@ class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     rumUrl,
-                    DatadogConfig.DEFAULT_SERVICE_NAME,
                     fakeEnvName
                 )
             )
-    }
-
-    @Test
-    fun `builder with all tracking instrumentation disabled`(forge: Forge) {
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
-            .useCustomRumEndpoint(rumUrl)
-            .build()
-
-        val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
-        assertThat(rumConfig).isNotNull()
-        RumConfigAssert.assertThat(rumConfig!!)
-            .hasClientToken(fakeClientToken)
-            .hasApplicationId(fakeApplicationId)
-            .hasEndpointUrl(rumUrl)
-            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
-            .hasEnvName(fakeEnvName)
-            .doesNotHaveGesturesTrackingStrategy()
-            .doesNotHaveViewTrackingStrategy()
     }
 
     @Test
@@ -632,7 +588,6 @@ class DatadogConfigBuilderTest {
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
-            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
             .hasEnvName(fakeEnvName)
             .hasGesturesTrackingStrategy(
                 touchTargetExtraAttributesProviders
@@ -658,7 +613,6 @@ class DatadogConfigBuilderTest {
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
-            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
             .hasEnvName(fakeEnvName)
             .hasGesturesTrackingStrategyApi29(
                 touchTargetExtraAttributesProviders
@@ -681,7 +635,6 @@ class DatadogConfigBuilderTest {
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
-            .hasServiceName(DatadogConfig.DEFAULT_SERVICE_NAME)
             .hasEnvName(fakeEnvName)
             .doesNotHaveGesturesTrackingStrategy()
             .hasViewTrackingStrategy(strategy)

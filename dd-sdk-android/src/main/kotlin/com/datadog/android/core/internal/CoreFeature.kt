@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import android.content.Context
 import android.os.Build
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -56,25 +57,27 @@ internal object CoreFeature {
 
     internal var packageName: String = ""
     internal var packageVersion: String = ""
+    internal var serviceName: String = ""
 
     internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
     internal lateinit var dataPersistenceExecutorService: ExecutorService
 
     fun initialize(
         appContext: Context,
-        needsClearTextHttp: Boolean
+        config: DatadogConfig.CoreConfig
     ) {
         if (initialized.get()) {
             return
         }
 
+        serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
 
         readApplicationInformation(appContext)
 
         setupInfoProviders(appContext)
 
-        setupOkHttpClient(needsClearTextHttp)
+        setupOkHttpClient(config.needsClearTextHttp)
         dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
         dataPersistenceExecutorService =
             ThreadPoolExecutor(
@@ -99,6 +102,9 @@ internal object CoreFeature {
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
             userInfoProvider = NoOpMutableUserInfoProvider()
+            serviceName = ""
+            packageName = ""
+            packageVersion = ""
             shutDownExecutors()
             initialized.set(false)
         }

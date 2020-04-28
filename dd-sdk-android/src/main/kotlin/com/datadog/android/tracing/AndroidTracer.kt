@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
@@ -66,7 +67,7 @@ class AndroidTracer internal constructor(
     class Builder {
 
         private var bundleWithRumEnabled: Boolean = true
-        private var serviceName: String = TracesFeature.serviceName
+        private var serviceName: String = CoreFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
         private val logsHandler: LogHandler

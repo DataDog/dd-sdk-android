@@ -11,6 +11,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
@@ -58,6 +59,7 @@ import org.mockito.quality.Strictness
 internal class CoreFeatureTest {
 
     lateinit var mockAppContext: Application
+
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var fakePackageName: String
@@ -82,7 +84,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `registers broadcast receivers on initialize (Lollipop)`() {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
         verify(mockAppContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
@@ -95,7 +97,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
     fun `registers receivers and callbacks on initialize (Nougat)`() {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
         verify(mockAppContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
@@ -108,7 +110,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes time provider`() {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.timeProvider)
             .isNotInstanceOf(NoOpMutableTimeProvider::class.java)
@@ -116,7 +118,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes user info provider`() {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.userInfoProvider)
             .isNotInstanceOf(NoOpMutableUserInfoProvider::class.java)
@@ -124,7 +126,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes app info`() {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
@@ -139,7 +141,7 @@ internal class CoreFeatureTest {
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(versionCode.toString())
@@ -148,7 +150,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `add strict network policy for https endpoints on 21+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -162,7 +164,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.KITKAT)
     fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, false)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -175,7 +177,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `no network policy for custom endpoints`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, true)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -189,7 +191,7 @@ internal class CoreFeatureTest {
     @Test
     fun `stop will shutdown the executors`() {
         // given
-        CoreFeature.initialize(mockAppContext, true)
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
         val mockedThreadPoolExecutor: ThreadPoolExecutor = mock()
         CoreFeature.dataPersistenceExecutorService = mockedThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
@@ -201,5 +203,27 @@ internal class CoreFeatureTest {
         // then
         verify(mockedThreadPoolExecutor).shutdownNow()
         verify(mockScheduledThreadPoolExecutor).shutdownNow()
+    }
+
+    @Test
+    fun `if custom service name not provided will use the package name`() {
+        // given
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(serviceName = null))
+
+        // then
+        assertThat(CoreFeature.serviceName).isEqualTo(mockAppContext.packageName)
+    }
+
+    @Test
+    fun `if custom service name provided will use this instead of the package name`(forge: Forge) {
+        // given
+        val serviceName = forge.anAlphabeticalString()
+        CoreFeature.initialize(
+            mockAppContext,
+            DatadogConfig.CoreConfig(serviceName = serviceName)
+        )
+
+        // then
+        assertThat(CoreFeature.serviceName).isEqualTo(serviceName)
     }
 }

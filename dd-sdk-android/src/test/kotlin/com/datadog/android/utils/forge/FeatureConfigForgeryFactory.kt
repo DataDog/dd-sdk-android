@@ -18,7 +18,6 @@ internal class FeatureConfigForgeryFactory :
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
     }

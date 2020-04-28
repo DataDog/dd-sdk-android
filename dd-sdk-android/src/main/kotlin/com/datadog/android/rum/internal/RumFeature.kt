@@ -48,7 +48,6 @@ internal object RumFeature {
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.RUM_US
-    internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
     internal var envName: String = ""
     internal var applicationId: UUID = UUID(0, 0)
 
@@ -83,7 +82,6 @@ internal object RumFeature {
 
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
-        serviceName = config.serviceName
         envName = config.envName
 
         config.gesturesTracker?.let { gesturesTracker = it }
@@ -120,7 +118,6 @@ internal object RumFeature {
             dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
-            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
             envName = ""
             // reset rum monitor to NoOp and reset the flag
             GlobalRum.isRegistered.set(false)

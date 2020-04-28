@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -90,7 +91,6 @@ internal class RumFeatureTest {
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
 
@@ -105,6 +105,7 @@ internal class RumFeatureTest {
     @AfterEach
     fun `tear down`() {
         RumFeature.stop()
+        CoreFeature.stop()
     }
 
     @Test
@@ -194,11 +195,9 @@ internal class RumFeatureTest {
 
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
-        val serviceName = RumFeature.serviceName
 
         assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-        assertThat(serviceName).isEqualTo(fakeConfig.serviceName)
     }
 
     @Test
@@ -218,14 +217,12 @@ internal class RumFeatureTest {
         val dataUploadScheduler = RumFeature.dataUploadScheduler
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
-        val serviceName = RumFeature.serviceName
         val userInfoProvider = RumFeature.userInfoProvider
 
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString(),
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = mock()
@@ -244,13 +241,11 @@ internal class RumFeatureTest {
         val dataUploadScheduler2 = RumFeature.dataUploadScheduler
         val clientToken2 = RumFeature.clientToken
         val endpointUrl2 = RumFeature.endpointUrl
-        val serviceName2 = RumFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
-        assertThat(serviceName).isSameAs(serviceName2)
         assertThat(userInfoProvider).isSameAs(RumFeature.userInfoProvider)
     }
 
