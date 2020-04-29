@@ -47,7 +47,7 @@ internal class DatadogLogHandler(
         }
 
         if (level >= AndroidLog.ERROR) {
-            GlobalRum.get().addError(message, loggerName, throwable, attributes)
+            GlobalRum.get().addError(message, ORIGIN_LOGGER, throwable, attributes)
         }
     }
 
@@ -95,4 +95,8 @@ internal class DatadogLogHandler(
     }
 
     // endregion
+
+    companion object {
+        internal const val ORIGIN_LOGGER = "logger"
+    }
 }
