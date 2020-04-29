@@ -133,7 +133,6 @@ internal class SpanSerializerTest {
     private fun assertGlobalInfoMatches(jsonObject: JsonObject) {
         assertThat(jsonObject)
             .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
-            .hasField(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
     }
 
     private fun assertSpanMatches(

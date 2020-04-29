@@ -51,7 +51,6 @@ internal class SpanSerializer(
         metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_ANDROID)
 
         metaObject.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
-        metaObject.addProperty(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
         addLogUserInfo(userInfoProvider.getUserInfo(), metaObject)
