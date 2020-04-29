@@ -29,12 +29,13 @@ open class CheckApiSurfaceTask : DefaultTask() {
             "git", "diff", "--color=never", "HEAD", "--", surfaceFile.absolutePath
         )
 
-        val additions = lines.count { it.matches(Regex("^\\+[^+].*$")) }
-        val removals = lines.count { it.matches(Regex("^-[^-].*$")) }
+        val additions = lines.filter { it.matches(Regex("^\\+[^+].*$")) }
+        val removals = lines.filter { it.matches(Regex("^-[^-].*$")) }
 
-        if (additions > 0 || removals > 0) {
+        if (additions.isNotEmpty() || removals.isNotEmpty()) {
             throw IllegalStateException(
-                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task before you push your PR."
+                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task before you push your PR.\n" +
+                    additions.joinToString("\n") + removals.joinToString("\n")
             )
         }
     }
