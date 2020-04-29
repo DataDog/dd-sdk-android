@@ -49,7 +49,6 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog.addProperty(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
         jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
         jsonLog.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
-        jsonLog.addProperty(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         // Timestamp
         val formattedDate = synchronized(simpleDateFormat) {
