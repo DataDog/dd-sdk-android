@@ -34,7 +34,7 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .build()
         Datadog.initialize(this, config)
     }
@@ -49,7 +49,7 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
