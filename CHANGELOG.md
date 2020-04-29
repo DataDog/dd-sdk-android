@@ -1,3 +1,8 @@
+# 1.3.1 / 2020-30-04
+
+### Changes
+
+* [BUGFIX] Fix ConcurrentModificationException crash in the FileReader class See #234 (Thanks @alparp27) 
 
 # 1.3.0 / 2020-03-02
 
