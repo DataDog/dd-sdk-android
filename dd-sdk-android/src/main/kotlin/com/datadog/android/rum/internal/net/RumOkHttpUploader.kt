@@ -6,7 +6,9 @@
 
 package com.datadog.android.rum.internal.net
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
+import com.datadog.android.rum.RumAttributes
 import java.util.Locale
 import okhttp3.OkHttpClient
 
@@ -16,6 +18,12 @@ internal open class RumOkHttpUploader(
     client: OkHttpClient
 ) : DataOkHttpUploader(buildUrl(endpoint, token), client, CONTENT_TYPE_TEXT_UTF8) {
 
+    private val tags: String by lazy {
+        arrayOf(
+            "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
+            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}"
+        ).joinToString(",")
+    }
     // region DataOkHttpUploader
 
     override fun setEndpoint(endpoint: String) {
@@ -25,14 +33,16 @@ internal open class RumOkHttpUploader(
     override fun buildQueryParams(): MutableMap<String, Any> {
         return mutableMapOf(
             BATCH_TIME to System.currentTimeMillis(),
-            QP_SOURCE to DD_SOURCE_ANDROID
+            QP_SOURCE to DD_SOURCE_ANDROID,
+            QP_TAGS to tags
         )
     }
 
     // endregion
 
     companion object {
-        private const val QP_SOURCE = "ddsource"
+        internal const val QP_SOURCE = "ddsource"
+        internal const val QP_TAGS = "ddtags"
         internal const val UPLOAD_URL =
             "%s/v1/input/%s"
 

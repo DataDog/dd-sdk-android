@@ -123,6 +123,7 @@ object com.datadog.android.rum.RumAttributes
   const val APPLICATION_ID: String
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String
+  const val SERVICE_NAME: String
   const val DATE: String
   const val DURATION: String
   const val ERROR_KIND: String

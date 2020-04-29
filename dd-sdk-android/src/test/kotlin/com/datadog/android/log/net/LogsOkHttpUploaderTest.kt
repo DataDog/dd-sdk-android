@@ -8,9 +8,23 @@ package com.datadog.android.log.net
 
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploader>() {
 
     override fun uploader(): LogsOkHttpUploader {

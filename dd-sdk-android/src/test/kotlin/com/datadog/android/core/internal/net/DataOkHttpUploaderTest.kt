@@ -8,11 +8,8 @@ package com.datadog.android.core.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
-import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -21,18 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
     lateinit var mockWebServer: MockWebServer
@@ -44,7 +30,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     lateinit var fakeUserAgent: String
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    open fun `set up`(forge: Forge) {
 
         Build.VERSION::class.java.setStaticValue("RELEASE", forge.anAlphaNumericalString())
         Build::class.java.setStaticValue("MODEL", forge.anAlphabeticalString())
@@ -66,7 +52,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     abstract fun expectedPathRegex(): String
 
     @AfterEach
-    fun `tear down`() {
+    open fun `tear down`() {
         mockWebServer.shutdown()
 
         Build.VERSION::class.java.setStaticValue("RELEASE", null)

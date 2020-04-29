@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.rum.RumAttributes
 import com.google.gson.JsonArray
@@ -30,10 +29,6 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
     override fun serialize(model: RumEvent): String {
         val root = JsonObject()
-
-        // App Context
-        root.addProperty(RumAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
-        root.addProperty(RumAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         // Event Context
         val context = model.context
