@@ -24,8 +24,11 @@ internal class RumGesturesTrackingActivityTestRule<T : Activity>(
     override fun beforeActivityLaunched() {
         super.beforeActivityLaunched()
         // attach the gestures tracker
-        val config = DatadogConfig.Builder(RuntimeConfig.DD_TOKEN, RuntimeConfig.APP_ID)
-            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+        val config = DatadogConfig.Builder(
+            RuntimeConfig.DD_TOKEN,
+            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
+            RuntimeConfig.APP_ID
+        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
             .trackGestures(arrayOf(JetpackViewAttributesProvider()))

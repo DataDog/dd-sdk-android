@@ -375,7 +375,9 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will add the span id and trace id if we active an active tracer`(forge: Forge) {
         // given
-        val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
+        val config =
+            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
+                .build()
         Datadog.initialize(mockContext(), config)
         val tracer = AndroidTracer.Builder().build()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
@@ -426,7 +428,9 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will add the Rum context`(forge: Forge) {
         // given
-        val config = DatadogConfig.Builder(forge.anAlphabeticalString()).build()
+        val config =
+            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
+                .build()
         Datadog.initialize(mockContext(), config)
         val rumContext = forge.getForgery<RumContext>()
         GlobalRum.updateRumContext(rumContext)
