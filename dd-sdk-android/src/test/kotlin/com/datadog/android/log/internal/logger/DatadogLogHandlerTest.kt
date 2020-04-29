@@ -220,7 +220,7 @@ internal class DatadogLogHandlerTest {
 
         verify(mockRumMonitor).addError(
             fakeMessage,
-            fakeLoggerName,
+            DatadogLogHandler.ORIGIN_LOGGER,
             null,
             fakeAttributes
         )
@@ -241,7 +241,7 @@ internal class DatadogLogHandlerTest {
 
         verify(mockRumMonitor).addError(
             fakeMessage,
-            fakeLoggerName,
+            DatadogLogHandler.ORIGIN_LOGGER,
             fakeThrowable,
             fakeAttributes
         )

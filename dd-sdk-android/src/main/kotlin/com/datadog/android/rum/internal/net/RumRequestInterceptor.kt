@@ -38,6 +38,8 @@ internal class RumRequestInterceptor : RequestInterceptor {
     override fun handleResponse(request: Request, response: Response) {
         val method = request.method()
         val mimeType = response.header(HEADER_CT)
+        val statusCode = response.code()
+        val url = request.url().toString()
         val kind = when {
             method in xhrMethods -> RumResourceKind.XHR
             mimeType == null -> RumResourceKind.UNKNOWN
@@ -48,19 +50,28 @@ internal class RumRequestInterceptor : RequestInterceptor {
             request,
             kind,
             mapOf(
-                RumAttributes.HTTP_STATUS_CODE to response.code(),
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
                 RumAttributes.NETWORK_BYTES_WRITTEN to
                     (response.body()?.contentLength() ?: 0L)
             )
         )
+        if (statusCode >= 400) {
+            GlobalRum.get().addError(
+                ERROR_MSG_FORMAT.format(method, url),
+                ORIGIN_NETWORK,
+                null,
+                mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+            )
+        }
     }
 
     override fun handleThrowable(request: Request, throwable: Throwable) {
         val method = request.method()
+        val url = request.url().toString()
         GlobalRum.get().stopResourceWithError(
             request,
-            "OkHttp error on $method",
-            "network",
+            ERROR_MSG_FORMAT.format(method, url),
+            ORIGIN_NETWORK,
             throwable
         )
     }
@@ -91,6 +102,10 @@ internal class RumRequestInterceptor : RequestInterceptor {
 
     companion object {
         internal const val HEADER_CT = "Content-Type"
+
+        internal const val ORIGIN_NETWORK = "network"
+
+        internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 
         private val xhrMethods = arrayOf("POST", "PUT", "DELETE")
     }

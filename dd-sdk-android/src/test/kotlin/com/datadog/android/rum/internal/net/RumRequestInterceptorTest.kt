@@ -267,9 +267,73 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResourceWithError(
             mockRequest,
-            "OkHttp error on $fakeMethod",
+            "OkHttp request error $fakeMethod $fakeUrl",
             "network",
             fakeThrowable
+        )
+        verifyNoMoreInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `stops Rum Resource and add Error on handleResponse 4xx`(
+        @IntForgery(400, 500) statusCode: Int,
+        @StringForgery(StringForgeryType.ASCII) body: String
+    ) {
+        whenever(mockResponse.code()) doReturn statusCode
+        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
+        whenever(mockRequest.method()) doReturn fakeMethod
+        val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR
+
+        testedInterceptor.handleResponse(mockRequest, mockResponse)
+
+        verify(mockRumMonitor).stopResource(
+            mockRequest,
+            kind,
+            mapOf(
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
+            )
+        )
+        verify(mockRumMonitor).addError(
+            "OkHttp request error $fakeMethod $fakeUrl",
+            "network",
+            null,
+            mapOf(
+                RumAttributes.HTTP_STATUS_CODE to statusCode
+            )
+        )
+        verifyNoMoreInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `stops Rum Resource and add Error on handleResponse 5xx`(
+        @IntForgery(500, 600) statusCode: Int,
+        @StringForgery(StringForgeryType.ASCII) body: String
+    ) {
+        whenever(mockResponse.code()) doReturn statusCode
+        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
+        whenever(mockRequest.method()) doReturn fakeMethod
+        val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR
+
+        testedInterceptor.handleResponse(mockRequest, mockResponse)
+
+        verify(mockRumMonitor).stopResource(
+            mockRequest,
+            kind,
+            mapOf(
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
+            )
+        )
+        verify(mockRumMonitor).addError(
+            "OkHttp request error $fakeMethod $fakeUrl",
+            "network",
+            null,
+            mapOf(
+                RumAttributes.HTTP_STATUS_CODE to statusCode
+            )
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
