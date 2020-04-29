@@ -34,7 +34,7 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .build()
         Datadog.initialize(this, config)
     }
@@ -49,7 +49,7 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN)
+        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .useEUEndpoints()
                         .build()
         Datadog.initialize(this, config)
@@ -120,7 +120,7 @@ If you want to trace your OkHttp requests, you can add the provided [Interceptor
 
 ```kotlin
 val okHttpClient =  OkHttpClient.Builder()
-    .addInterceptor(DatadogRumMonitor())
+    .addInterceptor(DatadogInterceptor())
     .build()
 ```
 
