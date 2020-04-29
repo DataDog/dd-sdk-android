@@ -25,7 +25,7 @@ internal open class RumOkHttpUploader(
     override fun buildQueryParams(): MutableMap<String, Any> {
         return mutableMapOf(
             BATCH_TIME to System.currentTimeMillis(),
-            QP_SOURCE to DD_SOURCE_MOBILE
+            QP_SOURCE to DD_SOURCE_ANDROID
         )
     }
 
@@ -33,7 +33,6 @@ internal open class RumOkHttpUploader(
 
     companion object {
         private const val QP_SOURCE = "ddsource"
-        private const val DD_SOURCE_MOBILE = "mobile"
         internal const val UPLOAD_URL =
             "%s/v1/input/%s"
 

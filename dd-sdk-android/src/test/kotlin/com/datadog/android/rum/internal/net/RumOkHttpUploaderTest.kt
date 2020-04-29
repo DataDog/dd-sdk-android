@@ -29,6 +29,6 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     }
 
     override fun expectedPathRegex(): String {
-        return "\\/v1\\/input/${fakeToken}\\?batch_time=\\d+&ddsource=mobile$"
+        return "\\/v1\\/input/${fakeToken}\\?batch_time=\\d+&ddsource=android$"
     }
 }
