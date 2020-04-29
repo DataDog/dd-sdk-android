@@ -137,7 +137,6 @@ internal class LogSerializerTest {
             .hasField(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
             .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
             .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
-            .hasField(LogAttributes.APPLICATION_PACKAGE, CoreFeature.packageName)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(

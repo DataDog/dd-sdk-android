@@ -30,7 +30,7 @@ object LogAttributes {
      * This value is extracted from your application's manifest and
      * filled automatically by the [Logger].
      */
-    const val APPLICATION_VERSION: String = "application.version"
+    const val APPLICATION_VERSION: String = "version"
 
     /**
      * The date when the log is fired as an ISO-8601 String. (String)
