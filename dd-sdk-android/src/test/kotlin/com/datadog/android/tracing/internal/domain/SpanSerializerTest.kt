@@ -154,6 +154,7 @@ internal class SpanSerializerTest {
             .hasField(SpanSerializer.TAG_META, span.meta)
             .hasField(SpanSerializer.TAG_META) {
                 hasField(SpanSerializer.TAG_DD_SOURCE, SpanSerializer.DD_SOURCE_ANDROID)
+                hasField(SpanSerializer.TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
             }
             .hasField(SpanSerializer.TAG_METRICS, span.metrics)
             .hasField(SpanSerializer.TAG_METRICS) {

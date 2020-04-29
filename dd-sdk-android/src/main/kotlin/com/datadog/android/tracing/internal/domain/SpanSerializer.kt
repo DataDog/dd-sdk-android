@@ -49,8 +49,7 @@ internal class SpanSerializer(
         }
 
         metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_ANDROID)
-
-        metaObject.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
+        metaObject.addProperty(TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
 
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
         addLogUserInfo(userInfoProvider.getUserInfo(), metaObject)
@@ -133,6 +132,7 @@ internal class SpanSerializer(
         internal const val TAG_START_TIMESTAMP = "start"
         internal const val TAG_DURATION = "duration"
         internal const val TAG_SERVICE_NAME = "service"
+        internal const val TAG_APPLICATION_VERSION = "version"
         internal const val TAG_TRACE_ID = "trace_id"
         internal const val TAG_SPAN_ID = "span_id"
         internal const val TAG_PARENT_ID = "parent_id"

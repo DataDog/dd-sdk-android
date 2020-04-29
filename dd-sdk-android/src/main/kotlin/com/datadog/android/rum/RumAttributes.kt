@@ -34,7 +34,15 @@ object RumAttributes {
      * This value is extracted from your application's manifest and
      * filled automatically by the [RumMonitor].
      */
-    const val APPLICATION_VERSION: String = "application.version"
+    const val APPLICATION_VERSION: String = "version"
+
+    /**
+     * The name of the application or service generating the rum events. (String)
+     * This values is configurable through the DatadogConfig during the SDK initialization.
+     * By default it will take the application package name.
+     * @see [DatadogConfig.Builder.setServiceName]
+     */
+    const val SERVICE_NAME: String = "service"
 
     /**
      * The date when the log is fired as an ISO-8601 String. (String)
