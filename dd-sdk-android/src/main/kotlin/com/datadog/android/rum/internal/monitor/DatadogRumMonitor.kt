@@ -25,37 +25,32 @@ internal class DatadogRumMonitor(
     // region RumMonitor
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StartView(key, name, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StartView(key, name, attributes)
         )
     }
 
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StopView(key, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StopView(key, attributes)
         )
     }
 
     override fun addUserAction(action: String, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StartAction(action, false, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StartAction(action, false, attributes)
         )
     }
 
     override fun startUserAction(action: String, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StartAction(action, true, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StartAction(action, true, attributes)
         )
     }
 
     override fun stopUserAction(action: String, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StopAction(action, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StopAction(action, attributes)
         )
     }
 
@@ -65,16 +60,14 @@ internal class DatadogRumMonitor(
         url: String,
         attributes: Map<String, Any?>
     ) {
-        rootScope.handleEvent(
-            RumRawEvent.StartResource(key, url, method, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StartResource(key, url, method, attributes)
         )
     }
 
     override fun stopResource(key: Any, kind: RumResourceKind, attributes: Map<String, Any?>) {
-        rootScope.handleEvent(
-            RumRawEvent.StopResource(key, kind, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.StopResource(key, kind, attributes)
         )
     }
 
@@ -84,9 +77,8 @@ internal class DatadogRumMonitor(
         origin: String,
         throwable: Throwable
     ) {
-        rootScope.handleEvent(
-            RumRawEvent.StopResourceWithError(key, message, origin, throwable),
-            writer
+        handleEvent(
+            RumRawEvent.StopResourceWithError(key, message, origin, throwable)
         )
     }
 
@@ -96,9 +88,8 @@ internal class DatadogRumMonitor(
         throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
-        rootScope.handleEvent(
-            RumRawEvent.AddError(message, origin, throwable, attributes),
-            writer
+        handleEvent(
+            RumRawEvent.AddError(message, origin, throwable, attributes)
         )
     }
 
@@ -107,10 +98,13 @@ internal class DatadogRumMonitor(
     // region Internal
 
     internal fun viewTreeChanged() {
-        rootScope.handleEvent(
-            RumRawEvent.ViewTreeChanged(),
-            writer
+        handleEvent(
+            RumRawEvent.ViewTreeChanged()
         )
+    }
+
+    private fun handleEvent(event: RumRawEvent) {
+        synchronized(rootScope) { rootScope.handleEvent(event, writer) }
     }
 
     // endregion
