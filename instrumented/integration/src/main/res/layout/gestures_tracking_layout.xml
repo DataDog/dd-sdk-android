@@ -23,7 +23,7 @@
             android:id="@+id/button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/button1" />
+            android:text="@string/button1"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -34,5 +34,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/container1"/>
+
+    <View
+        android:id="@+id/show_hide"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@android:color/holo_red_dark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

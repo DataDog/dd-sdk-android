@@ -33,6 +33,9 @@ internal class RumActionScope(
 
     internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
+    internal var resourcesCount: Int = 0
+    internal var viewTreeChangeCount: Int = 0
+
     private var sent = false
 
     // endregion
@@ -48,27 +51,11 @@ internal class RumActionScope(
         when {
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
-            event is RumRawEvent.ViewTreeChanged -> lastInteractionNanos = now
-            event is RumRawEvent.StopView -> {
-                ongoingResourceKeys.clear()
-                sendAction(now, writer)
-            }
-            event is RumRawEvent.StopAction -> {
-                name = event.name
-                attributes.putAll(event.attributes)
-                sendAction(now, writer)
-            }
-            event is RumRawEvent.StartResource -> {
-                lastInteractionNanos = now
-                ongoingResourceKeys.add(WeakReference(event.key))
-            }
-            event is RumRawEvent.StopResource -> {
-                val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
-                if (keyRef != null) {
-                    ongoingResourceKeys.remove(keyRef)
-                    lastInteractionNanos = now
-                }
-            }
+            event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
+            event is RumRawEvent.StopView -> onStopView(now, writer)
+            event is RumRawEvent.StopAction -> onStopAction(event, now, writer)
+            event is RumRawEvent.StartResource -> onStartResource(now, event)
+            event is RumRawEvent.StopResource -> onStopResource(event, now)
         }
 
         return if (sent) null else this
@@ -82,26 +69,73 @@ internal class RumActionScope(
 
     // region Internal
 
+    private fun onViewTreeChanged(now: Long) {
+        lastInteractionNanos = now
+        viewTreeChangeCount++
+    }
+
+    private fun onStopView(
+        now: Long,
+        writer: Writer<RumEvent>
+    ) {
+        ongoingResourceKeys.clear()
+        sendAction(now, writer)
+    }
+
+    private fun onStopAction(
+        event: RumRawEvent.StopAction,
+        now: Long,
+        writer: Writer<RumEvent>
+    ) {
+        name = event.name
+        attributes.putAll(event.attributes)
+        sendAction(now, writer)
+    }
+
+    private fun onStartResource(
+        now: Long,
+        event: RumRawEvent.StartResource
+    ) {
+        lastInteractionNanos = now
+        resourcesCount++
+        ongoingResourceKeys.add(WeakReference(event.key))
+    }
+
+    private fun onStopResource(
+        event: RumRawEvent.StopResource,
+        now: Long
+    ) {
+        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
+        if (keyRef != null) {
+            ongoingResourceKeys.remove(keyRef)
+            lastInteractionNanos = now
+        }
+    }
+
     private fun sendAction(
         endNanos: Long,
         writer: Writer<RumEvent>
     ) {
-        val eventData = RumEventData.UserAction(
-            name,
-            actionId,
-            max(endNanos - startedNanos, 1L)
-        )
+        if (sent) return
 
-        val event = RumEvent(
-            getRumContext(),
-            eventTimestamp,
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            attributes
-        )
+        if (resourcesCount > 0 || viewTreeChangeCount > 0) {
+            val eventData = RumEventData.UserAction(
+                name,
+                actionId,
+                max(endNanos - startedNanos, 1L)
+            )
 
-        writer.write(event)
-        parentScope.handleEvent(RumRawEvent.SentAction(), writer)
+            val event = RumEvent(
+                getRumContext(),
+                eventTimestamp,
+                eventData,
+                RumFeature.userInfoProvider.getUserInfo(),
+                attributes
+            )
+
+            writer.write(event)
+            parentScope.handleEvent(RumRawEvent.SentAction(), writer)
+        }
         sent = true
     }
 

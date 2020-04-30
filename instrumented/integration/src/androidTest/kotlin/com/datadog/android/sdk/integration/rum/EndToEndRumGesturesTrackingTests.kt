@@ -9,12 +9,8 @@ package com.datadog.android.sdk.integration.rum
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.ViewAction
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.swipeDown
-import androidx.test.espresso.action.ViewActions.swipeLeft
-import androidx.test.espresso.action.ViewActions.swipeRight
-import androidx.test.espresso.action.ViewActions.swipeUp
 import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,9 +23,7 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumGesturesTrackingActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
-import java.util.Random
 import java.util.concurrent.TimeUnit
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,24 +32,11 @@ import org.junit.runner.RunWith
 @LargeTest
 internal class EndToEndRumGesturesTrackingTests {
 
-    lateinit var swipeActionBundle: Pair<ViewAction, String>
-
     @get:Rule
     val mockServerRule = RumGesturesTrackingActivityTestRule(
         RumGesturesTrackingPlaygroundActivity::class.java,
         keepRequests = true
     )
-
-    @Before
-    fun setUp() {
-        val random = Random().nextInt()
-        swipeActionBundle = when {
-            random < 0.25 -> Pair(swipeDown(), "down")
-            random < 0.5 -> Pair(swipeLeft(), "left")
-            random < 0.75 -> Pair(swipeRight(), "right")
-            else -> Pair(swipeUp(), "up")
-        }
-    }
 
     @Test
     fun verifyTrackedGestures() {
@@ -76,10 +57,7 @@ internal class EndToEndRumGesturesTrackingTests {
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
         // perform a swipe event on the RecyclerView
-        onView(withId(R.id.recyclerView))
-            .perform(
-                swipeActionBundle.first
-            )
+        onView(withId(R.id.recyclerView)).perform(swipeDown())
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
         onView(withId(R.id.button)).perform(click()) // last one won't be sent (yet)
@@ -145,7 +123,7 @@ internal class EndToEndRumGesturesTrackingTests {
                 "${RecyclerView::class.java.canonicalName}",
                 "recyclerView",
                 extraAttributes = mapOf(
-                    RumAttributes.TAG_GESTURE_DIRECTION to swipeActionBundle.second
+                    RumAttributes.TAG_GESTURE_DIRECTION to "down"
                 )
             ),
             ExpectedViewEvent(

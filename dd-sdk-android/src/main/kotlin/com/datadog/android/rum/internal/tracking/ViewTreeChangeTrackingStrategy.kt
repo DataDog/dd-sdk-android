@@ -3,6 +3,7 @@ package com.datadog.android.rum.internal.tracking
 import android.app.Activity
 import android.view.ViewTreeObserver
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 
@@ -33,6 +34,7 @@ internal class ViewTreeChangeTrackingStrategy :
 
     override fun onGlobalLayout() {
         GlobalRum.addUserInteraction()
+        (GlobalRum.get() as? DatadogRumMonitor)?.viewTreeChanged()
     }
 
     // endregion
