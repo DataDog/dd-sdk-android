@@ -80,6 +80,7 @@ internal object RumFeature {
             return
         }
 
+        applicationId = config.applicationId
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         envName = config.envName
