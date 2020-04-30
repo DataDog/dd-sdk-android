@@ -120,6 +120,11 @@ internal class RumFeatureTest {
             mockPersistenceExecutorService,
             mockUserInfoProvider
         )
+
+        assertThat(RumFeature.applicationId).isEqualTo(fakeConfig.applicationId)
+        assertThat(RumFeature.endpointUrl).isEqualTo(fakeConfig.endpointUrl)
+        assertThat(RumFeature.envName).isEqualTo(fakeConfig.envName)
+        assertThat(RumFeature.clientToken).isEqualTo(fakeConfig.clientToken)
     }
 
     @Test
