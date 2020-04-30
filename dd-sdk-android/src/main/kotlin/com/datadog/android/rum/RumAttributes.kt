@@ -223,21 +223,21 @@ object RumAttributes {
      * This value is filled automatically by the [RumMonitor].
      * @see [Datadog.setUserInfo]
      */
-    const val USER_EMAIL: String = "user.email"
+    const val USER_EMAIL: String = "usr.email"
 
     /**
      * The user identifier. (String)
      * This value is filled automatically by the [RumMonitor].
      * @see [Datadog.setUserInfo]
      */
-    const val USER_ID: String = "user.id"
+    const val USER_ID: String = "usr.id"
 
     /**
      * The user friendly name. (String)
      * This value is filled automatically by the [RumMonitor].
      * @see [Datadog.setUserInfo]
      */
-    const val USER_NAME: String = "user.name"
+    const val USER_NAME: String = "usr.name"
 
     /** The UUID of the view. (String) */
     const val VIEW_ID: String = "view.id"
