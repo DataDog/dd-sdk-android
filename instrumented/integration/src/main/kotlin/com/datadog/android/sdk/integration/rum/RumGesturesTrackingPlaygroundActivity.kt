@@ -20,6 +20,7 @@ import com.datadog.android.sdk.integration.R
 
 internal class RumGesturesTrackingPlaygroundActivity : Activity() {
 
+    lateinit var showHide: View
     lateinit var button: Button
     lateinit var recyclerView: RecyclerView
     private var adapter = Adapter()
@@ -31,11 +32,27 @@ internal class RumGesturesTrackingPlaygroundActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.gestures_tracking_layout)
 
+        showHide = findViewById(R.id.show_hide)
         button = findViewById(R.id.button)
+        button.setOnClickListener { toggleVisibility() }
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                toggleVisibility()
+            }
+        })
         adapter.updateData(adapterData)
+    }
+
+    private fun toggleVisibility() {
+        if (showHide.visibility == View.VISIBLE) {
+            showHide.visibility = View.GONE
+        } else {
+            showHide.visibility = View.VISIBLE
+        }
     }
 
     // region Adapter
@@ -75,6 +92,7 @@ internal class RumGesturesTrackingPlaygroundActivity : Activity() {
 
             init {
                 view.setOnClickListener {
+                    toggleVisibility()
                     Toast.makeText(view.context, "$model was clicked", Toast.LENGTH_SHORT)
                         .show()
                 }
