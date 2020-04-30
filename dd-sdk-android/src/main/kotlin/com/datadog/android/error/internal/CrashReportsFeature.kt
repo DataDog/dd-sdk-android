@@ -32,7 +32,6 @@ internal object CrashReportsFeature {
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
-    internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
     internal var envName: String = ""
         set(value) {
             field = value
@@ -67,7 +66,6 @@ internal object CrashReportsFeature {
 
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
-        serviceName = config.serviceName
         envName = config.envName
 
         persistenceStrategy = CrashLogFileStrategy(appContext)
@@ -94,7 +92,6 @@ internal object CrashReportsFeature {
             clientToken = ""
             envName = ""
             endpointUrl = DatadogEndpoint.LOGS_US
-            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
 
             initialized.set(false)
         }
@@ -135,12 +132,6 @@ internal object CrashReportsFeature {
             appContext
         ).register()
     }
-
-    // endregion
-
-    // region Constants
-
-    internal const val CRASH_REPORTS_UPLOAD_THREAD_NAME = "ddog-crash-upload"
 
     // endregion
 }

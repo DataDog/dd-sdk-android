@@ -9,6 +9,7 @@ package com.datadog.android.tracing.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -87,7 +88,6 @@ internal class TracesFeatureTest {
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
 
@@ -102,6 +102,7 @@ internal class TracesFeatureTest {
     @AfterEach
     fun `tear down`() {
         TracesFeature.stop()
+        CoreFeature.stop()
     }
 
     @Test
@@ -185,11 +186,9 @@ internal class TracesFeatureTest {
 
         val clientToken = TracesFeature.clientToken
         val endpointUrl = TracesFeature.endpointUrl
-        val serviceName = TracesFeature.serviceName
 
         assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-        assertThat(serviceName).isEqualTo(fakeConfig.serviceName)
     }
 
     @Test
@@ -210,13 +209,11 @@ internal class TracesFeatureTest {
         val dataUploadScheduler = TracesFeature.dataUploadScheduler
         val clientToken = TracesFeature.clientToken
         val endpointUrl = TracesFeature.endpointUrl
-        val serviceName = TracesFeature.serviceName
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
         TracesFeature.initialize(
@@ -234,12 +231,10 @@ internal class TracesFeatureTest {
         val dataUploadScheduler2 = TracesFeature.dataUploadScheduler
         val clientToken2 = TracesFeature.clientToken
         val endpointUrl2 = TracesFeature.endpointUrl
-        val serviceName2 = TracesFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
-        assertThat(serviceName).isSameAs(serviceName2)
     }
 }

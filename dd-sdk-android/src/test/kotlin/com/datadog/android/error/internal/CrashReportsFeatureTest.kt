@@ -9,6 +9,7 @@ package com.datadog.android.error.internal
 import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
@@ -79,7 +80,6 @@ internal class CrashReportsFeatureTest {
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
 
@@ -93,6 +93,7 @@ internal class CrashReportsFeatureTest {
 
     @AfterEach
     fun `tear down`() {
+        CoreFeature.stop()
         CrashReportsFeature.stop()
     }
 
@@ -152,11 +153,9 @@ internal class CrashReportsFeatureTest {
 
         val clientToken = CrashReportsFeature.clientToken
         val endpointUrl = CrashReportsFeature.endpointUrl
-        val serviceName = CrashReportsFeature.serviceName
 
         assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-        assertThat(serviceName).isEqualTo(fakeConfig.serviceName)
     }
 
     @Test
@@ -219,13 +218,11 @@ internal class CrashReportsFeatureTest {
         val uploader = CrashReportsFeature.uploader
         val clientToken = CrashReportsFeature.clientToken
         val endpointUrl = CrashReportsFeature.endpointUrl
-        val serviceName = CrashReportsFeature.serviceName
 
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            serviceName = forge.anAlphabeticalString(),
             envName = forge.anAlphabeticalString()
         )
         CrashReportsFeature.initialize(
@@ -242,12 +239,10 @@ internal class CrashReportsFeatureTest {
         val uploader2 = CrashReportsFeature.uploader
         val clientToken2 = CrashReportsFeature.clientToken
         val endpointUrl2 = CrashReportsFeature.endpointUrl
-        val serviceName2 = CrashReportsFeature.serviceName
 
         assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
         assertThat(uploader).isSameAs(uploader2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
-        assertThat(serviceName).isSameAs(serviceName2)
     }
 }

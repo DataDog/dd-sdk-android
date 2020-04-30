@@ -23,18 +23,22 @@ import java.util.UUID
  */
 class DatadogConfig
 private constructor(
-    internal val needsClearTextHttp: Boolean,
     internal val logsConfig: FeatureConfig?,
     internal val tracesConfig: FeatureConfig?,
     internal val crashReportConfig: FeatureConfig?,
-    internal val rumConfig: RumConfig?
+    internal val rumConfig: RumConfig?,
+    internal var coreConfig: CoreConfig
 ) {
+
+    internal data class CoreConfig(
+        var needsClearTextHttp: Boolean = false,
+        val serviceName: String? = null
+    )
 
     internal data class FeatureConfig(
         val clientToken: String,
         val applicationId: UUID,
         val endpointUrl: String,
-        val serviceName: String,
         val envName: String
     )
 
@@ -42,7 +46,6 @@ private constructor(
         val clientToken: String,
         val applicationId: UUID,
         val endpointUrl: String,
-        val serviceName: String,
         val envName: String,
         val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
@@ -71,7 +74,7 @@ private constructor(
          * (e.g. "staging" vs. "production").
          */
         constructor(clientToken: String, envName: String) :
-                this(clientToken, envName, UUID(0, 0))
+            this(clientToken, envName, UUID(0, 0))
 
         /**
          * A Builder class for a [DatadogConfig].
@@ -82,42 +85,39 @@ private constructor(
          * @param applicationId your applicationId for RUM events
          */
         constructor(clientToken: String, envName: String, applicationId: String) :
-                this(clientToken, envName, UUID.fromString(applicationId))
+            this(clientToken, envName, UUID.fromString(applicationId))
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.LOGS_US,
-            DEFAULT_SERVICE_NAME,
             envName
         )
         private var tracesConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.TRACES_US,
-            DEFAULT_SERVICE_NAME,
             envName
         )
         private var crashReportConfig: FeatureConfig = FeatureConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.LOGS_US,
-            DEFAULT_SERVICE_NAME,
             envName
         )
         private var rumConfig: RumConfig = RumConfig(
             clientToken,
             applicationId,
             DatadogEndpoint.RUM_US,
-            DEFAULT_SERVICE_NAME,
             envName
         )
+
+        private var coreConfig = CoreConfig()
 
         private var logsEnabled: Boolean = true
         private var tracesEnabled: Boolean = true
         private var crashReportsEnabled: Boolean = true
         private var rumEnabled: Boolean = applicationId != UUID(0, 0)
-        private var needsClearTextHttp: Boolean = false
 
         /**
          * Builds a [DatadogConfig] based on the current state of this Builder.
@@ -125,11 +125,11 @@ private constructor(
         fun build(): DatadogConfig {
 
             return DatadogConfig(
-                needsClearTextHttp = needsClearTextHttp,
                 logsConfig = if (logsEnabled) logsConfig else null,
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
-                rumConfig = if (rumEnabled) rumConfig else null
+                rumConfig = if (rumEnabled) rumConfig else null,
+                coreConfig = coreConfig
             )
         }
 
@@ -182,10 +182,7 @@ private constructor(
          * @param serviceName the service name (default = "android")
          */
         fun setServiceName(serviceName: String): Builder {
-            logsConfig = logsConfig.copy(serviceName = serviceName)
-            tracesConfig = tracesConfig.copy(serviceName = serviceName)
-            crashReportConfig = crashReportConfig.copy(serviceName = serviceName)
-            rumConfig = rumConfig.copy(serviceName = serviceName)
+            coreConfig = coreConfig.copy(serviceName = serviceName)
             return this
         }
 
@@ -215,7 +212,7 @@ private constructor(
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
             rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_EU)
-            needsClearTextHttp = false
+            coreConfig = coreConfig.copy(needsClearTextHttp = false)
             return this
         }
 
@@ -229,7 +226,7 @@ private constructor(
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
             rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_US)
-            needsClearTextHttp = false
+            coreConfig = coreConfig.copy(needsClearTextHttp = false)
             return this
         }
 
@@ -305,14 +302,14 @@ private constructor(
 
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
-                needsClearTextHttp = true
+                coreConfig = coreConfig.copy(needsClearTextHttp = true)
             }
         }
 
         private fun provideUserTrackingStrategy(
             gesturesTracker: GesturesTracker
         ):
-                UserActionTrackingStrategy {
+            UserActionTrackingStrategy {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 GesturesTrackingStrategyApi29(gesturesTracker)
             } else {
@@ -322,8 +319,4 @@ private constructor(
     }
 
     // endregion
-
-    companion object {
-        internal const val DEFAULT_SERVICE_NAME = "android"
-    }
 }

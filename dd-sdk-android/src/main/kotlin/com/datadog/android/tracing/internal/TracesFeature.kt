@@ -34,7 +34,6 @@ internal object TracesFeature {
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.TRACES_US
-    internal var serviceName: String = DatadogConfig.DEFAULT_SERVICE_NAME
 
     internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -58,7 +57,6 @@ internal object TracesFeature {
 
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
-        serviceName = config.serviceName
         val envSuffix = if (config.envName.isEmpty()) "" else ", \"env\": \"${config.envName}\""
 
         persistenceStrategy = TracingFileStrategy(
@@ -87,7 +85,6 @@ internal object TracesFeature {
             dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
             endpointUrl = DatadogEndpoint.TRACES_US
-            serviceName = DatadogConfig.DEFAULT_SERVICE_NAME
             initialized.set(false)
         }
     }

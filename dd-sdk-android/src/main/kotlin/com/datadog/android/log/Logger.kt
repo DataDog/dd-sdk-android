@@ -173,7 +173,7 @@ internal constructor(private val handler: LogHandler) {
      */
     class Builder {
 
-        private var serviceName: String = LogsFeature.serviceName
+        private var serviceName: String = CoreFeature.serviceName
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
