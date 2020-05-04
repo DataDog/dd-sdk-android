@@ -37,6 +37,7 @@ inline fun <T : Any> withinSpan(
     val span = tracer.buildSpan(operationName)
         .asChildOf(parentSpan)
         .start()
+    val scope = tracer.activateSpan(span)
 
     return try {
         val result = span.block()
@@ -46,5 +47,6 @@ inline fun <T : Any> withinSpan(
         throw e
     } finally {
         span.finish()
+        scope.close()
     }
 }

@@ -23,7 +23,7 @@ internal class TracingFileStrategy(
     userInfoProvider: UserInfoProvider,
     recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
     maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
+    maxLogPerBatch: Int = 1,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE,
     envSuffix: String = "",
