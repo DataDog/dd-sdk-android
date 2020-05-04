@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.net
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.rum.RumAttributes
@@ -21,7 +22,8 @@ internal open class RumOkHttpUploader(
     private val tags: String by lazy {
         arrayOf(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
-            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}"
+            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}"
         ).joinToString(",")
     }
     // region DataOkHttpUploader

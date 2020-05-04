@@ -158,6 +158,7 @@ object com.datadog.android.rum.RumAttributes
   const val RUM_DOCUMENT_VERSION: String
   const val SESSION_ID: String
   const val SOURCE: String
+  const val SDK_VERSION: String
   const val TRACE_ID: String
   const val USER_EMAIL: String
   const val USER_ID: String
