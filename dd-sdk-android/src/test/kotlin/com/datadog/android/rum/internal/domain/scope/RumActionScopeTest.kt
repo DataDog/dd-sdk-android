@@ -590,6 +590,7 @@ internal class RumActionScopeTest {
                 testedScope.handleEvent(RumRawEvent.ViewTreeChanged(), mockWriter)
             }
         }
+        testedScope.handleEvent(RumRawEvent.ViewTreeChanged(), mockWriter)
         Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 

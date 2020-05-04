@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -132,6 +133,13 @@ object GlobalRum {
 
     internal fun updateRumContext(newContext: RumContext) {
         activeContext.set(newContext)
+    }
+
+    // For Tests only
+    @Suppress("unused")
+    @JvmStatic
+    private fun resetSession() {
+        (monitor as? DatadogRumMonitor)?.resetSession()
     }
 
     // endregion

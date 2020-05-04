@@ -36,6 +36,9 @@ internal class RumSessionScope(
         event: RumRawEvent,
         writer: Writer<RumEvent>
     ): RumScope? {
+        if (event is RumRawEvent.ResetSession) {
+            sessionId = UUID(0, 0)
+        }
         updateSessionIdIfNeeded()
 
         val iterator = activeChildrenScopes.iterator()

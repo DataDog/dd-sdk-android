@@ -66,4 +66,6 @@ internal sealed class RumRawEvent {
     internal class SentError : RumRawEvent()
 
     internal class ViewTreeChanged : RumRawEvent()
+
+    internal class ResetSession : RumRawEvent()
 }

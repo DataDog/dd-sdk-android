@@ -134,6 +134,21 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `updates sessionId on ResetSession event `() {
+        val firstSessionId = testedScope.getRumContext().sessionId
+        mockEvent = RumRawEvent.ResetSession()
+
+        testedScope.handleEvent(mockEvent, mockWriter)
+        val context = testedScope.getRumContext()
+
+        assertThat(context.sessionId)
+            .isNotEqualTo(UUID(0, 0))
+            .isNotEqualTo(firstSessionId)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
     fun `keeps sessionId if last interaction is recent`() {
         val repeatCount = (TEST_INACTIVITY_MS / TEST_SLEEP_MS) + 1
         val firstSessionId = testedScope.getRumContext().sessionId
