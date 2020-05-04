@@ -14,6 +14,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Scope
 import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.log.Fields
@@ -106,9 +107,11 @@ class SpanExtTest {
         val mockTracer: Tracer = mock()
         val mockSpanBuilder: Tracer.SpanBuilder = mock()
         val mockSpan: Span = mock()
+        val mockScope: Scope = mock()
         val mockParentSpan: Span = mock()
         GlobalTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(operationName)) doReturn mockSpanBuilder
+        whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
 
@@ -119,7 +122,10 @@ class SpanExtTest {
 
         assertThat(lambdaCalled).isTrue()
         assertThat(callResult).isEqualTo(result)
-        verify(mockSpan).finish()
+        inOrder(mockSpan, mockScope) {
+            verify(mockSpan).finish()
+            verify(mockScope).close()
+        }
     }
 
     @Test
@@ -132,9 +138,11 @@ class SpanExtTest {
         val mockTracer: Tracer = mock()
         val mockSpanBuilder: Tracer.SpanBuilder = mock()
         val mockSpan: Span = mock()
+        val mockScope: Scope = mock()
         val mockParentSpan: Span = mock()
         GlobalTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(operationName)) doReturn mockSpanBuilder
+        whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
 
@@ -147,7 +155,7 @@ class SpanExtTest {
 
         assertThat(lambdaCalled).isTrue()
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             argumentCaptor<Map<String, Any>>().apply {
                 verify(mockSpan).log(capture())
                 assertThat(firstValue)
@@ -156,6 +164,7 @@ class SpanExtTest {
             }
 
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
     }
 }
