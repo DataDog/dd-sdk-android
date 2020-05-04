@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.tracking
+package com.datadog.android.rum.internal.tracking
 
 import android.content.res.Resources
 import android.view.View
@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class JetpackViewAttributesProviderTest {
+internal class JetpackViewAttributesProviderTest {
 
     @Mock
     lateinit var mockedRecyclerView: RecyclerView
@@ -46,7 +46,8 @@ class JetpackViewAttributesProviderTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest = JetpackViewAttributesProvider()
+        underTest =
+            JetpackViewAttributesProvider()
     }
 
     @Test

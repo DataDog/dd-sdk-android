@@ -589,9 +589,7 @@ class DatadogConfigBuilderTest {
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
             .hasEnvName(fakeEnvName)
-            .hasGesturesTrackingStrategy(
-                touchTargetExtraAttributesProviders
-            )
+            .hasGesturesTrackingStrategy(touchTargetExtraAttributesProviders)
             .doesNotHaveViewTrackingStrategy()
     }
 
@@ -614,9 +612,7 @@ class DatadogConfigBuilderTest {
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
             .hasEnvName(fakeEnvName)
-            .hasGesturesTrackingStrategyApi29(
-                touchTargetExtraAttributesProviders
-            )
+            .hasGesturesTrackingStrategyApi29(touchTargetExtraAttributesProviders)
             .doesNotHaveViewTrackingStrategy()
     }
 

@@ -11,6 +11,7 @@ import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
+import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -277,9 +278,7 @@ private constructor(
         fun trackGestures(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
-            val gesturesTracker = DatadogGesturesTracker(
-                touchTargetExtraAttributesProviders
-            )
+            val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
             rumConfig = rumConfig.copy(
                 gesturesTracker = gesturesTracker,
                 userActionTrackingStrategy = provideUserTrackingStrategy(
@@ -315,6 +314,13 @@ private constructor(
             } else {
                 GesturesTrackingStrategy(gesturesTracker)
             }
+        }
+
+        private fun gestureTracker(customProviders: Array<ViewAttributesProvider>):
+            DatadogGesturesTracker {
+            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
+            val providers = customProviders + defaultProviders
+            return DatadogGesturesTracker(providers)
         }
     }
 

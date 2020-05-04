@@ -50,7 +50,7 @@ class LogApiBenchmark {
 
         val context = InstrumentationRegistry.getInstrumentation().context
         val config = DatadogConfig
-            .Builder("NO_TOKEN")
+            .Builder("NO_TOKEN", "benchmark")
             .useCustomLogsEndpoint(fakeEndpoint)
             .build()
         Datadog.initialize(context, config)
