@@ -97,6 +97,12 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
+    internal fun resetSession() {
+        handleEvent(
+            RumRawEvent.ResetSession()
+        )
+    }
+
     internal fun viewTreeChanged() {
         handleEvent(
             RumRawEvent.ViewTreeChanged()
