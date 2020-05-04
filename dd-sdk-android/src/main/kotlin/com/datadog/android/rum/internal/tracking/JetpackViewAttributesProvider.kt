@@ -1,9 +1,16 @@
-package com.datadog.android.rum.tracking
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.internal.tracking
 
 import android.content.res.Resources
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 
 /**
  * Provides extra attributes for the touch target View.
@@ -17,7 +24,8 @@ import com.datadog.android.rum.RumAttributes
  * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME]
  * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID]
  */
-class JetpackViewAttributesProvider : ViewAttributesProvider {
+internal class JetpackViewAttributesProvider :
+    ViewAttributesProvider {
 
     // region ViewAttributesProvider
 

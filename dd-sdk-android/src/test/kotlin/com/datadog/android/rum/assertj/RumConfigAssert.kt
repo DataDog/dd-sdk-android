@@ -29,7 +29,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(actual.clientToken)
             .overridingErrorMessage(
                 "Expected event to have client token $clientToken" +
-                        " but was ${actual.clientToken}"
+                    " but was ${actual.clientToken}"
             )
             .isEqualTo(clientToken)
         return this
@@ -39,7 +39,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(actual.applicationId)
             .overridingErrorMessage(
                 "Expected event to have application id $applicationId " +
-                        "but was ${actual.applicationId}"
+                    "but was ${actual.applicationId}"
             )
             .isEqualTo(applicationId)
         return this
@@ -49,7 +49,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(actual.endpointUrl)
             .overridingErrorMessage(
                 "Expected event to have endpoint url $url" +
-                        " but was ${actual.endpointUrl}"
+                    " but was ${actual.endpointUrl}"
             )
             .isEqualTo(url)
         return this
@@ -59,7 +59,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(actual.envName)
             .overridingErrorMessage(
                 "Expected event to have env name $envName" +
-                        " but was ${actual.envName}"
+                    " but was ${actual.envName}"
             )
             .isEqualTo(envName)
         return this
@@ -80,8 +80,9 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     ): RumConfigAssert {
         val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategyApi29>()
         val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
-        assertThat(gesturesTracker.targetAttributesProviders).isEqualTo(extraAttributesProviders)
-
+        RumGestureTrackerAssert.assertThat(gesturesTracker)
+            .hasCustomTargetAttributesProviders(extraAttributesProviders)
+            .hasDefaultTargetAttributesProviders()
         return this
     }
 
@@ -90,7 +91,9 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     ): RumConfigAssert {
         val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategy>()
         val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
-        assertThat(gesturesTracker.targetAttributesProviders).isEqualTo(extraAttributesProviders)
+        RumGestureTrackerAssert.assertThat(gesturesTracker)
+            .hasCustomTargetAttributesProviders(extraAttributesProviders)
+            .hasDefaultTargetAttributesProviders()
         return this
     }
 
@@ -98,8 +101,8 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(actual.viewTrackingStrategy)
             .overridingErrorMessage(
                 "Expected the viewTrackingStrategy to " +
-                        "be $viewTrackingStrategy" +
-                        " but was ${actual.viewTrackingStrategy}"
+                    "be $viewTrackingStrategy" +
+                    " but was ${actual.viewTrackingStrategy}"
             )
             .isEqualTo(viewTrackingStrategy)
         return this
@@ -115,8 +118,8 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
         assertThat(userActionTrackingStrategy)
             .overridingErrorMessage(
                 "Expected the trackGesturesStrategy " +
-                        "to be instance of ${Strategy::class.java.canonicalName}" +
-                        " but was ${userActionTrackingStrategy!!::class.java.canonicalName}"
+                    "to be instance of ${Strategy::class.java.canonicalName}" +
+                    " but was ${userActionTrackingStrategy!!::class.java.canonicalName}"
             )
             .isInstanceOf(Strategy::class.java)
         return userActionTrackingStrategy

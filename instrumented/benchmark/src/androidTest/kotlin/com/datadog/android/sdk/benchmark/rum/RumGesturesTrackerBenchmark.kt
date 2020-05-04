@@ -66,7 +66,7 @@ internal class RumGesturesTrackerBenchmark {
 
         val context = InstrumentationRegistry.getInstrumentation().context
         val config = DatadogConfig
-            .Builder("NO_TOKEN")
+            .Builder("NO_TOKEN", "benchmark")
             .useCustomTracesEndpoint(fakeEndpoint)
             .build()
         Datadog.initialize(context, config)

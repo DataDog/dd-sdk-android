@@ -229,8 +229,6 @@ class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLi
   constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android, app, androidx.fragment.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
-class com.datadog.android.rum.tracking.JetpackViewAttributesProvider : ViewAttributesProvider
-  override fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController, OnDestinationChangedListener
   constructor(Int, Boolean)
   override fun onActivityStarted(android.app.Activity)
