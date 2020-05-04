@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.net
 
 import android.app.Application
+import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
@@ -80,6 +81,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "&${RumOkHttpUploader.QP_SOURCE}=android" +
             "&${RumOkHttpUploader.QP_TAGS}=" +
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}," +
-            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}$"
+            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}," +
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}$"
     }
 }

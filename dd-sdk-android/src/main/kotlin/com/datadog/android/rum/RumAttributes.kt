@@ -221,6 +221,11 @@ object RumAttributes {
     const val SOURCE: String = "source"
 
     /**
+     * Version of the current Datadog SDK.
+     */
+    const val SDK_VERSION: String = "sdk-version"
+
+    /**
      * Trace Id related to the resource loading. (Number)
      * This value is filled automatically by the [RumMonitor].
      */
