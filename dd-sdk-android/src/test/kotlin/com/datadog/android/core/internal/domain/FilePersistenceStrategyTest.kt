@@ -27,6 +27,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -268,21 +270,27 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     }
 
     @Test
-    fun `read returns null when 1st batch is already sent but file still present`(
+    fun `reads null when batch already sent but the other thread is still trying to delete this`(
         forge: Forge
     ) {
         val fakeModel = forge.getForgery(modelClass)
         testedWriter.write(fakeModel)
         waitForNextBatch()
+        val countDownLatch = CountDownLatch(2)
         val batch = testedReader.readNextBatch()
+        var batch2: Batch? = Batch("", ByteArray(0))
         checkNotNull(batch)
 
-        testedReader.dropBatch(batch.id)
-        val logsDir = File(tempDir, dataFolderName)
-        val file = File(logsDir, batch.id)
-        file.writeText("I'm still there !")
-        val batch2 = testedReader.readNextBatch()
+        Thread {
+            testedReader.dropBatch(batch.id)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            batch2 = testedReader.readNextBatch()
+            countDownLatch.countDown()
+        }.start()
 
+        countDownLatch.await(5, TimeUnit.SECONDS)
         assertThat(batch2)
             .isNull()
     }

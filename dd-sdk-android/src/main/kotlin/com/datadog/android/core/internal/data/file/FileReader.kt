@@ -21,15 +21,12 @@ internal class FileReader(
     private val suffix: CharSequence = ""
 ) : Reader {
 
-    private val readFiles: MutableSet<String> = mutableSetOf()
-    private val sentBatches: MutableSet<String> = mutableSetOf()
+    private val lockedFiles: MutableSet<String> = mutableSetOf()
 
     // region LogReader
 
     override fun readNextBatch(): Batch? {
-        val (file, data) = synchronized(readFiles) {
-            readNextFile()
-        }
+        val (file, data) = readNextFile()
 
         return if (file == null) {
             null
@@ -43,23 +40,28 @@ internal class FileReader(
 
     override fun releaseBatch(batchId: String) {
         sdkLogger.i("releaseBatch $batchId")
-        synchronized(readFiles) {
-            readFiles.remove(batchId)
+        synchronized(lockedFiles) {
+            lockedFiles.remove(batchId)
         }
     }
 
     override fun dropBatch(batchId: String) {
         sdkLogger.i("dropBatch $batchId")
-        sentBatches.add(batchId)
-        readFiles.remove(batchId)
         val fileToDelete = File(dataDirectory, batchId)
-
-        deleteFile(fileToDelete)
+        if (deleteFile(fileToDelete)) {
+            releaseBatch(batchId)
+        }
     }
 
     override fun dropAllBatches() {
         sdkLogger.i("dropAllBatches")
-        fileOrchestrator.getAllFiles().forEach { deleteFile(it) }
+        fileOrchestrator
+            .getAllFiles()
+            .forEach {
+                if (deleteFile(it)) {
+                    releaseBatch(it.name)
+                }
+            }
     }
 
     // endregion
@@ -67,21 +69,28 @@ internal class FileReader(
     // region Internal
 
     private fun readNextFile(): Pair<File?, ByteArray> {
+        val file = lockAndGetFile()
+        return if (file != null) {
+            file to file.readBytes(withPrefix = prefix, withSuffix = suffix)
+        } else {
+            file to ByteArray(0)
+        }
+    }
+
+    private fun lockAndGetFile(): File? {
         var file: File? = null
-        val data = try {
-            file = fileOrchestrator.getReadableFile(sentBatches.union(readFiles))
-            if (file == null) {
-                ByteArray(0)
-            } else {
-                readFiles.add(file.name)
-                file.readBytes(withPrefix = prefix, withSuffix = suffix)
+        try {
+            synchronized(lockedFiles) {
+                val readFile = fileOrchestrator.getReadableFile(lockedFiles.toSet())
+                if (readFile != null) {
+                    lockedFiles.add(readFile.name)
+                }
+                file = readFile
             }
         } catch (e: FileNotFoundException) {
             sdkLogger.e("Couldn't create an input stream from file ${file?.path}", e)
-            ByteArray(0)
         } catch (e: IOException) {
             sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
-            ByteArray(0)
         } catch (e: SecurityException) {
             sdkLogger.e("Couldn't access file ${file?.path}", e)
             ByteArray(0)
@@ -89,20 +98,22 @@ internal class FileReader(
             sdkLogger.e("Couldn't read file ${file?.path} (not enough memory)", e)
             ByteArray(0)
         }
-
-        return file to data
+        return file
     }
 
-    private fun deleteFile(fileToDelete: File) {
+    private fun deleteFile(fileToDelete: File): Boolean {
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {
                 sdkLogger.d("File ${fileToDelete.path} deleted")
+                return true
             } else {
                 sdkLogger.e("Error deleting file ${fileToDelete.path}")
             }
         } else {
             sdkLogger.w("file ${fileToDelete.path} does not exist")
         }
+
+        return false
     }
 
     // endregion
