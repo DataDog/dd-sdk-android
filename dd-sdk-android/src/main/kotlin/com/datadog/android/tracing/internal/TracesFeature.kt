@@ -54,14 +54,13 @@ internal object TracesFeature {
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         serviceName = config.serviceName
-        val envSuffix = if (config.envName.isEmpty()) "" else ", \"env\": \"${config.envName}\""
 
         persistenceStrategy = TracingFileStrategy(
             appContext,
             timeProvider,
             networkInfoProvider,
             userInfoProvider,
-            envSuffix = envSuffix
+            envName = config.envName
         )
         setupUploader(endpointUrl, okHttpClient, networkInfoProvider, systemInfoProvider)
 

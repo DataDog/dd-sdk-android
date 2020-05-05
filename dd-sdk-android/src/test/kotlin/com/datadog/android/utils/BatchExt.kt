@@ -16,3 +16,8 @@ internal val Batch.asJsonArray: JsonArray
             return JsonArray()
         }
     }
+
+internal val Batch.lines: List<String>
+    get() {
+        return String(data).split('\n')
+    }

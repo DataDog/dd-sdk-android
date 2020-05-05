@@ -17,13 +17,14 @@ import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import datadog.opentracing.DDSpan
 import java.lang.Long
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,19 +70,22 @@ internal class EndToEndTraceTest {
             .forEach { request ->
                 assertThat(request.headers)
                     .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
-                val sentSpans =
-                    if (request.textBody != null) tracesPayloadToJsonArray(request.textBody)
-                    else JsonArray()
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
+                val sentSpans = tracesPayloadToJsonArray(request.textBody.orEmpty())
+
                 sentSpans.forEach {
                     Log.i("EndToEndTraceTest", "adding span $it")
                     spansObjects.add(it.asJsonObject)
                 }
             }
         val sentSpans = mockServerRule.activity.getSentSpans()
-        spansObjects.forEach {
-            val span = sentSpans.removeFirst()
-            it.assertMatches(span)
+        assertThat(sentSpans.size).isEqualTo(spansObjects.size)
+        sentSpans.forEach { span ->
+            val json = spansObjects.first {
+                it.get(TRACE_ID_KEY).asString == Long.toHexString((span.traceId.toLong())) &&
+                    it.get(SPAN_ID_KEY).asString == Long.toHexString((span.spanId.toLong()))
+            }
+            assertMatches(json, span)
         }
     }
 
@@ -93,7 +97,7 @@ internal class EndToEndTraceTest {
             .forEach { request ->
                 assertThat(request.headers)
                     .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.DD_CONTENT_TYPE)
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_JSON)
                 request.jsonBody!!.asJsonArray.forEach {
                     Log.i("EndToEndTraceTest", "adding log $it")
                     logObjects.add(it.asJsonObject)
@@ -112,23 +116,30 @@ internal class EndToEndTraceTest {
 
     // region Internal
 
-    private fun JsonObject.assertMatches(span: DDSpan) {
-        assertThat(this)
-            .hasField(START_TIMESTAMP_KEY, span.startTime)
-            .hasField(DURATION_KEY, span.durationNano)
+    private fun assertMatches(jsonObject: JsonObject, span: DDSpan) {
+        assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, Long.toHexString((span.traceId.toLong())))
             .hasField(SPAN_ID_KEY, Long.toHexString((span.spanId.toLong())))
             .hasField(PARENT_ID_KEY, Long.toHexString((span.parentId.toLong())))
+            .hasField(START_TIMESTAMP_KEY, span.startTime)
+            .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName)
             .hasField(OPERATION_NAME_KEY, span.operationName)
             .hasField(META_KEY, span.meta)
             .hasField(METRICS_KEY, span.metrics)
     }
 
-    private fun tracesPayloadToJsonArray(payload: String): JsonArray {
-        val container = JsonParser.parseString(payload).asJsonObject
-        return container.getAsJsonArray("spans")
+    private fun tracesPayloadToJsonArray(payload: String): List<JsonElement> {
+        return payload.split('\n').mapNotNull {
+            if (it.isEmpty()) {
+                null
+            } else {
+                JsonParser.parseString(it).asJsonObject
+            }
+        }.flatMap {
+            it.getAsJsonArray("spans").toList()
+        }
     }
 
     // endregion
@@ -144,7 +155,7 @@ internal class EndToEndTraceTest {
         const val OPERATION_NAME_KEY = "name"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
+        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"
