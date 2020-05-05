@@ -96,7 +96,7 @@ fun Project.bintrayConfig() {
             desc = "Datadog SDK fot Android"
             websiteUrl = "https://www.datadoghq.com/"
             setLicenses("Apache-2.0")
-            githubRepo = "datadog/$projectName"
+            githubRepo = "DataDog/dd-sdk-android"
             githubReleaseNotesFile = "README.md"
             vcsUrl = "https://github.com/DataDog/dd-sdk-android.git"
 
