@@ -1,3 +1,17 @@
+
+# 1.5.0 / 2020-??-??
+
+* [FEATURE] RUM: Add a RUM tracking feature:
+    - Track User sessions
+    - Track Activities or Fragments as Views
+    - Track resources (network requests)
+    - Track User interactions
+* [FEATURE] RUM: Add helper Interceptor to trace OkHttp requests
+* [FEATURE] RUM: Add helper WebView client to trace Webview
+* [OTHER] Global: The DatadogConfig needs a valid environment name (`envName`), applied to all features
+* [OTHER] Global: The serviceName by default will use your application's package name
+* [OTHER] Global: The logs and spans sent from the sdk can be found with the filter `source:android`
+
 # 1.4.1 / 2020-05-06
 
 * [BUGFIX] Trace: Fix spans intake (some spans could be missing)
@@ -12,12 +26,14 @@
 * [FEATURE] Logs: Add sampling option in the Logger
 * [IMPROVEMENT] Logs: Make the log operations thread safe
 * [BUGFIX] Logs: Fix rare crash on upload requests
+* [BUGFIX] Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks @alparp27)
+
 
 # 1.3.1 / 2020-04-30
 
 ### Changes
 
-* [BUGFIX] Fix ConcurrentModificationException crash in the FileReader class See [#234](https://github.com/DataDog/dd-sdk-android/issues/234) (Thanks @alparp27)
+* [BUGFIX] Fix ConcurrentModificationException crash in the FileReader class. See [#234](https://github.com/DataDog/dd-sdk-android/issues/234) (Thanks @alparp27)
 
 # 1.3.0 / 2020-03-02
 
@@ -35,13 +51,13 @@
 
 ### Changes
 
-* [BUGFIX] Fix invalid dependency group in `dd-sdk-android-timber` See [#147](https://github.com/DataDog/dd-sdk-android/issues/147) (Thanks @mduong, @alparp27, @rafaela-stockx)
+* [BUGFIX] Fix invalid dependency group in `dd-sdk-android-timber`. See [#147](https://github.com/DataDog/dd-sdk-android/issues/147) (Thanks @mduong, @alparp27, @rafaela-stockx)
 
 # 1.2.1 / 2020-02-19
 
 ### Changes
 
-* [BUGFIX] Fix invalid dependency version in `dd-sdk-android-timber` See [#138](https://github.com/DataDog/dd-sdk-android/issues/138) (Thanks @mduong)
+* [BUGFIX] Fix invalid dependency version in `dd-sdk-android-timber`. See [#138](https://github.com/DataDog/dd-sdk-android/issues/138) (Thanks @mduong)
 
 # 1.2.0 / 2020-01-20
 
