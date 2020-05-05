@@ -69,5 +69,6 @@ internal object RuntimeConfig {
     }
 
     const val DD_TOKEN = "MYTESTAPPTOKEN"
-    const val DD_CONTENT_TYPE = "application/json"
+    const val CONTENT_TYPE_JSON = "application/json"
+    const val CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8"
 }

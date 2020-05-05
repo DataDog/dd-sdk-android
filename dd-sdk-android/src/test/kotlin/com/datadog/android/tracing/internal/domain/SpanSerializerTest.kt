@@ -7,6 +7,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
@@ -19,8 +20,11 @@ import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,15 +45,21 @@ internal class SpanSerializerTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     lateinit var underTest: SpanSerializer
 
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeEnvName: String
+
     @Forgery
     lateinit var fakeUserInfo: UserInfo
+
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
@@ -57,7 +67,12 @@ internal class SpanSerializerTest {
     fun `set up`() {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        underTest = SpanSerializer(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
+        underTest = SpanSerializer(
+            mockTimeProvider,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            fakeEnvName
+        )
     }
 
     @Test
@@ -71,10 +86,12 @@ internal class SpanSerializerTest {
 
         // when
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
 
         // then
-        assertSpanMatches(span, jsonObject, serverOffsetNanos)
-        val metaObj = jsonObject.getAsJsonObject(SpanSerializer.TAG_META)
+        assertSpanMatches(span, spanObject, serverOffsetNanos)
+        assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
+        val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
         assertUserInfoMatches(fakeUserInfo, metaObj)
         assertNetworkInfoMatches(fakeNetworkInfo, metaObj)
         assertGlobalInfoMatches(metaObj)
@@ -98,10 +115,12 @@ internal class SpanSerializerTest {
         val serializedChild = JsonParser.parseString(underTest.serialize(childSpan)).asJsonObject
 
         // then
-        assertThat(serializedParent).hasField(SpanSerializer.TAG_METRICS) {
+        val serializedParentSpan = serializedParent.getAsJsonArray("spans").first() as JsonObject
+        val serializedChildSpan = serializedChild.getAsJsonArray("spans").first() as JsonObject
+        assertThat(serializedParentSpan).hasField(SpanSerializer.TAG_METRICS) {
             hasField(SpanSerializer.TAG_METRICS_TOP_LEVEL, 1)
         }
-        assertThat(serializedChild).hasField(SpanSerializer.TAG_METRICS) {
+        assertThat(serializedChildSpan).hasField(SpanSerializer.TAG_METRICS) {
             doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
         }
     }

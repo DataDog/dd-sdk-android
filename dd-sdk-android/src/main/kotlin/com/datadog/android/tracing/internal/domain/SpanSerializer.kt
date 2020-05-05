@@ -8,16 +8,37 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import datadog.opentracing.DDSpan
 
 internal class SpanSerializer(
     private val timeProvider: TimeProvider,
     private val networkInfoProvider: NetworkInfoProvider,
-    private val userInfoProvider: UserInfoProvider
+    private val userInfoProvider: UserInfoProvider,
+    private val envName: String
 ) : Serializer<DDSpan> {
 
+    // region Serializer
+
     override fun serialize(model: DDSpan): String {
+        val span = serializeSpan(model)
+        val spans = JsonArray(1)
+        spans.add(span)
+
+        val jsonObject = JsonObject()
+        jsonObject.add(TAG_SPANS, spans)
+        jsonObject.addProperty(TAG_ENV, envName)
+
+        return jsonObject.toString()
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun serializeSpan(model: DDSpan): JsonObject {
+
         val serverOffset = timeProvider.getServerOffsetNanos()
         val jsonObject = JsonObject()
         // it is safe to convert BigInteger IDs to Long as they are parsed as Long on the backend
@@ -33,7 +54,7 @@ internal class SpanSerializer(
         jsonObject.addProperty(TAG_TYPE, TYPE_CUSTOM)
         addMeta(jsonObject, model)
         addMetrics(jsonObject, model)
-        return jsonObject.toString()
+        return jsonObject
     }
 
     private fun addMeta(jsonObject: JsonObject, model: DDSpan) {
@@ -100,10 +121,16 @@ internal class SpanSerializer(
         }
     }
 
+    // endregion
+
     companion object {
 
         internal const val TYPE_CUSTOM = "custom"
         internal const val DD_SOURCE_MOBILE = "mobile"
+
+        // PAYLOAD TAGS
+        internal const val TAG_SPANS = "spans"
+        internal const val TAG_ENV = "env"
 
         // SPAN TAGS
         internal const val TAG_START_TIMESTAMP = "start"
