@@ -13,11 +13,14 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.lines
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -51,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 internal abstract class FilePersistenceStrategyTest<T : Any>(
     val dataFolderName: String,
     val maxMessagesPerPath: Int = MAX_MESSAGES_PER_BATCH,
+    val payloadDecoration: PayloadDecoration,
     val modelClass: Class<T>
 ) {
 
@@ -104,7 +108,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         testedWriter.write(fakeModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val model = batch.asJsonArray[0].asJsonObject
+        val model = getBatchElements(batch).first() as JsonObject
         assertMatches(model, fakeModel)
     }
 
@@ -115,8 +119,8 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         testedWriter.write(minimalModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        val log = batch.asJsonArray[0].asJsonObject
-        assertMatches(log, minimalModel)
+        val jsonObject = getBatchElements(batch).first() as JsonObject
+        assertMatches(jsonObject, minimalModel)
     }
 
     @Test
@@ -132,9 +136,10 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
 
-        val batchCount = min(maxMessagesPerPath, batch.asJsonArray.size())
+        val elements = getBatchElements(batch)
+        val batchCount = min(maxMessagesPerPath, elements.size)
         for (i in 0 until batchCount) {
-            val jsonObject = batch.asJsonArray[i].asJsonObject
+            val jsonObject = elements[i].asJsonObject
             assertMatches(jsonObject, sentModels[i])
         }
     }
@@ -148,7 +153,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
         testedWriter.write(nextModel)
         val batch = testedReader.readNextBatch()!!
-        val jsonObject = batch.asJsonArray[0].asJsonObject
+        val jsonObject = getBatchElements(batch).first() as JsonObject
         assertMatches(jsonObject, fakeModel)
     }
 
@@ -165,7 +170,8 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         waitForNextBatch()
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
-        batch.asJsonArray.forEachIndexed { i, jsonElement ->
+        val elements = getBatchElements(batch)
+        elements.forEachIndexed { i, jsonElement ->
             val jsonObject = jsonElement.asJsonObject
             assertHasMatches(jsonObject, fakeModels)
         }
@@ -195,15 +201,17 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         waitForNextBatch()
         val batch2 = testedReader.readNextBatch()!!
 
-        assertThat(batch.asJsonArray.size())
+        val elements = getBatchElements(batch)
+        val elements2 = getBatchElements(batch2)
+        assertThat(elements.size)
             .isEqualTo(maxMessagesPerPath)
-        assertThat(batch2.asJsonArray.size())
+        assertThat(elements2.size)
             .isEqualTo(maxMessagesPerPath)
-        batch.asJsonArray.forEachIndexed { i, model ->
+        elements.forEachIndexed { i, model ->
             val jsonObject = model.asJsonObject
             assertMatches(jsonObject, models[i])
         }
-        batch2.asJsonArray.forEachIndexed { i, model ->
+        elements2.forEachIndexed { i, model ->
             val jsonObject = model.asJsonObject
             assertMatches(jsonObject, models[i + maxMessagesPerPath])
         }
@@ -341,6 +349,14 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     )
 
     // endregion
+
+    fun getBatchElements(batch: Batch): List<JsonElement> {
+        if (payloadDecoration == PayloadDecoration.JSON_ARRAY_DECORATION) {
+            return batch.asJsonArray.toList()
+        } else {
+            return batch.lines.map { JsonParser.parseString(it) }
+        }
+    }
 
     companion object {
 

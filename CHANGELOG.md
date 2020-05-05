@@ -1,3 +1,7 @@
+# 1.4.1 / 2020-05-06
+
+* [BUGFIX] Trace: Fix spans intake (some spans could be missing)
+
 # 1.4.0 / 2020-05-05
 
 * [FEATURE] Global: Update the SDK initialization code

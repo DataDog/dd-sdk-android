@@ -16,6 +16,7 @@ import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.BuildConfig
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import java.util.Date
@@ -47,10 +48,12 @@ internal class EndToEndLogTest {
         // Check sent requests
         val requests = mockServerRule.getRequests()
         val logObjects = mutableListOf<JsonObject>()
-        requests.forEach { request ->
+        requests
+            .filter { it.url?.isLogsUrl() ?: false }
+            .forEach { request ->
             assertThat(request.headers)
                 .isNotNull
-                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.JSON_CONTENT_TYPE)
+                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_JSON)
                 .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
 
             request.jsonBody!!.asJsonArray.forEach {
@@ -129,7 +132,7 @@ internal class EndToEndLogTest {
         internal const val TAG_VERSION_NAME = "logger.version"
         internal const val TAG_APP_VERSION_NAME = "application.version"
 
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
+        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         internal val levels = arrayOf(
             "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"

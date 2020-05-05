@@ -41,6 +41,10 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
         fakeToken = forge.anHexadecimalString()
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
+        println("fakeUserAgent:$fakeUserAgent")
+        println("RELEASE:${Build.VERSION.RELEASE}")
+        println("MODEL:${Build.MODEL}")
+        println("ID:${Build.ID}")
         System.setProperty("http.agent", fakeUserAgent)
         testedUploader = uploader()
     }

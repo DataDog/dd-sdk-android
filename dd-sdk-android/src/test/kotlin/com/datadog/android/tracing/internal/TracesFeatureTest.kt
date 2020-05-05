@@ -10,8 +10,10 @@ import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -122,9 +124,11 @@ internal class TracesFeatureTest {
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
             .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
-        val reader = TracesFeature.persistenceStrategy.getReader()
-        val suffix: String = reader.getFieldValue("suffix")
-        assertThat(suffix).isEqualTo("], \"env\": \"${fakeConfig.envName}\"}")
+        val writer = TracesFeature.persistenceStrategy.getWriter()
+        val delegateWriter: Writer<*> = writer.getFieldValue("writer")
+        val serializer: Serializer<*> = delegateWriter.getFieldValue("serializer")
+        val envName: String = serializer.getFieldValue("envName")
+        assertThat(envName).isEqualTo(fakeConfig.envName)
     }
 
     @Test
@@ -145,9 +149,11 @@ internal class TracesFeatureTest {
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
             .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
-        val reader = TracesFeature.persistenceStrategy.getReader()
-        val suffix: String = reader.getFieldValue("suffix")
-        assertThat(suffix).isEqualTo("]}")
+        val writer = TracesFeature.persistenceStrategy.getWriter()
+        val delegateWriter: Writer<*> = writer.getFieldValue("writer")
+        val serializer: Serializer<*> = delegateWriter.getFieldValue("serializer")
+        val envName: String = serializer.getFieldValue("envName")
+        assertThat(envName).isEqualTo("")
     }
 
     @Test

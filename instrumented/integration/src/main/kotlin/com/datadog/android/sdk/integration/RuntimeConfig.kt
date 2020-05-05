@@ -14,10 +14,11 @@ import java.util.UUID
 internal object RuntimeConfig {
 
     val APP_ID = UUID.randomUUID().toString()
-    const val JSON_CONTENT_TYPE = "application/json"
-    const val TEXT_PLAIN_CONTENT_TYPE = "text/plain;charset=UTF-8"
-    const val DD_TOKEN = "MYTESTAPPTOKEN"
+
     const val INTEGRATION_TESTS_ENVIRONMENT = "integration-tests"
+    const val DD_TOKEN = "MYTESTAPPTOKEN"
+    const val CONTENT_TYPE_JSON = "application/json"
+    const val CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8"
     private const val LOCALHOST = "http://localhost"
 
     var logsEndpointUrl: String = LOCALHOST

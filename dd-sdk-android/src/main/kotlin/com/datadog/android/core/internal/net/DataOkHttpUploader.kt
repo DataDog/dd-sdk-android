@@ -30,10 +30,10 @@ internal abstract class DataOkHttpUploader(
             val response = call.execute()
             sdkLogger.i(
                 "Response " +
-                        "from ${url.substring(0, 32)}… " +
-                        "code:${response.code()} " +
-                        "body:${response.body()?.string()} " +
-                        "headers:${response.headers()}"
+                    "from ${url.substring(0, 32)}… " +
+                    "code:${response.code()} " +
+                    "body:${response.body()?.string()} " +
+                    "headers:${response.headers()}"
             )
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
@@ -63,13 +63,15 @@ internal abstract class DataOkHttpUploader(
         )
     }
 
-    private val userAgent = System.getProperty(SYSTEM_UA).let {
-        if (it.isNullOrBlank()) {
-            "Datadog/${BuildConfig.VERSION_NAME} " +
+    private val userAgent by lazy {
+        System.getProperty(SYSTEM_UA).let {
+            if (it.isNullOrBlank()) {
+                "Datadog/${BuildConfig.VERSION_NAME} " +
                     "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
                     "${Build.MODEL} Build/${Build.ID})"
-        } else {
-            it
+            } else {
+                it
+            }
         }
     }
 

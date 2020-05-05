@@ -26,17 +26,17 @@ internal class TracingFileStrategy(
     maxLogPerBatch: Int = 1,
     oldFileThreshold: Long = OLD_FILE_THRESHOLD,
     maxDiskSpace: Long = MAX_DISK_SPACE,
-    envSuffix: String = "",
+    envName: String = "",
     dataPersistenceExecutorService: ExecutorService
 ) : AsyncWriterFilePersistenceStrategy<DDSpan>(
     File(context.filesDir, TRACES_FOLDER),
-    SpanSerializer(timeProvider, networkInfoProvider, userInfoProvider),
+    SpanSerializer(timeProvider, networkInfoProvider, userInfoProvider, envName),
     recentDelayMs,
     maxBatchSize,
     maxLogPerBatch,
     oldFileThreshold,
     maxDiskSpace,
-    PayloadDecoration("{ \"spans\": [", "]$envSuffix}", ","),
+    PayloadDecoration.NEW_LINE_DECORATION,
     dataPersistenceExecutorService = dataPersistenceExecutorService
 ) {
     companion object {

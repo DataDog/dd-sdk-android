@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test
 internal class LogFileStrategyTest :
     FilePersistenceStrategyTest<Log>(
         LogFileStrategy.LOGS_FOLDER,
+        payloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
         modelClass = Log::class.java
     ) {
 

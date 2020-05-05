@@ -27,7 +27,7 @@ class SampleApplication : Application() {
                     BuildConfig.DD_RUM_APPLICATION_ID
                 )
             } else {
-                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN,environment)
+                DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN, environment)
             }
         configBuilder
             .setServiceName("android-sample-kotlin-timber")

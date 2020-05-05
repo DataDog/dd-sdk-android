@@ -100,7 +100,7 @@ internal class EndToEndRumFragmentTrackingTests {
             .forEach { request ->
                 HeadersAssert.assertThat(request.headers)
                     .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.TEXT_PLAIN_CONTENT_TYPE)
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
                 if (request.textBody != null) {
                     sentGestureEvents += rumPayloadToJsonList(request.textBody)
                 }

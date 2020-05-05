@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
+import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -43,18 +44,22 @@ import org.mockito.quality.Strictness
 internal class TracingFileStrategyTest :
     FilePersistenceStrategyTest<DDSpan>(
         TracingFileStrategy.TRACES_FOLDER,
+        payloadDecoration = PayloadDecoration.NEW_LINE_DECORATION,
         modelClass = DDSpan::class.java
     ) {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Forgery
     lateinit var fakeUserInfo: UserInfo
+
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
@@ -143,11 +148,12 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
-        val serviceName = jsonObject.getString(SpanSerializer.TAG_SERVICE_NAME)
-        val resourceName = jsonObject.getString(SpanSerializer.TAG_RESOURCE)
-        val traceId = jsonObject.getString(SpanSerializer.TAG_TRACE_ID).hexToBigInteger()
-        val spanId = jsonObject.getString(SpanSerializer.TAG_SPAN_ID).hexToBigInteger()
-        val parentId = jsonObject.getString(SpanSerializer.TAG_PARENT_ID).hexToBigInteger()
+        val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
+        val serviceName = spanObject.getString(SpanSerializer.TAG_SERVICE_NAME)
+        val resourceName = spanObject.getString(SpanSerializer.TAG_RESOURCE)
+        val traceId = spanObject.getString(SpanSerializer.TAG_TRACE_ID).hexToBigInteger()
+        val spanId = spanObject.getString(SpanSerializer.TAG_SPAN_ID).hexToBigInteger()
+        val parentId = spanObject.getString(SpanSerializer.TAG_PARENT_ID).hexToBigInteger()
 
         val roughMatches = models.filter {
             serviceName == it.serviceName &&
@@ -161,7 +167,10 @@ internal class TracingFileStrategyTest :
     }
 
     override fun assertMatches(jsonObject: JsonObject, model: DDSpan) {
-        assertThat(jsonObject)
+        val spansArray = jsonObject.getAsJsonArray("spans")
+        assertThat(spansArray).hasSize(1)
+        val spanObject = spansArray.first() as JsonObject
+        assertThat(spanObject)
             .hasField(SpanSerializer.TAG_START_TIMESTAMP, model.startTime)
             .hasField(SpanSerializer.TAG_DURATION, model.durationNano)
             .hasField(SpanSerializer.TAG_SERVICE_NAME, model.serviceName)
