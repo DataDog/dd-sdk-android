@@ -133,6 +133,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -174,6 +175,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -207,6 +209,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -239,6 +242,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -282,6 +286,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -314,6 +319,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -347,6 +353,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -422,6 +429,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -455,6 +463,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -493,6 +502,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -532,6 +542,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasUserActionData {
                     hasName(name)
@@ -562,6 +573,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
@@ -599,6 +611,7 @@ internal class RumActionScopeTest {
             RumEventAssert.assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasUserActionData {
                     hasName(fakeName)

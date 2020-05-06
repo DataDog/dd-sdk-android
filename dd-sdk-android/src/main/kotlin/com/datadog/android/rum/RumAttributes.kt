@@ -199,6 +199,53 @@ object RumAttributes {
      */
     const val NETWORK_BYTES_WRITTEN: String = "network.bytes_written"
 
+    /**
+     * The unique id of the Carrier attached to the SIM card. (Number)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_CARRIER_ID: String = "network.client.sim_carrier.id"
+
+    /**
+     * The name of the Carrier attached to the SIM card. (String)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_CARRIER_NAME: String = "network.client.sim_carrier.name"
+
+    /**
+     * The IP address of the client that initiated the TCP connection. (String)
+     * This value is automatically filled by the Datadog framework.
+     */
+    const val NETWORK_CLIENT_IP: String = "network.client.ip"
+
+    /**
+     * The port of the client that initiated the connection. (Number)
+     */
+    const val NETWORK_CLIENT_PORT: String = "network.client.port"
+
+    /**
+     * The connectivity status of the device. (String)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_CONNECTIVITY: String = "network.client.connectivity"
+
+    /**
+     * The downstream bandwidth for the current network in Kbps. (Number)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_DOWN_KBPS: String = "network.client.downlink_kbps"
+
+    /**
+     * The bearer specific signal strength. (Number)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_SIGNAL_STRENGTH: String = "network.client.signal_strength"
+
+    /**
+     * The upstream bandwidth for the current network in Kbps. (Number)
+     * This value is filled automatically by the [RumMonitor] for resources and errors.
+     */
+    const val NETWORK_UP_KBPS: String = "network.client.uplink_kbps"
+
     /** Value among: document, xhr, beacon, fetch, css, js, image, font, media, other. (String) */
     const val RESOURCE_KIND: String = "resource.kind"
 

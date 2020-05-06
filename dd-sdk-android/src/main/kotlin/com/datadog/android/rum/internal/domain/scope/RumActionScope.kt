@@ -130,7 +130,8 @@ internal class RumActionScope(
                 eventTimestamp,
                 eventData,
                 RumFeature.userInfoProvider.getUserInfo(),
-                attributes
+                attributes,
+                networkInfo = null
             )
 
             writer.write(event)

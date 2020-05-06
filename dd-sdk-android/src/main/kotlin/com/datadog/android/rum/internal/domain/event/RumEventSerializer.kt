@@ -43,6 +43,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         // User Info
         addUserInfo(model, root)
 
+        // Network Info
+        addNetworkInfo(model, root)
+
         // Data
         addEventData(model.eventData, root)
 
@@ -69,6 +72,28 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         }
         if (!name.isNullOrEmpty()) {
             root.addProperty(RumAttributes.USER_NAME, name)
+        }
+    }
+
+    private fun addNetworkInfo(model: RumEvent, root: JsonObject) {
+        val info = model.networkInfo
+        if (info != null) {
+            root.addProperty(RumAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            if (!info.carrierName.isNullOrBlank()) {
+                root.addProperty(RumAttributes.NETWORK_CARRIER_NAME, info.carrierName)
+            }
+            if (info.carrierId >= 0) {
+                root.addProperty(RumAttributes.NETWORK_CARRIER_ID, info.carrierId)
+            }
+            if (info.upKbps >= 0) {
+                root.addProperty(RumAttributes.NETWORK_UP_KBPS, info.upKbps)
+            }
+            if (info.downKbps >= 0) {
+                root.addProperty(RumAttributes.NETWORK_DOWN_KBPS, info.downKbps)
+            }
+            if (info.strength > Int.MIN_VALUE) {
+                root.addProperty(RumAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
+            }
         }
     }
 

@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -167,6 +168,66 @@ internal class RumEventSerializerTest {
 
     // region Internal
 
+    private fun assertNetworkInfoMatches(event: RumEvent, jsonObject: JsonObject) {
+        val info = event.networkInfo
+        if (info != null) {
+            assertThat(jsonObject).apply {
+                hasField(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
+                if (!info.carrierName.isNullOrBlank()) {
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
+                }
+                if (info.carrierId >= 0) {
+                    hasField(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
+                }
+                if (info.upKbps >= 0) {
+                    hasField(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
+                }
+                if (info.downKbps >= 0) {
+                    hasField(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
+                }
+                if (info.strength > Int.MIN_VALUE) {
+                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
+                }
+            }
+        } else {
+            assertThat(jsonObject)
+                .doesNotHaveField(LogAttributes.NETWORK_CONNECTIVITY)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
+                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
+        }
+    }
+
+    private fun assertUserInfoMatches(event: RumEvent, jsonObject: JsonObject) {
+        val info = event.userInfo
+        assertThat(jsonObject).apply {
+            if (info.id.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_ID)
+            } else {
+                hasField(LogAttributes.USR_ID, info.id)
+            }
+            if (info.name.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_NAME)
+            } else {
+                hasField(LogAttributes.USR_NAME, info.name)
+            }
+            if (info.email.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_EMAIL)
+            } else {
+                hasField(LogAttributes.USR_EMAIL, info.email)
+            }
+        }
+    }
+
     private fun assertEventMatches(
         jsonObject: JsonObject,
         event: RumEvent
@@ -185,6 +246,9 @@ internal class RumEventSerializerTest {
             .hasField(RumAttributes.EVT_CATEGORY, event.eventData.category)
 
         assertAttributesMatch(jsonObject, event)
+
+        assertNetworkInfoMatches(event, jsonObject)
+        assertUserInfoMatches(event, jsonObject)
     }
 
     private fun assertAttributesMatch(

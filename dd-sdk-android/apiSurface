@@ -154,6 +154,14 @@ object com.datadog.android.rum.RumAttributes
   const val HTTP_VERSION: String
   const val NETWORK_BYTES_READ: String
   const val NETWORK_BYTES_WRITTEN: String
+  const val NETWORK_CARRIER_ID: String
+  const val NETWORK_CARRIER_NAME: String
+  const val NETWORK_CLIENT_IP: String
+  const val NETWORK_CLIENT_PORT: String
+  const val NETWORK_CONNECTIVITY: String
+  const val NETWORK_DOWN_KBPS: String
+  const val NETWORK_SIGNAL_STRENGTH: String
+  const val NETWORK_UP_KBPS: String
   const val RESOURCE_KIND: String
   const val RUM_DOCUMENT_VERSION: String
   const val SESSION_ID: String

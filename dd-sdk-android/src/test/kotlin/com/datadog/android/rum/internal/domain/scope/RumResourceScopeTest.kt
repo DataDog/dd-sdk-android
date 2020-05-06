@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -72,6 +74,9 @@ internal class RumResourceScopeTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
+    @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
     @RegexForgery("http(s?)://[a-z]+.com/[a-z]+")
@@ -86,6 +91,9 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
+
     @LongForgery
     var fakeTimeStamp: Long = 0L
 
@@ -93,6 +101,7 @@ internal class RumResourceScopeTest {
     fun `set up`(forge: Forge) {
         RumFeature::class.java.setStaticValue("timeProvider", mockTimeProvider)
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
+        RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
 
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
@@ -100,6 +109,7 @@ internal class RumResourceScopeTest {
 
         whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimeStamp
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
 
         testedScope = RumResourceScope(
@@ -137,6 +147,7 @@ internal class RumResourceScopeTest {
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
+                .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -178,6 +189,7 @@ internal class RumResourceScopeTest {
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
+                .hasNetworkInfo(fakeNetworkInfo)
                 .hasErrorData {
                     hasMessage(message)
                     hasOrigin(origin)
@@ -248,6 +260,7 @@ internal class RumResourceScopeTest {
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
+                .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
