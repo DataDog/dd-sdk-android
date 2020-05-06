@@ -13,6 +13,7 @@ import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -38,6 +39,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
+import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -64,6 +66,9 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockChildScope: RumScope
+
+    @Mock
+    lateinit var mockActionScope: RumActionScope
 
     @Mock
     lateinit var mockEvent: RumRawEvent
@@ -103,6 +108,7 @@ internal class RumViewScopeTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
 
         testedScope = RumViewScope(mockParentScope, fakeKey, fakeName, fakeAttributes)
 
@@ -501,6 +507,9 @@ internal class RumViewScopeTest {
             RumRawEvent.StartAction(name, waitForStop, attributes),
             mockWriter
         )
+        val expectedAttributes = attributes.toMutableMap().apply {
+            put(RumAttributes.VIEW_URL, testedScope.urlName)
+        }
 
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
@@ -508,7 +517,7 @@ internal class RumViewScopeTest {
         val actionScope = testedScope.activeActionScope as RumActionScope
         assertThat(actionScope.name).isEqualTo(name)
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
-        assertThat(actionScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(actionScope.attributes).containsAllEntriesOf(expectedAttributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
     }
 
@@ -589,6 +598,9 @@ internal class RumViewScopeTest {
             RumRawEvent.StartResource(key, url, method, attributes),
             mockWriter
         )
+        val expectedAttributes = attributes.toMutableMap().apply {
+            put(RumAttributes.VIEW_URL, testedScope.urlName)
+        }
 
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
@@ -598,7 +610,7 @@ internal class RumViewScopeTest {
         assertThat(entry.value).isInstanceOf(RumResourceScope::class.java)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
-        assertThat(resourceScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(resourceScope.attributes).containsAllEntriesOf(expectedAttributes)
         assertThat(resourceScope.keyRef.get()).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
@@ -611,13 +623,19 @@ internal class RumViewScopeTest {
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
         forge: Forge
     ) {
-        testedScope.activeActionScope = mockChildScope
+        testedScope.activeActionScope = mockActionScope
+        val randomActionId = UUID.randomUUID()
+        whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
         mockEvent = RumRawEvent.StartResource(key, url, method, attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val expectedAttributes = attributes.toMutableMap().apply {
+            put(RumAttributes.VIEW_URL, testedScope.urlName)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+        }
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockActionScope).handleEvent(mockEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
@@ -625,7 +643,7 @@ internal class RumViewScopeTest {
         assertThat(entry.key.get()).isEqualTo(key)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
-        assertThat(resourceScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(resourceScope.attributes).containsAllEntriesOf(expectedAttributes)
         assertThat(resourceScope.keyRef.get()).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
@@ -667,18 +685,24 @@ internal class RumViewScopeTest {
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
+        testedScope.activeActionScope = mockActionScope
+        val randomActionId = UUID.randomUUID()
+        whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
         mockEvent = RumRawEvent.AddError(message, origin, throwable, attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
-
+        val expectedAttributes = attributes.toMutableMap().apply {
+            put(RumAttributes.VIEW_URL, testedScope.urlName)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+        }
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
 
             assertThat(firstValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(attributes)
+                .hasAttributes(expectedAttributes)
                 .hasErrorData {
                     hasMessage(message)
                     hasOrigin(origin)

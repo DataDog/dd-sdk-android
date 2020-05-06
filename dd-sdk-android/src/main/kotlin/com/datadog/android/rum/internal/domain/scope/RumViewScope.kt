@@ -24,7 +24,7 @@ internal class RumViewScope(
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
-    private val urlName = name.replace('.', '/')
+    internal val urlName = name.replace('.', '/')
 
     internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
@@ -121,11 +121,17 @@ internal class RumViewScope(
         writer: Writer<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
-        if (stopped) return
 
-        if (activeActionScope == null) {
-            activeActionScope = RumActionScope.fromEvent(this, event)
-        }
+        if (stopped || activeActionScope != null) return
+
+        val updatedAttributes = event.attributes.toMutableMap()
+            .apply {
+                put(RumAttributes.VIEW_URL, urlName)
+            }
+        val updatedEvent = event.copy(
+            attributes = updatedAttributes
+        )
+        activeActionScope = RumActionScope.fromEvent(this, updatedEvent)
     }
 
     private fun onStartResource(
@@ -135,7 +141,10 @@ internal class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val updatedEvent = event.copy(attributes = updateAttributesWithActionId(event.attributes))
+        val updatedEvent = event.copy(
+            attributes =
+            addExtraAttibutes(event.attributes)
+        )
         activeResourceScopes.put(
             WeakReference(event.key),
             RumResourceScope.fromEvent(this, updatedEvent)
@@ -149,7 +158,7 @@ internal class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val updatedAttributes = updateAttributesWithActionId(event.attributes)
+        val updatedAttributes = addExtraAttibutes(event.attributes)
         val eventData = RumEventData.Error(
             event.message, event.origin, event.throwable
         )
@@ -224,18 +233,17 @@ internal class RumViewScope(
         writer.write(event)
     }
 
-    private fun updateAttributesWithActionId(
+    private fun addExtraAttibutes(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
         val actionId = (activeActionScope as? RumActionScope)?.actionId
-        return if (actionId == null) {
-            attributes.toMutableMap()
-        } else {
-            attributes.toMutableMap()
-                .apply {
+        return attributes.toMutableMap()
+            .apply {
+                if (actionId != null) {
                     put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
                 }
-        }
+                put(RumAttributes.VIEW_URL, urlName)
+            }
     }
 
     // endregion
