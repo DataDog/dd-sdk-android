@@ -23,14 +23,20 @@ import okhttp3.OkHttpClient
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new DatadogInterceptor())
+ *       .addInterceptor(new DatadogInterceptor(listOf("yourdomain.com")))
  *       .build();
  * ```
+ * @param tracedHosts a list of all the hosts that you want to be automatically tracked
+ * by our APM [TracingInterceptor]. If no host provided the interceptor won't trace
+ * any OkHttpRequest, nor propagate tracing information to the backend.
+ * Please note that the host constraint will only be applied on the TracingInterceptor and we will
+ * continue to dispatch RUM Resource events for each request without applying any host filtering.
+ *
  */
-class DatadogInterceptor :
+class DatadogInterceptor(tracedHosts: List<String>) :
     Interceptor by CombinedInterceptor(
         listOf(
-            TracingRequestInterceptor(),
+            TracingRequestInterceptor(tracedHosts),
             RumRequestInterceptor()
         )
     )

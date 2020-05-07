@@ -28,10 +28,12 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
@@ -59,7 +61,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -72,7 +73,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TracingRequestInterceptorTest {
 
-    @Spy
     lateinit var testedInterceptor: TracingRequestInterceptor
 
     @Mock
@@ -104,15 +104,12 @@ internal class TracingRequestInterceptorTest {
 
     @RegexForgery("GET|POST|DELETE")
     lateinit var fakeMethod: String
+    lateinit var fakeWhitelistedDomain: String
+    lateinit var fakeSecondWhitelistedDomain: String
 
-    @RegexForgery("[a-z]+/[a-z]+")
-    lateinit var fakeMimeType: String
+    lateinit var fakeWhitelistedDomainUrl: String
 
-    @RegexForgery("http://[a-z0-9_]{8}\\.[a-z]{3}/")
-    lateinit var fakeUrl: String
-
-    @RegexForgery("http://[a-z0-9_]{8}\\.[a-z]{3}/")
-    lateinit var fakeUrl2: String
+    lateinit var fakeSecondWhitelistedDomainUrl: String
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeBodyContent: String
@@ -132,8 +129,14 @@ internal class TracingRequestInterceptorTest {
     @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
+    // region UnitTests
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeWhitelistedDomain = generateValidHostName(forge, type = HostType.IpV4)
+        fakeSecondWhitelistedDomain = generateValidHostName(forge)
+        fakeWhitelistedDomainUrl = generateUrlFromDomain(fakeWhitelistedDomain, forge)
+        fakeSecondWhitelistedDomainUrl = generateUrlFromDomain(fakeSecondWhitelistedDomain, forge)
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
@@ -141,14 +144,14 @@ internal class TracingRequestInterceptorTest {
         whenever(mockSpanBuilder.start()).doReturn(mockSpan, mockSpan2, null)
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpan2.context()) doReturn mockSpanContext
-
-        doReturn(mockLocalTracer).whenever(testedInterceptor).buildLocalTracer()
-
         fakeBody = if (fakeMethod == "POST") RequestBody.create(null, fakeBodyContent) else null
         fakeRequest = Request.Builder()
-            .url(fakeUrl)
+            .url(fakeWhitelistedDomainUrl)
             .method(fakeMethod, fakeBody)
             .build()
+        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeWhitelistedDomain)))
+
+        doReturn(mockLocalTracer).whenever(testedInterceptor).buildLocalTracer()
 
         TracesFeature.initialize(
             mockAppContext,
@@ -189,7 +192,7 @@ internal class TracingRequestInterceptorTest {
         assertThat(transformedRequest.method()).isEqualTo(fakeMethod)
         assertThat(transformedRequest.header(key)).isEqualTo(value)
         inOrder(mockSpan) {
-            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
         }
@@ -205,7 +208,7 @@ internal class TracingRequestInterceptorTest {
         testedInterceptor.handleResponse(transformedRequest, mockResponse)
 
         inOrder(mockSpan) {
-            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
@@ -213,23 +216,137 @@ internal class TracingRequestInterceptorTest {
     }
 
     @Test
-    fun `starts and stop span around successful request multithreaded`(
-        @IntForgery(200, 300) statusCode: Int
+    fun `does nothing if the request domain is not in the whitelisted domains`(forge: Forge) {
+        val fakeBlackListedDomain = generateBlacklistedDomain(forge)
+        val fakeBlacklistedUrl = "http://$fakeBlackListedDomain/"
+        val fakeBlacklistedRequest = Request.Builder()
+            .url(fakeBlacklistedUrl)
+            .method(fakeMethod, fakeBody)
+            .build()
+        val transformedRequest = testedInterceptor.transformRequest(fakeBlacklistedRequest)
+        testedInterceptor.handleResponse(transformedRequest, mockResponse)
+
+        verifyZeroInteractions(mockSpanBuilder)
+        verifyZeroInteractions(mockTracer)
+        verifyZeroInteractions(mockLocalTracer)
+    }
+
+    @Test
+    fun `does nothing if the request domain no whitelisted domains provided`(forge: Forge) {
+        testedInterceptor = spy(TracingRequestInterceptor())
+        val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
+        testedInterceptor.handleResponse(transformedRequest, mockResponse)
+
+        verifyZeroInteractions(mockSpanBuilder)
+        verifyZeroInteractions(mockTracer)
+        verifyZeroInteractions(mockLocalTracer)
+    }
+
+    @Test
+    fun `starts and stop span around multiple request from same host including subdomains`(
+        @IntForgery(200, 300) statusCode: Int,
+        forge: Forge
     ) {
-        val fakeRequest2 = Request.Builder()
-            .url(fakeUrl2)
+        val fakeDomain = generateValidHostName(forge, type = HostType.Hostname)
+        val fakeSubdomain =
+            forge.aStringMatching("([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-][a-zA-Z0-9])\\.") +
+                fakeDomain
+        val fakeUrl = generateUrlFromDomain(fakeDomain, forge)
+        val fakeSubdomainUrl = generateUrlFromDomain(fakeSubdomain, forge)
+        whenever(mockResponse.code()) doReturn statusCode
+        val firstRequest = Request.Builder()
+            .url(fakeUrl)
+            .method(fakeMethod, fakeBody)
+            .build()
+        val secondRequest = Request.Builder()
+            .url(fakeSubdomainUrl)
+            .method(fakeMethod, fakeBody)
+            .build()
+        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeDomain)))
+
+        val firstTransformedRequest = testedInterceptor.transformRequest(firstRequest)
+        testedInterceptor.handleResponse(firstTransformedRequest, mockResponse)
+        val secondTransformedRequest = testedInterceptor.transformRequest(secondRequest)
+        testedInterceptor.handleResponse(secondTransformedRequest, mockResponse)
+
+        inOrder(mockSpan, mockSpan2) {
+            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan).setTag("http.status_code", statusCode)
+            verify(mockSpan).finish()
+            verify(mockSpan2).setTag("http.url", fakeSubdomainUrl)
+            verify(mockSpan2).setTag("http.method", fakeMethod)
+            verify(mockSpan2).setTag("http.status_code", statusCode)
+            verify(mockSpan2).finish()
+        }
+    }
+
+    @Test
+    fun `starts and stop span around multiple request from different whitelisted hosts`(
+        @IntForgery(200, 300) statusCode: Int,
+        forge: Forge
+    ) {
+        testedInterceptor = spy(
+            TracingRequestInterceptor(
+                listOf(
+                    fakeWhitelistedDomain,
+                    fakeSecondWhitelistedDomain
+                )
+            )
+        )
+        whenever(mockResponse.code()) doReturn statusCode
+        val secondRequest = Request.Builder()
+            .url(fakeSecondWhitelistedDomainUrl)
+            .method(fakeMethod, fakeBody)
+            .build()
+        val firstTransformedRequest = testedInterceptor.transformRequest(fakeRequest)
+        testedInterceptor.handleResponse(firstTransformedRequest, mockResponse)
+        val secondTransformedRequest = testedInterceptor.transformRequest(secondRequest)
+        testedInterceptor.handleResponse(secondTransformedRequest, mockResponse)
+
+        inOrder(mockSpan, mockSpan2) {
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan).setTag("http.status_code", statusCode)
+            verify(mockSpan).finish()
+            verify(mockSpan2).setTag("http.url", fakeSecondWhitelistedDomainUrl)
+            verify(mockSpan2).setTag("http.method", fakeMethod)
+            verify(mockSpan2).setTag("http.status_code", statusCode)
+            verify(mockSpan2).finish()
+        }
+    }
+
+    @Test
+    fun `starts and stop span around successful request multithreaded`(
+        @IntForgery(200, 300) statusCode: Int,
+        forge: Forge
+    ) {
+
+        val fakeDomain = generateValidHostName(forge, type = HostType.Hostname)
+        val fakeSubdomain =
+            forge.aStringMatching("([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-][a-zA-Z0-9])\\.") +
+                fakeDomain
+        val fakeUrl = generateUrlFromDomain(fakeDomain, forge)
+        val fakeSubdomainUrl = generateUrlFromDomain(fakeSubdomain, forge)
+        val firstRequest = Request.Builder()
+            .url(fakeUrl)
+            .method(fakeMethod, fakeBody)
+            .build()
+        val secondRequest = Request.Builder()
+            .url(fakeSubdomainUrl)
             .method(fakeMethod, fakeBody)
             .build()
         whenever(mockResponse.code()) doReturn statusCode
+        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeDomain)))
         val countDownLatch = CountDownLatch(2)
         val runnable1 = Runnable {
-            val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
+            val transformedRequest = testedInterceptor.transformRequest(firstRequest)
             Thread.sleep(200)
             testedInterceptor.handleResponse(transformedRequest, mockResponse)
             countDownLatch.countDown()
         }
         val runnable2 = Runnable {
-            val transformedRequest = testedInterceptor.transformRequest(fakeRequest2)
+            val transformedRequest = testedInterceptor.transformRequest(secondRequest)
             Thread.sleep(200)
             testedInterceptor.handleResponse(transformedRequest, mockResponse)
             countDownLatch.countDown()
@@ -242,7 +359,12 @@ internal class TracingRequestInterceptorTest {
         inOrder(mockSpan) {
             verify(mockSpan).setTag(
                 eq("http.url"),
-                argThat<String> { this in arrayOf(fakeUrl, fakeUrl2) })
+                argThat<String> {
+                    this in arrayOf(
+                        fakeUrl,
+                        fakeSubdomainUrl
+                    )
+                })
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
@@ -250,7 +372,12 @@ internal class TracingRequestInterceptorTest {
         inOrder(mockSpan2) {
             verify(mockSpan2).setTag(
                 eq("http.url"),
-                argThat<String> { this in arrayOf(fakeUrl, fakeUrl2) })
+                argThat<String> {
+                    this in arrayOf(
+                        fakeUrl,
+                        fakeSubdomainUrl
+                    )
+                })
             verify(mockSpan2).setTag("http.method", fakeMethod)
             verify(mockSpan2).setTag("http.status_code", statusCode)
             verify(mockSpan2).finish()
@@ -266,7 +393,7 @@ internal class TracingRequestInterceptorTest {
         testedInterceptor.handleThrowable(transformedRequest, fakeThrowable)
 
         inOrder(mockSpan) {
-            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("error.msg", fakeThrowable.message)
             verify(mockSpan).setTag("error.type", fakeThrowable.javaClass.canonicalName)
@@ -297,7 +424,7 @@ internal class TracingRequestInterceptorTest {
         verifyZeroInteractions(mockTracer)
         inOrder(mockLocalTracer, mockSpan) {
             verify(mockLocalTracer).buildSpan("okhttp.request")
-            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
         }
@@ -319,7 +446,7 @@ internal class TracingRequestInterceptorTest {
 
         inOrder(mockSpan, mockSpan2, mockTracer, mockLocalTracer) {
             verify(mockLocalTracer).buildSpan("okhttp.request")
-            verify(mockSpan).setTag("http.url", fakeUrl)
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).context()
             verify(mockLocalTracer).inject(
@@ -327,7 +454,7 @@ internal class TracingRequestInterceptorTest {
             )
 
             verify(mockTracer).buildSpan("okhttp.request")
-            verify(mockSpan2).setTag("http.url", fakeUrl)
+            verify(mockSpan2).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan2).setTag("http.method", fakeMethod)
             verify(mockSpan2).context()
             verify(mockTracer).inject(
@@ -354,5 +481,68 @@ internal class TracingRequestInterceptorTest {
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(testedInterceptor).buildLocalTracer()
         verify(mockLocalTracer, times(2)).buildSpan("okhttp.request")
+    }
+
+    // endregion
+
+    // region Internal methods
+
+    private fun generateValidHostName(forge: Forge, type: HostType? = null): String {
+        val domainType = type
+            ?: if (forge.aBool()) {
+                HostType.Hostname
+            } else {
+                HostType.IpV4
+            }
+        val regex = when (domainType) {
+            HostType.IpV4 -> IPV4_REGEX_FORMAT
+            else -> HOSTNAME_REGEX_FORMAT
+        }
+
+        return forge.aStringMatching(regex)
+    }
+
+    private fun generateBlacklistedDomain(forge: Forge): String {
+        return if (fakeWhitelistedDomain.matches(Regex("^[0-9].*"))) {
+            // generate a first IP digit different than the current one
+            val currentFirstIpDigit = fakeWhitelistedDomain[0]
+            val newFirstIpDigit = generateDifferentDigit(currentFirstIpDigit)
+            newFirstIpDigit + fakeSecondWhitelistedDomain.substring(1)
+        } else {
+            if (forge.aBool()) {
+                fakeWhitelistedDomain + forge.anAlphabeticalString(size = 2)
+            } else {
+                forge.anAlphabeticalString(size = 2) + fakeWhitelistedDomain
+            }
+        }
+    }
+
+    private fun generateDifferentDigit(currentDigit: Char): Char {
+        val min = '0'
+        val max = '9'
+        return if (currentDigit == max) {
+            return min
+        } else {
+            currentDigit + 1
+        }
+    }
+
+    private fun generateUrlFromDomain(domain: String, forge: Forge): String {
+        return "http://${domain.toLowerCase()}/${forge.aStringMatching("[a-zA-Z0-9]{10}")}"
+    }
+
+    private enum class HostType {
+        Hostname, IpV4
+    }
+
+    // endregion
+
+    companion object {
+        const val HOSTNAME_REGEX_FORMAT =
+            "([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-][a-zA-Z0-9])\\." +
+                "([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-])[A-Za-z0-9]"
+        const val IPV4_REGEX_FORMAT =
+            "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
     }
 }
