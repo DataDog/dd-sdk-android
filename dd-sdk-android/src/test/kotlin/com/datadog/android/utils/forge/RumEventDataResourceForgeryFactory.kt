@@ -18,7 +18,8 @@ internal class RumEventDataResourceForgeryFactory :
             kind = forge.aValueFrom(RumResourceKind::class.java),
             method = forge.anElementFrom("GET", "PUT", "POST", "DELETE", "PATCH"),
             durationNanoSeconds = forge.aPositiveLong(),
-            url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+")
+            url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
+            timing = forge.getForgery()
         )
     }
 }

@@ -163,6 +163,16 @@ object com.datadog.android.rum.RumAttributes
   const val NETWORK_SIGNAL_STRENGTH: String
   const val NETWORK_UP_KBPS: String
   const val RESOURCE_KIND: String
+  const val RESOURCE_TIMING_DNS_START: String
+  const val RESOURCE_TIMING_DNS_DURATION: String
+  const val RESOURCE_TIMING_CONNECT_START: String
+  const val RESOURCE_TIMING_CONNECT_DURATION: String
+  const val RESOURCE_TIMING_SSL_START: String
+  const val RESOURCE_TIMING_SSL_DURATION: String
+  const val RESOURCE_TIMING_FB_START: String
+  const val RESOURCE_TIMING_FB_DURATION: String
+  const val RESOURCE_TIMING_DL_START: String
+  const val RESOURCE_TIMING_DL_DURATION: String
   const val RUM_DOCUMENT_VERSION: String
   const val SESSION_ID: String
   const val SOURCE: String

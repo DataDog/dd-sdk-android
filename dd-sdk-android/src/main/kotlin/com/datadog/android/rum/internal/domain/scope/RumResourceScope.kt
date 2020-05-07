@@ -90,7 +90,8 @@ internal class RumResourceScope(
             kind,
             method,
             url,
-            System.nanoTime() - startedNanos
+            System.nanoTime() - startedNanos,
+            null
         )
         val event = RumEvent(
             getRumContext(),

@@ -59,6 +59,7 @@ internal class RumEventSerializerTest {
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
+        val timing = fakeResource.timing!!
         assertThat(jsonObject)
             .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
             .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
@@ -67,6 +68,47 @@ internal class RumEventSerializerTest {
             .hasField(RumAttributes.USER_NAME, event.userInfo.name)
             .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
             .hasField(RumAttributes.USER_ID, event.userInfo.id)
+            .hasField(RumAttributes.RESOURCE_TIMING_DNS_START, timing.dnsStart)
+            .hasField(RumAttributes.RESOURCE_TIMING_DNS_DURATION, timing.dnsDuration)
+            .hasField(RumAttributes.RESOURCE_TIMING_CONNECT_START, timing.connectStart)
+            .hasField(RumAttributes.RESOURCE_TIMING_CONNECT_DURATION, timing.connectDuration)
+            .hasField(RumAttributes.RESOURCE_TIMING_SSL_START, timing.sslStart)
+            .hasField(RumAttributes.RESOURCE_TIMING_SSL_DURATION, timing.sslDuration)
+            .hasField(RumAttributes.RESOURCE_TIMING_FB_START, timing.firstByteStart)
+            .hasField(RumAttributes.RESOURCE_TIMING_FB_DURATION, timing.firstByteDuration)
+            .hasField(RumAttributes.RESOURCE_TIMING_DL_START, timing.downloadStart)
+            .hasField(RumAttributes.RESOURCE_TIMING_DL_DURATION, timing.downloadDuration)
+    }
+
+    @Test
+    fun `serializes resource rum event without timing`(
+        @Forgery fakeEvent: RumEvent,
+        @Forgery fakeResource: RumEventData.Resource
+    ) {
+        val event = fakeEvent.copy(eventData = fakeResource.copy(timing = null))
+
+        val serialized = underTest.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertEventMatches(jsonObject, event)
+        assertThat(jsonObject)
+            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
+            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
+            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
+            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
+            .hasField(RumAttributes.USER_NAME, event.userInfo.name)
+            .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
+            .hasField(RumAttributes.USER_ID, event.userInfo.id)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DNS_START)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DNS_DURATION)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_CONNECT_START)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_CONNECT_DURATION)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_SSL_START)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_SSL_DURATION)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_FB_START)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_FB_DURATION)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DL_START)
+            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DL_DURATION)
     }
 
     @Test
