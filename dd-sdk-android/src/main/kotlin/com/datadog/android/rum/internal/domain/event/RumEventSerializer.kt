@@ -139,16 +139,32 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         root.addProperty(RumAttributes.HTTP_URL, eventData.url)
         val timing = eventData.timing
         if (timing != null) {
-            root.addProperty(RumAttributes.RESOURCE_TIMING_DNS_START, timing.dnsStart)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_DNS_DURATION, timing.dnsDuration)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_CONNECT_START, timing.connectStart)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_CONNECT_DURATION, timing.connectDuration)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_SSL_START, timing.sslStart)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_SSL_DURATION, timing.sslDuration)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_FB_START, timing.firstByteStart)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_FB_DURATION, timing.firstByteDuration)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_DL_START, timing.downloadStart)
-            root.addProperty(RumAttributes.RESOURCE_TIMING_DL_DURATION, timing.downloadDuration)
+            if (timing.dnsStart > 0) {
+                root.addProperty(RumAttributes.RESOURCE_TIMING_DNS_START, timing.dnsStart)
+                root.addProperty(RumAttributes.RESOURCE_TIMING_DNS_DURATION, timing.dnsDuration)
+            }
+            if (timing.connectStart > 0) {
+                root.addProperty(RumAttributes.RESOURCE_TIMING_CONNECT_START, timing.connectStart)
+                root.addProperty(
+                    RumAttributes.RESOURCE_TIMING_CONNECT_DURATION,
+                    timing.connectDuration
+                )
+            }
+            if (timing.sslStart > 0) {
+                root.addProperty(RumAttributes.RESOURCE_TIMING_SSL_START, timing.sslStart)
+                root.addProperty(RumAttributes.RESOURCE_TIMING_SSL_DURATION, timing.sslDuration)
+            }
+            if (timing.firstByteStart > 0) {
+                root.addProperty(RumAttributes.RESOURCE_TIMING_FB_START, timing.firstByteStart)
+                root.addProperty(
+                    RumAttributes.RESOURCE_TIMING_FB_DURATION,
+                    timing.firstByteDuration
+                )
+            }
+            if (timing.downloadStart > 0) {
+                root.addProperty(RumAttributes.RESOURCE_TIMING_DL_START, timing.downloadStart)
+                root.addProperty(RumAttributes.RESOURCE_TIMING_DL_DURATION, timing.downloadDuration)
+            }
         }
     }
 

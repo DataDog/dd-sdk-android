@@ -34,6 +34,19 @@ object com.datadog.android.DatadogEndpoint
   const val TRACES_EU: String
   const val RUM_US: String
   const val RUM_EU: String
+class com.datadog.android.DatadogEventListener : okhttp3.EventListener
+  override fun dnsStart(okhttp3.Call, String)
+  override fun dnsEnd(okhttp3.Call, String, MutableList<java.net.InetAddress>)
+  override fun connectStart(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy)
+  override fun connectEnd(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?)
+  override fun secureConnectStart(okhttp3.Call)
+  override fun secureConnectEnd(okhttp3.Call, okhttp3.Handshake?)
+  override fun responseHeadersStart(okhttp3.Call)
+  override fun responseHeadersEnd(okhttp3.Call, okhttp3.Response)
+  override fun responseBodyStart(okhttp3.Call)
+  override fun responseBodyEnd(okhttp3.Call, Long)
+  class Factory : okhttp3.EventListener, Factory
+    override fun create(okhttp3.Call): okhttp3.EventListener
 class com.datadog.android.DatadogInterceptor : okhttp3.Interceptor
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA

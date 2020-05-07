@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.net
 
 import com.datadog.android.core.internal.net.RequestInterceptor
+import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
@@ -106,7 +107,7 @@ internal class RumRequestInterceptorTest {
 
         assertThat(transformedRequest).isSameAs(mockRequest)
         verify(mockRumMonitor).startResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             fakeMethod,
             fakeUrl,
             emptyMap()
@@ -130,7 +131,7 @@ internal class RumRequestInterceptorTest {
 
         assertThat(transformedRequest).isSameAs(mockRequest)
         verify(mockRumMonitor).startResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             fakeMethod,
             fakeUrl,
             mapOf(RumAttributes.TRACE_ID to traceId.toString())
@@ -151,7 +152,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             RumResourceKind.UNKNOWN,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -174,7 +175,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             RumResourceKind.fromMimeType(fakeMimeType),
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -197,7 +198,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             RumResourceKind.XHR,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -220,7 +221,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             RumResourceKind.XHR,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -243,7 +244,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             RumResourceKind.XHR,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -266,7 +267,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleThrowable(mockRequest, fakeThrowable)
 
         verify(mockRumMonitor).stopResourceWithError(
-            mockRequest,
+            identifyRequest(mockRequest),
             "OkHttp request error $fakeMethod $fakeUrl",
             "network",
             fakeThrowable
@@ -288,7 +289,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             kind,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,
@@ -320,7 +321,7 @@ internal class RumRequestInterceptorTest {
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
         verify(mockRumMonitor).stopResource(
-            mockRequest,
+            identifyRequest(mockRequest),
             kind,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode,

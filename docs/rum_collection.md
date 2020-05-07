@@ -87,7 +87,16 @@ Depending on your application's architecture, you can choose one of several impl
 
     This creates RUM resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error).
 
-    **Note**: If you use multiple Interceptors, this one must be called first.  
+    **Note**: If you use multiple Interceptors, this one must be called first.
+    
+5. (Optionnal) If you want to get timing information in Resources (such as time to first byte, DNS resolution, …), you can add the provided [Event][6] listener as follows:
+
+    ```kotlin
+    val okHttpClient =  OkHttpClient.Builder()
+        .addInterceptor(DatadogInterceptor())
+        .eventListenerFactory(DatadogEventListener.Factory())
+        .build()
+    ```
 
 ## Further Reading
 
@@ -99,3 +108,4 @@ Depending on your application's architecture, you can choose one of several impl
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [6]: https://square.github.io/okhttp/interceptors/
+[7]: https://square.github.io/okhttp/events/
