@@ -84,14 +84,108 @@ class SampleApplication : Application() {
     // ...
     // Then when the span should be closed
     span.finish()
-    ```
 
-6. (Optional) - Provide additional tags alongside your span.
+    ```
+7. Using Scopes:
+   ```kotlin
+   val span = tracer.buildSpan("<SPAN_NAME1>").start()
+   try {
+     val scope = tracer.activateSpan(span)
+     scope.use {
+          // Do something ...
+          // ...
+          // Start a new Scope
+          val childSpan = tracer.buildSpan("<SPAN_NAME2>").start()          
+          try {
+            tracer.activateSpan(childSpan).use {
+               // Do something ...
+            }  
+          }
+          catch(e:Error){
+            childSpan.error(e)
+          }
+          finally {
+            childSpan.finish()
+          }
+      }
+   }
+   catch(e:Error){
+     span.error(e)
+   }
+   finally {
+     span.finish()
+   }
+
+   ```
+8. Using scopes in Asynchronous calls:
+   ```kotlin
+   val span = tracer.buildSpan("<SPAN_NAME1>").start()
+   try{
+     val scope = tracer.activateSpan(span)
+     scope.use {
+        // Do something ...
+        doAsynWork {
+          // Step 2: reactivate the Span in the worker thread
+           val scopeContinuation = tracer.scopeManager().activate(span)
+           scopeContinuation.use {
+              // Do something ...
+           }
+        }
+      }   
+   }
+   catch(e:Error){
+     span.error(e)
+   }
+   finally{
+     span.finish()
+   }
+
+   ```  
+9. (Optional) How to manually distribute traces between your environments, for example frontend - backend:
+
+   * Step 1: Inject tracer context in the client request.
+
+   ```kotlin
+   val tracer = GlobalTracer.get()
+   val span = tracer.buildSpan("<SPAN_NAME>").start()
+   val tracedRequestBuilder = Request.Builder() ...
+   tracer.inject(
+           span.context(),
+           Format.Builtin.TEXT_MAP_INJECT,
+           TextMapInject { key, value ->
+               tracedRequestBuilder.addHeader(key, value)
+           }
+    val HttpRequest request = tracedRequestBuilder.build()
+    // Dispatch the request and finish the span after.
+   ```
+   * Step 2: Extract the client tracer context from headers in server code.
+
+   ```kotlin
+   val receivedRequest = // Your code here ...
+   val extractedContext = GlobalTracer.get()
+        .extract(
+            Format.Builtin.TEXT_MAP_EXTRACT,
+            TextMapExtract {
+                request.headers()
+                    .toMultimap()
+                    .map { it.key to it.value.joinToString(";") }
+                    .toMap()
+                    .toMutableMap()
+                    .iterator()
+            }
+        )
+   val serverSpan = tracer.buildSpan("<SERVER_SPAN_NAME>").asChildOf(extractedContext).start()      
+
+   ```
+
+**Note**: For code bases using the OkHttp client, Datadog provides the implementation below.
+
+10. (Optional) - Provide additional tags alongside your span.
 
     ```kotlin
     span.setTag("http.url", url)
     ```
-7. (Optional) Attach an error information to a Span:
+11. (Optional) Attach an error information to a span:
 
     If you want to mark a span as having an error, you can do so by logging it using the official OpenTracing tags
 
