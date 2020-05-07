@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -112,6 +113,16 @@ internal class RumEventAssert(actual: RumEvent) :
             .overridingErrorMessage(
                 "Expected log to have userInfo $expected " +
                     "but was ${actual.userInfo}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNetworkInfo(expected: NetworkInfo?): RumEventAssert {
+        assertThat(actual.networkInfo)
+            .overridingErrorMessage(
+                "Expected log to have networkInfo $expected " +
+                    "but was ${actual.networkInfo}"
             )
             .isEqualTo(expected)
         return this

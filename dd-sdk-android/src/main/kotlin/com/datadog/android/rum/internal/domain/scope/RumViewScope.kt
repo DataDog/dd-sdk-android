@@ -167,7 +167,8 @@ internal class RumViewScope(
             RumFeature.timeProvider.getDeviceTimestamp(),
             eventData,
             RumFeature.userInfoProvider.getUserInfo(),
-            updatedAttributes
+            updatedAttributes,
+            RumFeature.networkInfoProvider.getLatestNetworkInfo()
         )
         writer.write(errorEvent)
         errorCount++
@@ -227,7 +228,8 @@ internal class RumViewScope(
             eventTimestamp,
             eventData,
             RumFeature.userInfoProvider.getUserInfo(),
-            attributes
+            attributes,
+            null
         )
 
         writer.write(event)

@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -80,6 +82,9 @@ internal class RumViewScopeTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
+    @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
     @RegexForgery("([a-z]+\\.)+[A-Z][a-z]+")
@@ -93,6 +98,9 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
+
     @LongForgery
     var fakeTimeStamp: Long = 0L
 
@@ -100,12 +108,14 @@ internal class RumViewScopeTest {
     fun `set up`(forge: Forge) {
         RumFeature::class.java.setStaticValue("timeProvider", mockTimeProvider)
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
+        RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
 
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
         whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimeStamp
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -148,6 +158,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -191,6 +202,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -232,6 +244,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -276,6 +289,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -319,6 +333,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -354,6 +369,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -406,6 +422,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -438,6 +455,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -470,6 +488,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasName(fakeName.replace('.', '/'))
@@ -702,6 +721,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(fakeNetworkInfo)
                 .hasAttributes(expectedAttributes)
                 .hasErrorData {
                     hasMessage(message)
@@ -717,6 +737,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasTimestamp(fakeTimeStamp)
                 .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasMeasures {

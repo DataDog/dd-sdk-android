@@ -183,6 +183,7 @@ internal class RumFeatureTest {
         )
 
         assertThat(RumFeature.userInfoProvider).isEqualTo(mockUserInfoProvider)
+        assertThat(RumFeature.networkInfoProvider).isEqualTo(mockNetworkInfoProvider)
     }
 
     @Test
@@ -223,6 +224,7 @@ internal class RumFeatureTest {
         val clientToken = RumFeature.clientToken
         val endpointUrl = RumFeature.endpointUrl
         val userInfoProvider = RumFeature.userInfoProvider
+        val networkInfoProvider = RumFeature.networkInfoProvider
 
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
@@ -252,6 +254,7 @@ internal class RumFeatureTest {
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
         assertThat(userInfoProvider).isSameAs(RumFeature.userInfoProvider)
+        assertThat(networkInfoProvider).isSameAs(RumFeature.networkInfoProvider)
     }
 
     @Test

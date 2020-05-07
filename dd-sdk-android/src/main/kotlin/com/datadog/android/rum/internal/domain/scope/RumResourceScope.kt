@@ -29,6 +29,7 @@ internal class RumResourceScope(
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
     internal val startedNanos: Long = System.nanoTime()
+    private val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
 
@@ -96,7 +97,8 @@ internal class RumResourceScope(
             eventTimestamp,
             eventData,
             RumFeature.userInfoProvider.getUserInfo(),
-            attributes
+            attributes,
+            networkInfo
         )
         writer.write(event)
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
@@ -119,7 +121,8 @@ internal class RumResourceScope(
             eventTimestamp,
             eventData,
             RumFeature.userInfoProvider.getUserInfo(),
-            attributes
+            attributes,
+            networkInfo
         )
         writer.write(event)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)
