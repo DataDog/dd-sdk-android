@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
@@ -106,6 +107,12 @@ internal class DatadogRumMonitor(
     internal fun viewTreeChanged() {
         handleEvent(
             RumRawEvent.ViewTreeChanged()
+        )
+    }
+
+    fun addResourceTiming(key: Any, timing: RumEventData.Resource.Timing) {
+        handleEvent(
+            RumRawEvent.AddResourceTiming(key, timing)
         )
     }
 

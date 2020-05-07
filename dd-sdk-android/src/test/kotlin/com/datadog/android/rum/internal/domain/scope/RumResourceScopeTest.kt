@@ -20,6 +20,7 @@ import com.datadog.android.rum.assertj.RumEventAssert
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
@@ -39,6 +40,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Date
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -165,6 +167,98 @@ internal class RumResourceScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `send Resource on StopResource with timing and notify parent`(
+        @Forgery kind: RumResourceKind,
+        @Forgery timing: RumEventData.Resource.Timing,
+        forge: Forge
+    ) {
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
+        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        Thread.sleep(500)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(expectedAttributes)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasResourceData {
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasTiming(timing)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(resultTiming).isEqualTo(testedScope)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `send Resource on StopResource with unrelated timing event and notify parent`(
+        @Forgery kind: RumResourceKind,
+        @Forgery timing: RumEventData.Resource.Timing,
+        forge: Forge
+    ) {
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.AddResourceTiming(Date(), timing)
+        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        Thread.sleep(500)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasAttributes(expectedAttributes)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasResourceData {
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasTiming(null)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
     }
 

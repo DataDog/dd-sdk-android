@@ -26,6 +26,7 @@ internal class RumResourceScope(
 
     val keyRef: Reference<Any> = WeakReference(key)
     val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    var timing: RumEventData.Resource.Timing? = null
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
     internal val startedNanos: Long = System.nanoTime()
@@ -40,6 +41,8 @@ internal class RumResourceScope(
 
         if (key == null) {
             onStopResource(null, writer)
+        } else if (event is RumRawEvent.AddResourceTiming) {
+            if (key == event.key) timing = event.timing
         } else if (event is RumRawEvent.StopResource) {
             if (key == event.key) onStopResource(event, writer)
         } else if (event is RumRawEvent.StopResourceWithError) {
@@ -91,7 +94,7 @@ internal class RumResourceScope(
             method,
             url,
             System.nanoTime() - startedNanos,
-            null
+            timing
         )
         val event = RumEvent(
             getRumContext(),

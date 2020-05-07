@@ -77,6 +77,16 @@ internal class RumEventDataResourceAssert(actual: RumEventData.Resource) :
         return this
     }
 
+    fun hasTiming(timing: RumEventData.Resource.Timing?): RumEventDataResourceAssert {
+        assertThat(actual.timing)
+            .overridingErrorMessage(
+                "Expected event data to have timing $timing" +
+                    "but was ${actual.timing}"
+            )
+            .isEqualTo(timing)
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L
