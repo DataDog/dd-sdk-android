@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
@@ -89,6 +90,7 @@ internal class RumResourceScope(
         kind: RumResourceKind,
         writer: Writer<RumEvent>
     ) {
+        attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Resource(
             kind,
             method,
@@ -115,6 +117,7 @@ internal class RumResourceScope(
         throwable: Throwable,
         writer: Writer<RumEvent>
     ) {
+        attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Error(
             message,
             origin,

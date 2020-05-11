@@ -12,6 +12,7 @@ import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object GlobalRum {
 
+    internal val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
     internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
     internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
 
@@ -114,6 +116,24 @@ object GlobalRum {
     @JvmStatic
     fun get(): RumMonitor {
         return monitor
+    }
+
+    /**
+     * Adds a global attribute to all future RUM events.
+     * @param key the attribute key (non null)
+     * @param value the attribute value (or null)
+     */
+    @JvmStatic
+    fun addAttribute(key: String, value: Any?) {
+        globalAttributes[key] = value
+    }
+    /**
+     * Removes a global attribute from all future RUM events.
+     * @param key the attribute key (non null)
+     */
+    @JvmStatic
+    fun removeAttribute(key: String) {
+        globalAttributes.remove(key)
     }
 
     // region Internal

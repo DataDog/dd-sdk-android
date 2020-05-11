@@ -129,6 +129,7 @@ internal class RumViewScopeTest {
     fun `tear down`() {
         RumFeature::class.java.setStaticValue("timeProvider", SystemTimeProvider())
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
+        GlobalRum.globalAttributes.clear()
     }
 
     @Test
@@ -236,6 +237,48 @@ internal class RumViewScopeTest {
 
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(expectedAttributes)
+                .hasViewData {
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `stopView sends current stopped view Rum Event with global attributes`(
+        forge: Forge
+    ) {
+        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        GlobalRum.globalAttributes.putAll(attributes)
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
         )
 
@@ -739,6 +782,69 @@ internal class RumViewScopeTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
+                }
+                .hasContext {
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `sends Error and View event on AddError with global attributes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        testedScope.activeActionScope = mockActionScope
+        val randomActionId = UUID.randomUUID()
+        whenever(mockActionScope.actionId).thenReturn(randomActionId)
+        val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
+        mockEvent = RumRawEvent.AddError(message, origin, throwable, emptyMap())
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val expectedErrorAttributes = attributes.toMutableMap().apply {
+            put(RumAttributes.VIEW_URL, testedScope.urlName)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+        }
+        val expectedViewAttributes = attributes.toMutableMap().apply {
+            putAll(fakeAttributes)
+        }
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasAttributes(expectedErrorAttributes)
+                .hasErrorData {
+                    hasMessage(message)
+                    hasOrigin(origin)
+                    hasThrowable(throwable)
+                }
+                .hasContext {
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(expectedViewAttributes)
                 .hasViewData {
                     hasMeasures {
                         hasErrorCount(1)

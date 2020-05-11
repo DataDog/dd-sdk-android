@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -119,6 +120,7 @@ internal class RumActionScope(
         if (sent) return
 
         if (resourcesCount > 0 || viewTreeChangeCount > 0) {
+            attributes.putAll(GlobalRum.globalAttributes)
             val eventData = RumEventData.UserAction(
                 name,
                 actionId,

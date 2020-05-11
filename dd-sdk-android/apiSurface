@@ -132,6 +132,8 @@ object com.datadog.android.rum.GlobalRum
   fun registerIfAbsent(RumMonitor): Boolean
   fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
   fun get(): RumMonitor
+  fun addAttribute(String, Any?)
+  fun removeAttribute(String)
 object com.datadog.android.rum.RumAttributes
   const val APPLICATION_ID: String
   const val APPLICATION_PACKAGE: String
