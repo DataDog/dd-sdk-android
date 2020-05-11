@@ -145,7 +145,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
         whenever(mockRequest.method()) doReturn "GET"
 
@@ -168,7 +168,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn "GET"
 
@@ -191,7 +191,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn "POST"
 
@@ -214,7 +214,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn "PUT"
 
@@ -237,7 +237,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn "DELETE"
 
@@ -260,7 +260,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn fakeMethod
 
@@ -281,7 +281,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
         whenever(mockRequest.method()) doReturn fakeMethod
         val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR
@@ -313,7 +313,7 @@ internal class RumRequestInterceptorTest {
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.body()) doReturn ResponseBody.create(null, body)
+        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
         whenever(mockRequest.method()) doReturn fakeMethod
         val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR

@@ -116,14 +116,8 @@ internal class RumRequestInterceptor : RequestInterceptor {
     }
 
     private fun getBodyLength(response: Response): Long {
-        val body = response.body() ?: return -1L
-        val contentLength = body.contentLength()
-
-        return if (contentLength <= 0L) {
-            body.byteStream().readBytes().size.toLong()
-        } else {
-            contentLength
-        }
+        val body = response.peekBody(MAX_BODY_PEEK)
+        return body.contentLength()
     }
 
     // endregion
@@ -136,5 +130,8 @@ internal class RumRequestInterceptor : RequestInterceptor {
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 
         private val xhrMethods = arrayOf("POST", "PUT", "DELETE")
+
+        // We need to limit this value as the body will be loaded in memory
+        private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L
     }
 }
