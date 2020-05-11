@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.domain.event.RumEventData
 
 internal sealed class RumRawEvent {
 
@@ -37,6 +38,11 @@ internal sealed class RumRawEvent {
         val url: String,
         val method: String,
         val attributes: Map<String, Any?>
+    ) : RumRawEvent()
+
+    internal data class AddResourceTiming(
+        val key: Any,
+        val timing: RumEventData.Resource.Timing
     ) : RumRawEvent()
 
     internal data class StopResource(

@@ -15,8 +15,23 @@ internal sealed class RumEventData(val category: String) {
         val kind: RumResourceKind,
         val method: String,
         val url: String,
-        val durationNanoSeconds: Long
-    ) : RumEventData("resource")
+        val durationNanoSeconds: Long,
+        val timing: Timing?
+    ) : RumEventData("resource") {
+
+        internal data class Timing(
+            val dnsStart: Long,
+            val dnsDuration: Long,
+            val connectStart: Long,
+            val connectDuration: Long,
+            val sslStart: Long,
+            val sslDuration: Long,
+            val firstByteStart: Long,
+            val firstByteDuration: Long,
+            val downloadStart: Long,
+            val downloadDuration: Long
+        )
+    }
 
     internal data class UserAction(
         val name: String,

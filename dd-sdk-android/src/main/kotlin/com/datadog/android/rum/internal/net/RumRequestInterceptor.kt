@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.net
 
 import com.datadog.android.core.internal.net.RequestInterceptor
+import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumResourceKind
@@ -25,9 +26,10 @@ internal class RumRequestInterceptor : RequestInterceptor {
         val url = request.url().toString()
         val method = request.method()
         val traceId = extractTraceId(request)
+        val requestId = identifyRequest(request)
 
         GlobalRum.get().startResource(
-            request,
+            requestId,
             method,
             url,
             if (traceId != null) mapOf(RumAttributes.TRACE_ID to traceId) else emptyMap()
@@ -36,9 +38,10 @@ internal class RumRequestInterceptor : RequestInterceptor {
     }
 
     override fun handleResponse(request: Request, response: Response) {
+        val requestId = identifyRequest(request)
         val method = request.method()
         val mimeType = response.header(HEADER_CT)
-        val statusCode = response.code()
+
         val url = request.url().toString()
         val kind = when {
             method in xhrMethods -> RumResourceKind.XHR
@@ -47,29 +50,19 @@ internal class RumRequestInterceptor : RequestInterceptor {
         }
 
         GlobalRum.get().stopResource(
-            request,
+            requestId,
             kind,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to
-                    (response.body()?.contentLength() ?: 0L)
-            )
+            getResponseAttributes(response)
         )
-        if (statusCode >= 400) {
-            GlobalRum.get().addError(
-                ERROR_MSG_FORMAT.format(method, url),
-                ORIGIN_NETWORK,
-                null,
-                mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
-            )
-        }
+        handleErrorStatus(method, url, response.code())
     }
 
     override fun handleThrowable(request: Request, throwable: Throwable) {
+        val requestId = identifyRequest(request)
         val method = request.method()
         val url = request.url().toString()
         GlobalRum.get().stopResourceWithError(
-            request,
+            requestId,
             ERROR_MSG_FORMAT.format(method, url),
             ORIGIN_NETWORK,
             throwable
@@ -96,6 +89,41 @@ internal class RumRequestInterceptor : RequestInterceptor {
 
         val traceId = (extractedContext as? ExtractedContext)?.traceId?.toString()
         return traceId
+    }
+
+    private fun handleErrorStatus(method: String, url: String, statusCode: Int) {
+        if (statusCode >= 400) {
+            GlobalRum.get().addError(
+                ERROR_MSG_FORMAT.format(method, url),
+                ORIGIN_NETWORK,
+                null,
+                mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+            )
+        }
+    }
+
+    private fun getResponseAttributes(response: Response): Map<String, Any?> {
+        val statusCode = response.code()
+        val length = getBodyLength(response)
+        return if (length > 0L) {
+            mapOf(
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to length
+            )
+        } else {
+            mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+        }
+    }
+
+    private fun getBodyLength(response: Response): Long {
+        val body = response.body() ?: return -1L
+        val contentLength = body.contentLength()
+
+        return if (contentLength <= 0L) {
+            body.byteStream().readBytes().size.toLong()
+        } else {
+            contentLength
+        }
     }
 
     // endregion
