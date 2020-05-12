@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
   ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
   ~ Copyright 2016-Present Datadog, Inc.
@@ -22,5 +21,7 @@
     <string name="button_critical">💥</string>
     <string name="title_sendLog">Send a log</string>
     <string name="start_async_operation">Start Async Operation</string>
-
+    <string name="start_foreground_service">Start foreground service</string>
+    <string name="foreground_service_title">Sample App Logs Foreground Service</string>
+    <string name="foreground_service_desc">Used to send logs from a different process</string>
 </resources>

@@ -5,6 +5,7 @@
  */
 package com.datadog.android.sample.logs
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +15,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
+import com.datadog.android.sample.service.LogsForegroundService
 
 class LogsFragment :
     Fragment(),
@@ -45,6 +47,7 @@ class LogsFragment :
         rootView.findViewById<View>(R.id.log_warning).setOnClickListener(this)
         rootView.findViewById<View>(R.id.log_error).setOnClickListener(this)
         rootView.findViewById<View>(R.id.log_critical).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.start_foreground_service).setOnClickListener(this)
         return rootView
     }
 
@@ -69,6 +72,10 @@ class LogsFragment :
                 "User triggered a critical event",
                 UnsupportedOperationException("Oops")
             )
+            R.id.start_foreground_service -> {
+                val serviceIntent = Intent(context, LogsForegroundService::class.java)
+                activity?.startService(serviceIntent)
+            }
         }
     }
 
