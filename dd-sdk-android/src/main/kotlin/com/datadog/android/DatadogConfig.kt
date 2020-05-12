@@ -290,9 +290,12 @@ private constructor(
 
         /**
          * Sets the automatic view tracking strategy used by the SDK.
-         * By default this is null.
+         * By default no view will be tracked.
          * @param strategy as the [ViewTrackingStrategy]
-         * (e.g. FragmentViewTrackingStrategy, ActivityViewTrackingStrategy)
+         * @see [com.datadog.android.rum.tracking.ActivityViewTrackingStrategy]
+         * @see [com.datadog.android.rum.tracking.FragmentViewTrackingStrategy]
+         * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
+         * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
          */
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
             rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)

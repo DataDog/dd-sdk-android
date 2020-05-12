@@ -63,12 +63,16 @@ class SampleApplication : Application() {
 
     {{% /tab %}}
     {{< /tabs >}}
-    
+
 Depending on your application's architecture, you can choose one of several implementations of `ViewTrackingStrategy`:
- 
+
   - `ActivityViewTrackingStrategy`: Every activity in your application is considered a distinct view.
   - `FragmentViewTrackingStrategy`: Every fragment in your application is considered a distinct view.
   - `NavigationViewTrackingStrategy`: If you use the Android Jetpack Navigation library, this is the recommended strategy. It automatically tracks the navigation destination as a distinct view.
+  - `MixedViewTrackingStrategy`: Every activity or fragment in your application is considered a distinct view. This strategy is a mix between the `ActivityViewTrackingStrategy` and `FragmentViewTrackingStrategy`.
+
+
+  **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can validate which `Fragment` or `Activity` is tracked as a RUM view event by providing a `ComponentPredicate` implementation in the constructor.
 
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -76,7 +80,7 @@ Depending on your application's architecture, you can choose one of several impl
     val monitor = RumMonitor.Builder().build()
     GlobalRum.registerIfAbsent(monitor)
     ```
-   
+
 4. If you want to track your OkHttp requests as resources, you can add the provided [Interceptor][6] as follows:
 
     ```kotlin
