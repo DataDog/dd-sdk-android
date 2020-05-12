@@ -7,11 +7,15 @@
 package com.datadog.android.sample.traces;
 
 import android.os.AsyncTask;
+
 import androidx.lifecycle.ViewModel;
 import com.datadog.android.DatadogEventListener;
 import com.datadog.android.rum.RumInterceptor;
 import com.datadog.android.tracing.TracingInterceptor;
 import com.facebook.stetho.okhttp3.StethoInterceptor;
+
+import java.util.Collections;
+
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.util.GlobalTracer;
@@ -19,7 +23,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
 public class TracesViewModel extends ViewModel {
-
     private Task asyncTask;
 
     private Request request;
@@ -71,7 +74,7 @@ public class TracesViewModel extends ViewModel {
         }
 
         private OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(new TracingInterceptor())
+                .addInterceptor(new TracingInterceptor(Collections.singletonList("shopist.io")))
                 .addInterceptor(new RumInterceptor())
                 .eventListenerFactory(new DatadogEventListener.Factory())
                 .addNetworkInterceptor(new StethoInterceptor())
@@ -148,6 +151,5 @@ public class TracesViewModel extends ViewModel {
             void onDone();
         }
     }
-
 
 }

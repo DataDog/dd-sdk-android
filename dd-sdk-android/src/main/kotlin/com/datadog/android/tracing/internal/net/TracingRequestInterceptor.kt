@@ -25,7 +25,20 @@ import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Request
 import okhttp3.Response
 
-internal class TracingRequestInterceptor : RequestInterceptor {
+internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList()) :
+    RequestInterceptor {
+
+    private val hostRegex: Regex
+
+    init {
+        val regexFormat =
+            if (acceptedHosts.isEmpty()) {
+                ""
+            } else {
+                acceptedHosts.joinToString(separator = "|") { "^(.*\\.)*$it" }
+            }
+        hostRegex = Regex(regexFormat, RegexOption.IGNORE_CASE)
+    }
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
 
@@ -34,8 +47,11 @@ internal class TracingRequestInterceptor : RequestInterceptor {
     // region RequestInterceptor
 
     override fun transformRequest(request: Request): Request {
-        val tracer = resolveTracer()
+        if (!isWhitelisted(request)) {
+            return request
+        }
 
+        val tracer = resolveTracer()
         return if (tracer != null) {
             val span = tracer.buildSpan("okhttp.request").start()
             val url = request.url().toString()
@@ -123,6 +139,11 @@ internal class TracingRequestInterceptor : RequestInterceptor {
         )
 
         return tracedRequestBuilder.build()
+    }
+
+    private fun isWhitelisted(request: Request): Boolean {
+        val host = request.url().host()
+        return host.matches(hostRegex)
     }
 
     // endregion

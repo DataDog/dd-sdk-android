@@ -26,11 +26,15 @@ import okhttp3.OkHttpClient
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new TracingInterceptor())
+ *       .addInterceptor(new TracingInterceptor(listOf("yourdomain.com")))
  *       // Optional RUM integration
  *       .addInterceptor(new RumInterceptor())
  *       .build();
  * ```
+ * @param tracedHosts a list of all the hosts that you want to be automatically tracked
+ * by this interceptor. If no host is provided the interceptor won't trace any OkHttpRequest,
+ * nor propagate tracing information to the backend.
+ *
  */
-class TracingInterceptor :
-    Interceptor by CombinedInterceptor(TracingRequestInterceptor())
+class TracingInterceptor(tracedHosts: List<String>) :
+    Interceptor by CombinedInterceptor(TracingRequestInterceptor(tracedHosts))
