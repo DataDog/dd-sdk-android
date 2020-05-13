@@ -7,6 +7,7 @@
 package com.datadog.android.tracing.internal.net
 
 import com.datadog.android.core.internal.net.RequestInterceptor
+import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.internal.TracesFeature
@@ -58,7 +59,7 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
             span.setTag(Tags.HTTP_URL.key, url)
             span.setTag(Tags.HTTP_METHOD.key, request.method())
             val transformedRequest = updateRequest(request, tracer, span)
-            startedSpans[url] = span
+            startedSpans[identifyRequest(request)] = span
             return transformedRequest
         } else {
             request
@@ -66,9 +67,8 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
     }
 
     override fun handleResponse(request: Request, response: Response) {
-        val url = request.url().toString()
         val statusCode = response.code()
-        val span = startedSpans.remove(url)
+        val span = startedSpans.remove(identifyRequest(request))
         if (span != null) {
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
             if (statusCode >= 400) {
@@ -79,8 +79,7 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
     }
 
     override fun handleThrowable(request: Request, throwable: Throwable) {
-        val url = request.url().toString()
-        val span = startedSpans.remove(url)
+        val span = startedSpans.remove(identifyRequest(request))
         if (span != null) {
             (span as? MutableSpan)?.isError = true
             span.setTag(DDTags.ERROR_MSG, throwable.message)
