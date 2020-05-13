@@ -1,16 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
   ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools"
-          package="com.datadog.android.sample">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.datadog.android.sample">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".SampleApplication"
@@ -25,11 +24,14 @@
             android:name=".NavActivity"
             android:label="@string/activity_nav">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".service.LogsForegroundService"
+            android:process=":logsService" />
     </application>
 
 </manifest>
