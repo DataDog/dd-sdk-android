@@ -7,6 +7,7 @@
 package datadog.opentracing;
 
 import datadog.common.exec.CommonTaskExecutor;
+import datadog.common.exec.CommonTaskExecutor.Task;
 import datadog.opentracing.scopemanager.ContinuableScope;
 import datadog.trace.common.util.Clock;
 import java.io.Closeable;
@@ -16,7 +17,6 @@ import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -263,6 +263,8 @@ public class PendingTrace extends LinkedList<DDSpan> {
     }
   }
 
+  // FIXME: it should be possible to simplify this logic and avoid having SpanCleaner and
+  // SpanCleanerTask
   private static class SpanCleaner implements Runnable, Closeable {
     private static final long CLEAN_FREQUENCY = 1;
 
@@ -270,7 +272,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
         Collections.newSetFromMap(new ConcurrentHashMap<PendingTrace, Boolean>());
 
     public SpanCleaner() {
-      CommonTaskExecutor.INSTANCE.scheduleAtFixedRate(this, 0, CLEAN_FREQUENCY, TimeUnit.SECONDS);
+      CommonTaskExecutor.INSTANCE.scheduleAtFixedRate(
+          SpanCleanerTask.INSTANCE,
+          this,
+          0,
+          CLEAN_FREQUENCY,
+          TimeUnit.SECONDS,
+          "Pending trace cleaner");
     }
 
     @Override
@@ -284,6 +292,19 @@ public class PendingTrace extends LinkedList<DDSpan> {
     public void close() {
       // Make sure that whatever was left over gets cleaned up
       run();
+    }
+  }
+
+  /*
+   * Important to use explicit class to avoid implicit hard references to cleaners from within executor.
+   */
+  private static class SpanCleanerTask implements Task<SpanCleaner> {
+
+    static final SpanCleanerTask INSTANCE = new SpanCleanerTask();
+
+    @Override
+    public void run(final SpanCleaner target) {
+      target.run();
     }
   }
 }

@@ -132,10 +132,10 @@ dependencies {
 }
 
 cloneDependencies {
-
     clone(
         "https://github.com/DataDog/dd-trace-java.git",
         "dd-trace-ot",
+        "v0.50.0",
         listOf(
             "dd-trace-ot.gradle",
             "README.md",
@@ -158,6 +158,7 @@ cloneDependencies {
     clone(
         "https://github.com/DataDog/dd-trace-java.git",
         "dd-trace-api",
+        "v0.50.0",
         listOf(
             "dd-trace-api.gradle",
             "src/main/java/datadog/trace/api/GlobalTracer.java",
@@ -168,8 +169,10 @@ cloneDependencies {
     clone(
         "https://github.com/DataDog/dd-trace-java.git",
         "utils/thread-utils",
+        "v0.50.0",
         listOf(
-            "thread-utils.gradle"
+            "thread-utils.gradle",
+            "src/test/"
         )
     )
 }
