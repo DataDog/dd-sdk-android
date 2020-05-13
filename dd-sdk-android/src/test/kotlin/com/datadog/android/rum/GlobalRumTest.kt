@@ -9,8 +9,12 @@ package com.datadog.android.rum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.Exception
+import java.util.concurrent.CountDownLatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -66,5 +70,130 @@ internal class GlobalRumTest {
 
         assertThat(GlobalRum.get())
             .isSameAs(monitor)
+    }
+
+    @Test
+    fun `add global attributes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ASCII) value: String
+    ) {
+        GlobalRum.addAttribute(key, value)
+
+        assertThat(GlobalRum.globalAttributes)
+            .containsEntry(key, value)
+    }
+
+    @Test
+    fun `overwrite global attributes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ASCII) value: String,
+        @StringForgery(StringForgeryType.ASCII) value2: String
+    ) {
+        GlobalRum.addAttribute(key, value)
+        GlobalRum.addAttribute(key, value2)
+
+        assertThat(GlobalRum.globalAttributes)
+            .containsEntry(key, value2)
+    }
+
+    @Test
+    fun `remove global attributes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ASCII) value: String
+    ) {
+        GlobalRum.addAttribute(key, value)
+        assertThat(GlobalRum.globalAttributes)
+            .containsEntry(key, value)
+
+        GlobalRum.removeAttribute(key)
+        assertThat(GlobalRum.globalAttributes)
+            .doesNotContainKey(key)
+    }
+
+    @Test
+    fun `add global attributes (multithreaded)`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+    ) {
+        var errors = 0
+        val countDownLatch = CountDownLatch(2)
+        val threadAdd = Thread {
+            try {
+                for (i in 0..128) {
+                    GlobalRum.addAttribute("$key$i", "value-$i")
+                }
+            } catch (e: Exception) {
+                errors++
+            } finally {
+                countDownLatch.countDown()
+            }
+        }
+
+        val threadRead = Thread {
+            try {
+                for (i in 0..128) {
+                    val iterator = GlobalRum.globalAttributes.iterator()
+                    while (iterator.hasNext()) {
+                        val entry = iterator.next()
+                        println("${entry.key} = ${entry.value}")
+                    }
+                }
+            } catch (e: Exception) {
+                errors++
+            } finally {
+                countDownLatch.countDown()
+            }
+        }
+
+        threadRead.start()
+        threadAdd.start()
+
+        countDownLatch.await()
+
+        assertThat(errors).isEqualTo(0)
+    }
+
+    @Test
+    fun `remove global attributes (multithreaded)`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+    ) {
+        for (i in 0..128) {
+            GlobalRum.addAttribute("$key$i", "value-$i")
+        }
+        var errors = 0
+        val countDownLatch = CountDownLatch(2)
+        val threadAdd = Thread {
+            try {
+                for (i in 0..128) {
+                    GlobalRum.removeAttribute("$key$i")
+                }
+            } catch (e: Exception) {
+                errors++
+            } finally {
+                countDownLatch.countDown()
+            }
+        }
+
+        val threadRead = Thread {
+            try {
+                for (i in 0..128) {
+                    val iterator = GlobalRum.globalAttributes.iterator()
+                    while (iterator.hasNext()) {
+                        val entry = iterator.next()
+                        println("${entry.key} = ${entry.value}")
+                    }
+                }
+            } catch (e: Exception) {
+                errors++
+            } finally {
+                countDownLatch.countDown()
+            }
+        }
+
+        threadRead.start()
+        threadAdd.start()
+
+        countDownLatch.await()
+
+        assertThat(errors).isEqualTo(0)
     }
 }

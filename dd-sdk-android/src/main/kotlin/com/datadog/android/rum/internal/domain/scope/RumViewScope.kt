@@ -46,6 +46,7 @@ internal class RumViewScope(
 
     init {
         GlobalRum.updateRumContext(getRumContext())
+        attributes.putAll(GlobalRum.globalAttributes)
     }
 
     // region RumScope
@@ -143,7 +144,7 @@ internal class RumViewScope(
 
         val updatedEvent = event.copy(
             attributes =
-            addExtraAttibutes(event.attributes)
+            addExtraAttributes(event.attributes)
         )
         activeResourceScopes.put(
             WeakReference(event.key),
@@ -158,7 +159,7 @@ internal class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val updatedAttributes = addExtraAttibutes(event.attributes)
+        val updatedAttributes = addExtraAttributes(event.attributes)
         val eventData = RumEventData.Error(
             event.message, event.origin, event.throwable
         )
@@ -211,6 +212,7 @@ internal class RumViewScope(
     }
 
     private fun sendViewUpdate(writer: Writer<RumEvent>) {
+        attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = System.nanoTime() - startedNanos
         val eventData = RumEventData.View(
@@ -235,7 +237,7 @@ internal class RumViewScope(
         writer.write(event)
     }
 
-    private fun addExtraAttibutes(
+    private fun addExtraAttributes(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
         val actionId = (activeActionScope as? RumActionScope)?.actionId
@@ -245,6 +247,7 @@ internal class RumViewScope(
                     put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
                 }
                 put(RumAttributes.VIEW_URL, urlName)
+                putAll(GlobalRum.globalAttributes)
             }
     }
 

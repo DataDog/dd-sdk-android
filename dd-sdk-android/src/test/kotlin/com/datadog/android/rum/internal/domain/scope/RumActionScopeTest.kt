@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert
 import com.datadog.android.rum.internal.RumFeature
@@ -110,6 +111,7 @@ internal class RumActionScopeTest {
     fun `tear down`() {
         RumFeature::class.java.setStaticValue("timeProvider", SystemTimeProvider())
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
+        GlobalRum.globalAttributes.clear()
     }
 
     @Test
@@ -288,6 +290,46 @@ internal class RumActionScopeTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
+                .hasUserActionData {
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                }
+                .hasContext {
+                    hasViewId(fakeParentContext.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action on random event with some viewTreeChanges and global attributes`(
+        @IntForgery(1) count: Int,
+        forge: Forge
+    ) {
+        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        testedScope.viewTreeChangeCount = count
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(expectedAttributes)
                 .hasUserActionData {
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
