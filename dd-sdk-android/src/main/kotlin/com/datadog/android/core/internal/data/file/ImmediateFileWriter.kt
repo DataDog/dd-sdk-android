@@ -74,12 +74,11 @@ internal class ImmediateFileWriter<T : Any>(
         }
     }
 
-    @Suppress("NestedBlockDepth")
     private fun writeDataToFile(file: File, dataAsByteArray: ByteArray) {
         try {
             val outputStream = FileOutputStream(file, true)
             outputStream.use { stream ->
-                tryToLockAndWriteBytes(stream, file, dataAsByteArray)
+                lockFileAndWriteData(stream, file, dataAsByteArray)
             }
         } catch (e: IllegalStateException) {
             sdkLogger.e(
@@ -92,7 +91,7 @@ internal class ImmediateFileWriter<T : Any>(
         }
     }
 
-    private fun tryToLockAndWriteBytes(
+    private fun lockFileAndWriteData(
         stream: FileOutputStream,
         file: File,
         dataAsByteArray: ByteArray

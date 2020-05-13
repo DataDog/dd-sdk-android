@@ -175,7 +175,9 @@ internal class ImmediateFileWriterTest {
     }
 
     @Test
-    fun `does nothing if the file is locked from same JVM`(forge: Forge) {
+    fun `if the file is locked from same JVM(not our case) will handle correctly the exception`(
+        forge: Forge
+    ) {
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(rootDir, fileNameToWriteTo)

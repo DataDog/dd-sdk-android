@@ -9,6 +9,7 @@ package com.datadog.android.tracing.internal
 import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -99,13 +100,18 @@ internal object TracesFeature {
     ) {
         uploader = TracesOkHttpUploader(endpointUrl, clientToken, okHttpClient)
 
-        dataUploadScheduler = DataUploadScheduler(
-            persistenceStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
-        )
+        dataUploadScheduler = if (CoreFeature.isMainProcess) {
+            uploader = TracesOkHttpUploader(endpointUrl, clientToken, okHttpClient)
+            DataUploadScheduler(
+                persistenceStrategy.getReader(),
+                uploader,
+                networkInfoProvider,
+                systemInfoProvider,
+                dataUploadThreadPoolExecutor
+            )
+        } else {
+            NoOpUploadScheduler()
+        }
         dataUploadScheduler.startScheduling()
     }
 

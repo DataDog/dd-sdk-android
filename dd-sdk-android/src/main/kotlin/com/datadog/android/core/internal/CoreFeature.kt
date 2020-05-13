@@ -6,8 +6,11 @@
 
 package com.datadog.android.core.internal
 
+import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
+import android.os.Process
+import androidx.core.content.ContextCompat.getSystemService
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
@@ -58,6 +61,7 @@ internal object CoreFeature {
     internal var packageName: String = ""
     internal var packageVersion: String = ""
     internal var serviceName: String = ""
+    internal var isMainProcess: Boolean = true
 
     internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
     internal lateinit var dataPersistenceExecutorService: ExecutorService
@@ -72,6 +76,7 @@ internal object CoreFeature {
 
         serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
+        isMainProcess = resolveIsMainProcess(appContext)
 
         readApplicationInformation(appContext)
 
@@ -161,6 +166,19 @@ internal object CoreFeature {
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .build()
+    }
+
+    private fun resolveIsMainProcess(appContext: Context): Boolean {
+        val currentProcessId = Process.myPid()
+        val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val currentProcess = manager?.runningAppProcesses?.firstOrNull {
+            it.pid == currentProcessId
+        }
+        return if (currentProcess == null) {
+            true
+        } else {
+            appContext.packageName == currentProcess.processName
+        }
     }
 
     // endregion
