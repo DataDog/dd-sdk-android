@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import okhttp3.Request
+import okhttp3.internal.Util
 
 /**
  * Generates an identifier to uniquely track requests.
@@ -15,5 +16,11 @@ internal fun identifyRequest(request: Request): String {
     val method = request.method()
     val url = request.url()
     val body = request.body()
-    return "$method•$url•${body?.contentLength()}•${body?.contentType()}"
+    return if (body == null || body == Util.EMPTY_REQUEST) {
+        "$method•$url"
+    } else {
+        val contentLength = body.contentLength()
+        val contentType = body.contentType()
+        "$method•$url•$contentLength•$contentType"
+    }
 }
