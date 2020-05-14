@@ -56,7 +56,13 @@ open class GitCloneDependenciesTask : DefaultTask() {
         target: File
     ) {
         println(" --- Cloning ${dependency.originRepository} into ${target.absolutePath}")
-        project.execShell("git", "clone", "--depth", "1", dependency.originRepository, target.absolutePath)
+        project.execShell(
+            "git", "clone",
+            "--branch", dependency.originRef,
+            "--depth", "1",
+            dependency.originRepository,
+            target.absolutePath
+        )
         println(" --- Cloned")
     }
 

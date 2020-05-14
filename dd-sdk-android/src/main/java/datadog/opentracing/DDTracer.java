@@ -40,7 +40,6 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /** DDTracer makes it easy to send traces and span to DD using the OpenTracing API. */
 public class DDTracer implements io.opentracing.Tracer, Closeable, datadog.trace.api.Tracer {

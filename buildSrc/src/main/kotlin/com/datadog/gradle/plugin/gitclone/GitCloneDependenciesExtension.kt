@@ -11,7 +11,8 @@ open class GitCloneDependenciesExtension {
     internal class Dependency(
         var originRepository: String,
         var originSubFolder: String,
-        var excludedPrefixes: List<String>
+        var excludedPrefixes: List<String>,
+        var originRef: String
     )
 
     internal val dependencies: MutableList<Dependency> = mutableListOf()
@@ -19,10 +20,11 @@ open class GitCloneDependenciesExtension {
     fun clone(
         repo: String,
         subFolder: String = "",
+        ref: String = "master",
         excludedPrefixes: List<String> = emptyList()
     ) {
         dependencies.add(
-            Dependency(repo, subFolder, excludedPrefixes)
+            Dependency(repo, subFolder, excludedPrefixes, ref)
         )
     }
 }
