@@ -37,6 +37,7 @@ inline fun <reified T : Context> mockContext(
     mockPackageInfo.versionName = versionName
     mockPackageInfo.versionCode = versionCode
     whenever(mockPackageMgr.getPackageInfo(packageName, 0)) doReturn mockPackageInfo
+    whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()
 
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr

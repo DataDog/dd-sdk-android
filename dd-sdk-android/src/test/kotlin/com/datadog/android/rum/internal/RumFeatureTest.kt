@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -100,6 +101,7 @@ internal class RumFeatureTest {
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(rootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
+        CoreFeature.isMainProcess = true
     }
 
     @AfterEach
@@ -339,5 +341,26 @@ internal class RumFeatureTest {
         verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
             this is ViewTreeChangeTrackingStrategy
         })
+    }
+
+    @Test
+    fun `will use a NoOpUploadScheduler if this is not the application main process`() {
+        // given
+        CoreFeature.isMainProcess = false
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+
+        // then
+        assertThat(RumFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 }

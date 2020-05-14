@@ -12,10 +12,12 @@ import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.use
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.lang.IllegalStateException
 
 internal class ImmediateFileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
@@ -73,12 +75,32 @@ internal class ImmediateFileWriter<T : Any>(
     }
 
     private fun writeDataToFile(file: File, dataAsByteArray: ByteArray) {
-        val fileSize = file.length()
-        FileOutputStream(file, true).use {
-            if (fileSize > 0) {
-                it.write(separatorBytes)
+        try {
+            val outputStream = FileOutputStream(file, true)
+            outputStream.use { stream ->
+                lockFileAndWriteData(stream, file, dataAsByteArray)
             }
-            it.write(dataAsByteArray)
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(
+                "Exception when trying to lock the file: [${file.canonicalPath}] ", e
+            )
+        } catch (e: IOException) {
+            sdkLogger.e(
+                "Exception when trying to write data to: [${file.canonicalPath}] ", e
+            )
+        }
+    }
+
+    private fun lockFileAndWriteData(
+        stream: FileOutputStream,
+        file: File,
+        dataAsByteArray: ByteArray
+    ) {
+        stream.channel.lock().use {
+            if (file.length() > 0) {
+                stream.write(separatorBytes)
+            }
+            stream.write(dataAsByteArray)
         }
     }
 

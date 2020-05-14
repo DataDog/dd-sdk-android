@@ -9,6 +9,7 @@ package com.datadog.android.log.internal
 import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -107,15 +108,18 @@ internal object LogsFeature {
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
-        uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-
-        dataUploadScheduler = DataUploadScheduler(
-            persistenceStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
-        )
+        dataUploadScheduler = if (CoreFeature.isMainProcess) {
+            uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
+            DataUploadScheduler(
+                persistenceStrategy.getReader(),
+                uploader,
+                networkInfoProvider,
+                systemInfoProvider,
+                dataUploadThreadPoolExecutor
+            )
+        } else {
+            NoOpUploadScheduler()
+        }
         dataUploadScheduler.startScheduling()
     }
 

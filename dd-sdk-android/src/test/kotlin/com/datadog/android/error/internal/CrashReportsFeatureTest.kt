@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -55,14 +56,19 @@ internal class CrashReportsFeatureTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
     @Mock
     lateinit var mockOkHttpClient: OkHttpClient
+
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 
@@ -76,6 +82,7 @@ internal class CrashReportsFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        CoreFeature.isMainProcess = true
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
@@ -244,5 +251,27 @@ internal class CrashReportsFeatureTest {
         assertThat(uploader).isSameAs(uploader2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
+    }
+
+    @Test
+    fun `will use a NoOpUploadScheduler if this is not the application main process`() {
+        // given
+        CoreFeature.isMainProcess = false
+
+        // when
+        CrashReportsFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            mockTimeProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
+        )
+
+        // then
+        assertThat(CrashReportsFeature.dataUploadScheduler)
+            .isInstanceOf(NoOpUploadScheduler::class.java)
     }
 }

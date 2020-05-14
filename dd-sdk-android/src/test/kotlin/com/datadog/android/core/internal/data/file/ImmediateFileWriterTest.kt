@@ -23,6 +23,8 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -45,10 +47,13 @@ import org.mockito.quality.Strictness
 internal class ImmediateFileWriterTest {
 
     lateinit var underTest: ImmediateFileWriter<String>
+
     @Mock
     lateinit var mockedSerializer: Serializer<String>
+
     @Mock
     lateinit var mockedOrchestrator: Orchestrator
+
     @Mock
     lateinit var mockDeferredHandler: AndroidDeferredHandler
 
@@ -167,5 +172,58 @@ internal class ImmediateFileWriterTest {
 
         // then
         verifyZeroInteractions(mockDeferredHandler)
+    }
+
+    @Test
+    fun `if the file is locked from same JVM(not our case) will handle correctly the exception`(
+        forge: Forge
+    ) {
+        val models = forge.aList { anAlphabeticalString() }
+        val fileNameToWriteTo = forge.anAlphaNumericalString()
+        val file = File(rootDir, fileNameToWriteTo)
+        file.createNewFile()
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+
+        val outputStream = file.outputStream()
+        val lock = outputStream.channel.lock()
+        try {
+            models.forEach {
+                underTest.write(it)
+            }
+        } finally {
+            lock.release()
+            outputStream.close()
+        }
+
+        assertThat(file.readText())
+            .isEmpty()
+    }
+
+    @Test
+    fun `handles well the file locking when accessed from multiple threads`(forge: Forge) {
+        val models = forge.aList(size = 10) { anAlphabeticalString() }
+        val fileNameToWriteTo = forge.anAlphaNumericalString()
+        val file = File(rootDir, fileNameToWriteTo)
+        file.createNewFile()
+        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        val countDownLatch = CountDownLatch(2)
+
+        Thread {
+            models.take(5).forEach {
+                underTest.write(it)
+            }
+            countDownLatch.countDown()
+        }.start()
+
+        Thread {
+            models.takeLast(5).forEach {
+                underTest.write(it)
+            }
+            countDownLatch.countDown()
+        }.start()
+
+        countDownLatch.await(4, TimeUnit.SECONDS)
+        assertThat(file.readText().split(",").size)
+            .isEqualTo(models.size)
     }
 }

@@ -9,6 +9,8 @@ package com.datadog.android.error.internal
 import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
@@ -106,14 +108,18 @@ internal object CrashReportsFeature {
         systemInfoProvider: SystemInfoProvider,
         scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
-        uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-        dataUploadScheduler = com.datadog.android.core.internal.data.upload.DataUploadScheduler(
-            persistenceStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemInfoProvider,
-            scheduledThreadPoolExecutor
-        )
+        dataUploadScheduler = if (CoreFeature.isMainProcess) {
+            uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
+            DataUploadScheduler(
+                persistenceStrategy.getReader(),
+                uploader,
+                networkInfoProvider,
+                systemInfoProvider,
+                scheduledThreadPoolExecutor
+            )
+        } else {
+            NoOpUploadScheduler()
+        }
         dataUploadScheduler.startScheduling()
     }
 

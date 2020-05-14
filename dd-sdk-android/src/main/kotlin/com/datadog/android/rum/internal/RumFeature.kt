@@ -140,15 +140,18 @@ internal object RumFeature {
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
-        uploader = RumOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-
-        dataUploadScheduler = DataUploadScheduler(
-            persistenceStrategy.getReader(),
-            uploader,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
-        )
+        dataUploadScheduler = if (CoreFeature.isMainProcess) {
+            uploader = RumOkHttpUploader(endpointUrl, clientToken, okHttpClient)
+            DataUploadScheduler(
+                persistenceStrategy.getReader(),
+                uploader,
+                networkInfoProvider,
+                systemInfoProvider,
+                dataUploadThreadPoolExecutor
+            )
+        } else {
+            NoOpUploadScheduler()
+        }
         dataUploadScheduler.startScheduling()
     }
 

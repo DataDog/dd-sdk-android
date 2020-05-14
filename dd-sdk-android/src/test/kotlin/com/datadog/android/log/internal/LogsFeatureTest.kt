@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -75,6 +76,7 @@ internal class LogsFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        CoreFeature.isMainProcess = true
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
@@ -192,5 +194,25 @@ internal class LogsFeatureTest {
         assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
+    }
+
+    @Test
+    fun `will use a NoOpUploadScheduler if this is not the application main process`() {
+        // given
+        CoreFeature.isMainProcess = false
+
+        // when
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+
+        // then
+        assertThat(LogsFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 }
