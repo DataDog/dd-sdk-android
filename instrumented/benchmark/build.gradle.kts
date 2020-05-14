@@ -106,7 +106,7 @@ reviewBenchmark {
     // Global Benchmarks
     addThreshold(
         "benchmark_initialize",
-        TimeUnit.MILLISECONDS.toNanos(8)
+        8
     )
 
     // Logs Benchmarks
@@ -135,10 +135,10 @@ reviewBenchmark {
         1
     )
     addThreshold(
-        "benchmark_creating_heavy_load_of_spans", 400
+        "benchmark_creating_heavy_load_of_spans", 300
     )
     addThreshold(
-        "benchmark_creating_medium_load_of_spans", 250
+        "benchmark_creating_medium_load_of_spans", 150
     )
 
     // Logs I/O Benchmarks
@@ -160,6 +160,36 @@ reviewBenchmark {
         "benchmark_clicking_on_recycler_view_item_tracker_attached",
         "benchmark_clicking_on_recycler_view_item_tracker_not_attached",
         250
+    )
+
+    // RUM - Public API Benchmarks
+
+    addThreshold(
+        "benchmark_start_view", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_stop_view", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_start_resource", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_stop_resource", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_start_action", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_stop_action", 1 // 1 Millisecond
+    )
+
+    addThreshold(
+        "benchmark_add_error", 1 // 1 Millisecond
     )
 
     // those values are very big due to Bitrise emulator which is too slow. We will need to see

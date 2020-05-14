@@ -39,7 +39,10 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
     @InputDirectory
     fun getInputDir(): File {
         val outputsDir = File(buildDir, "outputs")
-        return File(outputsDir, "connected_android_test_additional_output")
+        return File(
+            outputsDir,
+            "connected_android_test_additional_output/debugAndroidTest/connected"
+        )
     }
 
     // endregion
@@ -64,6 +67,10 @@ open class ReviewBenchmarkResultsTask : DefaultTask() {
             // then verify the strategy
             benchmarksResults.forEach {
                 val strategy = strategies[it.key]
+                println(
+                    "Reviewing benchmark result: ${it.key} with" +
+                        " strategy: ${strategy?.javaClass?.simpleName}"
+                )
                 checkNotNull(strategy) {
                     System.err.println("No benchmarking strategy added for test \"${it.key}\"")
                 }

@@ -19,6 +19,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.sdk.benchmark.R
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.createInstance
@@ -70,9 +71,11 @@ internal class RumGesturesTrackerBenchmark {
             .useCustomTracesEndpoint(fakeEndpoint)
             .build()
         Datadog.initialize(context, config)
-
+        val viewAttributesProvider: ViewAttributesProvider =
+            createInstance("com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider") as ViewAttributesProvider
         datadogGesturesTracker = createInstance(
-            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker"
+            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker",
+            arrayOf(viewAttributesProvider)
         )
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
@@ -154,11 +157,19 @@ internal class RumGesturesTrackerBenchmark {
 
     private fun benchmarkWithTrackerAttached(toExecute: () -> Unit) {
         activityTestRule.runOnUiThread {
-            datadogGesturesTracker.invokeGenericMethod("startTracking", activityTestRule.activity)
+            datadogGesturesTracker.invokeGenericMethod(
+                "startTracking",
+                activityTestRule.activity.window,
+                activityTestRule.activity
+            )
         }
         toExecute()
         activityTestRule.runOnUiThread {
-            datadogGesturesTracker.invokeGenericMethod("stopTracking", activityTestRule.activity)
+            datadogGesturesTracker.invokeGenericMethod(
+                "stopTracking",
+                activityTestRule.activity.window,
+                activityTestRule.activity
+            )
         }
     }
     // endregion

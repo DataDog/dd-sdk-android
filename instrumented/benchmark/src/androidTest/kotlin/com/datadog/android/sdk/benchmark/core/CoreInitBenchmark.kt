@@ -12,7 +12,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.tools.unit.invokeMethod
+import java.util.UUID
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,10 +28,13 @@ class CoreInitBenchmark {
     fun benchmark_initialize() {
         val context = InstrumentationRegistry.getInstrumentation().context
         val config = DatadogConfig
-            .Builder("NO_TOKEN", "benchmark")
+            .Builder("NO_TOKEN", "benchmark", UUID.randomUUID().toString())
             .setTracesEnabled(true)
             .setLogsEnabled(true)
             .setCrashReportsEnabled(true)
+            .trackGestures()
+            .useViewTrackingStrategy(MixedViewTrackingStrategy(true))
+            .setRumEnabled(true)
             .build()
 
         benchmark.measureRepeated {
