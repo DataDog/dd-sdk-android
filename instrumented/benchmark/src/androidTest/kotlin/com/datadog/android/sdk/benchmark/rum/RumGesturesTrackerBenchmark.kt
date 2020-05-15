@@ -71,10 +71,14 @@ internal class RumGesturesTrackerBenchmark {
             .useCustomTracesEndpoint(fakeEndpoint)
             .build()
         Datadog.initialize(context, config)
+        val attrsProviderClassName =
+            "com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider"
         val viewAttributesProvider: ViewAttributesProvider =
-            createInstance("com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider") as ViewAttributesProvider
+            createInstance(attrsProviderClassName) as ViewAttributesProvider
+        val gesturesTrackerClassName =
+            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker"
         datadogGesturesTracker = createInstance(
-            "com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker",
+            gesturesTrackerClassName,
             arrayOf(viewAttributesProvider)
         )
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

@@ -146,16 +146,16 @@ internal class AndroidTracerTest {
         val span = tracer.buildSpan(operationName).start() as DDSpan
         val meta = span.meta
         assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isEqualTo(rumContext.applicationId.toString())
+            .isEqualTo(rumContext.applicationId)
         assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isEqualTo(rumContext.sessionId.toString())
+            .isEqualTo(rumContext.sessionId)
         val viewId = rumContext.viewId
         if (viewId == null) {
             assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID))
                 .isFalse()
         } else {
             assertThat(meta[LogAttributes.RUM_VIEW_ID])
-                .isEqualTo(viewId.toString())
+                .isEqualTo(viewId)
         }
     }
 

@@ -35,7 +35,6 @@ object GlobalRum {
     internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
 
     internal var sessionInactivityNanos = DEFAULT_SESSION_INACTIVITY_NS
-    internal var sessionMaxDurationNanos = DEFAULT_SESSION_MAX_DURATION_NS
 
     internal val sessionStartNs = AtomicLong(0L)
     internal val lastUserInteractionNs = AtomicLong(0L)
@@ -127,6 +126,7 @@ object GlobalRum {
     fun addAttribute(key: String, value: Any?) {
         globalAttributes[key] = value
     }
+
     /**
      * Removes a global attribute from all future RUM events.
      * @param key the attribute key (non null)

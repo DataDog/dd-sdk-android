@@ -7,7 +7,6 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.internal.domain.RumContext
-import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -17,7 +16,7 @@ internal class RumContextAssert(actual: RumContext) :
         RumContextAssert::class.java
     ) {
 
-    fun hasApplicationId(expected: UUID): RumContextAssert {
+    fun hasApplicationId(expected: String): RumContextAssert {
         assertThat(actual.applicationId)
             .overridingErrorMessage(
                 "Expected context to have applicationId $expected but was ${actual.applicationId}"
@@ -26,7 +25,7 @@ internal class RumContextAssert(actual: RumContext) :
         return this
     }
 
-    fun hasViewId(expected: UUID?): RumContextAssert {
+    fun hasViewId(expected: String?): RumContextAssert {
         assertThat(actual.viewId)
             .overridingErrorMessage(
                 "Expected context to have viewId $expected but was ${actual.viewId}"
@@ -35,7 +34,7 @@ internal class RumContextAssert(actual: RumContext) :
         return this
     }
 
-    fun hasSessionId(expected: UUID): RumContextAssert {
+    fun hasSessionId(expected: String): RumContextAssert {
         assertThat(actual.sessionId)
             .overridingErrorMessage(
                 "Expected context to have sessionId $expected but was ${actual.sessionId}"

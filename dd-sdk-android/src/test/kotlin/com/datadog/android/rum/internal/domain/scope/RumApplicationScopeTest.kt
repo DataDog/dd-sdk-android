@@ -62,7 +62,7 @@ internal class RumApplicationScopeTest {
     fun `always returns the same applicationId`() {
         val context = testedScope.getRumContext()
 
-        assertThat(context.applicationId).isEqualTo(fakeApplicationId)
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
     }
 
     @Test

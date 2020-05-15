@@ -22,7 +22,7 @@ internal class RumSessionScope(
 
     internal val activeChildrenScopes = mutableListOf<RumScope>()
 
-    internal var sessionId = UUID(0, 0)
+    internal var sessionId = NULL_SESSION_ID
     internal val sessionStartNs = AtomicLong(System.nanoTime())
     internal val lastUserInteractionNs = AtomicLong(0L)
 
@@ -37,7 +37,7 @@ internal class RumSessionScope(
         writer: Writer<RumEvent>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
-            sessionId = UUID(0, 0)
+            sessionId = NULL_SESSION_ID
         }
         updateSessionIdIfNeeded()
 
@@ -68,7 +68,7 @@ internal class RumSessionScope(
     @Synchronized
     private fun updateSessionIdIfNeeded() {
         val nanoTime = System.nanoTime()
-        val isFirstSession = sessionId == UUID(0, 0)
+        val isFirstSession = sessionId == NULL_SESSION_ID
         val sessionLength = nanoTime - sessionStartNs.get()
         val duration = nanoTime - lastUserInteractionNs.get()
         val isInactiveSession = duration >= sessionInactivityNanos
@@ -76,7 +76,7 @@ internal class RumSessionScope(
 
         if (isFirstSession || isInactiveSession || isLongSession) {
             sessionStartNs.set(nanoTime)
-            sessionId = UUID.randomUUID()
+            sessionId = UUID.randomUUID().toString()
         }
 
         lastUserInteractionNs.set(nanoTime)
@@ -87,5 +87,6 @@ internal class RumSessionScope(
     companion object {
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+        internal val NULL_SESSION_ID = UUID(0, 0).toString()
     }
 }
