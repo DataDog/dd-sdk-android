@@ -74,4 +74,6 @@ internal sealed class RumRawEvent {
     internal class ViewTreeChanged : RumRawEvent()
 
     internal class ResetSession : RumRawEvent()
+
+    internal class KeepAlive : RumRawEvent()
 }

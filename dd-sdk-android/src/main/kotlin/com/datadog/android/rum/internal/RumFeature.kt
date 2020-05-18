@@ -30,6 +30,7 @@ import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -123,6 +124,8 @@ internal object RumFeature {
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             envName = ""
+
+            (GlobalRum.get() as? DatadogRumMonitor)?.stopKeepAliveCallback()
             // reset rum monitor to NoOp and reset the flag
             GlobalRum.isRegistered.set(false)
             GlobalRum.registerIfAbsent(NoOpRumMonitor())

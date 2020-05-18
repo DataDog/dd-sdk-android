@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -16,9 +17,16 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
@@ -55,6 +63,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    @Mock
+    lateinit var mockHandler: Handler
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -63,7 +74,7 @@ internal class DatadogRumMonitorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
-        testedMonitor = DatadogRumMonitor(fakeApplicationId, mockWriter)
+        testedMonitor = DatadogRumMonitor(fakeApplicationId, mockWriter, mockHandler)
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
 
@@ -86,6 +97,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.name).isEqualTo(name)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -101,6 +113,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -117,6 +130,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -133,6 +147,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isTrue()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -148,6 +163,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -167,6 +183,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -184,6 +201,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -204,6 +222,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.origin).isEqualTo(origin)
             assertThat(event.throwable).isEqualTo(throwable)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -223,6 +242,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -234,6 +254,7 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue).isInstanceOf(RumRawEvent.ViewTreeChanged::class.java)
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -248,5 +269,53 @@ internal class DatadogRumMonitorTest {
 
             assertThat(firstValue).isEqualTo(RumRawEvent.AddResourceTiming(key, timing))
         }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `sends keep alive event to rootScope regularly`() {
+        argumentCaptor<Runnable> {
+            inOrder(mockScope, mockWriter, mockHandler) {
+                verify(mockHandler).postDelayed(capture(), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
+                verifyZeroInteractions(mockScope)
+                val runnable = firstValue
+                runnable.run()
+                verify(mockHandler).removeCallbacks(same(runnable))
+                verify(mockScope).handleEvent(
+                    argThat { this is RumRawEvent.KeepAlive },
+                    same(mockWriter)
+                )
+                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
+                verifyNoMoreInteractions()
+            }
+        }
+    }
+
+    @Test
+    fun `delays keep alive runnable on other event`() {
+        val mockEvent: RumRawEvent = mock()
+        val runnable = testedMonitor.keepAliveRunnable
+
+        testedMonitor.handleEvent(mockEvent)
+
+        argumentCaptor<Runnable> {
+            inOrder(mockScope, mockWriter, mockHandler) {
+                verify(mockHandler).removeCallbacks(same(runnable))
+                verify(mockScope).handleEvent(same(mockEvent), same(mockWriter))
+                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
+                verifyNoMoreInteractions()
+            }
+        }
+    }
+
+    @Test
+    fun `removes callback from handler on stopKeepAliveCallback`() {
+        // initial post
+        verify(mockHandler).postDelayed(any(), any())
+
+        testedMonitor.stopKeepAliveCallback()
+
+        verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
+        verifyNoMoreInteractions(mockHandler, mockWriter, mockScope)
     }
 }
