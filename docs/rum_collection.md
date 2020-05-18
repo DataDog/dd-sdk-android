@@ -94,8 +94,20 @@ Depending on your application's architecture, you can choose one of several impl
     This creates RUM resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error).
 
     **Note**: If you use multiple Interceptors, this one must be called first.
-    
-5. (Optionnal) If you want to get timing information in Resources (such as time to first byte, DNS resolution, …), you can add the provided [Event][6] listener as follows:
+
+4. If you want to manually track your view you can call the `RumMonitor#startView` when the view becomes visible and interactive (equivalent with the lifecycle event `onResume`) followed by `RumMonitor#stopView` when the view is no longer visible(equivalent with the lifecycle event `onPause`) as follows:
+
+   ```kotlin
+      fun onResume(){
+        GlobalRum.get().startView(viewKey, viewName, viewAttributes)        
+      }
+      ...
+      fun onPause(){
+        GlobalRum.get().stopView(viewKey, viewAttributes)        
+      }
+   ```
+
+6. (Optionnal) If you want to get timing information in Resources (such as time to first byte, DNS resolution, …), you can add the provided [Event][6] listener as follows:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
