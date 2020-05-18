@@ -483,6 +483,30 @@ internal class TracingRequestInterceptorTest {
         verify(mockLocalTracer, times(2)).buildSpan("okhttp.request")
     }
 
+    @Test
+    fun `using the wildcard will track any domain`(
+        forge: Forge,
+        @IntForgery(200, 300) statusCode: Int
+    ) {
+        val domain = generateValidHostName(forge)
+        val url = generateUrlFromDomain(domain, forge)
+        val request = Request.Builder()
+            .url(url)
+            .method(fakeMethod, fakeBody)
+            .build()
+        whenever(mockResponse.code()) doReturn statusCode
+        testedInterceptor = TracingRequestInterceptor(listOf("*"))
+
+        val transformedRequest = testedInterceptor.transformRequest(request)
+        testedInterceptor.handleResponse(transformedRequest, mockResponse)
+
+        inOrder(mockSpan) {
+            verify(mockSpan).setTag("http.url", url)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan).setTag("http.status_code", statusCode)
+            verify(mockSpan).finish()
+        }
+    }
     // endregion
 
     // region Internal methods

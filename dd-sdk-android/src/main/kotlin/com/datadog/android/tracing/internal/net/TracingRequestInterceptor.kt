@@ -36,7 +36,13 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
             if (acceptedHosts.isEmpty()) {
                 ""
             } else {
-                acceptedHosts.joinToString(separator = "|") { "^(.*\\.)*$it" }
+                acceptedHosts.joinToString(separator = "|") {
+                    if (it == "*") {
+                        ".*"
+                    } else {
+                        "^(.*\\.)*$it"
+                    }
+                }
             }
         hostRegex = Regex(regexFormat, RegexOption.IGNORE_CASE)
     }
