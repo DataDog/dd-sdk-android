@@ -73,6 +73,8 @@ Depending on your application's architecture, you can choose one of several impl
 
 
   **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can validate which `Fragment` or `Activity` is tracked as a RUM view event by providing a `ComponentPredicate` implementation in the constructor.
+  By default RUM Monitor for View tracking runs in manual mode so if you decide not to provide a view tracking strategy you will have to manually send us the
+  views by calling the start/stop View API methods yourself.
 
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 

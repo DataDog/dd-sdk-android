@@ -292,10 +292,14 @@ private constructor(
          * Sets the automatic view tracking strategy used by the SDK.
          * By default no view will be tracked.
          * @param strategy as the [ViewTrackingStrategy]
+         * Note: that by default RUM Monitor for View tracking runs in manual mode so if you
+         * decide not to provide a view tracking strategy you will have to manually send us the
+         * views by calling the [com.datadog.android.rum.RumMonitor] API methods yourself.
          * @see [com.datadog.android.rum.tracking.ActivityViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.FragmentViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
+
          */
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
             rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
