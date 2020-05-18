@@ -144,6 +144,22 @@ internal class RumViewScopeTest {
     // region View
 
     @Test
+    fun `startView doesn't send anything for stopped view Rum Event`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.StartView(key, name, emptyMap()),
+            mockWriter
+        )
+
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `startView sends current unstopped view Rum Event`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
@@ -541,6 +557,60 @@ internal class RumViewScopeTest {
                         hasErrorCount(0)
                         hasResourceCount(0)
                         hasUserActionCount(1)
+                    }
+                }
+                .hasContext {
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `keepAlive doesn't send anything for stopped view Rum Event`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `keepAlive sends current unstopped view Rum Event`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasTimestamp(fakeTimeStamp)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
                     }
                 }
                 .hasContext {

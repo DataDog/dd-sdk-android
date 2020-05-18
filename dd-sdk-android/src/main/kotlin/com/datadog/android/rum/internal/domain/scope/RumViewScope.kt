@@ -74,6 +74,7 @@ internal class RumViewScope(
             is RumRawEvent.StartAction -> onStartAction(event, writer)
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
+            is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
             else -> delegateEventToChildren(event, writer)
         }
 
@@ -173,6 +174,16 @@ internal class RumViewScope(
         )
         writer.write(errorEvent)
         errorCount++
+        sendViewUpdate(writer)
+    }
+
+    private fun onKeepAlive(
+        event: RumRawEvent.KeepAlive,
+        writer: Writer<RumEvent>
+    ) {
+        delegateEventToChildren(event, writer)
+        if (stopped) return
+
         sendViewUpdate(writer)
     }
 

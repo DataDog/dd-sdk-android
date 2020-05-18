@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -15,13 +16,23 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 internal class DatadogRumMonitor(
     applicationId: UUID,
-    private val writer: Writer<RumEvent>
+    private val writer: Writer<RumEvent>,
+    private val handler: Handler
 ) : RumMonitor {
 
     private val rootScope: RumScope = RumApplicationScope(applicationId)
+
+    internal val keepAliveRunnable = Runnable {
+        handleEvent(RumRawEvent.KeepAlive())
+    }
+
+    init {
+        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+    }
 
     // region RumMonitor
 
@@ -110,15 +121,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    fun addResourceTiming(key: Any, timing: RumEventData.Resource.Timing) {
+    internal fun addResourceTiming(key: Any, timing: RumEventData.Resource.Timing) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )
     }
 
-    private fun handleEvent(event: RumRawEvent) {
+    internal fun handleEvent(event: RumRawEvent) {
+        handler.removeCallbacks(keepAliveRunnable)
         synchronized(rootScope) { rootScope.handleEvent(event, writer) }
+        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
     }
 
     // endregion
+
+    companion object {
+        internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
+    }
 }

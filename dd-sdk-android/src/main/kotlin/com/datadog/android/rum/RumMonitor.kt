@@ -8,6 +8,8 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.app.Fragment
+import android.os.Handler
+import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
@@ -173,7 +175,8 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = RumFeature.applicationId,
-                    writer = RumFeature.persistenceStrategy.getWriter()
+                    writer = RumFeature.persistenceStrategy.getWriter(),
+                    handler = Handler(Looper.getMainLooper())
                 )
             }
         }
