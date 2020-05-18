@@ -17,6 +17,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
@@ -305,5 +306,16 @@ internal class DatadogRumMonitorTest {
                 verifyNoMoreInteractions()
             }
         }
+    }
+
+    @Test
+    fun `removes callback from handler on stopKeepAliveCallback`() {
+        // initial post
+        verify(mockHandler).postDelayed(any(), any())
+
+        testedMonitor.stopKeepAliveCallback()
+
+        verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
+        verifyNoMoreInteractions(mockHandler, mockWriter, mockScope)
     }
 }

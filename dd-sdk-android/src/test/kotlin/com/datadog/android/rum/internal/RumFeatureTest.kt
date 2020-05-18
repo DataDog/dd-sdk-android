@@ -16,6 +16,8 @@ import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrate
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -362,5 +364,26 @@ internal class RumFeatureTest {
 
         // then
         assertThat(RumFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
+    }
+
+    @Test
+    fun `stops the keep alive callback on stop`() {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+        val monitor: DatadogRumMonitor = mock()
+        GlobalRum.isRegistered.set(false)
+        GlobalRum.registerIfAbsent(monitor)
+
+        RumFeature.stop()
+
+        verify(monitor).stopKeepAliveCallback()
     }
 }

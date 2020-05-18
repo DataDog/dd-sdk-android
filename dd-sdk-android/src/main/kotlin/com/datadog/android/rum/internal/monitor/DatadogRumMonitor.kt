@@ -133,6 +133,10 @@ internal class DatadogRumMonitor(
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
     }
 
+    internal fun stopKeepAliveCallback() {
+        handler.removeCallbacks(keepAliveRunnable)
+    }
+
     // endregion
 
     companion object {
