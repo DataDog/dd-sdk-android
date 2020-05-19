@@ -6,6 +6,7 @@
 
 package com.datadog.android.sample
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -43,6 +44,9 @@ class NavActivity : AppCompatActivity() {
             R.id.navigation_webview -> navController.navigate(R.id.fragment_webview, arguments)
             R.id.navigation_traces -> navController.navigate(R.id.fragment_trace, arguments)
             R.id.navigation_data_list -> navController.navigate(R.id.fragment_data_list, arguments)
+            R.id.navigation_view_pager -> {
+                startActivity(Intent(this, ViewPagerActivity::class.java))
+            }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
