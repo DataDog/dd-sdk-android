@@ -9,7 +9,18 @@ package com.datadog.android.rum.internal.domain
 import java.util.UUID
 
 internal data class RumContext(
-    val applicationId: UUID = UUID(0, 0),
-    val sessionId: UUID = UUID(0, 0),
-    val viewId: UUID? = null
-)
+    val applicationId: String = NULL_SESSION_ID,
+    val sessionId: String = NULL_SESSION_ID,
+    val viewId: String? = null
+) {
+
+    constructor(
+        applicationUUID: UUID = UUID(0, 0),
+        sessionUUID: UUID = UUID(0, 0),
+        viewUUID: UUID?
+    ) : this(applicationUUID.toString(), sessionUUID.toString(), viewUUID?.toString())
+
+    companion object {
+        val NULL_SESSION_ID = UUID(0, 0).toString()
+    }
+}

@@ -9,7 +9,6 @@ package com.datadog.android.sdk.integration.rum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 internal data class ExpectedRumContext(
@@ -47,10 +46,10 @@ private fun rumContextValues(): Triple<String, String, String> {
     val rumContextRef: AtomicReference<Any> =
         GlobalRum::class.java.getStaticValue("activeContext")
     val rumContext = rumContextRef.get()
-    val appUUID: UUID = rumContext.getFieldValue("applicationId")
-    val sessionUUID: UUID = rumContext.getFieldValue("sessionId")
-    val viewUUID: UUID? = rumContext.getFieldValue("viewId")
-    return Triple(appUUID.toString(), sessionUUID.toString(), viewUUID?.toString() ?: "null")
+    val appId: String = rumContext.getFieldValue("applicationId")
+    val sessionId: String = rumContext.getFieldValue("sessionId")
+    val viewId: String? = rumContext.getFieldValue("viewId")
+    return Triple(appId, sessionId, viewId ?: "null")
 }
 
 private fun resolvedRumContext(): ExpectedRumContext {

@@ -154,9 +154,9 @@ class AndroidTracer internal constructor(
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
         return if (bundleWithRum) {
             val rumContext = GlobalRum.getRumContext()
-            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId.toString())
-                .withTag(LogAttributes.RUM_SESSION_ID, rumContext.sessionId.toString())
-                .withTag(LogAttributes.RUM_VIEW_ID, rumContext.viewId?.toString())
+            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
+                .withTag(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
+                .withTag(LogAttributes.RUM_VIEW_ID, rumContext.viewId)
         } else {
             this
         }

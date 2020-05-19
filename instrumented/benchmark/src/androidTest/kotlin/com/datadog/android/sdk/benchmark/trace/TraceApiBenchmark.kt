@@ -32,6 +32,7 @@ import org.junit.runner.RunWith
 class TraceApiBenchmark {
     @get:Rule
     val benchmark = BenchmarkRule()
+
     @get:Rule
     val forge = ForgeRule()
 
@@ -113,8 +114,8 @@ class TraceApiBenchmark {
             var counter = 0
             do {
                 val operationName = runWithTimingDisabled { forge.anAlphabeticalString() }
-                val tagsNumber = forge.anInt(max = 50)
-                val logsNumber = forge.anInt(max = 50)
+                val tagsNumber = runWithTimingDisabled { forge.anInt(max = 50) }
+                val logsNumber = runWithTimingDisabled { forge.anInt(max = 50) }
                 val span = testedTracer.buildSpan(operationName).start()
                 for (i in 0..tagsNumber) {
                     val (key, keyValue) = runWithTimingDisabled {
@@ -141,7 +142,7 @@ class TraceApiBenchmark {
     }
 
     companion object {
-        const val MAX_SPANS_PER_BATCH = 500
+        const val MAX_SPANS_PER_BATCH = 100
         const val MEDIUM_ITERATIONS = MAX_SPANS_PER_BATCH / 2
         const val BIG_ITERATIONS =
             MAX_SPANS_PER_BATCH

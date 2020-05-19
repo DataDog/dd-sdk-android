@@ -75,9 +75,9 @@ internal class DatadogLogHandler(
         }
         if (bundleWithRum && GlobalRum.isRegistered()) {
             val activeContext = GlobalRum.getRumContext()
-            logAttrs[LogAttributes.RUM_APPLICATION_ID] = activeContext.applicationId.toString()
-            logAttrs[LogAttributes.RUM_SESSION_ID] = activeContext.sessionId.toString()
-            logAttrs[LogAttributes.RUM_VIEW_ID] = activeContext.viewId?.toString()
+            logAttrs[LogAttributes.RUM_APPLICATION_ID] = activeContext.applicationId
+            logAttrs[LogAttributes.RUM_SESSION_ID] = activeContext.sessionId
+            logAttrs[LogAttributes.RUM_VIEW_ID] = activeContext.viewId
         }
         return Log(
             serviceName = serviceName,

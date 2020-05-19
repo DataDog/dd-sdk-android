@@ -16,7 +16,7 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
         return RumContext(
             forge.getForgery(),
             forge.getForgery(),
-            forge.aNullable { forge.getForgery<UUID>() }
+            forge.aNullable<UUID> { forge.getForgery<UUID>() }
         )
     }
 }

@@ -11,6 +11,7 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.forge.aThrowable
@@ -33,6 +34,7 @@ class LogIOBenchmark {
 
     @get:Rule
     val benchmark = BenchmarkRule()
+
     @get:Rule
     val forge = ForgeRule()
 
@@ -53,7 +55,12 @@ class LogIOBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        Datadog.initialize(context, "NO_TOKEN", fakeEndpoint)
+        Datadog.initialize(
+            context,
+            DatadogConfig.Builder("NO_TOKEN", "benchmark")
+                .useCustomLogsEndpoint(fakeEndpoint)
+                .build()
+        )
         val classLoader = Datadog::class.java.classLoader!!
         val LogFeatureClass =
             classLoader.loadClass("com.datadog.android.log.internal.LogsFeature") as Class<Any>

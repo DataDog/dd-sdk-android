@@ -32,9 +32,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         // Event Context
         val context = model.context
-        root.addProperty(RumAttributes.APPLICATION_ID, context.applicationId.toString())
-        root.addProperty(RumAttributes.SESSION_ID, context.sessionId.toString())
-        root.addProperty(RumAttributes.VIEW_ID, context.viewId.toString())
+        root.addProperty(RumAttributes.APPLICATION_ID, context.applicationId)
+        root.addProperty(RumAttributes.SESSION_ID, context.sessionId)
+        root.addProperty(RumAttributes.VIEW_ID, context.viewId)
 
         // Timestamp
         val formattedDate = simpleDateFormat.format(Date(model.timestamp))

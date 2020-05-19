@@ -29,7 +29,7 @@ internal class RumViewScope(
     internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
-    internal val viewId: UUID = UUID.randomUUID()
+    internal val viewId: String = UUID.randomUUID().toString()
     internal val startedNanos: Long = System.nanoTime()
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()

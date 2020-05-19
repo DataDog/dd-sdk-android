@@ -452,10 +452,10 @@ internal class DatadogLogHandlerTest {
             assertThat(lastValue.attributes)
                 .containsEntry(
                     LogAttributes.RUM_APPLICATION_ID,
-                    rumContext.applicationId.toString()
+                    rumContext.applicationId
                 )
-                .containsEntry(LogAttributes.RUM_SESSION_ID, rumContext.sessionId.toString())
-                .containsEntry(LogAttributes.RUM_VIEW_ID, rumContext.viewId?.toString())
+                .containsEntry(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
+                .containsEntry(LogAttributes.RUM_VIEW_ID, rumContext.viewId)
         }
         Datadog.invokeMethod("stop")
     }

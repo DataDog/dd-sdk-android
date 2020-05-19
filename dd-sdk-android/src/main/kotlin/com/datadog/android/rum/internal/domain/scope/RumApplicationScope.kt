@@ -11,10 +11,8 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import java.util.UUID
 
-internal class RumApplicationScope(
-    internal val applicationId: UUID
-) : RumScope {
-
+internal class RumApplicationScope(applicationId: UUID) : RumScope {
+    private val rumContext = RumContext(applicationId = applicationId.toString())
     private val childScope: RumScope = RumSessionScope(this)
 
     // region RumScope
@@ -28,7 +26,7 @@ internal class RumApplicationScope(
     }
 
     override fun getRumContext(): RumContext {
-        return RumContext(applicationId = applicationId)
+        return rumContext
     }
 
     // endregion

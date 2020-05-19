@@ -110,10 +110,4 @@ class LogApiBenchmark {
             testedLogger.e(message, throwable)
         }
     }
-
-    companion object {
-        const val MAX_LOGS_PER_BATCH = 500
-        const val MEDIUM_ITERATIONS = MAX_LOGS_PER_BATCH / 2
-        const val BIG_ITERATIONS = MAX_LOGS_PER_BATCH
-    }
 }
