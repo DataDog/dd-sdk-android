@@ -14,6 +14,7 @@
     <string name="title_traces">"Traces"</string>
     <string name="title_unknown">"?"</string>
     <string name="title_data_list">Data List</string>
+    <string name="title_view_pager">View Pager</string>
 
 
     <string name="button_warning">⚠️</string>

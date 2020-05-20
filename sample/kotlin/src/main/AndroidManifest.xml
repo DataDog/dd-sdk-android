@@ -29,6 +29,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ViewPagerActivity" />
+
         <service
             android:name=".service.LogsForegroundService"
             android:process=":logsService" />

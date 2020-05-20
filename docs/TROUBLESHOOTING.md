@@ -18,7 +18,7 @@ You also need to set the `android.useAndroidX` and `android.enableJetifier` prop
 
 This issue can occur if your dependencies rely on different Guava artifacts as the Datadog SDK for Android. The SDK uses AndroidX's WorkManager, which depends on a specific Guava dependency.
 
-Solve this issue by excluding the conflicting module from your dependency, eg: 
+Solve this issue by excluding the conflicting module from your dependency:
 
 ```
 implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
@@ -74,7 +74,17 @@ If you think the SDK does not behave as it should, make sure you set the library
 
 ### Logs/Traces are not appearing in your dashboard.
 
-Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens). 
+Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens).
 Otherwise, if the library's logs are enabled, you should see the following message in the Logcat :
- 
+
 > Unable to send batch because your token is invalid. Make sure that the provided token still exists.
+
+### RUM FragmentViewTrackingStrategy is not working correctly with the ViewPager
+
+If you have a FragmentViewPager somewhere in your activities this can produce wrong View events if you are using the RUM `FragmentViewTrackingStrategy`.
+The reason for this is the way the `FragmentPagerAdapter` used to work by resuming **current** and **next** fragment to be able to resolve the
+animated transition from one page to another. Please note that this behaviour is deprecated in the `FragmentPagerAdapter`. To avoid these issues please
+makes sure you switch to the new way of instantiating your `FragmentPagerAdapter` :
+```kotlin
+  FragmentPagerAdapter(fragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT)
+```
