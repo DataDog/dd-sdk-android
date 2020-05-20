@@ -73,6 +73,8 @@ Depending on your application's architecture, you can choose one of several impl
 
 
   **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can validate which `Fragment` or `Activity` is tracked as a RUM view event by providing a `ComponentPredicate` implementation in the constructor.
+  By default RUM Monitor for View tracking runs in manual mode so if you decide not to provide a view tracking strategy you will have to manually send the
+  views by calling the start/stop View API methods yourself.
 
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -92,8 +94,20 @@ Depending on your application's architecture, you can choose one of several impl
     This creates RUM resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error).
 
     **Note**: If you use multiple Interceptors, this one must be called first.
-    
-5. (Optionnal) If you want to get timing information in Resources (such as time to first byte, DNS resolution, …), you can add the provided [Event][6] listener as follows:
+
+4. If you want to manually track your view, call the `RumMonitor#startView` when the view becomes visible and interactive (equivalent with the lifecycle event `onResume`) followed by `RumMonitor#stopView` when the view is no longer visible(equivalent with the lifecycle event `onPause`) as follows:
+
+   ```kotlin
+      fun onResume(){
+        GlobalRum.get().startView(viewKey, viewName, viewAttributes)        
+      }
+      ...
+      fun onPause(){
+        GlobalRum.get().stopView(viewKey, viewAttributes)        
+      }
+   ```
+
+6. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the provided [Event][6] listener as follows:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
