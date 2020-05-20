@@ -18,7 +18,7 @@ You also need to set the `android.useAndroidX` and `android.enableJetifier` prop
 
 This issue can occur if your dependencies rely on different Guava artifacts as the Datadog SDK for Android. The SDK uses AndroidX's WorkManager, which depends on a specific Guava dependency.
 
-Solve this issue by excluding the conflicting module from your dependency, eg:
+Solve this issue by excluding the conflicting module from your dependency:
 
 ```
 implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
