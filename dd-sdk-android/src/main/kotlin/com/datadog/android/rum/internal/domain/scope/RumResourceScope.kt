@@ -14,18 +14,15 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
-import java.lang.ref.Reference
-import java.lang.ref.WeakReference
 
 internal class RumResourceScope(
     val parentScope: RumScope,
     val url: String,
     val method: String,
-    key: Any,
+    val key: String,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
-    val keyRef: Reference<Any> = WeakReference(key)
     val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     var timing: RumEventData.Resource.Timing? = null
 
@@ -38,8 +35,6 @@ internal class RumResourceScope(
     // region RumScope
 
     override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
-        val key = keyRef.get()
-
         if (key == null) {
             onStopResource(null, writer)
         } else if (event is RumRawEvent.AddResourceTiming) {

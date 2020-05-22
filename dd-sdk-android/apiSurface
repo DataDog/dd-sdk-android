@@ -217,9 +217,9 @@ interface com.datadog.android.rum.RumMonitor
   fun addUserAction(String, Map<String, Any?> = emptyMap())
   fun startUserAction(String, Map<String, Any?> = emptyMap())
   fun stopUserAction(String, Map<String, Any?> = emptyMap())
-  fun startResource(Any, String, String, Map<String, Any?> = emptyMap())
-  fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
-  fun stopResourceWithError(Any, String, String, Throwable)
+  fun startResource(String, String, String, Map<String, Any?> = emptyMap())
+  fun stopResource(String, RumResourceKind, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(String, String, String, Throwable)
   fun addError(String, String, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor

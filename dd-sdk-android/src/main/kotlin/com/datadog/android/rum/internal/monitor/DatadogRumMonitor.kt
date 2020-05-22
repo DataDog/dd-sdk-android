@@ -67,7 +67,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun startResource(
-        key: Any,
+        key: String,
         method: String,
         url: String,
         attributes: Map<String, Any?>
@@ -77,14 +77,14 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopResource(key: Any, kind: RumResourceKind, attributes: Map<String, Any?>) {
+    override fun stopResource(key: String, kind: RumResourceKind, attributes: Map<String, Any?>) {
         handleEvent(
             RumRawEvent.StopResource(key, kind, attributes)
         )
     }
 
     override fun stopResourceWithError(
-        key: Any,
+        key: String,
         message: String,
         origin: String,
         throwable: Throwable
@@ -121,7 +121,7 @@ internal class DatadogRumMonitor(
         )
     }
 
-    internal fun addResourceTiming(key: Any, timing: RumEventData.Resource.Timing) {
+    internal fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )

@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.ref.WeakReference
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -373,9 +372,10 @@ internal class RumViewScopeTest {
 
     @Test
     fun `stopView returns notNull if a resource is still active`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         forge: Forge
     ) {
-        testedScope.activeResourceScopes.put(WeakReference(""), mockChildScope)
+        testedScope.activeResourceScopes.put(key, mockChildScope)
 
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -738,12 +738,12 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
         val entry = testedScope.activeResourceScopes.entries.first()
-        assertThat(entry.key.get()).isEqualTo(key)
+        assertThat(entry.key).isEqualTo(key)
         assertThat(entry.value).isInstanceOf(RumResourceScope::class.java)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
         assertThat(resourceScope.attributes).containsAllEntriesOf(expectedAttributes)
-        assertThat(resourceScope.keyRef.get()).isSameAs(key)
+        assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
     }
@@ -772,18 +772,20 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
         val entry = testedScope.activeResourceScopes.entries.first()
-        assertThat(entry.key.get()).isEqualTo(key)
+        assertThat(entry.key).isEqualTo(key)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
         assertThat(resourceScope.attributes).containsAllEntriesOf(expectedAttributes)
-        assertThat(resourceScope.keyRef.get()).isSameAs(key)
+        assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
     }
 
     @Test
-    fun `unknown events are sent to children ResourceScopes`() {
-        testedScope.activeResourceScopes.put(WeakReference(""), mockChildScope)
+    fun `unknown events are sent to children ResourceScopes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+    ) {
+        testedScope.activeResourceScopes[key] = mockChildScope
         whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn mockChildScope
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -794,8 +796,10 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `removes ResourceScope when it updates to null`() {
-        testedScope.activeResourceScopes.put(WeakReference(""), mockChildScope)
+    fun `removes ResourceScope when it updates to null`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+    ) {
+        testedScope.activeResourceScopes[key] = mockChildScope
         whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)

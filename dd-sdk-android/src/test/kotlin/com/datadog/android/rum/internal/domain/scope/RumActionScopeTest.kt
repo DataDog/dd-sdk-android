@@ -163,7 +163,7 @@ internal class RumActionScopeTest {
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         var key: Any? = Object()
-        mockEvent = RumRawEvent.StartResource(key!!, url, method, emptyMap())
+        mockEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
 
