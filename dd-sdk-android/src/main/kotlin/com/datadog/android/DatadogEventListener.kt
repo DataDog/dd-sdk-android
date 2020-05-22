@@ -6,10 +6,11 @@
 
 package com.datadog.android
 
+import com.datadog.android.DatadogEventListener.Factory
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.RumEventData
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -37,7 +38,7 @@ import okhttp3.Response
  * @see [Factory]
  */
 class DatadogEventListener
-private constructor() : EventListener() {
+internal constructor(val key: String) : EventListener() {
 
     private val callStart = System.nanoTime()
 
@@ -45,7 +46,7 @@ private constructor() : EventListener() {
     private var dnsEnd = 0L
 
     private var connStart = 0L
-    private var connend = 0L
+    private var connEnd = 0L
 
     private var sslStart = 0L
     private var sslEnd = 0L
@@ -84,7 +85,7 @@ private constructor() : EventListener() {
         protocol: Protocol?
     ) {
         super.connectEnd(call, inetSocketAddress, proxy, protocol)
-        connend = System.nanoTime()
+        connEnd = System.nanoTime()
     }
 
     /** @inheritdoc */
@@ -102,6 +103,7 @@ private constructor() : EventListener() {
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
+        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
         headersStart = System.nanoTime()
     }
 
@@ -122,9 +124,8 @@ private constructor() : EventListener() {
         super.responseBodyEnd(call, byteCount)
         bodyEnd = System.nanoTime()
 
-        val key = identifyRequest(call.request())
         val timing = buildTiming()
-        (GlobalRum.get() as? DatadogRumMonitor)?.addResourceTiming(key, timing)
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
     }
 
     // endregion
@@ -140,7 +141,7 @@ private constructor() : EventListener() {
         val (conS, conD) = if (connStart == 0L) {
             0L to 0L
         } else {
-            (connStart - callStart) to (connend - connStart)
+            (connStart - callStart) to (connEnd - connStart)
         }
         val (sslS, sslD) = if (sslStart == 0L) {
             0L to 0L
@@ -170,6 +171,8 @@ private constructor() : EventListener() {
         )
     }
 
+    // endregion
+
     /**
      * Datadog's RUM implementation of OkHttp [EventListener.Factory].
      * Adding this Factory to your [OkHttpClient] will allow Datadog to monitor
@@ -188,7 +191,8 @@ private constructor() : EventListener() {
     class Factory : EventListener.Factory {
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
-            return DatadogEventListener()
+            val key = identifyRequest(call.request())
+            return DatadogEventListener(key)
         }
     }
 }

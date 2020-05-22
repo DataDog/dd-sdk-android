@@ -22,7 +22,7 @@ internal class DatadogRumMonitor(
     applicationId: UUID,
     private val writer: Writer<RumEvent>,
     private val handler: Handler
-) : RumMonitor {
+) : RumMonitor, AdvancedRumMonitor {
 
     private val rootScope: RumScope = RumApplicationScope(applicationId)
 
@@ -109,25 +109,25 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
-    internal fun resetSession() {
+    override fun resetSession() {
         handleEvent(
             RumRawEvent.ResetSession()
         )
     }
 
-    internal fun viewTreeChanged() {
+    override fun viewTreeChanged() {
         handleEvent(
             RumRawEvent.ViewTreeChanged()
         )
     }
 
-    internal fun waitForResourceTiming(key: String) {
+    override fun waitForResourceTiming(key: String) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key)
         )
     }
 
-    internal fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing) {
+    override fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )

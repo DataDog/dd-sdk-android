@@ -38,16 +38,11 @@ internal class RumResourceScope(
     // region RumScope
 
     override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
-        if (event is RumRawEvent.WaitForResourceTiming) {
-            if (key == event.key) waitForTiming = true
-        } else if (event is RumRawEvent.AddResourceTiming) {
-            if (key == event.key) onAddResourceTiming(event, writer)
-        } else if (event is RumRawEvent.StopResource) {
-            if (key == event.key) onStopResource(event, writer)
-        } else if (event is RumRawEvent.StopResourceWithError) {
-            if (key == event.key) {
-                onStopResourceWithError(event, writer)
-            }
+        when (event) {
+            is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
+            is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
+            is RumRawEvent.StopResource -> onStopResource(event, writer)
+            is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, writer)
         }
         return if (sent) null else this
     }
@@ -64,12 +59,13 @@ internal class RumResourceScope(
         event: RumRawEvent.StopResource?,
         writer: Writer<RumEvent>
     ) {
+        if (key != event?.key) return
+
         stopped = true
-        if (event != null) {
-            attributes.putAll(event.attributes)
-            kind = event.kind
-        }
-        if (waitForTiming && timing == null) return
+        attributes.putAll(event.attributes)
+        kind = event.kind
+        if (!(waitForTiming && timing == null))
+
         sendResource(kind, writer)
     }
 
@@ -77,6 +73,8 @@ internal class RumResourceScope(
         event: RumRawEvent.AddResourceTiming,
         writer: Writer<RumEvent>
     ) {
+        if (key != event.key) return
+
         timing = event.timing
         if (stopped && !sent) {
             sendResource(kind, writer)
@@ -87,6 +85,8 @@ internal class RumResourceScope(
         event: RumRawEvent.StopResourceWithError,
         writer: Writer<RumEvent>
     ) {
+        if (key != event.key) return
+
         attributes[RumAttributes.HTTP_URL] = url
         sendError(
             event.message,
