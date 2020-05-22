@@ -40,6 +40,10 @@ internal sealed class RumRawEvent {
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
+    internal data class WaitForResourceTiming(
+        val key: String
+    ) : RumRawEvent()
+
     internal data class AddResourceTiming(
         val key: String,
         val timing: RumEventData.Resource.Timing

@@ -31,14 +31,17 @@ internal class RumResourceScope(
     private val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
+    private var waitForTiming = false
+    private var stopped = false
+    private var kind: RumResourceKind = RumResourceKind.UNKNOWN
 
     // region RumScope
 
     override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
-        if (key == null) {
-            onStopResource(null, writer)
+        if (event is RumRawEvent.WaitForResourceTiming) {
+            if (key == event.key) waitForTiming = true
         } else if (event is RumRawEvent.AddResourceTiming) {
-            if (key == event.key) timing = event.timing
+            if (key == event.key) onAddResourceTiming(event, writer)
         } else if (event is RumRawEvent.StopResource) {
             if (key == event.key) onStopResource(event, writer)
         } else if (event is RumRawEvent.StopResourceWithError) {
@@ -61,11 +64,23 @@ internal class RumResourceScope(
         event: RumRawEvent.StopResource?,
         writer: Writer<RumEvent>
     ) {
-        if (event != null) attributes.putAll(event.attributes)
-        sendResource(
-            event?.kind ?: RumResourceKind.UNKNOWN,
-            writer
-        )
+        stopped = true
+        if (event != null) {
+            attributes.putAll(event.attributes)
+            kind = event.kind
+        }
+        if (waitForTiming && timing == null) return
+        sendResource(kind, writer)
+    }
+
+    private fun onAddResourceTiming(
+        event: RumRawEvent.AddResourceTiming,
+        writer: Writer<RumEvent>
+    ) {
+        timing = event.timing
+        if (stopped && !sent) {
+            sendResource(kind, writer)
+        }
     }
 
     private fun onStopResourceWithError(

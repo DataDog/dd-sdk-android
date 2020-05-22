@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -128,6 +129,7 @@ internal class DatadogRumMonitor(
     }
 
     internal fun handleEvent(event: RumRawEvent) {
+        devLogger.i("Handling $event")
         handler.removeCallbacks(keepAliveRunnable)
         synchronized(rootScope) { rootScope.handleEvent(event, writer) }
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
