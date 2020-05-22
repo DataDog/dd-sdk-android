@@ -258,6 +258,20 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `delegates waitForResourceTiming to rootScope`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+    ) {
+        testedMonitor.waitForResourceTiming(key)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            assertThat(firstValue).isEqualTo(RumRawEvent.WaitForResourceTiming(key))
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `delegates addResourceTiming to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @Forgery timing: RumEventData.Resource.Timing
