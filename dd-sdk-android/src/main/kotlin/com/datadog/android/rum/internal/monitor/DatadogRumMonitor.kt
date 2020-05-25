@@ -22,7 +22,7 @@ internal class DatadogRumMonitor(
     applicationId: UUID,
     private val writer: Writer<RumEvent>,
     private val handler: Handler
-) : RumMonitor {
+) : RumMonitor, AdvancedRumMonitor {
 
     private val rootScope: RumScope = RumApplicationScope(applicationId)
 
@@ -67,7 +67,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun startResource(
-        key: Any,
+        key: String,
         method: String,
         url: String,
         attributes: Map<String, Any?>
@@ -77,14 +77,14 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopResource(key: Any, kind: RumResourceKind, attributes: Map<String, Any?>) {
+    override fun stopResource(key: String, kind: RumResourceKind, attributes: Map<String, Any?>) {
         handleEvent(
             RumRawEvent.StopResource(key, kind, attributes)
         )
     }
 
     override fun stopResourceWithError(
-        key: Any,
+        key: String,
         message: String,
         origin: String,
         throwable: Throwable
@@ -109,19 +109,25 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
-    internal fun resetSession() {
+    override fun resetSession() {
         handleEvent(
             RumRawEvent.ResetSession()
         )
     }
 
-    internal fun viewTreeChanged() {
+    override fun viewTreeChanged() {
         handleEvent(
             RumRawEvent.ViewTreeChanged()
         )
     }
 
-    internal fun addResourceTiming(key: Any, timing: RumEventData.Resource.Timing) {
+    override fun waitForResourceTiming(key: String) {
+        handleEvent(
+            RumRawEvent.WaitForResourceTiming(key)
+        )
+    }
+
+    override fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )

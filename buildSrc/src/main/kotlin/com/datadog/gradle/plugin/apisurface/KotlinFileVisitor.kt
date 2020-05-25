@@ -217,14 +217,7 @@ class KotlinFileVisitor {
     private fun Node.TypeRef?.description(): String {
         return when (this) {
             is Node.TypeRef.Nullable -> "${type.description()}?"
-            is Node.TypeRef.Simple -> pieces.joinToString(", ") { p ->
-                val name = imports[p.name] ?: p.name
-                if (p.typeParams.isEmpty()) {
-                    name
-                } else {
-                    "$name<${p.typeParams.joinToString(", ") { it?.description().orEmpty() }}>"
-                }
-            }
+            is Node.TypeRef.Simple -> pieces.description()
             is Node.TypeRef.Func -> {
                 val prefix = if (receiverType != null) {
                     "${receiverType.description()}."
@@ -261,6 +254,21 @@ class KotlinFileVisitor {
                 }
             }
             "<$list>$postfix"
+        }
+    }
+
+    private fun List<Node.TypeRef.Simple.Piece>.description(): String {
+        return if (isEmpty()) {
+            ""
+        } else {
+            return mapIndexed { i, p ->
+                val name = if (i == 0) imports[p.name] ?: p.name else p.name
+                if (p.typeParams.isEmpty()) {
+                    name
+                } else {
+                    "$name<${p.typeParams.joinToString(", ") { it?.description().orEmpty() }}>"
+                }
+            }.joinToString(".")
         }
     }
 

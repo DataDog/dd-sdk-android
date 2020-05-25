@@ -45,7 +45,7 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun responseHeadersEnd(okhttp3.Call, okhttp3.Response)
   override fun responseBodyStart(okhttp3.Call)
   override fun responseBodyEnd(okhttp3.Call, Long)
-  class Factory : okhttp3.EventListener, Factory
+  class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 class com.datadog.android.DatadogInterceptor : okhttp3.Interceptor
   constructor(List<String>)
@@ -217,9 +217,9 @@ interface com.datadog.android.rum.RumMonitor
   fun addUserAction(String, Map<String, Any?> = emptyMap())
   fun startUserAction(String, Map<String, Any?> = emptyMap())
   fun stopUserAction(String, Map<String, Any?> = emptyMap())
-  fun startResource(Any, String, String, Map<String, Any?> = emptyMap())
-  fun stopResource(Any, RumResourceKind, Map<String, Any?> = emptyMap())
-  fun stopResourceWithError(Any, String, String, Throwable)
+  fun startResource(String, String, String, Map<String, Any?> = emptyMap())
+  fun stopResource(String, RumResourceKind, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(String, String, String, Throwable)
   fun addError(String, String, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
@@ -243,7 +243,7 @@ class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredi
   override fun accept(android.app.Fragment): Boolean
 class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
-abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application, ActivityLifecycleCallbacks, TrackingStrategy
+abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
   override fun register(android.content.Context)
   override fun unregister(android.content.Context?)
   override fun onActivityPaused(android.app.Activity)
@@ -262,18 +262,18 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
 class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android, app, androidx.fragment.app.Fragment> = AcceptAllDefaultFragment())
+  constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
 class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android, app, androidx.fragment.app.Fragment> = AcceptAllDefaultFragment())
+  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityDestroyed(android.app.Activity)
-class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController, OnDestinationChangedListener
+class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
   constructor(Int, Boolean)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)

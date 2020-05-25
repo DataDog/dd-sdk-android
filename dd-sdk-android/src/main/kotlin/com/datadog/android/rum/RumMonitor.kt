@@ -106,7 +106,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun startResource(
-        key: Any,
+        key: String,
         method: String,
         url: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -122,7 +122,7 @@ interface RumMonitor {
      * @see [stopResourceWithError]
      */
     fun stopResource(
-        key: Any,
+        key: String,
         kind: RumResourceKind,
         attributes: Map<String, Any?> = emptyMap()
     )
@@ -138,7 +138,7 @@ interface RumMonitor {
      * @see [stopResource]
      */
     fun stopResourceWithError(
-        key: Any,
+        key: String,
         message: String,
         origin: String,
         throwable: Throwable

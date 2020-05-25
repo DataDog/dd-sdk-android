@@ -35,7 +35,7 @@ internal class RumViewScope(
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
 
     internal var activeActionScope: RumScope? = null
-    internal val activeResourceScopes = mutableMapOf<WeakReference<Any>, RumScope>()
+    internal val activeResourceScopes = mutableMapOf<String, RumScope>()
 
     internal var resourceCount: Int = 0
     internal var actionCount: Int = 0
@@ -144,13 +144,9 @@ internal class RumViewScope(
         if (stopped) return
 
         val updatedEvent = event.copy(
-            attributes =
-            addExtraAttributes(event.attributes)
+            attributes = addExtraAttributes(event.attributes)
         )
-        activeResourceScopes.put(
-            WeakReference(event.key),
-            RumResourceScope.fromEvent(this, updatedEvent)
-        )
+        activeResourceScopes[event.key] = RumResourceScope.fromEvent(this, updatedEvent)
     }
 
     private fun onAddError(

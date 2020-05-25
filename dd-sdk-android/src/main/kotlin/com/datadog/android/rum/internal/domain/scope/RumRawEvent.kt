@@ -34,25 +34,29 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StartResource(
-        val key: Any,
+        val key: String,
         val url: String,
         val method: String,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
+    internal data class WaitForResourceTiming(
+        val key: String
+    ) : RumRawEvent()
+
     internal data class AddResourceTiming(
-        val key: Any,
+        val key: String,
         val timing: RumEventData.Resource.Timing
     ) : RumRawEvent()
 
     internal data class StopResource(
-        val key: Any,
+        val key: String,
         val kind: RumResourceKind,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
     internal data class StopResourceWithError(
-        val key: Any,
+        val key: String,
         val message: String,
         val origin: String,
         val throwable: Throwable
