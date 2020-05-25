@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -33,7 +33,7 @@ internal class RumResourceScope(
     private var sent = false
     private var waitForTiming = false
     private var stopped = false
-    private var kind: RumResourceKind = RumResourceKind.UNKNOWN
+    private var type: RumResourceType = RumResourceType.UNKNOWN
 
     // region RumScope
 
@@ -63,10 +63,10 @@ internal class RumResourceScope(
 
         stopped = true
         attributes.putAll(event.attributes)
-        kind = event.kind
+        type = event.type
         if (!(waitForTiming && timing == null))
 
-        sendResource(kind, writer)
+        sendResource(type, writer)
     }
 
     private fun onAddResourceTiming(
@@ -77,7 +77,7 @@ internal class RumResourceScope(
 
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(kind, writer)
+            sendResource(type, writer)
         }
     }
 
@@ -87,7 +87,7 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
 
-        attributes[RumAttributes.HTTP_URL] = url
+        attributes[RumAttributes.RESOURCE_URL] = url
         sendError(
             event.message,
             event.origin,
@@ -97,12 +97,12 @@ internal class RumResourceScope(
     }
 
     private fun sendResource(
-        kind: RumResourceKind,
+        type: RumResourceType,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Resource(
-            kind,
+            type,
             method,
             url,
             System.nanoTime() - startedNanos,
