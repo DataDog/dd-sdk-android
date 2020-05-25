@@ -70,10 +70,10 @@ Depending on your application's architecture, you can choose one of several impl
   - `FragmentViewTrackingStrategy`: Every fragment in your application is considered a distinct view.
   - `NavigationViewTrackingStrategy`: If you use the Android Jetpack Navigation library, this is the recommended strategy. It automatically tracks the navigation destination as a distinct view.
   - `MixedViewTrackingStrategy`: Every activity or fragment in your application is considered a distinct view. This strategy is a mix between the `ActivityViewTrackingStrategy` and `FragmentViewTrackingStrategy`.
-
-
-  **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can validate which `Fragment` or `Activity` is tracked as a RUM view event by providing a `ComponentPredicate` implementation in the constructor.
-  By default RUM Monitor for View tracking runs in manual mode so if you decide not to provide a view tracking strategy you will have to manually send the
+  
+  **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
+  
+  **Note**: By default RUM Monitor for View tracking runs in manual mode so if you decide not to provide a view tracking strategy you will have to manually send the
   views by calling the start/stop View API methods yourself.
 
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
@@ -95,19 +95,7 @@ Depending on your application's architecture, you can choose one of several impl
 
     **Note**: If you use multiple Interceptors, this one must be called first.
 
-4. If you want to manually track your view, call the `RumMonitor#startView` when the view becomes visible and interactive (equivalent with the lifecycle event `onResume`) followed by `RumMonitor#stopView` when the view is no longer visible(equivalent with the lifecycle event `onPause`) as follows:
-
-   ```kotlin
-      fun onResume(){
-        GlobalRum.get().startView(viewKey, viewName, viewAttributes)        
-      }
-      ...
-      fun onPause(){
-        GlobalRum.get().stopView(viewKey, viewAttributes)        
-      }
-   ```
-
-6. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the provided [Event][6] listener as follows:
+5. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the provided [Event][6] listener as follows:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
@@ -115,6 +103,42 @@ Depending on your application's architecture, you can choose one of several impl
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
     ```
+
+6. (Optional) If you want to manually track RUM events, you can use the `GlobalRum` class.
+  
+  To track views, call the `RumMonitor#startView` when the view becomes visible and interactive (equivalent with the lifecycle event `onResume`) followed by `RumMonitor#stopView` when the view is no longer visible(equivalent with the lifecycle event `onPause`) as follows:
+
+   ```kotlin
+      fun onResume(){
+        GlobalRum.get().startView(viewKey, viewName, viewAttributes)        
+      }
+      
+      fun onPause(){
+        GlobalRum.get().stopView(viewKey, viewAttributes)        
+      }
+   ```
+  
+  To track resources, call the `RumMonitor#startResource` when the resource starts being loaded, and `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource, as follow:
+  
+   ```kotlin
+      fun loadResource(){
+        GlobalRum.get().startResource(resourceKey, method, url, resourceAttributes)
+        try {
+          // do load the resource
+          GlobalRum.get().stopResource(resourceKey, resourceKind, additionalAttributes)
+        } catch (e : Exception) {
+          GlobalRum.get().stopResourceWithError(resourceKey, message, origin, e)
+        }
+      }
+   ```
+  
+  To track user actions, call the `RumMonitor#addUserAction`, or for continuous actions, call the `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`, as follow:
+  
+   ```kotlin
+      fun onUserInteraction(){
+        GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
+      }
+   ```
 
 ## Further Reading
 
