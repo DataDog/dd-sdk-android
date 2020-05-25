@@ -208,6 +208,14 @@ logger.removeAttribute("version_code")
 logger.removeAttribute("version_name")
 ```
 
+## Batch collection
+
+All the logs are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
+
+This means that even if users open your application while being offline, no data will be lost.
+
+The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}

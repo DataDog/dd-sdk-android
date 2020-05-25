@@ -118,7 +118,7 @@ Depending on your application's architecture, you can choose one of several impl
       }
    ```
   
-  To track resources, call the `RumMonitor#startResource` when the resource starts being loaded, and `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource, as follow:
+  To track resources, call the `RumMonitor#startResource` when the resource starts being loaded, and `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource, as follows:
   
    ```kotlin
       fun loadResource(){
@@ -132,13 +132,21 @@ Depending on your application's architecture, you can choose one of several impl
       }
    ```
   
-  To track user actions, call the `RumMonitor#addUserAction`, or for continuous actions, call the `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`, as follow:
+  To track user actions, call the `RumMonitor#addUserAction`, or for continuous actions, call the `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`, as follows:
   
    ```kotlin
       fun onUserInteraction(){
         GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
       }
    ```
+
+## Batch collection
+
+All the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
+
+This means that even if users open your application while being offline, no data will be lost.
+
+The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
 ## Further Reading
 

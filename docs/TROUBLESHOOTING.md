@@ -66,7 +66,7 @@ kotlinOptions {
 
 ### Foreword
 
-If you think the SDK does not behave as it should, make sure you set the library's verbosity to `VERBOSE` before running your application, as follow. It prints relevant error messages in the Logcat that can help you locate the source of the problem.
+If you think the SDK does not behave as it should, make sure you set the library's verbosity to `VERBOSE` before running your application, as follows. It prints relevant error messages in the Logcat that can help you locate the source of the problem.
 ``
 ```kotlin
     Datadog.setVerbosity(Log.VERBOSE)

@@ -48,7 +48,7 @@ class SampleApplication : Application() {
 
 ### Logger Initialization
 
-You can create a `Logger` instance using the dedicated builder, as follow:
+You can create a `Logger` instance using the dedicated builder, as follows:
 
 ```kotlin
     logger = Logger.Builder()
@@ -93,7 +93,7 @@ follow:
 #### Tags
 
 Tags take the form of a single String, but can also represent key-value pairs when using a colon, and are 
-You can add tags to a specific logger as follow: 
+You can add tags to a specific logger as follows: 
 
 ```kotlin
     // This will add a tag "build_type:debug" or "build_type:release" accordingly
@@ -103,7 +103,7 @@ You can add tags to a specific logger as follow:
     logger.addTag("android")
 ```
 
-You can remove tags from a specific logger as follow: 
+You can remove tags from a specific logger as follows: 
 
 ```kotlin
     // This will remove any tag starting with "build_type:"
@@ -116,7 +116,7 @@ You can remove tags from a specific logger as follow:
 #### Attributes
 
 Attributes are always in the form of a key-value pair. The value can be any primitive, String or Date.
-You can add attributes to a specific logger as follow:
+You can add attributes to a specific logger as follows:
 
 ```kotlin
     // This will add an attribute "version_code" with an integer value
@@ -125,7 +125,7 @@ You can add attributes to a specific logger as follow:
     logger.addAttribute("version_name", BuildConfig.VERSION_NAME)
 ```
 
-You can remove attributes from a specific logger as follow: 
+You can remove attributes from a specific logger as follows: 
 
 ```kotlin
     logger.removeAttribute("version_code")
@@ -141,7 +141,7 @@ do so by providing a map alongside the message, each entry being added as an att
     logger.i("onPageStarted", attributes = mapOf("http.url", url))
 ```
 
-In Java you can do so as follow:
+In Java you can do so as follows:
 ```java
     mLogger.d(
             "onPageStarted",
@@ -155,7 +155,7 @@ In Java you can do so as follow:
 ### Setting the Library's verbosity
 
 If you need to get information about the Library, you can set the verbosity
-level as follow: 
+level as follows: 
 
 ```kotlin
     Datadog.setVerbosity(Log.INFO)
