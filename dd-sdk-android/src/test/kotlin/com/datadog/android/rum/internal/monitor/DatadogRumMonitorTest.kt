@@ -208,10 +208,10 @@ internal class DatadogRumMonitorTest {
     fun `delegates stopResourceWithError to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.stopResourceWithError(key, message, origin, throwable)
+        testedMonitor.stopResourceWithError(key, message, source, throwable)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -219,7 +219,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StopResourceWithError
             assertThat(event.key).isEqualTo(key)
             assertThat(event.message).isEqualTo(message)
-            assertThat(event.origin).isEqualTo(origin)
+            assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -228,17 +228,17 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `delegates addError to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.addError(message, origin, throwable, fakeAttributes)
+        testedMonitor.addError(message, source, throwable, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.AddError
             assertThat(event.message).isEqualTo(message)
-            assertThat(event.origin).isEqualTo(origin)
+            assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }

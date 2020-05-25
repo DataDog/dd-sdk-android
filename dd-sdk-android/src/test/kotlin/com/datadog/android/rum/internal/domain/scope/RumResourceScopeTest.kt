@@ -308,14 +308,15 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Error on StopResourceWithError and notify parent`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.put(RumAttributes.RESOURCE_URL, fakeUrl)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, origin, throwable)
+        expectedAttributes[RumAttributes.ERROR_RESOURCE_URL] = fakeUrl
+        expectedAttributes[RumAttributes.ERROR_RESOURCE_METHOD] = fakeMethod
+        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, source, throwable)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -329,7 +330,7 @@ internal class RumResourceScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
+                    hasOrigin(source)
                     hasThrowable(throwable)
                 }
                 .hasContext {
@@ -349,7 +350,7 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Error on StopResourceWithError and notify parent with global attributes`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
@@ -357,9 +358,10 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        expectedAttributes.put(RumAttributes.RESOURCE_URL, fakeUrl)
+        expectedAttributes[RumAttributes.ERROR_RESOURCE_URL] = fakeUrl
+        expectedAttributes[RumAttributes.ERROR_RESOURCE_METHOD] = fakeMethod
         GlobalRum.globalAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, origin, throwable)
+        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, source, throwable)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -373,7 +375,7 @@ internal class RumResourceScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
+                    hasOrigin(source)
                     hasThrowable(throwable)
                 }
                 .hasContext {
@@ -411,7 +413,7 @@ internal class RumResourceScopeTest {
     @Test
     fun `ignores StopResourceWithError with different key`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
@@ -419,7 +421,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(RumAttributes.RESOURCE_URL, fakeUrl)
         mockEvent =
-            RumRawEvent.StopResourceWithError("not_the_$fakeKey", message, origin, throwable)
+            RumRawEvent.StopResourceWithError("not_the_$fakeKey", message, source, throwable)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)

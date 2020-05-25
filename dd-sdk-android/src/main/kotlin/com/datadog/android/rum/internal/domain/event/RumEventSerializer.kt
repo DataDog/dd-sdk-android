@@ -174,13 +174,13 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.Error
     ) {
         root.addProperty(RumAttributes.ERROR_MESSAGE, eventData.message)
-        root.addProperty(RumAttributes.ERROR_ORIGIN, eventData.origin)
+        root.addProperty(RumAttributes.ERROR_SOURCE, eventData.source)
 
         val throwable = eventData.throwable
         if (throwable != null) {
             val sw = StringWriter()
             throwable.printStackTrace(PrintWriter(sw))
-            root.addProperty(RumAttributes.ERROR_KIND, throwable.javaClass.simpleName)
+            root.addProperty(RumAttributes.ERROR_TYPE, throwable.javaClass.simpleName)
             root.addProperty(RumAttributes.ERROR_STACK, sw.toString())
         }
     }

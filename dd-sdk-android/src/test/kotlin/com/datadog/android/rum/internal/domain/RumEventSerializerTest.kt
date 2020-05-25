@@ -164,8 +164,8 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
             .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .hasField(RumAttributes.ERROR_KIND, fakeError.throwable.javaClass.simpleName)
+            .hasField(RumAttributes.ERROR_SOURCE, fakeError.source)
+            .hasField(RumAttributes.ERROR_TYPE, fakeError.throwable.javaClass.simpleName)
             .hasField(RumAttributes.ERROR_STACK, sw.toString())
     }
 
@@ -202,8 +202,8 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
             .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .doesNotHaveField(RumAttributes.ERROR_KIND)
+            .hasField(RumAttributes.ERROR_SOURCE, fakeError.source)
+            .doesNotHaveField(RumAttributes.ERROR_TYPE)
             .doesNotHaveField(RumAttributes.ERROR_STACK)
     }
 
