@@ -795,7 +795,7 @@ internal class RumViewScopeTest {
     @Test
     fun `sends Error and View event on AddError`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
@@ -803,7 +803,7 @@ internal class RumViewScopeTest {
         val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.AddError(message, origin, throwable, attributes)
+        mockEvent = RumRawEvent.AddError(message, source, throwable, attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
@@ -820,7 +820,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
+                    hasOrigin(source)
                     hasThrowable(throwable)
                 }
                 .hasContext {
@@ -852,7 +852,7 @@ internal class RumViewScopeTest {
     @Test
     fun `sends Error and View event on AddError with global attributes`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
@@ -860,7 +860,7 @@ internal class RumViewScopeTest {
         val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        mockEvent = RumRawEvent.AddError(message, origin, throwable, emptyMap())
+        mockEvent = RumRawEvent.AddError(message, source, throwable, emptyMap())
         GlobalRum.globalAttributes.putAll(attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -881,7 +881,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedErrorAttributes)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
+                    hasOrigin(source)
                     hasThrowable(throwable)
                 }
                 .hasContext {

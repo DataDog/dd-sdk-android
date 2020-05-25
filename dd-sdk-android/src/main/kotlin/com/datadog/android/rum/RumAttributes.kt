@@ -275,22 +275,15 @@ object RumAttributes {
 
     // endregion
 
-    // region …
+    // region Error
 
     /**
-     * A duration of any kind in nanoseconds. (Number)
-     * This value is filled automatically by the [RumMonitor] for
-     * Views, Resources and Actions.
-     */
-    const val DURATION: String = "duration"
-
-    /**
-     * The error type or kind (or code is some cases). (String)
+     * The error type or kind (or code in some cases). (String)
      * This value is filled automatically by the [RumMonitor] when you pass in a [Throwable].
      * @see [RumMonitor.addError]
      * @see [RumMonitor.stopResourceWithError]
      */
-    const val ERROR_KIND: String = "error.kind"
+    const val ERROR_TYPE: String = "error.type"
 
     /**
      * A concise, human-readable, one-line message explaining the event. (String)
@@ -298,14 +291,15 @@ object RumAttributes {
      * @see [RumMonitor.addError]
      * @see [RumMonitor.stopResourceWithError]
      */
-    const val ERROR_MESSAGE: String = "message"
+    const val ERROR_MESSAGE: String = "error.message"
 
     /**
-     * Value among: agent, console, network, source, logger. (String)
+     * The source of the error. (String)
+     * Value among: agent, console, network, source, logger.
      * This value is filled automatically by the [RumMonitor].
      * @see [RumMonitor.addError]
      */
-    const val ERROR_ORIGIN: String = "error.origin"
+    const val ERROR_SOURCE: String = "error.source"
 
     /**
      * The stack trace or the complementary information about the error. (String)
@@ -314,6 +308,38 @@ object RumAttributes {
      * @see [RumMonitor.stopResourceWithError]
      */
     const val ERROR_STACK: String = "error.stack"
+
+    /**
+     * Indicates the action performed by the Resource which triggered the error. (String)
+     * This value is filled automatically by the [RumMonitor] and the [RumInterceptor].
+     * @see [RumMonitor.startResource]
+     */
+    const val ERROR_RESOURCE_METHOD: String = "error.resource.method"
+
+    /**
+     * The HTTP response status code for the Resource which triggered the error. (Number)
+     * This value is filled automatically by the [RumInterceptor].
+     * @see [RumMonitor.stopResourceWithError]
+     */
+    const val ERROR_RESOURCE_STATUS_CODE: String = "error.resource.status_code"
+
+    /**
+     * The URL of a loaded Resource which triggered the error. (String)
+     * This value is filled automatically by the [RumMonitor] and the [RumInterceptor].
+     * @see [RumMonitor.stopResourceWithError]
+     */
+    const val ERROR_RESOURCE_URL: String = "error.resource.url"
+
+    // endregion
+
+    // region …
+
+    /**
+     * A duration of any kind in nanoseconds. (Number)
+     * This value is filled automatically by the [RumMonitor] for
+     * Views, Resources and Actions.
+     */
+    const val DURATION: String = "duration"
 
     /**
      * The UUID of the user action. (String)

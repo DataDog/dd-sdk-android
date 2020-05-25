@@ -63,7 +63,7 @@ internal sealed class RumEventData(val category: String) {
 
     internal data class Error(
         val message: String,
-        val origin: String,
+        val source: String,
         val throwable: Throwable? = null
     ) : RumEventData("error")
 }

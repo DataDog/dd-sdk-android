@@ -173,11 +173,14 @@ object com.datadog.android.rum.RumAttributes
   const val RESOURCE_TIMING_DL_DURATION: String
   const val RESOURCE_URL: String
   const val TRACE_ID: String
-  const val DURATION: String
-  const val ERROR_KIND: String
+  const val ERROR_TYPE: String
   const val ERROR_MESSAGE: String
-  const val ERROR_ORIGIN: String
+  const val ERROR_SOURCE: String
   const val ERROR_STACK: String
+  const val ERROR_RESOURCE_METHOD: String
+  const val ERROR_RESOURCE_STATUS_CODE: String
+  const val ERROR_RESOURCE_URL: String
+  const val DURATION: String
   const val EVT_ID: String
   const val EVT_NAME: String
   const val HTTP_REFERRER: String

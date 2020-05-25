@@ -87,10 +87,11 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
 
-        attributes[RumAttributes.RESOURCE_URL] = url
+        attributes[RumAttributes.ERROR_RESOURCE_URL] = url
+        attributes[RumAttributes.ERROR_RESOURCE_METHOD] = method
         sendError(
             event.message,
-            event.origin,
+            event.source,
             event.throwable,
             writer
         )
@@ -123,14 +124,14 @@ internal class RumResourceScope(
 
     private fun sendError(
         message: String,
-        origin: String,
+        source: String,
         throwable: Throwable,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Error(
             message,
-            origin,
+            source,
             throwable
         )
         val event = RumEvent(
