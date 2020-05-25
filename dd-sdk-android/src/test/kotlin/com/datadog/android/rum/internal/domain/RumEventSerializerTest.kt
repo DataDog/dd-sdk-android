@@ -139,14 +139,13 @@ internal class RumEventSerializerTest {
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
-        val measures = fakeView.measures
         assertThat(jsonObject)
-            .hasField(RumAttributes.RUM_DOCUMENT_VERSION, fakeView.version)
+            .hasField(RumAttributes._DD_DOCUMENT_VERSION, fakeView.version)
             .hasField(RumAttributes.VIEW_URL, fakeView.name)
-            .hasField(RumAttributes.DURATION, fakeView.durationNanoSeconds)
-            .hasField(RumAttributes.VIEW_MEASURES_ERROR_COUNT, fakeView.measures.errorCount)
-            .hasField(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, fakeView.measures.resourceCount)
-            .hasField(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
+            .hasField(RumAttributes.VIEW_DURATION, fakeView.durationNanoSeconds)
+            .hasField(RumAttributes.VIEW_ERROR_COUNT, fakeView.errorCount)
+            .hasField(RumAttributes.VIEW_RESOURCE_COUNT, fakeView.resourceCount)
+            .hasField(RumAttributes.VIEW_ACTION_COUNT, fakeView.actionCount)
     }
 
     @Test

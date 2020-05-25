@@ -30,7 +30,6 @@ internal class Configurator :
         forge.addFactory(RumEventDataResourceTimingForgeryFactory())
         forge.addFactory(RumEventDataUserActionForgeryFactory())
         forge.addFactory(RumEventDataViewForgeryFactory())
-        forge.addFactory(RumEventDataViewMeasureForgeryFactory())
         forge.addFactory(RumEventDataErrorForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
         forge.useJvmFactories()

@@ -15,13 +15,6 @@ import com.datadog.android.DatadogConfig
 @Suppress("unused")
 object RumAttributes {
 
-    // region Internal
-
-    /**
-     * The version of the RUM data format
-     */
-    internal const val _DD_FORMAT_VERSION = "_dd.format_version"
-
     // region Tags
 
     /**
@@ -59,6 +52,12 @@ object RumAttributes {
     // endregion
 
     // region Global Attributes
+
+    /**
+     * The version of the RUM data format.
+     * This value is filled automatically by the [RumMonitor].
+     */
+    internal const val _DD_FORMAT_VERSION = "_dd.format_version"
 
     /**
      * The UUID of the active user action. (String)
@@ -126,6 +125,38 @@ object RumAttributes {
      * The Url of the view. (String)
      */
     const val VIEW_URL: String = "view.url"
+
+    // endregion
+
+    // region View
+
+    /**
+     * Version of the view. (Number)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    internal const val _DD_DOCUMENT_VERSION: String = "_dd.document_version"
+
+    /** Number of user actions collected on the view. (Number)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val VIEW_ACTION_COUNT: String = "view.action.count"
+
+    /**
+     * A duration of any kind in nanoseconds. (Number)
+     * This value is filled automatically by the [RumMonitor] for
+     * Views, Resources and Actions.
+     */
+    const val VIEW_DURATION: String = "view.duration"
+
+    /** Number of errors collected on the view. (Number)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val VIEW_ERROR_COUNT: String = "view.error.count"
+
+    /** Number of resources collected on the view. (Number)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val VIEW_RESOURCE_COUNT: String = "view.resource.count"
 
     // endregion
 
@@ -378,31 +409,10 @@ object RumAttributes {
     const val RESOURCE_TIMING_DL_DURATION: String = "http.performance.download.duration"
 
     /**
-     * Version of the view. (Number)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val RUM_DOCUMENT_VERSION: String = "rum.document_version"
-
-    /**
      * Trace Id related to the resource loading. (Number)
      * This value is filled automatically by the [RumMonitor].
      */
     const val TRACE_ID: String = "trace_id"
-
-    /** Number of errors collected on the view. (Number)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val VIEW_MEASURES_ERROR_COUNT: String = "view.measures.error_count"
-
-    /** Number of resources collected on the view. (Number)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val VIEW_MEASURES_RESOURCE_COUNT: String = "view.measures.resource_count"
-
-    /** Number of user actions collected on the view. (Number)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val VIEW_MEASURES_USER_ACTION_COUNT: String = "view.measures.user_action_count"
 
     /**
      * The Url of the page that linked to the current page. (String)

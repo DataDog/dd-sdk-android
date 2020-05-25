@@ -42,44 +42,22 @@ internal sealed class RumEventData(val category: String) {
     internal data class View(
         val name: String,
         val durationNanoSeconds: Long,
-        val measures: Measures = Measures(),
+        val errorCount: Int = 0,
+        val resourceCount: Int = 0,
+        val actionCount: Int = 0,
         val version: Int = 1
     ) : RumEventData("view") {
 
         fun incrementErrorCount(): View {
-            return copy(
-                measures = measures.incrementErrorCount()
-            )
+            return copy(errorCount = errorCount + 1)
         }
 
         fun incrementResourceCount(): View {
-            return copy(
-                measures = measures.incrementResourceCount()
-            )
+            return copy(resourceCount = resourceCount + 1)
         }
 
-        fun incrementUserActionCount(): View {
-            return copy(
-                measures = measures.incrementUserActionCount()
-            )
-        }
-
-        internal data class Measures(
-            val errorCount: Int = 0,
-            val resourceCount: Int = 0,
-            val userActionCount: Int = 0
-        ) {
-            fun incrementErrorCount(): Measures {
-                return copy(errorCount = errorCount + 1)
-            }
-
-            fun incrementResourceCount(): Measures {
-                return copy(resourceCount = resourceCount + 1)
-            }
-
-            fun incrementUserActionCount(): Measures {
-                return copy(userActionCount = userActionCount + 1)
-            }
+        fun incrementActionCount(): View {
+            return copy(actionCount = actionCount + 1)
         }
     }
 

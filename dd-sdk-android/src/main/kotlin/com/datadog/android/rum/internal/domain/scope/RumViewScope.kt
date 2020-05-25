@@ -223,14 +223,12 @@ internal class RumViewScope(
         version++
         val updatedDurationNs = System.nanoTime() - startedNanos
         val eventData = RumEventData.View(
-            urlName,
-            updatedDurationNs,
-            RumEventData.View.Measures(
-                errorCount,
-                resourceCount,
-                actionCount
-            ),
-            version
+            name = urlName,
+            durationNanoSeconds = updatedDurationNs,
+            actionCount = actionCount,
+            errorCount = errorCount,
+            resourceCount = resourceCount,
+            version = version
         )
         val event = RumEvent(
             getRumContext(),

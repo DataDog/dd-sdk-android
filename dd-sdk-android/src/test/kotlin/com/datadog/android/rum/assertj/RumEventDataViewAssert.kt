@@ -67,10 +67,33 @@ internal class RumEventDataViewAssert(actual: RumEventData.View) :
         return this
     }
 
-    fun hasMeasures(assert: RumEventDataViewMeasuresAssert.() -> Unit): RumEventDataViewAssert {
+    fun hasErrorCount(expected: Int): RumEventDataViewAssert {
+        assertThat(actual.errorCount)
+            .overridingErrorMessage(
+                "Expected event data to have errorCount $expected " +
+                    "but was ${actual.errorCount}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
 
-        RumEventDataViewMeasuresAssert(actual.measures).assert()
+    fun hasResourceCount(expected: Int): RumEventDataViewAssert {
+        assertThat(actual.resourceCount)
+            .overridingErrorMessage(
+                "Expected event data to have resourceCount $expected " +
+                    "but was ${actual.resourceCount}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
 
+    fun hasActionCount(expected: Int): RumEventDataViewAssert {
+        assertThat(actual.actionCount)
+            .overridingErrorMessage(
+                "Expected event data to have actionCount $expected " +
+                    "but was ${actual.actionCount}"
+            )
+            .isEqualTo(expected)
         return this
     }
 
