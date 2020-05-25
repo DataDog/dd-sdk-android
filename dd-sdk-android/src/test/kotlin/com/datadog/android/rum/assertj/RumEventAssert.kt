@@ -39,9 +39,9 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+            .containsKey(RumAttributes.ACTION_ID)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.ACTION_ID] as? String
         assertThat(actionId)
             .isNotNull()
             .matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
@@ -51,9 +51,9 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasUserActionAttribute(expected: UUID): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+            .containsKey(RumAttributes.ACTION_ID)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.ACTION_ID] as? String
         assertThat(actionId)
             .isEqualTo(expected.toString())
 
@@ -62,7 +62,7 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasNoUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .doesNotContainKey(RumAttributes.EVT_USER_ACTION_ID)
+            .doesNotContainKey(RumAttributes.ACTION_ID)
 
         return this
     }

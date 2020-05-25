@@ -764,7 +764,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
 
         verify(mockActionScope).handleEvent(mockEvent, mockWriter)
@@ -830,7 +830,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -890,7 +890,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedErrorAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
         val expectedViewAttributes = attributes.toMutableMap().apply {
             putAll(fakeAttributes)
