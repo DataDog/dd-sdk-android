@@ -18,10 +18,12 @@ import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.propagation.ExtractedContext
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -36,6 +38,7 @@ import io.opentracing.util.GlobalTracer
 import java.math.BigInteger
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.assertj.core.api.Assertions.assertThat
@@ -134,9 +137,43 @@ internal class RumRequestInterceptorTest {
             identifyRequest(mockRequest),
             fakeMethod,
             fakeUrl,
-            mapOf(RumAttributes.TRACE_ID to traceId.toString())
+            mapOf(
+                RumAttributes.TRACE_ID to traceId.toString()
+            )
         )
         verifyNoMoreInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `starts Rum Resource event with request body length as attribute`(forge: Forge) {
+        val expectedBytesRead = forge.aLong()
+        val mockedBody: RequestBody = mock {
+            whenever(it.contentLength()).thenReturn(expectedBytesRead)
+        }
+        whenever(mockRequest.body()).thenReturn(mockedBody)
+
+        testedInterceptor.transformRequest(mockRequest)
+
+        verify(mockRumMonitor).startResource(
+            identifyRequest(mockRequest),
+            fakeMethod,
+            fakeUrl,
+            mapOf(RumAttributes.NETWORK_BYTES_READ to expectedBytesRead)
+        )
+    }
+
+    @Test
+    fun `when request does not have a body will not add the bytes_read attribute`(forge: Forge) {
+        whenever(mockRequest.body()).thenReturn(null)
+
+        testedInterceptor.transformRequest(mockRequest)
+
+        verify(mockRumMonitor).startResource(
+            identifyRequest(mockRequest),
+            fakeMethod,
+            fakeUrl,
+            emptyMap()
+        )
     }
 
     @Test
