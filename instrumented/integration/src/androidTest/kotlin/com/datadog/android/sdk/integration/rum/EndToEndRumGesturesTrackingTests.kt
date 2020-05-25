@@ -99,7 +99,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedViewEvent(
                 viewUrl, 2,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 1)
+                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 1)
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
@@ -116,7 +116,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ExpectedViewEvent(
                 viewUrl,
                 3,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 2)
+                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 2)
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
@@ -128,7 +128,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedViewEvent(
                 viewUrl, 4,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 3)
+                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 3)
             )
         )
     }

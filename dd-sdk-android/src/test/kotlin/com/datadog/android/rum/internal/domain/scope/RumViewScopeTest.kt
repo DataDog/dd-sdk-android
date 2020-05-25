@@ -180,11 +180,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -224,11 +222,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -266,11 +262,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -308,11 +302,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -353,11 +345,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -398,11 +388,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -434,11 +422,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -487,11 +473,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(1)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -520,11 +504,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(1)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(1)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -553,11 +535,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(1)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(1)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -607,11 +587,9 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasMeasures {
-                        hasErrorCount(0)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -857,11 +835,9 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasMeasures {
-                        hasErrorCount(1)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -920,11 +896,9 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedViewAttributes)
                 .hasViewData {
-                    hasMeasures {
-                        hasErrorCount(1)
-                        hasResourceCount(0)
-                        hasUserActionCount(0)
-                    }
+                    hasErrorCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)

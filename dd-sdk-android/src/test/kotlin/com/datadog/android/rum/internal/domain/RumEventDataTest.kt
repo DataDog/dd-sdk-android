@@ -37,11 +37,9 @@ internal class RumEventDataTest {
             .hasName(view.name)
             .hasVersion(view.version)
             .hasDuration(view.durationNanoSeconds)
-            .hasMeasures {
-                hasErrorCount(view.measures.errorCount + 1)
-                hasResourceCount(view.measures.resourceCount)
-                hasUserActionCount(view.measures.userActionCount)
-            }
+            .hasErrorCount(view.errorCount + 1)
+            .hasResourceCount(view.resourceCount)
+            .hasActionCount(view.actionCount)
     }
 
     @Test
@@ -54,27 +52,23 @@ internal class RumEventDataTest {
             .hasName(view.name)
             .hasVersion(view.version)
             .hasDuration(view.durationNanoSeconds)
-            .hasMeasures {
-                hasErrorCount(view.measures.errorCount)
-                hasResourceCount(view.measures.resourceCount + 1)
-                hasUserActionCount(view.measures.userActionCount)
-            }
+            .hasErrorCount(view.errorCount)
+            .hasResourceCount(view.resourceCount + 1)
+            .hasActionCount(view.actionCount)
     }
 
     @Test
     fun incrementUserActionCount(
         @Forgery view: RumEventData.View
     ) {
-        val incremented = view.incrementUserActionCount()
+        val incremented = view.incrementActionCount()
 
         assertThat(incremented)
             .hasName(view.name)
             .hasVersion(view.version)
             .hasDuration(view.durationNanoSeconds)
-            .hasMeasures {
-                hasErrorCount(view.measures.errorCount)
-                hasResourceCount(view.measures.resourceCount)
-                hasUserActionCount(view.measures.userActionCount + 1)
-            }
+            .hasErrorCount(view.errorCount)
+            .hasResourceCount(view.resourceCount)
+            .hasActionCount(view.actionCount + 1)
     }
 }
