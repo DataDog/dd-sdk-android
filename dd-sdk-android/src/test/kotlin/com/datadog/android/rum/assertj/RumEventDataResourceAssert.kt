@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceType
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -17,10 +17,10 @@ internal class RumEventDataResourceAssert(actual: RumEventData.Resource) :
         RumEventDataResourceAssert::class.java
     ) {
 
-    fun hasKind(expected: RumResourceKind): RumEventDataResourceAssert {
-        assertThat(actual.kind)
+    fun hasType(expected: RumResourceType): RumEventDataResourceAssert {
+        assertThat(actual.type)
             .overridingErrorMessage(
-                "Expected event data to have kind $expected but was ${actual.kind}"
+                "Expected event data to have type $expected but was ${actual.type}"
             )
             .isEqualTo(expected)
         return this
