@@ -254,46 +254,55 @@ object RumAttributes {
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_DNS_START: String = "http.performance.dns.start"
+
     /**
      * The duration of a resource DNS resolution.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_DNS_DURATION: String = "http.performance.dns.duration"
+
     /**
      * The start time of a resource connection.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_CONNECT_START: String = "http.performance.connect.start"
+
     /**
      * The duration of a resource connection.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_CONNECT_DURATION: String = "http.performance.connect.duration"
+
     /**
      * The start time of a resource  SSL handshake.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_SSL_START: String = "http.performance.ssl.start"
+
     /**
      * The duration of a resource SSL handshake.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_SSL_DURATION: String = "http.performance.ssl.duration"
+
     /**
      * The start time of a resource response headers download.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_FB_START: String = "http.performance.first_byte.start"
+
     /**
      * The duration of a resource response headers download.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_FB_DURATION: String = "http.performance.first_byte.duration"
+
     /**
      * The start time of a resource response body download.
      * This value is filled automatically by the [RumMonitor].
      */
     const val RESOURCE_TIMING_DL_START: String = "http.performance.download.start"
+
     /**
      * The duration of a resource response body download.
      * This value is filled automatically by the [RumMonitor].

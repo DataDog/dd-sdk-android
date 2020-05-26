@@ -25,14 +25,13 @@ internal class RumRequestInterceptor : RequestInterceptor {
     override fun transformRequest(request: Request): Request {
         val url = request.url().toString()
         val method = request.method()
-        val traceId = extractTraceId(request)
         val requestId = identifyRequest(request)
-
+        val requestAttributes = getRequestAttributes(request)
         GlobalRum.get().startResource(
             requestId,
             method,
             url,
-            if (traceId != null) mapOf(RumAttributes.TRACE_ID to traceId) else emptyMap()
+            requestAttributes
         )
         return request
     }
@@ -112,6 +111,19 @@ internal class RumRequestInterceptor : RequestInterceptor {
             )
         } else {
             mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+        }
+    }
+
+    private fun getRequestAttributes(request: Request): Map<String, Any?> {
+        val traceId = extractTraceId(request)
+        val requestBodyLength = request.body()?.contentLength()
+        return if (traceId == null && requestBodyLength == null) {
+            emptyMap()
+        } else {
+            val attributes = mutableMapOf<String, Any>()
+            traceId?.let { attributes[RumAttributes.TRACE_ID] = it }
+            requestBodyLength?.let { attributes[RumAttributes.NETWORK_BYTES_READ] = it }
+            attributes
         }
     }
 
