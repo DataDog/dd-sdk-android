@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Application
 import android.content.res.Resources
+import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
@@ -17,6 +18,7 @@ import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -24,6 +26,7 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -66,6 +69,8 @@ internal class WindowCallbackWrapperTest {
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
+
+    // region Unit Tests
 
     @BeforeEach
     fun `set up`() {
@@ -148,4 +153,69 @@ internal class WindowCallbackWrapperTest {
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
     }
+
+    @Test
+    fun `pressing back button will trigger specific user action event`(forge: Forge) {
+        // given
+        val returnedValue = forge.aBool()
+        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+
+        // when
+        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+
+        // then
+        inOrder(mockRumMonitor, mockCallback) {
+            verify(mockRumMonitor).addAction(Gesture.BACK.type)
+            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        }
+    }
+
+    @Test
+    fun `pressing back button will trigger user action event only on ACTION_UP`(forge: Forge) {
+        // given
+        val returnedValue = forge.aBool()
+        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)
+
+        // when
+        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+
+        // then
+        inOrder(mockRumMonitor, mockCallback) {
+            verifyZeroInteractions(mockRumMonitor)
+            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        }
+    }
+
+    @Test
+    fun `pressing any other key except back button will do nothing`(forge: Forge) {
+        // given
+        val returnedValue = forge.aBool()
+        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val keyCode = forge.anInt(min = 5)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, keyCode)
+
+        // when
+        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+
+        // then
+        inOrder(mockRumMonitor, mockCallback) {
+            verifyZeroInteractions(mockRumMonitor)
+            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun mockKeyEvent(action: Int, keyCode: Int): KeyEvent {
+        return mock {
+            whenever(it.keyCode).thenReturn(keyCode)
+            whenever(it.action).thenReturn(action)
+        }
+    }
+
+    // endregion
 }
