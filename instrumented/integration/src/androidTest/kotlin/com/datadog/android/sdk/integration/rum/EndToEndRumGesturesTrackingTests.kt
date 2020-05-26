@@ -109,8 +109,7 @@ internal class EndToEndRumGesturesTrackingTests {
                     RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
                     RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
                         mockServerRule.activity.recyclerView.javaClass.canonicalName,
-                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
-                        "recyclerView"
+                    RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to "recyclerView"
                 )
             ),
             ExpectedViewEvent(
@@ -134,6 +133,7 @@ internal class EndToEndRumGesturesTrackingTests {
     }
 
     // endregion
+
     companion object {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
     }
