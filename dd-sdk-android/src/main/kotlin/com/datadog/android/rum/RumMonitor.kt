@@ -56,42 +56,42 @@ interface RumMonitor {
     /**
      * Notifies that a User Action happened.
      * This is used to track discrete user actions (e.g.: tap).
-     * @param action the action identifier
+     * @param type the action type
      * @param attributes additional custom attributes to attach to the action
-     * @see [startUserAction]
-     * @see [stopUserAction]
+     * @see [startAction]
+     * @see [stopAction]
      */
-    fun addUserAction(
-        action: String,
+    fun addAction(
+        type: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
      * Notifies that a User Action started.
      * This is used to track long running user actions (e.g.: scroll). Such a user action must
-     * be stopped with [stopUserAction], and will be stopped automatically if it lasts more than
+     * be stopped with [stopAction], and will be stopped automatically if it lasts more than
      * 10 seconds.
-     * @param action the action identifier
+     * @param type the action type
      * @param attributes additional custom attributes to attach to the action
-     * @see [stopUserAction]
-     * @see [addUserAction]
+     * @see [stopAction]
+     * @see [addAction]
      */
-    fun startUserAction(
-        action: String,
+    fun startAction(
+        type: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
      * Notifies that a User Action stopped.
      * This is used to stop tracking long running user actions (e.g.: scroll), started
-     * with [startUserAction].
-     * @param action the action identifier (overriding the last started action)
+     * with [startAction].
+     * @param type the action type (overriding the last started action)
      * @param attributes additional custom attributes to attach to the action
-     * @see [addUserAction]
-     * @see [startUserAction]
+     * @see [addAction]
+     * @see [startAction]
      */
-    fun stopUserAction(
-        action: String,
+    fun stopAction(
+        type: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 

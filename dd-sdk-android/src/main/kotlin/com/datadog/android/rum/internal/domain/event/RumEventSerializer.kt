@@ -103,7 +103,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         root.addProperty(RumAttributes.TYPE, eventData.category)
         when (eventData) {
             is RumEventData.Resource -> addResourceData(eventData, root)
-            is RumEventData.UserAction -> addUserActionData(eventData, root)
+            is RumEventData.Action -> addActionData(eventData, root)
             is RumEventData.View -> addViewData(eventData, root)
             is RumEventData.Error -> addErrorData(root, eventData)
         }
@@ -121,13 +121,13 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         root.addProperty(RumAttributes.VIEW_ACTION_COUNT, eventData.actionCount)
     }
 
-    private fun addUserActionData(
-        eventData: RumEventData.UserAction,
+    private fun addActionData(
+        eventData: RumEventData.Action,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes.EVT_NAME, eventData.name)
-        root.addProperty(RumAttributes.EVT_ID, eventData.id.toString())
-        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.ACTION_TYPE, eventData.type)
+        root.addProperty(RumAttributes.ACTION_ID, eventData.id.toString())
+        root.addProperty(RumAttributes.ACTION_DURATION, eventData.durationNanoSeconds)
     }
 
     private fun addResourceData(

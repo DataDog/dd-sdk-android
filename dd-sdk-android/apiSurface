@@ -155,6 +155,7 @@ object com.datadog.android.rum.RumAttributes
   const val VIEW_ACTION_COUNT: String
   const val VIEW_DURATION: String
   const val VIEW_ERROR_COUNT: String
+  const val VIEW_REFERRER: String
   const val VIEW_RESOURCE_COUNT: String
   const val RESOURCE_DURATION: String
   const val RESOURCE_TYPE: String
@@ -180,36 +181,31 @@ object com.datadog.android.rum.RumAttributes
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
-  const val DURATION: String
-  const val EVT_ID: String
-  const val EVT_NAME: String
-  const val HTTP_REFERRER: String
-  const val HTTP_USERAGENT: String
-  const val HTTP_VERSION: String
-  const val NETWORK_BYTES_READ: String
+  const val ACTION_DURATION: String
+  const val ACTION_ERROR_COUNT: String
+  const val ACTION_RESOURCE_COUNT: String
+  const val ACTION_TARGET_CLASS_NAME: String
+  const val ACTION_TARGET_NAME: String
+  const val ACTION_TARGET_PARENT_INDEX: String
+  const val ACTION_TARGET_PARENT_CLASSNAME: String
+  const val ACTION_TARGET_PARENT_RESOURCE_ID: String
+  const val ACTION_TARGET_RESOURCE_ID: String
+  const val ACTION_TYPE: String
   const val NETWORK_CARRIER_ID: String
   const val NETWORK_CARRIER_NAME: String
-  const val NETWORK_CLIENT_IP: String
-  const val NETWORK_CLIENT_PORT: String
   const val NETWORK_CONNECTIVITY: String
   const val NETWORK_DOWN_KBPS: String
   const val NETWORK_SIGNAL_STRENGTH: String
   const val NETWORK_UP_KBPS: String
-  const val VIEW_REFERRER: String
-  const val TAG_TARGET_CLASS_NAME: String
-  const val TAG_TARGET_RESOURCE_ID: String
-  const val TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER: String
-  const val TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME: String
-  const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String
-  const val TAG_TARGET_TITLE: String
+  const val NETWORK_BYTES_READ: String
   const val TAG_GESTURE_DIRECTION: String
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addUserAction(String, Map<String, Any?> = emptyMap())
-  fun startUserAction(String, Map<String, Any?> = emptyMap())
-  fun stopUserAction(String, Map<String, Any?> = emptyMap())
+  fun addAction(String, Map<String, Any?> = emptyMap())
+  fun startAction(String, Map<String, Any?> = emptyMap())
+  fun stopAction(String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, RumResourceType, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(String, String, String, Throwable)

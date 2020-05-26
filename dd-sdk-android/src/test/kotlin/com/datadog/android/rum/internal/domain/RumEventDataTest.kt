@@ -58,7 +58,7 @@ internal class RumEventDataTest {
     }
 
     @Test
-    fun incrementUserActionCount(
+    fun incrementActionCount(
         @Forgery view: RumEventData.View
     ) {
         val incremented = view.incrementActionCount()
