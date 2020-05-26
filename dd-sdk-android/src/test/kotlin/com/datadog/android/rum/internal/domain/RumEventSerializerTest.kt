@@ -114,7 +114,7 @@ internal class RumEventSerializerTest {
     @Test
     fun `serializes user action rum event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeAction: RumEventData.UserAction
+        @Forgery fakeAction: RumEventData.Action
     ) {
         val event = fakeEvent.copy(eventData = fakeAction)
 
@@ -123,9 +123,9 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
-            .hasField(RumAttributes.EVT_NAME, fakeAction.name)
-            .hasField(RumAttributes.EVT_ID, fakeAction.id.toString())
-            .hasField(RumAttributes.DURATION, fakeAction.durationNanoSeconds)
+            .hasField(RumAttributes.ACTION_TYPE, fakeAction.type)
+            .hasField(RumAttributes.ACTION_ID, fakeAction.id.toString())
+            .hasField(RumAttributes.ACTION_DURATION, fakeAction.durationNanoSeconds)
     }
 
     @Test

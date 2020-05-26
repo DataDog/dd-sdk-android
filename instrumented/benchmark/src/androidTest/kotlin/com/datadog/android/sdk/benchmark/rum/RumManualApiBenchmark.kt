@@ -149,7 +149,7 @@ class RumManualApiBenchmark {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
             val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            GlobalRum.get().startUserAction(actionName, attributes)
+            GlobalRum.get().startAction(actionName, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }
@@ -169,8 +169,8 @@ class RumManualApiBenchmark {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
             val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            runWithTimingDisabled { GlobalRum.get().startUserAction(actionName, attributes) }
-            GlobalRum.get().stopUserAction(actionName, attributes)
+            runWithTimingDisabled { GlobalRum.get().startAction(actionName, attributes) }
+            GlobalRum.get().stopAction(actionName, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }

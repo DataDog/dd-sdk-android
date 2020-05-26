@@ -156,6 +156,11 @@ object RumAttributes {
      */
     const val VIEW_ERROR_COUNT: String = "view.error.count"
 
+    /**
+     * The Url of the page that linked to the current page. (String)
+     */
+    const val VIEW_REFERRER: String = "view.referrer"
+
     /** Number of resources collected on the view. (Number)
      * This value is filled automatically by the [RumMonitor].
      */
@@ -332,48 +337,85 @@ object RumAttributes {
 
     // endregion
 
-    // region …
+    // region Action
 
     /**
-     * A duration of any kind in nanoseconds. (Number)
-     * This value is filled automatically by the [RumMonitor] for
-     * Views, Resources and Actions.
+     * The action duration in nanoseconds. (Number)
+     * This value is filled automatically by the [RumMonitor].
+     * @see [RumMonitor.addAction]
+     * @see [RumMonitor.startAction]
+     * @see [RumMonitor.stopAction]
      */
-    const val DURATION: String = "duration"
+    const val ACTION_DURATION: String = "action.duration"
 
     /**
-     * The UUID of the user action. (String)
+     * Number of errors collected on the action. (Number)
      * This value is filled automatically by the [RumMonitor].
      */
-    const val EVT_ID: String = "evt.id"
+    const val ACTION_ERROR_COUNT: String = "action.error.count"
 
     /**
-     * The name of the user action. (String)
-     * @see [RumMonitor.addUserAction]
+     * Number of resources collected on the action. (Number)
+     * This value is filled automatically by the [RumMonitor].
      */
-    const val EVT_NAME: String = "evt.name"
+    const val ACTION_RESOURCE_COUNT: String = "action.resource.count"
 
     /**
-     * HTTP header field that identifies the address of the web page
-     * that linked to the resource being requested. (String)
+     * The touch target class name. (String)
+     * @see [RumMonitor.addAction]
+     * @see [RumMonitor.startAction]
+     * @see [RumMonitor.stopAction]
      */
-    const val HTTP_REFERRER: String = "http.referrer"
+    const val ACTION_TARGET_CLASS_NAME: String = "action.target.classname"
 
     /**
-     * The User-Agent as it is sent (raw format). (String)
-     * This value is automatically filled by the Datadog framework, using the System's "http.agent" property.
+     * The name of the action's target. (String)
+     * @see [RumMonitor.addAction]
+     * @see [RumMonitor.startAction]
+     * @see [RumMonitor.stopAction]
      */
-    const val HTTP_USERAGENT: String = "http.useragent"
+    const val ACTION_TARGET_NAME: String = "action.target.name"
 
     /**
-     * The version of HTTP used for the request. (String)
+     * The index of the touch target in the parent view. (Integer)
+     * For now we only detect RecyclerView as parent.
      */
-    const val HTTP_VERSION: String = "http.version"
+    const val ACTION_TARGET_PARENT_INDEX: String = "action.target.parent.index"
 
     /**
-     * Total number of bytes transmitted from the client to the server. (Number)
+     * The class name of the touch target's parent view. (String)
+     * For now we only detect RecyclerView as parent.
      */
-    const val NETWORK_BYTES_READ: String = "network.bytes_read"
+    const val ACTION_TARGET_PARENT_CLASSNAME: String = "action.target.parent.classname"
+
+    /**
+     * The resource id of the target container in case this is a scrollable component. (String)
+     * In case the resource id is missing we will provide the
+     * container id in a Hexa String format (e.g. 0x1A2B1)
+     * For now we only support the RecyclerView component.
+     */
+    const val ACTION_TARGET_PARENT_RESOURCE_ID: String = "action.target.parent.resource_id"
+
+    /**
+     * The touch target resource id. (String)
+     * It can either be the resource identifier, or the raw hexadecimal value.
+     * @see [RumMonitor.addAction]
+     * @see [RumMonitor.startAction]
+     * @see [RumMonitor.stopAction]
+     */
+    const val ACTION_TARGET_RESOURCE_ID: String = "action.target.resource_id"
+
+    /**
+     * The action type. (String)
+     * @see [RumMonitor.addAction]
+     * @see [RumMonitor.startAction]
+     * @see [RumMonitor.stopAction]
+     */
+    const val ACTION_TYPE: String = "action.type"
+
+    // endregion
+
+    // region Network Info
 
     /**
      * The unique id of the Carrier attached to the SIM card. (Number)
@@ -386,17 +428,6 @@ object RumAttributes {
      * This value is filled automatically by the [RumMonitor] for resources and errors.
      */
     const val NETWORK_CARRIER_NAME: String = "network.client.sim_carrier.name"
-
-    /**
-     * The IP address of the client that initiated the TCP connection. (String)
-     * This value is automatically filled by the Datadog framework.
-     */
-    const val NETWORK_CLIENT_IP: String = "network.client.ip"
-
-    /**
-     * The port of the client that initiated the connection. (Number)
-     */
-    const val NETWORK_CLIENT_PORT: String = "network.client.port"
 
     /**
      * The connectivity status of the device. (String)
@@ -422,52 +453,15 @@ object RumAttributes {
      */
     const val NETWORK_UP_KBPS: String = "network.client.uplink_kbps"
 
-    /**
-     * The Url of the page that linked to the current page. (String)
-     */
-    const val VIEW_REFERRER: String = "view.referrer"
+    // endregion
+
+    // region …
 
     /**
-     * The touch target class name. (String)
+     * Total number of bytes transmitted from the client to the server. (Number)
+     * TODO RUMM-469 rename to v2
      */
-    const val TAG_TARGET_CLASS_NAME: String = "target.classname"
-
-    /**
-     * The touch target resource id. (String)
-     * In case the resource id is missing we will provide the
-     * target id in a Hexa String format (e.g. 0x1A2B1)
-     */
-    const val TAG_TARGET_RESOURCE_ID: String = "target.resourceId"
-
-    /**
-     * The position of the touch target in the scrollable container adapter. (Integer)
-     * Provided only in cases where the parent of the target is a scrollable component.
-     * For now we only support the RecyclerView component.
-     */
-    const val TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER: String =
-        "target.scrollableContainer.position"
-
-    /**
-     * The class name of the target container in case this is a scrollable component. (String)
-     * For now we only support the RecyclerView component.
-     */
-    const val TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME: String =
-        "target.scrollableContainer.classname"
-
-    /**
-     * The resource id of the target container in case this is a scrollable component. (String)
-     * In case the resource id is missing we will provide the
-     * container id in a Hexa String format (e.g. 0x1A2B1)
-     * For now we only support the RecyclerView component.
-     */
-    const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String =
-        "target.scrollableContainer.resourceId"
-
-    /**
-     * The value of the target title attribute. We are usually adding this as an extra information
-     * for the Tapped Menu items.
-     */
-    const val TAG_TARGET_TITLE: String = "target.title"
+    const val NETWORK_BYTES_READ: String = "network.bytes_read"
 
     /**
      * The gesture event direction.
