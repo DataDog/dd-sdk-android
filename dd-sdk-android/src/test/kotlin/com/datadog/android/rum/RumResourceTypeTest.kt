@@ -24,7 +24,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumResourceKindTest {
+internal class RumResourceTypeTest {
 
     @Test
     fun `detect image MimeType`(
@@ -32,10 +32,10 @@ internal class RumResourceKindTest {
     ) {
         val mimeType = forge.aStringMatching("image/((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}")
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.IMAGE)
+            .isEqualTo(RumResourceType.IMAGE)
     }
 
     @Test
@@ -47,10 +47,10 @@ internal class RumResourceKindTest {
                 "((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}"
         )
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.MEDIA)
+            .isEqualTo(RumResourceType.MEDIA)
     }
 
     @Test
@@ -59,10 +59,10 @@ internal class RumResourceKindTest {
     ) {
         val mimeType = forge.aStringMatching("font/((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}")
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.FONT)
+            .isEqualTo(RumResourceType.FONT)
     }
 
     @Test
@@ -71,10 +71,10 @@ internal class RumResourceKindTest {
     ) {
         val mimeType = forge.aStringMatching("text/javascript")
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.JS)
+            .isEqualTo(RumResourceType.JS)
     }
 
     @Test
@@ -83,10 +83,10 @@ internal class RumResourceKindTest {
     ) {
         val mimeType = forge.aStringMatching("text/css")
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.CSS)
+            .isEqualTo(RumResourceType.CSS)
     }
 
     @Test
@@ -95,9 +95,9 @@ internal class RumResourceKindTest {
     ) {
         val mimeType = forge.aWhitespaceString()
 
-        val kind = RumResourceKind.fromMimeType(mimeType)
+        val kind = RumResourceType.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.UNKNOWN)
+            .isEqualTo(RumResourceType.UNKNOWN)
     }
 }

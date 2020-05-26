@@ -17,7 +17,9 @@ internal class RumEventDataViewForgeryFactory : ForgeryFactory<RumEventData.View
         return RumEventData.View(
             name = forge.aStringMatching("[a-z]+(/[a-z]+)+"),
             durationNanoSeconds = forge.aPositiveLong(),
-            measures = forge.getForgery(),
+            errorCount = forge.anInt(0, forge.aSmallInt()),
+            resourceCount = forge.anInt(0, forge.aSmallInt()),
+            actionCount = forge.anInt(0, forge.aSmallInt()),
             version = forge.aPositiveInt(strict = true)
         )
     }

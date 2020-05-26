@@ -37,11 +37,11 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasUserActionAttribute(): RumEventAssert {
+    fun hasActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+            .containsKey(RumAttributes.ACTION_ID)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.ACTION_ID] as? String
         assertThat(actionId)
             .isNotNull()
             .matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
@@ -49,20 +49,20 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasUserActionAttribute(expected: UUID): RumEventAssert {
+    fun hasActionAttribute(expected: UUID): RumEventAssert {
         assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+            .containsKey(RumAttributes.ACTION_ID)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
+        val actionId = actual.attributes[RumAttributes.ACTION_ID] as? String
         assertThat(actionId)
             .isEqualTo(expected.toString())
 
         return this
     }
 
-    fun hasNoUserActionAttribute(): RumEventAssert {
+    fun hasNoActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
-            .doesNotContainKey(RumAttributes.EVT_USER_ACTION_ID)
+            .doesNotContainKey(RumAttributes.ACTION_ID)
 
         return this
     }
@@ -90,11 +90,11 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasUserActionData(assert: RumEventDataActionAssert.() -> Unit): RumEventAssert {
+    fun hasActionData(assert: RumEventDataActionAssert.() -> Unit): RumEventAssert {
         assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.UserAction::class.java)
+            .isInstanceOf(RumEventData.Action::class.java)
 
-        RumEventDataActionAssert(actual.eventData as RumEventData.UserAction).assert()
+        RumEventDataActionAssert(actual.eventData as RumEventData.Action).assert()
 
         return this
     }

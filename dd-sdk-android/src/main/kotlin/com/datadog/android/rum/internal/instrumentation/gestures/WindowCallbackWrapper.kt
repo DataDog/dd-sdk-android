@@ -40,11 +40,11 @@ internal class WindowCallbackWrapper(
 
     override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
         val attributes = mutableMapOf<String, Any?>(
-            RumAttributes.TAG_TARGET_CLASS_NAME to item.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
-            RumAttributes.TAG_TARGET_TITLE to item.title
+            RumAttributes.ACTION_TARGET_CLASS_NAME to item.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
+            RumAttributes.ACTION_TARGET_NAME to item.title
         )
-        GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
+        GlobalRum.get().addAction(Gesture.TAP.type, attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 

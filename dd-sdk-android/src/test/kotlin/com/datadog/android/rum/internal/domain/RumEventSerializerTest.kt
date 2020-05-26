@@ -61,10 +61,10 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         val timing = fakeResource.timing!!
         assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
-            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
+            .hasField(RumAttributes.RESOURCE_DURATION, fakeResource.durationNanoSeconds)
+            .hasField(RumAttributes.RESOURCE_TYPE, fakeResource.type.value)
+            .hasField(RumAttributes.RESOURCE_URL, fakeResource.url)
+            .hasField(RumAttributes.RESOURCE_METHOD, fakeResource.method)
             .hasField(RumAttributes.USER_NAME, event.userInfo.name)
             .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
             .hasField(RumAttributes.USER_ID, event.userInfo.id)
@@ -92,10 +92,10 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
-            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
+            .hasField(RumAttributes.RESOURCE_DURATION, fakeResource.durationNanoSeconds)
+            .hasField(RumAttributes.RESOURCE_TYPE, fakeResource.type.value)
+            .hasField(RumAttributes.RESOURCE_URL, fakeResource.url)
+            .hasField(RumAttributes.RESOURCE_METHOD, fakeResource.method)
             .hasField(RumAttributes.USER_NAME, event.userInfo.name)
             .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
             .hasField(RumAttributes.USER_ID, event.userInfo.id)
@@ -114,7 +114,7 @@ internal class RumEventSerializerTest {
     @Test
     fun `serializes user action rum event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeAction: RumEventData.UserAction
+        @Forgery fakeAction: RumEventData.Action
     ) {
         val event = fakeEvent.copy(eventData = fakeAction)
 
@@ -123,9 +123,9 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
-            .hasField(RumAttributes.EVT_NAME, fakeAction.name)
-            .hasField(RumAttributes.EVT_ID, fakeAction.id.toString())
-            .hasField(RumAttributes.DURATION, fakeAction.durationNanoSeconds)
+            .hasField(RumAttributes.ACTION_TYPE, fakeAction.type)
+            .hasField(RumAttributes.ACTION_ID, fakeAction.id.toString())
+            .hasField(RumAttributes.ACTION_DURATION, fakeAction.durationNanoSeconds)
     }
 
     @Test
@@ -139,14 +139,13 @@ internal class RumEventSerializerTest {
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
-        val measures = fakeView.measures
         assertThat(jsonObject)
-            .hasField(RumAttributes.RUM_DOCUMENT_VERSION, fakeView.version)
+            .hasField(RumAttributes._DD_DOCUMENT_VERSION, fakeView.version)
             .hasField(RumAttributes.VIEW_URL, fakeView.name)
-            .hasField(RumAttributes.DURATION, fakeView.durationNanoSeconds)
-            .hasField(RumAttributes.VIEW_MEASURES_ERROR_COUNT, fakeView.measures.errorCount)
-            .hasField(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, fakeView.measures.resourceCount)
-            .hasField(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
+            .hasField(RumAttributes.VIEW_DURATION, fakeView.durationNanoSeconds)
+            .hasField(RumAttributes.VIEW_ERROR_COUNT, fakeView.errorCount)
+            .hasField(RumAttributes.VIEW_RESOURCE_COUNT, fakeView.resourceCount)
+            .hasField(RumAttributes.VIEW_ACTION_COUNT, fakeView.actionCount)
     }
 
     @Test
@@ -165,8 +164,8 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
             .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .hasField(RumAttributes.ERROR_KIND, fakeError.throwable.javaClass.simpleName)
+            .hasField(RumAttributes.ERROR_SOURCE, fakeError.source)
+            .hasField(RumAttributes.ERROR_TYPE, fakeError.throwable.javaClass.simpleName)
             .hasField(RumAttributes.ERROR_STACK, sw.toString())
     }
 
@@ -182,9 +181,9 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
+            .hasField(RumAttributes.RESOURCE_DURATION, fakeResource.durationNanoSeconds)
+            .hasField(RumAttributes.RESOURCE_TYPE, fakeResource.type.value)
+            .hasField(RumAttributes.RESOURCE_URL, fakeResource.url)
             .doesNotHaveField(RumAttributes.USER_ID)
             .doesNotHaveField(RumAttributes.USER_EMAIL)
             .doesNotHaveField(RumAttributes.USER_NAME)
@@ -203,8 +202,8 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
         assertThat(jsonObject)
             .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .doesNotHaveField(RumAttributes.ERROR_KIND)
+            .hasField(RumAttributes.ERROR_SOURCE, fakeError.source)
+            .doesNotHaveField(RumAttributes.ERROR_TYPE)
             .doesNotHaveField(RumAttributes.ERROR_STACK)
     }
 
@@ -280,12 +279,14 @@ internal class RumEventSerializerTest {
                 event.context.applicationId
             )
             .hasField(RumAttributes.SESSION_ID, event.context.sessionId)
+            .hasField(RumAttributes.SESSION_TYPE, "user")
+            .hasField(RumAttributes._DD_FORMAT_VERSION, 2)
             .hasField(RumAttributes.VIEW_ID, event.context.viewId)
             .hasStringFieldMatching(
                 RumAttributes.DATE,
                 "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
             )
-            .hasField(RumAttributes.EVT_CATEGORY, event.eventData.category)
+            .hasField(RumAttributes.TYPE, event.eventData.category)
 
         assertAttributesMatch(jsonObject, event)
 

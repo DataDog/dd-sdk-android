@@ -119,7 +119,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `menu item selection will trigger a Rum UserActionEvent`(forge: Forge) {
+    fun `menu item selection will trigger a Rum ActionEvent`(forge: Forge) {
         // given
         val returnValue = forge.aBool()
         val itemTitle = forge.aString()
@@ -138,12 +138,12 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockCallback, mockRumMonitor) {
-            verify(mockRumMonitor).addUserAction(eq(Gesture.TAP.actionName),
+            verify(mockRumMonitor).addAction(eq(Gesture.TAP.type),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                            this[RumAttributes.TAG_TARGET_RESOURCE_ID] == itemResourceName &&
-                            this[RumAttributes.TAG_TARGET_TITLE] == itemTitle
+                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                            this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
+                            this[RumAttributes.ACTION_TARGET_NAME] == itemTitle
                 })
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }

@@ -32,8 +32,10 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         // Event Context
         val context = model.context
+        root.addProperty(RumAttributes._DD_FORMAT_VERSION, FORMAT_VERSION)
         root.addProperty(RumAttributes.APPLICATION_ID, context.applicationId)
         root.addProperty(RumAttributes.SESSION_ID, context.sessionId)
+        root.addProperty(RumAttributes.SESSION_TYPE, SESSION_TYPE_USER)
         root.addProperty(RumAttributes.VIEW_ID, context.viewId)
 
         // Timestamp
@@ -98,10 +100,10 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     }
 
     private fun addEventData(eventData: RumEventData, root: JsonObject) {
-        root.addProperty(RumAttributes.EVT_CATEGORY, eventData.category)
+        root.addProperty(RumAttributes.TYPE, eventData.category)
         when (eventData) {
             is RumEventData.Resource -> addResourceData(eventData, root)
-            is RumEventData.UserAction -> addUserActionData(eventData, root)
+            is RumEventData.Action -> addActionData(eventData, root)
             is RumEventData.View -> addViewData(eventData, root)
             is RumEventData.Error -> addErrorData(root, eventData)
         }
@@ -111,32 +113,31 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.View,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes.RUM_DOCUMENT_VERSION, eventData.version)
+        root.addProperty(RumAttributes._DD_DOCUMENT_VERSION, eventData.version)
         root.addProperty(RumAttributes.VIEW_URL, eventData.name)
-        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
-        val measures = eventData.measures
-        root.addProperty(RumAttributes.VIEW_MEASURES_ERROR_COUNT, measures.errorCount)
-        root.addProperty(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, measures.resourceCount)
-        root.addProperty(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
+        root.addProperty(RumAttributes.VIEW_DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.VIEW_ERROR_COUNT, eventData.errorCount)
+        root.addProperty(RumAttributes.VIEW_RESOURCE_COUNT, eventData.resourceCount)
+        root.addProperty(RumAttributes.VIEW_ACTION_COUNT, eventData.actionCount)
     }
 
-    private fun addUserActionData(
-        eventData: RumEventData.UserAction,
+    private fun addActionData(
+        eventData: RumEventData.Action,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes.EVT_NAME, eventData.name)
-        root.addProperty(RumAttributes.EVT_ID, eventData.id.toString())
-        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.ACTION_TYPE, eventData.type)
+        root.addProperty(RumAttributes.ACTION_ID, eventData.id.toString())
+        root.addProperty(RumAttributes.ACTION_DURATION, eventData.durationNanoSeconds)
     }
 
     private fun addResourceData(
         eventData: RumEventData.Resource,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
-        root.addProperty(RumAttributes.RESOURCE_KIND, eventData.kind.value)
-        root.addProperty(RumAttributes.HTTP_METHOD, eventData.method)
-        root.addProperty(RumAttributes.HTTP_URL, eventData.url)
+        root.addProperty(RumAttributes.RESOURCE_DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.RESOURCE_TYPE, eventData.type.value)
+        root.addProperty(RumAttributes.RESOURCE_METHOD, eventData.method)
+        root.addProperty(RumAttributes.RESOURCE_URL, eventData.url)
         val timing = eventData.timing
         if (timing != null) {
             if (timing.dnsStart > 0) {
@@ -173,13 +174,13 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.Error
     ) {
         root.addProperty(RumAttributes.ERROR_MESSAGE, eventData.message)
-        root.addProperty(RumAttributes.ERROR_ORIGIN, eventData.origin)
+        root.addProperty(RumAttributes.ERROR_SOURCE, eventData.source)
 
         val throwable = eventData.throwable
         if (throwable != null) {
             val sw = StringWriter()
             throwable.printStackTrace(PrintWriter(sw))
-            root.addProperty(RumAttributes.ERROR_KIND, throwable.javaClass.simpleName)
+            root.addProperty(RumAttributes.ERROR_TYPE, throwable.javaClass.simpleName)
             root.addProperty(RumAttributes.ERROR_STACK, sw.toString())
         }
     }
@@ -210,6 +211,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // endregion
 
     companion object {
+        private const val FORMAT_VERSION = 2
+        private const val SESSION_TYPE_USER = "user"
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     }
 }

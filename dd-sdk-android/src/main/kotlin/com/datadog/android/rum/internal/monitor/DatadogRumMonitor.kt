@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceType
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -48,21 +48,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun addAction(type: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, false, attributes)
+            RumRawEvent.StartAction(type, false, attributes)
         )
     }
 
-    override fun startUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun startAction(type: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, true, attributes)
+            RumRawEvent.StartAction(type, true, attributes)
         )
     }
 
-    override fun stopUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun stopAction(type: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopAction(action, attributes)
+            RumRawEvent.StopAction(type, attributes)
         )
     }
 
@@ -77,31 +77,31 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopResource(key: String, kind: RumResourceKind, attributes: Map<String, Any?>) {
+    override fun stopResource(key: String, type: RumResourceType, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopResource(key, kind, attributes)
+            RumRawEvent.StopResource(key, type, attributes)
         )
     }
 
     override fun stopResourceWithError(
         key: String,
         message: String,
-        origin: String,
+        source: String,
         throwable: Throwable
     ) {
         handleEvent(
-            RumRawEvent.StopResourceWithError(key, message, origin, throwable)
+            RumRawEvent.StopResourceWithError(key, message, source, throwable)
         )
     }
 
     override fun addError(
         message: String,
-        origin: String,
+        source: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.AddError(message, origin, throwable, attributes)
+            RumRawEvent.AddError(message, source, throwable, attributes)
         )
     }
 

@@ -87,7 +87,7 @@ internal class GesturesListener(
             val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
-                rumMonitor.startUserAction(Gesture.NONE.actionName)
+                rumMonitor.startAction(Gesture.NONE.type)
             } else {
                 return false
             }
@@ -120,8 +120,8 @@ internal class GesturesListener(
 
         val targetId: String = resolveResourceNameFromId(scrollTarget.id)
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
-        registeredRumMonitor.stopUserAction(
-            scrollEventType.actionName,
+        registeredRumMonitor.stopAction(
+            scrollEventType.type,
             attributes
         )
     }
@@ -132,8 +132,8 @@ internal class GesturesListener(
         onUpEvent: MotionEvent
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to targetId
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
         )
         gestureDirection = resolveGestureDirection(onUpEvent)
         attributes.put(RumAttributes.TAG_GESTURE_DIRECTION, gestureDirection)
@@ -157,14 +157,14 @@ internal class GesturesListener(
             findTargetForTap(decorView, e.x, e.y)?.let { target ->
                 val targetId: String = resolveResourceNameFromId(target.id)
                 val attributes = mutableMapOf<String, Any?>(
-                    RumAttributes.TAG_TARGET_CLASS_NAME to target.javaClass.canonicalName,
-                    RumAttributes.TAG_TARGET_RESOURCE_ID to targetId
+                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.javaClass.canonicalName,
+                    RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
                 )
                 attributesProviders.forEach {
                     it.extractAttributes(target, attributes)
                 }
-                GlobalRum.get().addUserAction(
-                    Gesture.TAP.actionName,
+                GlobalRum.get().addAction(
+                    Gesture.TAP.type,
                     attributes
                 )
             }
@@ -282,11 +282,11 @@ internal class GesturesListener(
         internal const val SCROLL_DIRECTION_DOWN = "down"
 
         internal val MSG_NO_TARGET_TAP = "We could not find a valid target for " +
-            "the ${Gesture.TAP.actionName} event." +
+            "the ${Gesture.TAP.type} event." +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
         internal val MSG_NO_TARGET_SCROLL_SWIPE = "We could not find a valid target for " +
-            "the ${Gesture.SCROLL.actionName} or ${Gesture.SWIPE.actionName} event. " +
+            "the ${Gesture.SCROLL.type} or ${Gesture.SWIPE.type} event. " +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
     }

@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.net.RequestInterceptor
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceType
 import datadog.opentracing.propagation.ExtractedContext
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapExtract
@@ -42,15 +42,15 @@ internal class RumRequestInterceptor : RequestInterceptor {
         val mimeType = response.header(HEADER_CT)
 
         val url = request.url().toString()
-        val kind = when {
-            method in xhrMethods -> RumResourceKind.XHR
-            mimeType == null -> RumResourceKind.UNKNOWN
-            else -> RumResourceKind.fromMimeType(mimeType)
+        val type = when {
+            method in xhrMethods -> RumResourceType.XHR
+            mimeType == null -> RumResourceType.UNKNOWN
+            else -> RumResourceType.fromMimeType(mimeType)
         }
 
         GlobalRum.get().stopResource(
             requestId,
-            kind,
+            type,
             getResponseAttributes(response)
         )
         handleErrorStatus(method, url, response.code())
@@ -96,7 +96,11 @@ internal class RumRequestInterceptor : RequestInterceptor {
                 ERROR_MSG_FORMAT.format(method, url),
                 ORIGIN_NETWORK,
                 null,
-                mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+                mapOf(
+                    RumAttributes.ERROR_RESOURCE_URL to url,
+                    RumAttributes.ERROR_RESOURCE_METHOD to method,
+                    RumAttributes.ERROR_RESOURCE_STATUS_CODE to statusCode
+                )
             )
         }
     }
@@ -106,11 +110,11 @@ internal class RumRequestInterceptor : RequestInterceptor {
         val length = getBodyLength(response)
         return if (length > 0L) {
             mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to length
+                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
+                RumAttributes.RESOURCE_SIZE to length
             )
         } else {
-            mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
+            mapOf(RumAttributes.RESOURCE_STATUS_CODE to statusCode)
         }
     }
 
