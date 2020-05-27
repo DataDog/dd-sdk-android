@@ -13,6 +13,7 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import com.google.android.material.snackbar.Snackbar
 
 class NavActivity : AppCompatActivity() {
 
@@ -46,6 +47,14 @@ class NavActivity : AppCompatActivity() {
             R.id.navigation_data_list -> navController.navigate(R.id.fragment_data_list, arguments)
             R.id.navigation_view_pager -> {
                 startActivity(Intent(this, ViewPagerActivity::class.java))
+            }
+            R.id.show_snack_bar->{
+                Snackbar.make(
+                    this.window.decorView.rootView,
+                    "Demo message",
+                    Snackbar.LENGTH_LONG
+                ).show()
+
             }
             else -> result = super.onOptionsItemSelected(item)
         }

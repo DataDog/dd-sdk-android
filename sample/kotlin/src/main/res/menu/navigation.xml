@@ -31,4 +31,9 @@
         android:icon="@drawable/ic_view_array_black_24dp"
         android:title="@string/title_view_pager" />
 
+    <item
+        android:id="@+id/show_snack_bar"
+        android:icon="@drawable/ic_message_black_24dp"
+        android:title="@string/title_show_snackbar" />
+
 </menu>

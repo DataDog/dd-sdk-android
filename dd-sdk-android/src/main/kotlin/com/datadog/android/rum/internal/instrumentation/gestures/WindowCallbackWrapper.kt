@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
@@ -46,6 +47,13 @@ internal class WindowCallbackWrapper(
         )
         GlobalRum.get().addAction(Gesture.TAP.type, attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+            GlobalRum.get().addAction(Gesture.BACK.type)
+        }
+        return wrappedCallback.dispatchKeyEvent(event)
     }
 
     // endregion

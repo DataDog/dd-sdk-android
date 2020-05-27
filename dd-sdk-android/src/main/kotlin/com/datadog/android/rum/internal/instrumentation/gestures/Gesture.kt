@@ -10,5 +10,6 @@ internal enum class Gesture(val type: String) {
     TAP("tap"),
     SWIPE("swipe"),
     SCROLL("scroll"),
+    BACK("back"),
     NONE("")
 }
