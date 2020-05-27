@@ -23,7 +23,7 @@ context and your API token. You can create a token from the Integrations > API
 in Datadog. **Make sure you create a key of type `Client Token`.**
 
 Once Datadog is initialized, you can then create a `Logger` instance using the
-dedicated builder, and integrate it in Timber, as follow: 
+dedicated builder, and integrate it in Timber, as follows: 
 
 ```kotlin
 class SampleApplication : Application() {

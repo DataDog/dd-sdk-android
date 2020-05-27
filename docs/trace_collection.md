@@ -148,20 +148,21 @@ class SampleApplication : Application() {
    ```kotlin
    val tracer = GlobalTracer.get()
    val span = tracer.buildSpan("<SPAN_NAME>").start()
-   val tracedRequestBuilder = Request.Builder() ...
+   val tracedRequestBuilder = Request.Builder()
    tracer.inject(
            span.context(),
            Format.Builtin.TEXT_MAP_INJECT,
            TextMapInject { key, value ->
                tracedRequestBuilder.addHeader(key, value)
            }
-    val HttpRequest request = tracedRequestBuilder.build()
+   )
+    val request = tracedRequestBuilder.build()
     // Dispatch the request and finish the span after.
    ```
+   
    * Step 2: Extract the client tracer context from headers in server code.
 
    ```kotlin
-   val receivedRequest = // Your code here ...
    val extractedContext = GlobalTracer.get()
         .extract(
             Format.Builtin.TEXT_MAP_EXTRACT,
@@ -210,7 +211,7 @@ In addition to manual tracing, the `dd-sdk-android` library provides the followi
 
 ### OkHttp
 
-If you want to trace your OkHttp requests, you can add the provided [Interceptor][6] as follow:
+If you want to trace your OkHttp requests, you can add the provided [Interceptor][6] as follows:
 
 ```kotlin
 val okHttpClient =  OkHttpClient.Builder()
@@ -221,6 +222,14 @@ val okHttpClient =  OkHttpClient.Builder()
 This creates a span around each request processed by the OkHttpClient, with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
 
 **Note**: If you use multiple Interceptors, this one must be called first.
+
+## Batch collection
+
+All the spans are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
+
+This means that even if users open your application while being offline, no data will be lost.
+
+The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
 ## Further Reading
 

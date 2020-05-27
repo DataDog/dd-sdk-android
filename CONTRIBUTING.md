@@ -5,6 +5,58 @@ First of all, thanks for contributing!
 This document provides some basic guidelines for contributing to this repository.
 To propose improvements, feel free to submit a PR or open an Issue.
 
+## Setup your developer Environment
+
+To setup your enviroment, make sure you installed [Android Studio](https://developer.android.com/studio).
+
+**Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
+
+### Modules
+
+This project hosts the following modules:
+
+  - `dd-sdk-android`: the main library implementing all Datadog features (Logs, Traces, RUM, Crash reports);
+  - `dd-sdk-android-timber`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Timber](https://github.com/JakeWharton/timber);
+  - `dd-sdk-android-ktx`: a set of Kotlin extensions to make the `dd-sdk-android` library more Kotlin friendly;
+  - `instrumented/benchmark`: a test module to verify the performance of the library;
+  - `instrumented/integration`: a test module with integration tests using Espresso;
+  - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
+  - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
+  - `tools/unit`: a utility library with code to help writing unit tests;
+  - `sample/***`: a few sample application showcasing how to use the library features in production code;
+
+### Building the SDK
+
+You can build the SDK using the following Gradle command:
+
+```shell script
+./gradlew :dd-sdk-android:assemble :dd-sdk-android-timber:assemble :dd-sdk-android-ktx:assemble
+```
+
+### Running the tests
+
+The whole project is covered by a set of static analysis tools, linters and tests, each triggered by a custom global Gradle task, as follows:
+
+```shell script
+# launches the debug and release unit tests for all modules 
+./gradlew unitTestAll
+
+# launches the instrumented tests for all modules
+./gradlew instrumentTestAll
+
+# launches the detekt static analysis for all modules
+./gradlew detektAll
+
+# launches the ktlint format check for all modules
+./gradlew ktlintCheckAll
+
+# launches the Android linter for all modules
+./gradlew lintCheckAll
+
+# launches all the tests described above
+./gradlew checkAll
+```
+
 ## Submitting Issues
 
 Many great ideas for new features come from the community, and we'd be happy to
