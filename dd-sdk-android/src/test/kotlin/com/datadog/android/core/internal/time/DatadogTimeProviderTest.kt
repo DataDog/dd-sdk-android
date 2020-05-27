@@ -44,8 +44,10 @@ internal class DatadogTimeProviderTest {
 
     @Mock
     lateinit var mockContext: Context
+
     @Mock
     lateinit var mockPreferences: SharedPreferences
+
     @Mock
     lateinit var mockPreferencesEditor: SharedPreferences.Editor
 
@@ -91,21 +93,65 @@ internal class DatadogTimeProviderTest {
         val start = System.currentTimeMillis()
         val timestamp = testedProvider.getServerTimestamp()
         val end = System.currentTimeMillis()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
 
         assertThat(timestamp)
             .isBetween(start, end)
+        assertThat(offsetNanos)
+            .isEqualTo(0L)
     }
 
     @Test
-    fun `server timestamp is offset when first offset is known`(
-        @LongForgery(min = -ONE_YEAR, max = ONE_YEAR) offset: Long
+    fun `server timestamp is same as device when offset is too low with one sample`(
+        @LongForgery(min = -FIVE_SECOND, max = FIVE_SECOND) offset: Long
     ) {
         testedProvider.updateOffset(offset)
 
         val start = System.currentTimeMillis()
         val timestamp = testedProvider.getServerTimestamp()
-        val offsetNanos = testedProvider.getServerOffsetNanos()
         val end = System.currentTimeMillis()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
+
+        assertThat(timestamp)
+            .isBetween(start, end)
+        assertThat(offsetNanos)
+            .isEqualTo(0L)
+    }
+
+    @Test
+    fun `server timestamp is same as device when offset is too low with many samples`(
+        @LongForgery(min = -FIVE_SECOND, max = FIVE_SECOND) averageOffset: Long,
+        @IntForgery(min = 50, max = 500) count: Int,
+        forge: Forge
+    ) {
+        for (i in 0 until count) {
+            val offset = forge.aGaussianLong(averageOffset, ONE_SECOND)
+            if (abs(offset - averageOffset) < FIVE_SECOND) {
+                testedProvider.updateOffset(offset)
+            }
+        }
+
+        val start = System.currentTimeMillis()
+        val timestamp = testedProvider.getServerTimestamp()
+        val end = System.currentTimeMillis()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
+
+        assertThat(timestamp)
+            .isBetween(start, end)
+        assertThat(offsetNanos)
+            .isEqualTo(0L)
+    }
+
+    @Test
+    fun `server timestamp is offset when first offset is known`(
+        @LongForgery(min = ONE_MINUTE, max = ONE_YEAR) offset: Long
+    ) {
+        testedProvider.updateOffset(offset)
+
+        val start = System.currentTimeMillis()
+        val timestamp = testedProvider.getServerTimestamp()
+        val end = System.currentTimeMillis()
+        val offsetNanos = testedProvider.getServerOffsetNanos()
 
         assertThat(timestamp)
             .isBetween(start + offset, end + offset)
@@ -190,13 +236,17 @@ internal class DatadogTimeProviderTest {
         @IntForgery(min = 10, max = 100) count: Int,
         forge: Forge
     ) {
+        var updates = 0
         for (i in 0 until count) {
             val offset = forge.aGaussianLong(averageOffset, deviation)
-            testedProvider.updateOffset(offset)
+            if (abs(offset - averageOffset) < deviation) {
+                testedProvider.updateOffset(offset)
+                updates++
+            }
         }
 
         argumentCaptor<Long>().apply {
-            verify(mockPreferencesEditor, times(count)).putLong(
+            verify(mockPreferencesEditor, times(updates)).putLong(
                 eq(DatadogTimeProvider.PREF_OFFSET_MS),
                 capture()
             )
@@ -225,6 +275,7 @@ internal class DatadogTimeProviderTest {
 
     companion object {
         private const val ONE_SECOND = 1000L
+        private const val FIVE_SECOND = 5L * ONE_SECOND
         private const val HALF_MINUTE = 30 * ONE_SECOND
         private const val ONE_MINUTE = 60L * ONE_SECOND
         private const val ONE_HOUR = 60L * ONE_MINUTE

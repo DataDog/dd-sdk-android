@@ -10,7 +10,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import androidx.core.content.ContextCompat.getSystemService
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.NetworkTimeInterceptor
@@ -42,7 +41,7 @@ internal object CoreFeature {
 
     // region Constants
 
-    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION / 2
+    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION_MS / 2
     private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5) // 5 seconds
     private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
 
