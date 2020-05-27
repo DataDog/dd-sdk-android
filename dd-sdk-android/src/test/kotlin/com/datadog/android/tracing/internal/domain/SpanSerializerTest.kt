@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing.internal.domain
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -170,6 +171,8 @@ internal class SpanSerializerTest {
             .hasField(SpanSerializer.TAG_META, span.meta)
             .hasField(SpanSerializer.TAG_META) {
                 hasField(SpanSerializer.TAG_DD_SOURCE, SpanSerializer.DD_SOURCE_ANDROID)
+                hasField(SpanSerializer.TAG_SPAN_KIND, SpanSerializer.KIND_CLIENT)
+                hasField(SpanSerializer.TAG_TRACER_VERSION, BuildConfig.VERSION_NAME)
                 hasField(SpanSerializer.TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
             }
             .hasField(SpanSerializer.TAG_METRICS, span.metrics)

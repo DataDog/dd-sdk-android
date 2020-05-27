@@ -56,6 +56,7 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
         return if (tracer != null) {
             val span = tracer.buildSpan("okhttp.request").start()
             val url = request.url().toString()
+            (span as? MutableSpan)?.resourceName = url
             span.setTag(Tags.HTTP_URL.key, url)
             span.setTag(Tags.HTTP_METHOD.key, request.method())
             val transformedRequest = updateRequest(request, tracer, span)
@@ -71,8 +72,12 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
         val span = startedSpans.remove(identifyRequest(request))
         if (span != null) {
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
-            if (statusCode >= 400) {
+            if (statusCode in 400..499) {
                 (span as? MutableSpan)?.isError = true
+            }
+            if (statusCode == 404) {
+                // limit spam on 404 resources
+                (span as? MutableSpan)?.resourceName = "404"
             }
             span.finish()
         }
