@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
@@ -136,7 +135,6 @@ internal class LogSerializerTest {
             .hasField(LogAttributes.LOGGER_NAME, log.loggerName)
             .hasField(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
             .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
-            .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject).hasStringFieldMatching(

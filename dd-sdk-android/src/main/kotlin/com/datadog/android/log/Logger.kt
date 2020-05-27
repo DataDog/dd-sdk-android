@@ -190,8 +190,8 @@ internal constructor(private val handler: LogHandler) {
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                            buildDatadogHandler(),
-                            buildLogcatHandler()
+                        buildDatadogHandler(),
+                        buildLogcatHandler()
                     )
                 }
                 datadogLogsEnabled -> buildDatadogHandler()
@@ -483,6 +483,9 @@ internal constructor(private val handler: LogHandler) {
         combinedTags.addAll(tags)
         if (LogsFeature.envTag.isNotEmpty()) {
             combinedTags.add(LogsFeature.envTag)
+        }
+        if (LogsFeature.appVersionTag.isNotEmpty()) {
+            combinedTags.add(LogsFeature.appVersionTag)
         }
 
         handler.handleLog(level, message, throwable, combinedAttributes, combinedTags, timestamp)

@@ -55,6 +55,7 @@ DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
 object com.datadog.android.log.LogAttributes
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String
+  const val ENV: String
   const val DATE: String
   const val DB_INSTANCE: String
   const val DB_OPERATION: String

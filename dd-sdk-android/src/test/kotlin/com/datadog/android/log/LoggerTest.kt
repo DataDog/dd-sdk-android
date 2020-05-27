@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,8 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
-        ExtendWith(MockitoExtension::class),
-        ExtendWith(ForgeExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings
 @ForgeConfiguration(Configurator::class)
@@ -52,8 +53,15 @@ internal class LoggerTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         LogsFeature.envName = ""
+        LogsFeature.appVersion = ""
         fakeMessage = forge.anAlphabeticalString()
         testedLogger = Logger(mockLogHandler)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        LogsFeature.envName = ""
+        LogsFeature.appVersion = ""
     }
 
     // region Log
@@ -63,13 +71,13 @@ internal class LoggerTest {
         testedLogger.v(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.VERBOSE,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.VERBOSE,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -79,14 +87,14 @@ internal class LoggerTest {
         testedLogger.internalLog(level, fakeMessage, null, emptyMap(), timestamp)
 
         verify(mockLogHandler)
-                .handleLog(
-                        level,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet(),
-                        timestamp
-                )
+            .handleLog(
+                level,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet(),
+                timestamp
+            )
     }
 
     @Test
@@ -94,13 +102,13 @@ internal class LoggerTest {
         testedLogger.d(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.DEBUG,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -108,13 +116,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -122,13 +130,13 @@ internal class LoggerTest {
         testedLogger.w(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.WARN,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.WARN,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -136,13 +144,13 @@ internal class LoggerTest {
         testedLogger.e(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ERROR,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ERROR,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -150,13 +158,13 @@ internal class LoggerTest {
         testedLogger.wtf(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ASSERT,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ASSERT,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     // endregion
@@ -167,13 +175,13 @@ internal class LoggerTest {
         testedLogger.v(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.VERBOSE,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.VERBOSE,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -181,13 +189,13 @@ internal class LoggerTest {
         testedLogger.d(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.DEBUG,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -195,13 +203,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -209,13 +217,13 @@ internal class LoggerTest {
         testedLogger.w(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.WARN,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.WARN,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -223,13 +231,13 @@ internal class LoggerTest {
         testedLogger.e(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ERROR,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ERROR,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -237,13 +245,13 @@ internal class LoggerTest {
         testedLogger.wtf(fakeMessage, throwable)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ASSERT,
-                        fakeMessage,
-                        throwable,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ASSERT,
+                fakeMessage,
+                throwable,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     // endregion
@@ -259,13 +267,13 @@ internal class LoggerTest {
         testedLogger.v(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.VERBOSE,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.VERBOSE,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -277,13 +285,13 @@ internal class LoggerTest {
         testedLogger.d(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.DEBUG,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -295,13 +303,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -313,13 +321,13 @@ internal class LoggerTest {
         testedLogger.w(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.WARN,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.WARN,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -331,13 +339,13 @@ internal class LoggerTest {
         testedLogger.e(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ERROR,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ERROR,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -349,13 +357,13 @@ internal class LoggerTest {
         testedLogger.wtf(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ASSERT,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ASSERT,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -367,13 +375,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to NULL_MAP_VALUE),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to NULL_MAP_VALUE),
+                emptySet()
+            )
     }
 
     @Test
@@ -384,13 +392,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -401,13 +409,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -418,13 +426,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     // endregion
@@ -441,13 +449,13 @@ internal class LoggerTest {
         testedLogger.v(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.VERBOSE,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.VERBOSE,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -460,13 +468,13 @@ internal class LoggerTest {
         testedLogger.d(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.DEBUG,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -479,13 +487,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -498,13 +506,13 @@ internal class LoggerTest {
         testedLogger.w(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.WARN,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.WARN,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -517,13 +525,13 @@ internal class LoggerTest {
         testedLogger.e(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ERROR,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ERROR,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -536,13 +544,13 @@ internal class LoggerTest {
         testedLogger.wtf(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.ASSERT,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.ASSERT,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -555,13 +563,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -573,13 +581,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     // endregion
@@ -595,13 +603,13 @@ internal class LoggerTest {
         testedLogger.v(fakeMessage, null, mapOf(key to value))
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.VERBOSE,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.VERBOSE,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -614,14 +622,14 @@ internal class LoggerTest {
         testedLogger.internalLog(level, fakeMessage, null, mapOf(key to value), timestamp)
 
         verify(mockLogHandler)
-                .handleLog(
-                        level,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet(),
-                        timestamp
-                )
+            .handleLog(
+                level,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet(),
+                timestamp
+            )
     }
 
     @Test
@@ -633,13 +641,13 @@ internal class LoggerTest {
         testedLogger.d(fakeMessage, null, mapOf(key to value))
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.DEBUG,
-                        fakeMessage,
-                        null,
-                        mapOf(key to value),
-                        emptySet()
-                )
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
     }
 
     @Test
@@ -653,13 +661,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage, null, mapOf(key to localValue))
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        mapOf(key to localValue),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to localValue),
+                emptySet()
+            )
     }
 
     @Test
@@ -675,23 +683,23 @@ internal class LoggerTest {
 
         inOrder(mockLogHandler) {
             verify(mockLogHandler)
-                    .handleLog(
-                            eq(Log.WARN),
-                            eq(message1),
-                            isNull(),
-                            eq(mapOf(key to value)),
-                            eq(emptySet()),
-                            isNull()
-                    )
+                .handleLog(
+                    eq(Log.WARN),
+                    eq(message1),
+                    isNull(),
+                    eq(mapOf(key to value)),
+                    eq(emptySet()),
+                    isNull()
+                )
             verify(mockLogHandler)
-                    .handleLog(
-                            eq(Log.ERROR),
-                            eq(message2),
-                            isNull(),
-                            eq(emptyMap()),
-                            eq(emptySet()),
-                            isNull()
-                    )
+                .handleLog(
+                    eq(Log.ERROR),
+                    eq(message2),
+                    isNull(),
+                    eq(emptyMap()),
+                    eq(emptySet()),
+                    isNull()
+                )
         }
     }
 
@@ -707,13 +715,52 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        setOf("env:$envName")
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf("${LogAttributes.ENV}:$envName")
+            )
+    }
+
+    @Test
+    fun `adds app version tag if present`(forge: Forge) {
+        val appVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
+        LogsFeature.appVersion = appVersion
+
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf("${LogAttributes.APPLICATION_VERSION}:$appVersion")
+            )
+    }
+
+    @Test
+    fun `adds app version tag and env tag if both present`(forge: Forge) {
+        val appVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
+        LogsFeature.appVersion = appVersion
+        val envName = forge.anAlphabeticalString()
+        LogsFeature.envName = envName
+
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf(
+                    "${LogAttributes.ENV}:$envName",
+                    "${LogAttributes.APPLICATION_VERSION}:$appVersion"
                 )
+            )
     }
 
     @Test
@@ -724,13 +771,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        setOf(tag)
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf(tag)
+            )
     }
 
     @Test
@@ -742,13 +789,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        setOf("$key:$value")
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf("$key:$value")
+            )
     }
 
     @Test
@@ -764,13 +811,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        setOf("$key:$value1", "$key:$value2", "$key:$value3")
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                setOf("$key:$value1", "$key:$value2", "$key:$value3")
+            )
     }
 
     // endregion
@@ -786,13 +833,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -805,13 +852,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     @Test
@@ -828,13 +875,13 @@ internal class LoggerTest {
         testedLogger.i(fakeMessage)
 
         verify(mockLogHandler)
-                .handleLog(
-                        Log.INFO,
-                        fakeMessage,
-                        null,
-                        emptyMap(),
-                        emptySet()
-                )
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                emptyMap(),
+                emptySet()
+            )
     }
 
     // endregion
@@ -846,9 +893,9 @@ internal class LoggerTest {
         val asyncOperations = 100
         val syncOperations = 10
         val randomTags =
-                forge.aList(asyncOperations) {
-                    "${forge.aString(syncOperations)}:${forge.aString(syncOperations)}"
-                }
+            forge.aList(asyncOperations) {
+                "${forge.aString(syncOperations)}:${forge.aString(syncOperations)}"
+            }
         val countDownLatch = CountDownLatch(asyncOperations)
         var logDebugExecutionCalls = 0
         repeat(asyncOperations) {
@@ -885,13 +932,13 @@ internal class LoggerTest {
                     logDebugExecutionCalls++
                     {
                         val attributes =
-                                forge.aMap<String, Any>(size = forge.anInt(min = 1, max = 5)) {
-                                    forge.aString(size = syncOperations) to
-                                            forge.aString(size = syncOperations)
-                                }
+                            forge.aMap<String, Any>(size = forge.anInt(min = 1, max = 5)) {
+                                forge.aString(size = syncOperations) to
+                                    forge.aString(size = syncOperations)
+                            }
                         testedLogger.d(
-                                forge.aString(size = syncOperations),
-                                attributes = attributes
+                            forge.aString(size = syncOperations),
+                            attributes = attributes
                         )
                     }
                 }
@@ -904,12 +951,12 @@ internal class LoggerTest {
 
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(mockLogHandler, times(logDebugExecutionCalls)).handleLog(
-                eq(Log.DEBUG),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull()
+            eq(Log.DEBUG),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
         )
     }
 
@@ -930,8 +977,8 @@ internal class LoggerTest {
                         repeat(syncedOperations) {
                             val randomAttributeIndex = forge.anInt(0, asyncOperations)
                             testedLogger.addAttribute(
-                                    randomAttributes[randomAttributeIndex].first,
-                                    randomAttributes[randomAttributeIndex].second
+                                randomAttributes[randomAttributeIndex].first,
+                                randomAttributes[randomAttributeIndex].second
                             )
                         }
                     }
@@ -941,7 +988,7 @@ internal class LoggerTest {
                         repeat(syncedOperations) {
                             val randomAttributeIndex = forge.anInt(0, asyncOperations)
                             testedLogger.removeAttribute(
-                                    randomAttributes[randomAttributeIndex].first
+                                randomAttributes[randomAttributeIndex].first
                             )
                         }
                     }
@@ -950,13 +997,13 @@ internal class LoggerTest {
                     logDebugExecutionCalls++
                     {
                         val attributes =
-                                forge.aMap<String, Any>(size = forge.anInt(min = 1, max = 5)) {
-                                    forge.aString(size = syncedOperations) to
-                                            forge.aString(size = syncedOperations)
-                                }
+                            forge.aMap<String, Any>(size = forge.anInt(min = 1, max = 5)) {
+                                forge.aString(size = syncedOperations) to
+                                    forge.aString(size = syncedOperations)
+                            }
                         testedLogger.d(
-                                forge.aString(size = syncedOperations),
-                                attributes = attributes
+                            forge.aString(size = syncedOperations),
+                            attributes = attributes
                         )
                     }
                 }
@@ -969,12 +1016,12 @@ internal class LoggerTest {
 
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(mockLogHandler, times(logDebugExecutionCalls)).handleLog(
-                eq(Log.DEBUG),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull()
+            eq(Log.DEBUG),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
         )
     }
 

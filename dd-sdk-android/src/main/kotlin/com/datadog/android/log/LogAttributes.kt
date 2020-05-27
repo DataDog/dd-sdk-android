@@ -33,6 +33,12 @@ object LogAttributes {
     const val APPLICATION_VERSION: String = "version"
 
     /**
+     * The custom environment name. (Number)
+     * This value is filled automatically by the [Logger].
+     */
+    const val ENV: String = "env"
+
+    /**
      * The date when the log is fired as an ISO-8601 String. (String)
      * This value is filled automatically by the [Logger].
      */
