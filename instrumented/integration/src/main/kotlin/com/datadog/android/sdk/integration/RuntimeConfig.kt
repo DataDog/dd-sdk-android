@@ -50,7 +50,8 @@ internal object RuntimeConfig {
         "flavor" to BuildConfig.FLAVOR,
         "build_type" to BuildConfig.BUILD_TYPE,
         "blank" to "",
-        "env" to RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT
+        "env" to INTEGRATION_TESTS_ENVIRONMENT,
+        "version" to BuildConfig.VERSION_NAME
     )
 
     val singleValueTags = listOf(

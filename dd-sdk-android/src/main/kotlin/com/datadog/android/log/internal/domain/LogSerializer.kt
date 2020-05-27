@@ -8,7 +8,6 @@ package com.datadog.android.log.internal.domain
 
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -48,7 +47,6 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog.addProperty(LogAttributes.LOGGER_NAME, log.loggerName)
         jsonLog.addProperty(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
         jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
-        jsonLog.addProperty(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
 
         // Timestamp
         val formattedDate = synchronized(simpleDateFormat) {

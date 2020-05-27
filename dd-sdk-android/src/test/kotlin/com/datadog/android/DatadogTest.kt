@@ -13,6 +13,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
@@ -104,8 +105,10 @@ internal class DatadogTest {
             .handleLog(
                 AndroidLog.WARN,
                 Datadog.MESSAGE_ALREADY_INITIALIZED,
-                tags = setOf("env:$fakeEnvName")
-            )
+                tags = setOf(
+                    "${LogAttributes.ENV}:$fakeEnvName",
+                    "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion")
+                )
     }
 
     @Test
@@ -128,7 +131,10 @@ internal class DatadogTest {
             .handleLog(
                 AndroidLog.WARN,
                 String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()"),
-                tags = setOf("env:$fakeEnvName")
+                tags = setOf(
+                    "${LogAttributes.ENV}:$fakeEnvName",
+                    "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion"
+                )
             )
     }
 
@@ -146,7 +152,10 @@ internal class DatadogTest {
             .handleLog(
                 AndroidLog.WARN,
                 String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()"),
-                tags = setOf("env:$fakeEnvName")
+                tags = setOf(
+                    "${LogAttributes.ENV}:$fakeEnvName",
+                    "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion"
+                )
             )
     }
 

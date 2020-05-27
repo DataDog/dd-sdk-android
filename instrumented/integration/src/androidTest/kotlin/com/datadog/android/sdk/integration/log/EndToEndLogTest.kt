@@ -22,7 +22,6 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,7 +37,6 @@ internal class EndToEndLogTest {
     )
 
     @Test
-    @Ignore
     fun verifyExpectedActivityLogs() {
 
         // Wait to make sure all batches are consumed
@@ -76,7 +74,6 @@ internal class EndToEndLogTest {
                 .hasField(TAG_SERVICE, mockServerRule.activity.packageName)
                 .hasField(TAG_LOGGER_NAME, expectedLoggerName())
                 .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
-                .hasField(TAG_APP_VERSION_NAME, BuildConfig.VERSION_NAME)
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
             assertThat(tags).containsOnlyElementsOf(globalTags)
@@ -130,7 +127,6 @@ internal class EndToEndLogTest {
 
         internal const val TAG_LOGGER_NAME = "logger.name"
         internal const val TAG_VERSION_NAME = "logger.version"
-        internal const val TAG_APP_VERSION_NAME = "application.version"
 
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
