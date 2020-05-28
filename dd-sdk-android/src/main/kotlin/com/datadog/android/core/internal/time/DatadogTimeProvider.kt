@@ -38,7 +38,7 @@ internal class DatadogTimeProvider(
         if (samples == 0) {
             serverOffset = offsetMs
             samples = 1
-        } else if (abs(currentOffsetMs - offsetMs) > MAX_OFFSET_DEVIATION) {
+        } else if (abs(currentOffsetMs - offsetMs) > MAX_OFFSET_DEVIATION_MS) {
             serverOffset = offsetMs
             samples = 1
         } else {
@@ -66,11 +66,19 @@ internal class DatadogTimeProvider(
     }
 
     override fun getServerTimestamp(): Long {
-        return System.currentTimeMillis() + serverOffset
+        if (serverOffset < MIN_OFFSET_CORRECTION_MS) {
+            return System.currentTimeMillis()
+        } else {
+            return System.currentTimeMillis() + serverOffset
+        }
     }
 
     override fun getServerOffsetNanos(): Long {
-        return TimeUnit.MILLISECONDS.toNanos(serverOffset)
+        if (serverOffset < MIN_OFFSET_CORRECTION_MS) {
+            return 0L
+        } else {
+            return TimeUnit.MILLISECONDS.toNanos(serverOffset)
+        }
     }
 
     // endregion
@@ -91,6 +99,9 @@ internal class DatadogTimeProvider(
         private const val MAX_SAMPLES = 64
 
         // The Max allowed deviation, accounting for long transport in bad network conditions
-        internal const val MAX_OFFSET_DEVIATION: Long = 60L * 1000L
+        internal const val MAX_OFFSET_DEVIATION_MS: Long = 60L * 1000L
+
+        // If the deviation is below this value, we don't apply the correction
+        internal const val MIN_OFFSET_CORRECTION_MS: Long = 10L * 1000L
     }
 }
