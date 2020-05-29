@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing.internal.domain
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -70,6 +71,8 @@ internal class SpanSerializer(
         }
 
         metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_ANDROID)
+        metaObject.addProperty(TAG_SPAN_KIND, KIND_CLIENT)
+        metaObject.addProperty(TAG_TRACER_VERSION, BuildConfig.VERSION_NAME)
         metaObject.addProperty(TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
 
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
@@ -150,6 +153,7 @@ internal class SpanSerializer(
 
         internal const val TYPE_CUSTOM = "custom"
         internal const val DD_SOURCE_ANDROID = "android"
+        internal const val KIND_CLIENT = "client"
 
         // PAYLOAD TAGS
         internal const val TAG_SPANS = "spans"
@@ -171,5 +175,7 @@ internal class SpanSerializer(
         internal const val TAG_METRICS = "metrics"
         internal const val TAG_METRICS_TOP_LEVEL = "_top_level"
         internal const val TAG_DD_SOURCE = "_dd.source"
+        internal const val TAG_SPAN_KIND = "span.kind"
+        internal const val TAG_TRACER_VERSION = "tracer.version"
     }
 }

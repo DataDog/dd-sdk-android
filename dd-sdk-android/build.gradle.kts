@@ -145,6 +145,7 @@ cloneDependencies {
             "src/ot33CompatabilityTest/",
             "src/ot31CompatabilityTest/",
             "src/test/resources/",
+            "src/main/java/datadog/trace/common/processor/",
             "src/main/java/datadog/trace/common/sampling/RuleBasedSampler.java",
             "src/main/java/datadog/trace/common/serialization",
             "src/main/java/datadog/trace/common/writer/unixdomainsockets",
