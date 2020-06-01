@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import java.io.IOException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -40,7 +41,7 @@ import okhttp3.Response
 class DatadogEventListener
 internal constructor(val key: String) : EventListener() {
 
-    private val callStart = System.nanoTime()
+    private var callStart = 0L
 
     private var dnsStart = 0L
     private var dnsEnd = 0L
@@ -58,6 +59,11 @@ internal constructor(val key: String) : EventListener() {
     private var bodyEnd = 0L
 
     // region EventListener
+
+    override fun callStart(call: Call) {
+        super.callStart(call)
+        callStart = System.nanoTime()
+    }
 
     /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
@@ -111,6 +117,9 @@ internal constructor(val key: String) : EventListener() {
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = System.nanoTime()
+        if (response.code() >= 400) {
+            sendTiming()
+        }
     }
 
     /** @inheritdoc */
@@ -123,14 +132,29 @@ internal constructor(val key: String) : EventListener() {
     override fun responseBodyEnd(call: Call, byteCount: Long) {
         super.responseBodyEnd(call, byteCount)
         bodyEnd = System.nanoTime()
+    }
 
-        val timing = buildTiming()
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
+    /** @inheritdoc */
+    override fun callEnd(call: Call) {
+        super.callEnd(call)
+        sendTiming()
+    }
+
+    /** @inheritdoc */
+    override fun callFailed(call: Call, ioe: IOException) {
+        super.callFailed(call, ioe)
+        sendTiming()
     }
 
     // endregion
 
     // region Internal
+
+    private fun sendTiming() {
+
+        val timing = buildTiming()
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
+    }
 
     private fun buildTiming(): RumEventData.Resource.Timing {
         val (dnsS, dnsD) = if (dnsStart == 0L) {
