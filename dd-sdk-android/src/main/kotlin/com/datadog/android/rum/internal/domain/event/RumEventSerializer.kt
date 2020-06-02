@@ -113,12 +113,13 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.View,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes._DD_DOCUMENT_VERSION, eventData.version)
+        root.addProperty(RumAttributes.RUM_DOCUMENT_VERSION, eventData.version)
         root.addProperty(RumAttributes.VIEW_URL, eventData.name)
-        root.addProperty(RumAttributes.VIEW_DURATION, eventData.durationNanoSeconds)
-        root.addProperty(RumAttributes.VIEW_ERROR_COUNT, eventData.errorCount)
-        root.addProperty(RumAttributes.VIEW_RESOURCE_COUNT, eventData.resourceCount)
-        root.addProperty(RumAttributes.VIEW_ACTION_COUNT, eventData.actionCount)
+        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        val measures = eventData.measures
+        root.addProperty(RumAttributes.VIEW_MEASURES_ERROR_COUNT, measures.errorCount)
+        root.addProperty(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, measures.resourceCount)
+        root.addProperty(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
     }
 
     private fun addUserActionData(
