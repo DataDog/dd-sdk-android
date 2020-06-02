@@ -32,10 +32,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         // Event Context
         val context = model.context
-        root.addProperty(RumAttributes._DD_FORMAT_VERSION, FORMAT_VERSION)
         root.addProperty(RumAttributes.APPLICATION_ID, context.applicationId)
         root.addProperty(RumAttributes.SESSION_ID, context.sessionId)
-        root.addProperty(RumAttributes.SESSION_TYPE, SESSION_TYPE_USER)
         root.addProperty(RumAttributes.VIEW_ID, context.viewId)
 
         // Timestamp
@@ -100,7 +98,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     }
 
     private fun addEventData(eventData: RumEventData, root: JsonObject) {
-        root.addProperty(RumAttributes.TYPE, eventData.category)
+        root.addProperty(RumAttributes.EVT_CATEGORY, eventData.category)
         when (eventData) {
             is RumEventData.Resource -> addResourceData(eventData, root)
             is RumEventData.UserAction -> addUserActionData(eventData, root)
@@ -212,8 +210,6 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // endregion
 
     companion object {
-        private const val FORMAT_VERSION = 2
-        private const val SESSION_TYPE_USER = "user"
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     }
 }

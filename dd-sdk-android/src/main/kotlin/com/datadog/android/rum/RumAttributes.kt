@@ -15,14 +15,19 @@ import com.datadog.android.DatadogConfig
 @Suppress("unused")
 object RumAttributes {
 
-    // region Internal
+    /**
+     * The UUID of the application. (String)
+     * This value is filled automatically by the [RumMonitor].
+     * @see [DatadogConfig.Builder]
+     */
+    const val APPLICATION_ID: String = "application_id"
 
     /**
-     * The version of the RUM data format
+     * The package name of the application. (String)
+     * This value is extracted from your application's manifest and
+     * filled automatically by the [RumMonitor].
      */
-    internal const val _DD_FORMAT_VERSION = "_dd.format_version"
-
-    // region Tags
+    const val APPLICATION_PACKAGE: String = "application.package"
 
     /**
      * The human readable version of the application. (String)
@@ -30,12 +35,6 @@ object RumAttributes {
      * filled automatically by the [RumMonitor].
      */
     const val APPLICATION_VERSION: String = "version"
-
-    /**
-     * The custom environment name. (Number)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val ENV: String = "env"
 
     /**
      * The name of the application or service generating the rum events. (String)
@@ -46,90 +45,10 @@ object RumAttributes {
     const val SERVICE_NAME: String = "service"
 
     /**
-     * The technology from which the log originated. (String)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val SOURCE: String = "source"
-
-    /**
-     * Version of the current Datadog SDK.
-     */
-    const val SDK_VERSION: String = "sdk_version"
-
-    // endregion
-
-    // region Global Attributes
-
-    /**
-     * The UUID of the active user action. (String)
-     * This is used to link errors and resources with a user action.
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val ACTION_ID: String = "action.id"
-
-    /**
-     * The UUID of the application. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [DatadogConfig.Builder]
-     */
-    const val APPLICATION_ID: String = "application.id"
-
-    /**
      * The date when the log is fired as an ISO-8601 String. (String)
      * This value is filled automatically by the [RumMonitor].
      */
     const val DATE: String = "date"
-
-    /**
-     * The UUID of the session. (String)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val SESSION_ID: String = "session.id"
-
-    /**
-     * The type of the session (can be "user" or"synthetics"). (String)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val SESSION_TYPE: String = "session.type"
-
-    /**
-     * The type of the event. (String)
-     * This value is filled automatically by the [RumMonitor].
-     */
-    const val TYPE: String = "type"
-
-    /**
-     * The user email. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_EMAIL: String = "usr.email"
-
-    /**
-     * The user identifier. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_ID: String = "usr.id"
-
-    /**
-     * The user friendly name. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_NAME: String = "usr.name"
-
-    /** The UUID of the view. (String) */
-    const val VIEW_ID: String = "view.id"
-
-    /**
-     * The Url of the view. (String)
-     */
-    const val VIEW_URL: String = "view.url"
-
-    // endregion
-
-    // region …
 
     /**
      * A duration of any kind in nanoseconds. (Number)
@@ -170,6 +89,12 @@ object RumAttributes {
     const val ERROR_STACK: String = "error.stack"
 
     /**
+     * The category of the event. (String)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val EVT_CATEGORY: String = "evt.category"
+
+    /**
      * The UUID of the user action. (String)
      * This value is filled automatically by the [RumMonitor].
      */
@@ -180,6 +105,13 @@ object RumAttributes {
      * @see [RumMonitor.addUserAction]
      */
     const val EVT_NAME: String = "evt.name"
+
+    /**
+     * The UUID of the active user action. (String)
+     * This is used to link errors and resources with a user action.
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val EVT_USER_ACTION_ID: String = "evt.user_action_id"
 
     /**
      * Indicates the desired action to be performed for a given resource. (String)
@@ -384,10 +316,51 @@ object RumAttributes {
     const val RUM_DOCUMENT_VERSION: String = "rum.document_version"
 
     /**
+     * The UUID of the session. (String)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val SESSION_ID: String = "session_id"
+
+    /**
+     * The technology from which the log originated. (String)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val SOURCE: String = "source"
+
+    /**
+     * Version of the current Datadog SDK.
+     */
+    const val SDK_VERSION: String = "sdk_version"
+
+    /**
      * Trace Id related to the resource loading. (Number)
      * This value is filled automatically by the [RumMonitor].
      */
     const val TRACE_ID: String = "trace_id"
+
+    /**
+     * The user email. (String)
+     * This value is filled automatically by the [RumMonitor].
+     * @see [Datadog.setUserInfo]
+     */
+    const val USER_EMAIL: String = "usr.email"
+
+    /**
+     * The user identifier. (String)
+     * This value is filled automatically by the [RumMonitor].
+     * @see [Datadog.setUserInfo]
+     */
+    const val USER_ID: String = "usr.id"
+
+    /**
+     * The user friendly name. (String)
+     * This value is filled automatically by the [RumMonitor].
+     * @see [Datadog.setUserInfo]
+     */
+    const val USER_NAME: String = "usr.name"
+
+    /** The UUID of the view. (String) */
+    const val VIEW_ID: String = "view.id"
 
     /** Number of errors collected on the view. (Number)
      * This value is filled automatically by the [RumMonitor].
@@ -408,6 +381,11 @@ object RumAttributes {
      * The Url of the page that linked to the current page. (String)
      */
     const val VIEW_REFERRER: String = "view.referrer"
+
+    /**
+     * The Url of the view. (String)
+     */
+    const val VIEW_URL: String = "view.url"
 
     /**
      * The touch target class name. (String)
@@ -455,6 +433,4 @@ object RumAttributes {
      * The gesture event direction.
      */
     const val TAG_GESTURE_DIRECTION: String = "gesture.direction"
-
-    // endregion
 }

@@ -280,14 +280,12 @@ internal class RumEventSerializerTest {
                 event.context.applicationId
             )
             .hasField(RumAttributes.SESSION_ID, event.context.sessionId)
-            .hasField(RumAttributes.SESSION_TYPE, "user")
-            .hasField(RumAttributes._DD_FORMAT_VERSION, 2)
             .hasField(RumAttributes.VIEW_ID, event.context.viewId)
             .hasStringFieldMatching(
                 RumAttributes.DATE,
                 "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
             )
-            .hasField(RumAttributes.TYPE, event.eventData.category)
+            .hasField(RumAttributes.EVT_CATEGORY, event.eventData.category)
 
         assertAttributesMatch(jsonObject, event)
 

@@ -251,7 +251,7 @@ internal class RumViewScope(
         return attributes.toMutableMap()
             .apply {
                 if (actionId != null) {
-                    put(RumAttributes.ACTION_ID, actionId.toString())
+                    put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
                 }
                 put(RumAttributes.VIEW_URL, urlName)
                 putAll(GlobalRum.globalAttributes)
