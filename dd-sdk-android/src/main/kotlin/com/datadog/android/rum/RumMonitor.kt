@@ -132,7 +132,7 @@ interface RumMonitor {
      * @param key the instance that represents the active view (usually your
      * request or network call instance).
      * @param message a message explaining the error
-     * @param source the source of the error (eg: "network", "sqlight", "assets", …)
+     * @param origin the origin of the error (eg: "network", "sqlight", "assets", …)
      * @param throwable the throwable
      * @see [startResource]
      * @see [stopResource]
@@ -140,20 +140,20 @@ interface RumMonitor {
     fun stopResourceWithError(
         key: String,
         message: String,
-        source: String,
+        origin: String,
         throwable: Throwable
     )
 
     /**
      * Notifies that an error occurred in the active View.
      * @param message a message explaining the error
-     * @param source the source of the error (eg: "network", "sqlight", "assets", …)
+     * @param origin the origin of the error (eg: "network", "sqlight", "assets", …)
      * @param throwable the throwable
      * @param attributes additional custom attributes to attach to the error
      */
     fun addError(
         message: String,
-        source: String,
+        origin: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>
     )

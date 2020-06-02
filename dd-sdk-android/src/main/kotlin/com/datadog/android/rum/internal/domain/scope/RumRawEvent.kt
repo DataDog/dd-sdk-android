@@ -58,13 +58,13 @@ internal sealed class RumRawEvent {
     internal data class StopResourceWithError(
         val key: String,
         val message: String,
-        val source: String,
+        val origin: String,
         val throwable: Throwable
     ) : RumRawEvent()
 
     internal data class AddError(
         val message: String,
-        val source: String,
+        val origin: String,
         val throwable: Throwable?,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()

@@ -158,7 +158,7 @@ internal class RumViewScope(
 
         val updatedAttributes = addExtraAttributes(event.attributes)
         val eventData = RumEventData.Error(
-            event.message, event.source, event.throwable
+            event.message, event.origin, event.throwable
         )
         val errorEvent = RumEvent(
             getRumContext(),

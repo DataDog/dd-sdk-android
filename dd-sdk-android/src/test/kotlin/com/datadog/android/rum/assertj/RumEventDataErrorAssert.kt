@@ -17,9 +17,9 @@ internal class RumEventDataErrorAssert(actual: RumEventData.Error) :
     ) {
 
     fun hasOrigin(expected: String): RumEventDataErrorAssert {
-        assertThat(actual.source)
+        assertThat(actual.origin)
             .overridingErrorMessage(
-                "Expected event data to have source $expected but was ${actual.source}"
+                "Expected event data to have origin $expected but was ${actual.origin}"
             )
             .isEqualTo(expected)
         return this

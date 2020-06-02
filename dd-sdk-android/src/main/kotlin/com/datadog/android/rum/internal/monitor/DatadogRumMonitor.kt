@@ -86,22 +86,22 @@ internal class DatadogRumMonitor(
     override fun stopResourceWithError(
         key: String,
         message: String,
-        source: String,
+        origin: String,
         throwable: Throwable
     ) {
         handleEvent(
-            RumRawEvent.StopResourceWithError(key, message, source, throwable)
+            RumRawEvent.StopResourceWithError(key, message, origin, throwable)
         )
     }
 
     override fun addError(
         message: String,
-        source: String,
+        origin: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, attributes)
+            RumRawEvent.AddError(message, origin, throwable, attributes)
         )
     }
 

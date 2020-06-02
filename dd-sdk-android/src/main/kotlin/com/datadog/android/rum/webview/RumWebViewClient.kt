@@ -61,7 +61,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, errorCode, description, failingUrl)
         GlobalRum.get().addError(
             "Error $errorCode: $description",
-            SOURCE,
+            ORIGIN,
             null,
             mapOf(RumAttributes.RESOURCE_URL to failingUrl)
         )
@@ -77,7 +77,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, request, error)
         GlobalRum.get().addError(
             "Error ${error?.errorCode}: ${error?.description}",
-            SOURCE,
+            ORIGIN,
             null,
             mapOf(RumAttributes.RESOURCE_URL to request?.url)
         )
@@ -93,7 +93,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedHttpError(view, request, errorResponse)
         GlobalRum.get().addError(
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
-            SOURCE,
+            ORIGIN,
             null,
             mapOf(RumAttributes.RESOURCE_URL to request?.url)
         )
@@ -108,7 +108,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedSslError(view, handler, error)
         GlobalRum.get().addError(
             "SSL Error ${error?.primaryError}",
-            SOURCE,
+            ORIGIN,
             null,
             mapOf(RumAttributes.RESOURCE_URL to error?.url)
         )
@@ -117,7 +117,7 @@ open class RumWebViewClient : WebViewClient() {
     // endregion
 
     companion object {
-        internal const val SOURCE = "WebViewClient"
+        internal const val ORIGIN = "WebViewClient"
         internal const val METHOD_GET = "GET"
     }
 }

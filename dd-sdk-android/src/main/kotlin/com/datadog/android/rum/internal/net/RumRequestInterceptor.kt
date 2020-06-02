@@ -96,11 +96,7 @@ internal class RumRequestInterceptor : RequestInterceptor {
                 ERROR_MSG_FORMAT.format(method, url),
                 ORIGIN_NETWORK,
                 null,
-                mapOf(
-                    RumAttributes.ERROR_RESOURCE_URL to url,
-                    RumAttributes.ERROR_RESOURCE_METHOD to method,
-                    RumAttributes.ERROR_RESOURCE_STATUS_CODE to statusCode
-                )
+                mapOf(RumAttributes.RESOURCE_STATUS_CODE to statusCode)
             )
         }
     }

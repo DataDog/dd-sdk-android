@@ -17,7 +17,7 @@ internal class RumEventDataErrorForgeryFactory : ForgeryFactory<RumEventData.Err
 
         return RumEventData.Error(
             message = forge.anAlphabeticalString(),
-            source = forge.anAlphabeticalString(),
+            origin = forge.anAlphabeticalString(),
             throwable = forge.aThrowable()
         )
     }
