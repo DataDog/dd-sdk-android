@@ -14,8 +14,8 @@ interface ViewAttributesProvider {
      * @param attributes the default attributes Map. Usually this contains some default
      * attributes which are determined and added by the SDK. Please make sure you do not
      * override any of these reserved attributes.
-     * @see [RumAttributes.ACTION_TARGET_RESOURCE_ID]
-     * @see [RumAttributes.ACTION_TARGET_CLASS_NAME]
+     * @see [RumAttributes.TAG_TARGET_RESOURCE_ID]
+     * @see [RumAttributes.TAG_TARGET_CLASS_NAME]
      */
     fun extractAttributes(view: View, attributes: MutableMap<String, Any?>)
 }

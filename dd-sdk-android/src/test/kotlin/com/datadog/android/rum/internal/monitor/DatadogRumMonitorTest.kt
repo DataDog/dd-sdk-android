@@ -117,16 +117,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addAction to rootScope`(
+    fun `delegates addUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.addAction(name, fakeAttributes)
+        testedMonitor.addUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -134,16 +134,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates startAction to rootScope`(
+    fun `delegates startUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.startAction(name, fakeAttributes)
+        testedMonitor.startUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isTrue()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -151,16 +151,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates stopAction to rootScope`(
+    fun `delegates stopUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.stopAction(name, fakeAttributes)
+        testedMonitor.stopUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)

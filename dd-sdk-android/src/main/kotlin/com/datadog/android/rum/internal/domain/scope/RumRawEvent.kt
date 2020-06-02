@@ -23,13 +23,13 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StartAction(
-        val type: String,
+        val name: String,
         val waitForStop: Boolean,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
     internal data class StopAction(
-        val type: String,
+        val name: String,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 

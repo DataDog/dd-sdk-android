@@ -48,21 +48,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addAction(type: String, attributes: Map<String, Any?>) {
+    override fun addUserAction(action: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(type, false, attributes)
+            RumRawEvent.StartAction(action, false, attributes)
         )
     }
 
-    override fun startAction(type: String, attributes: Map<String, Any?>) {
+    override fun startUserAction(action: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(type, true, attributes)
+            RumRawEvent.StartAction(action, true, attributes)
         )
     }
 
-    override fun stopAction(type: String, attributes: Map<String, Any?>) {
+    override fun stopUserAction(action: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopAction(type, attributes)
+            RumRawEvent.StopAction(action, attributes)
         )
     }
 

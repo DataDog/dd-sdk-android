@@ -9,14 +9,13 @@ package com.datadog.android.utils.forge
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import java.util.UUID
 
-internal class RumEventDataActionForgeryFactory :
-    ForgeryFactory<RumEventData.Action> {
-    override fun getForgery(forge: Forge): RumEventData.Action {
-        return RumEventData.Action(
-            type = forge.anAlphabeticalString(),
-            id = forge.getForgery<UUID>().toString(),
+internal class RumEventDataUserActionForgeryFactory :
+    ForgeryFactory<RumEventData.UserAction> {
+    override fun getForgery(forge: Forge): RumEventData.UserAction {
+        return RumEventData.UserAction(
+            name = forge.anAlphabeticalString(),
+            id = forge.getForgery(),
             durationNanoSeconds = forge.aPositiveLong()
         )
     }

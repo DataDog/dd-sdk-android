@@ -32,8 +32,8 @@ import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
-import com.datadog.android.rum.internal.tracking.ActionTrackingStrategy
-import com.datadog.android.rum.internal.tracking.NoOpActionTrackingStrategy
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
+import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -61,9 +61,12 @@ internal object RumFeature {
     internal val timeProvider: TimeProvider = SystemTimeProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
-    internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
-    internal var actionTrackingStrategy: ActionTrackingStrategy = NoOpActionTrackingStrategy()
-    internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
+    internal var viewTrackingStrategy: ViewTrackingStrategy =
+        NoOpViewTrackingStrategy()
+    internal var actionTrackingStrategy: UserActionTrackingStrategy =
+        NoOpUserActionTrackingStrategy()
+    internal var viewTreeTrackingStrategy: TrackingStrategy =
+        ViewTreeChangeTrackingStrategy()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -87,7 +90,7 @@ internal object RumFeature {
 
         config.gesturesTracker?.let { gesturesTracker = it }
         config.viewTrackingStrategy?.let { viewTrackingStrategy = it }
-        config.actionTrackingStrategy?.let { actionTrackingStrategy = it }
+        config.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
 
         persistenceStrategy = RumFileStrategy(
             appContext,

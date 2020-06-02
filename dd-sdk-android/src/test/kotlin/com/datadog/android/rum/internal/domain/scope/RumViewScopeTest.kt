@@ -625,7 +625,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isInstanceOf(RumActionScope::class.java)
         val actionScope = testedScope.activeActionScope as RumActionScope
-        assertThat(actionScope.type).isEqualTo(name)
+        assertThat(actionScope.name).isEqualTo(name)
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
         assertThat(actionScope.attributes).containsAllEntriesOf(expectedAttributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
@@ -734,7 +734,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
         mockEvent = RumRawEvent.StartResource(key, url, method, attributes)
@@ -742,7 +742,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
 
         verify(mockActionScope).handleEvent(mockEvent, mockWriter)
@@ -800,7 +800,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
         mockEvent = RumRawEvent.AddError(message, source, throwable, attributes)
@@ -808,7 +808,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -857,7 +857,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
         mockEvent = RumRawEvent.AddError(message, source, throwable, emptyMap())
@@ -866,7 +866,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedErrorAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.ACTION_ID, randomActionId.toString())
         }
         val expectedViewAttributes = attributes.toMutableMap().apply {
             putAll(fakeAttributes)

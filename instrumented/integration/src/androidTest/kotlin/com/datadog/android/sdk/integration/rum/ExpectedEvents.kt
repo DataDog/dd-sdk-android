@@ -38,8 +38,8 @@ internal interface ExpectedEvent {
 }
 
 internal enum class Gesture(val gestureName: String) {
-    TAP("Tap"),
-    SWIPE("Swipe")
+    TAP("tap"),
+    SWIPE("swipe")
 }
 
 private fun rumContextValues(): Triple<String, String, String> {

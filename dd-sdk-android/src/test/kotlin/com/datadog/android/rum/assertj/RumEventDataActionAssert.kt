@@ -11,25 +11,16 @@ import java.util.UUID
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class RumEventDataActionAssert(actual: RumEventData.Action) :
-    AbstractObjectAssert<RumEventDataActionAssert, RumEventData.Action>(
+internal class RumEventDataActionAssert(actual: RumEventData.UserAction) :
+    AbstractObjectAssert<RumEventDataActionAssert, RumEventData.UserAction>(
         actual,
         RumEventDataActionAssert::class.java
     ) {
 
-    fun hasType(expected: String): RumEventDataActionAssert {
-        assertThat(actual.type)
+    fun hasName(expected: String): RumEventDataActionAssert {
+        assertThat(actual.name)
             .overridingErrorMessage(
-                "Expected event data to have type $expected but was ${actual.type}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
-    fun hasId(expected: String): RumEventDataActionAssert {
-        assertThat(actual.id)
-            .overridingErrorMessage(
-                "Expected event data to have id $expected but was ${actual.id}"
+                "Expected event data to have name $expected but was ${actual.name}"
             )
             .isEqualTo(expected)
         return this
@@ -77,29 +68,9 @@ internal class RumEventDataActionAssert(actual: RumEventData.Action) :
         return this
     }
 
-    fun hasErrorCount(expected: Int): RumEventDataActionAssert {
-        assertThat(actual.errorCount)
-            .overridingErrorMessage(
-                "Expected event data to have errorCount $expected " +
-                    "but was ${actual.errorCount}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
-    fun hasResourceCount(expected: Int): RumEventDataActionAssert {
-        assertThat(actual.resourceCount)
-            .overridingErrorMessage(
-                "Expected event data to have resourceCount $expected " +
-                    "but was ${actual.resourceCount}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
     companion object {
 
-        internal fun assertThat(actual: RumEventData.Action): RumEventDataActionAssert =
+        internal fun assertThat(actual: RumEventData.UserAction): RumEventDataActionAssert =
             RumEventDataActionAssert(actual)
     }
 }

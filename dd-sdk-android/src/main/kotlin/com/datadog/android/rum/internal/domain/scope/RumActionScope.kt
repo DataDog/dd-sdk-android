@@ -20,13 +20,13 @@ import kotlin.math.max
 internal class RumActionScope(
     val parentScope: RumScope,
     val waitForStop: Boolean,
-    initialType: String,
+    initialName: String,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
-    internal val actionId: String = UUID.randomUUID().toString()
-    internal var type: String = initialType
+    internal val actionId: UUID = UUID.randomUUID()
+    internal var name: String = initialName
     internal val startedNanos: Long = System.nanoTime()
     internal var lastInteractionNanos: Long = startedNanos
 
@@ -34,8 +34,7 @@ internal class RumActionScope(
 
     internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
-    internal var errorCount: Int = 0
-    internal var resourceCount: Int = 0
+    internal var resourcesCount: Int = 0
     internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
@@ -56,10 +55,8 @@ internal class RumActionScope(
             event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
             event is RumRawEvent.StopView -> onStopView(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now, writer)
-            event is RumRawEvent.StartResource -> onStartResource(event, now)
+            event is RumRawEvent.StartResource -> onStartResource(now, event)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
-            event is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, now)
-            event is RumRawEvent.AddError -> onAddError(now)
         }
 
         return if (sent) null else this
@@ -91,17 +88,17 @@ internal class RumActionScope(
         now: Long,
         writer: Writer<RumEvent>
     ) {
-        type = event.type
+        name = event.name
         attributes.putAll(event.attributes)
         sendAction(now, writer)
     }
 
     private fun onStartResource(
-        event: RumRawEvent.StartResource,
-        now: Long
+        now: Long,
+        event: RumRawEvent.StartResource
     ) {
         lastInteractionNanos = now
-        resourceCount++
+        resourcesCount++
         ongoingResourceKeys.add(WeakReference(event.key))
     }
 
@@ -116,40 +113,18 @@ internal class RumActionScope(
         }
     }
 
-    private fun onStopResourceWithError(
-        event: RumRawEvent.StopResourceWithError,
-        now: Long
-    ) {
-        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
-        if (keyRef != null) {
-            ongoingResourceKeys.remove(keyRef)
-            errorCount++
-            resourceCount--
-            lastInteractionNanos = now
-        }
-    }
-
-    private fun onAddError(
-        now: Long
-    ) {
-        errorCount++
-        lastInteractionNanos = now
-    }
-
     private fun sendAction(
         endNanos: Long,
         writer: Writer<RumEvent>
     ) {
         if (sent) return
 
-        if (resourceCount > 0 || viewTreeChangeCount > 0 || errorCount > 0) {
+        if (resourcesCount > 0 || viewTreeChangeCount > 0) {
             attributes.putAll(GlobalRum.globalAttributes)
-            val eventData = RumEventData.Action(
-                type = type,
-                id = actionId,
-                durationNanoSeconds = max(endNanos - startedNanos, 1L),
-                resourceCount = resourceCount,
-                errorCount = errorCount
+            val eventData = RumEventData.UserAction(
+                name,
+                actionId,
+                max(endNanos - startedNanos, 1L)
             )
 
             val event = RumEvent(
@@ -179,7 +154,7 @@ internal class RumActionScope(
             parentScope: RumScope,
             event: RumRawEvent.StartAction
         ): RumScope {
-            return RumActionScope(parentScope, event.waitForStop, event.type, event.attributes)
+            return RumActionScope(parentScope, event.waitForStop, event.name, event.attributes)
         }
     }
 }

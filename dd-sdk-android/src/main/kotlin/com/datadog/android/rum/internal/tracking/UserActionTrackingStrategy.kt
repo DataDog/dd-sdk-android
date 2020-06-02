@@ -12,5 +12,5 @@ import com.datadog.tools.annotation.NoOpImplementation
  * A TrackingStrategy dedicated to user actions tracking.
  */
 @NoOpImplementation
-internal interface ActionTrackingStrategy :
+internal interface UserActionTrackingStrategy :
     TrackingStrategy

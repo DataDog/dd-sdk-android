@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-internal enum class Gesture(val type: String) {
+internal enum class Gesture(val actionName: String) {
     TAP("tap"),
     SWIPE("swipe"),
     SCROLL("scroll"),

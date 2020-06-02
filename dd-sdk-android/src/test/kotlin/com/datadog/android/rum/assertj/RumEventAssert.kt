@@ -37,7 +37,7 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasActionAttribute(): RumEventAssert {
+    fun hasUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
             .containsKey(RumAttributes.ACTION_ID)
 
@@ -49,7 +49,7 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasActionAttribute(expected: UUID): RumEventAssert {
+    fun hasUserActionAttribute(expected: UUID): RumEventAssert {
         assertThat(actual.attributes)
             .containsKey(RumAttributes.ACTION_ID)
 
@@ -60,7 +60,7 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasNoActionAttribute(): RumEventAssert {
+    fun hasNoUserActionAttribute(): RumEventAssert {
         assertThat(actual.attributes)
             .doesNotContainKey(RumAttributes.ACTION_ID)
 
@@ -90,11 +90,11 @@ internal class RumEventAssert(actual: RumEvent) :
         return this
     }
 
-    fun hasActionData(assert: RumEventDataActionAssert.() -> Unit): RumEventAssert {
+    fun hasUserActionData(assert: RumEventDataActionAssert.() -> Unit): RumEventAssert {
         assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.Action::class.java)
+            .isInstanceOf(RumEventData.UserAction::class.java)
 
-        RumEventDataActionAssert(actual.eventData as RumEventData.Action).assert()
+        RumEventDataActionAssert(actual.eventData as RumEventData.UserAction).assert()
 
         return this
     }

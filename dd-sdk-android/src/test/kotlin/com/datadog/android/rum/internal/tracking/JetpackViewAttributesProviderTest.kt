@@ -91,10 +91,12 @@ internal class JetpackViewAttributesProviderTest {
         // then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
-                RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
-                RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
+                RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to
+                    expectedAdapterPosition,
+                RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
                     mockedRecyclerView.javaClass.canonicalName,
-                RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to expectedParentResourceId
+                RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
+                    expectedParentResourceId
             )
         )
     }
@@ -137,10 +139,12 @@ internal class JetpackViewAttributesProviderTest {
         // then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
-                RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
-                RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
+                RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to
+                    expectedAdapterPosition,
+                RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
                     mockedRecyclerView.javaClass.canonicalName,
-                RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to expectedParentResourceId
+                RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
+                    expectedParentResourceId
             )
         )
     }

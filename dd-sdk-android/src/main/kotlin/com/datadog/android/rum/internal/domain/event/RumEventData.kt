@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.rum.RumResourceType
+import java.util.UUID
 
 internal sealed class RumEventData(val category: String) {
 
@@ -32,13 +33,11 @@ internal sealed class RumEventData(val category: String) {
         )
     }
 
-    internal data class Action(
-        val type: String,
-        val id: String,
-        val durationNanoSeconds: Long,
-        val errorCount: Int = 0,
-        val resourceCount: Int = 0
-    ) : RumEventData("action")
+    internal data class UserAction(
+        val name: String,
+        val id: UUID,
+        val durationNanoSeconds: Long
+    ) : RumEventData("user_action")
 
     internal data class View(
         val name: String,

@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean switchToFragment(@IdRes final int id) {
 
-        mRumMonitor.addAction(
+        mRumMonitor.addUserAction(
                 "switchToFragment",
                 new HashMap<String, Object>() {{
                     put("fragment_id", Integer.toString(id));

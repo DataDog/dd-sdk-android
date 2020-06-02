@@ -41,17 +41,17 @@ internal class WindowCallbackWrapper(
 
     override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
         val attributes = mutableMapOf<String, Any?>(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to item.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
-            RumAttributes.ACTION_TARGET_NAME to item.title
+            RumAttributes.TAG_TARGET_CLASS_NAME to item.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
+            RumAttributes.TAG_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addAction(Gesture.TAP.type, attributes)
+        GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            GlobalRum.get().addAction(Gesture.BACK.type)
+            GlobalRum.get().addUserAction(Gesture.BACK.actionName)
         }
         return wrappedCallback.dispatchKeyEvent(event)
     }
