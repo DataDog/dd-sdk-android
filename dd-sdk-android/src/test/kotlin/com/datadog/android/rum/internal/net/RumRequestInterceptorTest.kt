@@ -12,7 +12,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -190,10 +190,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
-            RumResourceType.UNKNOWN,
+            RumResourceKind.UNKNOWN,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -213,10 +213,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
-            RumResourceType.fromMimeType(fakeMimeType),
+            RumResourceKind.fromMimeType(fakeMimeType),
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -236,10 +236,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
-            RumResourceType.XHR,
+            RumResourceKind.XHR,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -259,10 +259,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
-            RumResourceType.XHR,
+            RumResourceKind.XHR,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -282,10 +282,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
-            RumResourceType.XHR,
+            RumResourceKind.XHR,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -321,7 +321,7 @@ internal class RumRequestInterceptorTest {
         whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
         whenever(mockRequest.method()) doReturn fakeMethod
-        val kind = if (fakeMethod == "GET") RumResourceType.UNKNOWN else RumResourceType.XHR
+        val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR
 
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
@@ -329,8 +329,8 @@ internal class RumRequestInterceptorTest {
             identifyRequest(mockRequest),
             kind,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verify(mockRumMonitor).addError(
@@ -338,7 +338,7 @@ internal class RumRequestInterceptorTest {
             "network",
             null,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode
+                RumAttributes.HTTP_STATUS_CODE to statusCode
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -353,7 +353,7 @@ internal class RumRequestInterceptorTest {
         whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
         whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn null
         whenever(mockRequest.method()) doReturn fakeMethod
-        val kind = if (fakeMethod == "GET") RumResourceType.UNKNOWN else RumResourceType.XHR
+        val kind = if (fakeMethod == "GET") RumResourceKind.UNKNOWN else RumResourceKind.XHR
 
         testedInterceptor.handleResponse(mockRequest, mockResponse)
 
@@ -361,8 +361,8 @@ internal class RumRequestInterceptorTest {
             identifyRequest(mockRequest),
             kind,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode,
-                RumAttributes.RESOURCE_SIZE to body.toByteArray().size.toLong()
+                RumAttributes.HTTP_STATUS_CODE to statusCode,
+                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
             )
         )
         verify(mockRumMonitor).addError(
@@ -370,7 +370,7 @@ internal class RumRequestInterceptorTest {
             "network",
             null,
             mapOf(
-                RumAttributes.RESOURCE_STATUS_CODE to statusCode
+                RumAttributes.HTTP_STATUS_CODE to statusCode
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)

@@ -123,7 +123,7 @@ interface RumMonitor {
      */
     fun stopResource(
         key: String,
-        type: RumResourceType,
+        kind: RumResourceKind,
         attributes: Map<String, Any?> = emptyMap()
     )
 

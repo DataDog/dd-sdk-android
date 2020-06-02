@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -15,7 +15,7 @@ internal class RumEventDataResourceForgeryFactory :
     ForgeryFactory<RumEventData.Resource> {
     override fun getForgery(forge: Forge): RumEventData.Resource {
         return RumEventData.Resource(
-            type = forge.aValueFrom(RumResourceType::class.java),
+            kind = forge.aValueFrom(RumResourceKind::class.java),
             method = forge.anElementFrom("GET", "PUT", "POST", "DELETE", "PATCH"),
             durationNanoSeconds = forge.aPositiveLong(),
             url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),

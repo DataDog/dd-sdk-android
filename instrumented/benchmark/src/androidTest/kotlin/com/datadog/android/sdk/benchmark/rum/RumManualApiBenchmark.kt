@@ -14,7 +14,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.invokeMethod
@@ -129,7 +129,7 @@ class RumManualApiBenchmark {
                 forge.aStringMatching("http//[a-z1-9]+\\.[a-z]{3}/")
             }
             val kind =
-                runWithTimingDisabled { forge.anElementFrom(RumResourceType.values().asList()) }
+                runWithTimingDisabled { forge.anElementFrom(RumResourceKind.values().asList()) }
             runWithTimingDisabled { GlobalRum.get().startResource(resourceKey, resourceName, url) }
             GlobalRum.get().stopResource(resourceKey, kind)
             runWithTimingDisabled { GlobalRum.get().stopView(viewKey) }

@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -77,9 +77,9 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopResource(key: String, type: RumResourceType, attributes: Map<String, Any?>) {
+    override fun stopResource(key: String, kind: RumResourceKind, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopResource(key, type, attributes)
+            RumRawEvent.StopResource(key, kind, attributes)
         )
     }
 

@@ -134,10 +134,10 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         eventData: RumEventData.Resource,
         root: JsonObject
     ) {
-        root.addProperty(RumAttributes.RESOURCE_DURATION, eventData.durationNanoSeconds)
-        root.addProperty(RumAttributes.RESOURCE_TYPE, eventData.type.value)
-        root.addProperty(RumAttributes.RESOURCE_METHOD, eventData.method)
-        root.addProperty(RumAttributes.RESOURCE_URL, eventData.url)
+        root.addProperty(RumAttributes.DURATION, eventData.durationNanoSeconds)
+        root.addProperty(RumAttributes.RESOURCE_KIND, eventData.kind.value)
+        root.addProperty(RumAttributes.HTTP_METHOD, eventData.method)
+        root.addProperty(RumAttributes.HTTP_URL, eventData.url)
         val timing = eventData.timing
         if (timing != null) {
             if (timing.dnsStart > 0) {

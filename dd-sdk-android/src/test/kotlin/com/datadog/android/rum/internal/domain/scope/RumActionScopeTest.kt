@@ -13,7 +13,7 @@ import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -119,12 +119,12 @@ internal class RumActionScopeTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
-        @Forgery type: RumResourceType
+        @Forgery kind: RumResourceKind
     ) {
         mockEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
-        mockEvent = RumRawEvent.StopResource(key, type, emptyMap())
+        mockEvent = RumRawEvent.StopResource(key, kind, emptyMap())
         val result2 = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
         mockEvent = mock()

@@ -6,13 +6,13 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import java.util.UUID
 
 internal sealed class RumEventData(val category: String) {
 
     internal data class Resource(
-        val type: RumResourceType,
+        val kind: RumResourceKind,
         val method: String,
         val url: String,
         val durationNanoSeconds: Long,

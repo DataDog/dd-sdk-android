@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -189,16 +189,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `delegates stopResource to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @Forgery type: RumResourceType
+        @Forgery kind: RumResourceKind
     ) {
-        testedMonitor.stopResource(key, type, fakeAttributes)
+        testedMonitor.stopResource(key, kind, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopResource
             assertThat(event.key).isEqualTo(key)
-            assertThat(event.type).isEqualTo(type)
+            assertThat(event.kind).isEqualTo(kind)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)

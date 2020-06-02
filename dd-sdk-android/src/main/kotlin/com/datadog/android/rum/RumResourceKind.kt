@@ -12,7 +12,7 @@ import java.util.Locale
  * Describe the category of a RUM Resource.
  * @see [RumMonitor]
  */
-enum class RumResourceType(val value: String) {
+enum class RumResourceKind(val value: String) {
     // Specific kind of JS resources loading
     BEACON("beacon"),
     FETCH("fetch"),
@@ -31,7 +31,7 @@ enum class RumResourceType(val value: String) {
     companion object {
 
         @JvmStatic
-        internal fun fromMimeType(mimeType: String): RumResourceType {
+        internal fun fromMimeType(mimeType: String): RumResourceKind {
             val baseType = mimeType.substringBefore('/').toLowerCase(Locale.US)
             val subtype = mimeType.substringAfter('/').substringBefore(';').toLowerCase(Locale.US)
 
