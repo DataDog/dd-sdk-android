@@ -99,23 +99,24 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedViewEvent(
                 viewUrl, 2,
-                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 1)
+                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 1)
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 "${CardView::class.java.canonicalName}",
                 "recyclerViewRow",
                 extraAttributes = mapOf(
-                    RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
-                    RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
+                    RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to 2,
+                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
                         mockServerRule.activity.recyclerView.javaClass.canonicalName,
-                    RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to "recyclerView"
+                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
+                        "recyclerView"
                 )
             ),
             ExpectedViewEvent(
                 viewUrl,
                 3,
-                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 2)
+                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 2)
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
@@ -127,13 +128,12 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedViewEvent(
                 viewUrl, 4,
-                extraAttributes = mapOf(RumAttributes.VIEW_ACTION_COUNT to 3)
+                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 3)
             )
         )
     }
 
     // endregion
-
     companion object {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
     }

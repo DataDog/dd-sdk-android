@@ -6,12 +6,13 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
+import java.util.UUID
 
 internal sealed class RumEventData(val category: String) {
 
     internal data class Resource(
-        val type: RumResourceType,
+        val kind: RumResourceKind,
         val method: String,
         val url: String,
         val durationNanoSeconds: Long,
@@ -32,39 +33,59 @@ internal sealed class RumEventData(val category: String) {
         )
     }
 
-    internal data class Action(
-        val type: String,
-        val id: String,
-        val durationNanoSeconds: Long,
-        val errorCount: Int = 0,
-        val resourceCount: Int = 0
-    ) : RumEventData("action")
+    internal data class UserAction(
+        val name: String,
+        val id: UUID,
+        val durationNanoSeconds: Long
+    ) : RumEventData("user_action")
 
     internal data class View(
         val name: String,
         val durationNanoSeconds: Long,
-        val errorCount: Int = 0,
-        val resourceCount: Int = 0,
-        val actionCount: Int = 0,
+        val measures: Measures = Measures(),
         val version: Int = 1
     ) : RumEventData("view") {
 
         fun incrementErrorCount(): View {
-            return copy(errorCount = errorCount + 1)
+            return copy(
+                measures = measures.incrementErrorCount()
+            )
         }
 
         fun incrementResourceCount(): View {
-            return copy(resourceCount = resourceCount + 1)
+            return copy(
+                measures = measures.incrementResourceCount()
+            )
         }
 
-        fun incrementActionCount(): View {
-            return copy(actionCount = actionCount + 1)
+        fun incrementUserActionCount(): View {
+            return copy(
+                measures = measures.incrementUserActionCount()
+            )
+        }
+
+        internal data class Measures(
+            val errorCount: Int = 0,
+            val resourceCount: Int = 0,
+            val userActionCount: Int = 0
+        ) {
+            fun incrementErrorCount(): Measures {
+                return copy(errorCount = errorCount + 1)
+            }
+
+            fun incrementResourceCount(): Measures {
+                return copy(resourceCount = resourceCount + 1)
+            }
+
+            fun incrementUserActionCount(): Measures {
+                return copy(userActionCount = userActionCount + 1)
+            }
         }
     }
 
     internal data class Error(
         val message: String,
-        val source: String,
+        val origin: String,
         val throwable: Throwable? = null
     ) : RumEventData("error")
 }

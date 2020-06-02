@@ -180,9 +180,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -222,9 +224,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -262,9 +266,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -302,9 +308,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -345,9 +353,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -388,9 +398,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -422,9 +434,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -473,9 +487,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -504,9 +520,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(1)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(1)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -535,9 +553,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(1)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(1)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -587,9 +607,11 @@ internal class RumViewScopeTest {
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(0)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -625,7 +647,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isInstanceOf(RumActionScope::class.java)
         val actionScope = testedScope.activeActionScope as RumActionScope
-        assertThat(actionScope.type).isEqualTo(name)
+        assertThat(actionScope.name).isEqualTo(name)
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
         assertThat(actionScope.attributes).containsAllEntriesOf(expectedAttributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
@@ -734,7 +756,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
         mockEvent = RumRawEvent.StartResource(key, url, method, attributes)
@@ -742,7 +764,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
         }
 
         verify(mockActionScope).handleEvent(mockEvent, mockWriter)
@@ -795,20 +817,20 @@ internal class RumViewScopeTest {
     @Test
     fun `sends Error and View event on AddError`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.AddError(message, source, throwable, attributes)
+        mockEvent = RumRawEvent.AddError(message, origin, throwable, attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
         }
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -820,7 +842,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(source)
+                    hasOrigin(origin)
                     hasThrowable(throwable)
                 }
                 .hasContext {
@@ -835,9 +857,11 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasErrorCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)
@@ -852,21 +876,21 @@ internal class RumViewScopeTest {
     @Test
     fun `sends Error and View event on AddError with global attributes`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val randomActionId = UUID.randomUUID().toString()
+        val randomActionId = UUID.randomUUID()
         whenever(mockActionScope.actionId).thenReturn(randomActionId)
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        mockEvent = RumRawEvent.AddError(message, source, throwable, emptyMap())
+        mockEvent = RumRawEvent.AddError(message, origin, throwable, emptyMap())
         GlobalRum.globalAttributes.putAll(attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
         val expectedErrorAttributes = attributes.toMutableMap().apply {
             put(RumAttributes.VIEW_URL, testedScope.urlName)
-            put(RumAttributes.ACTION_ID, randomActionId)
+            put(RumAttributes.EVT_USER_ACTION_ID, randomActionId.toString())
         }
         val expectedViewAttributes = attributes.toMutableMap().apply {
             putAll(fakeAttributes)
@@ -881,7 +905,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedErrorAttributes)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(source)
+                    hasOrigin(origin)
                     hasThrowable(throwable)
                 }
                 .hasContext {
@@ -896,9 +920,11 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedViewAttributes)
                 .hasViewData {
-                    hasErrorCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
+                    hasMeasures {
+                        hasErrorCount(1)
+                        hasResourceCount(0)
+                        hasUserActionCount(0)
+                    }
                 }
                 .hasContext {
                     hasViewId(testedScope.viewId)

@@ -124,11 +124,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(target, expectedResourceName)
+        verifyUserAction(target, expectedResourceName)
     }
 
     @Test
-    fun `onTap dispatches an Action if target is ViewGroup and clickable`(forge: Forge) {
+    fun `onTap dispatches an UserAction if target is ViewGroup and clickable`(forge: Forge) {
         // given
         val mockEvent: MotionEvent = forge.getForgery()
         val target: ViewGroup = mockView(
@@ -161,7 +161,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(target, expectedResourceName)
+        verifyUserAction(target, expectedResourceName)
     }
 
     @Test
@@ -203,7 +203,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(validTarget, expectedResourceName)
+        verifyUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -244,7 +244,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(validTarget, expectedResourceName)
+        verifyUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -300,7 +300,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(decorView, expectedResourceName)
+        verifyUserAction(decorView, expectedResourceName)
     }
 
     @Test
@@ -337,7 +337,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(validTarget, "0x${targetId.toString(16)}")
+        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
@@ -370,7 +370,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verifyAction(validTarget, "0x${targetId.toString(16)}")
+        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
@@ -409,8 +409,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.TAG_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName
         )
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
@@ -431,19 +431,19 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         underTest.onSingleTapUp(mockEvent)
 
         // then
-        verify(mockRumMonitor).addAction(
-            Gesture.TAP.type,
+        verify(mockRumMonitor).addUserAction(
+            Gesture.TAP.actionName,
             expectedAttributes
         )
     }
 
-    private fun verifyAction(target: View, expectedResourceName: String) {
-        verify(mockRumMonitor).addAction(
-            eq(Gesture.TAP.type),
+    private fun verifyUserAction(target: View, expectedResourceName: String) {
+        verify(mockRumMonitor).addUserAction(
+            eq(Gesture.TAP.actionName),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
-                this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == expectedResourceName
+                this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 }

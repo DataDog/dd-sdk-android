@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -33,7 +33,7 @@ internal class RumResourceScope(
     private var sent = false
     private var waitForTiming = false
     private var stopped = false
-    private var type: RumResourceType = RumResourceType.UNKNOWN
+    private var kind: RumResourceKind = RumResourceKind.UNKNOWN
 
     // region RumScope
 
@@ -63,10 +63,10 @@ internal class RumResourceScope(
 
         stopped = true
         attributes.putAll(event.attributes)
-        type = event.type
+        kind = event.kind
         if (!(waitForTiming && timing == null))
 
-        sendResource(type, writer)
+        sendResource(kind, writer)
     }
 
     private fun onAddResourceTiming(
@@ -77,7 +77,7 @@ internal class RumResourceScope(
 
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(type, writer)
+            sendResource(kind, writer)
         }
     }
 
@@ -87,23 +87,22 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
 
-        attributes[RumAttributes.ERROR_RESOURCE_URL] = url
-        attributes[RumAttributes.ERROR_RESOURCE_METHOD] = method
+        attributes[RumAttributes.HTTP_URL] = url
         sendError(
             event.message,
-            event.source,
+            event.origin,
             event.throwable,
             writer
         )
     }
 
     private fun sendResource(
-        type: RumResourceType,
+        kind: RumResourceKind,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Resource(
-            type,
+            kind,
             method,
             url,
             System.nanoTime() - startedNanos,
@@ -124,14 +123,14 @@ internal class RumResourceScope(
 
     private fun sendError(
         message: String,
-        source: String,
+        origin: String,
         throwable: Throwable,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val eventData = RumEventData.Error(
             message,
-            source,
+            origin,
             throwable
         )
         val event = RumEvent(

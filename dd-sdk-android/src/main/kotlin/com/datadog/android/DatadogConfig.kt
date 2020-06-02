@@ -11,8 +11,8 @@ import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
-import com.datadog.android.rum.internal.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
@@ -49,7 +49,7 @@ private constructor(
         val endpointUrl: String,
         val envName: String,
         val gesturesTracker: GesturesTracker? = null,
-        val actionTrackingStrategy: ActionTrackingStrategy? = null,
+        val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
         val viewTrackingStrategy: ViewTrackingStrategy? = null
     )
 
@@ -269,7 +269,7 @@ private constructor(
 
         /**
          * Enable the gestures auto tracker. By enabling this feature the SDK will intercept
-         * tap events and automatically send those as RUM Actions for you.
+         * tap events and automatically send those as RUM UserActions for you.
          * @param touchTargetExtraAttributesProviders an array with your own implementation of the
          * target attributes provider.
          * @see [ViewAttributesProvider]
@@ -281,7 +281,7 @@ private constructor(
             val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
             rumConfig = rumConfig.copy(
                 gesturesTracker = gesturesTracker,
-                actionTrackingStrategy = provideUserTrackingStrategy(
+                userActionTrackingStrategy = provideUserTrackingStrategy(
                     gesturesTracker
                 )
             )
@@ -316,7 +316,7 @@ private constructor(
         private fun provideUserTrackingStrategy(
             gesturesTracker: GesturesTracker
         ):
-            ActionTrackingStrategy {
+            UserActionTrackingStrategy {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 GesturesTrackingStrategyApi29(gesturesTracker)
             } else {

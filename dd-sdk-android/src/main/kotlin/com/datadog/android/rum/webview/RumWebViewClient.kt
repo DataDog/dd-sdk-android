@@ -18,7 +18,7 @@ import android.webkit.WebViewClient
 import androidx.annotation.RequiresApi
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
@@ -46,7 +46,7 @@ open class RumWebViewClient : WebViewClient() {
         if (url != null) {
             val key = url
             GlobalRum.get().stopResource(key,
-                RumResourceType.DOCUMENT
+                RumResourceKind.DOCUMENT
             )
         }
     }
@@ -61,9 +61,9 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, errorCode, description, failingUrl)
         GlobalRum.get().addError(
             "Error $errorCode: $description",
-            SOURCE,
+            ORIGIN,
             null,
-            mapOf(RumAttributes.RESOURCE_URL to failingUrl)
+            mapOf(RumAttributes.HTTP_URL to failingUrl)
         )
     }
 
@@ -77,9 +77,9 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, request, error)
         GlobalRum.get().addError(
             "Error ${error?.errorCode}: ${error?.description}",
-            SOURCE,
+            ORIGIN,
             null,
-            mapOf(RumAttributes.RESOURCE_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -93,9 +93,9 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedHttpError(view, request, errorResponse)
         GlobalRum.get().addError(
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
-            SOURCE,
+            ORIGIN,
             null,
-            mapOf(RumAttributes.RESOURCE_URL to request?.url)
+            mapOf(RumAttributes.HTTP_URL to request?.url)
         )
     }
 
@@ -108,16 +108,16 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedSslError(view, handler, error)
         GlobalRum.get().addError(
             "SSL Error ${error?.primaryError}",
-            SOURCE,
+            ORIGIN,
             null,
-            mapOf(RumAttributes.RESOURCE_URL to error?.url)
+            mapOf(RumAttributes.HTTP_URL to error?.url)
         )
     }
 
     // endregion
 
     companion object {
-        internal const val SOURCE = "WebViewClient"
+        internal const val ORIGIN = "WebViewClient"
         internal const val METHOD_GET = "GET"
     }
 }

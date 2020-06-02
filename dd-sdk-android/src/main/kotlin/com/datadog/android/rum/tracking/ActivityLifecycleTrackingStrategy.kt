@@ -84,7 +84,7 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
         val attributes = mutableMapOf<String, Any?>()
 
         bundle.keySet().forEach {
-            attributes["$VIEW_ARGUMENTS.$it"] = bundle.get(it)
+            attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
         }
 
         return attributes
@@ -93,6 +93,6 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
     // endregion
 
     companion object {
-        internal const val VIEW_ARGUMENTS = "view.arguments"
+        internal const val ARGUMENT_TAG = "view.arguments"
     }
 }

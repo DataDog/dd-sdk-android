@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.rum.RumResourceType
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -117,16 +117,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addAction to rootScope`(
+    fun `delegates addUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.addAction(name, fakeAttributes)
+        testedMonitor.addUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -134,16 +134,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates startAction to rootScope`(
+    fun `delegates startUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.startAction(name, fakeAttributes)
+        testedMonitor.startUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StartAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isTrue()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -151,16 +151,16 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates stopAction to rootScope`(
+    fun `delegates stopUserAction to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
-        testedMonitor.stopAction(name, fakeAttributes)
+        testedMonitor.stopUserAction(name, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopAction
-            assertThat(event.type).isEqualTo(name)
+            assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -189,16 +189,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `delegates stopResource to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @Forgery type: RumResourceType
+        @Forgery kind: RumResourceKind
     ) {
-        testedMonitor.stopResource(key, type, fakeAttributes)
+        testedMonitor.stopResource(key, kind, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.StopResource
             assertThat(event.key).isEqualTo(key)
-            assertThat(event.type).isEqualTo(type)
+            assertThat(event.kind).isEqualTo(kind)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -208,10 +208,10 @@ internal class DatadogRumMonitorTest {
     fun `delegates stopResourceWithError to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.stopResourceWithError(key, message, source, throwable)
+        testedMonitor.stopResourceWithError(key, message, origin, throwable)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -219,7 +219,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StopResourceWithError
             assertThat(event.key).isEqualTo(key)
             assertThat(event.message).isEqualTo(message)
-            assertThat(event.source).isEqualTo(source)
+            assertThat(event.origin).isEqualTo(origin)
             assertThat(event.throwable).isEqualTo(throwable)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -228,17 +228,17 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `delegates addError to rootScope`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) source: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.addError(message, source, throwable, fakeAttributes)
+        testedMonitor.addError(message, origin, throwable, fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.AddError
             assertThat(event.message).isEqualTo(message)
-            assertThat(event.source).isEqualTo(source)
+            assertThat(event.origin).isEqualTo(origin)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }

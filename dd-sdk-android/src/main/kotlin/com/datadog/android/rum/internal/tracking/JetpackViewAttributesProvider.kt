@@ -20,9 +20,9 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
  *     of the target inside the adapter attribute together
  *     with the container class name and resource id </li>
  * </ul>
- * @see [RumAttributes.ACTION_TARGET_PARENT_INDEX]
- * @see [RumAttributes.ACTION_TARGET_PARENT_CLASSNAME]
- * @see [RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID]
+ * @see [RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER]
+ * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME]
+ * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID]
  */
 internal class JetpackViewAttributesProvider :
     ViewAttributesProvider {
@@ -39,10 +39,11 @@ internal class JetpackViewAttributesProvider :
         while (parent != null) {
             if (parent is RecyclerView && child != null && isDirectChildOfRecyclerView(child)) {
                 val positionInAdapter = parent.getChildAdapterPosition(child)
-                attributes[RumAttributes.ACTION_TARGET_PARENT_INDEX] = positionInAdapter
-                attributes[RumAttributes.ACTION_TARGET_PARENT_CLASSNAME] =
+                attributes[RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER] =
+                    positionInAdapter
+                attributes[RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME] =
                     parent.javaClass.canonicalName
-                attributes[RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID] =
+                attributes[RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID] =
                     resolveIdOrResourceName(parent)
                 break
             }

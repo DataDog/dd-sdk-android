@@ -94,8 +94,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
@@ -112,10 +112,10 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SCROLL.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SCROLL.actionName),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -159,8 +159,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
@@ -177,10 +177,10 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SCROLL.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SCROLL.actionName),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -228,13 +228,13 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes1: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection1
         )
         val expectedAttributes2: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection2
         )
         underTest = GesturesListener(
@@ -259,17 +259,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SCROLL.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SCROLL.actionName),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SCROLL.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SCROLL.actionName),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)
@@ -399,8 +399,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
@@ -418,10 +418,10 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SWIPE.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SWIPE.actionName),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -471,13 +471,13 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes1: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection1
         )
         val expectedAttributes2: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection2
         )
         underTest = GesturesListener(
@@ -504,17 +504,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SWIPE.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SWIPE.actionName),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startAction("")
+            verify(mockDatadogRumMonitor).startUserAction("")
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopAction(
-                eq(Gesture.SWIPE.type),
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(Gesture.SWIPE.actionName),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)

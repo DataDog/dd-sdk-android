@@ -158,7 +158,7 @@ internal class RumViewScope(
 
         val updatedAttributes = addExtraAttributes(event.attributes)
         val eventData = RumEventData.Error(
-            event.message, event.source, event.throwable
+            event.message, event.origin, event.throwable
         )
         val errorEvent = RumEvent(
             getRumContext(),
@@ -223,12 +223,14 @@ internal class RumViewScope(
         version++
         val updatedDurationNs = System.nanoTime() - startedNanos
         val eventData = RumEventData.View(
-            name = urlName,
-            durationNanoSeconds = updatedDurationNs,
-            actionCount = actionCount,
-            errorCount = errorCount,
-            resourceCount = resourceCount,
-            version = version
+            urlName,
+            updatedDurationNs,
+            RumEventData.View.Measures(
+                errorCount,
+                resourceCount,
+                actionCount
+            ),
+            version
         )
         val event = RumEvent(
             getRumContext(),
@@ -249,7 +251,7 @@ internal class RumViewScope(
         return attributes.toMutableMap()
             .apply {
                 if (actionId != null) {
-                    put(RumAttributes.ACTION_ID, actionId.toString())
+                    put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
                 }
                 put(RumAttributes.VIEW_URL, urlName)
                 putAll(GlobalRum.globalAttributes)
