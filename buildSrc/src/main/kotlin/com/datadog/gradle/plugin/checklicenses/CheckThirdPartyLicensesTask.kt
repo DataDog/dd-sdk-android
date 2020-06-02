@@ -8,11 +8,13 @@ package com.datadog.gradle.plugin.checklicenses
 
 import java.io.File
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
 
 open class CheckThirdPartyLicensesTask : DefaultTask() {
 
+    @get:Input
     internal var extension: ThirdPartyLicensesExtension =
         ThirdPartyLicensesExtension()
     private val provider: DependenciesLicenseProvider =
@@ -33,7 +35,6 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
             extension.transitiveDependencies,
             extension.listDependencyOnce
         )
-
         val listedDependencies = parseCsvFile()
 
         checkMatchingDependencies(projectDependencies, listedDependencies, "missing")

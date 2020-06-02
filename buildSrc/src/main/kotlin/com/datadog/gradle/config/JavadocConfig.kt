@@ -15,7 +15,7 @@ import org.jetbrains.dokka.gradle.DokkaTask
 fun Project.javadocConfig() {
 
     @Suppress("UnstableApiUsage")
-    val javadocTask = tasks.register("generateJavadoc", Jar::class.java) {
+    tasks.register("generateJavadoc", Jar::class.java) {
         dependsOn("dokka")
         archiveClassifier.convention("javadoc")
         from("${buildDir.canonicalPath}/reports/javadoc")
@@ -30,7 +30,5 @@ fun Project.javadocConfig() {
                 outputDir.mkdirs()
             }
         }
-
-        javadocTask.dependsOn(this)
     }
 }

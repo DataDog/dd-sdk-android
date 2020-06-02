@@ -47,7 +47,6 @@ internal object RuntimeConfig {
     }
 
     val keyValuePairsTags = mapOf(
-        "flavor" to BuildConfig.FLAVOR,
         "build_type" to BuildConfig.BUILD_TYPE,
         "blank" to "",
         "env" to INTEGRATION_TESTS_ENVIRONMENT,

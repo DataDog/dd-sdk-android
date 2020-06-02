@@ -7,10 +7,12 @@
 package com.datadog.gradle.plugin.checklicenses
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
 open class UpdateThirdPartyLicensesTask : DefaultTask() {
 
+    @get: Input
     internal var extension: ThirdPartyLicensesExtension =
         ThirdPartyLicensesExtension()
     private val provider: DependenciesLicenseProvider =

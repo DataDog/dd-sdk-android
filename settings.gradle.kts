@@ -4,37 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
-
-pluginManagement {
-    resolutionStrategy {
-        eachPlugin {
-            val version = when (requested.id.id) {
-                Dependencies.PluginIds.Android -> Dependencies.Versions.AndroidToolsPlugin
-                Dependencies.PluginIds.KotlinJVM,
-                Dependencies.PluginIds.KotlinAndroid,
-                Dependencies.PluginIds.KotlinAndroidExtension -> Dependencies.Versions.Kotlin
-                Dependencies.PluginIds.Detetk -> Dependencies.Versions.Detekt
-                Dependencies.PluginIds.DependencyVersion -> Dependencies.Versions.DependencyVersion
-                Dependencies.PluginIds.KtLint -> Dependencies.Versions.KtLint
-                Dependencies.PluginIds.Bintray -> Dependencies.Versions.Bintray
-                Dependencies.PluginIds.Unmock -> Dependencies.Versions.Unmock
-
-                else -> {
-                    if (
-                        requested.id.namespace != Dependencies.PluginNamespaces.Gradle &&
-                        requested.id.namespace != null
-                    ) {
-                        println("✗ unknown plugin ${requested.id.namespace}.${requested.id.name}")
-                    }
-                    null
-                }
-            }
-            version?.let { useVersion(it) }
-        }
-    }
-}
-
 include(":dd-sdk-android")
 include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")

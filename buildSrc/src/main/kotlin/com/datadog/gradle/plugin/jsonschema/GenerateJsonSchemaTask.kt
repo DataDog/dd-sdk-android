@@ -60,7 +60,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
      * The [InputFiles] (E.g.: all the json files in `resources/json`).
      */
     @InputFiles
-    private fun getInputFiles(): List<File> {
+    fun getInputFiles(): List<File> {
         return getInputDir().listFiles().orEmpty().toList()
             .filter { it.extension == "json" }
     }
@@ -93,7 +93,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
      * The [OutputDirectory] (`src/main/kotlin/{out_package}`).
      */
     @OutputDirectory
-    private fun getOutputPackage(): File {
+    fun getOutputPackage(): File {
         val topDir = getOutputDir()
         val outputPackageDir = File(
             topDir.absolutePath + File.separator +
