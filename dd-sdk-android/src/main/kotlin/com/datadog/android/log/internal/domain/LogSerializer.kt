@@ -174,14 +174,14 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
 
         internal fun resolveLogLevelStatus(level: Int): String {
             return when (level) {
-                AndroidLog.ASSERT -> "CRITICAL"
-                AndroidLog.ERROR -> "ERROR"
-                AndroidLog.WARN -> "WARN"
-                AndroidLog.INFO -> "INFO"
-                AndroidLog.DEBUG -> "DEBUG"
-                AndroidLog.VERBOSE -> "TRACE"
-                Log.CRASH -> "EMERGENCY"
-                else -> "DEBUG"
+                AndroidLog.ASSERT -> "critical"
+                AndroidLog.ERROR -> "error"
+                AndroidLog.WARN -> "warn"
+                AndroidLog.INFO -> "info"
+                AndroidLog.DEBUG -> "debug"
+                AndroidLog.VERBOSE -> "trace"
+                Log.CRASH -> "emergency"
+                else -> "debug"
             }
         }
     }
