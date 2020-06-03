@@ -131,7 +131,7 @@ internal class EndToEndLogTest {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         internal val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+            "debug", "debug", "trace", "debug", "info", "warn", "error", "critical"
         )
     }
 }

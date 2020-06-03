@@ -161,7 +161,7 @@ internal class EndToEndTraceTest {
         private const val TAG_EVENT = "event"
         private const val TAG_LOGGER_NAME = "logger.name"
         private val levels = arrayOf(
-            "DEBUG", "DEBUG", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
+            "debug", "debug", "trace", "debug", "info", "warn", "error", "critical"
         )
     }
 }
