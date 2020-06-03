@@ -580,7 +580,7 @@ class DatadogConfigBuilderTest {
             }
         val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackGestures(touchTargetExtraAttributesProviders)
+            .trackInteractions(touchTargetExtraAttributesProviders)
             .build()
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()
@@ -603,7 +603,7 @@ class DatadogConfigBuilderTest {
             }
         val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
             .useCustomRumEndpoint(rumUrl)
-            .trackGestures(touchTargetExtraAttributesProviders)
+            .trackInteractions(touchTargetExtraAttributesProviders)
             .build()
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()

@@ -59,7 +59,7 @@ public class SampleApplication extends Application {
 
         configBuilder.setServiceName("android-sample-java")
                 .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true))
-                .trackGestures();
+                .trackInteractions();
 
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL != null) {

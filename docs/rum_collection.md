@@ -35,7 +35,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
-                        .trackGestures()
+                        .trackInteractions()
                         .useViewTrackingStrategy(strategy)
                         .build()
         Datadog.initialize(this, config)
@@ -52,7 +52,7 @@ class SampleApplication : Application() {
         super.onCreate()
 
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
-                        .trackGestures()
+                        .trackInteractions()
                         .useViewTrackingStrategy(strategy)
                         .useEUEndpoints()
                         .build()

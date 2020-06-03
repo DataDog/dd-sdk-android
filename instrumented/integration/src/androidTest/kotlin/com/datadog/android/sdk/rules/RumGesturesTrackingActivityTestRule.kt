@@ -30,7 +30,7 @@ internal class RumGesturesTrackingActivityTestRule<T : Activity>(
         ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .trackGestures()
+            .trackInteractions()
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
             .build()
 

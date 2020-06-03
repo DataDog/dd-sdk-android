@@ -32,7 +32,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin-timber")
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-            .trackGestures()
+            .trackInteractions()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
