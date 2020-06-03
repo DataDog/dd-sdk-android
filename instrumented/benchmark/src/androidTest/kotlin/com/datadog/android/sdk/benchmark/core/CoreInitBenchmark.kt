@@ -32,7 +32,7 @@ class CoreInitBenchmark {
             .setTracesEnabled(true)
             .setLogsEnabled(true)
             .setCrashReportsEnabled(true)
-            .trackGestures()
+            .trackInteractions()
             .useViewTrackingStrategy(MixedViewTrackingStrategy(true))
             .setRumEnabled(true)
             .build()

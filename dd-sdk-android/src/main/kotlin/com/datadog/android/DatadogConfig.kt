@@ -268,14 +268,14 @@ private constructor(
         }
 
         /**
-         * Enable the gestures auto tracker. By enabling this feature the SDK will intercept
-         * tap events and automatically send those as RUM UserActions for you.
+         * Enable the user interaction automatic tracker. By enabling this feature the SDK will intercept
+         * UI interaction events (e.g.: taps, scrolls, swipes) and automatically send those as RUM UserActions for you.
          * @param touchTargetExtraAttributesProviders an array with your own implementation of the
          * target attributes provider.
          * @see [ViewAttributesProvider]
          */
         @JvmOverloads
-        fun trackGestures(
+        fun trackInteractions(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
             val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
