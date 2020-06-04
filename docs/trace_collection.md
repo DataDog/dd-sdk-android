@@ -159,7 +159,7 @@ class SampleApplication : Application() {
     val request = tracedRequestBuilder.build()
     // Dispatch the request and finish the span after.
    ```
-   
+
    * Step 2: Extract the client tracer context from headers in server code.
 
    ```kotlin
@@ -220,6 +220,24 @@ val okHttpClient =  OkHttpClient.Builder()
 ```
 
 This creates a span around each request processed by the OkHttpClient, with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
+
+Because the way the OkHttp Request is executed (using a Thread pool), we are not able to link the request span with the span that triggered the request. You can still manually provide a parent Span in the `OkHttp Request.Builder` as follows:
+
+```kotlin
+val request = Request.Builder()
+              .url(requestUrl)
+              .tag(Span::class.java, parentSpan)
+              .build()
+```
+
+or if you are using the extensions provided in the `dd-sdk-android-ktx` library:
+
+```kotlin
+val request = Request.Builder()
+              .url(requestUrl)
+              .parentSpan(parentSpan)
+              .build()
+```
 
 **Note**: If you use multiple Interceptors, this one must be called first.
 

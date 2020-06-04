@@ -54,7 +54,11 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
 
         val tracer = resolveTracer()
         return if (tracer != null) {
-            val span = tracer.buildSpan("okhttp.request").start()
+            val spanBuilder = tracer.buildSpan("okhttp.request")
+            request.tag(Span::class.java)?.let {
+                spanBuilder.asChildOf(it)
+            }
+            val span = spanBuilder.start()
             val url = request.url().toString()
             (span as? MutableSpan)?.resourceName = url
             span.setTag(Tags.HTTP_URL.key, url)
