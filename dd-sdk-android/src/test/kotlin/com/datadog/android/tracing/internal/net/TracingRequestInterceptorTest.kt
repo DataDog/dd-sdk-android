@@ -141,6 +141,7 @@ internal class TracingRequestInterceptorTest {
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
         whenever(mockLocalTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.asChildOf(any<Span>())) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()).doReturn(mockSpan, mockSpan2, null)
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpan2.context()) doReturn mockSpanContext
@@ -192,6 +193,26 @@ internal class TracingRequestInterceptorTest {
         assertThat(transformedRequest.method()).isEqualTo(fakeMethod)
         assertThat(transformedRequest.header(key)).isEqualTo(value)
         inOrder(mockSpan) {
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    @Test
+    fun `adds the parent span if present in the request headers`() {
+        val mockParentSpan: Span = mock()
+        fakeRequest = Request.Builder()
+            .url(fakeWhitelistedDomainUrl)
+            .tag(Span::class.java, mockParentSpan)
+            .method(fakeMethod, fakeBody)
+            .build()
+        val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
+
+        assertThat(transformedRequest.url()).isEqualTo(fakeRequest.url())
+        assertThat(transformedRequest.method()).isEqualTo(fakeMethod)
+        inOrder(mockSpanBuilder, mockSpan) {
+            verify(mockSpanBuilder).asChildOf(mockParentSpan)
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
