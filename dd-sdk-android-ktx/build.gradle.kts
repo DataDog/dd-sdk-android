@@ -69,6 +69,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Timber)
 
     testImplementation(project(":tools:unit"))
