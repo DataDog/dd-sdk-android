@@ -13,8 +13,10 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlin.math.min
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -42,85 +44,86 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `logStatus SUCCESS`() {
-        UploadStatus.SUCCESS.logStatus(fakeContext)
+    fun `logStatus SUCCESS`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.SUCCESS.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.VERBOSE,
-                "Batch sent successfully ($fakeContext)."
+                "Batch [$byteSize bytes] sent successfully ($fakeContext)."
             )
     }
 
     @Test
-    fun `logStatus NETWORK_ERROR`() {
-        UploadStatus.NETWORK_ERROR.logStatus(fakeContext)
+    fun `logStatus NETWORK_ERROR`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.NETWORK_ERROR.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch ($fakeContext) because of a network error; " +
-                    "we will retry later."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because of a network error; we will retry later."
             )
     }
 
     @Test
-    fun `logStatus INVALID_TOKEN_ERROR`() {
-        UploadStatus.INVALID_TOKEN_ERROR.logStatus(fakeContext)
+    fun `logStatus INVALID_TOKEN_ERROR`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.INVALID_TOKEN_ERROR.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch ($fakeContext) because your token is invalid. " +
-                    "Make sure that the provided token still exists."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because your token is invalid. Make sure that the provided token still exists."
             )
     }
 
     @Test
-    fun `logStatus HTTP_REDIRECTION`() {
-        UploadStatus.HTTP_REDIRECTION.logStatus(fakeContext)
+    fun `logStatus HTTP_REDIRECTION`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.HTTP_REDIRECTION.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.WARN,
-                "Unable to send batch ($fakeContext) because of a network error; " +
-                    "we will retry later."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because of a network error; we will retry later."
             )
     }
 
     @Test
-    fun `logStatus HTTP_CLIENT_ERROR`() {
-        UploadStatus.HTTP_CLIENT_ERROR.logStatus(fakeContext)
+    fun `logStatus HTTP_CLIENT_ERROR`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.HTTP_CLIENT_ERROR.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch ($fakeContext) because of a processing error " +
-                    "(possibly because of invalid data); the batch was dropped."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because of a processing error (possibly because of invalid data); " +
+                    "the batch was dropped."
             )
     }
 
     @Test
-    fun `logStatus HTTP_SERVER_ERROR`() {
-        UploadStatus.HTTP_SERVER_ERROR.logStatus(fakeContext)
+    fun `logStatus HTTP_SERVER_ERROR`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.HTTP_SERVER_ERROR.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch ($fakeContext) because of a " +
-                    "server processing error; we will retry later."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because of a server processing error; we will retry later."
             )
     }
 
     @Test
-    fun `logStatus UNKNOWN_ERROR`() {
-        UploadStatus.UNKNOWN_ERROR.logStatus(fakeContext)
+    fun `logStatus UNKNOWN_ERROR`(@IntForgery(min = 0) byteSize: Int) {
+        UploadStatus.UNKNOWN_ERROR.logStatus(fakeContext, byteSize)
 
         verify(mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch ($fakeContext) because of an unknown error; " +
-                    "we will retry later."
+                "Unable to send batch [$byteSize bytes] ($fakeContext) " +
+                    "because of an unknown error; we will retry later."
             )
     }
 }
