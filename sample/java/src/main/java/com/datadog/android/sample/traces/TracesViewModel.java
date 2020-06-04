@@ -9,6 +9,7 @@ package com.datadog.android.sample.traces;
 import android.os.AsyncTask;
 
 import androidx.lifecycle.ViewModel;
+
 import com.datadog.android.DatadogEventListener;
 import com.datadog.android.rum.RumInterceptor;
 import com.datadog.android.tracing.TracingInterceptor;
@@ -20,6 +21,7 @@ import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.util.GlobalTracer;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 
 public class TracesViewModel extends ViewModel {
@@ -50,6 +52,7 @@ public class TracesViewModel extends ViewModel {
     }
 
     public static class Request extends AsyncTask<Void, Void, Request.Result> {
+        private Span currentActiveMainSpan = null;
 
         static class Result {
 
@@ -61,6 +64,12 @@ public class TracesViewModel extends ViewModel {
                 this.exception = exception;
             }
 
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            currentActiveMainSpan = GlobalTracer.get().activeSpan();
         }
 
         public interface Callback {
@@ -82,9 +91,13 @@ public class TracesViewModel extends ViewModel {
 
         @Override
         protected Result doInBackground(Void... voids) {
-            okhttp3.Request request = new okhttp3.Request.Builder()
+            final okhttp3.Request.Builder builder = new okhttp3.Request.Builder()
                     .get()
-                    .url("https://shopist.io/category_1.json")
+                    .url("https://shopist.io/category_1.json");
+            if (currentActiveMainSpan != null) {
+                builder.tag(Span.class, currentActiveMainSpan);
+            }
+            final okhttp3.Request request = builder
                     .build();
 
             try {

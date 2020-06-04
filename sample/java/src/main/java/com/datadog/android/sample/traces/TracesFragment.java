@@ -60,8 +60,7 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onResume() {
         final Tracer tracer = GlobalTracer.get();
-        @SuppressWarnings("ConstantConditions")
-        final Span mainActivitySpan = ((MainActivity)getActivity()).getMainSpan();
+        @SuppressWarnings("ConstantConditions") final Span mainActivitySpan = ((MainActivity) getActivity()).getMainSpan();
         mMainSpan = tracer
                 .buildSpan("TracesFragment").asChildOf(mainActivitySpan).start();
         mMainScope = tracer.activateSpan(mMainSpan);
@@ -111,9 +110,9 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
             mViewModel.startRequest(new TracesViewModel.Request.Callback() {
                 @Override
                 public void onResult(TracesViewModel.Request.Result result) {
-                    if (result.response == null){
+                    if (result.response == null) {
                         mRequestStatus.setImageResource(R.drawable.ic_cancel_red_24dp);
-                    } else if (result.response.code() >= 400 ){
+                    } else if (result.response.code() >= 400) {
                         mRequestStatus.setImageResource(R.drawable.ic_error_red_24dp);
                     } else {
                         mRequestStatus.setImageResource(R.drawable.ic_check_circle_green_24dp);
