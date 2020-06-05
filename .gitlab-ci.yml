@@ -4,6 +4,7 @@ include:
 variables:
   CURRENT_CI_IMAGE: "1"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
+  SLACK_NOTIFIER_IMAGE: "486234852809.dkr.ecr.us-east-1.amazonaws.com/slack-notifier:latest"
 
 stages:
   - ci-image
@@ -104,22 +105,23 @@ publish:release-timber:
     - ./gradlew :dd-sdk-android-timber:bintrayUpload
 
 notify:release:
-  extends: .slack-notifier-base
+  image: $SLACK_NOTIFIER_IMAGE
   stage: notify
   when: on_success
   only:
     - tags
   script:
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray:"'
+    - BINTRAY_URL="https://bintray.com/datadog/datadog-maven/dd-sdk-android/$CI_COMMIT_TAG"
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray: $BINTRAY_URL"'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:
-  extends: .slack-notifier-base
+  image: $SLACK_NOTIFIER_IMAGE
   stage: notify
   when: on_failure
   only:
     - tags
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
-    - 'MESSAGE_TEXT=":status_alert: `$CI_PROJECT_NAME` $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
+    - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
