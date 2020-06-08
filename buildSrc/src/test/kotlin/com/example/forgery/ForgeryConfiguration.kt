@@ -22,6 +22,7 @@ class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(OpusForgeryFactory())
         forge.addFactory(PersonForgeryFactory())
         forge.addFactory(ProductForgeryFactory())
+        forge.addFactory(UserForgeryFactory())
         forge.addFactory(StyleForgeryFactory())
         forge.addFactory(VideoForgeryFactory())
     }

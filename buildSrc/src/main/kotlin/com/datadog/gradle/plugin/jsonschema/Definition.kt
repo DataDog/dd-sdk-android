@@ -18,8 +18,9 @@ data class Definition(
     @SerializedName("\$id") val id: String?,
     @SerializedName("required") val required: List<String>?,
     @SerializedName("uniqueItems") val uniqueItems: Boolean?,
-    @SerializedName("properties") val properties: Map<String, Definition>?,
     @SerializedName("items") val items: Definition?,
+    @SerializedName("allOf") val allOf: List<Definition>?,
+    @SerializedName("properties") val properties: Map<String, Definition>?,
     @SerializedName("definitions") val definitions: Map<String, Definition>?
 )
 

@@ -7,7 +7,6 @@
 package com.example.forgery
 
 import com.example.model.Location
-import com.example.model.Planet
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -15,7 +14,7 @@ internal class LocationForgeryFactory : ForgeryFactory<Location> {
 
     override fun getForgery(forge: Forge): Location {
         return Location(
-            planet = Planet.EARTH
+            planet = Location.Planet.EARTH
         )
     }
 }

@@ -68,7 +68,8 @@ class PokoGeneratorTest(
                 arrayOf("nested_enum", "DateTime"),
                 arrayOf("description", "Opus"),
                 arrayOf("top_level_definition", "Foo"),
-                arrayOf("types", "Demo")
+                arrayOf("types", "Demo"),
+                arrayOf("all_of", "User")
             )
         }
     }

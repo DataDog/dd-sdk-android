@@ -21,45 +21,45 @@ data class Opus(
     val artists: List<Artist>?,
     @SerializedName("duration")
     val duration: Int?
-)
+) {
+    /**
+     * An artist and their role in an opus.
+     * @param name The artist's name.
+     * @param role The artist's role.
+     */
+    data class Artist(
+        @SerializedName("name")
+        val name: String?,
+        @SerializedName("role")
+        val role: Role?
+    )
 
-/**
- * An artist and their role in an opus.
- * @param name The artist's name.
- * @param role The artist's role.
- */
-data class Artist(
-    @SerializedName("name")
-    val name: String?,
-    @SerializedName("role")
-    val role: Role?
-)
+    enum class Role {
+        @SerializedName("singer")
+        SINGER,
 
-enum class Role {
-    @SerializedName("singer")
-    SINGER,
+        @SerializedName("guitarist")
+        GUITARIST,
 
-    @SerializedName("guitarist")
-    GUITARIST,
+        @SerializedName("pianist")
+        PIANIST,
 
-    @SerializedName("pianist")
-    PIANIST,
+        @SerializedName("drummer")
+        DRUMMER,
 
-    @SerializedName("drummer")
-    DRUMMER,
+        @SerializedName("bassist")
+        BASSIST,
 
-    @SerializedName("bassist")
-    BASSIST,
+        @SerializedName("viloinist")
+        VILOINIST,
 
-    @SerializedName("viloinist")
-    VILOINIST,
+        @SerializedName("dj")
+        DJ,
 
-    @SerializedName("dj")
-    DJ,
+        @SerializedName("vocals")
+        VOCALS,
 
-    @SerializedName("vocals")
-    VOCALS,
-
-    @SerializedName("other")
-    OTHER
+        @SerializedName("other")
+        OTHER
+    }
 }

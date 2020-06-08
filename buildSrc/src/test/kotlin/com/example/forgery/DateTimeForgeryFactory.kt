@@ -6,21 +6,19 @@
 
 package com.example.forgery
 
-import com.example.model.Date
 import com.example.model.DateTime
-import com.example.model.Time
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 class DateTimeForgeryFactory : ForgeryFactory<DateTime> {
     override fun getForgery(forge: Forge): DateTime {
         return DateTime(
-            date = Date(
+            date = DateTime.Date(
                 year = forge.aNullable { anInt() },
                 month = forge.aNullable { getForgery() },
                 day = forge.aNullable { anInt(1, 31) }
             ),
-            time = Time(
+            time = DateTime.Time(
                 hour = forge.aNullable { anInt(0, 24) },
                 minute = forge.aNullable { anInt(0, 60) },
                 seconds = forge.aNullable { anInt(0, 24) }

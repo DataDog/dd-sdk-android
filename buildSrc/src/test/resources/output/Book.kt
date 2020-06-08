@@ -14,20 +14,20 @@ data class Book(
     val price: Double,
     @SerializedName("author")
     val author: Author
-)
+) {
+    data class Author(
+        @SerializedName("firstName")
+        val firstName: String,
+        @SerializedName("lastName")
+        val lastName: String,
+        @SerializedName("contact")
+        val contact: Contact
+    )
 
-data class Author(
-    @SerializedName("firstName")
-    val firstName: String,
-    @SerializedName("lastName")
-    val lastName: String,
-    @SerializedName("contact")
-    val contact: Contact
-)
-
-data class Contact(
-    @SerializedName("phone")
-    val phone: String?,
-    @SerializedName("email")
-    val email: String?
-)
+    data class Contact(
+        @SerializedName("phone")
+        val phone: String?,
+        @SerializedName("email")
+        val email: String?
+    )
+}

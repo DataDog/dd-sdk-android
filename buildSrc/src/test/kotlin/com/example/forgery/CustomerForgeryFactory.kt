@@ -6,7 +6,6 @@
 
 package com.example.forgery
 
-import com.example.model.Address
 import com.example.model.Customer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -15,16 +14,16 @@ class CustomerForgeryFactory : ForgeryFactory<Customer> {
     override fun getForgery(forge: Forge): Customer {
         return Customer(
             name = forge.aNullable { anAlphabeticalString() },
-            billing_address = forge.aNullable {
-                Address(
-                    street_address = forge.anAlphabeticalString(),
+            billingAddress = forge.aNullable {
+                Customer.Address(
+                    streetAddress = forge.anAlphabeticalString(),
                     city = forge.anAlphabeticalString(),
                     state = forge.anAlphabeticalString()
                 )
             },
-            shipping_address = forge.aNullable {
-                Address(
-                    street_address = forge.anAlphabeticalString(),
+            shippingAddress = forge.aNullable {
+                Customer.Address(
+                    streetAddress = forge.anAlphabeticalString(),
                     city = forge.anAlphabeticalString(),
                     state = forge.anAlphabeticalString()
                 )

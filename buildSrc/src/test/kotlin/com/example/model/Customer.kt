@@ -7,16 +7,16 @@ data class Customer(
     @SerializedName("name")
     val name: String?,
     @SerializedName("billing_address")
-    val billing_address: Address?,
+    val billingAddress: Address?,
     @SerializedName("shipping_address")
-    val shipping_address: Address?
-)
-
-data class Address(
-    @SerializedName("street_address")
-    val street_address: String,
-    @SerializedName("city")
-    val city: String,
-    @SerializedName("state")
-    val state: String
-)
+    val shippingAddress: Address?
+) {
+    data class Address(
+        @SerializedName("street_address")
+        val streetAddress: String,
+        @SerializedName("city")
+        val city: String,
+        @SerializedName("state")
+        val state: String
+    )
+}

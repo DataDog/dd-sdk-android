@@ -6,9 +6,7 @@
 
 package com.example.forgery
 
-import com.example.model.Author
 import com.example.model.Book
-import com.example.model.Contact
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -17,10 +15,10 @@ class BookForgeryFactory : ForgeryFactory<Book> {
         return Book(
             bookId = forge.anInt(),
             title = forge.anAlphabeticalString(),
-            author = Author(
+            author = Book.Author(
                 firstName = forge.anAlphabeticalString(),
                 lastName = forge.anAlphabeticalString(),
-                contact = Contact(
+                contact = Book.Contact(
                     email = forge.aNullable { aStringMatching("[a-z0-9]+@[a-z]+.com") },
                     phone = forge.aNullable { aStringMatching("\\+[0-9]{6,10}") }
                 )

@@ -5,18 +5,18 @@ import com.google.gson.annotations.SerializedName
 data class Style(
     @SerializedName("color")
     val color: Color
-)
+) {
+    enum class Color {
+        @SerializedName("red")
+        RED,
 
-enum class Color {
-    @SerializedName("red")
-    RED,
+        @SerializedName("amber")
+        AMBER,
 
-    @SerializedName("amber")
-    AMBER,
+        @SerializedName("green")
+        GREEN,
 
-    @SerializedName("green")
-    GREEN,
-
-    @SerializedName("dark_blue")
-    DARK_BLUE
+        @SerializedName("dark_blue")
+        DARK_BLUE
+    }
 }

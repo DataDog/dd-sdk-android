@@ -6,7 +6,6 @@
 
 package com.example.forgery
 
-import com.example.model.Artist
 import com.example.model.Opus
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -19,7 +18,7 @@ internal class OpusForgeryFactory : ForgeryFactory<Opus> {
             composer = forge.aNullable { anAlphabeticalString() },
             artists = forge.aNullable {
                 aList {
-                    Artist(
+                    Opus.Artist(
                         name = forge.aNullable { anAlphabeticalString() },
                         role = forge.aNullable { getForgery() }
                     )
