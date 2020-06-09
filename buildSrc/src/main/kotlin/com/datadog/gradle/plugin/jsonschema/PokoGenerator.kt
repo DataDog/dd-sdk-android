@@ -38,65 +38,54 @@ class PokoGenerator(
     internal val packageName: String
 ) {
 
-    private lateinit var rootSchema: Definition
+    val gson = Gson()
+
     private lateinit var rootTypeName: String
     private lateinit var rootDefinition: Definition
+    private val loadedSchemas: MutableList<Definition> = mutableListOf()
 
-    private val nestedDefinitions: MutableList<Pair<String, Definition>> = mutableListOf()
+    private val nestedDefinitions: MutableList<DefinitionRef> = mutableListOf()
     private val nestedEnums: MutableList<Pair<String, List<String>>> = mutableListOf()
-    private val identifiedDefinitions: MutableMap<String, String> = mutableMapOf()
 
     // region PokoGenerator
 
+    /**
+     * Generate a POKO file based on the input schema file
+     */
     fun generate() {
         println("Generating class for schema ${schemaFile.name} with package name $packageName")
-        val gson = Gson()
-        rootSchema = gson.fromJson(
-            schemaFile.inputStream().reader(Charsets.UTF_8),
-            Definition::class.java
-        )
-
-        rootSchema.definitions?.forEach { (name, definition) ->
-            definition.id?.let { identifiedDefinitions[it] = name }
+        val schema = loadSchema(schemaFile)
+        require(schema.type == Type.OBJECT) {
+            "Top level schema with type ${schema.type} is not supported."
         }
+        rootDefinition = schema
 
-        rootDefinition = rootSchema
-
-        generateFile(outputDir)
+        generateFile(schema)
     }
 
     // endregion
 
-    // region Internal
+    // region Code Generation
 
-    private fun generateFile(
-        outputDir: File
-    ) {
-        require(rootSchema.type == Type.OBJECT) {
-            "Top level schema with type ${rootSchema.type} is not supported."
-        }
-        rootTypeName = (rootSchema.title ?: schemaFile.nameWithoutExtension).toCamelCase()
+    /**
+     *  Generate a POKO file based on the root schema definition
+     */
+    private fun generateFile(schema: Definition) {
+        rootTypeName = (schema.title ?: schemaFile.nameWithoutExtension).toCamelCase()
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
-
-        val typeBuilder = generateTopLevelType(rootSchema)
-
-        rootSchema.definitions?.forEach { (name, definition) ->
-            if (definition != rootDefinition) {
-                typeBuilder.addType(generateType(name.toCamelCase(), definition).build())
-            }
-        }
+        val typeBuilder = generateTopLevelType(schema)
 
         while (nestedDefinitions.isNotEmpty()) {
             val definitions = nestedDefinitions.toList()
-            definitions.forEach { (name, definition) ->
-                typeBuilder.addType(generateType(name.toCamelCase(), definition).build())
+            definitions.forEach {
+                typeBuilder.addType(generateDataClass(it.className, it.definition).build())
             }
             nestedDefinitions.removeAll(definitions)
         }
 
         nestedEnums.forEach { (name, values) ->
-            typeBuilder.addType(generateEnum(name.toCamelCase(), values))
+            typeBuilder.addType(generateEnumClass(name.toCamelCase(), values))
         }
 
         fileBuilder
@@ -106,16 +95,19 @@ class PokoGenerator(
             .writeTo(outputDir)
     }
 
+    /**
+     * Generates the main, top level type related to the given Schema
+     */
     private fun generateTopLevelType(schema: Definition): TypeSpec.Builder {
         return if (!schema.properties.isNullOrEmpty()) {
-            generateType(rootTypeName, schema)
+            generateDataClass(rootTypeName, schema)
         } else if (!schema.allOf.isNullOrEmpty()) {
-            generateTypeAllOf(rootTypeName, schema)
+            generateTypeAllOf(rootTypeName, schema.allOf)
         } else if (!schema.ref.isNullOrBlank()) {
-            val refDefinition = getRefDefinition(schema.ref)
+            val refDefinition = findDefinitionReference(schema.ref)
             if (refDefinition != null) {
-                rootDefinition = refDefinition
-                generateType(rootTypeName, refDefinition)
+                rootDefinition = refDefinition.definition
+                generateTopLevelType(refDefinition.definition)
             } else {
                 throw IllegalStateException(
                     "Top level definition reference not found: ${schema.ref}."
@@ -127,24 +119,43 @@ class PokoGenerator(
         }
     }
 
-    private fun getRefDefinition(ref: String): Definition? {
-        val definition = REF_DEFINITION_REGEX.matchEntire(ref)
-        val id = REF_ID_REGEX.matchEntire(ref)
+    /**
+     * Generates the `data class` [TypeSpec.Builder] for the given definition.
+     * @param className the name of the class / enum
+     * @param definition the Json Schema definition of the type
+     */
+    private fun generateDataClass(
+        className: String,
+        definition: Definition
+    ): TypeSpec.Builder {
+        val constructorBuilder = FunSpec.constructorBuilder()
+        val typeBuilder = TypeSpec.classBuilder(className)
+            .addModifiers(KModifier.DATA)
+        val docBuilder = CodeBlock.builder()
 
-        return rootSchema.definitions?.entries?.firstOrNull {
-            if (definition != null) {
-                it.key == definition.groupValues[1]
-            } else if (id != null) {
-                it.value.id == ref
-            } else false
-        }?.value
+        appendTypeDefinition(
+            definition,
+            typeBuilder,
+            constructorBuilder,
+            docBuilder
+        )
+
+        typeBuilder.primaryConstructor(constructorBuilder.build())
+            .addKdoc(docBuilder.build())
+
+        return typeBuilder
     }
 
-    private fun generateEnum(
-        typeName: String,
+    /**
+     * Generates the `enum class` [TypeSpec.Builder] for the given definition.
+     * @param className the name of the class / enum
+     * @param values the list of allowed json enum values
+     */
+    private fun generateEnumClass(
+        className: String,
         values: List<String>
     ): TypeSpec {
-        val enumBuilder = TypeSpec.enumBuilder(typeName)
+        val enumBuilder = TypeSpec.enumBuilder(className)
 
         values.forEach { value ->
             enumBuilder.addEnumConstant(
@@ -158,49 +169,27 @@ class PokoGenerator(
         return enumBuilder.build()
     }
 
-    private fun generateType(
-        typeName: String,
-        definition: Definition
-    ): TypeSpec.Builder {
-        val constructorBuilder = FunSpec.constructorBuilder()
-        val typeBuilder = TypeSpec.classBuilder(typeName)
-            .addModifiers(KModifier.DATA)
-        val docBuilder = CodeBlock.builder()
-
-        appendTypeDefinition(
-            definition,
-            docBuilder,
-            constructorBuilder,
-            typeBuilder
-        )
-
-        typeBuilder.primaryConstructor(constructorBuilder.build())
-            .addKdoc(docBuilder.build())
-
-        return typeBuilder
-    }
-
+    /**
+     * Generates the `data class` [TypeSpec.Builder] merging all the given definitions.
+     * @param className the name of the class / enum
+     * @param definitions the Json Schema definition of the type
+     */
     private fun generateTypeAllOf(
-        typeName: String,
-        definition: Definition
+        className: String,
+        definitions: List<Definition>
     ): TypeSpec.Builder {
         val constructorBuilder = FunSpec.constructorBuilder()
-        val typeBuilder = TypeSpec.classBuilder(typeName)
+        val typeBuilder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
         val docBuilder = CodeBlock.builder()
 
-        definition.allOf?.forEach { subDef ->
+        definitions.forEach { subDef ->
             if (!subDef.ref.isNullOrBlank()) {
-                val subRef = getRefDefinition(subDef.ref)
-                if (subRef != null) {
-                    appendTypeDefinition(subRef, docBuilder, constructorBuilder, typeBuilder)
-                } else {
-                    throw IllegalStateException(
-                        "AllOf definition reference not found: ${subDef.ref}."
-                    )
-                }
+                val subRef = findDefinitionReference(subDef.ref)
+                checkNotNull(subRef) { "AllOf definition reference not found: ${subDef.ref}." }
+                appendTypeDefinition(subRef.definition, typeBuilder, constructorBuilder, docBuilder)
             } else if (!subDef.properties.isNullOrEmpty()) {
-                appendTypeDefinition(subDef, docBuilder, constructorBuilder, typeBuilder)
+                appendTypeDefinition(subDef, typeBuilder, constructorBuilder, docBuilder)
             }
         }
 
@@ -210,35 +199,21 @@ class PokoGenerator(
         return typeBuilder
     }
 
-    private fun appendTypeDefinition(
-        definition: Definition,
-        docBuilder: CodeBlock.Builder,
-        constructorBuilder: FunSpec.Builder,
-        typeBuilder: TypeSpec.Builder
-    ) {
-        if (!definition.description.isNullOrBlank()) {
-            docBuilder.add(definition.description)
-            docBuilder.add("\n")
-        }
-
-        definition.properties?.forEach { (name, property) ->
-            val required = (definition.required != null) && (name in definition.required)
-            generateProperty(
-                name, required, property,
-                constructorBuilder,
-                typeBuilder,
-                docBuilder
-            )
-        }
-    }
-
-    @Suppress("LongParameterList")
-    private fun generateProperty(
+    /**
+     * Appends a `data class` property to a [TypeSpec.Builder].
+     * @param name the property json name
+     * @param required whether the property is required or not.
+     * @param propertyDef the property [Definition]
+     * @param typeBuilder the `data class` [TypeSpec] builder.
+     * @param constructorBuilder the `data class` constructor builder.
+     * @param docBuilder the `data class` KDoc builder.
+     */
+    private fun appendProperty(
         name: String,
         required: Boolean,
         propertyDef: Definition,
-        constructorBuilder: FunSpec.Builder,
         typeBuilder: TypeSpec.Builder,
+        constructorBuilder: FunSpec.Builder,
         docBuilder: CodeBlock.Builder
     ) {
         val varName = name.toCamelCaseAsVar()
@@ -258,6 +233,117 @@ class PokoGenerator(
         if (!propertyDef.description.isNullOrBlank()) {
             docBuilder.add("@param $varName ${propertyDef.description}\n")
         }
+    }
+
+    /**
+     * Appends all `data class` properties to a [TypeSpec.Builder] from the given definition.
+     * @param definition the definition to use.
+     * @param typeBuilder the `data class` [TypeSpec] builder.
+     * @param constructorBuilder the `data class` constructor builder.
+     * @param docBuilder the `data class` KDoc builder.
+     */
+    private fun appendTypeDefinition(
+        definition: Definition,
+        typeBuilder: TypeSpec.Builder,
+        constructorBuilder: FunSpec.Builder,
+        docBuilder: CodeBlock.Builder
+    ) {
+        if (!definition.description.isNullOrBlank()) {
+            docBuilder.add(definition.description)
+            docBuilder.add("\n")
+        }
+
+        definition.properties?.forEach { (name, property) ->
+            val required = (definition.required != null) && (name in definition.required)
+            appendProperty(
+                name, required, property,
+                typeBuilder,
+                constructorBuilder,
+                docBuilder
+            )
+        }
+    }
+
+    // endregion
+
+    // region JsonSchema parsing
+
+    /**
+     * Returns the [DefinitionRef] from a given `$ref` property.
+     *
+     * - `#/definitions/foo`
+     * - `#bar`
+     *
+     * @param ref the reference used to resolve the target definiton
+     * @return the found Definition reference or null
+     */
+    private fun findDefinitionReference(ref: String): DefinitionRef? {
+        val file = REF_FILE_REGEX.matchEntire(ref)
+        if (file != null) {
+            return loadDefinitionFromFileRef(file.groupValues[2], file.groupValues[5])
+        }
+
+        val name = REF_DEFINITION_REGEX.matchEntire(ref)?.groupValues?.get(1)
+        val id = REF_ID_REGEX.matchEntire(ref)?.groupValues?.get(0)
+        if (name == null && id == null) return null
+
+        val matcher = if (name != null) {
+            { key: String, _: Definition -> key == name }
+        } else {
+            { _: String, def: Definition -> def.id == id }
+        }
+
+        val match = loadedSchemas.mapNotNull { schema ->
+            schema.definitions?.entries?.firstOrNull { matcher(it.key, it.value) }
+        }.firstOrNull() ?: return null
+
+        val className = match.key.toCamelCase()
+        return DefinitionRef(
+            definition = match.value,
+            id = ref,
+            className = className,
+            typeName = ClassName(packageName, rootTypeName, className)
+        )
+    }
+
+    /**
+     * Loads a Definition from a Json Schema file
+     * @param path the path to the file to load (relatively to the root file)
+     * @param ref a nested reference to a definiton, or blank to use the root type.
+     * @return the loaded definition or `null` if it wasn't found
+     */
+    private fun loadDefinitionFromFileRef(
+        path: String,
+        ref: String
+    ): DefinitionRef? {
+        val file = File(schemaFile.parentFile.absolutePath + File.separator + path)
+        val schema = loadSchema(file)
+
+        return if (ref.isBlank()) {
+            val className = (schema.title ?: file.nameWithoutExtension).toCamelCase()
+            DefinitionRef(
+                definition = schema,
+                id = path,
+                className = className,
+                typeName = ClassName(packageName, rootTypeName, className)
+            )
+        } else {
+            findDefinitionReference(ref)
+        }
+    }
+
+    /**
+     * Loads a Json Schema from the given file.
+     * @param file the [File] to load from.
+     * @return the loaded [Definition]
+     */
+    private fun loadSchema(file: File): Definition {
+        val schema = gson.fromJson(
+            file.inputStream().reader(Charsets.UTF_8),
+            Definition::class.java
+        )
+        loadedSchemas.add(schema)
+        return schema
     }
 
     // endregion
@@ -297,43 +383,42 @@ class PokoGenerator(
         return if (ref.isNullOrBlank()) {
             type.asKotlinType(typeName, this)
         } else {
-            ref.asKotlinTypeName()
-        }
-    }
-
-    private fun String.asKotlinTypeName(): TypeName {
-        val definition = REF_DEFINITION_REGEX.matchEntire(this)
-        val id = REF_ID_REGEX.matchEntire(this)
-        return if (definition != null) {
-            ClassName(packageName, rootTypeName, definition.groupValues[1].toCamelCase())
-        } else if (id != null) {
-            val typeName = identifiedDefinitions[this]
-            if (typeName.isNullOrBlank()) {
-                ANY_NULLABLE
+            val def = findDefinitionReference(ref)
+            checkNotNull(def) { "Unable to get definition from: $ref" }
+            val entry = nestedDefinitions.firstOrNull { it.definition == def.definition }
+            if (entry == null) {
+                nestedDefinitions.add(def)
+                ClassName(packageName, rootTypeName, def.className)
             } else {
-                ClassName(packageName, rootTypeName, typeName.toCamelCase())
+                ClassName(packageName, rootTypeName, entry.className)
             }
-        } else {
-            ANY_NULLABLE
         }
     }
 
-    private fun Type?.asKotlinType(typeName: String, definition: Definition): TypeName {
+    private fun Type?.asKotlinType(className: String, definition: Definition): TypeName {
         return when (this) {
             Type.NULL -> ANY_NULLABLE
             Type.BOOLEAN -> BOOLEAN
             Type.OBJECT -> {
-                nestedDefinitions.add(typeName to definition)
-                ClassName(packageName, rootTypeName, typeName)
+                val typeName = ClassName(packageName, rootTypeName, className)
+                nestedDefinitions.add(
+                    DefinitionRef(
+                        definition = definition,
+                        id = className,
+                        className = className,
+                        typeName = typeName
+                    )
+                )
+                typeName
             }
             Type.ARRAY -> {
                 if (definition.uniqueItems == true) {
                     SET.parameterizedBy(
-                        definition.items?.asKotlinTypeName(typeName, true) ?: STAR
+                        definition.items?.asKotlinTypeName(className, true) ?: STAR
                     )
                 } else {
                     LIST.parameterizedBy(
-                        definition.items?.asKotlinTypeName(typeName, true) ?: STAR
+                        definition.items?.asKotlinTypeName(className, true) ?: STAR
                     )
                 }
             }
@@ -358,6 +443,7 @@ class PokoGenerator(
 
         private val REF_DEFINITION_REGEX = Regex("#/definitions/([\\w]+)")
         private val REF_ID_REGEX = Regex("#[\\w]+")
+        private val REF_FILE_REGEX = Regex("(file:)?(([^/]+/)*([^/]+)\\.json)(#(.*))?")
 
         private val ANY_NULLABLE = ANY.copy(nullable = true)
     }

@@ -47,8 +47,18 @@ class PokoGeneratorTest(
             { _, attrs -> attrs.isRegularFile }
         ).findFirst().get().toFile()
 
-        assertThat(generatedFile.readText(Charsets.UTF_8))
-            .isEqualTo(File(outputPath).readText(Charsets.UTF_8))
+        val generatedContent = generatedFile.readText(Charsets.UTF_8)
+        val outputContent = File(outputPath).readText(Charsets.UTF_8)
+        assertThat(generatedContent)
+            .overridingErrorMessage(
+                "File $outputFile generated from schema $inputSchema didn't match expectation:\n" +
+                    "<<<<<<< EXPECTED\n" +
+                    outputContent +
+                    "=======\n" +
+                    generatedContent +
+                    "\n>>>>>>> GENERATED\n"
+            )
+            .isEqualTo(outputContent)
     }
 
     companion object {
@@ -69,7 +79,9 @@ class PokoGeneratorTest(
                 arrayOf("description", "Opus"),
                 arrayOf("top_level_definition", "Foo"),
                 arrayOf("types", "Demo"),
-                arrayOf("all_of", "User")
+                arrayOf("all_of", "User"),
+                arrayOf("external_description", "Delivery"),
+                arrayOf("external_nested_description", "Shipping")
             )
         }
     }

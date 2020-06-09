@@ -13,9 +13,9 @@ class ForgeryConfiguration : ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(ArticleForgeryFactory())
         forge.addFactory(BookForgeryFactory())
-        forge.addFactory(CartForgeryFactory())
         forge.addFactory(CustomerForgeryFactory())
         forge.addFactory(DateTimeForgeryFactory())
+        forge.addFactory(DeliveryForgeryFactory())
         forge.addFactory(DemoForgeryFactory())
         forge.addFactory(FooForgeryFactory())
         forge.addFactory(LocationForgeryFactory())
@@ -23,6 +23,7 @@ class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(PersonForgeryFactory())
         forge.addFactory(ProductForgeryFactory())
         forge.addFactory(UserForgeryFactory())
+        forge.addFactory(ShippingForgeryFactory())
         forge.addFactory(StyleForgeryFactory())
         forge.addFactory(VideoForgeryFactory())
     }

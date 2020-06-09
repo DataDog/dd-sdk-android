@@ -37,13 +37,24 @@ class ModelValidationTest(
         val gson = Gson()
         val type = Class.forName("com.example.model.$className")
         val schema = loadSchema(schemaResourcePath)
-        val validator = SchemaLoader.load(schema)
+        val file = javaClass.getResource("/input/").file
+        println(">> SCOPE PATH : file://$file")
+        val schemaLoader = SchemaLoader.builder()
+            .resolutionScope("file://$file")
+            .schemaJson(schema)
+            .build()
+        val validator = schemaLoader.load().build()
 
         repeat(10) {
             val entity = forge.getForgery(type)
             val json = gson.toJson(entity, type)
-            println("Validating $schemaResourcePath:\n$entity\n$json\n")
-            validator.validate(JSONObject(json))
+            try {
+                validator.validate(JSONObject(json))
+            } catch (e: Exception) {
+                throw RuntimeException(
+                    "Failed to validate $schemaResourcePath:\n$entity\n$json\n", e
+                )
+            }
         }
     }
 
@@ -71,7 +82,9 @@ class ModelValidationTest(
                 arrayOf("description", "Opus"),
                 arrayOf("top_level_definition", "Foo"),
                 arrayOf("types", "Demo"),
-                arrayOf("all_of", "User")
+                arrayOf("all_of", "User"),
+                arrayOf("external_description", "Delivery"),
+                arrayOf("external_nested_description", "Shipping")
             )
         }
     }

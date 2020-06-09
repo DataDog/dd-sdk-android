@@ -15,20 +15,6 @@ data class User(
     @SerializedName("contact_type")
     val contactType: ContactType
 ) {
-    data class Email(
-        @SerializedName("username")
-        val username: String,
-        @SerializedName("host")
-        val host: String
-    )
-
-    data class Identity(
-        @SerializedName("firstname")
-        val firstname: String?,
-        @SerializedName("lastname")
-        val lastname: String
-    )
-
     enum class ContactType {
         @SerializedName("personal")
         PERSONAL,
