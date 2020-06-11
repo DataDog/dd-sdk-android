@@ -98,8 +98,13 @@ tasks {
         from("$projectDir/src/test/kotlin/com/example/model")
         into("$projectDir/src/test/resources/output")
     }
+
+    register<Delete>("deleteTestRes") {
+        delete("$projectDir/src/test/resources/output/")
+    }
 }
 
 tasks.named("test") {
     dependsOn("copyTestRes")
+    finalizedBy("deleteTestRes")
 }
