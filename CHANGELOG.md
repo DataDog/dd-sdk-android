@@ -1,3 +1,7 @@
+# 1.4.2 / 2020-06-12
+
+* [BUGFIX] Global: Fix data upload (some payloads could rarely be malformed)
+
 # 1.4.1 / 2020-05-06
 
 * [BUGFIX] Trace: Fix spans intake (some spans could be missing)
