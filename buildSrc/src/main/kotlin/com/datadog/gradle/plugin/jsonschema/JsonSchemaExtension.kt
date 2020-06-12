@@ -13,4 +13,6 @@ package com.datadog.gradle.plugin.jsonschema
 open class JsonSchemaExtension {
     var targetPackageName: String = ""
     var inputDirPath: String = "resources"
+    var ignoredFiles: Array<String> = emptyArray()
+    var nameMapping: Map<String, String> = emptyMap()
 }

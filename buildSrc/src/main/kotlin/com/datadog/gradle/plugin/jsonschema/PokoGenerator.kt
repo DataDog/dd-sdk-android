@@ -35,7 +35,8 @@ import kotlin.IllegalStateException
 class PokoGenerator(
     internal val schemaFile: File,
     internal val outputDir: File,
-    internal val packageName: String
+    internal val packageName: String,
+    internal val nameMapping: Map<String, String>
 ) {
 
     val gson = Gson()
@@ -71,7 +72,9 @@ class PokoGenerator(
      *  Generate a POKO file based on the root schema definition
      */
     private fun generateFile(schema: Definition) {
-        rootTypeName = (schema.title ?: schemaFile.nameWithoutExtension).toCamelCase()
+        val customName = nameMapping[schemaFile.name]
+        val fileName = schemaFile.nameWithoutExtension
+        rootTypeName = (customName ?: schema.title ?: fileName).toCamelCase()
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
         val typeBuilder = generateTopLevelType(schema)

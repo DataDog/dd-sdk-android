@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "error-schema.json",
+  "type": "object",
+  "description": "Schema of all properties of an Error event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "description": "Error properties",
+          "required": [
+            "message",
+            "source"
+          ],
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Error message"
+            },
+            "source": {
+              "type": "string",
+              "description": "Source of the error",
+              "enum": ["network", "source", "console", "logger", "agent"]
+            },
+            "stack": {
+              "type": "string",
+              "description": "Stacktrace of the error"
+            },
+            "resource": {
+              "type": "object",
+              "description": "Resource properties of the error",
+              "required": [
+                "method",
+                "status_code",
+                "url"
+              ],
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "description": "HTTP method of the resource",
+                  "enum": ["POST", "GET", "HEAD", "PUT", "DELETE", "PATCH"]
+                },
+                "status_code": {
+                  "type": "integer",
+                  "description": "HTTP Status code of the resource",
+                  "minimum": 0
+                },
+                "url": {
+                  "type": "string",
+                  "description": "URL of the resource"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

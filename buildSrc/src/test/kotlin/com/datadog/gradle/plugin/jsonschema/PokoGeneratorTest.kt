@@ -36,7 +36,8 @@ class PokoGeneratorTest(
         val testedGenerator = PokoGenerator(
             File(inputPath),
             tempDir,
-            "com.example.model"
+            "com.example.model",
+            emptyMap()
         )
 
         testedGenerator.generate()

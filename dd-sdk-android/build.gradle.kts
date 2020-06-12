@@ -34,6 +34,7 @@ plugins {
     id("thirdPartyLicences")
     id("apiSurface")
     id("cloneDependencies")
+    id("jsonschema2poko")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     id("de.mobilej.unmock")
@@ -176,6 +177,11 @@ cloneDependencies {
             "src/test/"
         )
     )
+    clone(
+        "https://github.com/DataDog/rum-events-format.git",
+        "schemas",
+        destinationFolder = "src/main/json"
+    )
 }
 
 unMock {
@@ -185,6 +191,18 @@ unMock {
     keepStartingWith("com.android.internal.util.")
     keepStartingWith("android.util.")
     keep("android.content.ComponentName")
+}
+
+jsonSchema2Poko {
+    inputDirPath = "src/main/json"
+    targetPackageName = "com.datadog.android.rum.internal.domain"
+    ignoredFiles = arrayOf("_common-schema.json", "long_task-schema.json")
+    nameMapping = mapOf(
+        "action-schema.json" to "ActionEvent",
+        "error-schema.json" to "ErrorEvent",
+        "resource-schema.json" to "ResourceEvent",
+        "view-schema.json" to "ViewEvent"
+    )
 }
 
 kotlinConfig()

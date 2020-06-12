@@ -42,10 +42,12 @@ open class GenerateJsonSchemaTask : DefaultTask() {
         val outputDir = getOutputDir()
         val files = inputDir.listFiles() ?: return
 
-        files.forEach {
-            PokoGenerator(it, outputDir, extension.targetPackageName)
-                .generate()
-        }
+        files.asSequence()
+            .filter { it.name !in extension.ignoredFiles }
+            .forEach {
+                PokoGenerator(it, outputDir, extension.targetPackageName, extension.nameMapping)
+                    .generate()
+            }
     }
 
     /**
