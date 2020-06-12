@@ -76,9 +76,10 @@ internal class ImmediateFileWriter<T : Any>(
         val fileSize = file.length()
         FileOutputStream(file, true).use {
             if (fileSize > 0) {
-                it.write(separatorBytes)
+                it.write(separatorBytes + dataAsByteArray)
+            } else {
+                it.write(dataAsByteArray)
             }
-            it.write(dataAsByteArray)
         }
     }
 
