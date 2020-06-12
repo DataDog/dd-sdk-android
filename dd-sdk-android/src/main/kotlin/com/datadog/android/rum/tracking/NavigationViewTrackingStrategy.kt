@@ -60,7 +60,7 @@ class NavigationViewTrackingStrategy(
 
     // region OnDestinationChangedListener
 
-    override fun `onDestinationChanged`(
+    override fun onDestinationChanged(
         controller: NavController,
         destination: NavDestination,
         arguments: Bundle?

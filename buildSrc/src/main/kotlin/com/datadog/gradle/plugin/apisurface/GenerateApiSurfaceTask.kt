@@ -57,8 +57,6 @@ open class GenerateApiSurfaceTask : DefaultTask() {
         if (file.canRead()) {
             if (file.extension == EXT_KT) {
                 visitor.visitFile(file)
-            } else {
-                println("${file.path} is not a kotlin source file")
             }
         } else {
             System.err.println("${file.path} is not readable")
