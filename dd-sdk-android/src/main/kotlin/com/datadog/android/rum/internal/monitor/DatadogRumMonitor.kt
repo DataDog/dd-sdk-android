@@ -10,6 +10,7 @@ import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.UserActionKind
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -48,21 +49,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun addUserAction(action: UserActionKind, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, false, attributes)
+            RumRawEvent.StartAction(action.actionName, false, attributes)
         )
     }
 
-    override fun startUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun startUserAction(action: UserActionKind, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, true, attributes)
+            RumRawEvent.StartAction(action.actionName, true, attributes)
         )
     }
 
-    override fun stopUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun stopUserAction(action: UserActionKind, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopAction(action, attributes)
+            RumRawEvent.StopAction(action.actionName, attributes)
         )
     }
 

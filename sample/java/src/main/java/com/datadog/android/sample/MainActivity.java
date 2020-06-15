@@ -14,10 +14,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
+import com.datadog.android.rum.RumAttributes;
 import com.datadog.android.rum.RumMonitor;
+import com.datadog.android.rum.UserActionKind;
 import com.datadog.android.sample.dialog.SampleDialogFragment;
 import com.datadog.android.sample.logs.LogsFragment;
 import com.datadog.android.sample.traces.TracesFragment;
@@ -127,9 +130,10 @@ public class MainActivity extends AppCompatActivity {
     private boolean switchToFragment(@IdRes final int id) {
 
         mRumMonitor.addUserAction(
-                "switchToFragment",
+                UserActionKind.CUSTOM,
                 new HashMap<String, Object>() {{
                     put("fragment_id", Integer.toString(id));
+                    put("action.description", "switchingToFragment");
                 }});
         final Fragment fragmentToUse;
         switch (id) {

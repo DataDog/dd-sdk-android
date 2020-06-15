@@ -433,14 +433,14 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // then
         verify(mockRumMonitor).addUserAction(
-            UserActionKind.TAP.actionName,
+            UserActionKind.TAP,
             expectedAttributes
         )
     }
 
     private fun verifyUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
-            eq(UserActionKind.TAP.actionName),
+            eq(UserActionKind.TAP),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&

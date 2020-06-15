@@ -90,7 +90,7 @@ internal class GesturesListener(
                 scrollEventType = UserActionKind.SCROLL
                 scrollTargetReference = WeakReference(scrollTarget)
                 // we start the action as scroll action and we update it later to SWIPE if needed
-                rumMonitor.startUserAction(UserActionKind.SCROLL.actionName)
+                rumMonitor.startUserAction(UserActionKind.SCROLL)
             } else {
                 return false
             }
@@ -121,7 +121,7 @@ internal class GesturesListener(
         val targetId: String = resolveResourceNameFromId(scrollTarget.id)
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
         registeredRumMonitor.stopUserAction(
-            currentScrollEventType.actionName,
+            currentScrollEventType,
             attributes
         )
     }
@@ -164,7 +164,7 @@ internal class GesturesListener(
                     it.extractAttributes(target, attributes)
                 }
                 GlobalRum.get().addUserAction(
-                    UserActionKind.TAP.actionName,
+                    UserActionKind.TAP,
                     attributes
                 )
             }

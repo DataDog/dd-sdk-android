@@ -218,9 +218,9 @@ class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addUserAction(String, Map<String, Any?> = emptyMap())
-  fun startUserAction(String, Map<String, Any?> = emptyMap())
-  fun stopUserAction(String, Map<String, Any?> = emptyMap())
+  fun addUserAction(UserActionKind, Map<String, Any?> = emptyMap())
+  fun startUserAction(UserActionKind, Map<String, Any?> = emptyMap())
+  fun stopUserAction(UserActionKind, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(String, String, String, Throwable)

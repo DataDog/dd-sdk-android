@@ -46,13 +46,13 @@ internal class WindowCallbackWrapper(
             RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
             RumAttributes.TAG_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addUserAction(UserActionKind.TAP.actionName, attributes)
+        GlobalRum.get().addUserAction(UserActionKind.TAP, attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            GlobalRum.get().addUserAction(UserActionKind.BACK.actionName)
+            GlobalRum.get().addUserAction(UserActionKind.BACK)
         }
         return wrappedCallback.dispatchKeyEvent(event)
     }

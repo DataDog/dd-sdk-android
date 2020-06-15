@@ -15,6 +15,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.UserActionKind
 import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.invokeMethod
@@ -148,8 +149,8 @@ class RumManualApiBenchmark {
             runWithTimingDisabled {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
-            val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            GlobalRum.get().startUserAction(actionName, attributes)
+            val actionType = runWithTimingDisabled { forge.aValueFrom(UserActionKind::class.java) }
+            GlobalRum.get().startUserAction(actionType, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }
@@ -168,9 +169,9 @@ class RumManualApiBenchmark {
             runWithTimingDisabled {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
-            val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            runWithTimingDisabled { GlobalRum.get().startUserAction(actionName, attributes) }
-            GlobalRum.get().stopUserAction(actionName, attributes)
+            val actionType = runWithTimingDisabled { forge.aValueFrom(UserActionKind::class.java) }
+            runWithTimingDisabled { GlobalRum.get().startUserAction(actionType, attributes) }
+            GlobalRum.get().stopUserAction(actionType, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }

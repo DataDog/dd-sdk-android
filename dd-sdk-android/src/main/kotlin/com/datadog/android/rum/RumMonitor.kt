@@ -60,9 +60,10 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the action
      * @see [startUserAction]
      * @see [stopUserAction]
+     * @see [UserActionKind]
      */
     fun addUserAction(
-        action: String,
+        action: UserActionKind,
         attributes: Map<String, Any?> = emptyMap()
     )
 
@@ -75,9 +76,10 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the action
      * @see [stopUserAction]
      * @see [addUserAction]
+     * @see [UserActionKind]
      */
     fun startUserAction(
-        action: String,
+        action: UserActionKind,
         attributes: Map<String, Any?> = emptyMap()
     )
 
@@ -89,9 +91,10 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the action
      * @see [addUserAction]
      * @see [startUserAction]
+     * @see [UserActionKind]
      */
     fun stopUserAction(
-        action: String,
+        action: UserActionKind,
         attributes: Map<String, Any?> = emptyMap()
     )
 

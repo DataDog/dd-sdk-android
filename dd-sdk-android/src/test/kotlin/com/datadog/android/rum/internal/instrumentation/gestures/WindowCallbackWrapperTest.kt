@@ -144,7 +144,7 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockCallback, mockRumMonitor) {
-            verify(mockRumMonitor).addUserAction(eq(UserActionKind.TAP.actionName),
+            verify(mockRumMonitor).addUserAction(eq(UserActionKind.TAP),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
                     this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
@@ -167,7 +167,7 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
-            verify(mockRumMonitor).addUserAction(UserActionKind.BACK.actionName)
+            verify(mockRumMonitor).addUserAction(UserActionKind.BACK)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
