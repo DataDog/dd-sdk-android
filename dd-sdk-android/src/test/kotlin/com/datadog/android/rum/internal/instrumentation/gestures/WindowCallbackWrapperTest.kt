@@ -17,6 +17,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.UserActionKind
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -143,7 +144,7 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockCallback, mockRumMonitor) {
-            verify(mockRumMonitor).addUserAction(eq(Gesture.TAP.actionName),
+            verify(mockRumMonitor).addUserAction(eq(UserActionKind.TAP.actionName),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
                     this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
@@ -166,7 +167,7 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
-            verify(mockRumMonitor).addUserAction(Gesture.BACK.actionName)
+            verify(mockRumMonitor).addUserAction(UserActionKind.BACK.actionName)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }

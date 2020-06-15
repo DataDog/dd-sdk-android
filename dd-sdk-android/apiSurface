@@ -241,6 +241,13 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object
+enum com.datadog.android.rum.UserActionKind
+  constructor(String)
+  - TAP
+  - SWIPE
+  - SCROLL
+  - BACK
+  - CUSTOM
 class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
 class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>

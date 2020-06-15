@@ -4,12 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.instrumentation.gestures
+package com.datadog.android.rum
 
-internal enum class Gesture(val actionName: String) {
+/**
+ * Describes the type of an User action.
+ * @see [RumMonitor]
+ */
+enum class UserActionKind(val actionName: String) {
     TAP("tap"),
     SWIPE("swipe"),
     SCROLL("scroll"),
     BACK("back"),
-    NONE("")
+    CUSTOM("custom")
 }

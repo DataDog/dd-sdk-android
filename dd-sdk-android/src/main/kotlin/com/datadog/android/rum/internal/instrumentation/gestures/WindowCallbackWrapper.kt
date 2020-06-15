@@ -13,6 +13,7 @@ import android.view.Window
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.UserActionKind
 import java.lang.Exception
 
 internal class WindowCallbackWrapper(
@@ -45,13 +46,13 @@ internal class WindowCallbackWrapper(
             RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
             RumAttributes.TAG_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
+        GlobalRum.get().addUserAction(UserActionKind.TAP.actionName, attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            GlobalRum.get().addUserAction(Gesture.BACK.actionName)
+            GlobalRum.get().addUserAction(UserActionKind.BACK.actionName)
         }
         return wrappedCallback.dispatchKeyEvent(event)
     }

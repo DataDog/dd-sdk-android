@@ -15,6 +15,7 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.UserActionKind
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
@@ -29,7 +30,7 @@ internal class GesturesListener(
     GestureDetector.OnGestureListener {
 
     private val coordinatesContainer = IntArray(2)
-    private var scrollEventType: Gesture = Gesture.NONE
+    private var scrollEventType: UserActionKind? = null
     private var gestureDirection = ""
     private var scrollTargetReference: WeakReference<View?> = WeakReference(null)
     private var onTouchDownXPos = 0f
@@ -65,7 +66,7 @@ internal class GesturesListener(
         velocityY: Float
     ): Boolean {
 
-        scrollEventType = Gesture.SWIPE
+        scrollEventType = UserActionKind.SWIPE
         return false
     }
 
@@ -82,16 +83,17 @@ internal class GesturesListener(
         }
 
         // we only start the user action once
-        if (scrollEventType == Gesture.NONE) {
+        if (scrollEventType == null) {
             // check if we find a valid target
             val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
             if (scrollTarget != null) {
+                scrollEventType = UserActionKind.SCROLL
                 scrollTargetReference = WeakReference(scrollTarget)
-                rumMonitor.startUserAction(Gesture.NONE.actionName)
+                // we start the action as scroll action and we update it later to SWIPE if needed
+                rumMonitor.startUserAction(UserActionKind.SCROLL.actionName)
             } else {
                 return false
             }
-            scrollEventType = Gesture.SCROLL
         }
 
         return false
@@ -106,9 +108,7 @@ internal class GesturesListener(
     // region Internal
 
     private fun closeScrollOrSwipeEventIfAny(decorView: View?, onUpEvent: MotionEvent) {
-        if (scrollEventType == Gesture.NONE) {
-            return
-        }
+        val currentScrollEventType = scrollEventType ?: return
         val registeredRumMonitor = GlobalRum.get()
         val scrollTarget = scrollTargetReference.get()
         if (decorView == null ||
@@ -121,7 +121,7 @@ internal class GesturesListener(
         val targetId: String = resolveResourceNameFromId(scrollTarget.id)
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
         registeredRumMonitor.stopUserAction(
-            scrollEventType.actionName,
+            currentScrollEventType.actionName,
             attributes
         )
     }
@@ -146,7 +146,7 @@ internal class GesturesListener(
 
     private fun resetScrollEventParameters() {
         scrollTargetReference.clear()
-        scrollEventType = Gesture.NONE
+        scrollEventType = null
         gestureDirection = ""
         onTouchDownYPos = 0f
         onTouchDownXPos = 0f
@@ -164,7 +164,7 @@ internal class GesturesListener(
                     it.extractAttributes(target, attributes)
                 }
                 GlobalRum.get().addUserAction(
-                    Gesture.TAP.actionName,
+                    UserActionKind.TAP.actionName,
                     attributes
                 )
             }
@@ -236,7 +236,7 @@ internal class GesturesListener(
 
     private fun isScrollableView(view: View): Boolean {
         return ScrollingView::class.java.isAssignableFrom(view.javaClass) ||
-                AbsListView::class.java.isAssignableFrom(view.javaClass)
+            AbsListView::class.java.isAssignableFrom(view.javaClass)
     }
 
     private fun hitTest(
@@ -282,11 +282,12 @@ internal class GesturesListener(
         internal const val SCROLL_DIRECTION_DOWN = "down"
 
         internal val MSG_NO_TARGET_TAP = "We could not find a valid target for " +
-            "the ${Gesture.TAP.actionName} event." +
+            "the ${UserActionKind.TAP.actionName} event." +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
         internal val MSG_NO_TARGET_SCROLL_SWIPE = "We could not find a valid target for " +
-            "the ${Gesture.SCROLL.actionName} or ${Gesture.SWIPE.actionName} event. " +
+            "the ${UserActionKind.SCROLL.actionName} or " +
+            "${UserActionKind.SWIPE.actionName} event. " +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
     }
