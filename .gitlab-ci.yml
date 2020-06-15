@@ -29,7 +29,7 @@ analysis:ktlint:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :ktlintCheckAll
+    - ./gradlew :ktlintCheckAll --stacktrace
 
 analysis:android-lint:
   tags: [ "runner:docker", "size:large" ]
@@ -37,7 +37,7 @@ analysis:android-lint:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :lintCheckAll
+    - ./gradlew :lintCheckAll --stacktrace
 
 analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
@@ -45,7 +45,7 @@ analysis:detekt:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :detektAll
+    - ./gradlew :detektAll --stacktrace
 
 analysis:licenses:
   tags: [ "runner:docker", "size:large" ]
@@ -53,7 +53,7 @@ analysis:licenses:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences
+    - ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace
 
 analysis:api-surface:
   tags: [ "runner:docker", "size:large" ]
@@ -61,7 +61,7 @@ analysis:api-surface:
   stage: analysis
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges
+    - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace
 
 test:unit:
   tags: [ "runner:docker", "size:large" ]
@@ -69,7 +69,7 @@ test:unit:
   stage: test
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew unitTestAll
+    - ./gradlew unitTestAll --stacktrace
 
 publish:release:
   tags: [ "runner:docker", "size:large" ]
