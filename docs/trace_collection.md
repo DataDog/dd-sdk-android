@@ -1,7 +1,5 @@
 # Android Trace Collection
 
-<div class="alert alert-info">The Android trace collection is in public beta, and is currently not supported by Datadog.</div>
-
 Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side tracing library][2] and leverage the following features:
 
 * Create custom [spans][3] for operations in your application.
