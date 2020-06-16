@@ -311,6 +311,27 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `ignores non public default constructor`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            class Spam
+                internal constructor(i : Int) {
+                constructor(s : String) : this(s.length)
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  constructor(String)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes abstract and open classes`() {
         tempFile.writeText(
             """
@@ -338,8 +359,8 @@ internal class KotlinFileVisitorTest {
             """
             package foo.bar
             class Spam {
-                open fun doSomething {}
-                abstract fun doSomethingElse {}
+                open fun doSomething() : String = ""
+                abstract fun doSomethingElse() {}
             }
         """.trimIndent()
         )
@@ -348,7 +369,7 @@ internal class KotlinFileVisitorTest {
 
         assertEquals(
             "class foo.bar.Spam\n" +
-                "  open fun doSomething()\n" +
+                "  open fun doSomething(): String\n" +
                 "  abstract fun doSomethingElse()\n",
             testedVisitor.description.toString()
         )
@@ -360,8 +381,8 @@ internal class KotlinFileVisitorTest {
             """
             package foo.bar
             class Spam {
-                protected open fun doSomething {}
-                protected abstract fun doSomethingElse {}
+                protected open fun doSomething() {}
+                protected abstract fun doSomethingElse() {}
             }
         """.trimIndent()
         )
@@ -427,7 +448,7 @@ internal class KotlinFileVisitorTest {
                 fun <T: IOException> doSomething(input: T) : IOException {
                     return IOException(input)
                 }
-                
+
                 fun <K, V> doSomethingElse(map : Map<K, V>) : Pair<List<K>, List<V>> {
                     TODO()
                 }
@@ -462,6 +483,63 @@ internal class KotlinFileVisitorTest {
 
         assertEquals(
             "class foo.bar.Spam : java.io.IOException, java.lang.Runnable, java.util.Comparator<String>\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes nested parent class and interfaces in class types`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            class Spam : Bar.AbstractCallback(), Baz.Listener<String> {
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam : Bar.AbstractCallback, Baz.Listener<String>\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes function`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            class Spam {
+                fun doSomething(i: Int, s: String?, l : List<String?>) {}
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  fun doSomething(Int, String?, List<String?>)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes constructor with default parameters`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            class Spam (i: Int, s: String? = null, l : List<String> = emptyList()) {
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  constructor(Int, String? = null, List<String> = emptyList())\n",
             testedVisitor.description.toString()
         )
     }
@@ -533,6 +611,45 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `describes constructor with lambda parameters`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            class Spam (block : (String, Char) -> Int) {
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  constructor((String, Char) -> Int)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes object`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            object Global {
+                const val DATA : String= "Something"
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "object foo.bar.Global\n" +
+                "  const val DATA: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes companion object`() {
         tempFile.writeText(
             """
@@ -549,7 +666,7 @@ internal class KotlinFileVisitorTest {
 
         assertEquals(
             "class foo.bar.Spam\n" +
-                "  companion object\n" +
+                "  companion object \n" +
                 "    const val DATA: String\n",
             testedVisitor.description.toString()
         )
@@ -593,17 +710,42 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
-    fun `describes type alias`() {
+    fun `replace imported type with canonical name`() {
         tempFile.writeText(
             """
-            typealias StringTransform = (String) -> String?
+            package foo.bar
+            import com.example.Data
+            class Spam {
+                fun doSomething() : Data
+                fun doSomethingElse() : not.same.Data
+            }
         """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
 
         assertEquals(
-            "typealias StringTransform = (String) -> String?\n",
+            "class foo.bar.Spam\n" +
+                "  fun doSomething(): com.example.Data\n" +
+                "  fun doSomethingElse(): not.same.Data\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes type alias`() {
+        tempFile.writeText(
+            """
+            typealias StringTransform = (String) -> String?
+            typealias StringRepeat = (String, Int) -> String
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "typealias StringTransform = (String) -> String?\n" +
+                "typealias StringRepeat = (String, Int) -> String\n",
             testedVisitor.description.toString()
         )
     }
@@ -650,10 +792,10 @@ internal class KotlinFileVisitorTest {
             """
             package foo.bar
             import kotlin.Deprecated
-            
+
             class Spam {
                 @Deprecated
-                fun doSomething() {} 
+                fun doSomething() {}
             }
         """.trimIndent()
         )
@@ -668,15 +810,15 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
-    fun `describes deprecated field`() {
+    fun `describes deprecated constructor`() {
         tempFile.writeText(
             """
             package foo.bar
-            import java.lang.Deprecated
-            
-            class Spam {
+            import kotlin.Deprecated
+
+            class Spam(i : Int) {
                 @Deprecated
-                val data : String = ""
+                constructor(s : String) : this(s.length)
             }
         """.trimIndent()
         )
@@ -685,7 +827,76 @@ internal class KotlinFileVisitorTest {
 
         assertEquals(
             "class foo.bar.Spam\n" +
-                "  DEPRECATED val data: String\n",
+                "  constructor(Int)\n" +
+                "  DEPRECATED constructor(String)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes deprecated field`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import java.lang.Deprecated
+
+            class Spam {
+                @Deprecated
+                val foo : String = ""
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  DEPRECATED val foo: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes deprecated const`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import java.lang.Deprecated
+
+            object Spam {
+                @Deprecated("Don't use anymore")
+                const val foo : String = ""
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "object foo.bar.Spam\n" +
+                "  DEPRECATED const val foo: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes identifiers with keywords field`() {
+        tempFile.writeText(
+            """
+            package foo.bar.internal
+            import java.lang.Deprecated
+
+            class Spam {
+                val data : String = ""
+            }
+        """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.internal.Spam\n" +
+                "  val data: String\n",
             testedVisitor.description.toString()
         )
     }

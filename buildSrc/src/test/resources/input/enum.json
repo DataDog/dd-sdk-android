@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Style",
+  "type": "object",
+  "properties": {
+    "color": {
+      "type": "string",
+      "enum": ["red", "amber", "green", "dark_blue"]
+    }
+  },
+  "required": [ "color"]
+}

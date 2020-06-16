@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Book",
+  "type": "object",
+  "properties": {
+    "bookId": {
+      "type": "integer"
+    },
+    "title": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [ "firstName", "lastName", "contact" ]
+    }
+  },
+  "required": [ "bookId", "title", "price", "author" ]
+}

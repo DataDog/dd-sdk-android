@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "_common-schema.json",
+  "type": "object",
+  "description": "Schema of common properties of RUM events",
+  "required": [
+    "type",
+    "date",
+    "application",
+    "session",
+    "view",
+    "_dd"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "RUM event type",
+      "enum": ["action", "error", "long_task", "resource", "view"]
+    },
+    "date": {
+      "type": "integer",
+      "description": "Start of the event in ms from epoch",
+      "minimum": 0
+    },
+    "application": {
+      "type": "object",
+      "description": "Application properties",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the application",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "description": "Session properties",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the session",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the session",
+          "enum": ["user", "synthetics"]
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "description": "View properties",
+      "required": [
+        "id",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the view",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "referrer": {
+          "type": "string",
+          "description": "URL that linked to the initial view of the page"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the view"
+        }
+      }
+    },
+    "_dd": {
+      "type": "object",
+      "description": "Internal properties",
+      "required": [
+        "format_version"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 2,
+          "description": "Version of the RUM event format"
+        }
+      }
+    }
+  }
+}

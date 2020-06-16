@@ -22,13 +22,13 @@ buildscript {
 }
 
 apply(plugin = "kotlin")
-apply(plugin = "java-gradle-plugin")
 
 repositories {
     mavenCentral()
     google()
     maven { setUrl("https://plugins.gradle.org/m2/") }
     maven { setUrl("https://maven.google.com") }
+    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
@@ -45,13 +45,22 @@ dependencies {
     implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
 
     // check api surface
-    implementation("net.java.dev.jna:jna:4.2.2")
-    implementation("com.github.cretz.kastree:kastree-ast-jvm:0.4.0")
-    implementation("com.github.cretz.kastree:kastree-ast-psi:0.4.0")
+    implementation("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm:c35b50fa44")
 
+    // JsonSchema 2 Poko
+    implementation("com.google.code.gson:gson:2.8.6")
+    implementation("com.squareup:kotlinpoet:1.6.0")
+
+    // Tests
     testImplementation("junit:junit:4.12")
     testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
     testImplementation("net.wuerl.kotlin:assertj-core-kotlin:0.2.1")
+    testImplementation("com.github.xgouchet.Elmyr:core:1.0.0")
+    testImplementation("com.github.xgouchet.Elmyr:inject:1.0.0")
+    testImplementation("com.github.xgouchet.Elmyr:junit4:1.0.0")
+    testImplementation("com.github.xgouchet.Elmyr:jvm:1.0.0")
+    // Json Schema validation
+    testImplementation("com.github.everit-org.json-schema:org.everit.json.schema:1.12.1")
 }
 
 gradlePlugin {
@@ -72,9 +81,29 @@ gradlePlugin {
             id = "cloneDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin"
         }
+        register("jsonschema2poko") {
+            id = "jsonschema2poko" // the alias
+            implementationClass = "com.datadog.gradle.plugin.jsonschema.JsonSchemaPlugin"
+        }
     }
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8.toString()
+}
+
+tasks {
+    register<Copy>("copyTestRes") {
+        from("$projectDir/src/test/kotlin/com/example/model")
+        into("$projectDir/src/test/resources/output")
+    }
+
+    register<Delete>("deleteTestRes") {
+        delete("$projectDir/src/test/resources/output/")
+    }
+}
+
+tasks.named("test") {
+    dependsOn("copyTestRes")
+    finalizedBy("deleteTestRes")
 }

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "long_task-schema.json",
+  "type": "object",
+  "description": "Schema of all properties of a Long Task event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "required": [
+        "long_task"
+      ],
+      "properties": {
+        "long_task": {
+          "type": "object",
+          "description": "Long Task properties",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ns of the long task",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Opus",
+  "description": "A musical opus.",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The opus's title."
+    },
+    "composer": {
+      "type": "string",
+      "description": "The opus's composer."
+    },
+    "artists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "An artist and their role in an opus.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The artist's name."
+          },
+          "role": {
+            "type": "string",
+            "description": "The artist's role.",
+            "enum" : ["singer", "guitarist", "pianist", "drummer", "bassist", "viloinist", "dj", "vocals", "other"]
+          }
+        }
+      },
+      "description": "The opus's artists."
+    },
+    "duration": {
+      "description": "The opus's duration in seconds",
+      "type": "integer"
+    }
+  }
+}

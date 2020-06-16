@@ -240,7 +240,7 @@ enum com.datadog.android.rum.RumResourceKind
   - CSS
   - MEDIA
   - OTHER
-  companion object
+  companion object 
 class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
 class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
@@ -258,7 +258,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  companion object
+  companion object 
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityResumed(android.app.Activity)
@@ -283,7 +283,7 @@ class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : Activity
   override fun onActivityPaused(android.app.Activity)
   override fun onActivityStopped(android.app.Activity)
   override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
-  companion object
+  companion object 
 interface com.datadog.android.rum.tracking.TrackingStrategy
   fun register(android.content.Context)
   fun unregister(android.content.Context?)
@@ -293,7 +293,7 @@ interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrate
 open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
-  companion object
+  companion object 
 open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
   override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
   override fun onPageFinished(android.webkit.WebView?, String?)
@@ -301,7 +301,7 @@ open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.Web
   override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
   override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
-  companion object
+  companion object 
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
@@ -309,7 +309,7 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
-  companion object
+  companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
 class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor

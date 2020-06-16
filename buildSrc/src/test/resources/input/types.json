@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Demo",
+  "type": "object",
+  "properties": {
+    "s": {
+      "type": "string"
+    },
+    "i": {
+      "type": "integer"
+    },
+    "n": {
+      "type": "number"
+    },
+    "b": {
+      "type": "boolean"
+    },
+    "l": {
+      "type": "null"
+    }
+  },
+  "required": ["s", "i", "n", "b"]
+}

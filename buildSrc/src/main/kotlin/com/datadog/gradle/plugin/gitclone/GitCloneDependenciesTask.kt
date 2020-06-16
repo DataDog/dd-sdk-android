@@ -46,7 +46,8 @@ open class GitCloneDependenciesTask : DefaultTask() {
         } else {
             File("${target.absolutePath}${File.separator}${dependency.originSubFolder}")
         }
-        copySources(copyFrom, project.projectDir, dependency.excludedPrefixes)
+        val copyTo = File(project.projectDir.path + File.separator + dependency.destinationFolder)
+        copySources(copyFrom, copyTo, dependency.excludedPrefixes)
 
         deleteClone(target)
     }
@@ -63,7 +64,6 @@ open class GitCloneDependenciesTask : DefaultTask() {
             dependency.originRepository,
             target.absolutePath
         )
-        println(" --- Cloned")
     }
 
     private fun copySources(
@@ -76,8 +76,6 @@ open class GitCloneDependenciesTask : DefaultTask() {
         src.walkBottomUp()
             .filter { it.isFile }
             .forEach { copyFile(it, srcPath, destPath, excludedPrefixes) }
-
-        println(" --- Copied")
     }
 
     private fun copyFile(

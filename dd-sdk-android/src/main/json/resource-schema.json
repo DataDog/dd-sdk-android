@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "resource-schema.json",
+  "type": "object",
+  "description": "Schema of all properties of a Resource event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "resource": {
+          "type": "object",
+          "description": "Resource properties",
+          "required": [
+            "type",
+            "url",
+            "duration"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Resource type",
+              "enum": ["document", "xhr", "beacon", "fetch", "css", "js", "image", "font", "media", "other"]
+            },
+            "method": {
+              "type": "string",
+              "description": "HTTP method of the resource",
+              "enum": ["POST", "GET", "HEAD", "PUT", "DELETE", "PATCH"]
+            },
+            "url": {
+              "type": "string",
+              "description": "URL of the resource"
+            },
+            "status_code": {
+              "type": "integer",
+              "description": "HTTP status code of the resource",
+              "minimum": 0
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Duration of the resource",
+              "minimum": 0
+            },
+            "size": {
+              "type": "integer",
+              "description": "Size in octet of the resource response body",
+              "minimum": 0
+            },
+            "redirect": {
+              "type": "object",
+              "description": "Redirect phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource redirect phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the redirect phase",
+                  "minimum": 0
+                }
+              }
+            },
+            "dns": {
+              "type": "object",
+              "description": "DNS phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource dns phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the dns phase",
+                  "minimum": 0
+                }
+              }
+            },
+            "connect": {
+              "type": "object",
+              "description": "Connect phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource connect phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the connect phase",
+                  "minimum": 0
+                }
+              }
+            },
+            "ssl": {
+              "type": "object",
+              "description": "SSL phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource ssl phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the ssl phase",
+                  "minimum": 0
+                }
+              }
+            },
+            "first_byte": {
+              "type": "object",
+              "description": "First Byte phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource first byte phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the first byte phase",
+                  "minimum": 0
+                }
+              }
+            },
+            "download": {
+              "type": "object",
+              "description": "Download phase properties",
+              "required": [
+                "duration",
+                "start"
+              ],
+              "properties": {
+                "duration": {
+                  "type": "integer",
+                  "description": "Duration in ns of the resource download phase",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "integer",
+                  "description": "Duration in ns between start of the request and start of the download phase",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

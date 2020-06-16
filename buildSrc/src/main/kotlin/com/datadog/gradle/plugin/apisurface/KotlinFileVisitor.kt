@@ -7,323 +7,520 @@
 package com.datadog.gradle.plugin.apisurface
 
 import java.io.File
-import java.lang.UnsupportedOperationException
-import kastree.ast.Node
-import kastree.ast.psi.Parser
+import kotlinx.ast.common.AstSource
+import kotlinx.ast.common.ast.Ast
+import kotlinx.ast.common.ast.AstNode
+import kotlinx.ast.common.ast.AstTerminal
+import kotlinx.ast.common.print
+import kotlinx.ast.grammar.kotlin.target.antlr.kotlin.KotlinGrammarAntlrKotlinParser
 
 class KotlinFileVisitor {
 
     val description = StringBuilder()
+    private lateinit var pkg: String
     private val imports = mutableMapOf<String, String>()
 
     // region KotlinFileVisitor
 
-    fun visitFile(file: File) {
+    fun visitFile(file: File, printAst: Boolean = false) {
         val code = file.readText()
-        val ast = Parser.parseFile(code, throwOnError = false)
+        val source = AstSource.String(code)
+        val ast = KotlinGrammarAntlrKotlinParser.parseKotlinFile(source)
 
+        if (printAst) ast.print()
         imports.clear()
-        ast.imports.forEach {
-            imports[it.alias ?: it.names.last()] = it.names.joinToString(".")
+        try {
+            visitAst(ast, level = 0)
+        } catch (e: Exception) {
+            throw IllegalStateException("Error generating API surface for $file", e)
         }
-
-        val pkg = ast.pkg?.names?.joinToString(".", postfix = ".").orEmpty()
-        ast.decls.forEach { visitDeclaration(it, pkg, 0) }
     }
 
     // endregion
 
     // region Internal/Visitor
 
-    private fun visitDeclaration(
-        declaration: Node.Decl,
-        pkg: String,
-        level: Int
-    ) {
-        if (declaration is Node.WithModifiers) {
-            if (!declaration.isPublic()) return
-
-            description.append("  ".repeat(level))
-
-            if (declaration.isDeprecated()) {
-                description.append("DEPRECATED ")
-            }
-
-            if (declaration.isProtected()) {
-                description.append("protected ")
-            }
-            if (declaration.isOpen()) {
-                description.append("open ")
-            }
-            if (declaration.isAbstract()) {
-                description.append("abstract ")
-            }
-        }
-
-        when (declaration) {
-            is Node.Decl.Structured -> visitStructured(declaration, pkg, level)
-            is Node.Decl.Init -> {
-            }
-            is Node.Decl.Func -> visitFunction(declaration)
-            is Node.Decl.Property -> visitProperty(declaration)
-            is Node.Decl.TypeAlias -> visitTypeAlias(declaration, level)
-            is Node.Decl.Constructor -> visitConstructor(declaration)
-            is Node.Decl.EnumEntry -> visitEnumEntry(declaration)
+    private fun visitAst(ast: Ast, level: Int) {
+        when (ast) {
+            is AstNode -> visitAstNode(ast, level)
+            is AstTerminal -> ignoreNode()
+            else -> throw IllegalStateException("Unable to handle $ast")
         }
     }
 
-    private fun visitEnumEntry(declaration: Node.Decl.EnumEntry) {
-        description.append("- ")
-        description.append(declaration.name)
+    private fun visitAstNode(node: AstNode, level: Int) {
+        when (node.description) {
+            "kotlinFile",
+            "importList",
+            "topLevelObject",
+            "declaration",
+            "classMemberDeclarations",
+            "classMemberDeclaration",
+            "enumEntries",
+            "kamoulox" -> node.children.forEach {
+                visitAst(it, level)
+            }
+            "packageHeader" -> visitPackage(node)
+            "importHeader" -> visitImport(node)
+            "classDeclaration" -> visitTypeDeclaration(node, level, "class")
+            "objectDeclaration" -> visitTypeDeclaration(node, level, "object")
+            "companionObject" -> visitTypeDeclaration(node, level, "companion object")
+            "secondaryConstructor" -> visitSecondaryConstructor(node, level)
+            "functionDeclaration" -> visitFunctionDeclaration(node, level)
+            "propertyDeclaration" -> visitProperty(node, level)
+            "typeAlias" -> visitTypeAlias(node, level)
+            "enumEntry" -> visitEnumEntry(node, level)
+            "semis" -> ignoreNode()
+            else -> println("??? ${node.description}")
+        }
+    }
+
+    private fun visitTypeDeclaration(node: AstNode, level: Int, type: String) {
+        if (node.isInternal() || node.isPrivate()) return
+
+        description.append(INDENT.repeat(level))
+
+        // Modifiers
+        if (node.isDeprecated()) description.append("DEPRECATED ")
+        if (node.isSealed()) description.append("sealed ")
+        if (node.isProtected()) description.append("protected ")
+        if (node.isOpen()) description.append("open ")
+        if (node.isAbstract()) description.append("abstract ")
+
+        when {
+            node.hasChildTerminal("INTERFACE") -> description.append("interface ")
+            node.isEnum() -> description.append("enum ")
+            else -> description.append("$type ")
+        }
+
+        // Canonical name
+        if (level == 0) description.append(pkg)
+        description.append(node.identifierName())
+
+        // Generics
+        visitTypeParameters(node)
+
+        // Parent types
+        visitParentTypes(node)
+
+        // EOL
+        description.append("\n")
+
+        // Primary constructor
+        val primaryConstructor = node.firstChildNodeOrNull("primaryConstructor")
+        if (primaryConstructor != null) {
+            visitPrimaryConstructor(primaryConstructor, level + 1)
+        }
+
+        // Content
+        node.firstChildNodeOrNull("classBody")?.children?.forEach {
+            visitAst(it, level + 1)
+        }
+        node.firstChildNodeOrNull("enumClassBody")?.children?.forEach {
+            visitAst(it, level + 1)
+        }
+    }
+
+    private fun visitPrimaryConstructor(node: AstNode, level: Int) {
+        if (node.isInternal() || node.isPrivate()) return
+
+        description.append(INDENT.repeat(level))
+
+        description.append("constructor")
+
+        // Parameters
+        visitConstructorParameters(node)
+
+        // EOL
         description.append("\n")
     }
 
-    private fun visitConstructor(constructor: Node.Decl.Constructor) {
-        description.append("constructor(")
-        visitParameters(constructor.params)
-        description.append(")\n")
+    private fun visitSecondaryConstructor(node: AstNode, level: Int) {
+        if (node.isInternal() || node.isPrivate()) return
+
+        description.append(INDENT.repeat(level))
+
+        // Modifiers
+        if (node.isDeprecated()) description.append("DEPRECATED ")
+        if (node.isProtected()) description.append("protected ")
+
+        description.append("constructor")
+
+        // Parameters
+        visitFunctionParameters(node)
+
+        // EOL
+        description.append("\n")
     }
 
-    private fun visitStructured(
-        structured: Node.Decl.Structured,
-        pkg: String,
-        level: Int
-    ) {
-        if (structured.isSealed()) {
-            description.append("sealed ")
-        }
-        description.append(structured.form.description())
-        if (structured.form != Node.Decl.Structured.Form.COMPANION_OBJECT) {
+    private fun visitFunctionDeclaration(node: AstNode, level: Int) {
+        if (node.isInternal() || node.isPrivate()) return
+
+        description.append(INDENT.repeat(level))
+
+        // Modifiers
+        if (node.isDeprecated()) description.append("DEPRECATED ")
+        if (node.isOverride()) description.append("override ")
+        if (node.isProtected()) description.append("protected ")
+        if (node.isOpen()) description.append("open ")
+        if (node.isAbstract()) description.append("abstract ")
+
+        description.append("fun ")
+
+        // Generics
+        visitTypeParameters(node)
+        if (node.hasChildNode("typeParameters")) {
             description.append(" ")
-            if (level == 0) {
-                description.append(pkg)
-            }
-            description.append(structured.name)
         }
 
-        description.append(structured.typeParams.description())
-        description.append(structured.parentDescription())
+        // Name
+        description.append(node.identifierName())
 
-        description.append('\n')
+        // Parameters
+        visitFunctionParameters(node)
 
-        // Visit children
-        structured.primaryConstructor?.asConstructor()?.let {
-            visitDeclaration(it, pkg, level + 1)
-        }
-
-        structured.members.forEach {
-            visitDeclaration(it, pkg, level + 1)
-        }
-    }
-
-    private fun visitTypeAlias(
-        typeAlias: Node.Decl.TypeAlias,
-        level: Int
-    ) {
-        if (typeAlias.isPublic()) {
-            description.append("  ".repeat(level))
-            description.append("typealias ")
-            description.append(typeAlias.name)
-            description.append(" = ")
-            description.append(typeAlias.type.description())
-            description.append('\n')
-        }
-    }
-
-    private fun visitFunction(func: Node.Decl.Func) {
-        if (func.isOverride()) {
-            description.append("override fun ")
-        } else {
-            description.append("fun ")
-        }
-
-        description.append(func.typeParams.description(postfix = " "))
-
-        description.append(func.name)
-        description.append("(")
-        visitParameters(func.params)
-        description.append(")")
-
-        val returnType = func.type.description()
-        if (returnType.isNotBlank()) {
+        // Return type
+        val type = node.firstChildNodeOrNull("type")
+        type?.let {
             description.append(": ")
-            description.append(returnType)
+            description.append(it.typeName())
         }
-        description.append('\n')
+
+        // EOL
+        description.append("\n")
     }
 
-    private fun visitParameters(params: List<Node.Decl.Func.Param>) {
-        if (params.isNotEmpty()) {
-            params.forEachIndexed { i, param ->
-                if (i > 0) description.append(", ")
-                description.append(param.type.description())
+    private fun visitProperty(node: AstNode, level: Int) {
+        if (node.isInternal() || node.isPrivate()) return
 
-                if (param.default != null) {
-                    description.append(" = ")
-                    description.append(param.default.description())
-                }
-            }
-        }
-    }
+        description.append(INDENT.repeat(level))
 
-    private fun visitProperty(property: Node.Decl.Property) {
-        if (property.isConst()) {
-            description.append("const val ")
-        } else if (property.readOnly) {
+        // Modifiers
+        if (node.isDeprecated()) description.append("DEPRECATED ")
+        if (node.isOverride()) description.append("override ")
+        if (node.isProtected()) description.append("protected ")
+        if (node.isOpen()) description.append("open ")
+        if (node.isAbstract()) description.append("abstract ")
+        if (node.isConst()) description.append("const ")
+
+        // Property type
+        if (node.hasChildTerminal("VAL")) {
             description.append("val ")
-        } else {
+        } else if (node.hasChildTerminal("VAR")) {
             description.append("var ")
         }
 
-        property.vars
-            .filterNotNull()
-            .forEach {
-                description.append(it.name)
-                checkNotNull(it.type) { "Public properties should use an explicit type. Error on property ${it.name}" }
-                description.append(": ")
-                description.append(it.type.description())
-            }
+        val variableDeclaration = node.firstChildNode("variableDeclaration")
+        description.append(variableDeclaration.identifierName())
 
-        description.append('\n')
+        // Type
+        description.append(": ")
+        val propertyType = variableDeclaration.firstChildNodeOrNull("type")
+        checkNotNull(propertyType) {
+            "Public properties should use an explicit type. " +
+                "Error on property ${variableDeclaration.identifierName()}"
+        }
+        description.append(propertyType.typeName())
+
+        // EOL
+        description.append("\n")
     }
 
-    // endregion
+    private fun visitEnumEntry(node: AstNode, level: Int) {
+        description.append(INDENT.repeat(level))
+        description.append("- ")
+        description.append(node.identifierName())
+        description.append("\n")
+    }
 
-    // region Internal/Ext
+    private fun visitParentTypes(node: AstNode) {
+        val parentSpecifiers = node.firstChildNodeOrNull("delegationSpecifiers")
+            ?.childrenNodes("annotatedDelegationSpecifier")
+            ?.map {
+                val delegation = it.firstChildNode("delegationSpecifier")
+                val typeRef = delegation.firstChildNodeOrNull("constructorInvocation")
+                    ?: delegation.firstChildNodeOrNull("explicitDelegation")
+                    ?: delegation
+                typeRef.typeReferenceName()
+            }
+        if (!parentSpecifiers.isNullOrEmpty()) {
+            description.append(" : ")
+            description.append(parentSpecifiers.joinToString(", "))
+        }
+    }
 
-    private fun Node.Decl.Structured.PrimaryConstructor.asConstructor(): Node.Decl.Constructor {
-        return Node.Decl.Constructor(
-            mods = mods,
-            params = params,
-            delegationCall = null,
-            block = null
+    private fun visitTypeParameters(node: AstNode) {
+        val typeParameters = node.firstChildNodeOrNull("typeParameters") ?: return
+        val generics = typeParameters.childrenNodes("typeParameter")
+            .map {
+                val name = it.identifierName()
+                val type = it.firstChildNodeOrNull("type")?.typeName()
+                name + (if (type == null) "" else ": $type")
+            }
+        description.append(
+            generics.joinToString(", ", prefix = "<", postfix = ">")
         )
     }
 
-    private fun Node.Decl.Structured.Form.description(): String {
-        return when (this) {
-            Node.Decl.Structured.Form.CLASS -> "class"
-            Node.Decl.Structured.Form.ENUM_CLASS -> "enum"
-            Node.Decl.Structured.Form.INTERFACE -> "interface"
-            Node.Decl.Structured.Form.OBJECT -> "object"
-            Node.Decl.Structured.Form.COMPANION_OBJECT -> "companion object"
-        }
+    private fun visitFunctionParameters(node: AstNode) {
+        description.append("(")
+        description.append(
+            node.firstChildNode("functionValueParameters")
+                .childrenNodes("functionValueParameter")
+                .joinToString(", ") { it.parameterType() }
+        )
+        description.append(")")
     }
 
-    private fun Node.Type?.description(): String {
-        return this?.ref.description()
+    private fun visitConstructorParameters(node: AstNode) {
+        description.append("(")
+        description.append(
+            node.firstChildNode("classParameters")
+                .childrenNodes("classParameter")
+                .joinToString(", ") { it.constructorParameterType() }
+        )
+        description.append(")")
     }
 
-    private fun Node.TypeRef?.description(): String {
-        return when (this) {
-            is Node.TypeRef.Nullable -> "${type.description()}?"
-            is Node.TypeRef.Simple -> pieces.description()
-            is Node.TypeRef.Func -> {
-                val prefix = if (receiverType != null) {
-                    "${receiverType.description()}."
-                } else {
-                    ""
-                }
-                val inputs = params.joinToString(", ") { it.type.description() }
-                val output = type.description()
-                "$prefix($inputs) -> $output"
-            }
-            null -> ""
-            else -> throw UnsupportedOperationException("Unable to get description for TypeRef $this")
-        }
-    }
-
-    private fun Node.Expr?.description(): String {
-        return when (this) {
-            is Node.Expr.Const -> this.value
-            is Node.Expr.Call -> "${this.expr.description()}()"
-            is Node.Expr.Name -> imports[this.name] ?: this.name
-            else -> throw UnsupportedOperationException("Unable to get description for Expr $this")
-        }
-    }
-
-    private fun List<Node.TypeParam>.description(postfix: String = ""): String {
-        return if (isEmpty()) {
-            ""
+    private fun visitPackage(node: AstNode) {
+        val identifier = node.firstChildNodeOrNull("identifier")
+        pkg = if (identifier != null) {
+            identifier.identifierName() + "."
         } else {
-            val list = joinToString(", ") {
-                if (it.type != null) {
-                    "${it.name}: ${it.type.description()}"
-                } else {
-                    it.name
-                }
-            }
-            "<$list>$postfix"
-        }
-    }
-
-    private fun List<Node.TypeRef.Simple.Piece>.description(): String {
-        return if (isEmpty()) {
             ""
-        } else {
-            return mapIndexed { i, p ->
-                val name = if (i == 0) imports[p.name] ?: p.name else p.name
-                if (p.typeParams.isEmpty()) {
-                    name
-                } else {
-                    "$name<${p.typeParams.joinToString(", ") { it?.description().orEmpty() }}>"
-                }
-            }.joinToString(".")
         }
     }
 
-    private fun Node.Decl.Structured.parentDescription(): String {
-        return if (parents.isEmpty()) {
-            ""
-        } else {
-            parents.joinToString(", ", prefix = " : ") {
-                when (it) {
-                    is Node.Decl.Structured.Parent.CallConstructor -> it.type.description()
-                    is Node.Decl.Structured.Parent.Type -> it.type.description()
-                }
-            }
-        }
+    private fun visitImport(node: AstNode) {
+        val import = node.firstChildNode("identifier").identifierName()
+
+        val importAlias = node.firstChildNodeOrNull("importAlias")?.identifierName()
+
+        imports[importAlias ?: import.substringAfterLast(".")] = import
     }
 
-    private fun Node.WithAnnotations.isDeprecated(): Boolean {
-        return anns.any { annotationSet ->
-            annotationSet.anns.any { annotation ->
-                annotation.names.any {
-                    val name = imports[it] ?: it
-                    name == "Deprecated" || name == "kotlin.Deprecated" || name == "java.lang.Deprecated"
-                }
-            }
-        }
+    private fun visitTypeAlias(node: AstNode, level: Int) {
+        if (node.isInternal() || node.isPrivate()) return
+
+        val name = node.identifierName()
+
+        val type = node.firstChildNode("type")
+
+        description.append(INDENT.repeat(level))
+        description.append("typealias $name = ${type.lambdaName()}\n")
     }
 
-    private fun Node.WithModifiers.isPublic(): Boolean {
-        return !(Node.Modifier.Lit(Node.Modifier.Keyword.INTERNAL) in mods ||
-            Node.Modifier.Lit(Node.Modifier.Keyword.PRIVATE) in mods)
-    }
-
-    private fun Node.WithModifiers.isProtected(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.PROTECTED) in mods
-    }
-
-    private fun Node.WithModifiers.isConst(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.CONST) in mods
-    }
-
-    private fun Node.WithModifiers.isOverride(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.OVERRIDE) in mods
-    }
-
-    private fun Node.WithModifiers.isOpen(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.OPEN) in mods
-    }
-
-    private fun Node.WithModifiers.isAbstract(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.ABSTRACT) in mods
-    }
-
-    private fun Node.WithModifiers.isSealed(): Boolean {
-        return Node.Modifier.Lit(Node.Modifier.Keyword.SEALED) in mods
+    private fun ignoreNode() {
+        // Do Nothing
     }
 
     // endregion
+
+    // region Internal/Ext/Modifiers
+
+    private fun AstNode.isSealed(): Boolean {
+        return hasModifier("classModifier", "SEALED")
+    }
+
+    private fun AstNode.isEnum(): Boolean {
+        return hasModifier("classModifier", "ENUM")
+    }
+
+    private fun AstNode.isProtected(): Boolean {
+        return hasModifier("visibilityModifier", "PROTECTED")
+    }
+
+    private fun AstNode.isPrivate(): Boolean {
+        return hasModifier("visibilityModifier", "PRIVATE")
+    }
+
+    private fun AstNode.isInternal(): Boolean {
+        return hasModifier("visibilityModifier", "INTERNAL")
+    }
+
+    private fun AstNode.isOpen(): Boolean {
+        return hasModifier("inheritanceModifier", "OPEN")
+    }
+
+    private fun AstNode.isAbstract(): Boolean {
+        return hasModifier("inheritanceModifier", "ABSTRACT")
+    }
+
+    private fun AstNode.isOverride(): Boolean {
+        return hasModifier("memberModifier", "OVERRIDE")
+    }
+
+    private fun AstNode.isConst(): Boolean {
+        return hasModifier("propertyModifier", "CONST")
+    }
+
+    private fun AstNode.hasModifier(group: String, modifier: String): Boolean {
+        val modifiers = firstChildNodeOrNull("modifiers") ?: return false
+        return modifiers.childrenNodes("modifier")
+            .mapNotNull { it.firstChildNodeOrNull(group) }
+            .any { it.firstChildTerminalOrNull(modifier) != null }
+    }
+
+    private fun AstNode.isDeprecated(): Boolean {
+        val modifiers = firstChildNodeOrNull("modifiers") ?: return false
+        return modifiers.childrenNodes("annotation")
+            .mapNotNull { it.firstChildNodeOrNull("singleAnnotation") }
+            .mapNotNull { it.firstChildNodeOrNull("unescapedAnnotation") }
+            .map { it.firstChildNodeOrNull("constructorInvocation") ?: it }
+            .filter { it.hasChildNode("userType") }
+            .any { it.typeReferenceName() in DEPRECATED_ANNOTATIONS }
+    }
+
+    // endregion
+
+    // region Internal/Ext/Node
+
+    private fun Ast.isNode(description: String): Boolean {
+        return this is AstNode && this.description == description
+    }
+
+    private fun AstNode.firstChildNode(description: String): AstNode {
+        val first = firstChildNodeOrNull(description)
+        checkNotNull(first) { "Unable to find a child with description $description in \n$this" }
+        return first
+    }
+
+    private fun AstNode.firstChildNodeOrNull(description: String): AstNode? {
+        return children.firstOrNull { it.isNode(description) } as? AstNode
+    }
+
+    private fun AstNode.hasChildNode(description: String): Boolean {
+        return children.any { it.isNode(description) }
+    }
+
+    private fun AstNode.childrenNodes(description: String): List<AstNode> {
+        return children.filterIsInstance<AstNode>()
+            .filter { it.description == description }
+    }
+
+    // endregion
+
+    // region Internal/Ext/Terminal
+
+    private fun Ast.isTerminal(description: String): Boolean {
+        return this is AstTerminal && this.description == description
+    }
+
+    private fun AstNode.firstChildTerminal(description: String): AstTerminal {
+        val first = firstChildTerminalOrNull(description)
+        checkNotNull(first) { "Unable to find a child with description $description in \n$this" }
+        return first
+    }
+
+    private fun AstNode.firstChildTerminalOrNull(description: String): AstTerminal? {
+        return children.firstOrNull { it.isTerminal(description) } as? AstTerminal
+    }
+
+    private fun AstNode.hasChildTerminal(description: String): Boolean {
+        return children.any { it.isTerminal(description) }
+    }
+
+    // endregion
+
+    // region Internal/Ext/Names
+
+    private fun AstNode.identifierName(): String {
+        return childrenNodes("simpleIdentifier")
+            .joinToString(".") {
+                it.firstChildTerminalOrNull("Identifier")?.text ?: it.children.first()
+                    .expressionValue()
+            }
+    }
+
+    private fun AstNode.typeName(): String {
+        val nullableType = firstChildNodeOrNull("nullableType")
+        return when {
+            nullableType != null -> nullableType.typeName() + "?"
+            hasChildNode("functionType") -> lambdaName()
+            else -> firstChildNode("typeReference").typeReferenceName()
+        }
+    }
+
+    private fun AstNode.typeReferenceName(): String {
+        val simpleUserTypes = firstChildNode("userType")
+            .childrenNodes("simpleUserType")
+
+        return simpleUserTypes.fold("") { aggr, userType ->
+            val typeName = userType.identifierName()
+            val generics = userType.firstChildNodeOrNull("typeArguments")
+                ?.childrenNodes("typeProjection")
+                ?.joinToString(", ", prefix = "<", postfix = ">") {
+                    it.firstChildNode("type").typeName()
+                } ?: ""
+            if (aggr.isEmpty()) {
+                (imports[typeName] ?: typeName) + generics
+            } else {
+                "$aggr.$typeName$generics"
+            }
+        }
+    }
+
+    private fun AstNode.lambdaName(): String {
+        val functionType = firstChildNode("functionType")
+
+        val receiver = functionType.firstChildNodeOrNull("receiverType")?.typeName()
+        val params = functionType.firstChildNode("functionTypeParameters")
+            .childrenNodes("type")
+            .joinToString(", ") { it.typeName() }
+        val returns = functionType.firstChildNode("type").typeName()
+
+        return if (receiver == null) {
+            "($params) -> $returns"
+        } else {
+            "$receiver.($params) -> $returns"
+        }
+    }
+
+    private fun AstNode.parameterType(): String {
+        val typeName = firstChildNode("parameter")
+            .firstChildNode("type")
+            .typeName()
+
+        return if (hasChildNode("expression")) {
+            val defaultValue = firstChildNode("expression").expressionValue()
+            "$typeName = $defaultValue"
+        } else {
+            typeName
+        }
+    }
+
+    private fun AstNode.constructorParameterType(): String {
+        val typeName = firstChildNode("type")
+            .typeName()
+
+        return if (hasChildNode("expression")) {
+            val defaultValue = firstChildNode("expression").expressionValue()
+            "$typeName = $defaultValue"
+        } else {
+            typeName
+        }
+    }
+
+    private fun Ast.expressionValue(): String {
+        return if (this is AstNode) {
+            children.map { it.expressionValue() }.joinToString("")
+        } else if (this is AstTerminal) {
+            text
+        } else {
+            println("EXPR ?? $this")
+            "…"
+        }
+    }
+
+    // endregion
+
+    companion object {
+        private const val INDENT = "  "
+
+        private val DEPRECATED_ANNOTATIONS = arrayOf(
+            "java.lang.Deprecated",
+            "kotlin.Deprecated",
+            "Deprecated"
+        )
+    }
 }
