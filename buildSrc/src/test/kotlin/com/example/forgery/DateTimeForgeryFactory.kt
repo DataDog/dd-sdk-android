@@ -14,14 +14,14 @@ class DateTimeForgeryFactory : ForgeryFactory<DateTime> {
     override fun getForgery(forge: Forge): DateTime {
         return DateTime(
             date = DateTime.Date(
-                year = forge.aNullable { anInt() },
+                year = forge.aNullable { aLong() },
                 month = forge.aNullable { getForgery() },
-                day = forge.aNullable { anInt(1, 31) }
+                day = forge.aNullable { aLong(1, 31) }
             ),
             time = DateTime.Time(
-                hour = forge.aNullable { anInt(0, 24) },
-                minute = forge.aNullable { anInt(0, 60) },
-                seconds = forge.aNullable { anInt(0, 24) }
+                hour = forge.aNullable { aLong(0, 24) },
+                minute = forge.aNullable { aLong(0, 60) },
+                seconds = forge.aNullable { aLong(0, 24) }
             )
         )
     }

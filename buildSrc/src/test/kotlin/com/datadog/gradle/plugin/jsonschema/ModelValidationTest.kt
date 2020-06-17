@@ -78,13 +78,15 @@ class ModelValidationTest(
                 arrayOf("definition_with_id", "Customer"),
                 arrayOf("enum", "Style"),
                 arrayOf("constant", "Location"),
+                arrayOf("constant_number", "Version"),
                 arrayOf("nested_enum", "DateTime"),
                 arrayOf("description", "Opus"),
                 arrayOf("top_level_definition", "Foo"),
                 arrayOf("types", "Demo"),
                 arrayOf("all_of", "User"),
                 arrayOf("external_description", "Delivery"),
-                arrayOf("external_nested_description", "Shipping")
+                arrayOf("external_nested_description", "Shipping"),
+                arrayOf("definition_name_conflict", "Conflict")
             )
         }
     }

@@ -6,17 +6,12 @@
 
 package com.example.forgery
 
-import com.example.model.Person
+import com.example.model.Version
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class PersonForgeryFactory : ForgeryFactory<Person> {
-
-    override fun getForgery(forge: Forge): Person {
-        return Person(
-            firstName = forge.aNullable { anAlphabeticalString() },
-        lastName = forge.aNullable { anAlphabeticalString() },
-            age = forge.aNullable { aLong() }
-        )
+class VersionForgeryFactory : ForgeryFactory<Version> {
+    override fun getForgery(forge: Forge): Version {
+        return Version()
     }
 }

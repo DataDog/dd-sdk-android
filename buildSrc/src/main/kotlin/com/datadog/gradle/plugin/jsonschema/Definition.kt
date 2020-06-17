@@ -13,7 +13,7 @@ data class Definition(
     @SerializedName("description") val description: String?,
     @SerializedName("type") val type: Type?,
     @SerializedName("enum") val enum: List<String>?,
-    @SerializedName("const") val constant: String?,
+    @SerializedName("const") val constant: Any?,
     @SerializedName("\$ref") val ref: String?,
     @SerializedName("\$id") val id: String?,
     @SerializedName("required") val required: List<String>?,

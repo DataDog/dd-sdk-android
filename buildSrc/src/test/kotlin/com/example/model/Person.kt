@@ -1,7 +1,7 @@
 package com.example.model
 
 import com.google.gson.annotations.SerializedName
-import kotlin.Int
+import kotlin.Long
 import kotlin.String
 
 data class Person(
@@ -10,5 +10,5 @@ data class Person(
     @SerializedName("lastName")
     val lastName: String?,
     @SerializedName("age")
-    val age: Int?
+    val age: Long?
 )

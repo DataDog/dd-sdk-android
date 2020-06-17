@@ -15,7 +15,7 @@ internal class FooForgeryFactory : ForgeryFactory<Foo> {
     override fun getForgery(forge: Forge): Foo {
         return Foo(
             bar = forge.aNullable { anAlphabeticalString() },
-            baz = forge.aNullable { anInt() }
+            baz = forge.aNullable { aLong() }
         )
     }
 }

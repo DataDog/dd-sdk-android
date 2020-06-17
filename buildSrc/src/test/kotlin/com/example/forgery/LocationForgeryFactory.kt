@@ -13,8 +13,6 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class LocationForgeryFactory : ForgeryFactory<Location> {
 
     override fun getForgery(forge: Forge): Location {
-        return Location(
-            planet = Location.Planet.EARTH
-        )
+        return Location()
     }
 }

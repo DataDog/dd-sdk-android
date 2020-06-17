@@ -1,7 +1,7 @@
 package com.example.model
 
 import com.google.gson.annotations.SerializedName
-import kotlin.Int
+import kotlin.Long
 
 data class DateTime(
     @SerializedName("date")
@@ -11,20 +11,20 @@ data class DateTime(
 ) {
     data class Date(
         @SerializedName("year")
-        val year: Int?,
+        val year: Long?,
         @SerializedName("month")
         val month: Month?,
         @SerializedName("day")
-        val day: Int?
+        val day: Long?
     )
 
     data class Time(
         @SerializedName("hour")
-        val hour: Int?,
+        val hour: Long?,
         @SerializedName("minute")
-        val minute: Int?,
+        val minute: Long?,
         @SerializedName("seconds")
-        val seconds: Int?
+        val seconds: Long?
     )
 
     enum class Month {

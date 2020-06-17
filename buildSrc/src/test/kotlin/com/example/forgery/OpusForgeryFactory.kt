@@ -24,7 +24,7 @@ internal class OpusForgeryFactory : ForgeryFactory<Opus> {
                     )
                 }
             },
-            duration = forge.aNullable { aPositiveInt() }
+            duration = forge.aNullable { aPositiveLong() }
         )
     }
 }

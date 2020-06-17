@@ -1,7 +1,7 @@
 package com.example.model
 
 import com.google.gson.annotations.SerializedName
-import kotlin.Int
+import kotlin.Long
 import kotlin.String
 import kotlin.collections.List
 
@@ -20,7 +20,7 @@ data class Opus(
     @SerializedName("artists")
     val artists: List<Artist>?,
     @SerializedName("duration")
-    val duration: Int?
+    val duration: Long?
 ) {
     /**
      * An artist and their role in an opus.

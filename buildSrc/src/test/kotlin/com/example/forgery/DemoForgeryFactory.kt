@@ -15,7 +15,7 @@ internal class DemoForgeryFactory : ForgeryFactory<Demo> {
     override fun getForgery(forge: Forge): Demo {
         return Demo(
             s = forge.anAlphabeticalString(),
-            i = forge.anInt(),
+            i = forge.aLong(),
             n = forge.aDouble(),
             b = forge.aBool(),
             l = null
