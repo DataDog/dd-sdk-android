@@ -9,9 +9,15 @@
     },
     {
       "required": [
+        "type",
         "action"
       ],
       "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "action"
+        },
         "action": {
           "type": "object",
           "description": "Action properties",

@@ -4,7 +4,6 @@
   "type": "object",
   "description": "Schema of common properties of RUM events",
   "required": [
-    "type",
     "date",
     "application",
     "session",
@@ -12,11 +11,6 @@
     "_dd"
   ],
   "properties": {
-    "type": {
-      "type": "string",
-      "description": "RUM event type",
-      "enum": ["action", "error", "long_task", "resource", "view"]
-    },
     "date": {
       "type": "integer",
       "description": "Start of the event in ms from epoch",
