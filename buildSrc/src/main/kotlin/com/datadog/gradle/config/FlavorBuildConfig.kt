@@ -1,0 +1,53 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.gradle.config
+
+import com.android.build.gradle.internal.dsl.ProductFlavor
+import com.google.gson.Gson
+import java.io.File
+
+private fun sampleAppConfig(filePath: String): SampleAppConfig {
+    val file = File(filePath)
+    if (!file.exists()) {
+        return SampleAppConfig()
+    }
+    file.inputStream().reader().use {
+        val jsonString = it.readText()
+        return Gson().fromJson(jsonString, SampleAppConfig::class.java)
+    }
+}
+
+fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
+    val config =
+        sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
+    println("Configuring flavor: [${flavor.name}] with config: [$config]")
+    flavor.buildConfigField(
+        "String",
+        "DD_OVERRIDE_LOGS_URL",
+        "\"${config.logsEndpoint}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_OVERRIDE_TRACES_URL",
+        "\"${config.tracesEndpoint}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_OVERRIDE_RUM_URL",
+        "\"${config.rumEndpoint}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_RUM_APPLICATION_ID",
+        "\"${config.appId}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_CLIENT_TOKEN",
+        "\"${config.token}\""
+    )
+}

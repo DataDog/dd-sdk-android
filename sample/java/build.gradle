@@ -1,3 +1,6 @@
+import static com.datadog.gradle.config.FlavorBuildConfigKt.configureFlavorForSampleApp
+
+
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
@@ -26,13 +29,6 @@ android {
         applicationId = "com.datadog.android.sample"
 
         buildConfigField("String", "GIT_COMMIT_H", "\"${getGitHash()}\"")
-
-        if (project.hasProperty("DD_CLIENT_TOKEN")) {
-            buildConfigField("String", "DD_CLIENT_TOKEN", "\"${project.property("DD_CLIENT_TOKEN")}\"")
-        } else {
-            buildConfigField("String", "DD_CLIENT_TOKEN", "\"\"")
-        }
-
         multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
@@ -43,17 +39,11 @@ android {
     productFlavors {
         staging {
             dimension "version"
-            buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "\"${project.findProperty("DD_OVERRIDE_LOGS_URL")}\"")
-            buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "\"${project.findProperty("DD_OVERRIDE_TRACES_URL")}\"")
-            buildConfigField("String", "DD_OVERRIDE_RUM_URL", "\"${project.findProperty("DD_OVERRIDE_RUM_URL")}\"")
-            buildConfigField("String", "DD_RUM_APPLICATION_ID", "\"${project.findProperty("DD_RUM_APPLICATION_ID")}\"")
+            configureFlavorForSampleApp(it, rootDir)
         }
-        full {
+        production {
             dimension "version"
-            buildConfigField("String", "DD_OVERRIDE_LOGS_URL", "null")
-            buildConfigField("String", "DD_OVERRIDE_TRACES_URL", "null")
-            buildConfigField("String", "DD_OVERRIDE_RUM_URL", "null")
-            buildConfigField("String", "DD_RUM_APPLICATION_ID", "null")
+            configureFlavorForSampleApp(it, rootDir)
         }
     }
     dexOptions {
