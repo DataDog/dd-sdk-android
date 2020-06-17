@@ -195,7 +195,7 @@ unMock {
 
 jsonSchema2Poko {
     inputDirPath = "src/main/json"
-    targetPackageName = "com.datadog.android.rum.internal.domain"
+    targetPackageName = "com.datadog.android.rum.internal.domain.model"
     ignoredFiles = arrayOf("_common-schema.json", "long_task-schema.json")
     nameMapping = mapOf(
         "action-schema.json" to "ActionEvent",

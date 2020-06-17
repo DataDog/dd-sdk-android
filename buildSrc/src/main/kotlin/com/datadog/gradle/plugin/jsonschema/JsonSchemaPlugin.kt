@@ -8,7 +8,6 @@ package com.datadog.gradle.plugin.jsonschema
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /**
  * The main Gradle [Plugin].
@@ -26,10 +25,9 @@ class JsonSchemaPlugin : Plugin<Project> {
 
         val task = target.tasks
             .create(TASK_REVIEW_NAME, GenerateJsonSchemaTask::class.java)
+        task.setParams(extension = extension)
 
-        task.setParams(buildDir = target.buildDir, extension = extension)
-
-        target.tasks.withType(KotlinCompile::class.java) { dependsOn(task) }
+        target.tasks.named("preBuild") { dependsOn(task) }
     }
 
     // endregion
