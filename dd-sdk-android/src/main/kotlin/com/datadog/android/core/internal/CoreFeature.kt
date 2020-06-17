@@ -65,6 +65,10 @@ internal object CoreFeature {
     internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
     internal lateinit var dataPersistenceExecutorService: ExecutorService
 
+    init {
+        System.loadLibrary("native-lib")
+    }
+
     fun initialize(
         appContext: Context,
         config: DatadogConfig.CoreConfig
@@ -72,7 +76,7 @@ internal object CoreFeature {
         if (initialized.get()) {
             return
         }
-
+        initSignalHandler()
         serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
         isMainProcess = resolveIsMainProcess(appContext)
@@ -96,6 +100,7 @@ internal object CoreFeature {
 
     fun stop() {
         if (initialized.get()) {
+            deinitSignalHandler()
             contextRef.get()?.let {
                 networkInfoProvider.unregister(it)
                 systemInfoProvider.unregister(it)
@@ -180,5 +185,23 @@ internal object CoreFeature {
         }
     }
 
+
     // endregion
+
+    /**
+     * Initialize native signal handler to catch native crashes.
+     */
+    external fun initSignalHandler()
+
+    /**
+     * Deinitialzie native signal handler to leave native crashes alone.
+     */
+    external fun deinitSignalHandler()
+
+    /**
+     * A native method that is implemented by the 'native-lib' native library,
+     * which is packaged with this application. It will throw a C++ exception
+     * and catch it in the signal handler which will be visible in the logs.
+     */
+    external fun crashAndGetExceptionMessage()
 }

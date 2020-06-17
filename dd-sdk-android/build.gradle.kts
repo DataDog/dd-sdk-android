@@ -53,6 +53,11 @@ android {
         targetSdkVersion(AndroidConfig.TARGET_SDK)
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+        externalNativeBuild {
+            cmake {
+                cppFlags.add("-std=c++14")
+            }
+        }
     }
 
     sourceSets.named("main") {
@@ -104,6 +109,14 @@ android {
         isCheckReleaseBuilds = false
         isCheckGeneratedSources = true
     }
+
+    externalNativeBuild {
+        cmake {
+            path = File("${projectDir}/src/main/cpp/CMakeLists.txt")
+            version = "3.10.2"
+        }
+    }
+    ndkVersion = "21.3.6528147"
 }
 
 dependencies {

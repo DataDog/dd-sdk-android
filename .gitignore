@@ -12,9 +12,13 @@ captures/
 .gradle/
 build/
 
+# CMake
+.cxx/
+
 # Local configuration file (sdk path, etc)
 local.properties
 repo/
+config/
 
 # MacOS garbage
 .DS_Store

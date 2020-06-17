@@ -21,6 +21,14 @@ class NavActivity : AppCompatActivity() {
 
     // region Activity
 
+    override fun onResume() {
+        super.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -36,6 +44,7 @@ class NavActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        crashAndGetExceptionMessage()
         val arguments = Bundle(2)
         arguments.putInt("item.itemId", item.itemId)
         arguments.putString("item.title", item.title.toString())
@@ -48,18 +57,30 @@ class NavActivity : AppCompatActivity() {
             R.id.navigation_view_pager -> {
                 startActivity(Intent(this, ViewPagerActivity::class.java))
             }
-            R.id.show_snack_bar->{
+            R.id.show_snack_bar -> {
                 Snackbar.make(
                     this.window.decorView.rootView,
                     "Demo message",
                     Snackbar.LENGTH_LONG
                 ).show()
-
             }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
     }
 
+    /**
+     * A native method that is implemented by the 'native-lib' native library,
+     * which is packaged with this application. It will throw a C++ exception
+     * and catch it in the signal handler which will be visible in the logs.
+     */
+    external fun crashAndGetExceptionMessage()
+
     // endregion
+
+    companion object {
+        init {
+            System.loadLibrary("native-lib");
+        }
+    }
 }

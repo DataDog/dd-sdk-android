@@ -40,6 +40,7 @@ import,com.squareup.okio,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.squareup.moshi,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,Copyright 2020 Datadog, Inc.
 import,com.datadoghq,Apache-2.0,Copyright 2017 Datadog, Inc
+import,https://github.com/testfairy-blog/NdkPlayground/blob/master/app/src/main/cpp/native-lib.cpp,Apache-2.0,Copyright 2019 Diego Perini
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
