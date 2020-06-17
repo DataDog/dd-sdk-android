@@ -45,31 +45,25 @@ public class SampleApplication extends Application {
         Stetho.initializeWithDefaults(this);
 
         final DatadogConfig.Builder configBuilder;
-        final String environment = "staging";
-        if (BuildConfig.DD_RUM_APPLICATION_ID != null) {
-            configBuilder = new DatadogConfig.Builder(
-                    BuildConfig.DD_CLIENT_TOKEN,
-                    environment,
-                    BuildConfig.DD_RUM_APPLICATION_ID
-            );
-
-        } else {
-            configBuilder = new DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN, environment);
-        }
-
+        final String environment = BuildConfig.FLAVOR;
+        configBuilder = new DatadogConfig.Builder(
+                BuildConfig.DD_CLIENT_TOKEN,
+                environment,
+                BuildConfig.DD_RUM_APPLICATION_ID
+        );
         configBuilder.setServiceName("android-sample-java")
                 .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true))
                 .trackInteractions();
 
 
-        if (BuildConfig.DD_OVERRIDE_LOGS_URL != null) {
+        if (!BuildConfig.DD_OVERRIDE_LOGS_URL.isEmpty()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
             configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
         }
-        if (BuildConfig.DD_OVERRIDE_TRACES_URL != null) {
+        if (!BuildConfig.DD_OVERRIDE_TRACES_URL.isEmpty()) {
             configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL);
         }
-        if (BuildConfig.DD_OVERRIDE_RUM_URL != null) {
+        if (!BuildConfig.DD_OVERRIDE_RUM_URL.isEmpty()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL);
         }
 

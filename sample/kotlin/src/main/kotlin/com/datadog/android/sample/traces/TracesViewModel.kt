@@ -8,6 +8,8 @@ package com.datadog.android.sample.traces
 
 import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
+import com.datadog.android.log.Logger
+import com.datadog.android.sample.BuildConfig
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import java.lang.Exception
@@ -28,24 +30,40 @@ class TracesViewModel : ViewModel() {
     private class Task(val onDone: () -> Unit) : AsyncTask<Unit, Unit, Unit>() {
         var activeSpanInMainThread: Span? = null
 
+        private val logger: Logger by lazy {
+            Logger.Builder()
+                .setServiceName("android-sample-kotlin")
+                .setLoggerName("async_task")
+                .setLogcatLogsEnabled(true)
+                .build()
+                .apply {
+                    addTag("flavor", BuildConfig.FLAVOR)
+                    addTag("build_type", BuildConfig.BUILD_TYPE)
+                }
+        }
+
+
         override fun onPreExecute() {
             super.onPreExecute()
             activeSpanInMainThread = GlobalTracer.get().activeSpan()
         }
 
         override fun doInBackground(vararg params: Unit?) {
-            val span = GlobalTracer.get()
+            val spanBuilder = GlobalTracer.get()
                 .buildSpan("AsyncOperation")
-                .asChildOf(activeSpanInMainThread)
-                .start()
+            activeSpanInMainThread?.let {
+                spanBuilder.asChildOf(it)
+            }
+            val span = spanBuilder.start()
             if (isCancelled) {
                 return
             }
             try {
                 val scope = GlobalTracer.get().activateSpan(span)
+                logger.v("Starting Async Operation...")
                 // just emulate an async operation here
                 Thread.sleep(10000)
-
+                logger.v("Finishing Async Operation...")
                 scope.close()
             } catch (e: Exception) {
                 span.log(e.message)
