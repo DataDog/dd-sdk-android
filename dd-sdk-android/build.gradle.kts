@@ -156,7 +156,7 @@ jsonSchema2Poko {
 }
 
 kotlinConfig()
-detektConfig()
+detektConfig(excludes = listOf("**/com/datadog/android/rum/internal/domain/model/**"))
 ktLintConfig()
 junitConfig()
 jacocoConfig()

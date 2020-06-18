@@ -10,7 +10,7 @@ import com.example.model.Book
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class BookForgeryFactory : ForgeryFactory<Book> {
+internal class BookForgeryFactory : ForgeryFactory<Book> {
     override fun getForgery(forge: Forge): Book {
         return Book(
             bookId = forge.aLong(),

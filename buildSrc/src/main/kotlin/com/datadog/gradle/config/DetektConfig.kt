@@ -11,7 +11,7 @@ import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.withType
 
-fun Project.detektConfig() {
+fun Project.detektConfig(excludes: List<String> = emptyList()) {
 
     extensionConfig<DetektExtension> {
         input = files("$projectDir/src/main/kotlin")
@@ -27,6 +27,8 @@ fun Project.detektConfig() {
 
     tasks.withType<Detekt> {
         dependsOn(":tools:detekt:assemble")
+
+        setExcludes(excludes)
     }
 
     tasks.named("check") {

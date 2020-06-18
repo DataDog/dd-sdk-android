@@ -10,7 +10,7 @@ import com.example.model.Version
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class VersionForgeryFactory : ForgeryFactory<Version> {
+internal class VersionForgeryFactory : ForgeryFactory<Version> {
     override fun getForgery(forge: Forge): Version {
         return Version()
     }

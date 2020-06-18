@@ -10,7 +10,7 @@ import com.example.model.Conflict
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class ConflictForgeryFactory : ForgeryFactory<Conflict> {
+internal class ConflictForgeryFactory : ForgeryFactory<Conflict> {
     override fun getForgery(forge: Forge): Conflict {
         return Conflict(
             type = forge.aNullable {

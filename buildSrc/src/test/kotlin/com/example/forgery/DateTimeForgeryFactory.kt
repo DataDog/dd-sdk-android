@@ -10,7 +10,7 @@ import com.example.model.DateTime
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class DateTimeForgeryFactory : ForgeryFactory<DateTime> {
+internal class DateTimeForgeryFactory : ForgeryFactory<DateTime> {
     override fun getForgery(forge: Forge): DateTime {
         return DateTime(
             date = DateTime.Date(

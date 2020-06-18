@@ -9,7 +9,7 @@ package com.example.forgery
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
 
-class ForgeryConfiguration : ForgeConfigurator {
+internal class ForgeryConfiguration : ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(ArticleForgeryFactory())
         forge.addFactory(BookForgeryFactory())
