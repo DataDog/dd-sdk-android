@@ -21,6 +21,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LIST
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SET
@@ -219,13 +220,12 @@ class PokoGenerator(
         docBuilder: CodeBlock.Builder
     ) {
         val varName = name.variableName()
-        val type = if (required) {
-            propertyDef.asKotlinTypeName(name, false)
-        } else {
-            propertyDef.asKotlinTypeName(name, false).copy(nullable = true)
-        }
+        val type = propertyDef.asKotlinTypeName(name, false).copy(nullable = !required)
 
-        constructorBuilder.addParameter(varName, type)
+        val constructorParamBuilder = ParameterSpec.builder(varName, type)
+        if (!required) { constructorParamBuilder.defaultValue("null") }
+        constructorBuilder.addParameter(constructorParamBuilder.build())
+
         typeBuilder.addProperty(
             PropertySpec.builder(varName, type)
                 .initializer(varName)

@@ -6,9 +6,9 @@ import kotlin.String
 
 data class Person(
     @SerializedName("firstName")
-    val firstName: String?,
+    val firstName: String? = null,
     @SerializedName("lastName")
-    val lastName: String?,
+    val lastName: String? = null,
     @SerializedName("age")
-    val age: Long?
+    val age: Long? = null
 )

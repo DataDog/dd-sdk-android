@@ -17,5 +17,5 @@ data class Demo(
     @SerializedName("b")
     val b: Boolean,
     @SerializedName("l")
-    val l: Any?
+    val l: Any? = null
 )

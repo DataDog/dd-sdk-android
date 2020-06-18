@@ -6,7 +6,7 @@ import kotlin.String
 
 data class Foo(
     @SerializedName("bar")
-    val bar: String?,
+    val bar: String? = null,
     @SerializedName("baz")
-    val baz: Long?
+    val baz: Long? = null
 )

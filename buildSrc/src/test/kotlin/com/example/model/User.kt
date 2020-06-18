@@ -9,7 +9,7 @@ data class User(
     @SerializedName("host")
     val host: String,
     @SerializedName("firstname")
-    val firstname: String?,
+    val firstname: String? = null,
     @SerializedName("lastname")
     val lastname: String,
     @SerializedName("contact_type")

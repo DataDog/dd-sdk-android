@@ -26,8 +26,8 @@ data class Book(
 
     data class Contact(
         @SerializedName("phone")
-        val phone: String?,
+        val phone: String? = null,
         @SerializedName("email")
-        val email: String?
+        val email: String? = null
     )
 }

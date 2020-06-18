@@ -14,13 +14,13 @@ import kotlin.collections.List
  */
 data class Opus(
     @SerializedName("title")
-    val title: String?,
+    val title: String? = null,
     @SerializedName("composer")
-    val composer: String?,
+    val composer: String? = null,
     @SerializedName("artists")
-    val artists: List<Artist>?,
+    val artists: List<Artist>? = null,
     @SerializedName("duration")
-    val duration: Long?
+    val duration: Long? = null
 ) {
     /**
      * An artist and their role in an opus.
@@ -29,9 +29,9 @@ data class Opus(
      */
     data class Artist(
         @SerializedName("name")
-        val name: String?,
+        val name: String? = null,
         @SerializedName("role")
-        val role: Role?
+        val role: Role? = null
     )
 
     enum class Role {
