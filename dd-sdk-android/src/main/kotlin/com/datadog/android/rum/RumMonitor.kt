@@ -44,7 +44,6 @@ interface RumMonitor {
      * Stops a previously started View, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
      * [Activity] or [Fragment] instance).
-     * @param name the name of the view (usually your [Activity] or [Fragment] full class name)
      * @param attributes additional custom attributes to attach to the view
      * @see [startView]
      */
@@ -56,14 +55,16 @@ interface RumMonitor {
     /**
      * Notifies that a User Action happened.
      * This is used to track discrete user actions (e.g.: tap).
-     * @param action the action identifier
+     * @param type the action type
+     * @param name the action identifier
      * @param attributes additional custom attributes to attach to the action
      * @see [startUserAction]
      * @see [stopUserAction]
      */
     fun addUserAction(
-        action: String,
-        attributes: Map<String, Any?> = emptyMap()
+        type: RumActionType,
+        name: String,
+        attributes: Map<String, Any?>
     )
 
     /**
@@ -71,27 +72,31 @@ interface RumMonitor {
      * This is used to track long running user actions (e.g.: scroll). Such a user action must
      * be stopped with [stopUserAction], and will be stopped automatically if it lasts more than
      * 10 seconds.
-     * @param action the action identifier
+     * @param type the action type
+     * @param name the action identifier
      * @param attributes additional custom attributes to attach to the action
      * @see [stopUserAction]
      * @see [addUserAction]
      */
     fun startUserAction(
-        action: String,
-        attributes: Map<String, Any?> = emptyMap()
+        type: RumActionType,
+        name: String,
+        attributes: Map<String, Any?>
     )
 
     /**
      * Notifies that a User Action stopped.
      * This is used to stop tracking long running user actions (e.g.: scroll), started
      * with [startUserAction].
-     * @param action the action identifier (overriding the last started action)
+     * @param type the action type (overriding the last started action)
+     * @param name the action identifier (overriding the last started action)
      * @param attributes additional custom attributes to attach to the action
      * @see [addUserAction]
      * @see [startUserAction]
      */
     fun stopUserAction(
-        action: String,
+        type: RumActionType,
+        name: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
@@ -116,44 +121,50 @@ interface RumMonitor {
      * Stops a previously started Resource, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
      * request or network call instance).
-     * @param mimeType the (nullable) mime type of the loaded resource, used to categorize it
+     * @param statusCode the status code of the resource (if any)
+     * @param size the size of the resource, in bytes
+     * @param kind the type of resource loaded
      * @param attributes additional custom attributes to attach to the resource
      * @see [startResource]
      * @see [stopResourceWithError]
      */
     fun stopResource(
         key: String,
+        statusCode: Int?,
+        size: Long?,
         kind: RumResourceKind,
-        attributes: Map<String, Any?> = emptyMap()
+        attributes: Map<String, Any?>
     )
 
     /**
      * Stops a previously started Resource that failed loading, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
      * request or network call instance).
+     * @param statusCode the status code of the resource (if any)
      * @param message a message explaining the error
-     * @param origin the origin of the error (eg: "network", "sqlight", "assets", …)
+     * @param source the source of the error
      * @param throwable the throwable
      * @see [startResource]
      * @see [stopResource]
      */
     fun stopResourceWithError(
         key: String,
+        statusCode: Int?,
         message: String,
-        origin: String,
+        source: RumErrorSource,
         throwable: Throwable
     )
 
     /**
      * Notifies that an error occurred in the active View.
      * @param message a message explaining the error
-     * @param origin the origin of the error (eg: "network", "sqlight", "assets", …)
+     * @param source the source of the error
      * @param throwable the throwable
      * @param attributes additional custom attributes to attach to the error
      */
     fun addError(
         message: String,
-        origin: String,
+        source: RumErrorSource,
         throwable: Throwable?,
         attributes: Map<String, Any?>
     )

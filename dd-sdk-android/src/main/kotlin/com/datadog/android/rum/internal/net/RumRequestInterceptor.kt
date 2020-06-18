@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.net.RequestInterceptor
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import datadog.opentracing.propagation.ExtractedContext
 import io.opentracing.propagation.Format
@@ -50,8 +51,10 @@ internal class RumRequestInterceptor : RequestInterceptor {
 
         GlobalRum.get().stopResource(
             requestId,
+            response.code(),
+            getBodyLength(response),
             kind,
-            getResponseAttributes(response)
+            emptyMap()
         )
         handleErrorStatus(method, url, response.code())
     }
@@ -62,8 +65,9 @@ internal class RumRequestInterceptor : RequestInterceptor {
         val url = request.url().toString()
         GlobalRum.get().stopResourceWithError(
             requestId,
+            null,
             ERROR_MSG_FORMAT.format(method, url),
-            ORIGIN_NETWORK,
+            RumErrorSource.NETWORK,
             throwable
         )
     }
@@ -94,23 +98,10 @@ internal class RumRequestInterceptor : RequestInterceptor {
         if (statusCode >= 400) {
             GlobalRum.get().addError(
                 ERROR_MSG_FORMAT.format(method, url),
-                ORIGIN_NETWORK,
+                RumErrorSource.NETWORK,
                 null,
                 mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
             )
-        }
-    }
-
-    private fun getResponseAttributes(response: Response): Map<String, Any?> {
-        val statusCode = response.code()
-        val length = getBodyLength(response)
-        return if (length > 0L) {
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to length
-            )
-        } else {
-            mapOf(RumAttributes.HTTP_STATUS_CODE to statusCode)
         }
     }
 
@@ -127,17 +118,16 @@ internal class RumRequestInterceptor : RequestInterceptor {
         }
     }
 
-    private fun getBodyLength(response: Response): Long {
+    private fun getBodyLength(response: Response): Long? {
         val body = response.peekBody(MAX_BODY_PEEK)
-        return body.contentLength()
+        val contentLength = body.contentLength()
+        return if (contentLength == 0L) null else contentLength
     }
 
     // endregion
 
     companion object {
         internal const val HEADER_CT = "Content-Type"
-
-        internal const val ORIGIN_NETWORK = "network"
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 

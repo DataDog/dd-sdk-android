@@ -12,6 +12,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 
 /**
  * A [WebViewClient] propagating all relevant events to Datadog.
@@ -43,8 +44,11 @@ internal constructor(private val logger: Logger) : WebChromeClient() {
             logger.log(level.toLogLevel(), message, null, attributes)
 
             if (level == ConsoleMessage.MessageLevel.ERROR) {
-                GlobalRum.get().addError(message,
-                    LOGGER_NAME, null, attributes)
+                GlobalRum.get().addError(
+                    message,
+                    RumErrorSource.CONSOLE,
+                    null,
+                    attributes)
             }
         }
         return false

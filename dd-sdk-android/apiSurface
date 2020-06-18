@@ -139,6 +139,12 @@ object com.datadog.android.rum.GlobalRum
   fun get(): RumMonitor
   fun addAttribute(String, Any?)
   fun removeAttribute(String)
+enum com.datadog.android.rum.RumActionType
+  - TAP
+  - SCROLL
+  - SWIPE
+  - CLICK
+  - CUSTOM
 object com.datadog.android.rum.RumAttributes
   const val APPLICATION_ID: String
   const val APPLICATION_PACKAGE: String
@@ -214,17 +220,23 @@ object com.datadog.android.rum.RumAttributes
   const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String
   const val TAG_TARGET_TITLE: String
   const val TAG_GESTURE_DIRECTION: String
+enum com.datadog.android.rum.RumErrorSource
+  - NETWORK
+  - SOURCE
+  - CONSOLE
+  - LOGGER
+  - AGENT
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addUserAction(String, Map<String, Any?> = emptyMap())
-  fun startUserAction(String, Map<String, Any?> = emptyMap())
-  fun stopUserAction(String, Map<String, Any?> = emptyMap())
+  fun addUserAction(RumActionType, String, Map<String, Any?>)
+  fun startUserAction(RumActionType, String, Map<String, Any?>)
+  fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
-  fun stopResource(String, RumResourceKind, Map<String, Any?> = emptyMap())
-  fun stopResourceWithError(String, String, String, Throwable)
-  fun addError(String, String, Throwable?, Map<String, Any?>)
+  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+  fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
+  fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
 enum com.datadog.android.rum.RumResourceKind

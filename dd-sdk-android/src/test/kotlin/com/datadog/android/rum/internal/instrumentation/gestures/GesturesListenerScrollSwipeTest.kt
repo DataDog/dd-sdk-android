@@ -13,6 +13,7 @@ import android.widget.AbsListView
 import android.widget.ListAdapter
 import androidx.core.view.ScrollingView
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -112,10 +113,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SCROLL.actionName),
+                eq(RumActionType.SCROLL),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -177,10 +179,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SCROLL.actionName),
+                eq(RumActionType.SCROLL),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -259,17 +262,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SCROLL.actionName),
+                eq(RumActionType.SCROLL),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SCROLL.actionName),
+                eq(RumActionType.SCROLL),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)
@@ -418,10 +423,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SWIPE.actionName),
+                eq(RumActionType.SWIPE),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -504,17 +510,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // then
 
         inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SWIPE.actionName),
+                eq(RumActionType.SWIPE),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startUserAction("")
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
             verify(mockDatadogRumMonitor).stopUserAction(
-                eq(Gesture.SWIPE.actionName),
+                eq(RumActionType.SWIPE),
+                eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)

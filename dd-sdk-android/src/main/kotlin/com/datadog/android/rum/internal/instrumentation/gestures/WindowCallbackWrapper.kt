@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import java.lang.Exception
 
@@ -40,18 +41,20 @@ internal class WindowCallbackWrapper(
     }
 
     override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+        val resourceId = resourceIdName(item.itemId)
         val attributes = mutableMapOf<String, Any?>(
             RumAttributes.TAG_TARGET_CLASS_NAME to item.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to resolveResourceNameFromId(item.itemId),
+            RumAttributes.TAG_TARGET_RESOURCE_ID to resourceId,
             RumAttributes.TAG_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addUserAction(Gesture.TAP.actionName, attributes)
+        GlobalRum.get().addUserAction(RumActionType.TAP, targetName(item, resourceId), attributes)
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            GlobalRum.get().addUserAction(Gesture.BACK.actionName)
+            // TODO RUMM-495 add a BACK action to the json schema
+            GlobalRum.get().addUserAction(RumActionType.CUSTOM, "back", emptyMap())
         }
         return wrappedCallback.dispatchKeyEvent(event)
     }

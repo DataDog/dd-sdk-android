@@ -61,7 +61,7 @@ class GesturesUtilsTest {
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(resourceName)
 
         // when
-        assertThat(resolveResourceNameFromId(resourceId)).isEqualTo(resourceName)
+        assertThat(resourceIdName(resourceId)).isEqualTo(resourceName)
     }
 
     @Test
@@ -73,7 +73,7 @@ class GesturesUtilsTest {
         whenever(mockAppContext.resources).thenReturn(null)
 
         // when
-        assertThat(resolveResourceNameFromId(resourceId))
+        assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 
@@ -91,7 +91,7 @@ class GesturesUtilsTest {
         )
 
         // when
-        assertThat(resolveResourceNameFromId(resourceId))
+        assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 
@@ -105,7 +105,7 @@ class GesturesUtilsTest {
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(null)
 
         // when
-        assertThat(resolveResourceNameFromId(resourceId))
+        assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 }

@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.utils.forge.Configurator
@@ -190,11 +191,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             RumResourceKind.UNKNOWN,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
@@ -213,11 +213,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             RumResourceKind.fromMimeType(fakeMimeType),
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
@@ -236,11 +235,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             RumResourceKind.XHR,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
@@ -259,11 +257,10 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             RumResourceKind.XHR,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
@@ -282,31 +279,27 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             RumResourceKind.XHR,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
     @Test
     fun `stops Rum Resource with Error on handleThrowable`(
-        @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
-        whenever(mockResponse.code()) doReturn statusCode
-        whenever(mockResponse.peekBody(any())) doReturn ResponseBody.create(null, body)
-        whenever(mockResponse.header(RumRequestInterceptor.HEADER_CT)) doReturn fakeMimeType
         whenever(mockRequest.method()) doReturn fakeMethod
 
         testedInterceptor.handleThrowable(mockRequest, fakeThrowable)
 
         verify(mockRumMonitor).stopResourceWithError(
             identifyRequest(mockRequest),
+            null,
             "OkHttp request error $fakeMethod $fakeUrl",
-            "network",
+            RumErrorSource.NETWORK,
             fakeThrowable
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -327,15 +320,14 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             kind,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verify(mockRumMonitor).addError(
             "OkHttp request error $fakeMethod $fakeUrl",
-            "network",
+            RumErrorSource.NETWORK,
             null,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode
@@ -359,15 +351,14 @@ internal class RumRequestInterceptorTest {
 
         verify(mockRumMonitor).stopResource(
             identifyRequest(mockRequest),
+            statusCode,
+            body.toByteArray().size.toLong(),
             kind,
-            mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode,
-                RumAttributes.NETWORK_BYTES_WRITTEN to body.toByteArray().size.toLong()
-            )
+            emptyMap()
         )
         verify(mockRumMonitor).addError(
             "OkHttp request error $fakeMethod $fakeUrl",
-            "network",
+            RumErrorSource.NETWORK,
             null,
             mapOf(
                 RumAttributes.HTTP_STATUS_CODE to statusCode

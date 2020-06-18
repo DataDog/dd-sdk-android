@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -432,18 +433,20 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // then
         verify(mockRumMonitor).addUserAction(
-            Gesture.TAP.actionName,
+            RumActionType.TAP,
+            targetName(validTarget, expectedResourceName),
             expectedAttributes
         )
     }
 
     private fun verifyUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
-            eq(Gesture.TAP.actionName),
+            eq(RumActionType.TAP),
+            argThat { startsWith("${target.javaClass.simpleName}(") },
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                    this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 }

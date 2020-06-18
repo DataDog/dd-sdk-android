@@ -8,7 +8,7 @@ package com.datadog.android
 
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -131,7 +131,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
-        argumentCaptor<RumEventData.Resource.Timing> {
+        argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
@@ -186,7 +186,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.callEnd(mockCall)
 
-        argumentCaptor<RumEventData.Resource.Timing> {
+        argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
@@ -245,7 +245,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.callFailed(mockCall, IOException(error))
 
-        argumentCaptor<RumEventData.Resource.Timing> {
+        argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())

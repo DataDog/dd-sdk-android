@@ -8,13 +8,13 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
-import java.util.UUID
+import com.datadog.android.rum.internal.domain.model.ActionEvent
+import com.datadog.android.rum.internal.domain.model.ErrorEvent
+import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 
 internal class RumEventAssert(actual: RumEvent) :
     AbstractObjectAssert<RumEventAssert, RumEvent>(
@@ -22,88 +22,44 @@ internal class RumEventAssert(actual: RumEvent) :
         RumEventAssert::class.java
     ) {
 
-    fun hasTimestamp(expected: Long, offset: Long = TIMESTAMP_THRESHOLD_MS): RumEventAssert {
-        assertThat(actual.timestamp)
-            .overridingErrorMessage(
-                "Expected event to have timestamp $expected but was ${actual.timestamp}"
-            )
-            .isCloseTo(expected, Offset.offset(offset))
-        return this
-    }
-
     fun hasAttributes(attributes: Map<String, Any?>): RumEventAssert {
         assertThat(actual.attributes)
             .containsAllEntriesOf(attributes)
         return this
     }
 
-    fun hasUserActionAttribute(): RumEventAssert {
-        assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+    fun hasViewData(assert: ViewEventAssert.() -> Unit): RumEventAssert {
+        assertThat(actual.event)
+            .isInstanceOf(ViewEvent::class.java)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
-        assertThat(actionId)
-            .isNotNull()
-            .matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
+        ViewEventAssert(actual.event as ViewEvent).assert()
 
         return this
     }
 
-    fun hasUserActionAttribute(expected: UUID): RumEventAssert {
-        assertThat(actual.attributes)
-            .containsKey(RumAttributes.EVT_USER_ACTION_ID)
+    fun hasResourceData(assert: ResourceEventAssert.() -> Unit): RumEventAssert {
+        assertThat(actual.event)
+            .isInstanceOf(ResourceEvent::class.java)
 
-        val actionId = actual.attributes[RumAttributes.EVT_USER_ACTION_ID] as? String
-        assertThat(actionId)
-            .isEqualTo(expected.toString())
+        ResourceEventAssert(actual.event as ResourceEvent).assert()
 
         return this
     }
 
-    fun hasNoUserActionAttribute(): RumEventAssert {
-        assertThat(actual.attributes)
-            .doesNotContainKey(RumAttributes.EVT_USER_ACTION_ID)
+    fun hasActionData(assert: ActionEventAssert.() -> Unit): RumEventAssert {
+        assertThat(actual.event)
+            .isInstanceOf(ActionEvent::class.java)
+
+        ActionEventAssert(actual.event as ActionEvent).assert()
 
         return this
     }
 
-    fun hasContext(assert: RumContextAssert.() -> Unit): RumEventAssert {
-        RumContextAssert(actual.context).assert()
-        return this
-    }
+    fun hasErrorData(assert: ErrorEventAssert.() -> Unit): RumEventAssert {
+        assertThat(actual.event)
+            .isInstanceOf(ErrorEvent::class.java)
 
-    fun hasViewData(assert: RumEventDataViewAssert.() -> Unit): RumEventAssert {
-        assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.View::class.java)
-
-        RumEventDataViewAssert(actual.eventData as RumEventData.View).assert()
-
-        return this
-    }
-
-    fun hasResourceData(assert: RumEventDataResourceAssert.() -> Unit): RumEventAssert {
-        assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.Resource::class.java)
-
-        RumEventDataResourceAssert(actual.eventData as RumEventData.Resource).assert()
-
-        return this
-    }
-
-    fun hasUserActionData(assert: RumEventDataActionAssert.() -> Unit): RumEventAssert {
-        assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.UserAction::class.java)
-
-        RumEventDataActionAssert(actual.eventData as RumEventData.UserAction).assert()
-
-        return this
-    }
-
-    fun hasErrorData(assert: RumEventDataErrorAssert.() -> Unit): RumEventAssert {
-        assertThat(actual.eventData)
-            .isInstanceOf(RumEventData.Error::class.java)
-
-        RumEventDataErrorAssert(actual.eventData as RumEventData.Error).assert()
+        ErrorEventAssert(actual.event as ErrorEvent).assert()
 
         return this
     }
@@ -111,7 +67,7 @@ internal class RumEventAssert(actual: RumEvent) :
     fun hasUserInfo(expected: UserInfo?): RumEventAssert {
         assertThat(actual.userInfo)
             .overridingErrorMessage(
-                "Expected log to have userInfo $expected " +
+                "Expected RUM event to have userInfo $expected " +
                     "but was ${actual.userInfo}"
             )
             .isEqualTo(expected)
@@ -121,7 +77,7 @@ internal class RumEventAssert(actual: RumEvent) :
     fun hasNetworkInfo(expected: NetworkInfo?): RumEventAssert {
         assertThat(actual.networkInfo)
             .overridingErrorMessage(
-                "Expected log to have networkInfo $expected " +
+                "Expected RUM event to have networkInfo $expected " +
                     "but was ${actual.networkInfo}"
             )
             .isEqualTo(expected)

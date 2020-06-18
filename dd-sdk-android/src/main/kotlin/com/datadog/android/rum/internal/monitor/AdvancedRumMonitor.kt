@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -19,5 +19,5 @@ internal interface AdvancedRumMonitor : RumMonitor {
 
     fun waitForResourceTiming(key: String)
 
-    fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing)
+    fun addResourceTiming(key: String, timing: ResourceTiming)
 }

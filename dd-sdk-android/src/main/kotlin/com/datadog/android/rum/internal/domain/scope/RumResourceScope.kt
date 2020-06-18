@@ -7,13 +7,16 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.model.ErrorEvent
+import com.datadog.android.rum.internal.domain.model.ResourceEvent
 
 internal class RumResourceScope(
     val parentScope: RumScope,
@@ -24,7 +27,7 @@ internal class RumResourceScope(
 ) : RumScope {
 
     val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
-    var timing: RumEventData.Resource.Timing? = null
+    var timing: ResourceTiming? = null
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
     internal val startedNanos: Long = System.nanoTime()
@@ -34,6 +37,8 @@ internal class RumResourceScope(
     private var waitForTiming = false
     private var stopped = false
     private var kind: RumResourceKind = RumResourceKind.UNKNOWN
+    private var statusCode: Long? = null
+    private var size: Long? = null
 
     // region RumScope
 
@@ -64,9 +69,11 @@ internal class RumResourceScope(
         stopped = true
         attributes.putAll(event.attributes)
         kind = event.kind
-        if (!(waitForTiming && timing == null))
+        statusCode = event.statusCode
+        size = event.size
 
-        sendResource(kind, writer)
+        if (!(waitForTiming && timing == null))
+            sendResource(kind, event.statusCode, event.size, writer)
     }
 
     private fun onAddResourceTiming(
@@ -77,7 +84,7 @@ internal class RumResourceScope(
 
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(kind, writer)
+            sendResource(kind, statusCode, size, writer)
         }
     }
 
@@ -87,10 +94,10 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
 
-        attributes[RumAttributes.HTTP_URL] = url
         sendError(
             event.message,
-            event.origin,
+            event.source,
+            event.statusCode,
             event.throwable,
             writer
         )
@@ -98,50 +105,91 @@ internal class RumResourceScope(
 
     private fun sendResource(
         kind: RumResourceKind,
+        statusCode: Long?,
+        size: Long?,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
-        val eventData = RumEventData.Resource(
-            kind,
-            method,
-            url,
-            System.nanoTime() - startedNanos,
-            timing
+        val context = getRumContext()
+        val resourceEvent = ResourceEvent(
+            date = eventTimestamp,
+            resource = ResourceEvent.Resource(
+                type = kind.toSchemaType(),
+                url = url,
+                duration = System.nanoTime() - startedNanos,
+                method = method.toMethod(),
+                statusCode = statusCode,
+                size = size,
+                dns = timing?.dns(),
+                connect = timing?.connect(),
+                ssl = timing?.ssl(),
+                firstByte = timing?.firstByte(),
+                download = timing?.download(),
+                redirect = null
+            ),
+            action = context.actionId?.let { ResourceEvent.Action(it) },
+            view = ResourceEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty(),
+                referrer = null
+            ),
+            application = ResourceEvent.Application(context.applicationId),
+            session = ResourceEvent.Session(
+                id = context.sessionId,
+                type = ResourceEvent.Type.USER
+            ),
+            dd = ResourceEvent.Dd()
         )
-        val event = RumEvent(
-            getRumContext(),
-            eventTimestamp,
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            attributes,
-            networkInfo
+        val rumEvent = RumEvent(
+            event = resourceEvent,
+            attributes = attributes,
+            userInfo = RumFeature.userInfoProvider.getUserInfo(),
+            networkInfo = networkInfo
         )
-        writer.write(event)
+        writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
         sent = true
     }
 
     private fun sendError(
         message: String,
-        origin: String,
+        source: RumErrorSource,
+        statusCode: Long?,
         throwable: Throwable,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
-        val eventData = RumEventData.Error(
-            message,
-            origin,
-            throwable
+
+        val context = getRumContext()
+        val errorEvent = ErrorEvent(
+            date = eventTimestamp,
+            error = ErrorEvent.Error(
+                message = message,
+                source = source.toSchemaSource(),
+                stack = throwable.loggableStackTrace(),
+                resource = ErrorEvent.Resource(
+                    url = url,
+                    method = method.toErrorMethod(),
+                    statusCode = statusCode ?: 0
+                )
+            ),
+            action = context.actionId?.let { ErrorEvent.Action(it) },
+            view = ErrorEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty(),
+                referrer = null
+            ),
+            application = ErrorEvent.Application(context.applicationId),
+            session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
+            dd = ErrorEvent.Dd()
         )
-        val event = RumEvent(
-            getRumContext(),
-            eventTimestamp,
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            attributes,
-            networkInfo
+        val rumEvent = RumEvent(
+            event = errorEvent,
+            attributes = attributes,
+            userInfo = RumFeature.userInfoProvider.getUserInfo(),
+            networkInfo = networkInfo
         )
-        writer.write(event)
+        writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)
         sent = true
     }
@@ -149,7 +197,6 @@ internal class RumResourceScope(
     // endregion
 
     companion object {
-
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource

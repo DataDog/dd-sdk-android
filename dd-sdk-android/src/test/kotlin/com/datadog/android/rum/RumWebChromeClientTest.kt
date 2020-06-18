@@ -182,7 +182,7 @@ internal class RumWebChromeClientTest {
         )
         verify(mockRumMonitor).addError(
             fakeMessage,
-            RumWebChromeClient.LOGGER_NAME,
+            RumErrorSource.CONSOLE,
             null,
             mapOf(
                 RumWebChromeClient.SOURCE_ID to fakeSource,

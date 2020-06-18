@@ -11,14 +11,10 @@ import java.util.UUID
 internal data class RumContext(
     val applicationId: String = NULL_SESSION_ID,
     val sessionId: String = NULL_SESSION_ID,
-    val viewId: String? = null
+    val viewId: String? = null,
+    val viewUrl: String? = null,
+    val actionId: String? = null
 ) {
-
-    constructor(
-        applicationUUID: UUID = UUID(0, 0),
-        sessionUUID: UUID = UUID(0, 0),
-        viewUUID: UUID?
-    ) : this(applicationUUID.toString(), sessionUUID.toString(), viewUUID?.toString())
 
     companion object {
         val NULL_SESSION_ID = UUID(0, 0).toString()

@@ -8,10 +8,11 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.model.ActionEvent
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -20,12 +21,14 @@ import kotlin.math.max
 internal class RumActionScope(
     val parentScope: RumScope,
     val waitForStop: Boolean,
+    initialType: RumActionType,
     initialName: String,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
-    internal val actionId: UUID = UUID.randomUUID()
+    internal val actionId: String = UUID.randomUUID().toString()
+    internal var type: RumActionType = initialType
     internal var name: String = initialName
     internal val startedNanos: Long = System.nanoTime()
     internal var lastInteractionNanos: Long = startedNanos
@@ -34,7 +37,7 @@ internal class RumActionScope(
 
     internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
-    internal var resourcesCount: Int = 0
+    internal var resourcesCount: Long = 0
     internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
@@ -88,6 +91,7 @@ internal class RumActionScope(
         now: Long,
         writer: Writer<RumEvent>
     ) {
+        type = event.type
         name = event.name
         attributes.putAll(event.attributes)
         sendAction(now, writer)
@@ -121,22 +125,37 @@ internal class RumActionScope(
 
         if (resourcesCount > 0 || viewTreeChangeCount > 0) {
             attributes.putAll(GlobalRum.globalAttributes)
-            val eventData = RumEventData.UserAction(
-                name,
-                actionId,
-                max(endNanos - startedNanos, 1L)
+            val context = getRumContext()
+            val actionEvent = ActionEvent(
+                date = eventTimestamp,
+                action = ActionEvent.Action(
+                    type = type.toSchemaType(),
+                    id = actionId,
+                    target = ActionEvent.Target(name),
+                    error = ActionEvent.Error(0), // TODO RUMM-531
+                    resource = ActionEvent.Resource(resourcesCount),
+                    longTask = null,
+                    loadingTime = max(endNanos - startedNanos, 1L)
+                ),
+                view = ActionEvent.View(
+                    id = context.viewId.orEmpty(),
+                    url = context.viewUrl.orEmpty(),
+                    referrer = null
+                ),
+                application = ActionEvent.Application(context.applicationId),
+                session = ActionEvent.Session(
+                    id = context.sessionId,
+                    type = ActionEvent.Type.USER
+                ),
+                dd = ActionEvent.Dd()
             )
-
-            val event = RumEvent(
-                getRumContext(),
-                eventTimestamp,
-                eventData,
-                RumFeature.userInfoProvider.getUserInfo(),
-                attributes,
+            val rumEvent = RumEvent(
+                event = actionEvent,
+                attributes = attributes,
+                userInfo = RumFeature.userInfoProvider.getUserInfo(),
                 networkInfo = null
             )
-
-            writer.write(event)
+            writer.write(rumEvent)
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)
         }
         sent = true
@@ -154,7 +173,13 @@ internal class RumActionScope(
             parentScope: RumScope,
             event: RumRawEvent.StartAction
         ): RumScope {
-            return RumActionScope(parentScope, event.waitForStop, event.name, event.attributes)
+            return RumActionScope(
+                parentScope,
+                event.waitForStop,
+                event.type,
+                event.name,
+                event.attributes
+            )
         }
     }
 }
