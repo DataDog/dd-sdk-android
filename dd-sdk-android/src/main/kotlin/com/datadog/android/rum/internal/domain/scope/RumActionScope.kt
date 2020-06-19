@@ -134,13 +134,11 @@ internal class RumActionScope(
                     target = ActionEvent.Target(name),
                     error = ActionEvent.Error(0), // TODO RUMM-531
                     resource = ActionEvent.Resource(resourcesCount),
-                    longTask = null,
                     loadingTime = max(endNanos - startedNanos, 1L)
                 ),
                 view = ActionEvent.View(
                     id = context.viewId.orEmpty(),
-                    url = context.viewUrl.orEmpty(),
-                    referrer = null
+                    url = context.viewUrl.orEmpty()
                 ),
                 application = ActionEvent.Application(context.applicationId),
                 session = ActionEvent.Session(
@@ -152,8 +150,7 @@ internal class RumActionScope(
             val rumEvent = RumEvent(
                 event = actionEvent,
                 attributes = attributes,
-                userInfo = RumFeature.userInfoProvider.getUserInfo(),
-                networkInfo = null
+                userInfo = RumFeature.userInfoProvider.getUserInfo()
             )
             writer.write(rumEvent)
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)

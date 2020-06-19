@@ -124,14 +124,12 @@ internal class RumResourceScope(
                 connect = timing?.connect(),
                 ssl = timing?.ssl(),
                 firstByte = timing?.firstByte(),
-                download = timing?.download(),
-                redirect = null
+                download = timing?.download()
             ),
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
                 id = context.viewId.orEmpty(),
-                url = context.viewUrl.orEmpty(),
-                referrer = null
+                url = context.viewUrl.orEmpty()
             ),
             application = ResourceEvent.Application(context.applicationId),
             session = ResourceEvent.Session(
@@ -176,8 +174,7 @@ internal class RumResourceScope(
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
-                url = context.viewUrl.orEmpty(),
-                referrer = null
+                url = context.viewUrl.orEmpty()
             ),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),

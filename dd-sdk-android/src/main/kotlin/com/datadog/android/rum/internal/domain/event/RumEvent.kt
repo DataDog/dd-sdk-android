@@ -12,6 +12,6 @@ import com.datadog.android.log.internal.user.UserInfo
 internal data class RumEvent(
     val event: Any,
     val attributes: Map<String, Any?>,
-    val userInfo: UserInfo?,
-    val networkInfo: NetworkInfo?
+    val userInfo: UserInfo? = null,
+    val networkInfo: NetworkInfo? = null
 )

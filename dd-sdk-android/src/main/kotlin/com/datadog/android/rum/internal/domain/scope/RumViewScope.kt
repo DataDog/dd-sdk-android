@@ -163,14 +163,12 @@ internal class RumViewScope(
             error = ErrorEvent.Error(
                 message = event.message,
                 source = event.source.toSchemaSource(),
-                stack = event.throwable?.loggableStackTrace(),
-                resource = null
+                stack = event.throwable?.loggableStackTrace()
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
-                url = context.viewUrl.orEmpty(),
-                referrer = null
+                url = context.viewUrl.orEmpty()
             ),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
@@ -246,16 +244,7 @@ internal class RumViewScope(
                 timeSpent = updatedDurationNs,
                 action = ViewEvent.Action(actionCount),
                 resource = ViewEvent.Resource(resourceCount),
-                error = ViewEvent.Error(errorCount),
-                loadingType = null,
-                longTask = null,
-                referrer = null,
-                loadEvent = null,
-                loadingTime = null,
-                domComplete = null,
-                domContentLoaded = null,
-                domInteractive = null,
-                firstContentfulPaint = null
+                error = ViewEvent.Error(errorCount)
             ),
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.Session(id = context.sessionId, type = ViewEvent.Type.USER),
@@ -265,8 +254,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             attributes = attributes,
-            userInfo = RumFeature.userInfoProvider.getUserInfo(),
-            networkInfo = null
+            userInfo = RumFeature.userInfoProvider.getUserInfo()
         )
         writer.write(rumEvent)
     }
