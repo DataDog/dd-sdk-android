@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 import kotlin.Long
 import kotlin.String
 
-data class Person(
+internal data class Person(
     @SerializedName("firstName")
     val firstName: String? = null,
     @SerializedName("lastName")

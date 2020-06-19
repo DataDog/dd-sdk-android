@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 import kotlin.String
 import kotlin.collections.Set
 
-data class Video(
+internal data class Video(
     @SerializedName("title")
     val title: String,
     @SerializedName("tags")

@@ -2,7 +2,7 @@ package com.example.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Style(
+internal data class Style(
     @SerializedName("color")
     val color: Color
 ) {

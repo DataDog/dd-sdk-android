@@ -80,6 +80,7 @@ class PokoGenerator(
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
         val typeBuilder = generateTopLevelType(schema)
+            .addModifiers(KModifier.INTERNAL)
 
         while (nestedDefinitions.isNotEmpty()) {
             val definitions = nestedDefinitions.toList()
@@ -119,8 +120,7 @@ class PokoGenerator(
                 )
             }
         } else {
-            println("UNSUPPORTED\n$schema")
-            TODO()
+            throw UnsupportedOperationException("Unsupported schema definition\n$schema")
         }
     }
 
@@ -223,7 +223,9 @@ class PokoGenerator(
         val type = propertyDef.asKotlinTypeName(name, false).copy(nullable = !required)
 
         val constructorParamBuilder = ParameterSpec.builder(varName, type)
-        if (!required) { constructorParamBuilder.defaultValue("null") }
+        if (!required) {
+            constructorParamBuilder.defaultValue("null")
+        }
         constructorBuilder.addParameter(constructorParamBuilder.build())
 
         typeBuilder.addProperty(

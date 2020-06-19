@@ -5,7 +5,7 @@ import kotlin.Double
 import kotlin.Long
 import kotlin.String
 
-data class Product(
+internal data class Product(
     @SerializedName("productId")
     val productId: Long,
     @SerializedName("productName")

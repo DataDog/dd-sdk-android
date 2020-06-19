@@ -12,7 +12,7 @@ import kotlin.collections.List
  * @param artists The opus's artists.
  * @param duration The opus's duration in seconds
  */
-data class Opus(
+internal data class Opus(
     @SerializedName("title")
     val title: String? = null,
     @SerializedName("composer")

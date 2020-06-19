@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 import kotlin.Double
 import kotlin.Long
 
-class Version {
+internal class Version {
     @SerializedName("version")
     val version: Long = 42L
 

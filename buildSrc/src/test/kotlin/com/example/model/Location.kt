@@ -3,7 +3,7 @@ package com.example.model
 import com.google.gson.annotations.SerializedName
 import kotlin.String
 
-class Location {
+internal class Location {
     @SerializedName("planet")
     val planet: String = "earth"
 }

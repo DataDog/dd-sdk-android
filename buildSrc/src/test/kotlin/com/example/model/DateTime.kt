@@ -3,7 +3,7 @@ package com.example.model
 import com.google.gson.annotations.SerializedName
 import kotlin.Long
 
-data class DateTime(
+internal data class DateTime(
     @SerializedName("date")
     val date: Date? = null,
     @SerializedName("time")

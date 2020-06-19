@@ -3,7 +3,7 @@ package com.example.model
 import com.google.gson.annotations.SerializedName
 import kotlin.String
 
-data class Conflict(
+internal data class Conflict(
     @SerializedName("type")
     val type: Type? = null,
     @SerializedName("user")

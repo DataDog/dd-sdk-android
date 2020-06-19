@@ -7,7 +7,7 @@ import kotlin.Double
 import kotlin.Long
 import kotlin.String
 
-data class Demo(
+internal data class Demo(
     @SerializedName("s")
     val s: String,
     @SerializedName("i")
