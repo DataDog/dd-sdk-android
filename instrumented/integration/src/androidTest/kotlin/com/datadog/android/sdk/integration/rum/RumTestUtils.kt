@@ -11,15 +11,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions
 
-internal const val EVENT_NAME = "evt.name"
-internal const val TARGET_CLASS_NAME = "target.classname"
-internal const val TARGET_RESOURCE_ID = "target.resourceId"
-internal const val APPLICATION_ID = "application_id"
-internal const val SESSION_ID = "session_id"
-internal const val VIEW_ID = "view.id"
-
-internal const val VIEW_URL = "view.url"
-internal const val RUM_DOC_VERSION = "rum.document_version"
+internal const val TARGET_CLASS_NAME = "action.target.classname"
+internal const val TARGET_RESOURCE_ID = "action.target.resource_id"
 internal const val VIEW_ARGUMENTS_PREFIX = "view.arguments."
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
@@ -33,7 +26,7 @@ internal fun List<JsonObject>.assertMatches(
     Assertions.assertThat(this.size)
         .withFailMessage(
             "We were expecting ${expected.size} rum " +
-                    "events instead they were ${this.size}"
+                "events instead they were ${this.size}"
         )
         .isEqualTo(expected.size)
 
@@ -51,7 +44,9 @@ internal fun List<JsonObject>.assertMatches(
 private fun JsonObject.assertMatches(event: ExpectedGestureEvent) {
     assertMatchesRoot(event)
     JsonObjectAssert.assertThat(this)
-        .hasField(EVENT_NAME, event.type.gestureName)
+        .hasField("action") {
+            hasField("type", event.type.gestureName)
+        }
         .hasField(TARGET_CLASS_NAME, event.targetClassName)
         .hasField(TARGET_RESOURCE_ID, event.targetResourceId)
     JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
@@ -60,15 +55,25 @@ private fun JsonObject.assertMatches(event: ExpectedGestureEvent) {
 private fun JsonObject.assertMatches(event: ExpectedViewEvent) {
     assertMatchesRoot(event)
     JsonObjectAssert.assertThat(this)
-        .hasField(VIEW_URL, event.viewUrl)
-        .hasField(RUM_DOC_VERSION, event.docVersion)
+        .hasField("view") {
+            hasField("url", event.viewUrl)
+        }
+        .hasField("_dd") {
+            hasField("document_version", event.docVersion)
+        }
     JsonObjectAssert.assertThat(this).bundlesMap(event.viewArguments, VIEW_ARGUMENTS_PREFIX)
     JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
 }
 
 private fun JsonObject.assertMatchesRoot(event: ExpectedEvent) {
     JsonObjectAssert.assertThat(this)
-        .hasField(APPLICATION_ID, event.rumContext.applicationId)
-        .hasField(SESSION_ID, event.rumContext.sessionId)
-        .hasField(VIEW_ID, event.rumContext.viewId)
+        .hasField("application") {
+            hasField("id", event.rumContext.applicationId)
+        }
+        .hasField("session") {
+            hasField("id", event.rumContext.sessionId)
+        }
+        .hasField("view") {
+            hasField("id", event.rumContext.viewId)
+        }
 }

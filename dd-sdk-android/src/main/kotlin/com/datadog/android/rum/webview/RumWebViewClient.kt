@@ -36,8 +36,10 @@ open class RumWebViewClient : WebViewClient() {
         super.onPageStarted(view, url, favicon)
         if (url != null) {
             val key = url
-            GlobalRum.get().startResource(key,
-                METHOD_GET, url)
+            GlobalRum.get().startResource(
+                key,
+                METHOD_GET, url
+            )
         }
     }
 
@@ -67,7 +69,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error $errorCode: $description",
             RumErrorSource.SOURCE,
             null,
-            mapOf(RumAttributes.HTTP_URL to failingUrl)
+            mapOf(RumAttributes.ERROR_RESOURCE_URL to failingUrl)
         )
     }
 
@@ -83,7 +85,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${error?.errorCode}: ${error?.description}",
             RumErrorSource.NETWORK,
             null,
-            mapOf(RumAttributes.HTTP_URL to request?.url)
+            mapOf(RumAttributes.ERROR_RESOURCE_URL to request?.url)
         )
     }
 
@@ -99,7 +101,7 @@ open class RumWebViewClient : WebViewClient() {
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
             RumErrorSource.NETWORK,
             null,
-            mapOf(RumAttributes.HTTP_URL to request?.url)
+            mapOf(RumAttributes.ERROR_RESOURCE_URL to request?.url)
         )
     }
 
@@ -114,7 +116,7 @@ open class RumWebViewClient : WebViewClient() {
             "SSL Error ${error?.primaryError}",
             RumErrorSource.NETWORK,
             null,
-            mapOf(RumAttributes.HTTP_URL to error?.url)
+            mapOf(RumAttributes.ERROR_RESOURCE_URL to error?.url)
         )
     }
 

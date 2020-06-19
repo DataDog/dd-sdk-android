@@ -127,6 +127,7 @@ internal class EndToEndRumFragmentTrackingTests {
     }
 
     // endregion
+
     companion object {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }

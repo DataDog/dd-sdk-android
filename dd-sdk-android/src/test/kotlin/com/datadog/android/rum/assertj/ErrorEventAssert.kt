@@ -59,6 +59,32 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasResource(
+        expectedUrl: String,
+        expectedMethod: String,
+        expectedStatusCode: Long
+    ): ErrorEventAssert {
+        assertThat(actual.error.resource?.url)
+            .overridingErrorMessage(
+                "Expected event data to have error.resource.url $expectedUrl " +
+                    "but was ${actual.error.resource?.url}"
+            )
+            .isEqualTo(expectedUrl)
+        assertThat(actual.error.resource?.method)
+            .overridingErrorMessage(
+                "Expected event data to have error.resource.method $expectedMethod " +
+                    "but was ${actual.error.resource?.method}"
+            )
+            .isEqualTo(ErrorEvent.Method.valueOf(expectedMethod))
+        assertThat(actual.error.resource?.statusCode)
+            .overridingErrorMessage(
+                "Expected event data to have error.resource.statusCode $expectedStatusCode " +
+                    "but was ${actual.error.resource?.statusCode}"
+            )
+            .isEqualTo(expectedStatusCode)
+        return this
+    }
+
     fun hasView(expectedId: String?, expectedUrl: String?): ErrorEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(

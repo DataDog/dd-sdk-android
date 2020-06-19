@@ -410,8 +410,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
         )
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
@@ -445,8 +445,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             argThat { startsWith("${target.javaClass.simpleName}(") },
             argThat {
                 val targetClassName = target.javaClass.canonicalName
-                this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                    this[RumAttributes.TAG_TARGET_RESOURCE_ID] == expectedResourceName
+                this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                    this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
 }

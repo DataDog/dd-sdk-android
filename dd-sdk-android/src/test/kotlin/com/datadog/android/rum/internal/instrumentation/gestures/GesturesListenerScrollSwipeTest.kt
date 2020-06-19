@@ -95,9 +95,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
             WeakReference(decorView)
@@ -161,9 +161,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
             WeakReference(decorView)
@@ -231,14 +231,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes1: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection1
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection1
         )
         val expectedAttributes2: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection2
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2
         )
         underTest = GesturesListener(
             WeakReference(decorView)
@@ -404,9 +404,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
         underTest = GesturesListener(
             WeakReference(decorView)
@@ -477,14 +477,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedAttributes1: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection1
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection1
         )
         val expectedAttributes2: MutableMap<String, Any?> = mutableMapOf(
-            RumAttributes.TAG_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.TAG_TARGET_RESOURCE_ID to expectedResourceName,
-            RumAttributes.TAG_GESTURE_DIRECTION to expectedDirection2
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2
         )
         underTest = GesturesListener(
             WeakReference(decorView)

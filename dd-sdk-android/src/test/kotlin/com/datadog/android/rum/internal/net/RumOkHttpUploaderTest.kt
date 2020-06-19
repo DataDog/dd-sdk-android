@@ -13,9 +13,13 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
@@ -35,21 +39,24 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>() {
+
+    @RegexForgery("([a-z]+\\.)+[a-z]+")
     lateinit var fakePackageName: String
+    @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeEnvName: String
     lateinit var mockAppContext: Application
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        fakePackageName = forge.anAlphabeticalString()
-        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
+        RumFeature.envName = fakeEnvName
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         CoreFeature.initialize(
-            mockAppContext, DatadogConfig.CoreConfig(
-                needsClearTextHttp = forge.aBool(),
-                serviceName = forge.anAlphabeticalString()
-            )
+            mockAppContext,
+            DatadogConfig.CoreConfig(needsClearTextHttp = forge.aBool())
         )
     }
 
@@ -80,8 +87,9 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "?${DataOkHttpUploader.BATCH_TIME}=\\d+" +
             "&${RumOkHttpUploader.QP_SOURCE}=android" +
             "&${RumOkHttpUploader.QP_TAGS}=" +
-            "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}," +
-            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}," +
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}$"
+            "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
+            "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}," +
+            "${RumAttributes.ENV}:$fakeEnvName$"
     }
 }

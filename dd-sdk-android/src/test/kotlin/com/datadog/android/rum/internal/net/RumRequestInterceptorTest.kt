@@ -330,7 +330,9 @@ internal class RumRequestInterceptorTest {
             RumErrorSource.NETWORK,
             null,
             mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode
+                RumAttributes.ERROR_RESOURCE_URL to fakeUrl,
+                RumAttributes.ERROR_RESOURCE_METHOD to fakeMethod,
+                RumAttributes.ERROR_RESOURCE_STATUS_CODE to statusCode
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
@@ -361,7 +363,9 @@ internal class RumRequestInterceptorTest {
             RumErrorSource.NETWORK,
             null,
             mapOf(
-                RumAttributes.HTTP_STATUS_CODE to statusCode
+                RumAttributes.ERROR_RESOURCE_URL to fakeUrl,
+                RumAttributes.ERROR_RESOURCE_METHOD to fakeMethod,
+                RumAttributes.ERROR_RESOURCE_STATUS_CODE to statusCode
             )
         )
         verifyNoMoreInteractions(mockRumMonitor)
