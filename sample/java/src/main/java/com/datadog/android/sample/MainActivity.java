@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
+import com.datadog.android.rum.RumActionType;
 import com.datadog.android.rum.RumMonitor;
 import com.datadog.android.sample.dialog.SampleDialogFragment;
 import com.datadog.android.sample.logs.LogsFragment;
@@ -127,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean switchToFragment(@IdRes final int id) {
 
         mRumMonitor.addUserAction(
+                RumActionType.CUSTOM,
                 "switchToFragment",
                 new HashMap<String, Object>() {{
                     put("fragment_id", Integer.toString(id));
