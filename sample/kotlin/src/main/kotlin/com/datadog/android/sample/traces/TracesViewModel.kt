@@ -42,7 +42,6 @@ class TracesViewModel : ViewModel() {
                 }
         }
 
-
         override fun onPreExecute() {
             super.onPreExecute()
             activeSpanInMainThread = GlobalTracer.get().activeSpan()

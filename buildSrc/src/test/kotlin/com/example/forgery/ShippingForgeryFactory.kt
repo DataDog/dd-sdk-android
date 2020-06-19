@@ -10,7 +10,7 @@ import com.example.model.Shipping
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class ShippingForgeryFactory : ForgeryFactory<Shipping> {
+internal class ShippingForgeryFactory : ForgeryFactory<Shipping> {
     override fun getForgery(forge: Forge): Shipping {
         return Shipping(
             item = forge.anAlphabeticalString(),

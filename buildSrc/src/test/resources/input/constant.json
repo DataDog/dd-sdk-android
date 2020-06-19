@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "planet": {
+      "type" : "string",
       "const": "earth"
     }
   },

@@ -98,37 +98,34 @@ internal class EndToEndRumGesturesTrackingTests {
                 "button"
             ),
             ExpectedViewEvent(
-                viewUrl, 2,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 1)
+                viewUrl, 2
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 "${CardView::class.java.canonicalName}",
                 "recyclerViewRow",
                 extraAttributes = mapOf(
-                    RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER to 2,
-                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME to
+                    RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
+                    RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
                         mockServerRule.activity.recyclerView.javaClass.canonicalName,
-                    RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID to
+                    RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to
                         "recyclerView"
                 )
             ),
             ExpectedViewEvent(
                 viewUrl,
-                3,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 2)
+                3
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
                 "${RecyclerView::class.java.canonicalName}",
                 "recyclerView",
                 extraAttributes = mapOf(
-                    RumAttributes.TAG_GESTURE_DIRECTION to "down"
+                    RumAttributes.ACTION_GESTURE_DIRECTION to "down"
                 )
             ),
             ExpectedViewEvent(
-                viewUrl, 4,
-                extraAttributes = mapOf(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT to 3)
+                viewUrl, 4
             )
         )
     }

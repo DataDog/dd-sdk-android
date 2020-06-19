@@ -13,7 +13,7 @@ import org.gradle.api.tasks.TaskAction
 
 open class GitCloneDependenciesTask : DefaultTask() {
 
-    internal var extension: GitCloneDependenciesExtension =
+    var extension: GitCloneDependenciesExtension =
         GitCloneDependenciesExtension()
 
     init {

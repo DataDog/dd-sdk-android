@@ -7,22 +7,20 @@
 package com.datadog.android.sample.traces;
 
 import android.os.AsyncTask;
-
+import android.util.Log;
 import androidx.lifecycle.ViewModel;
-
 import com.datadog.android.DatadogEventListener;
 import com.datadog.android.rum.RumInterceptor;
 import com.datadog.android.tracing.TracingInterceptor;
 import com.facebook.stetho.okhttp3.StethoInterceptor;
-
-import java.util.Collections;
-
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.util.GlobalTracer;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+
+import java.util.Collections;
 
 public class TracesViewModel extends ViewModel {
     private Task asyncTask;
@@ -102,6 +100,12 @@ public class TracesViewModel extends ViewModel {
 
             try {
                 Response response = okHttpClient.newCall(request).execute();
+                ResponseBody body = response.body();
+                if (body != null) {
+                    String content = body.string();
+                    Log.d("Response", content);
+                }
+
                 return new Result(response, null);
             } catch (Exception e) {
                 return new Result(null, e);

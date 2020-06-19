@@ -12,16 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
-
 import com.datadog.android.log.Logger;
 import com.datadog.android.sample.MainActivity;
 import com.datadog.android.sample.R;
-
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
@@ -35,7 +32,7 @@ public class TracesFragment extends Fragment implements View.OnClickListener {
     private TracesViewModel mViewModel;
     private ImageView mRequestStatus;
 
-    private Logger mLogger = new Logger.Builder()
+    private final Logger mLogger = new Logger.Builder()
             .setLoggerName("traces_fragment")
             .setLogcatLogsEnabled(true)
             .build();

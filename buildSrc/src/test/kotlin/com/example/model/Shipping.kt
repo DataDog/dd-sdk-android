@@ -3,7 +3,7 @@ package com.example.model
 import com.google.gson.annotations.SerializedName
 import kotlin.String
 
-data class Shipping(
+internal data class Shipping(
     @SerializedName("item")
     val item: String,
     @SerializedName("destination")

@@ -10,7 +10,7 @@ import com.example.model.User
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class UserForgeryFactory : ForgeryFactory<User> {
+internal class UserForgeryFactory : ForgeryFactory<User> {
     override fun getForgery(forge: Forge): User {
         return User(
             username = forge.anAlphabeticalString(),

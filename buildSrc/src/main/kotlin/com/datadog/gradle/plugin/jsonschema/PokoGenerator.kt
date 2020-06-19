@@ -6,8 +6,8 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import android.databinding.tool.ext.joinToCamelCaseAsVar
 import android.databinding.tool.ext.toCamelCase
-import android.databinding.tool.ext.toCamelCaseAsVar
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.squareup.kotlinpoet.ANY
@@ -18,9 +18,10 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LIST
+import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SET
@@ -43,6 +44,7 @@ class PokoGenerator(
 
     private lateinit var rootTypeName: String
     private lateinit var rootDefinition: Definition
+    private val knownTypes: MutableList<String> = mutableListOf()
     private val loadedSchemas: MutableList<Definition> = mutableListOf()
 
     private val nestedDefinitions: MutableList<DefinitionRef> = mutableListOf()
@@ -78,6 +80,7 @@ class PokoGenerator(
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
         val typeBuilder = generateTopLevelType(schema)
+            .addModifiers(KModifier.INTERNAL)
 
         while (nestedDefinitions.isNotEmpty()) {
             val definitions = nestedDefinitions.toList()
@@ -117,8 +120,7 @@ class PokoGenerator(
                 )
             }
         } else {
-            println("UNSUPPORTED\n$schema")
-            TODO()
+            throw UnsupportedOperationException("Unsupported schema definition\n$schema")
         }
     }
 
@@ -133,7 +135,6 @@ class PokoGenerator(
     ): TypeSpec.Builder {
         val constructorBuilder = FunSpec.constructorBuilder()
         val typeBuilder = TypeSpec.classBuilder(className)
-            .addModifiers(KModifier.DATA)
         val docBuilder = CodeBlock.builder()
 
         appendTypeDefinition(
@@ -183,7 +184,6 @@ class PokoGenerator(
     ): TypeSpec.Builder {
         val constructorBuilder = FunSpec.constructorBuilder()
         val typeBuilder = TypeSpec.classBuilder(className)
-            .addModifiers(KModifier.DATA)
         val docBuilder = CodeBlock.builder()
 
         definitions.forEach { subDef ->
@@ -219,13 +219,15 @@ class PokoGenerator(
         constructorBuilder: FunSpec.Builder,
         docBuilder: CodeBlock.Builder
     ) {
-        val varName = name.toCamelCaseAsVar()
-        val type = if (required) {
-            propertyDef.asKotlinTypeName(name, false)
-        } else {
-            propertyDef.asKotlinTypeName(name, false).copy(nullable = true)
+        val varName = name.variableName()
+        val type = propertyDef.asKotlinTypeName(name, false).copy(nullable = !required)
+
+        val constructorParamBuilder = ParameterSpec.builder(varName, type)
+        if (!required) {
+            constructorParamBuilder.defaultValue("null")
         }
-        constructorBuilder.addParameter(varName, type)
+        constructorBuilder.addParameter(constructorParamBuilder.build())
+
         typeBuilder.addProperty(
             PropertySpec.builder(varName, type)
                 .initializer(varName)
@@ -236,6 +238,41 @@ class PokoGenerator(
         if (!propertyDef.description.isNullOrBlank()) {
             docBuilder.add("@param $varName ${propertyDef.description}\n")
         }
+    }
+
+    /**
+     * Appends a `class` property to a [TypeSpec.Builder], with a constant default value.
+     * @param name the property json name
+     * @param propertyDef the property [Definition]
+     * @param typeBuilder the `data class` [TypeSpec] builder.
+     */
+    private fun appendConstant(
+        name: String,
+        propertyDef: Definition,
+        typeBuilder: TypeSpec.Builder
+    ) {
+        val varName = name.variableName()
+        val constant = propertyDef.constant
+        val propertyBuilder = if (constant is String) {
+            PropertySpec.builder(varName, STRING)
+                .initializer("\"$constant\"")
+        } else if (constant is Double && propertyDef.type == Type.INTEGER) {
+            PropertySpec.builder(varName, LONG)
+                .initializer("${constant.toLong()}L")
+        } else if (constant is Double) {
+            PropertySpec.builder(varName, DOUBLE)
+                .initializer("$constant")
+        } else {
+            TODO("Unknown type $constant ${constant!!.javaClass}")
+        }
+
+        if (!propertyDef.description.isNullOrBlank()) {
+            propertyBuilder.addKdoc(propertyDef.description)
+        }
+
+        propertyBuilder.addAnnotation(name.serializedAnnotation())
+
+        typeBuilder.addProperty(propertyBuilder.build())
     }
 
     /**
@@ -256,14 +293,27 @@ class PokoGenerator(
             docBuilder.add("\n")
         }
 
+        var nonConstants = 0
+
         definition.properties?.forEach { (name, property) ->
             val required = (definition.required != null) && (name in definition.required)
-            appendProperty(
-                name, required, property,
-                typeBuilder,
-                constructorBuilder,
-                docBuilder
-            )
+            val isConstant = property.constant != null
+
+            if (isConstant) {
+                appendConstant(name, property, typeBuilder)
+            } else {
+                nonConstants++
+                appendProperty(
+                    name, required, property,
+                    typeBuilder,
+                    constructorBuilder,
+                    docBuilder
+                )
+            }
+        }
+
+        if (nonConstants > 0) {
+            typeBuilder.addModifiers(KModifier.DATA)
         }
     }
 
@@ -353,6 +403,13 @@ class PokoGenerator(
 
     // region Extensions
 
+    private fun String.variableName(): String {
+        val split = this.split("_").filter { it.isNotBlank() }
+        if (split.isEmpty()) return ""
+        if (split.size == 1) return split[0]
+        return split.joinToCamelCaseAsVar()
+    }
+
     private fun String.singular(): String {
         return if (endsWith("ies")) {
             substring(0, length - 3)
@@ -361,6 +418,25 @@ class PokoGenerator(
         } else {
             this
         }
+    }
+
+    private fun String.uniqueClassName(): String {
+        var uniqueName = this
+        var tries = 0
+        while (uniqueName in knownTypes) {
+            tries++
+            uniqueName = "${this}$tries"
+        }
+        knownTypes.add(uniqueName)
+        return uniqueName
+    }
+
+    private fun DefinitionRef.withUniqueClassName(): DefinitionRef {
+        val uniqueName = className.uniqueClassName()
+        return copy(
+            className = uniqueName,
+            typeName = ClassName(packageName, rootTypeName, uniqueName)
+        )
     }
 
     private fun Definition.asKotlinTypeName(
@@ -374,13 +450,9 @@ class PokoGenerator(
         }
 
         if (!enum.isNullOrEmpty()) {
-            nestedEnums.add(name to enum)
-            return ClassName(packageName, rootTypeName, typeName)
-        }
-
-        if (!constant.isNullOrBlank()) {
-            nestedEnums.add(name to listOf(constant))
-            return ClassName(packageName, rootTypeName, typeName)
+            val uniqueName = typeName.uniqueClassName()
+            nestedEnums.add(uniqueName to enum)
+            return ClassName(packageName, rootTypeName, uniqueName)
         }
 
         return if (ref.isNullOrBlank()) {
@@ -390,8 +462,9 @@ class PokoGenerator(
             checkNotNull(def) { "Unable to get definition from: $ref" }
             val entry = nestedDefinitions.firstOrNull { it.definition == def.definition }
             if (entry == null) {
-                nestedDefinitions.add(def)
-                ClassName(packageName, rootTypeName, def.className)
+                val uniqueDef = def.withUniqueClassName()
+                nestedDefinitions.add(uniqueDef)
+                ClassName(packageName, rootTypeName, uniqueDef.className)
             } else {
                 ClassName(packageName, rootTypeName, entry.className)
             }
@@ -403,16 +476,14 @@ class PokoGenerator(
             Type.NULL -> ANY_NULLABLE
             Type.BOOLEAN -> BOOLEAN
             Type.OBJECT -> {
-                val typeName = ClassName(packageName, rootTypeName, className)
-                nestedDefinitions.add(
-                    DefinitionRef(
-                        definition = definition,
-                        id = className,
-                        className = className,
-                        typeName = typeName
-                    )
-                )
-                typeName
+                val def = DefinitionRef(
+                    definition = definition,
+                    id = className,
+                    className = className,
+                    typeName = ClassName(packageName, rootTypeName, className)
+                ).withUniqueClassName()
+                nestedDefinitions.add(def)
+                def.typeName
             }
             Type.ARRAY -> {
                 if (definition.uniqueItems == true) {
@@ -427,7 +498,7 @@ class PokoGenerator(
             }
             Type.NUMBER -> DOUBLE
             Type.STRING -> STRING
-            Type.INTEGER -> INT
+            Type.INTEGER -> LONG
             null -> {
                 ANY_NULLABLE
             }

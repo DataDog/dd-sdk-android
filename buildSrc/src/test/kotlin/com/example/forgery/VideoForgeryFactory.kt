@@ -10,7 +10,7 @@ import com.example.model.Video
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class VideoForgeryFactory : ForgeryFactory<Video> {
+internal class VideoForgeryFactory : ForgeryFactory<Video> {
     override fun getForgery(forge: Forge): Video {
         return Video(
             title = forge.anAlphabeticalString(),

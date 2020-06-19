@@ -39,11 +39,11 @@ internal class JetpackViewAttributesProvider :
         while (parent != null) {
             if (parent is RecyclerView && child != null && isDirectChildOfRecyclerView(child)) {
                 val positionInAdapter = parent.getChildAdapterPosition(child)
-                attributes[RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER] =
+                attributes[RumAttributes.ACTION_TARGET_PARENT_INDEX] =
                     positionInAdapter
-                attributes[RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME] =
+                attributes[RumAttributes.ACTION_TARGET_PARENT_CLASSNAME] =
                     parent.javaClass.canonicalName
-                attributes[RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID] =
+                attributes[RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID] =
                     resolveIdOrResourceName(parent)
                 break
             }

@@ -11,17 +11,18 @@ import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.assertj.RumEventAssert
+import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
@@ -133,34 +134,36 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource and notify parent`(
         @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -174,6 +177,8 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource and notify parent with global attributes`(
         @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
         val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
@@ -181,28 +186,27 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         GlobalRum.globalAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, emptyMap())
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -216,7 +220,9 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource with timing and notify parent`(
         @Forgery kind: RumResourceKind,
-        @Forgery timing: RumEventData.Resource.Timing,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -226,28 +232,27 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasTiming(timing)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -262,7 +267,9 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource with unrelated timing event and notify parent`(
         @Forgery kind: RumResourceKind,
-        @Forgery timing: RumEventData.Resource.Timing,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -272,28 +279,27 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                    hasTiming(null)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasNoTiming()
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -308,34 +314,32 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Error on StopResourceWithError and notify parent`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.put(RumAttributes.HTTP_URL, fakeUrl)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, origin, throwable)
+        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
-                    hasThrowable(throwable)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -349,7 +353,8 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Error on StopResourceWithError and notify parent with global attributes`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @Forgery source: RumErrorSource,
+        @LongForgery(200, 600) statusCode: Long,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
@@ -357,29 +362,28 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        expectedAttributes.put(RumAttributes.HTTP_URL, fakeUrl)
         GlobalRum.globalAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, message, origin, throwable)
+        mockEvent =
+            RumRawEvent.StopResourceWithError(fakeKey, statusCode, message, source, throwable)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasErrorData {
                     hasMessage(message)
-                    hasOrigin(origin)
-                    hasThrowable(throwable)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    hasResource(fakeUrl, fakeMethod, statusCode)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -393,13 +397,15 @@ internal class RumResourceScopeTest {
     @Test
     fun `ignores StopResource with different key`(
         @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", kind, attributes)
+        mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -411,15 +417,18 @@ internal class RumResourceScopeTest {
     @Test
     fun `ignores StopResourceWithError with different key`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) origin: String,
+        @Forgery source: RumErrorSource,
+        @LongForgery(200, 600) statusCode: Long,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.put(RumAttributes.HTTP_URL, fakeUrl)
-        mockEvent =
-            RumRawEvent.StopResourceWithError("not_the_$fakeKey", message, origin, throwable)
+        mockEvent = RumRawEvent.StopResourceWithError(
+            "not_the_$fakeKey",
+            statusCode,
+            message,
+            source,
+            throwable
+        )
 
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -431,6 +440,8 @@ internal class RumResourceScopeTest {
     @Test
     fun `ignores StopResource if waiting for timing`(
         @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -441,7 +452,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         verifyZeroInteractions(mockWriter, mockParentScope)
@@ -452,6 +463,8 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource and notify parent if waiting for timing with different key`(
         @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -462,26 +475,25 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -496,7 +508,9 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on StopResource after waiting for timing and notify parent`(
         @Forgery kind: RumResourceKind,
-        @Forgery timing: RumEventData.Resource.Timing,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -508,28 +522,27 @@ internal class RumResourceScopeTest {
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                    hasTiming(timing)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    // hasTiming(timing) TODO
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -545,7 +558,9 @@ internal class RumResourceScopeTest {
     @Test
     fun `send Resource on Timing event after waitForTiming and stopResource and notify parent`(
         @Forgery kind: RumResourceKind,
-        @Forgery timing: RumEventData.Resource.Timing,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -555,7 +570,7 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
@@ -563,22 +578,21 @@ internal class RumResourceScopeTest {
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
-            RumEventAssert.assertThat(lastValue)
-                .hasTimestamp(fakeTimeStamp)
+            assertThat(lastValue)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
+                    hasTimestamp(fakeTimeStamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasTiming(timing)
-                }
-                .hasContext {
-                    hasViewId(fakeParentContext.viewId)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
                 }
         }
         verify(mockParentScope).handleEvent(

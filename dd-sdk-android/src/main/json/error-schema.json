@@ -9,9 +9,15 @@
     },
     {
       "required": [
+        "type",
         "error"
       ],
       "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "error"
+        },
         "error": {
           "type": "object",
           "description": "Error properties",
@@ -57,6 +63,20 @@
                   "description": "URL of the resource"
                 }
               }
+            }
+          }
+        },
+        "action": {
+          "type": "object",
+          "description": "Action properties",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "UUID of the action",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
             }
           }
         }

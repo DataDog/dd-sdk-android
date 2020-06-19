@@ -24,6 +24,7 @@ import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -155,7 +156,7 @@ internal class DatadogExceptionHandlerTest {
         }
         verify(mockRumMonitor).addError(
             "Application crash detected",
-            "crash",
+            RumErrorSource.SOURCE,
             fakeThrowable,
             emptyMap()
         )

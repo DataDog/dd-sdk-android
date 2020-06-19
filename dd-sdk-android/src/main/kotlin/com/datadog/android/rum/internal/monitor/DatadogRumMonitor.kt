@@ -8,10 +8,12 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
@@ -48,21 +50,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun addUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, false, attributes)
+            RumRawEvent.StartAction(type, name, false, attributes)
         )
     }
 
-    override fun startUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun startUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StartAction(action, true, attributes)
+            RumRawEvent.StartAction(type, name, true, attributes)
         )
     }
 
-    override fun stopUserAction(action: String, attributes: Map<String, Any?>) {
+    override fun stopUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.StopAction(action, attributes)
+            RumRawEvent.StopAction(type, name, attributes)
         )
     }
 
@@ -77,31 +79,38 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopResource(key: String, kind: RumResourceKind, attributes: Map<String, Any?>) {
+    override fun stopResource(
+        key: String,
+        statusCode: Int?,
+        size: Long?,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?>
+    ) {
         handleEvent(
-            RumRawEvent.StopResource(key, kind, attributes)
+            RumRawEvent.StopResource(key, statusCode?.toLong(), size, kind, attributes)
         )
     }
 
     override fun stopResourceWithError(
         key: String,
+        statusCode: Int?,
         message: String,
-        origin: String,
+        source: RumErrorSource,
         throwable: Throwable
     ) {
         handleEvent(
-            RumRawEvent.StopResourceWithError(key, message, origin, throwable)
+            RumRawEvent.StopResourceWithError(key, statusCode?.toLong(), message, source, throwable)
         )
     }
 
     override fun addError(
         message: String,
-        origin: String,
+        source: RumErrorSource,
         throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.AddError(message, origin, throwable, attributes)
+            RumRawEvent.AddError(message, source, throwable, attributes)
         )
     }
 
@@ -127,7 +136,7 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addResourceTiming(key: String, timing: RumEventData.Resource.Timing) {
+    override fun addResourceTiming(key: String, timing: ResourceTiming) {
         handleEvent(
             RumRawEvent.AddResourceTiming(key, timing)
         )

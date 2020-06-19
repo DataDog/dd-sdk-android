@@ -139,92 +139,56 @@ object com.datadog.android.rum.GlobalRum
   fun get(): RumMonitor
   fun addAttribute(String, Any?)
   fun removeAttribute(String)
+enum com.datadog.android.rum.RumActionType
+  - TAP
+  - SCROLL
+  - SWIPE
+  - CLICK
+  - CUSTOM
 object com.datadog.android.rum.RumAttributes
-  const val APPLICATION_ID: String
-  const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String
+  const val ENV: String
   const val SERVICE_NAME: String
-  const val DATE: String
-  const val DURATION: String
-  const val ERROR_KIND: String
-  const val ERROR_MESSAGE: String
-  const val ERROR_ORIGIN: String
-  const val ERROR_STACK: String
-  const val EVT_CATEGORY: String
-  const val EVT_ID: String
-  const val EVT_NAME: String
-  const val EVT_USER_ACTION_ID: String
-  const val HTTP_METHOD: String
-  const val HTTP_PERFORMANCE_CONNECT_DURATION: String
-  const val HTTP_PERFORMANCE_CONNECT_START: String
-  const val HTTP_PERFORMANCE_DNS_DURATION: String
-  const val HTTP_PERFORMANCE_DNS_START: String
-  const val HTTP_PERFORMANCE_DOWNLOAD_DURATION: String
-  const val HTTP_PERFORMANCE_DOWNLOAD_START: String
-  const val HTTP_PERFORMANCE_FIRST_BYTE_DURATION: String
-  const val HTTP_PERFORMANCE_FIRST_BYTE_START: String
-  const val HTTP_PERFORMANCE_REDIRECT_DURATION: String
-  const val HTTP_PERFORMANCE_REDIRECT_START: String
-  const val HTTP_PERFORMANCE_SSL_DURATION: String
-  const val HTTP_PERFORMANCE_SSL_START: String
-  const val HTTP_REFERRER: String
-  const val HTTP_STATUS_CODE: String
-  const val HTTP_URL: String
-  const val HTTP_USERAGENT: String
-  const val HTTP_VERSION: String
-  const val NETWORK_BYTES_READ: String
-  const val NETWORK_BYTES_WRITTEN: String
+  const val SOURCE: String
+  const val SDK_VERSION: String
+  const val USER_EMAIL: String
+  const val USER_ID: String
+  const val USER_NAME: String
+  const val TRACE_ID: String
+  const val ERROR_RESOURCE_METHOD: String
+  const val ERROR_RESOURCE_STATUS_CODE: String
+  const val ERROR_RESOURCE_URL: String
+  const val ACTION_TARGET_CLASS_NAME: String
+  const val ACTION_TARGET_TITLE: String
+  const val ACTION_TARGET_PARENT_INDEX: String
+  const val ACTION_TARGET_PARENT_CLASSNAME: String
+  const val ACTION_TARGET_PARENT_RESOURCE_ID: String
+  const val ACTION_TARGET_RESOURCE_ID: String
+  const val ACTION_GESTURE_DIRECTION: String
   const val NETWORK_CARRIER_ID: String
   const val NETWORK_CARRIER_NAME: String
-  const val NETWORK_CLIENT_IP: String
-  const val NETWORK_CLIENT_PORT: String
   const val NETWORK_CONNECTIVITY: String
   const val NETWORK_DOWN_KBPS: String
   const val NETWORK_SIGNAL_STRENGTH: String
   const val NETWORK_UP_KBPS: String
-  const val RESOURCE_KIND: String
-  const val RESOURCE_TIMING_DNS_START: String
-  const val RESOURCE_TIMING_DNS_DURATION: String
-  const val RESOURCE_TIMING_CONNECT_START: String
-  const val RESOURCE_TIMING_CONNECT_DURATION: String
-  const val RESOURCE_TIMING_SSL_START: String
-  const val RESOURCE_TIMING_SSL_DURATION: String
-  const val RESOURCE_TIMING_FB_START: String
-  const val RESOURCE_TIMING_FB_DURATION: String
-  const val RESOURCE_TIMING_DL_START: String
-  const val RESOURCE_TIMING_DL_DURATION: String
-  const val RUM_DOCUMENT_VERSION: String
-  const val SESSION_ID: String
-  const val SOURCE: String
-  const val SDK_VERSION: String
-  const val TRACE_ID: String
-  const val USER_EMAIL: String
-  const val USER_ID: String
-  const val USER_NAME: String
-  const val VIEW_ID: String
-  const val VIEW_MEASURES_ERROR_COUNT: String
-  const val VIEW_MEASURES_RESOURCE_COUNT: String
-  const val VIEW_MEASURES_USER_ACTION_COUNT: String
-  const val VIEW_REFERRER: String
-  const val VIEW_URL: String
-  const val TAG_TARGET_CLASS_NAME: String
-  const val TAG_TARGET_RESOURCE_ID: String
-  const val TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER: String
-  const val TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME: String
-  const val TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID: String
-  const val TAG_TARGET_TITLE: String
-  const val TAG_GESTURE_DIRECTION: String
+  const val NETWORK_BYTES_READ: String
+enum com.datadog.android.rum.RumErrorSource
+  - NETWORK
+  - SOURCE
+  - CONSOLE
+  - LOGGER
+  - AGENT
 class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addUserAction(String, Map<String, Any?> = emptyMap())
-  fun startUserAction(String, Map<String, Any?> = emptyMap())
-  fun stopUserAction(String, Map<String, Any?> = emptyMap())
+  fun addUserAction(RumActionType, String, Map<String, Any?>)
+  fun startUserAction(RumActionType, String, Map<String, Any?>)
+  fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
-  fun stopResource(String, RumResourceKind, Map<String, Any?> = emptyMap())
-  fun stopResourceWithError(String, String, String, Throwable)
-  fun addError(String, String, Throwable?, Map<String, Any?>)
+  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+  fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
+  fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   class Builder
     fun build(): RumMonitor
 enum com.datadog.android.rum.RumResourceKind

@@ -9,7 +9,7 @@ package com.datadog.android
 import com.datadog.android.DatadogEventListener.Factory
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.io.IOException
 import java.net.InetAddress
@@ -156,7 +156,7 @@ internal constructor(val key: String) : EventListener() {
         (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
     }
 
-    private fun buildTiming(): RumEventData.Resource.Timing {
+    private fun buildTiming(): ResourceTiming {
         val (dnsS, dnsD) = if (dnsStart == 0L) {
             0L to 0L
         } else {
@@ -181,7 +181,7 @@ internal constructor(val key: String) : EventListener() {
             (bodyStart - callStart) to (bodyEnd - bodyStart)
         }
 
-        return RumEventData.Resource.Timing(
+        return ResourceTiming(
             dnsStart = dnsS,
             dnsDuration = dnsD,
             connectStart = conS,

@@ -7,11 +7,13 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.model.ActionEvent
+import com.datadog.android.rum.internal.domain.model.ErrorEvent
+import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -21,8 +23,6 @@ import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.Date
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,166 +49,218 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `serializes resource rum event`(
+    fun `serializes event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeResource: RumEventData.Resource
+        @Forgery event: ResourceEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeResource)
+        val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(event)
+        val serialized = underTest.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
-        val timing = fakeResource.timing!!
+        assertEventMatches(jsonObject, rumEvent)
         assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
-            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
-            .hasField(RumAttributes.USER_NAME, event.userInfo.name)
-            .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
-            .hasField(RumAttributes.USER_ID, event.userInfo.id)
-            .hasField(RumAttributes.RESOURCE_TIMING_DNS_START, timing.dnsStart)
-            .hasField(RumAttributes.RESOURCE_TIMING_DNS_DURATION, timing.dnsDuration)
-            .hasField(RumAttributes.RESOURCE_TIMING_CONNECT_START, timing.connectStart)
-            .hasField(RumAttributes.RESOURCE_TIMING_CONNECT_DURATION, timing.connectDuration)
-            .hasField(RumAttributes.RESOURCE_TIMING_SSL_START, timing.sslStart)
-            .hasField(RumAttributes.RESOURCE_TIMING_SSL_DURATION, timing.sslDuration)
-            .hasField(RumAttributes.RESOURCE_TIMING_FB_START, timing.firstByteStart)
-            .hasField(RumAttributes.RESOURCE_TIMING_FB_DURATION, timing.firstByteDuration)
-            .hasField(RumAttributes.RESOURCE_TIMING_DL_START, timing.downloadStart)
-            .hasField(RumAttributes.RESOURCE_TIMING_DL_DURATION, timing.downloadDuration)
-    }
-
-    @Test
-    fun `serializes resource rum event without timing`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery fakeResource: RumEventData.Resource
-    ) {
-        val event = fakeEvent.copy(eventData = fakeResource.copy(timing = null))
-
-        val serialized = underTest.serialize(event)
-
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
-        assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
-            .hasField(RumAttributes.HTTP_METHOD, fakeResource.method)
-            .hasField(RumAttributes.USER_NAME, event.userInfo.name)
-            .hasField(RumAttributes.USER_EMAIL, event.userInfo.email)
-            .hasField(RumAttributes.USER_ID, event.userInfo.id)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DNS_START)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DNS_DURATION)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_CONNECT_START)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_CONNECT_DURATION)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_SSL_START)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_SSL_DURATION)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_FB_START)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_FB_DURATION)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DL_START)
-            .doesNotHaveField(RumAttributes.RESOURCE_TIMING_DL_DURATION)
+            .hasField("type", "resource")
+            .hasField("date", event.date)
+            .hasField("resource") {
+                hasField("type", event.resource.type.name.toLowerCase())
+                hasField("url", event.resource.url)
+                hasField("duration", event.resource.duration)
+                hasNullableField("method", event.resource.method?.name)
+                hasNullableField("status_code", event.resource.statusCode)
+                hasNullableField("size", event.resource.size)
+                // TODO timing ?
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.toLowerCase())
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+            }
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
     }
 
     @Test
     fun `serializes user action rum event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeAction: RumEventData.UserAction
+        @Forgery event: ActionEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeAction)
+        val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(event)
+        val serialized = underTest.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
+        assertEventMatches(jsonObject, rumEvent)
         assertThat(jsonObject)
-            .hasField(RumAttributes.EVT_NAME, fakeAction.name)
-            .hasField(RumAttributes.EVT_ID, fakeAction.id.toString())
-            .hasField(RumAttributes.DURATION, fakeAction.durationNanoSeconds)
+            .hasField("type", "action")
+            .hasField("date", event.date)
+            .hasField("action") {
+                hasField("type", event.action.type.name.toLowerCase())
+                hasNullableField("id", event.action.id)
+                event.action.target?.let {
+                    hasField("target") {
+                        hasField("name", it.name)
+                    }
+                }
+                event.action.resource?.let {
+                    hasField("resource") {
+                        hasField("count", it.count)
+                    }
+                }
+                event.action.error?.let {
+                    hasField("error") {
+                        hasField("count", it.count)
+                    }
+                }
+                event.action.longTask?.let {
+                    hasField("long_task") {
+                        hasField("count", it.count)
+                    }
+                }
+                hasNullableField("loading_time", event.action.loadingTime)
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.toLowerCase())
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+            }
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
     }
 
     @Test
     fun `serializes view rum event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeView: RumEventData.View
+        @Forgery event: ViewEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeView)
+        val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(event)
+        val serialized = underTest.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
-        val measures = fakeView.measures
+        assertEventMatches(jsonObject, rumEvent)
         assertThat(jsonObject)
-            .hasField(RumAttributes.RUM_DOCUMENT_VERSION, fakeView.version)
-            .hasField(RumAttributes.VIEW_URL, fakeView.name)
-            .hasField(RumAttributes.DURATION, fakeView.durationNanoSeconds)
-            .hasField(RumAttributes.VIEW_MEASURES_ERROR_COUNT, fakeView.measures.errorCount)
-            .hasField(RumAttributes.VIEW_MEASURES_RESOURCE_COUNT, fakeView.measures.resourceCount)
-            .hasField(RumAttributes.VIEW_MEASURES_USER_ACTION_COUNT, measures.userActionCount)
+            .hasField("type", "view")
+            .hasField("date", event.date)
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.toLowerCase())
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+                hasField("time_spent", event.view.timeSpent)
+                hasField("action") {
+                    hasField("count", event.view.action.count)
+                }
+                hasField("resource") {
+                    hasField("count", event.view.resource.count)
+                }
+                hasField("error") {
+                    hasField("count", event.view.error.count)
+                }
+                event.view.longTask?.let {
+                    hasField("long_task") {
+                        hasField("count", it.count)
+                    }
+                }
+            }
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
     }
 
     @Test
     fun `serializes error rum event`(
         @Forgery fakeEvent: RumEvent,
-        @Forgery fakeError: RumEventData.Error
+        @Forgery event: ErrorEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeError)
+        val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(event)
+        val serialized = underTest.serialize(rumEvent)
 
-        val sw = StringWriter()
-        val throwable = fakeError.throwable!!
-        throwable.printStackTrace(PrintWriter(sw))
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
+        assertEventMatches(jsonObject, rumEvent)
         assertThat(jsonObject)
-            .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .hasField(RumAttributes.ERROR_KIND, fakeError.throwable.javaClass.simpleName)
-            .hasField(RumAttributes.ERROR_STACK, sw.toString())
+            .hasField("type", "error")
+            .hasField("date", event.date)
+            .hasField("error") {
+                hasField("message", event.error.message)
+                hasField("source", event.error.source.name.toLowerCase())
+                hasNullableField("stack", event.error.stack)
+                event.error.resource?.let {
+                    hasField("resource") {
+                        hasField("method", it.method.name.toUpperCase())
+                        hasField("status_code", it.statusCode)
+                        hasField("url", it.url)
+                    }
+                }
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.toLowerCase())
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+            }
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
     }
 
     @Test
     fun `if user info is missing will not be serialized`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery fakeResource: RumEventData.Resource
+        @Forgery fakeEvent: RumEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeResource, userInfo = UserInfo())
-
+        val event = fakeEvent.copy(userInfo = null)
         val serialized = underTest.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
-        assertThat(jsonObject)
-            .hasField(RumAttributes.DURATION, fakeResource.durationNanoSeconds)
-            .hasField(RumAttributes.RESOURCE_KIND, fakeResource.kind.value)
-            .hasField(RumAttributes.HTTP_URL, fakeResource.url)
-            .doesNotHaveField(RumAttributes.USER_ID)
-            .doesNotHaveField(RumAttributes.USER_EMAIL)
-            .doesNotHaveField(RumAttributes.USER_NAME)
     }
 
     @Test
-    fun `serializes error rum event without throwable`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery fakeError: RumEventData.Error
+    fun `if network info is missing will not be serialized`(
+        @Forgery fakeEvent: RumEvent
     ) {
-        val event = fakeEvent.copy(eventData = fakeError.copy(throwable = null))
-
+        val event = fakeEvent.copy(networkInfo = null)
         val serialized = underTest.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         assertEventMatches(jsonObject, event)
-        assertThat(jsonObject)
-            .hasField(RumAttributes.ERROR_MESSAGE, fakeError.message)
-            .hasField(RumAttributes.ERROR_ORIGIN, fakeError.origin)
-            .doesNotHaveField(RumAttributes.ERROR_KIND)
-            .doesNotHaveField(RumAttributes.ERROR_STACK)
     }
 
     // region Internal
+
+    private fun assertEventMatches(
+        jsonObject: JsonObject,
+        event: RumEvent
+    ) {
+        assertAttributesMatch(jsonObject, event)
+        assertNetworkInfoMatches(event, jsonObject)
+        assertUserInfoMatches(event, jsonObject)
+    }
 
     private fun assertNetworkInfoMatches(event: RumEvent, jsonObject: JsonObject) {
         val info = event.networkInfo
@@ -251,46 +303,30 @@ internal class RumEventSerializerTest {
 
     private fun assertUserInfoMatches(event: RumEvent, jsonObject: JsonObject) {
         val info = event.userInfo
-        assertThat(jsonObject).apply {
-            if (info.id.isNullOrEmpty()) {
-                doesNotHaveField(LogAttributes.USR_ID)
-            } else {
-                hasField(LogAttributes.USR_ID, info.id)
+        if (info != null) {
+            assertThat(jsonObject).apply {
+                if (info.id.isNullOrEmpty()) {
+                    doesNotHaveField(RumAttributes.USER_ID)
+                } else {
+                    hasField(RumAttributes.USER_ID, info.id)
+                }
+                if (info.name.isNullOrEmpty()) {
+                    doesNotHaveField(RumAttributes.USER_NAME)
+                } else {
+                    hasField(RumAttributes.USER_NAME, info.name)
+                }
+                if (info.email.isNullOrEmpty()) {
+                    doesNotHaveField(RumAttributes.USER_EMAIL)
+                } else {
+                    hasField(RumAttributes.USER_EMAIL, info.email)
+                }
             }
-            if (info.name.isNullOrEmpty()) {
-                doesNotHaveField(LogAttributes.USR_NAME)
-            } else {
-                hasField(LogAttributes.USR_NAME, info.name)
-            }
-            if (info.email.isNullOrEmpty()) {
-                doesNotHaveField(LogAttributes.USR_EMAIL)
-            } else {
-                hasField(LogAttributes.USR_EMAIL, info.email)
-            }
+        } else {
+            assertThat(jsonObject)
+                .doesNotHaveField(RumAttributes.USER_ID)
+                .doesNotHaveField(RumAttributes.USER_NAME)
+                .doesNotHaveField(RumAttributes.USER_EMAIL)
         }
-    }
-
-    private fun assertEventMatches(
-        jsonObject: JsonObject,
-        event: RumEvent
-    ) {
-        assertThat(jsonObject)
-            .hasField(
-                RumAttributes.APPLICATION_ID,
-                event.context.applicationId
-            )
-            .hasField(RumAttributes.SESSION_ID, event.context.sessionId)
-            .hasField(RumAttributes.VIEW_ID, event.context.viewId)
-            .hasStringFieldMatching(
-                RumAttributes.DATE,
-                "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
-            )
-            .hasField(RumAttributes.EVT_CATEGORY, event.eventData.category)
-
-        assertAttributesMatch(jsonObject, event)
-
-        assertNetworkInfoMatches(event, jsonObject)
-        assertUserInfoMatches(event, jsonObject)
     }
 
     private fun assertAttributesMatch(

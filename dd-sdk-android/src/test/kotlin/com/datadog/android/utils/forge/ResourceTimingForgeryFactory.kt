@@ -6,14 +6,14 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class RumEventDataResourceTimingForgeryFactory :
-    ForgeryFactory<RumEventData.Resource.Timing> {
-    override fun getForgery(forge: Forge): RumEventData.Resource.Timing {
-        return RumEventData.Resource.Timing(
+internal class ResourceTimingForgeryFactory :
+    ForgeryFactory<ResourceTiming> {
+    override fun getForgery(forge: Forge): ResourceTiming {
+        return ResourceTiming(
             dnsStart = forge.aPositiveLong(),
             dnsDuration = forge.aPositiveLong(),
             connectStart = forge.aPositiveLong(),

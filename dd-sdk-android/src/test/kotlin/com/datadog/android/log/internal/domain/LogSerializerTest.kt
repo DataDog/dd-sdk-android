@@ -231,7 +231,7 @@ internal class LogSerializerTest {
         if (throwable != null) {
             assertThat(jsonObject)
                 .hasField(LogAttributes.ERROR_KIND, throwable.javaClass.simpleName)
-                .hasField(LogAttributes.ERROR_MESSAGE, throwable.message)
+                .hasNullableField(LogAttributes.ERROR_MESSAGE, throwable.message)
                 .hasField(LogAttributes.ERROR_STACK, throwable.loggableStackTrace())
         } else {
             assertThat(jsonObject)

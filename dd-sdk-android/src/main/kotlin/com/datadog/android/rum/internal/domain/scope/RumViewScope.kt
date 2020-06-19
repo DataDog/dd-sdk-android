@@ -7,12 +7,13 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.model.ErrorEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -37,10 +38,10 @@ internal class RumViewScope(
     internal var activeActionScope: RumScope? = null
     internal val activeResourceScopes = mutableMapOf<String, RumScope>()
 
-    internal var resourceCount: Int = 0
-    internal var actionCount: Int = 0
-    internal var errorCount: Int = 0
-    internal var version: Int = 1
+    internal var resourceCount: Long = 0
+    internal var actionCount: Long = 0
+    internal var errorCount: Long = 0
+    internal var version: Long = 1
 
     internal var stopped: Boolean = false
 
@@ -86,7 +87,12 @@ internal class RumViewScope(
     }
 
     override fun getRumContext(): RumContext {
-        return parentScope.getRumContext().copy(viewId = viewId)
+        return parentScope.getRumContext()
+            .copy(
+                viewId = viewId,
+                viewUrl = urlName,
+                actionId = (activeActionScope as? RumActionScope)?.actionId
+            )
     }
 
     // endregion
@@ -126,14 +132,7 @@ internal class RumViewScope(
 
         if (stopped || activeActionScope != null) return
 
-        val updatedAttributes = event.attributes.toMutableMap()
-            .apply {
-                put(RumAttributes.VIEW_URL, urlName)
-            }
-        val updatedEvent = event.copy(
-            attributes = updatedAttributes
-        )
-        activeActionScope = RumActionScope.fromEvent(this, updatedEvent)
+        activeActionScope = RumActionScope.fromEvent(this, event)
     }
 
     private fun onStartResource(
@@ -156,19 +155,32 @@ internal class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
+        val context = getRumContext()
         val updatedAttributes = addExtraAttributes(event.attributes)
-        val eventData = RumEventData.Error(
-            event.message, event.origin, event.throwable
+
+        val errorEvent = ErrorEvent(
+            date = eventTimestamp,
+            error = ErrorEvent.Error(
+                message = event.message,
+                source = event.source.toSchemaSource(),
+                stack = event.throwable?.loggableStackTrace()
+            ),
+            action = context.actionId?.let { ErrorEvent.Action(it) },
+            view = ErrorEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty()
+            ),
+            application = ErrorEvent.Application(context.applicationId),
+            session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
+            dd = ErrorEvent.Dd()
         )
-        val errorEvent = RumEvent(
-            getRumContext(),
-            RumFeature.timeProvider.getDeviceTimestamp(),
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            updatedAttributes,
-            RumFeature.networkInfoProvider.getLatestNetworkInfo()
+        val rumEvent = RumEvent(
+            event = errorEvent,
+            attributes = updatedAttributes,
+            userInfo = RumFeature.userInfoProvider.getUserInfo(),
+            networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
         )
-        writer.write(errorEvent)
+        writer.write(rumEvent)
         errorCount++
         sendViewUpdate(writer)
     }
@@ -222,40 +234,36 @@ internal class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = System.nanoTime() - startedNanos
-        val eventData = RumEventData.View(
-            urlName,
-            updatedDurationNs,
-            RumEventData.View.Measures(
-                errorCount,
-                resourceCount,
-                actionCount
+        val context = getRumContext()
+
+        val viewEvent = ViewEvent(
+            date = RumFeature.timeProvider.getDeviceTimestamp(),
+            view = ViewEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty(),
+                timeSpent = updatedDurationNs,
+                action = ViewEvent.Action(actionCount),
+                resource = ViewEvent.Resource(resourceCount),
+                error = ViewEvent.Error(errorCount)
             ),
-            version
-        )
-        val event = RumEvent(
-            getRumContext(),
-            eventTimestamp,
-            eventData,
-            RumFeature.userInfoProvider.getUserInfo(),
-            attributes,
-            null
+            application = ViewEvent.Application(context.applicationId),
+            session = ViewEvent.Session(id = context.sessionId, type = ViewEvent.Type.USER),
+            dd = ViewEvent.Dd(documentVersion = version)
         )
 
-        writer.write(event)
+        val rumEvent = RumEvent(
+            event = viewEvent,
+            attributes = attributes,
+            userInfo = RumFeature.userInfoProvider.getUserInfo()
+        )
+        writer.write(rumEvent)
     }
 
     private fun addExtraAttributes(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
-        val actionId = (activeActionScope as? RumActionScope)?.actionId
         return attributes.toMutableMap()
-            .apply {
-                if (actionId != null) {
-                    put(RumAttributes.EVT_USER_ACTION_ID, actionId.toString())
-                }
-                put(RumAttributes.VIEW_URL, urlName)
-                putAll(GlobalRum.globalAttributes)
-            }
+            .apply { putAll(GlobalRum.globalAttributes) }
     }
 
     // endregion

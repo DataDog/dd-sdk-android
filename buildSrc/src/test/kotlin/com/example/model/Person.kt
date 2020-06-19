@@ -1,14 +1,14 @@
 package com.example.model
 
 import com.google.gson.annotations.SerializedName
-import kotlin.Int
+import kotlin.Long
 import kotlin.String
 
-data class Person(
+internal data class Person(
     @SerializedName("firstName")
-    val firstName: String?,
+    val firstName: String? = null,
     @SerializedName("lastName")
-    val lastName: String?,
+    val lastName: String? = null,
     @SerializedName("age")
-    val age: Int?
+    val age: Long? = null
 )

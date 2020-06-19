@@ -4,18 +4,18 @@ import com.google.gson.annotations.SerializedName
 import kotlin.Any
 import kotlin.Boolean
 import kotlin.Double
-import kotlin.Int
+import kotlin.Long
 import kotlin.String
 
-data class Demo(
+internal data class Demo(
     @SerializedName("s")
     val s: String,
     @SerializedName("i")
-    val i: Int,
+    val i: Long,
     @SerializedName("n")
     val n: Double,
     @SerializedName("b")
     val b: Boolean,
     @SerializedName("l")
-    val l: Any?
+    val l: Any? = null
 )

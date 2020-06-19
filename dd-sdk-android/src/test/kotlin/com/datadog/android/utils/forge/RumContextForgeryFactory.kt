@@ -14,9 +14,11 @@ import java.util.UUID
 internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
     override fun getForgery(forge: Forge): RumContext {
         return RumContext(
-            forge.getForgery(),
-            forge.getForgery(),
-            forge.aNullable<UUID> { forge.getForgery<UUID>() }
+            applicationId = forge.getForgery<UUID>().toString(),
+            sessionId = forge.getForgery<UUID>().toString(),
+            viewId = forge.aNullable { getForgery<UUID>().toString() },
+            viewUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+"),
+            actionId = forge.aNullable { getForgery<UUID>().toString() }
         )
     }
 }

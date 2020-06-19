@@ -16,7 +16,7 @@ internal class PersonForgeryFactory : ForgeryFactory<Person> {
         return Person(
             firstName = forge.aNullable { anAlphabeticalString() },
         lastName = forge.aNullable { anAlphabeticalString() },
-            age = forge.aNullable { anInt() }
+            age = forge.aNullable { aLong() }
         )
     }
 }

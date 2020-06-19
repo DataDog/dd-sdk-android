@@ -6,8 +6,10 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.domain.event.RumEventData
+import com.datadog.android.rum.internal.domain.event.ResourceTiming
 
 internal sealed class RumRawEvent {
 
@@ -23,12 +25,14 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StartAction(
+        val type: RumActionType,
         val name: String,
         val waitForStop: Boolean,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
     internal data class StopAction(
+        val type: RumActionType,
         val name: String,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
@@ -46,25 +50,28 @@ internal sealed class RumRawEvent {
 
     internal data class AddResourceTiming(
         val key: String,
-        val timing: RumEventData.Resource.Timing
+        val timing: ResourceTiming
     ) : RumRawEvent()
 
     internal data class StopResource(
         val key: String,
+        val statusCode: Long?,
+        val size: Long?,
         val kind: RumResourceKind,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()
 
     internal data class StopResourceWithError(
         val key: String,
+        val statusCode: Long?,
         val message: String,
-        val origin: String,
+        val source: RumErrorSource,
         val throwable: Throwable
     ) : RumRawEvent()
 
     internal data class AddError(
         val message: String,
-        val origin: String,
+        val source: RumErrorSource,
         val throwable: Throwable?,
         val attributes: Map<String, Any?>
     ) : RumRawEvent()

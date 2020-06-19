@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Version",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type" : "integer",
+      "const": 42
+    },
+    "delta": {
+      "type" : "number",
+      "const": 3.1415
+    }
+  },
+  "required": [ "version"]
+}

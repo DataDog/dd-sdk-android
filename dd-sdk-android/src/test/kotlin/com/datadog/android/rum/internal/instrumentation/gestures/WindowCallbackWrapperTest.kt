@@ -15,6 +15,7 @@ import android.view.Window
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -143,12 +144,14 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockCallback, mockRumMonitor) {
-            verify(mockRumMonitor).addUserAction(eq(Gesture.TAP.actionName),
+            verify(mockRumMonitor).addUserAction(
+                eq(RumActionType.TAP),
+                eq(targetName(menuItem, itemResourceName)),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.TAG_TARGET_CLASS_NAME] == targetClassName &&
-                            this[RumAttributes.TAG_TARGET_RESOURCE_ID] == itemResourceName &&
-                            this[RumAttributes.TAG_TARGET_TITLE] == itemTitle
+                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
+                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
                 })
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
@@ -166,7 +169,7 @@ internal class WindowCallbackWrapperTest {
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
-            verify(mockRumMonitor).addUserAction(Gesture.BACK.actionName)
+            verify(mockRumMonitor).addUserAction(RumActionType.CUSTOM, "back", emptyMap())
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }

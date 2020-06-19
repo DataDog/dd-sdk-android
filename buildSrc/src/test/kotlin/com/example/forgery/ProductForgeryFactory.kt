@@ -14,7 +14,7 @@ internal class ProductForgeryFactory : ForgeryFactory<Product> {
 
     override fun getForgery(forge: Forge): Product {
         return Product(
-            productId = forge.anInt(),
+            productId = forge.aLong(),
             productName = forge.anAlphabeticalString(),
             price = forge.aDouble(0.0)
         )

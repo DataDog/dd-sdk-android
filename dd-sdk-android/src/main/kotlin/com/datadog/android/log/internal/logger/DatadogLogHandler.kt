@@ -16,6 +16,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import io.opentracing.util.GlobalTracer
 
 internal class DatadogLogHandler(
@@ -47,7 +48,7 @@ internal class DatadogLogHandler(
         }
 
         if (level >= AndroidLog.ERROR) {
-            GlobalRum.get().addError(message, ORIGIN_LOGGER, throwable, attributes)
+            GlobalRum.get().addError(message, RumErrorSource.LOGGER, throwable, attributes)
         }
     }
 
@@ -95,8 +96,4 @@ internal class DatadogLogHandler(
     }
 
     // endregion
-
-    companion object {
-        internal const val ORIGIN_LOGGER = "logger"
-    }
 }

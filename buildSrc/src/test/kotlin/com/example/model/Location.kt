@@ -1,13 +1,9 @@
 package com.example.model
 
 import com.google.gson.annotations.SerializedName
+import kotlin.String
 
-data class Location(
+internal class Location {
     @SerializedName("planet")
-    val planet: Planet
-) {
-    enum class Planet {
-        @SerializedName("earth")
-        EARTH
-    }
+    val planet: String = "earth"
 }

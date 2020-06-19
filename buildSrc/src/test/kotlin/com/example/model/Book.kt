@@ -2,12 +2,12 @@ package com.example.model
 
 import com.google.gson.annotations.SerializedName
 import kotlin.Double
-import kotlin.Int
+import kotlin.Long
 import kotlin.String
 
-data class Book(
+internal data class Book(
     @SerializedName("bookId")
-    val bookId: Int,
+    val bookId: Long,
     @SerializedName("title")
     val title: String,
     @SerializedName("price")
@@ -26,8 +26,8 @@ data class Book(
 
     data class Contact(
         @SerializedName("phone")
-        val phone: String?,
+        val phone: String? = null,
         @SerializedName("email")
-        val email: String?
+        val email: String? = null
     )
 }

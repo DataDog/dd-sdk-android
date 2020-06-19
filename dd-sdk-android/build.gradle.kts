@@ -33,7 +33,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("apiSurface")
-    id("cloneDependencies")
     id("jsonschema2poko")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
@@ -132,58 +131,6 @@ dependencies {
     detekt(Dependencies.Libraries.DetektCli)
 }
 
-cloneDependencies {
-    clone(
-        "https://github.com/DataDog/dd-trace-java.git",
-        "dd-trace-ot",
-        "v0.50.0",
-        listOf(
-            "dd-trace-ot.gradle",
-            "README.md",
-            "jfr-openjdk/",
-            "src/jmh/", // JVM based benchmark, not relevant for ART/Dalvik
-            "src/traceAgentTest/",
-            "src/ot33CompatabilityTest/",
-            "src/ot31CompatabilityTest/",
-            "src/test/resources/",
-            "src/main/java/datadog/trace/common/processor/",
-            "src/main/java/datadog/trace/common/sampling/RuleBasedSampler.java",
-            "src/main/java/datadog/trace/common/serialization",
-            "src/main/java/datadog/trace/common/writer/unixdomainsockets",
-            "src/main/java/datadog/trace/common/writer/ddagent",
-            "src/main/java/datadog/trace/common/writer/DDAgentWriter.java",
-            "src/main/java/datadog/opentracing/resolver",
-            "src/main/java/datadog/opentracing/ContainerInfo.java",
-            "src/test"
-        )
-    )
-    clone(
-        "https://github.com/DataDog/dd-trace-java.git",
-        "dd-trace-api",
-        "v0.50.0",
-        listOf(
-            "dd-trace-api.gradle",
-            "src/main/java/datadog/trace/api/GlobalTracer.java",
-            "src/main/java/datadog/trace/api/CorrelationIdentifier.java",
-            "src/test"
-        )
-    )
-    clone(
-        "https://github.com/DataDog/dd-trace-java.git",
-        "utils/thread-utils",
-        "v0.50.0",
-        listOf(
-            "thread-utils.gradle",
-            "src/test/"
-        )
-    )
-    clone(
-        "https://github.com/DataDog/rum-events-format.git",
-        "schemas",
-        destinationFolder = "src/main/json"
-    )
-}
-
 unMock {
     keep("android.os.BaseBundle")
     keep("android.os.Bundle")
@@ -193,9 +140,12 @@ unMock {
     keep("android.content.ComponentName")
 }
 
+apply(from = "clone_dd_trace.gradle.kts")
+apply(from = "clone_rum_schema.gradle.kts")
+
 jsonSchema2Poko {
     inputDirPath = "src/main/json"
-    targetPackageName = "com.datadog.android.rum.internal.domain"
+    targetPackageName = "com.datadog.android.rum.internal.domain.model"
     ignoredFiles = arrayOf("_common-schema.json", "long_task-schema.json")
     nameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
@@ -206,7 +156,7 @@ jsonSchema2Poko {
 }
 
 kotlinConfig()
-detektConfig()
+detektConfig(excludes = listOf("**/com/datadog/android/rum/internal/domain/model/**"))
 ktLintConfig()
 junitConfig()
 jacocoConfig()

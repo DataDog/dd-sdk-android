@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
@@ -36,7 +37,7 @@ internal class DatadogExceptionHandler(
         writer.write(createLog(t, e))
 
         // write a rum error too
-        GlobalRum.get().addError(MESSAGE, LOGGER_NAME, e, emptyMap())
+        GlobalRum.get().addError(MESSAGE, RumErrorSource.SOURCE, e, emptyMap())
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
