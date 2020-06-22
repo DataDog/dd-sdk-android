@@ -10,14 +10,22 @@ import android.app.Activity
 import android.os.Bundle
 import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
+import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
+import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import java.lang.IllegalStateException
+import java.util.WeakHashMap
 
 /**
  * A [ViewTrackingStrategy] that will track [Fragment]s within a NavigationHost
@@ -34,26 +42,49 @@ class NavigationViewTrackingStrategy(
     ViewTrackingStrategy,
     NavController.OnDestinationChangedListener {
 
+    private var lifecycleCallbackRefs =
+        WeakHashMap<Activity, NavControllerFragmentLifecycleCallbacks>()
+    private val predicate: ComponentPredicate<Fragment> = object : ComponentPredicate<Fragment> {
+        override fun accept(component: Fragment): Boolean {
+            return !NavHostFragment::class.java.isAssignableFrom(component.javaClass)
+        }
+    }
+
     // region ActivityLifecycleTrackingStrategy
 
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
-        val navController = activity.findNavControllerOrNull(navigationViewId)
-        navController?.addOnDestinationChangedListener(this)
-    }
-
-    override fun onActivityPaused(activity: Activity) {
-        super.onActivityPaused(activity)
-        val navController = activity.findNavControllerOrNull(navigationViewId)
-        navController?.currentDestination?.let {
-            GlobalRum.get().stopView(it)
+        activity.findNavControllerOrNull(navigationViewId)?.let {
+            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+                val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
+                    it,
+                    argumentsProvider = {
+                        emptyMap()
+                    },
+                    componentPredicate = predicate
+                )
+                navControllerFragmentCallbacks.register(activity as FragmentActivity)
+                lifecycleCallbackRefs[activity] = navControllerFragmentCallbacks
+            }
+            it.addOnDestinationChangedListener(this)
         }
     }
 
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
-        val navController = activity.findNavControllerOrNull(navigationViewId)
-        navController?.removeOnDestinationChangedListener(this)
+        activity.findNavControllerOrNull(navigationViewId)?.let {
+            it.removeOnDestinationChangedListener(this)
+            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+                lifecycleCallbackRefs.remove(activity)?.unregister(activity as FragmentActivity)
+            }
+        }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        super.onActivityPaused(activity)
+        activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {
+            GlobalRum.get().stopView(it)
+        }
     }
 
     // endregion
@@ -97,6 +128,44 @@ class NavigationViewTrackingStrategy(
     }
 
     // endregion
+
+    // region Internal
+
+    // endregion
+
+    internal class NavControllerFragmentLifecycleCallbacks(
+        private val navController: NavController,
+        argumentsProvider: (Fragment) -> Map<String, Any?>,
+        componentPredicate: ComponentPredicate<Fragment>
+    ) : AndroidXFragmentLifecycleCallbacks(
+        argumentsProvider,
+        componentPredicate,
+        rumMonitor = NoOpRumMonitor(),
+        advancedRumMonitor = AdvancedMonitorDecorator(
+            GlobalRum.get() as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
+        )
+    ) {
+        override fun resolveKey(fragment: Fragment): Any {
+            return navController.currentDestination ?: NO_DESTINATION_FOUND
+        }
+
+        companion object {
+            val NO_DESTINATION_FOUND = Any()
+        }
+    }
+
+    internal class AdvancedMonitorDecorator(private val advancedRumMonitor: AdvancedRumMonitor) :
+        AdvancedRumMonitor by advancedRumMonitor {
+        override fun updateViewLoadingTime(
+            key: Any,
+            loadingTimeInNs: Long,
+            type: ViewEvent.LoadingType
+        ) {
+            if (key != NavControllerFragmentLifecycleCallbacks.NO_DESTINATION_FOUND) {
+                advancedRumMonitor.updateViewLoadingTime(key, loadingTimeInNs, type)
+            }
+        }
+    }
 
     companion object {
         internal const val UNKNOWN_DESTINATION_NAME = "Unknown"

@@ -148,6 +148,30 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasLoadingTime(
+        expected: Long?
+    ): ViewEventAssert {
+        assertThat(actual.view.loadingTime)
+            .overridingErrorMessage(
+                "Expected event to have loadingTime $expected" +
+                    " but was ${actual.view.loadingTime}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasLoadingType(
+        expected: ViewEvent.LoadingType?
+    ): ViewEventAssert {
+        assertThat(actual.view.loadingType)
+            .overridingErrorMessage(
+                "Expected event to have loadingType $expected" +
+                    " but was ${actual.view.loadingType}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

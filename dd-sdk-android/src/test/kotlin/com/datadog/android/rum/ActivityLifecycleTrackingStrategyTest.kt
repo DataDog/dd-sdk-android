@@ -11,6 +11,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.view.Window
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
@@ -42,7 +43,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
     lateinit var mockIntent: Intent
 
     @Mock
-    lateinit var mockRumMonitor: RumMonitor
+    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Mock
     lateinit var mockActivity: Activity

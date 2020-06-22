@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
@@ -145,6 +146,16 @@ internal class DatadogRumMonitor(
     override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
         handleEvent(
             RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        )
+    }
+
+    override fun updateViewLoadingTime(
+        key: Any,
+        loadingTimeInNs: Long,
+        type: ViewEvent.LoadingType
+    ) {
+        handleEvent(
+            RumRawEvent.UpdateViewLoadingTime(key, loadingTimeInNs, type)
         )
     }
 

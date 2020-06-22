@@ -138,7 +138,7 @@ internal class FragmentViewTrackingStrategyTest {
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
 
         // then
         verify(mockAndroidxFragmentManager)
@@ -180,7 +180,7 @@ internal class FragmentViewTrackingStrategyTest {
             })
 
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
 
         // then
         verify(mockAndroidxFragmentManager)
@@ -209,7 +209,7 @@ internal class FragmentViewTrackingStrategyTest {
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
 
         // then
         verify(mockAndroidxFragmentManager)
@@ -237,10 +237,10 @@ internal class FragmentViewTrackingStrategyTest {
     }
 
     @Test
-    fun `when FragmentActivity resumed it will reuse same callback`() {
+    fun `when FragmentActivity started it will reuse same callback`() {
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
 
         // then
         argumentCaptor<FragmentManager.FragmentLifecycleCallbacks> {
@@ -253,9 +253,9 @@ internal class FragmentViewTrackingStrategyTest {
     }
 
     @Test
-    fun `when FragmentActivity paused will unregister the right callback`() {
+    fun `when FragmentActivity stopped will unregister the right callback`() {
         // given
-        underTest.onActivityResumed(mockAndroidxActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
         verify(mockAndroidxFragmentManager)
             .registerFragmentLifecycleCallbacks(
@@ -264,7 +264,7 @@ internal class FragmentViewTrackingStrategyTest {
             )
 
         // when
-        underTest.onActivityPaused(mockAndroidxActivity)
+        underTest.onActivityStopped(mockAndroidxActivity)
 
         // then
         verify(mockAndroidxFragmentManager)
@@ -274,9 +274,9 @@ internal class FragmentViewTrackingStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity resumed will register the right callback`() {
+    fun `when base activity started will register the right callback`() {
         // when
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         verify(mockDefaultFragmentManager)
@@ -286,10 +286,10 @@ internal class FragmentViewTrackingStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity resumed will register the same callback`() {
+    fun `when base activity started will register the same callback`() {
         // when
-        underTest.onActivityResumed(mockActivity)
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks> {
@@ -313,7 +313,7 @@ internal class FragmentViewTrackingStrategyTest {
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
         // when
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         verify(mockDefaultFragmentManager)
@@ -357,7 +357,7 @@ internal class FragmentViewTrackingStrategyTest {
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
         // when
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         verify(mockDefaultFragmentManager)
@@ -388,7 +388,7 @@ internal class FragmentViewTrackingStrategyTest {
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
         // when
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         verify(mockDefaultFragmentManager)
@@ -417,9 +417,9 @@ internal class FragmentViewTrackingStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `when base activity paused will unregister the right callback`() {
+    fun `when base activity stopped will unregister the right callback`() {
         // given
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
         verify(mockDefaultFragmentManager)
@@ -429,7 +429,7 @@ internal class FragmentViewTrackingStrategyTest {
             )
 
         // when
-        underTest.onActivityPaused(mockActivity)
+        underTest.onActivityStopped(mockActivity)
 
         // then
         verify(mockDefaultFragmentManager)
@@ -439,9 +439,9 @@ internal class FragmentViewTrackingStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `when base activity resumed API below O will do nothing`() {
+    fun `when base activity started API below O will do nothing`() {
         // when
-        underTest.onActivityResumed(mockActivity)
+        underTest.onActivityStarted(mockActivity)
 
         // then
         verifyZeroInteractions(mockAndroidxFragmentManager)
@@ -450,9 +450,9 @@ internal class FragmentViewTrackingStrategyTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `when base activity paused API below O will do nothing`() {
+    fun `when base activity stopped API below O will do nothing`() {
         // when
-        underTest.onActivityPaused(mockActivity)
+        underTest.onActivityStopped(mockActivity)
 
         // then
         verifyZeroInteractions(mockAndroidxFragmentManager)
@@ -467,10 +467,10 @@ internal class FragmentViewTrackingStrategyTest {
         val baseArgumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
         // when
-        underTest.onActivityResumed(mockAndroidxActivity)
-        underTest.onActivityResumed(mockActivity)
-        underTest.onActivityPaused(mockAndroidxActivity)
-        underTest.onActivityPaused(mockActivity)
+        underTest.onActivityStarted(mockAndroidxActivity)
+        underTest.onActivityStarted(mockActivity)
+        underTest.onActivityStopped(mockAndroidxActivity)
+        underTest.onActivityStopped(mockActivity)
 
         // then
         inOrder(mockAndroidxFragmentManager, mockDefaultFragmentManager) {

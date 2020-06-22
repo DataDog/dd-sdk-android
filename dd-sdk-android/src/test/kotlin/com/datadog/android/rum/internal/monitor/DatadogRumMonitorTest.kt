@@ -13,6 +13,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.utils.forge.Configurator
@@ -319,6 +320,27 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.isFatal).isTrue()
             assertThat(event.attributes).isEmpty()
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `delegates updateViewLoadingTime to rootScope`(forge: Forge) {
+        val key = forge.anAsciiString()
+        val loadingTime = forge.aLong(min = 1)
+        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
+
+        testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            assertThat(firstValue).isEqualTo(
+                RumRawEvent.UpdateViewLoadingTime(
+                    key,
+                    loadingTime,
+                    loadingType
+                )
+            )
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

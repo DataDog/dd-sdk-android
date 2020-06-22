@@ -27,7 +27,7 @@ abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycle
         } else {
             devLogger.e(
                 "In order to use the RUM automatic tracking feature you will have" +
-                        "to use the Application context when initializing the SDK"
+                    "to use the Application context when initializing the SDK"
             )
         }
     }
