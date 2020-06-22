@@ -14,6 +14,7 @@ import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert
 import com.datadog.android.rum.internal.RumFeature
@@ -147,6 +148,55 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(500)
+                    hasResourceCount(1)
+                    hasErrorCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isNull()
+    }
+
+    @Test
+    fun `start+stop resource (with error) extends action threshold`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        mockEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResourceWithError(key, statusCode, message, source, throwable)
+        val result2 = testedScope.handleEvent(mockEvent, mockWriter)
+        Thread.sleep(500)
+        mockEvent = mock()
+        val result3 = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasType(fakeType)
+                    hasName(fakeName)
+                    hasDurationGreaterThan(500)
+                    hasResourceCount(0)
+                    hasErrorCount(1)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -188,6 +238,48 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(1)
+                    hasErrorCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `send action if an error occured`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        mockEvent = RumRawEvent.AddError(message, source, throwable, emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        Thread.sleep(500)
+
+        mockEvent = mock()
+        val result2 = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasType(fakeType)
+                    hasName(fakeName)
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(1)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -221,6 +313,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -253,6 +347,42 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `send action on stop view with some errors`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        testedScope.errorsCount = count
+        mockEvent = RumRawEvent.StopView(Object(), emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            RumEventAssert.assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasType(fakeType)
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(count)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -335,6 +465,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -367,6 +499,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -400,6 +534,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -475,6 +611,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasResourceCount(1)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -508,6 +646,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -546,6 +686,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -586,6 +728,8 @@ internal class RumActionScopeTest {
                     hasType(type)
                     hasName(name)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -625,6 +769,8 @@ internal class RumActionScopeTest {
                     hasTimestamp(fakeTimeStamp)
                     hasName(name)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -655,6 +801,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -692,6 +840,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasName(fakeName)
                     hasDurationGreaterThan(duration)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
