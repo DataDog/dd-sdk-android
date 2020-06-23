@@ -165,6 +165,7 @@ internal class RumResourceScope(
                 message = message,
                 source = source.toSchemaSource(),
                 stack = throwable.loggableStackTrace(),
+                isCrash = false,
                 resource = ErrorEvent.Resource(
                     url = url,
                     method = method.toErrorMethod(),

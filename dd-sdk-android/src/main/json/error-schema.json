@@ -39,6 +39,10 @@
               "type": "string",
               "description": "Stacktrace of the error"
             },
+            "is_crash": {
+              "type": "boolean",
+              "description": "Whether this error crashed the host application"
+            },
             "resource": {
               "type": "object",
               "description": "Resource properties of the error",

@@ -59,6 +59,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun isCrash(expected: Boolean): ErrorEventAssert {
+        assertThat(actual.error.isCrash)
+            .overridingErrorMessage(
+                "Expected event data to have error.isCrash $expected " +
+                    "but was ${actual.error.isCrash}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasResource(
         expectedUrl: String,
         expectedMethod: String,
