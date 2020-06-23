@@ -255,6 +255,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.isFatal).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -297,6 +298,27 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             assertThat(firstValue).isEqualTo(RumRawEvent.AddResourceTiming(key, timing))
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `delegates addCrash to rootScope`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        testedMonitor.addCrash(message, source, throwable)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.isFatal).isTrue()
+            assertThat(event.attributes).isEmpty()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.tools.annotation.NoOpImplementation
@@ -20,4 +21,10 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun waitForResourceTiming(key: String)
 
     fun addResourceTiming(key: String, timing: ResourceTiming)
+
+    fun addCrash(
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable
+    )
 }
