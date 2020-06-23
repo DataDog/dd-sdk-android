@@ -41,6 +41,7 @@ internal class RumViewScope(
     internal var resourceCount: Long = 0
     internal var actionCount: Long = 0
     internal var errorCount: Long = 0
+    internal var crashCount: Long = 0
     internal var version: Long = 1
 
     internal var stopped: Boolean = false
@@ -182,6 +183,9 @@ internal class RumViewScope(
         )
         writer.write(rumEvent)
         errorCount++
+        if (event.isFatal) {
+            crashCount++
+        }
         sendViewUpdate(writer)
     }
 
@@ -244,7 +248,8 @@ internal class RumViewScope(
                 timeSpent = updatedDurationNs,
                 action = ViewEvent.Action(actionCount),
                 resource = ViewEvent.Resource(resourceCount),
-                error = ViewEvent.Error(errorCount)
+                error = ViewEvent.Error(errorCount),
+                crash = ViewEvent.Crash(crashCount)
             ),
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.Session(id = context.sessionId, type = ViewEvent.Type.USER),

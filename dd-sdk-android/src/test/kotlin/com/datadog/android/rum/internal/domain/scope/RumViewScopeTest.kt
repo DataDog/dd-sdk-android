@@ -89,6 +89,7 @@ internal class RumViewScopeTest {
 
     @RegexForgery("([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
+
     @RegexForgery("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
     lateinit var fakeActionId: String
     lateinit var fakeKey: ByteArray
@@ -204,8 +205,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -244,8 +246,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -282,8 +285,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -320,8 +324,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -361,8 +366,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -402,8 +408,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -434,8 +441,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -483,8 +491,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(1)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -512,8 +521,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(1)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -541,8 +551,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(1)
+                    hasActionCount(1)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -591,8 +602,9 @@ internal class RumViewScopeTest {
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -793,7 +805,7 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.AddError(message, source, throwable, attributes)
+        mockEvent = RumRawEvent.AddError(message, source, throwable, false, attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -822,8 +834,9 @@ internal class RumViewScopeTest {
                 .hasViewData {
                     hasTimestamp(fakeTimeStamp)
                     hasErrorCount(1)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -842,7 +855,7 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        mockEvent = RumRawEvent.AddError(message, source, throwable, emptyMap())
+        mockEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
         GlobalRum.globalAttributes.putAll(attributes)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -874,8 +887,112 @@ internal class RumViewScopeTest {
                 .hasViewData {
                     hasTimestamp(fakeTimeStamp)
                     hasErrorCount(1)
+                    hasCrashCount(0)
                     hasResourceCount(0)
-                    hasUserActionCount(0)
+                    hasActionCount(0)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `sends Error and View event on fatal AddError`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes()
+        mockEvent = RumRawEvent.AddError(message, source, throwable, true, attributes)
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasAttributes(attributes)
+                .hasErrorData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `sends Error and View event on fatal AddError with global attributes`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
+        mockEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val expectedViewAttributes = attributes.toMutableMap().apply {
+            putAll(fakeAttributes)
+        }
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasAttributes(attributes)
+                .hasErrorData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(expectedViewAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)

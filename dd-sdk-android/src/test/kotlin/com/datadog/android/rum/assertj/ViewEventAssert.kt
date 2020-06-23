@@ -101,11 +101,21 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasUserActionCount(expected: Long): ViewEventAssert {
+    fun hasActionCount(expected: Long): ViewEventAssert {
         assertThat(actual.view.action.count)
             .overridingErrorMessage(
                 "Expected event data to have view.action.count $expected " +
                     "but was ${actual.view.action.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasCrashCount(expected: Long): ViewEventAssert {
+        assertThat(actual.view.crash?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.crash.count $expected " +
+                    "but was ${actual.view.crash?.count}"
             )
             .isEqualTo(expected)
         return this
