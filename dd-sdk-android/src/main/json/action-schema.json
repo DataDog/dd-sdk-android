@@ -67,6 +67,20 @@
                 }
               }
             },
+            "crash": {
+              "type": "object",
+              "description": "Properties of the crashes of the action",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of crashes that occurred on the action",
+                  "minimum": 0
+                }
+              }
+            },
             "long_task": {
               "type": "object",
               "description": "Properties of the long tasks of the action",
