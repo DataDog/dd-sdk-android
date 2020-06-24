@@ -38,6 +38,7 @@ internal class RumActionScope(
     internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
     internal var resourcesCount: Long = 0
+    internal var errorsCount: Long = 0
     internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
@@ -58,8 +59,10 @@ internal class RumActionScope(
             event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
             event is RumRawEvent.StopView -> onStopView(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now, writer)
-            event is RumRawEvent.StartResource -> onStartResource(now, event)
+            event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
+            event is RumRawEvent.AddError -> onError(event, now)
+            event is RumRawEvent.StopResourceWithError -> onResourceError(event, now)
         }
 
         return if (sent) null else this
@@ -98,8 +101,8 @@ internal class RumActionScope(
     }
 
     private fun onStartResource(
-        now: Long,
-        event: RumRawEvent.StartResource
+        event: RumRawEvent.StartResource,
+        now: Long
     ) {
         lastInteractionNanos = now
         resourcesCount++
@@ -117,13 +120,28 @@ internal class RumActionScope(
         }
     }
 
+    private fun onError(event: RumRawEvent.AddError, now: Long) {
+        lastInteractionNanos = now
+        errorsCount++
+    }
+
+    private fun onResourceError(event: RumRawEvent.StopResourceWithError, now: Long) {
+        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
+        if (keyRef != null) {
+            ongoingResourceKeys.remove(keyRef)
+            lastInteractionNanos = now
+            resourcesCount--
+            errorsCount++
+        }
+    }
+
     private fun sendAction(
         endNanos: Long,
         writer: Writer<RumEvent>
     ) {
         if (sent) return
 
-        if (resourcesCount > 0 || viewTreeChangeCount > 0) {
+        if (resourcesCount > 0 || errorsCount > 0 || viewTreeChangeCount > 0) {
             attributes.putAll(GlobalRum.globalAttributes)
             val context = getRumContext()
             val actionEvent = ActionEvent(
@@ -132,7 +150,7 @@ internal class RumActionScope(
                     type = type.toSchemaType(),
                     id = actionId,
                     target = ActionEvent.Target(name),
-                    error = ActionEvent.Error(0), // TODO RUMM-531
+                    error = ActionEvent.Error(errorsCount),
                     resource = ActionEvent.Resource(resourcesCount),
                     loadingTime = max(endNanos - startedNanos, 1L)
                 ),

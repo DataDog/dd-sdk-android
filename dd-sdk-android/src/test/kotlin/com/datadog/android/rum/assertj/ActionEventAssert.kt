@@ -50,6 +50,26 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasResourceCount(expected: Long): ActionEventAssert {
+        assertThat(actual.action.resource?.count)
+            .overridingErrorMessage(
+                "Expected event data to have action.resource.count $expected " +
+                    "but was ${actual.action.resource?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasErrorCount(expected: Long): ActionEventAssert {
+        assertThat(actual.action.error?.count)
+            .overridingErrorMessage(
+                "Expected event data to have action.error.count $expected " +
+                    "but was ${actual.action.error?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasView(expectedId: String?, expectedUrl: String?): ActionEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(
