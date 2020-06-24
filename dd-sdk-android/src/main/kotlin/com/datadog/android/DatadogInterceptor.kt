@@ -9,6 +9,8 @@ package com.datadog.android
 import com.datadog.android.core.internal.net.CombinedInterceptor
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.internal.net.RumRequestInterceptor
+import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.internal.net.TracingRequestInterceptor
 import okhttp3.Interceptor
@@ -31,12 +33,18 @@ import okhttp3.OkHttpClient
  * any OkHttpRequest, nor propagate tracing information to the backend.
  * Please note that the host constraint will only be applied on the TracingInterceptor and we will
  * continue to dispatch RUM Resource events for each request without applying any host filtering.
+ * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
+ * the possibility to modify the created [io.opentracing.Span].
  *
  */
-class DatadogInterceptor(tracedHosts: List<String>) :
+
+class DatadogInterceptor @JvmOverloads constructor(
+    tracedHosts: List<String>,
+    tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+) :
     Interceptor by CombinedInterceptor(
         listOf(
-            TracingRequestInterceptor(tracedHosts),
+            TracingRequestInterceptor(tracedRequestListener, tracedHosts),
             RumRequestInterceptor()
         )
     )
