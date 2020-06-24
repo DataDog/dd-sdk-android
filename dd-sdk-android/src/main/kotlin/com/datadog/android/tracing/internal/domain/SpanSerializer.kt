@@ -63,7 +63,7 @@ internal class SpanSerializer(
             metaObject.addProperty(it.key, it.value)
         }
 
-        metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_MOBILE)
+        metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_ANDROID)
         metaObject.addProperty(TAG_VERSION_NAME, BuildConfig.VERSION_NAME)
         metaObject.addProperty(TAG_APP_VERSION_NAME, CoreFeature.packageVersion)
         metaObject.addProperty(TAG_APP_PACKAGE_NAME, CoreFeature.packageName)
@@ -126,7 +126,7 @@ internal class SpanSerializer(
     companion object {
 
         internal const val TYPE_CUSTOM = "custom"
-        internal const val DD_SOURCE_MOBILE = "mobile"
+        internal const val DD_SOURCE_ANDROID = "android"
 
         // PAYLOAD TAGS
         internal const val TAG_SPANS = "spans"
