@@ -25,7 +25,7 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -87,7 +87,7 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockWorkManager: WorkManagerImpl
 
     @Mock
-    lateinit var mockRumMonitor: RumMonitor
+    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -154,11 +154,10 @@ internal class DatadogExceptionHandlerTest {
                 .hasTimestamp(fakeTime.time)
                 .hasTags(listOf("env:$envName"))
         }
-        verify(mockRumMonitor).addError(
+        verify(mockRumMonitor).addCrash(
             "Application crash detected",
             RumErrorSource.SOURCE,
-            fakeThrowable,
-            emptyMap()
+            fakeThrowable
         )
         verifyZeroInteractions(mockPreviousHandler)
     }

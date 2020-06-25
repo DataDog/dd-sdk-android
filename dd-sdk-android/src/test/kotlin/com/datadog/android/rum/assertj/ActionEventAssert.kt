@@ -70,6 +70,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasCrashCount(expected: Long): ActionEventAssert {
+        assertThat(actual.action.crash?.count)
+            .overridingErrorMessage(
+                "Expected event data to have action.crash.count $expected " +
+                    "but was ${actual.action.crash?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasView(expectedId: String?, expectedUrl: String?): ActionEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(

@@ -110,13 +110,13 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, attributes)
+            RumRawEvent.AddError(message, source, throwable, false, attributes)
         )
     }
 
     // endregion
 
-    // region Internal
+    // region AdvancedRumMonitor
 
     override fun resetSession() {
         handleEvent(
@@ -141,6 +141,16 @@ internal class DatadogRumMonitor(
             RumRawEvent.AddResourceTiming(key, timing)
         )
     }
+
+    override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
+        handleEvent(
+            RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        )
+    }
+
+    // endregion
+
+    // region Internal
 
     internal fun handleEvent(event: RumRawEvent) {
         handler.removeCallbacks(keepAliveRunnable)
