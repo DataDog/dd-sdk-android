@@ -1,3 +1,7 @@
+# 1.4.3 / 2020-06-25
+
+* [IMPROVEMENT] Global: The `source` tag on logs and trace now uses `android` instead of ~~`mobile`~~
+
 # 1.4.2 / 2020-06-12
 
 * [BUGFIX] Global: Fix data upload (some payloads could rarely be malformed)
