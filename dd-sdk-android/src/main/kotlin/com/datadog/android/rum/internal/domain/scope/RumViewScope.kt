@@ -43,6 +43,8 @@ internal class RumViewScope(
     internal var errorCount: Long = 0
     internal var crashCount: Long = 0
     internal var version: Long = 1
+    internal var loadingTime: Long? = null
+    internal var loadingType: ViewEvent.LoadingType? = null
 
     internal var stopped: Boolean = false
 
@@ -77,6 +79,7 @@ internal class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+            is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             else -> delegateEventToChildren(event, writer)
         }
 
@@ -242,10 +245,12 @@ internal class RumViewScope(
         val context = getRumContext()
 
         val viewEvent = ViewEvent(
-            date = RumFeature.timeProvider.getDeviceTimestamp(),
+            date = eventTimestamp,
             view = ViewEvent.View(
                 id = context.viewId.orEmpty(),
                 url = context.viewUrl.orEmpty(),
+                loadingTime = loadingTime,
+                loadingType = loadingType,
                 timeSpent = updatedDurationNs,
                 action = ViewEvent.Action(actionCount),
                 resource = ViewEvent.Resource(resourceCount),
@@ -270,6 +275,19 @@ internal class RumViewScope(
     ): MutableMap<String, Any?> {
         return attributes.toMutableMap()
             .apply { putAll(GlobalRum.globalAttributes) }
+    }
+
+    private fun onUpdateViewLoadingTime(
+        event: RumRawEvent.UpdateViewLoadingTime,
+        writer: Writer<RumEvent>
+    ) {
+        val startedKey = keyRef.get()
+        if (event.key != startedKey) {
+            return
+        }
+        loadingTime = event.loadingTime
+        loadingType = event.loadingType
+        sendViewUpdate(writer)
     }
 
     // endregion

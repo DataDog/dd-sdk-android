@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.tracking
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -13,13 +14,18 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 
-internal class AndroidXFragmentLifecycleCallbacks(
+internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
-    private val componentPredicate: ComponentPredicate<Fragment>
+    private val componentPredicate: ComponentPredicate<Fragment>,
+    private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
+    private val rumMonitor: RumMonitor,
+    private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     // region FragmentLifecycleCallbacks
@@ -35,6 +41,20 @@ internal class AndroidXFragmentLifecycleCallbacks(
     // endregion
 
     // region FragmentManager.FragmentLifecycleCallbacks
+
+    override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
+        super.onFragmentAttached(fm, f, context)
+        componentPredicate.runIfValid(f) {
+            viewLoadingTimer.onCreated(resolveKey(it))
+        }
+    }
+
+    override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
+        super.onFragmentStarted(fm, f)
+        componentPredicate.runIfValid(f) {
+            viewLoadingTimer.onStartLoading(resolveKey(it))
+        }
+    }
 
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
@@ -55,18 +75,54 @@ internal class AndroidXFragmentLifecycleCallbacks(
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         componentPredicate.runIfValid(f) {
-            GlobalRum.get()
-                .startView(
-                    it,
-                    it.resolveViewName(),
-                    argumentsProvider(it)
+            val key = resolveKey(it)
+            viewLoadingTimer.onFinishedLoading(key)
+            rumMonitor.startView(
+                key,
+                it.resolveViewName(),
+                argumentsProvider(it)
+            )
+            val loadingTime = viewLoadingTimer.getLoadingTime(key)
+            if (loadingTime != null) {
+                advancedRumMonitor.updateViewLoadingTime(
+                    key,
+                    loadingTime,
+                    resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(key))
                 )
+            }
         }
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
-        componentPredicate.runIfValid(f) { GlobalRum.get().stopView(it) }
+        componentPredicate.runIfValid(f) {
+            val key = resolveKey(it)
+            rumMonitor.stopView(key)
+            viewLoadingTimer.onPaused(key)
+        }
+    }
+
+    override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
+        super.onFragmentDestroyed(fm, f)
+        componentPredicate.runIfValid(f) {
+            viewLoadingTimer.onDestroyed(resolveKey(it))
+        }
+    }
+
+    // endregion
+
+    // region utils
+
+    open fun resolveKey(fragment: Fragment): Any {
+        return fragment
+    }
+
+    private fun resolveLoadingType(firstTimeLoading: Boolean): ViewEvent.LoadingType {
+        return if (firstTimeLoading) {
+            ViewEvent.LoadingType.FRAGMENT_DISPLAY
+        } else {
+            ViewEvent.LoadingType.FRAGMENT_REDISPLAY
+        }
     }
 
     // endregion

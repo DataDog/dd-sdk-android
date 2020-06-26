@@ -10,6 +10,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 
 internal sealed class RumRawEvent {
 
@@ -75,6 +76,12 @@ internal sealed class RumRawEvent {
         val throwable: Throwable?,
         val isFatal: Boolean,
         val attributes: Map<String, Any?>
+    ) : RumRawEvent()
+
+    internal data class UpdateViewLoadingTime(
+        val key: Any,
+        val loadingTime: Long,
+        val loadingType: ViewEvent.LoadingType
     ) : RumRawEvent()
 
     internal class SentResource : RumRawEvent()

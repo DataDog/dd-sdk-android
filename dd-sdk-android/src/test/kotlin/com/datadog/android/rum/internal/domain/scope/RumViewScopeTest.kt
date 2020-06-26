@@ -22,6 +22,7 @@ import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
@@ -107,6 +108,9 @@ internal class RumViewScopeTest {
     @LongForgery
     var fakeTimeStamp: Long = 0L
 
+    @LongForgery
+    var secondFakeTimestamp: Long = 0L
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         RumFeature::class.java.setStaticValue("timeProvider", mockTimeProvider)
@@ -116,7 +120,9 @@ internal class RumViewScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimeStamp
+        whenever(mockTimeProvider.getDeviceTimestamp())
+            .doReturn(fakeTimeStamp)
+            .doReturn(secondFakeTimestamp)
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -1003,6 +1009,54 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `updates view loading time and type when required`(forge: Forge) {
+        val loadingTime = forge.aLong(min = 1)
+        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
+        val result = testedScope.handleEvent(
+            RumRawEvent.UpdateViewLoadingTime(fakeKey, loadingTime, loadingType),
+            mockWriter
+        )
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeTimeStamp)
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasLoadingTime(loadingTime)
+                    hasLoadingType(loadingType)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `trying to update the loading time using a different key does nothing`(forge: Forge) {
+        val differentKey = fakeKey + "different".toByteArray()
+        val loadingTime = forge.aLong(min = 1)
+        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
+        val result = testedScope.handleEvent(
+            RumRawEvent.UpdateViewLoadingTime(differentKey, loadingTime, loadingType),
+            mockWriter
+        )
+
+        verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 

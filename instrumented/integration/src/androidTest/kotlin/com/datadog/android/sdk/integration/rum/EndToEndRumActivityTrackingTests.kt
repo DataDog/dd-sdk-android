@@ -59,7 +59,14 @@ internal class EndToEndRumActivityTrackingTests {
         }
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)
-
+        // for view loading time update
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 3,
+                viewArguments = expectedViewArguments
+            )
+        )
         // Check sent requests
         checkSentRequests()
     }

@@ -13,10 +13,13 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import androidx.fragment.app.Fragment;
 import androidx.multidex.MultiDex;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.datadog.android.Datadog;
 import com.datadog.android.DatadogConfig;
+import com.datadog.android.rum.tracking.ComponentPredicate;
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy;
 import com.datadog.android.log.Logger;
 import com.datadog.android.rum.GlobalRum;
@@ -52,7 +55,14 @@ public class SampleApplication extends Application {
                 BuildConfig.DD_RUM_APPLICATION_ID
         );
         configBuilder.setServiceName("android-sample-java")
-                .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true))
+                .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true,
+                        new ComponentPredicate<Fragment>() {
+                            @Override
+                            public boolean accept(Fragment component) {
+                                return !NavHostFragment.class.isAssignableFrom(
+                                        component.getClass());
+                            }
+                        }))
                 .trackInteractions();
 
 

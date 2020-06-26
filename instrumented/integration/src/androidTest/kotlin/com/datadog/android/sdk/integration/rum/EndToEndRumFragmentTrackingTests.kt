@@ -44,7 +44,7 @@ internal class EndToEndRumFragmentTrackingTests {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
         val fragmentAViewUrl = currentFragmentViewUrl()
-        // add the first expected event
+        // add the first expected event (for view start)
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
@@ -52,7 +52,14 @@ internal class EndToEndRumFragmentTrackingTests {
                 currentFragmentExtras()
             )
         )
-
+        // for update view time
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentAViewUrl,
+                3,
+                currentFragmentExtras()
+            )
+        )
         // swipe to change the fragment
         onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
@@ -63,6 +70,14 @@ internal class EndToEndRumFragmentTrackingTests {
             ExpectedViewEvent(
                 fragmentBViewUrl,
                 2,
+                currentFragmentExtras()
+            )
+        )
+        // for updating the time
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentBViewUrl,
+                3,
                 currentFragmentExtras()
             )
         )
@@ -80,12 +95,26 @@ internal class EndToEndRumFragmentTrackingTests {
                 currentFragmentExtras()
             )
         )
+        // for updating the time
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentCViewUrl,
+                3,
+                currentFragmentExtras()
+            )
+        )
 
         // swipe to close the view
         onView(withId(R.id.tab_layout)).perform(swipeRight())
         instrumentation.waitForIdleSync()
-
         Thread.sleep(INITIAL_WAIT_MS)
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentBViewUrl,
+                2,
+                currentFragmentExtras()
+            )
+        )
 
         // Check sent requests
         checkSentRequests()

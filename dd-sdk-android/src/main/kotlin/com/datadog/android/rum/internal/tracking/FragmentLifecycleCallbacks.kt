@@ -18,5 +18,5 @@ internal interface FragmentLifecycleCallbacks<T : Activity> {
 
     fun unregister(activity: T)
 
-    // end region
+    // endregion
 }

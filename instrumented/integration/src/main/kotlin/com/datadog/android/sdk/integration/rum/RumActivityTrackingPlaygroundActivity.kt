@@ -19,9 +19,6 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 internal class RumActivityTrackingPlaygroundActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.fragment_tracking_layout)
-
         // use the activity view tracking strategy
         val config = DatadogConfig.Builder(
             RuntimeConfig.DD_TOKEN,
@@ -36,5 +33,7 @@ internal class RumActivityTrackingPlaygroundActivity : Activity() {
 
         Datadog.initialize(this, config)
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.fragment_tracking_layout)
     }
 }

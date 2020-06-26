@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -19,6 +20,8 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun viewTreeChanged()
 
     fun waitForResourceTiming(key: String)
+
+    fun updateViewLoadingTime(key: Any, loadingTimeInNs: Long, type: ViewEvent.LoadingType)
 
     fun addResourceTiming(key: String, timing: ResourceTiming)
 

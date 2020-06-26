@@ -6,22 +6,32 @@
 
 package com.datadog.android.rum.tracking
 
-import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
 import android.view.View
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.R
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
+import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -32,6 +42,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,7 +63,7 @@ internal class NavigationViewTrackingStrategyTest {
     lateinit var testedStrategy: NavigationViewTrackingStrategy
 
     @Mock
-    lateinit var mockActivity: Activity
+    lateinit var mockActivity: FragmentActivity
 
     @Mock
     lateinit var mockAppContext: Application
@@ -66,9 +77,19 @@ internal class NavigationViewTrackingStrategyTest {
     @Mock
     lateinit var mockNavController: NavController
 
+    @Mock
+    lateinit var mockFragmentManager: FragmentManager
+
     lateinit var mockNavDestination: NavDestination
 
-    lateinit var mockRumMonitor: RumMonitor
+    @Mock
+    lateinit var mockRumMonitor: AdvancedRumMonitor
+
+    @Mock
+    lateinit var mockViewLoadingTimer: ViewLoadingTimer
+
+    @Mock
+    lateinit var mockFragment: Fragment
 
     @IntForgery
     var fakeNavViewId: Int = 0
@@ -78,14 +99,20 @@ internal class NavigationViewTrackingStrategyTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         doReturn(mockNavView).whenever(mockActivity).findViewById<View>(fakeNavViewId)
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
         mockNavDestination = getMockNavDestination(forge, fakeDestinationName)
 
-        GlobalRum.registerIfAbsent(mock<RumMonitor>())
-        mockRumMonitor = GlobalRum.get()
+        GlobalRum.registerIfAbsent(mockRumMonitor)
 
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        GlobalRum.isRegistered.set(false)
+        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     // region ActivityLifecycleTrackingStrategy
@@ -130,10 +157,36 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
+    fun `registers fragment lifecycle callback onActivityStarted`() {
+        testedStrategy.onActivityStarted(mockActivity)
+
+        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
+            any<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>(),
+            eq(true)
+        )
+    }
+
+    @Test
     fun `unregisters navigation listener onActivityStopped`() {
         testedStrategy.onActivityStopped(mockActivity)
 
         verify(mockNavController).removeOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `unregisters fragment lifecycle callback onActivityStopped`() {
+        // given
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // when
+        testedStrategy.onActivityStopped(mockActivity)
+
+        // then
+        val argumentCaptor =
+            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
+        verify(mockFragmentManager)
+            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
+        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(argumentCaptor.firstValue)
     }
 
     @Test
@@ -261,6 +314,92 @@ internal class NavigationViewTrackingStrategyTest {
 
     // endregion
 
+    // FragmentLifecycleCallbacks
+
+    @Test
+    fun `will update Rum event time when fragment resumed with the resolved key`(forge: Forge) {
+        // given
+        whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
+        val expectedLoadingTime = forge.aLong()
+        val firsTimeLoading = forge.aBool()
+        val expectedLoadingType =
+            if (firsTimeLoading) {
+                ViewEvent.LoadingType.FRAGMENT_DISPLAY
+            } else {
+                ViewEvent.LoadingType.FRAGMENT_REDISPLAY
+            }
+        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
+            .thenReturn(expectedLoadingTime)
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
+            .thenReturn(firsTimeLoading)
+        val callback = setupFragmentCallbacks()
+
+        // when
+        callback.onFragmentResumed(mock(), mockFragment)
+
+        // then
+        verify(mockRumMonitor).updateViewLoadingTime(
+            mockNavDestination,
+            expectedLoadingTime,
+            expectedLoadingType
+        )
+    }
+
+    @Test
+    fun `will do nothing when fragment resumed is NavHostFragment`(forge: Forge) {
+        // given
+        val navHostFragment: NavHostFragment = mock()
+        whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
+        val expectedLoadingTime = forge.aLong()
+        val firsTimeLoading = forge.aBool()
+        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
+            .thenReturn(expectedLoadingTime)
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
+            .thenReturn(firsTimeLoading)
+        val callback = setupFragmentCallbacks()
+
+        // when
+        callback.onFragmentResumed(mock(), navHostFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `will do nothing when there is no currentDestination`(forge: Forge) {
+        // given
+        whenever(mockNavController.currentDestination).thenReturn(null)
+        val expectedLoadingTime = forge.aLong()
+        val firsTimeLoading = forge.aBool()
+        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
+            .thenReturn(expectedLoadingTime)
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
+            .thenReturn(firsTimeLoading)
+        val callback = setupFragmentCallbacks()
+
+        // when
+        callback.onFragmentResumed(mock(), mockFragment)
+
+        // then
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    // region Internal
+
+    private fun setupFragmentCallbacks():
+        NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks {
+        // given
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // then
+        val argumentCaptor =
+            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
+        verify(mockFragmentManager)
+            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
+        argumentCaptor.firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        return argumentCaptor.firstValue
+    }
+
     private fun getMockNavDestination(
         forge: Forge,
         name: String
@@ -278,4 +417,6 @@ internal class NavigationViewTrackingStrategyTest {
             }
         )
     }
+
+    // endregion
 }

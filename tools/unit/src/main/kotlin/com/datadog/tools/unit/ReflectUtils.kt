@@ -10,6 +10,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import java.util.LinkedList
 import kotlin.reflect.jvm.isAccessible
 
 /**
@@ -94,21 +95,45 @@ inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R 
  * @param fieldName the name of the field
  * @param fieldValue the value of the field
  */
+@Suppress("SwallowedException")
 inline fun <reified T> Any.setFieldValue(
     fieldName: String,
     fieldValue: T
-) {
-    val field = javaClass.getDeclaredField(fieldName)
+): Boolean {
+    var field: Field? = null
+    val classesToSearch = LinkedList<Class<*>>()
+    classesToSearch.add(this.javaClass)
+    val classesSearched = mutableSetOf<Class<*>>()
+
+    while (field == null && classesToSearch.isNotEmpty()) {
+        val toSearchIn = classesToSearch.remove()
+        try {
+            field = toSearchIn.getDeclaredField(fieldName)
+        } catch (e: NoSuchFieldException) {
+            // do nothing
+        }
+        classesSearched.add(toSearchIn)
+        toSearchIn.superclass?.let {
+            if (!classesSearched.contains(it)) {
+                classesToSearch.add(it)
+            }
+        }
+    }
 
     // make it accessible
-    field.isAccessible = true
+    if (field != null) {
+        field.isAccessible = true
 
-    // Make it non final
-    val modifiersField = Field::class.java.getDeclaredField("modifiers")
-    modifiersField.isAccessible = true
-    modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+        // Make it non final
+        val modifiersField = Field::class.java.getDeclaredField("modifiers")
+        modifiersField.isAccessible = true
+        modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
 
-    field.set(this, fieldValue)
+        field.set(this, fieldValue)
+        return true
+    } else {
+        return false
+    }
 }
 
 /**
@@ -213,7 +238,7 @@ private fun <T : Any> T.getDeclaredMethodRecursively(
             } else {
                 lookingInClass.declaredMethods.firstOrNull {
                     it.name == methodName &&
-                            it.parameterTypes.size == declarationParams.size
+                        it.parameterTypes.size == declarationParams.size
                 }
             }
         } catch (e: Throwable) {
