@@ -34,7 +34,16 @@ import okhttp3.OkHttpClient
  * @param tracedHosts a list of all the hosts that you want to be automatically tracked
  * by this interceptor. If no host is provided the interceptor won't trace any OkHttpRequest,
  * nor propagate tracing information to the backend.
+ * @param tracedRequestListener a listener for automatically created [Span]s
  *
  */
-class TracingInterceptor(tracedHosts: List<String>) :
-    Interceptor by CombinedInterceptor(TracingRequestInterceptor(tracedHosts))
+class TracingInterceptor @JvmOverloads constructor(
+    tracedHosts: List<String>,
+    tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+) :
+    Interceptor by CombinedInterceptor(
+        TracingRequestInterceptor(
+            tracedRequestListener,
+            tracedHosts
+        )
+    )

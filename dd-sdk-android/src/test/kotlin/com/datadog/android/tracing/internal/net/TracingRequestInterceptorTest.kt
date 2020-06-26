@@ -13,6 +13,8 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -129,10 +131,13 @@ internal class TracingRequestInterceptorTest {
     @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
+    lateinit var tracedRequestListener: TracedRequestListener
+
     // region UnitTests
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        tracedRequestListener = NoOpTracedRequestListener()
         fakeWhitelistedDomain = generateValidHostName(forge, type = HostType.IpV4)
         fakeSecondWhitelistedDomain = generateValidHostName(forge)
         fakeWhitelistedDomainUrl = generateUrlFromDomain(fakeWhitelistedDomain, forge)
@@ -150,7 +155,8 @@ internal class TracingRequestInterceptorTest {
             .url(fakeWhitelistedDomainUrl)
             .method(fakeMethod, fakeBody)
             .build()
-        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeWhitelistedDomain)))
+        testedInterceptor =
+            spy(TracingRequestInterceptor(tracedRequestListener, listOf(fakeWhitelistedDomain)))
 
         doReturn(mockLocalTracer).whenever(testedInterceptor).buildLocalTracer()
 
@@ -254,7 +260,7 @@ internal class TracingRequestInterceptorTest {
 
     @Test
     fun `does nothing if the request domain no whitelisted domains provided`(forge: Forge) {
-        testedInterceptor = spy(TracingRequestInterceptor())
+        testedInterceptor = spy(TracingRequestInterceptor(tracedRequestListener))
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
         testedInterceptor.handleResponse(transformedRequest, mockResponse)
 
@@ -283,7 +289,8 @@ internal class TracingRequestInterceptorTest {
             .url(fakeSubdomainUrl)
             .method(fakeMethod, fakeBody)
             .build()
-        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeDomain)))
+        testedInterceptor =
+            spy(TracingRequestInterceptor(tracedRequestListener, listOf(fakeDomain)))
 
         val firstTransformedRequest = testedInterceptor.transformRequest(firstRequest)
         testedInterceptor.handleResponse(firstTransformedRequest, mockResponse)
@@ -309,6 +316,7 @@ internal class TracingRequestInterceptorTest {
     ) {
         testedInterceptor = spy(
             TracingRequestInterceptor(
+                tracedRequestListener,
                 listOf(
                     fakeWhitelistedDomain,
                     fakeSecondWhitelistedDomain
@@ -358,7 +366,8 @@ internal class TracingRequestInterceptorTest {
             .method(fakeMethod, fakeBody)
             .build()
         whenever(mockResponse.code()) doReturn statusCode
-        testedInterceptor = spy(TracingRequestInterceptor(listOf(fakeDomain)))
+        testedInterceptor =
+            spy(TracingRequestInterceptor(tracedRequestListener, listOf(fakeDomain)))
         val countDownLatch = CountDownLatch(2)
         val runnable1 = Runnable {
             val transformedRequest = testedInterceptor.transformRequest(firstRequest)
@@ -502,6 +511,76 @@ internal class TracingRequestInterceptorTest {
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(testedInterceptor).buildLocalTracer()
         verify(mockLocalTracer, times(2)).buildSpan("okhttp.request")
+    }
+
+    @Test
+    fun `will modify the span attributes in TracedRequestListener around a throwing request`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeKey: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeValue: String
+    ) {
+        // given
+        tracedRequestListener = object : TracedRequestListener {
+            override fun onRequestIntercepted(
+                request: Request,
+                span: Span,
+                response: Response?,
+                throwable: Throwable?
+            ) {
+                span.setTag(attributeKey, attributeValue)
+            }
+        }
+        testedInterceptor =
+            TracingRequestInterceptor(tracedRequestListener, listOf(fakeWhitelistedDomain))
+
+        val sw = StringWriter()
+        fakeThrowable.printStackTrace(PrintWriter(sw))
+
+        val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
+        testedInterceptor.handleThrowable(transformedRequest, fakeThrowable)
+
+        inOrder(mockSpan) {
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan).setTag("error.msg", fakeThrowable.message)
+            verify(mockSpan).setTag("error.type", fakeThrowable.javaClass.canonicalName)
+            verify(mockSpan).setTag("error.stack", sw.toString())
+            verify(mockSpan).setTag(attributeKey, attributeValue)
+            verify(mockSpan).finish()
+        }
+    }
+
+    @Test
+    fun `will modify the span attributes in the TracedRequestListener around succesfull request`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeKey: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeValue: String,
+        @IntForgery(200, 300) statusCode: Int
+    ) {
+        // given
+        tracedRequestListener = object : TracedRequestListener {
+            override fun onRequestIntercepted(
+                request: Request,
+                span: Span,
+                response: Response?,
+                throwable: Throwable?
+            ) {
+                span.setTag(attributeKey, attributeValue)
+            }
+        }
+        testedInterceptor =
+            TracingRequestInterceptor(tracedRequestListener, listOf(fakeWhitelistedDomain))
+        whenever(mockResponse.code()) doReturn statusCode
+
+        // when
+        val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
+        testedInterceptor.handleResponse(transformedRequest, mockResponse)
+
+        inOrder(mockSpan) {
+            verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
+            verify(mockSpan).setTag("http.method", fakeMethod)
+            verify(mockSpan).setTag("http.status_code", statusCode)
+            verify(mockSpan).setTag(attributeKey, attributeValue)
+            verify(mockSpan).finish()
+        }
     }
 
     // endregion

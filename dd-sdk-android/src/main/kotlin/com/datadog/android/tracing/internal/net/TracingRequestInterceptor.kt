@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.net.RequestInterceptor
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.internal.TracesFeature
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
@@ -26,7 +27,10 @@ import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Request
 import okhttp3.Response
 
-internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList()) :
+internal class TracingRequestInterceptor(
+    private val tracedRequestListener: TracedRequestListener,
+    acceptedHosts: List<String> = emptyList()
+) :
     RequestInterceptor {
 
     private val hostRegex: Regex
@@ -83,6 +87,7 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
                 // limit spam on 404 resources
                 (span as? MutableSpan)?.resourceName = "404"
             }
+            tracedRequestListener.onRequestIntercepted(request, span, response, null)
             span.finish()
         }
     }
@@ -96,6 +101,7 @@ internal class TracingRequestInterceptor(acceptedHosts: List<String> = emptyList
             val sw = StringWriter()
             throwable.printStackTrace(PrintWriter(sw))
             span.setTag(DDTags.ERROR_STACK, sw.toString())
+            tracedRequestListener.onRequestIntercepted(request, span, null, throwable)
             span.finish()
         }
     }
