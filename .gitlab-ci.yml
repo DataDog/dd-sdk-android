@@ -4,7 +4,6 @@ include:
 variables:
   CURRENT_CI_IMAGE: "1"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
-  SLACK_NOTIFIER_IMAGE: "486234852809.dkr.ecr.us-east-1.amazonaws.com/slack-notifier:latest"
 
 stages:
   - ci-image
@@ -105,7 +104,7 @@ publish:release-timber:
     - ./gradlew :dd-sdk-android-timber:bintrayUpload
 
 notify:release:
-  image: $SLACK_NOTIFIER_IMAGE
+  extends: .slack-notifier-base
   stage: notify
   when: on_success
   only:
@@ -116,7 +115,7 @@ notify:release:
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:
-  image: $SLACK_NOTIFIER_IMAGE
+  extends: .slack-notifier-base
   stage: notify
   when: on_failure
   only:
