@@ -12,6 +12,14 @@
 * [OTHER] Global: The serviceName by default will use your application's package name
 * [OTHER] Global: The logs and spans sent from the sdk can be found with the filter `source:android`
 
+# 1.4.3 / 2020-06-25
+
+* [IMPROVEMENT] Global: The `source` tag on logs and trace now uses `android` instead of ~~`mobile`~~
+
+# 1.4.2 / 2020-06-12
+
+* [BUGFIX] Global: Fix data upload (some payloads could rarely be malformed)
+
 # 1.4.1 / 2020-05-06
 
 * [BUGFIX] Trace: Fix spans intake (some spans could be missing)

@@ -32,8 +32,8 @@ internal open class LogsOkHttpUploader(
 
     companion object {
         private const val QP_SOURCE = "ddsource"
-        internal const val UPLOAD_URL =
-            "%s/v1/input/%s"
+        private const val DD_SOURCE_ANDROID = "android"
+        internal const val UPLOAD_URL = "%s/v1/input/%s"
 
         private fun buildUrl(endpoint: String, token: String): String {
             return String.format(

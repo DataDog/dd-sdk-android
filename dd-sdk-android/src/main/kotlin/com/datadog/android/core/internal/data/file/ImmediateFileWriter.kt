@@ -98,9 +98,10 @@ internal class ImmediateFileWriter<T : Any>(
     ) {
         stream.channel.lock().use {
             if (file.length() > 0) {
-                stream.write(separatorBytes)
+                stream.write(separatorBytes + dataAsByteArray)
+            } else {
+                stream.write(dataAsByteArray)
             }
-            stream.write(dataAsByteArray)
         }
     }
 
