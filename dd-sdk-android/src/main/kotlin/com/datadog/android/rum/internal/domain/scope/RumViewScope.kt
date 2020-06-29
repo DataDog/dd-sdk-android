@@ -30,7 +30,8 @@ internal class RumViewScope(
     internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
-    internal val viewId: String = UUID.randomUUID().toString()
+    internal var sessionId: String = parentScope.getRumContext().sessionId
+    internal var viewId: String = UUID.randomUUID().toString()
     internal val startedNanos: Long = System.nanoTime()
 
     internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
@@ -91,7 +92,13 @@ internal class RumViewScope(
     }
 
     override fun getRumContext(): RumContext {
-        return parentScope.getRumContext()
+        val parentContext = parentScope.getRumContext()
+        if (parentContext.sessionId != sessionId) {
+            sessionId = parentContext.sessionId
+            viewId = UUID.randomUUID().toString()
+        }
+
+        return parentContext
             .copy(
                 viewId = viewId,
                 viewUrl = urlName,
