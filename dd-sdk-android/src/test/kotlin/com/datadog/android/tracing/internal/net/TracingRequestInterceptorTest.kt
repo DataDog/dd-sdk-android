@@ -138,7 +138,8 @@ internal class TracingRequestInterceptorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         tracedRequestListener = NoOpTracedRequestListener()
-        fakeWhitelistedDomain = generateValidHostName(forge, type = HostType.IpV4)
+        fakeWhitelistedDomain =
+            generateValidHostName(forge, type = forge.aValueFrom(HostType::class.java))
         fakeSecondWhitelistedDomain = generateValidHostName(forge)
         fakeWhitelistedDomainUrl = generateUrlFromDomain(fakeWhitelistedDomain, forge)
         fakeSecondWhitelistedDomainUrl = generateUrlFromDomain(fakeSecondWhitelistedDomain, forge)
@@ -587,14 +588,11 @@ internal class TracingRequestInterceptorTest {
 
     // region Internal methods
 
-    private fun generateValidHostName(forge: Forge, type: HostType? = null): String {
-        val domainType = type
-            ?: if (forge.aBool()) {
-                HostType.Hostname
-            } else {
-                HostType.IpV4
-            }
-        val regex = when (domainType) {
+    private fun generateValidHostName(
+        forge: Forge,
+        type: HostType = HostType.Hostname
+    ): String {
+        val regex = when (type) {
             HostType.IpV4 -> IPV4_REGEX_FORMAT
             else -> HOSTNAME_REGEX_FORMAT
         }
