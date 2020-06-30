@@ -43,6 +43,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -166,6 +167,30 @@ internal class RumViewScopeTest {
         assertThat(context.viewUrl).isEqualTo(testedScope.urlName)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+    }
+
+    @Test
+    fun `updates the viewId when the parent sessionId changes`(
+        @Forgery newSessionId: UUID
+    ) {
+        val initialViewId = testedScope.viewId
+        val context = testedScope.getRumContext()
+        whenever(mockParentScope.getRumContext())
+            .doReturn(fakeParentContext.copy(sessionId = newSessionId.toString()))
+
+        val updatedContext = testedScope.getRumContext()
+
+        assertThat(context.actionId).isNull()
+        assertThat(context.viewId).isEqualTo(initialViewId)
+        assertThat(context.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+
+        assertThat(updatedContext.actionId).isNull()
+        assertThat(updatedContext.viewId).isNotEqualTo(initialViewId)
+        assertThat(updatedContext.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(updatedContext.sessionId).isEqualTo(newSessionId.toString())
+        assertThat(updatedContext.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
 
     // endregion
