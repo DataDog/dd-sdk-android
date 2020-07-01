@@ -40,7 +40,26 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasName(expected: String): ActionEventAssert {
+    fun hasType(expected: ActionEvent.Type1): ActionEventAssert {
+        assertThat(actual.action.type)
+            .overridingErrorMessage(
+                "Expected event data to have action.type $expected but was ${actual.action.type}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoTarget(): ActionEventAssert {
+        assertThat(actual.action.target)
+            .overridingErrorMessage(
+                "Expected event data to have no action.target " +
+                    "but was ${actual.action.target}"
+            )
+            .isNull()
+        return this
+    }
+
+    fun hasTargetName(expected: String): ActionEventAssert {
         assertThat(actual.action.target?.name)
             .overridingErrorMessage(
                 "Expected event data to have action.target.name $expected " +
@@ -51,7 +70,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
     }
 
     fun hasResourceCount(expected: Long): ActionEventAssert {
-        assertThat(actual.action.resource?.count)
+        assertThat(actual.action.resource?.count ?: 0)
             .overridingErrorMessage(
                 "Expected event data to have action.resource.count $expected " +
                     "but was ${actual.action.resource?.count}"
@@ -61,7 +80,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
     }
 
     fun hasErrorCount(expected: Long): ActionEventAssert {
-        assertThat(actual.action.error?.count)
+        assertThat(actual.action.error?.count ?: 0)
             .overridingErrorMessage(
                 "Expected event data to have action.error.count $expected " +
                     "but was ${actual.action.error?.count}"
@@ -71,7 +90,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
     }
 
     fun hasCrashCount(expected: Long): ActionEventAssert {
-        assertThat(actual.action.crash?.count)
+        assertThat(actual.action.crash?.count ?: 0)
             .overridingErrorMessage(
                 "Expected event data to have action.crash.count $expected " +
                     "but was ${actual.action.crash?.count}"
