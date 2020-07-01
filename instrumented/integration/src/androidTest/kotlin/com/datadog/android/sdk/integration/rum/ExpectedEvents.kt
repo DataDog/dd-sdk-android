@@ -17,6 +17,10 @@ internal data class ExpectedRumContext(
     val viewId: String
 )
 
+internal data class ExpectedApplicationStart(
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
 internal data class ExpectedGestureEvent(
     val type: Gesture,
     val targetClassName: String,

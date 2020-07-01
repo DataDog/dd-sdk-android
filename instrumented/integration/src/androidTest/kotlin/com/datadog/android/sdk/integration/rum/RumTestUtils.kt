@@ -34,11 +34,25 @@ internal fun List<JsonObject>.verifyEventMatches(
         when (val expectedEvent = expected[index]) {
             is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
+            is ExpectedApplicationStart -> event.verifyEventMatches(expectedEvent)
             else -> {
                 // Do nothing
             }
         }
     }
+}
+
+private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStart) {
+    assertThat(this)
+        .hasField("application") {
+            hasField("id", event.rumContext.applicationId)
+        }
+        .hasField("session") {
+            hasField("id", event.rumContext.sessionId)
+        }
+        .hasField("action") {
+            hasField("type", "application_start")
+        }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedGestureEvent) {

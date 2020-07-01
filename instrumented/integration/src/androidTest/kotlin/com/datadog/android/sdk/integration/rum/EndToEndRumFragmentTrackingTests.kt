@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 @LargeTest
 internal class EndToEndRumFragmentTrackingTests {
 
-    private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
+    private val expectedEvents: MutableList<ExpectedEvent> = mutableListOf()
 
     @get:Rule
     val mockServerRule = RumMockServerActivityTestRule(
@@ -40,6 +40,7 @@ internal class EndToEndRumFragmentTrackingTests {
 
     @Test
     fun verifyViewEvents() {
+        expectedEvents.add(ExpectedApplicationStart())
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
@@ -116,11 +117,11 @@ internal class EndToEndRumFragmentTrackingTests {
             )
         )
 
-        // Check sent requests
         checkSentRequests()
     }
 
     // region Internal
+
     private fun checkSentRequests() {
         val requests = mockServerRule.getRequests()
         val sentGestureEvents = mutableListOf<JsonObject>()
