@@ -23,6 +23,8 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
@@ -60,6 +62,7 @@ internal object LogsFeature {
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -91,6 +94,7 @@ internal object LogsFeature {
             dataUploadThreadPoolExecutor
         )
 
+        registerPlugins(appContext, config)
         initialized.set(true)
     }
 
@@ -100,6 +104,7 @@ internal object LogsFeature {
 
     fun stop() {
         if (initialized.get()) {
+            unregisterPlugins()
             dataUploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpUploadScheduler()
@@ -134,6 +139,25 @@ internal object LogsFeature {
             NoOpUploadScheduler()
         }
         dataUploadScheduler.startScheduling()
+    }
+
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+        plugins = config.plugins
+        plugins.forEach {
+            it.register(
+                DatadogPluginConfig.LogsPluginConfig(
+                    appContext,
+                    config.envName,
+                    CoreFeature.serviceName
+                )
+            )
+        }
+    }
+
+    private fun unregisterPlugins() {
+        plugins.forEach {
+            it.unregister()
+        }
     }
 
     // endregion

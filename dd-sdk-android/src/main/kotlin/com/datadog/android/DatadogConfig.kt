@@ -7,6 +7,8 @@
 package com.datadog.android
 
 import android.os.Build
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
@@ -40,7 +42,8 @@ private constructor(
         val clientToken: String,
         val applicationId: UUID,
         val endpointUrl: String,
-        val envName: String
+        val envName: String,
+        val plugins: List<DatadogPlugin> = emptyList()
     )
 
     internal data class RumConfig(
@@ -50,7 +53,8 @@ private constructor(
         val envName: String,
         val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
-        val viewTrackingStrategy: ViewTrackingStrategy? = null
+        val viewTrackingStrategy: ViewTrackingStrategy? = null,
+        val plugins: List<DatadogPlugin> = emptyList()
     )
 
     // region Builder
@@ -304,6 +308,29 @@ private constructor(
          */
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
             rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
+            return this
+        }
+
+        /**
+         * Adds a plugin to a specific feature. This plugin will only be registered if the feature
+         * was enabled.
+         * @param plugin a [DatadogPlugin]
+         * @param feature the feature for which this plugin should be registered
+         * @see [Feature.LOG]
+         * @see [Feature.CRASH]
+         * @see [Feature.TRACE]
+         * @see [Feature.RUM]
+         */
+        fun addPlugin(plugin: DatadogPlugin, feature: Feature): Builder {
+            when (feature) {
+                Feature.RUM -> rumConfig = rumConfig.copy(plugins = rumConfig.plugins + plugin)
+                Feature.TRACE -> tracesConfig =
+                    tracesConfig.copy(plugins = tracesConfig.plugins + plugin)
+                Feature.LOG -> logsConfig = logsConfig.copy(plugins = logsConfig.plugins + plugin)
+                Feature.CRASH -> crashReportConfig =
+                    crashReportConfig.copy(plugins = crashReportConfig.plugins + plugin)
+            }
+
             return this
         }
 

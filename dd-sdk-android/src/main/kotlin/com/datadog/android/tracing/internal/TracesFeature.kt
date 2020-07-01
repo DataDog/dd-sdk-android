@@ -21,6 +21,8 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import datadog.opentracing.DDSpan
@@ -39,6 +41,7 @@ internal object TracesFeature {
     internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -75,11 +78,13 @@ internal object TracesFeature {
             dataUploadThreadPoolExecutor
         )
 
+        registerPlugins(appContext, config)
         initialized.set(true)
     }
 
     fun stop() {
         if (initialized.get()) {
+            unregisterPlugins()
             dataUploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpUploadScheduler()
@@ -113,6 +118,25 @@ internal object TracesFeature {
             NoOpUploadScheduler()
         }
         dataUploadScheduler.startScheduling()
+    }
+
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+        plugins = config.plugins
+        plugins.forEach {
+            it.register(
+                DatadogPluginConfig.TracingPluginConfig(
+                    appContext,
+                    config.envName,
+                    CoreFeature.serviceName
+                )
+            )
+        }
+    }
+
+    private fun unregisterPlugins() {
+        plugins.forEach {
+            it.unregister()
+        }
     }
 
     // endregion

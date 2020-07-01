@@ -24,6 +24,8 @@ import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.RumFileStrategy
@@ -67,6 +69,7 @@ internal object RumFeature {
         NoOpUserActionTrackingStrategy()
     internal var viewTreeTrackingStrategy: TrackingStrategy =
         ViewTreeChangeTrackingStrategy()
+    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -106,6 +109,7 @@ internal object RumFeature {
         registerTrackingStrategies(appContext)
         this.userInfoProvider = userInfoProvider
         this.networkInfoProvider = networkInfoProvider
+        registerPlugins(appContext, config)
         initialized.set(true)
     }
 
@@ -115,6 +119,7 @@ internal object RumFeature {
 
     fun stop() {
         if (initialized.get()) {
+            unregisterPlugins()
             dataUploadScheduler.stopScheduling()
 
             unregisterTrackingStrategies(CoreFeature.contextRef.get())
@@ -168,6 +173,25 @@ internal object RumFeature {
         actionTrackingStrategy.unregister(appContext)
         viewTrackingStrategy.unregister(appContext)
         viewTreeTrackingStrategy.unregister(appContext)
+    }
+
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.RumConfig) {
+        plugins = config.plugins
+        plugins.forEach {
+            it.register(
+                DatadogPluginConfig.RumPluginConfig(
+                    appContext,
+                    config.envName,
+                    CoreFeature.serviceName
+                )
+            )
+        }
+    }
+
+    private fun unregisterPlugins() {
+        plugins.forEach {
+            it.unregister()
+        }
     }
 
     // endregion

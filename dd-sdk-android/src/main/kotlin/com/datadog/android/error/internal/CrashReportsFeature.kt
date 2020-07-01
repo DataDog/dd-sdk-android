@@ -23,6 +23,8 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
@@ -49,6 +51,7 @@ internal object CrashReportsFeature {
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -78,6 +81,7 @@ internal object CrashReportsFeature {
             systemInfoProvider,
             dataUploadThreadPoolExecutor
         )
+        registerPlugins(appContext, config)
         setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
 
         initialized.set(true)
@@ -85,6 +89,7 @@ internal object CrashReportsFeature {
 
     fun stop() {
         if (initialized.get()) {
+            unregisterPlugins()
             Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
             dataUploadScheduler.stopScheduling()
 
@@ -137,6 +142,25 @@ internal object CrashReportsFeature {
             persistenceStrategy.getWriter(),
             appContext
         ).register()
+    }
+
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+        plugins = config.plugins
+        plugins.forEach {
+            it.register(
+                DatadogPluginConfig.CrashReportsPluginConfig(
+                    appContext,
+                    config.envName,
+                    CoreFeature.serviceName
+                )
+            )
+        }
+    }
+
+    private fun unregisterPlugins() {
+        plugins.forEach {
+            it.unregister()
+        }
     }
 
     // endregion

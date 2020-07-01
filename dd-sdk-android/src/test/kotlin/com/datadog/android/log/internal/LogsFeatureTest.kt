@@ -15,10 +15,16 @@ import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.log.internal.domain.LogFileStrategy
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -194,6 +200,49 @@ internal class LogsFeatureTest {
         assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
         assertThat(clientToken).isSameAs(clientToken2)
         assertThat(endpointUrl).isSameAs(endpointUrl2)
+    }
+
+    @Test
+    fun `it will register and unregister the provided plugin when initialise and stop called`(
+        forge: Forge
+    ) {
+        // given
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+
+        // when
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+        LogsFeature.stop()
+
+        val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
+        // then
+        val mockedPlugins = plugins.toTypedArray()
+        inOrder(*mockedPlugins) {
+            mockedPlugins.forEach {
+                verify(it).register(argumentCaptor.capture())
+            }
+            mockedPlugins.forEach {
+                verify(it).unregister()
+            }
+        }
+
+        argumentCaptor.allValues.forEach {
+            assertThat(it).isInstanceOf(DatadogPluginConfig.LogsPluginConfig::class.java)
+            assertThat(it.context).isEqualTo(mockAppContext)
+            assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
+            assertThat(it.envName).isEqualTo(fakeConfig.envName)
+            assertThat(it.featureFolderName).isEqualTo(LogFileStrategy.LOGS_FOLDER)
+            assertThat(it.context).isEqualTo(mockAppContext)
+        }
     }
 
     @Test

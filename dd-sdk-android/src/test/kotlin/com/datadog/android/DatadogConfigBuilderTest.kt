@@ -7,6 +7,8 @@
 package com.datadog.android
 
 import android.os.Build
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.RumConfigAssert
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -634,5 +636,65 @@ class DatadogConfigBuilderTest {
             .hasEnvName(fakeEnvName)
             .doesNotHaveGesturesTrackingStrategy()
             .hasViewTrackingStrategy(strategy)
+    }
+
+    @Test
+    fun `adding a plugin will register it to the specific feature`(forge: Forge) {
+        val logsPlugin: DatadogPlugin = mock()
+        val tracesPlugin: DatadogPlugin = mock()
+        val rumPlugin: DatadogPlugin = mock()
+        val crashPlugin: DatadogPlugin = mock()
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .addPlugin(logsPlugin, Feature.LOG)
+            .addPlugin(tracesPlugin, Feature.TRACE)
+            .addPlugin(rumPlugin, Feature.RUM)
+            .addPlugin(crashPlugin, Feature.CRASH)
+            .build()
+
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    plugins = listOf(logsPlugin)
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_US,
+                    fakeEnvName,
+                    plugins = listOf(tracesPlugin)
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    plugins = listOf(crashPlugin)
+
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
+                    fakeEnvName,
+                    plugins = listOf(rumPlugin)
+
+                )
+            )
     }
 }
