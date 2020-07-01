@@ -63,6 +63,7 @@ android {
         isCheckReleaseBuilds = false
         isCheckGeneratedSources = true
     }
+    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 dependencies {

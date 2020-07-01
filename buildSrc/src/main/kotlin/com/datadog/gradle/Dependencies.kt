@@ -63,6 +63,10 @@ object Dependencies {
 
         // Internal APIs
         const val TracingOt = "0.45.0"
+
+        // NDK
+        const val NdkVersion = "21.3.6528147"
+        const val CMakeVersion = "3.10.2"
     }
 
     object Libraries {

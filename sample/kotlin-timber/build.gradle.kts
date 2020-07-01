@@ -76,6 +76,8 @@ android {
     dexOptions {
         javaMaxHeapSize = "4g"
     }
+
+    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 dependencies {

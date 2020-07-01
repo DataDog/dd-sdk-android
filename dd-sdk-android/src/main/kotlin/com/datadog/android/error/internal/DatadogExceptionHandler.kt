@@ -85,7 +85,7 @@ internal class DatadogExceptionHandler(
     // endregion
 
     companion object {
-        private const val LOGGER_NAME = "crash"
-        private const val MESSAGE = "Application crash detected"
+        internal const val LOGGER_NAME = "crash"
+        internal const val MESSAGE = "Application crash detected"
     }
 }
