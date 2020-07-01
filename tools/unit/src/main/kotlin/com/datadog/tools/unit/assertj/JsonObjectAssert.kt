@@ -12,6 +12,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.math.BigInteger
+import java.util.Date
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -400,12 +401,12 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     /**
-     *  Verifies that the actual jsonObject contains a field with the given name and
-     *  Map<String,Any> value.
+     *  Verifies that the actual jsonObject contains a field with the given name,
+     *  and that field contains attributes matching the given map.
      *  @param name the field name
-     *  @param expectedValue the expected value of the field
+     *  @param expectedValue the expected attributes of the field
      */
-    fun hasField(name: String, map: Map<String, Any>): JsonObjectAssert {
+    fun hasField(name: String, expectedValue: Map<String, Any>): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
                 "Expected json object to have field named $name but couldn't find one"
@@ -419,46 +420,31 @@ class JsonObjectAssert(actual: JsonObject) :
                     "but was ${element.javaClass.simpleName}"
             )
             .isTrue()
-        val jsonObject = element as JsonObject
-        assertMapInJsonObject(map, jsonObject)
+
+        assertThat(element.asJsonObject).containsAttributes(expectedValue)
         return this
     }
 
     /**
-     *  Verifies that the actual Map of key -> value pairs is contained as a
-     *  property -> value equivalent inside the JsonObject.
-     *  @param map the Map to be asserted
+     *  Verifies that the actual jsonObject contains attributes matching the given map.
+     *  @param expectedValue the Map to be asserted
      */
-    fun bundlesMap(map: Map<String, Any?>, keysPrefix: String = ""): JsonObjectAssert {
-        assertMapInJsonObject(map, actual, keysPrefix)
-        return this
-    }
-
-    private fun assertMapInJsonObject(
-        map: Map<String, Any?>,
-        jsonObject: JsonObject,
-        keyPrefix: String = ""
-    ) {
-        map.forEach {
-            val keyValue = it.value
+    fun containsAttributes(expectedValue: Map<String, Any?>): JsonObjectAssert {
+        expectedValue.forEach {
+            val value = it.value
             val key = it.key
-            assertGenericValue("$keyPrefix$key", keyValue, jsonObject)
+            when (value) {
+                is Boolean -> hasField(key, value)
+                is Int -> hasField(key, value)
+                is Long -> hasField(key, value)
+                is Float -> hasField(key, value)
+                is Double -> hasField(key, value)
+                is String -> hasField(key, value)
+                is Date -> hasField(key, value.time)
+                is BigInteger -> hasField(key, value)
+            }
         }
-    }
-
-    private fun assertGenericValue(
-        key: String,
-        keyValue: Any?,
-        jsonObject: JsonObject
-    ) {
-        when (keyValue) {
-            is String -> assertThat(jsonObject).hasField(key, keyValue)
-            is Int -> assertThat(jsonObject).hasField(key, keyValue)
-            is Long -> assertThat(jsonObject).hasField(key, keyValue)
-            is Double -> assertThat(jsonObject).hasField(key, keyValue)
-            is Float -> assertThat(jsonObject).hasField(key, keyValue)
-            is BigInteger -> assertThat(jsonObject).hasField(key, keyValue)
-        }
+        return this
     }
 
     companion object {

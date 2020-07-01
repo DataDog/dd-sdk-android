@@ -83,6 +83,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         jsonEvent: JsonObject
     ) {
         event.attributes.forEach {
+            val rawKey = it.key
+            val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
             val value = it.value
             val jsonValue = when (value) {
                 null -> JsonNull.INSTANCE
@@ -97,13 +99,24 @@ internal class RumEventSerializer : Serializer<RumEvent> {
                 is JsonArray -> value
                 else -> JsonPrimitive(value.toString())
             }
-            jsonEvent.add(it.key, jsonValue)
+            jsonEvent.add(key, jsonValue)
         }
     }
 
     // endregion
 
     companion object {
-        private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        internal val knownAttributes = setOf(
+            RumAttributes.ACTION_GESTURE_DIRECTION,
+            RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID,
+            RumAttributes.ACTION_TARGET_PARENT_CLASSNAME,
+            RumAttributes.ACTION_TARGET_PARENT_INDEX,
+            RumAttributes.ACTION_TARGET_CLASS_NAME,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID,
+            RumAttributes.ACTION_TARGET_TITLE,
+            RumAttributes.ERROR_RESOURCE_METHOD,
+            RumAttributes.ERROR_RESOURCE_STATUS_CODE,
+            RumAttributes.ERROR_RESOURCE_URL
+        )
     }
 }
