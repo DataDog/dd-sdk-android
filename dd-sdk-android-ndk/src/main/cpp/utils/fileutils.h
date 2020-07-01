@@ -4,13 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.error.internal
+#ifndef FILEUTILS_H
+#define FILEUTILS_H
 
-import android.content.Context
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-internal interface NdkCrashHandler {
+namespace fileutils {
 
-    fun register(appContext: Context)
-
-    fun unregister()
+    bool create_dir_if_not_exists(const char *dirPath);
 }
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+

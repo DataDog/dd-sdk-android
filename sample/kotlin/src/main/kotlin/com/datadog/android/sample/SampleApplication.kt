@@ -9,6 +9,8 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
@@ -21,6 +23,7 @@ class SampleApplication : Application() {
             System.loadLibrary("datadog-native-sample-lib")
         }
     }
+
     override fun onCreate() {
         super.onCreate()
         val environment = BuildConfig.FLAVOR
@@ -33,7 +36,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin")
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
-            .setCrashReportsEnabled(true, true)
+            .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .trackInteractions()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {

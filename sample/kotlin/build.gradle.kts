@@ -88,6 +88,7 @@ android {
 dependencies {
 
     api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-ndk"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)

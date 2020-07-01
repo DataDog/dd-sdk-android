@@ -27,7 +27,7 @@ import java.util.TimeZone
  * The Logging feature implementation of the [Serializer] interface.
  */
 internal class LogSerializer(private val logConstraints: LogConstraints = DatadogLogConstraints()) :
-        Serializer<Log> {
+    Serializer<Log> {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
@@ -126,7 +126,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         val tags = logConstraints.validateTags(log.tags)
-                .joinToString(",")
+            .joinToString(",")
         jsonLog.addProperty(TAG_DATADOG_TAGS, tags)
     }
 
@@ -135,24 +135,24 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         jsonLog: JsonObject
     ) {
         logConstraints.validateAttributes(log.attributes)
-                .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
-                .forEach {
-                    val value = it.value
-                    val jsonValue = when (value) {
-                        NULL_MAP_VALUE -> JsonNull.INSTANCE
-                        is Boolean -> JsonPrimitive(value)
-                        is Int -> JsonPrimitive(value)
-                        is Long -> JsonPrimitive(value)
-                        is Float -> JsonPrimitive(value)
-                        is Double -> JsonPrimitive(value)
-                        is String -> JsonPrimitive(value)
-                        is Date -> JsonPrimitive(value.time)
-                        is JsonObject -> value
-                        is JsonArray -> value
-                        else -> JsonPrimitive(value.toString())
-                    }
-                    jsonLog.add(it.key, jsonValue)
+            .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
+            .forEach {
+                val value = it.value
+                val jsonValue = when (value) {
+                    NULL_MAP_VALUE -> JsonNull.INSTANCE
+                    is Boolean -> JsonPrimitive(value)
+                    is Int -> JsonPrimitive(value)
+                    is Long -> JsonPrimitive(value)
+                    is Float -> JsonPrimitive(value)
+                    is Double -> JsonPrimitive(value)
+                    is String -> JsonPrimitive(value)
+                    is Date -> JsonPrimitive(value.time)
+                    is JsonObject -> value
+                    is JsonArray -> value
+                    else -> JsonPrimitive(value.toString())
                 }
+                jsonLog.add(it.key, jsonValue)
+            }
     }
 
     companion object {
@@ -161,15 +161,15 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         internal const val TAG_DATADOG_TAGS = "ddtags"
 
         internal val reservedAttributes = arrayOf(
-                LogAttributes.HOST,
-                LogAttributes.MESSAGE,
-                LogAttributes.STATUS,
-                LogAttributes.SERVICE_NAME,
-                LogAttributes.SOURCE,
-                LogAttributes.ERROR_KIND,
-                LogAttributes.ERROR_MESSAGE,
-                LogAttributes.ERROR_STACK,
-                TAG_DATADOG_TAGS
+            LogAttributes.HOST,
+            LogAttributes.MESSAGE,
+            LogAttributes.STATUS,
+            LogAttributes.SERVICE_NAME,
+            LogAttributes.SOURCE,
+            LogAttributes.ERROR_KIND,
+            LogAttributes.ERROR_MESSAGE,
+            LogAttributes.ERROR_STACK,
+            TAG_DATADOG_TAGS
         )
 
         internal fun resolveLogLevelStatus(level: Int): String {
@@ -180,6 +180,8 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
                 AndroidLog.INFO -> "info"
                 AndroidLog.DEBUG -> "debug"
                 AndroidLog.VERBOSE -> "trace"
+                // If you change these you will have to propagate the changes
+                // also into the datadog-native-lib.cpp file inside the dd-sdk-android-ndk module.
                 Log.CRASH -> "emergency"
                 else -> "debug"
             }

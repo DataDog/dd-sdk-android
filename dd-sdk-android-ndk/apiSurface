@@ -1,0 +1,3 @@
+class com.datadog.android.ndk.NdkCrashReportsPlugin : com.datadog.android.plugin.DatadogPlugin
+  override fun register(com.datadog.android.plugin.DatadogPluginConfig)
+  override fun unregister()

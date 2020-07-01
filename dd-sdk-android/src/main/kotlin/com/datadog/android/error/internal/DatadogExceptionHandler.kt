@@ -85,6 +85,8 @@ internal class DatadogExceptionHandler(
     // endregion
 
     companion object {
+        // If you change these you will have to propagate the changes
+        // also into the datadog-native-lib.cpp file inside the dd-sdk-android-ndk module.
         internal const val LOGGER_NAME = "crash"
         internal const val MESSAGE = "Application crash detected"
     }

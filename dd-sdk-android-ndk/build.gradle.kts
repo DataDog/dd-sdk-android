@@ -1,7 +1,7 @@
 /*
  * Unless explicitly stated otherwise all pomFilesList in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
+ * Copyright 2016-2019 Datadog, Inc.
  */
 
 import com.datadog.gradle.Dependencies
@@ -41,6 +41,11 @@ android {
         targetSdkVersion(AndroidConfig.TARGET_SDK)
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+        externalNativeBuild {
+            cmake {
+                cppFlags.add("-std=c++14")
+            }
+        }
     }
 
     sourceSets.named("main") {
@@ -63,17 +68,24 @@ android {
         isCheckReleaseBuilds = false
         isCheckGeneratedSources = true
     }
+
+    externalNativeBuild {
+        cmake {
+            path = File("$projectDir/src/main/cpp/CMakeLists.txt")
+            version = Dependencies.Versions.CMakeVersion
+        }
+    }
+    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.Timber)
+    implementation(Dependencies.Libraries.OkHttp)
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
-    testImplementation(Dependencies.Libraries.OkHttpMock)
 
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)

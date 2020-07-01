@@ -58,8 +58,6 @@ android {
         exclude("META-INF/LICENSE.md")
         exclude("META-INF/LICENSE-notice.md")
     }
-
-    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 repositories {

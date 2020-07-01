@@ -253,7 +253,7 @@ internal class TracesFeatureTest {
     }
 
     @Test
-    fun `it will register and unregister the provided plugin when initialise and stop called`(
+    fun `it will register the provided plugin when feature is initialized`(
         forge: Forge
     ) {
         // given
@@ -273,7 +273,6 @@ internal class TracesFeatureTest {
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService
         )
-        TracesFeature.stop()
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
         // then
@@ -282,9 +281,6 @@ internal class TracesFeatureTest {
             mockedPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
-            mockedPlugins.forEach {
-                verify(it).unregister()
-            }
         }
 
         argumentCaptor.allValues.forEach {
@@ -292,8 +288,41 @@ internal class TracesFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featureFolderName).isEqualTo(TracingFileStrategy.TRACES_FOLDER)
+            assertThat(it.featurePersistenceDirName).isEqualTo(TracingFileStrategy.TRACES_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
+        }
+    }
+
+    @Test
+    fun `it unregister the provided plugin when stop called`(
+        forge: Forge
+    ) {
+        // given
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+
+        TracesFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            mockSystemInfoProvider,
+            mockTimeProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+
+        // when
+        TracesFeature.stop()
+
+        // then
+        val mockedPlugins = plugins.toTypedArray()
+        inOrder(*mockedPlugins) {
+            mockedPlugins.forEach {
+                verify(it).unregister()
+            }
         }
     }
 

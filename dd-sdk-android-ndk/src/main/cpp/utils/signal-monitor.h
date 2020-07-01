@@ -1,3 +1,12 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+
+#ifndef SIGNAL_MONITOR_H
+#define SIGNAL_MONITOR_H
 
 #include <jni.h>
 #include <stdbool.h>
@@ -11,13 +20,15 @@ extern "C" {
  * serialize to disk and invoke the previously-installed handler
  * @return true if monitoring started successfully
  */
-bool installSignalHandlers(JNIEnv *env);
+bool install_signal_handlers(JNIEnv *env);
+
 /**
  * Stop monitoring for fatal exceptions and reinstall previously-installed
  * handlers
  */
-void uninstallSignalHandlers(void);
+void uninstall_signal_handlers(void);
 
 #ifdef __cplusplus
 }
+#endif
 #endif

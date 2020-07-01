@@ -19,7 +19,7 @@ sealed class DatadogPluginConfig(
     val context: Context,
     val envName: String,
     val serviceName: String,
-    val featureFolderName: String
+    val featurePersistenceDirName: String
 ) {
 
     internal class CrashReportsPluginConfig(

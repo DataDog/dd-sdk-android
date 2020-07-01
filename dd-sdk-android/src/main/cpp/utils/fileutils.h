@@ -1,1 +1,0 @@
-void createDirIfNotExists(const char *dirPath);

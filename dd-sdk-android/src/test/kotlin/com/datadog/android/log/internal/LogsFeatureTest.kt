@@ -203,7 +203,7 @@ internal class LogsFeatureTest {
     }
 
     @Test
-    fun `it will register and unregister the provided plugin when initialise and stop called`(
+    fun `it will register the provided plugin when feature was initialized`(
         forge: Forge
     ) {
         // given
@@ -221,7 +221,6 @@ internal class LogsFeatureTest {
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService
         )
-        LogsFeature.stop()
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
         // then
@@ -230,9 +229,6 @@ internal class LogsFeatureTest {
             mockedPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
-            mockedPlugins.forEach {
-                verify(it).unregister()
-            }
         }
 
         argumentCaptor.allValues.forEach {
@@ -240,8 +236,38 @@ internal class LogsFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featureFolderName).isEqualTo(LogFileStrategy.LOGS_FOLDER)
+            assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.LOGS_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
+        }
+    }
+
+    @Test
+    fun `it will unregister the provided plugin when stop called`(
+        forge: Forge
+    ) {
+        // given
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+
+        // when
+        LogsFeature.stop()
+
+        // then
+        val mockedPlugins = plugins.toTypedArray()
+        inOrder(*mockedPlugins) {
+            mockedPlugins.forEach {
+                verify(it).unregister()
+            }
         }
     }
 
