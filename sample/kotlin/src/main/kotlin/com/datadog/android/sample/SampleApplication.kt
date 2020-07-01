@@ -16,7 +16,11 @@ import com.datadog.android.tracing.AndroidTracer
 import io.opentracing.util.GlobalTracer
 
 class SampleApplication : Application() {
-
+    companion object {
+        init {
+            System.loadLibrary("datadog-native-sample-lib")
+        }
+    }
     override fun onCreate() {
         super.onCreate()
         val environment = BuildConfig.FLAVOR
@@ -29,6 +33,7 @@ class SampleApplication : Application() {
         configBuilder
             .setServiceName("android-sample-kotlin")
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
+            .setCrashReportsEnabled(true, true)
             .trackInteractions()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {

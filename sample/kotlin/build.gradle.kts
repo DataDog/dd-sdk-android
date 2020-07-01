@@ -40,6 +40,11 @@ android {
         multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
+        externalNativeBuild {
+            cmake {
+                cppFlags.add("-std=c++14")
+            }
+        }
     }
 
     sourceSets.named("main") {
@@ -70,6 +75,14 @@ android {
     dexOptions {
         javaMaxHeapSize = "4g"
     }
+
+    externalNativeBuild {
+        cmake {
+            path = File("$projectDir/src/main/cpp/CMakeLists.txt")
+            version = Dependencies.Versions.CMakeVersion
+        }
+    }
+    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 dependencies {
