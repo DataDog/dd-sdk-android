@@ -83,7 +83,7 @@ internal class EndToEndRumGesturesTrackingTests {
                 }
             }
         val expectedGestures = expectedEvents()
-        sentGestureEvents.assertMatches(expectedGestures)
+        sentGestureEvents.verifyEventMatches(expectedGestures)
     }
 
     private fun expectedEvents(): List<ExpectedEvent> {

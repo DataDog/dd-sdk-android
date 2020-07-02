@@ -86,7 +86,7 @@ internal class EndToEndRumActivityTrackingTests {
                     sentGestureEvents += rumPayloadToJsonList(request.textBody)
                 }
             }
-        sentGestureEvents.assertMatches(expectedEvents)
+        sentGestureEvents.verifyEventMatches(expectedEvents)
     }
 
     // endregion

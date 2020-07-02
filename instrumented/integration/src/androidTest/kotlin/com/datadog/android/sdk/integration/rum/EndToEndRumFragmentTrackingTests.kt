@@ -134,7 +134,7 @@ internal class EndToEndRumFragmentTrackingTests {
                     sentGestureEvents += rumPayloadToJsonList(request.textBody)
                 }
             }
-        sentGestureEvents.assertMatches(expectedEvents)
+        sentGestureEvents.verifyEventMatches(expectedEvents)
     }
 
     private fun currentFragment(): Fragment? {

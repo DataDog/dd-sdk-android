@@ -6,21 +6,21 @@
 
 package com.datadog.android.sdk.integration.rum
 
-import com.datadog.tools.unit.assertj.JsonObjectAssert
+import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions
 
 internal const val TARGET_CLASS_NAME = "action.target.classname"
 internal const val TARGET_RESOURCE_ID = "action.target.resource_id"
-internal const val VIEW_ARGUMENTS_PREFIX = "view.arguments."
+internal const val VIEW_ARGUMENTS_PREFIX = "context.view.arguments."
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
     return payload.split(Regex("\n"))
         .map { JsonParser.parseString(it) as JsonObject }
 }
 
-internal fun List<JsonObject>.assertMatches(
+internal fun List<JsonObject>.verifyEventMatches(
     expected: List<ExpectedEvent>
 ) {
     Assertions.assertThat(this.size)
@@ -32,8 +32,8 @@ internal fun List<JsonObject>.assertMatches(
 
     this.forEachIndexed { index, event ->
         when (val expectedEvent = expected[index]) {
-            is ExpectedViewEvent -> event.assertMatches(expectedEvent)
-            is ExpectedGestureEvent -> event.assertMatches(expectedEvent)
+            is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
+            is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
                 // Do nothing
             }
@@ -41,32 +41,37 @@ internal fun List<JsonObject>.assertMatches(
     }
 }
 
-private fun JsonObject.assertMatches(event: ExpectedGestureEvent) {
-    assertMatchesRoot(event)
-    JsonObjectAssert.assertThat(this)
+private fun JsonObject.verifyEventMatches(event: ExpectedGestureEvent) {
+    verifyRootMatches(event)
+    assertThat(this)
         .hasField("action") {
             hasField("type", event.type.gestureName)
         }
         .hasField(TARGET_CLASS_NAME, event.targetClassName)
         .hasField(TARGET_RESOURCE_ID, event.targetResourceId)
-    JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
+    assertThat(this).containsAttributes(event.extraAttributes)
 }
 
-private fun JsonObject.assertMatches(event: ExpectedViewEvent) {
-    assertMatchesRoot(event)
-    JsonObjectAssert.assertThat(this)
+private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
+    verifyRootMatches(event)
+
+    assertThat(this)
         .hasField("view") {
             hasField("url", event.viewUrl)
         }
         .hasField("_dd") {
             hasField("document_version", event.docVersion)
         }
-    JsonObjectAssert.assertThat(this).bundlesMap(event.viewArguments, VIEW_ARGUMENTS_PREFIX)
-    JsonObjectAssert.assertThat(this).bundlesMap(event.extraAttributes)
+
+    assertThat(this).containsAttributes(event.extraAttributes)
+    val viewArguments = event.viewArguments
+        .map { "$VIEW_ARGUMENTS_PREFIX${it.key}" to it.value }
+        .toMap()
+    assertThat(this).containsAttributes(viewArguments)
 }
 
-private fun JsonObject.assertMatchesRoot(event: ExpectedEvent) {
-    JsonObjectAssert.assertThat(this)
+private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {
+    assertThat(this)
         .hasField("application") {
             hasField("id", event.rumContext.applicationId)
         }
@@ -76,4 +81,8 @@ private fun JsonObject.assertMatchesRoot(event: ExpectedEvent) {
         .hasField("view") {
             hasField("id", event.rumContext.viewId)
         }
+}
+
+private fun Map<String, Any?>.toContextAttributes(): Map<String, Any?> {
+    return map { "context.${it.key}" to it.value }.toMap()
 }

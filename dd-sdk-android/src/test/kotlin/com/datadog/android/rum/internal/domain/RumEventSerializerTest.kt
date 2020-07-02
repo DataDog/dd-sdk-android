@@ -20,6 +20,7 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -251,13 +252,32 @@ internal class RumEventSerializerTest {
         assertEventMatches(jsonObject, event)
     }
 
+    @Test
+    fun `keep known custom attributes as is`(
+        @Forgery fakeEvent: RumEvent,
+        forge: Forge
+    ) {
+        val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
+        val value = forge.anAlphabeticalString()
+        val event = fakeEvent.copy(attributes = mapOf(key to value))
+
+        val serialized = underTest.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        assertNetworkInfoMatches(event, jsonObject)
+        assertUserInfoMatches(event, jsonObject)
+        assertThat(jsonObject)
+            .hasField(key, value)
+    }
+
     // region Internal
 
     private fun assertEventMatches(
         jsonObject: JsonObject,
         event: RumEvent
     ) {
-        assertAttributesMatch(jsonObject, event)
+        assertCustomAttributesMatch(jsonObject, event)
         assertNetworkInfoMatches(event, jsonObject)
         assertUserInfoMatches(event, jsonObject)
     }
@@ -329,7 +349,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    private fun assertAttributesMatch(
+    private fun assertCustomAttributesMatch(
         jsonObject: JsonObject,
         event: RumEvent
     ) {
@@ -337,18 +357,19 @@ internal class RumEventSerializerTest {
             .filter { it.key.isNotBlank() }
             .forEach {
                 val value = it.value
+                val keyName = "context.${it.key}"
                 when (value) {
-                    null -> assertThat(jsonObject).hasNullField(it.key)
-                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                    is Int -> assertThat(jsonObject).hasField(it.key, value)
-                    is Long -> assertThat(jsonObject).hasField(it.key, value)
-                    is Float -> assertThat(jsonObject).hasField(it.key, value)
-                    is Double -> assertThat(jsonObject).hasField(it.key, value)
-                    is String -> assertThat(jsonObject).hasField(it.key, value)
-                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
-                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
-                    else -> assertThat(jsonObject).hasField(it.key, value.toString())
+                    null -> assertThat(jsonObject).hasNullField(keyName)
+                    is Boolean -> assertThat(jsonObject).hasField(keyName, value)
+                    is Int -> assertThat(jsonObject).hasField(keyName, value)
+                    is Long -> assertThat(jsonObject).hasField(keyName, value)
+                    is Float -> assertThat(jsonObject).hasField(keyName, value)
+                    is Double -> assertThat(jsonObject).hasField(keyName, value)
+                    is String -> assertThat(jsonObject).hasField(keyName, value)
+                    is Date -> assertThat(jsonObject).hasField(keyName, value.time)
+                    is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
+                    is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
+                    else -> assertThat(jsonObject).hasField(keyName, value.toString())
                 }
             }
     }
