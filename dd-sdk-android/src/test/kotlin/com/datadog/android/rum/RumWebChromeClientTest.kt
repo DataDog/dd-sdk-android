@@ -169,20 +169,10 @@ internal class RumWebChromeClientTest {
 
         val result = testedClient.onConsoleMessage(mockConsoleMessage)
 
-        verify(mockLogHandler).handleLog(
-            Log.ERROR,
-            fakeMessage,
-            null,
-            mapOf(
-                RumWebChromeClient.SOURCE_ID to fakeSource,
-                RumWebChromeClient.SOURCE_LINE to fakeLine
-            ),
-            emptySet(),
-            null
-        )
+        verifyZeroInteractions(mockLogHandler)
         verify(mockRumMonitor).addError(
             fakeMessage,
-            RumErrorSource.CONSOLE,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(
                 RumWebChromeClient.SOURCE_ID to fakeSource,

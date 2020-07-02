@@ -113,6 +113,19 @@ public class MainActivity extends AppCompatActivity {
         mLogger.d("MainActivity/onDestroy");
     }
 
+    @Override
+    public void onBackPressed() {
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_host);
+
+        if (currentFragment instanceof BaseFragment){
+            BaseFragment baseFragment = (BaseFragment) currentFragment;
+            if (baseFragment.onBackPressed()){
+                return;
+            }
+        }
+        super.onBackPressed();
+    }
+
     // endregion
 
     // region utility methods

@@ -57,6 +57,7 @@ internal fun RumErrorSource.toSchemaSource(): ErrorEvent.Source {
         RumErrorSource.CONSOLE -> ErrorEvent.Source.CONSOLE
         RumErrorSource.LOGGER -> ErrorEvent.Source.LOGGER
         RumErrorSource.AGENT -> ErrorEvent.Source.AGENT
+        RumErrorSource.WEBVIEW -> ErrorEvent.Source.WEBVIEW
     }
 }
 

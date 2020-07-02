@@ -20,5 +20,7 @@ enum class RumErrorSource {
     /** Error extracted from a logged error. */
     LOGGER,
     /** Error originated in an Agent. */
-    AGENT
+    AGENT,
+    /** Error originated in a WebView. */
+    WEBVIEW
 }

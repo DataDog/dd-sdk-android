@@ -33,7 +33,7 @@
             "source": {
               "type": "string",
               "description": "Source of the error",
-              "enum": ["network", "source", "console", "logger", "agent"]
+              "enum": ["network", "source", "console", "logger", "agent", "webview"]
             },
             "stack": {
               "type": "string",
