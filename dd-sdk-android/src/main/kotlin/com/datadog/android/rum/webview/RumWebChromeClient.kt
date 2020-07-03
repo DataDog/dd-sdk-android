@@ -41,14 +41,14 @@ internal constructor(private val logger: Logger) : WebChromeClient() {
                 SOURCE_LINE to consoleMessage.lineNumber()
             )
 
-            logger.log(level.toLogLevel(), message, null, attributes)
-
             if (level == ConsoleMessage.MessageLevel.ERROR) {
                 GlobalRum.get().addError(
                     message,
-                    RumErrorSource.CONSOLE,
+                    RumErrorSource.WEBVIEW,
                     null,
                     attributes)
+            } else {
+                logger.log(level.toLogLevel(), message, null, attributes)
             }
         }
         return false

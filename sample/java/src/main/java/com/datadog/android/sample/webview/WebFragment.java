@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 import com.datadog.android.rum.webview.RumWebChromeClient;
 import com.datadog.android.rum.webview.RumWebViewClient;
+import com.datadog.android.sample.BaseFragment;
 import com.datadog.android.sample.MainActivity;
 import com.datadog.android.sample.R;
 import io.opentracing.Scope;
@@ -24,7 +25,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 
-public class WebFragment extends Fragment {
+public class WebFragment extends BaseFragment {
 
     private WebViewModel mViewModel;
     private WebView mWebView;
@@ -75,6 +76,21 @@ public class WebFragment extends Fragment {
         mMainScope.close();
         mMainSpan.finish();
     }
+
+    // endregion
+
+    // region BaseFragment
+
+    @Override
+    public boolean onBackPressed() {
+        if (mWebView.canGoBack()) {
+            mWebView.goBack();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     // endregion
 

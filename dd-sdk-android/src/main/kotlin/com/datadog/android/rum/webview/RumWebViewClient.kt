@@ -67,7 +67,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, errorCode, description, failingUrl)
         GlobalRum.get().addError(
             "Error $errorCode: $description",
-            RumErrorSource.SOURCE,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to failingUrl)
         )
@@ -83,7 +83,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedError(view, request, error)
         GlobalRum.get().addError(
             "Error ${error?.errorCode}: ${error?.description}",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to request?.url)
         )
@@ -99,7 +99,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedHttpError(view, request, errorResponse)
         GlobalRum.get().addError(
             "Error ${errorResponse?.statusCode}: ${errorResponse?.reasonPhrase}",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to request?.url)
         )
@@ -114,7 +114,7 @@ open class RumWebViewClient : WebViewClient() {
         super.onReceivedSslError(view, handler, error)
         GlobalRum.get().addError(
             "SSL Error ${error?.primaryError}",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to error?.url)
         )

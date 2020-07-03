@@ -123,7 +123,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $errorCode: $description",
-            RumErrorSource.SOURCE,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to fakeUrl)
         )
@@ -138,7 +138,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $errorCode: null",
-            RumErrorSource.SOURCE,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to fakeUrl)
         )
@@ -153,7 +153,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $errorCode: $description",
-            RumErrorSource.SOURCE,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to null)
         )
@@ -176,7 +176,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $errorCode: $description",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to mockUri)
         )
@@ -196,7 +196,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $errorCode: $description",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to null)
         )
@@ -216,7 +216,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error null: null",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to mockUri)
         )
@@ -239,7 +239,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $statusCode: $reasonPhrase",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to mockUri)
         )
@@ -259,7 +259,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error null: null",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to mockUri)
         )
@@ -279,7 +279,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "Error $statusCode: $reasonPhrase",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to null)
         )
@@ -297,7 +297,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "SSL Error $primaryError",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to fakeUrl)
         )
@@ -315,7 +315,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "SSL Error $primaryError",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to fakeUrl)
         )
@@ -329,7 +329,7 @@ internal class RumWebViewClientTest {
 
         verify(mockRumMonitor).addError(
             "SSL Error null",
-            RumErrorSource.NETWORK,
+            RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to null)
         )
