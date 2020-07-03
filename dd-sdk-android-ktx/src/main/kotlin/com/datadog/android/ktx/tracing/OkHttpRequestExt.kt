@@ -9,6 +9,10 @@ package com.datadog.android.ktx.tracing
 import io.opentracing.Span
 import okhttp3.Request
 
+/**
+ * Set the parent for the [Span] created around this OkHttp [Request].
+ * @param span the parent [Span]
+ */
 fun Request.Builder.parentSpan(span: Span): Request.Builder {
     tag(Span::class.java, span)
     return this

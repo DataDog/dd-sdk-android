@@ -83,10 +83,12 @@ class SpanExtTest {
         val mockTracer: Tracer = mock()
         val mockSpanBuilder: Tracer.SpanBuilder = mock()
         val mockSpan: Span = mock()
+        val mockScope: Scope = mock()
         GlobalTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(operationName)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
+        whenever(mockTracer.activateSpan(mockSpan)).thenReturn(mockScope)
 
         val callResult = withinSpan(operationName) {
             lambdaCalled = true
@@ -96,6 +98,7 @@ class SpanExtTest {
         assertThat(lambdaCalled).isTrue()
         assertThat(callResult).isEqualTo(result)
         verify(mockSpan).finish()
+        verify(mockScope).close()
     }
 
     @Test

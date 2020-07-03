@@ -17,16 +17,20 @@ fun Span.setError(throwable: Throwable) {
 /**
  * Helper method to attach an error message to this [Span].
  * The error message will be added to this [Span] as a standard Error Tag.
- * @param message the error message you want to attach
+ * @param message the error message you want to attach.
  */
 fun Span.setError(message: String) {
     AndroidTracer.logErrorMessage(this, message)
 }
 
 /**
- * Wraps the provided lambda within a [Span]
+ * Wraps the provided lambda within a [Span].
+ * @param operationName the name of the [Span] created around the lambda
+ * @param parentSpan the parent [Span]. By default this is null
+ * @param block the lambda function traced by this newly created [Span]
  *
  */
+@SuppressWarnings("TooGenericExceptionCaught")
 inline fun <T : Any> withinSpan(
     operationName: String,
     parentSpan: Span? = null,
