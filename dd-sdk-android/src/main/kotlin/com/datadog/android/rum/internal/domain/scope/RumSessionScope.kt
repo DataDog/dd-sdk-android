@@ -6,13 +6,17 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ActionEvent
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.max
 
 internal class RumSessionScope(
     internal val parentScope: RumScope,
@@ -22,9 +26,11 @@ internal class RumSessionScope(
 
     internal val activeChildrenScopes = mutableListOf<RumScope>()
 
-    internal var sessionId = NULL_SESSION_ID
+    internal var sessionId = RumContext.NULL_SESSION_ID
     internal val sessionStartNs = AtomicLong(System.nanoTime())
     internal val lastUserInteractionNs = AtomicLong(0L)
+
+    internal var applicationDisplayed: Boolean = false
 
     init {
         GlobalRum.updateRumContext(getRumContext())
@@ -37,7 +43,7 @@ internal class RumSessionScope(
         writer: Writer<RumEvent>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
-            sessionId = NULL_SESSION_ID
+            sessionId = RumContext.NULL_SESSION_ID
         }
         updateSessionIdIfNeeded()
 
@@ -50,6 +56,9 @@ internal class RumSessionScope(
         }
 
         if (event is RumRawEvent.StartView) {
+            if (!applicationDisplayed) {
+                onApplicationDisplayed(writer)
+            }
             activeChildrenScopes.add(RumViewScope.fromEvent(this, event))
         }
 
@@ -65,16 +74,46 @@ internal class RumSessionScope(
 
     // region Internal
 
+    private fun onApplicationDisplayed(
+        writer: Writer<RumEvent>
+    ) {
+        applicationDisplayed = true
+        val now = System.nanoTime()
+        val startupTime = Datadog.startupTimeNs
+        val context = getRumContext()
+        val actionEvent = ActionEvent(
+            date = TimeUnit.NANOSECONDS.toMillis(startupTime),
+            action = ActionEvent.Action(
+                type = ActionEvent.Type1.APPLICATION_START,
+                id = sessionId,
+                loadingTime = max(now - startupTime, 1L)
+            ),
+            view = ActionEvent.View(id = RumContext.NULL_SESSION_ID, url = ""),
+            application = ActionEvent.Application(context.applicationId),
+            session = ActionEvent.Session(
+                id = context.sessionId,
+                type = ActionEvent.Type.USER
+            ),
+            dd = ActionEvent.Dd()
+        )
+        val rumEvent = RumEvent(
+            event = actionEvent,
+            attributes = emptyMap(),
+            userInfo = RumFeature.userInfoProvider.getUserInfo()
+        )
+        writer.write(rumEvent)
+    }
+
     @Synchronized
     private fun updateSessionIdIfNeeded() {
         val nanoTime = System.nanoTime()
-        val isFirstSession = sessionId == NULL_SESSION_ID
+        val isNewSession = sessionId == RumContext.NULL_SESSION_ID
         val sessionLength = nanoTime - sessionStartNs.get()
         val duration = nanoTime - lastUserInteractionNs.get()
         val isInactiveSession = duration >= sessionInactivityNanos
         val isLongSession = sessionLength >= sessionMaxDurationNanos
 
-        if (isFirstSession || isInactiveSession || isLongSession) {
+        if (isNewSession || isInactiveSession || isLongSession) {
             sessionStartNs.set(nanoTime)
             sessionId = UUID.randomUUID().toString()
         }
@@ -87,6 +126,5 @@ internal class RumSessionScope(
     companion object {
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
-        internal val NULL_SESSION_ID = UUID(0, 0).toString()
     }
 }

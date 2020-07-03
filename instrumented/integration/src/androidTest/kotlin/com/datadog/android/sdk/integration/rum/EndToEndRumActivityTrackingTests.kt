@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 @LargeTest
 internal class EndToEndRumActivityTrackingTests {
 
-    private val expectedEvents: MutableList<ExpectedViewEvent> = mutableListOf()
+    private val expectedEvents: MutableList<ExpectedEvent> = mutableListOf()
     private val expectedViewArguments = mapOf<String, Any?>(
         "key1" to "keyValue1",
         "key2" to 1,
@@ -39,6 +39,7 @@ internal class EndToEndRumActivityTrackingTests {
 
     @Test
     fun verifyViewEvents() {
+        expectedEvents.add(ExpectedApplicationStart())
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val viewUrl = mockServerRule.activity.javaClass.canonicalName!!.replace(
             '.',
@@ -67,7 +68,7 @@ internal class EndToEndRumActivityTrackingTests {
                 viewArguments = expectedViewArguments
             )
         )
-        // Check sent requests
+
         checkSentRequests()
     }
 

@@ -62,6 +62,7 @@ object Datadog {
     const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     internal val initialized = AtomicBoolean(false)
+    internal val startupTimeNs = System.nanoTime()
 
     internal var libraryVerbosity = Int.MAX_VALUE
         private set

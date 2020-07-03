@@ -6,16 +6,26 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -27,7 +37,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -62,19 +71,22 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeParentContext: RumContext
 
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
     @BeforeEach
     fun `set up`() {
+        RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
+
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         testedScope = RumSessionScope(mockParentScope, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        // We never send events from this scope
-        verifyZeroInteractions(mockWriter)
     }
 
     @Test
@@ -181,6 +193,7 @@ internal class RumSessionScopeTest {
         verify(mockChildScope).handleEvent(mockEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
+        verifyZeroInteractions(mockWriter)
     }
 
     @Test
@@ -232,6 +245,7 @@ internal class RumSessionScopeTest {
 
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
+        verifyZeroInteractions(mockWriter)
     }
 
     @Test
@@ -244,6 +258,92 @@ internal class RumSessionScopeTest {
 
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `sends application start on first startView event`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        testedScope.activeChildrenScopes.add(mockChildScope)
+
+        mockEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val now = System.nanoTime()
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasActionData {
+                    hasTimestamp(TimeUnit.NANOSECONDS.toMillis(Datadog.startupTimeNs))
+                    hasType(ActionEvent.Type1.APPLICATION_START)
+                    hasNoTarget()
+                    hasDurationLowerThan(now - Datadog.startupTimeNs)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(RumContext.NULL_SESSION_ID, "")
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(testedScope.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `sends application start only once`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        testedScope.activeChildrenScopes.add(mockChildScope)
+
+        mockEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val now = System.nanoTime()
+        mockEvent = RumRawEvent.StartView("not_the_$key", "another_$name", emptyMap())
+        val result2 = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+            assertThat(firstValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasActionData {
+                    hasTimestamp(TimeUnit.NANOSECONDS.toMillis(Datadog.startupTimeNs))
+                    hasType(ActionEvent.Type1.APPLICATION_START)
+                    hasNoTarget()
+                    hasDurationLowerThan(now - Datadog.startupTimeNs)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(RumContext.NULL_SESSION_ID, "")
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(testedScope.sessionId)
+                }
+            assertThat(lastValue)
+                .hasUserInfo(fakeUserInfo)
+                .hasNetworkInfo(null)
+                .hasViewData {
+                    hasName(name.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(testedScope.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
     }
 
     companion object {

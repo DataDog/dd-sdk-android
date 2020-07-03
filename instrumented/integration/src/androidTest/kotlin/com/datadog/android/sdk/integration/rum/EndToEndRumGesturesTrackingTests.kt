@@ -64,11 +64,11 @@ internal class EndToEndRumGesturesTrackingTests {
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)
 
-        // Check sent requests
         checkSentRequests()
     }
 
     // region Internal
+
     private fun checkSentRequests() {
         val requests = mockServerRule.getRequests()
         val sentGestureEvents = mutableListOf<JsonObject>()
@@ -92,6 +92,7 @@ internal class EndToEndRumGesturesTrackingTests {
             '/'
         )
         return listOf(
+            ExpectedApplicationStart(),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 "${mockServerRule.activity.button.javaClass.canonicalName}",
@@ -131,6 +132,7 @@ internal class EndToEndRumGesturesTrackingTests {
     }
 
     // endregion
+
     companion object {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
     }
