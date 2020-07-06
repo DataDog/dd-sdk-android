@@ -28,6 +28,7 @@ internal fun Forge.exhaustiveAttributes(): Map<String, Any?> {
         getForgery<File>(),
         getForgery<JsonObject>(),
         getForgery<JsonArray>(),
+        aList { anAlphabeticalString() },
         null
     ).map { anAlphabeticalString() to it }
         .toMap().toMutableMap()
