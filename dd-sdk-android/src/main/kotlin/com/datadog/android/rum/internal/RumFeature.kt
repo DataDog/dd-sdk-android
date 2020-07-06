@@ -20,8 +20,6 @@ import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.SystemTimeProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
@@ -58,7 +56,6 @@ internal object RumFeature {
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
-    internal val timeProvider: TimeProvider = SystemTimeProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     internal var viewTrackingStrategy: ViewTrackingStrategy =

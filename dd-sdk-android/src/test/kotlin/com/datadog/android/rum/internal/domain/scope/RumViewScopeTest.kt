@@ -7,9 +7,9 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -29,6 +29,7 @@ import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -37,7 +38,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -75,9 +75,6 @@ internal class RumViewScopeTest {
     lateinit var mockActionScope: RumActionScope
 
     @Mock
-    lateinit var mockEvent: RumRawEvent
-
-    @Mock
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
@@ -106,24 +103,21 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
-    @LongForgery
-    var fakeTimeStamp: Long = 0L
+    lateinit var fakeEventTime: Time
 
-    @LongForgery
-    var secondFakeTimestamp: Long = 0L
+    lateinit var fakeEvent: RumRawEvent
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature::class.java.setStaticValue("timeProvider", mockTimeProvider)
+        fakeEventTime = Time()
+
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
         RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
 
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
+        fakeEvent = mockEvent()
 
-        whenever(mockTimeProvider.getDeviceTimestamp())
-            .doReturn(fakeTimeStamp)
-            .doReturn(secondFakeTimestamp)
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -131,14 +125,19 @@ internal class RumViewScopeTest {
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
 
-        testedScope = RumViewScope(mockParentScope, fakeKey, fakeName, fakeAttributes)
+        testedScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes
+        )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
 
     @AfterEach
     fun `tear down`() {
-        RumFeature::class.java.setStaticValue("timeProvider", SystemTimeProvider())
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
         GlobalRum.globalAttributes.clear()
     }
@@ -231,7 +230,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -272,7 +271,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -311,7 +310,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -350,7 +349,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -392,7 +391,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -434,7 +433,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -467,7 +466,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -506,9 +505,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `sends View event on SentError`() {
-        mockEvent = RumRawEvent.SentError()
+        fakeEvent = RumRawEvent.SentError()
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
@@ -517,7 +516,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -536,9 +535,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `sends View event on SentResource`() {
-        mockEvent = RumRawEvent.SentResource()
+        fakeEvent = RumRawEvent.SentResource()
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
@@ -547,7 +546,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -566,9 +565,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `sends View event on SentAction`() {
-        mockEvent = RumRawEvent.SentAction()
+        fakeEvent = RumRawEvent.SentAction()
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
@@ -577,7 +576,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -628,7 +627,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -682,12 +681,12 @@ internal class RumViewScopeTest {
     ) {
         val attributes = forge.exhaustiveAttributes()
         testedScope.activeActionScope = mockChildScope
-        mockEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn mockChildScope
+        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
@@ -702,9 +701,9 @@ internal class RumViewScopeTest {
     ) {
         val attributes = forge.exhaustiveAttributes()
         testedScope.stopped = true
-        mockEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         verifyZeroInteractions(mockWriter)
         assertThat(result).isNull()
@@ -715,9 +714,9 @@ internal class RumViewScopeTest {
     fun `unknown events are sent to children ActionScope`() {
         testedScope.activeActionScope = mockChildScope
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
@@ -725,11 +724,11 @@ internal class RumViewScopeTest {
     @Test
     fun `remove child ActionScope when it updates to null`() {
         testedScope.activeActionScope = mockChildScope
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isNull()
@@ -776,11 +775,11 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.StartResource(key, url, method, attributes)
+        fakeEvent = RumRawEvent.StartResource(key, url, method, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockActionScope).handleEvent(mockEvent, mockWriter)
+        verify(mockActionScope).handleEvent(fakeEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
@@ -799,11 +798,11 @@ internal class RumViewScopeTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String
     ) {
         testedScope.activeResourceScopes[key] = mockChildScope
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn mockChildScope
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
@@ -813,11 +812,11 @@ internal class RumViewScopeTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String
     ) {
         testedScope.activeResourceScopes[key] = mockChildScope
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isEmpty()
@@ -836,9 +835,9 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.AddError(message, source, throwable, false, attributes)
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -848,7 +847,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -864,7 +863,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
@@ -887,10 +886,10 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        mockEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
         GlobalRum.globalAttributes.putAll(attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
         val expectedViewAttributes = attributes.toMutableMap().apply {
             putAll(fakeAttributes)
         }
@@ -902,7 +901,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -918,7 +917,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedViewAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
@@ -941,9 +940,9 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.AddError(message, source, throwable, true, attributes)
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -953,7 +952,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -969,7 +968,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasResourceCount(0)
@@ -992,10 +991,10 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        mockEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
         GlobalRum.globalAttributes.putAll(attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
         val expectedViewAttributes = attributes.toMutableMap().apply {
             putAll(fakeAttributes)
         }
@@ -1007,7 +1006,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasAttributes(attributes)
                 .hasErrorData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1023,7 +1022,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(expectedViewAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasResourceCount(0)
@@ -1053,7 +1052,7 @@ internal class RumViewScopeTest {
                 .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
                     hasDurationGreaterThan(1)
                     hasLoadingTime(loadingTime)
@@ -1086,4 +1085,10 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    private fun mockEvent(): RumRawEvent {
+        val event: RumRawEvent = mock()
+        whenever(event.eventTime) doReturn Time()
+        return event
+    }
 }
