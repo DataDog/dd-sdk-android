@@ -13,6 +13,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.sdk.benchmark.aThrowable
@@ -128,10 +130,13 @@ class RumManualApiBenchmark {
             val url = runWithTimingDisabled {
                 forge.aStringMatching("http//[a-z1-9]+\\.[a-z]{3}/")
             }
-            val kind =
-                runWithTimingDisabled { forge.anElementFrom(RumResourceKind.values().asList()) }
+            val statusCode = runWithTimingDisabled { forge.aNullable { anInt(200, 600) } }
+            val byteSize = runWithTimingDisabled { forge.aNullable { aLong(0, 655536L) } }
+            val kind = runWithTimingDisabled {
+                forge.anElementFrom(RumResourceKind.values().asList())
+            }
             runWithTimingDisabled { GlobalRum.get().startResource(resourceKey, resourceName, url) }
-            GlobalRum.get().stopResource(resourceKey, kind)
+            GlobalRum.get().stopResource(resourceKey, statusCode, byteSize, kind, emptyMap())
             runWithTimingDisabled { GlobalRum.get().stopView(viewKey) }
         }
     }
@@ -148,8 +153,9 @@ class RumManualApiBenchmark {
             runWithTimingDisabled {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
+            val actionType = runWithTimingDisabled { forge.aValueFrom(RumActionType::class.java) }
             val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            GlobalRum.get().startUserAction(actionName, attributes)
+            GlobalRum.get().startUserAction(actionType, actionName, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }
@@ -168,9 +174,10 @@ class RumManualApiBenchmark {
             runWithTimingDisabled {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
-            val actionName = runWithTimingDisabled { forge.anAlphabeticalString() }
-            runWithTimingDisabled { GlobalRum.get().startUserAction(actionName, attributes) }
-            GlobalRum.get().stopUserAction(actionName, attributes)
+            val type = runWithTimingDisabled { forge.aValueFrom(RumActionType::class.java) }
+            val name = runWithTimingDisabled { forge.anAlphabeticalString() }
+            runWithTimingDisabled { GlobalRum.get().startUserAction(type, name, attributes) }
+            GlobalRum.get().stopUserAction(type, name, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }
@@ -190,9 +197,9 @@ class RumManualApiBenchmark {
                 GlobalRum.get().startView(viewKey, viewName, attributes = attributes)
             }
             val errorMessage = runWithTimingDisabled { forge.anAlphabeticalString() }
-            val errorOrigin = runWithTimingDisabled { forge.anAlphabeticalString() }
+            val errorSource = runWithTimingDisabled { forge.aValueFrom(RumErrorSource::class.java) }
             val throwable: Throwable = runWithTimingDisabled { forge.aThrowable() }
-            GlobalRum.get().addError(errorMessage, errorOrigin, throwable, attributes)
+            GlobalRum.get().addError(errorMessage, errorSource, throwable, attributes)
             runWithTimingDisabled {
                 GlobalRum.get().stopView(viewKey)
             }

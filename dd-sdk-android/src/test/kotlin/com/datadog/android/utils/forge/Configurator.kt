@@ -32,7 +32,6 @@ internal class Configurator :
         forge.addFactory(ResourceEventForgeryFactory())
         forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
-        forge.addFactory(TimeForgeryFactory())
         forge.useJvmFactories()
     }
 }
