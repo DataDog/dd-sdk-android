@@ -179,6 +179,26 @@ internal class AndroidTracerTest {
     }
 
     @Test
+    fun `it will build a valid Tracer with global tags`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) operation: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) value: String
+    ) {
+        // when
+        val tracer = underTest
+            .setServiceName(fakeServiceName)
+            .addGlobalTag(key, value)
+            .build()
+        val properties = underTest.properties()
+
+        // then
+        assertThat(tracer).isNotNull()
+        val span = tracer.buildSpan(operation).start() as DDSpan
+        assertThat(span.serviceName).isEqualTo(fakeServiceName)
+        assertThat(span.tags).containsEntry(key, value)
+    }
+
+    @Test
     fun `it will build a valid Tracer with default values if not provided`(forge: Forge) {
         // when
         val tracer = underTest.build()

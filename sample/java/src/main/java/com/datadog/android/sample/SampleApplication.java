@@ -123,7 +123,12 @@ public class SampleApplication extends Application {
         logger.v("Added tags");
 
         // initialize the tracer here
-        GlobalTracer.registerIfAbsent(new AndroidTracer.Builder().build());
+        GlobalTracer.registerIfAbsent(
+                new AndroidTracer.Builder()
+                        .addGlobalTag("flavor", BuildConfig.FLAVOR)
+                        .addGlobalTag("build_type", BuildConfig.BUILD_TYPE)
+                        .build()
+        );
         GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
     }
 

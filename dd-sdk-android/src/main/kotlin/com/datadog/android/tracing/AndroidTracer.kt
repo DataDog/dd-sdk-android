@@ -41,6 +41,8 @@ class AndroidTracer internal constructor(
     private val bundleWithRum: Boolean
 ) : DDTracer(config, writer) {
 
+    // region Tracer
+
     override fun buildSpan(operationName: String): DDSpanBuilder {
         // On Android, the same zygote is reused for every single application,
         // meaning that the ThreadLocalRandom reuses the same exact state,
@@ -60,6 +62,8 @@ class AndroidTracer internal constructor(
             .withRumContext()
     }
 
+    // endregion
+
     /**
      * Builds a [AndroidTracer] instance.
      *
@@ -71,6 +75,8 @@ class AndroidTracer internal constructor(
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
         private val logsHandler: LogHandler
+
+        private val globalTags: MutableMap<String, String> = mutableMapOf()
 
         init {
             val logger = Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
@@ -113,6 +119,16 @@ class AndroidTracer internal constructor(
         }
 
         /**
+         * Adds a global tag which will be appended to all spans created with the built tracer.
+         * @param key the tag key
+         * @param value the tag value
+         */
+        fun addGlobalTag(key: String, value: String): Builder {
+            this.globalTags[key] = value
+            return this
+        }
+
+        /**
          * Enables the trace bundling with the current active View. If this feature is enabled all
          * the spans from this moment on will be bundled with the current view information and you
          * will be able to see all the traces sent during a specific view in the Rum Explorer.
@@ -138,6 +154,10 @@ class AndroidTracer internal constructor(
             properties.setProperty(
                 Config.PARTIAL_FLUSH_MIN_SPANS,
                 partialFlushThreshold.toString()
+            )
+            properties.setProperty(
+                Config.TAGS,
+                globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
             )
             return properties
         }
