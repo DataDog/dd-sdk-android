@@ -48,6 +48,7 @@ class LogsFragment :
         rootView.findViewById<View>(R.id.log_error).setOnClickListener(this)
         rootView.findViewById<View>(R.id.log_critical).setOnClickListener(this)
         rootView.findViewById<View>(R.id.start_foreground_service).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.simulate_ndk_crash).setOnClickListener(this)
         return rootView
     }
 
@@ -76,12 +77,22 @@ class LogsFragment :
                 val serviceIntent = Intent(context, LogsForegroundService::class.java)
                 activity?.startService(serviceIntent)
             }
+            R.id.simulate_ndk_crash -> {
+                simulateNdkCrash()
+            }
         }
     }
 
     //endregion
 
+    // region NDK
+
+    external fun simulateNdkCrash()
+
+    // endregion
+
     companion object {
+
         fun newInstance(): LogsFragment {
             return LogsFragment()
         }

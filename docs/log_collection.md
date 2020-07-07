@@ -142,6 +142,7 @@ The following methods in `Logger.Builder` can be used when initializing the logg
 | `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                                                  |
 | `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal to or higher than the provided level are logged to Android's Logcat.                                                                                                       |
 | `setSampleRate(<SAMPLE_RATE>)`   | Set the sampling rate for this logger. All the logs produced by the logger instance are randomly sampled according to the provided sample rate (default 1.0 = all logs). **Note**: The Logcat logs are not sampled.            |
+| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                                                       |
 
 ### Global configuration

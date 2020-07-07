@@ -12,6 +12,9 @@ captures/
 .gradle/
 build/
 
+# CMake
+.cxx/
+
 # Local configuration file (sdk path, etc)
 local.properties
 repo/

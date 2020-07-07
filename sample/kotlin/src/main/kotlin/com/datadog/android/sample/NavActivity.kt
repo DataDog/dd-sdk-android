@@ -18,7 +18,6 @@ import com.google.android.material.snackbar.Snackbar
 class NavActivity : AppCompatActivity() {
 
     lateinit var navController: NavController
-
     // region Activity
 
     override fun onCreate(savedInstanceState: Bundle?) {

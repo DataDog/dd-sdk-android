@@ -16,7 +16,10 @@ import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrate
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
@@ -26,7 +29,9 @@ import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -385,5 +390,77 @@ internal class RumFeatureTest {
         RumFeature.stop()
 
         verify(monitor).stopKeepAliveCallback()
+    }
+
+    @Test
+    fun `it will register the provided plugin when the feature is initialized`(
+        forge: Forge
+    ) {
+        // given
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+
+        val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
+
+        // then
+        val mockedPlugins = plugins.toTypedArray()
+        inOrder(*mockedPlugins) {
+            mockedPlugins.forEach {
+                verify(it).register(argumentCaptor.capture())
+            }
+        }
+
+        argumentCaptor.allValues.forEach {
+            assertThat(it).isInstanceOf(DatadogPluginConfig.RumPluginConfig::class.java)
+            assertThat(it.context).isEqualTo(mockAppContext)
+            assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
+            assertThat(it.envName).isEqualTo(fakeConfig.envName)
+            assertThat(it.featurePersistenceDirName).isEqualTo(RumFileStrategy.RUM_FOLDER)
+            assertThat(it.context).isEqualTo(mockAppContext)
+        }
+    }
+
+    @Test
+    fun `it will unregister the provided plugin when stop called`(
+        forge: Forge
+    ) {
+        // given
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+
+        // when
+        RumFeature.stop()
+
+        // then
+        val mockedPlugins = plugins.toTypedArray()
+        inOrder(*mockedPlugins) {
+            mockedPlugins.forEach {
+                verify(it).unregister()
+            }
+        }
     }
 }
