@@ -10,6 +10,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.event.toJsonArray
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
@@ -369,6 +370,7 @@ internal class RumEventSerializerTest {
                     is Date -> assertThat(jsonObject).hasField(keyName, value.time)
                     is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
                     is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
+                    is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
                     else -> assertThat(jsonObject).hasField(keyName, value.toString())
                 }
             }

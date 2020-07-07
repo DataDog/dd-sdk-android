@@ -19,6 +19,8 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal class DatadogRumMonitor(
@@ -36,6 +38,8 @@ internal class DatadogRumMonitor(
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
     }
+
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     // region RumMonitor
 
@@ -165,8 +169,12 @@ internal class DatadogRumMonitor(
 
     internal fun handleEvent(event: RumRawEvent) {
         handler.removeCallbacks(keepAliveRunnable)
-        synchronized(rootScope) { rootScope.handleEvent(event, writer) }
-        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+        executorService.submit {
+            synchronized(rootScope) {
+                rootScope.handleEvent(event, writer)
+            }
+            handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+        }
     }
 
     internal fun stopKeepAliveCallback() {

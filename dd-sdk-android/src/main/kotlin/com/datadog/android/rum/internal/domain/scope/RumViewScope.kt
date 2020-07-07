@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
@@ -22,6 +23,7 @@ internal class RumViewScope(
     internal val parentScope: RumScope,
     key: Any,
     internal val name: String,
+    eventTime: Time,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
@@ -32,9 +34,9 @@ internal class RumViewScope(
 
     internal var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
-    internal val startedNanos: Long = System.nanoTime()
+    internal val startedNanos: Long = eventTime.nanoTime
 
-    internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
+    internal val eventTimestamp = eventTime.timestamp
 
     internal var activeActionScope: RumScope? = null
     internal val activeResourceScopes = mutableMapOf<String, RumScope>()
@@ -64,15 +66,15 @@ internal class RumViewScope(
         when (event) {
             is RumRawEvent.SentError -> {
                 errorCount++
-                sendViewUpdate(writer)
+                sendViewUpdate(event, writer)
             }
             is RumRawEvent.SentResource -> {
                 resourceCount++
-                sendViewUpdate(writer)
+                sendViewUpdate(event, writer)
             }
             is RumRawEvent.SentAction -> {
                 actionCount++
-                sendViewUpdate(writer)
+                sendViewUpdate(event, writer)
             }
             is RumRawEvent.StartView -> onStartView(event, writer)
             is RumRawEvent.StopView -> onStopView(event, writer)
@@ -115,7 +117,7 @@ internal class RumViewScope(
         writer: Writer<RumEvent>
     ) {
         if (!stopped) {
-            sendViewUpdate(writer)
+            sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
             stopped = true
         }
@@ -130,7 +132,7 @@ internal class RumViewScope(
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
             attributes.putAll(event.attributes)
-            sendViewUpdate(writer)
+            sendViewUpdate(event, writer)
             stopped = true
         }
     }
@@ -197,7 +199,7 @@ internal class RumViewScope(
         if (event.isFatal) {
             crashCount++
         }
-        sendViewUpdate(writer)
+        sendViewUpdate(event, writer)
     }
 
     private fun onKeepAlive(
@@ -207,7 +209,7 @@ internal class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        sendViewUpdate(writer)
+        sendViewUpdate(event, writer)
     }
 
     private fun delegateEventToChildren(
@@ -245,10 +247,10 @@ internal class RumViewScope(
         }
     }
 
-    private fun sendViewUpdate(writer: Writer<RumEvent>) {
+    private fun sendViewUpdate(event: RumRawEvent, writer: Writer<RumEvent>) {
         attributes.putAll(GlobalRum.globalAttributes)
         version++
-        val updatedDurationNs = System.nanoTime() - startedNanos
+        val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
 
         val viewEvent = ViewEvent(
@@ -294,7 +296,7 @@ internal class RumViewScope(
         }
         loadingTime = event.loadingTime
         loadingType = event.loadingType
-        sendViewUpdate(writer)
+        sendViewUpdate(event, writer)
     }
 
     // endregion
@@ -305,7 +307,13 @@ internal class RumViewScope(
             parentScope: RumScope,
             event: RumRawEvent.StartView
         ): RumViewScope {
-            return RumViewScope(parentScope, event.key, event.name, event.attributes)
+            return RumViewScope(
+                parentScope,
+                event.key,
+                event.name,
+                event.eventTime,
+                event.attributes
+            )
         }
     }
 }

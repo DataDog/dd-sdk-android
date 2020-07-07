@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.RumFeature
@@ -21,16 +22,17 @@ import kotlin.math.max
 internal class RumActionScope(
     val parentScope: RumScope,
     val waitForStop: Boolean,
+    eventTime: Time,
     initialType: RumActionType,
     initialName: String,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
-    internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
+    internal val eventTimestamp = eventTime.timestamp
     internal val actionId: String = UUID.randomUUID().toString()
     internal var type: RumActionType = initialType
     internal var name: String = initialName
-    internal val startedNanos: Long = System.nanoTime()
+    internal val startedNanos: Long = eventTime.nanoTime
     internal var lastInteractionNanos: Long = startedNanos
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
@@ -47,8 +49,7 @@ internal class RumActionScope(
     // endregion
 
     override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
-
-        val now = System.nanoTime()
+        val now = event.eventTime.nanoTime
         val isInactive = now - lastInteractionNanos > ACTION_INACTIVITY_NS
         val isLongDuration = now - startedNanos > ACTION_MAX_DURATION_NS
         ongoingResourceKeys.removeAll { it.get() == null }
@@ -203,6 +204,7 @@ internal class RumActionScope(
             return RumActionScope(
                 parentScope,
                 event.waitForStop,
+                event.eventTime,
                 event.type,
                 event.name,
                 event.attributes

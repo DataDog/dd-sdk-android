@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.rum.RumAttributes
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -86,20 +87,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             val rawKey = it.key
             val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
             val value = it.value
-            val jsonValue = when (value) {
-                null -> JsonNull.INSTANCE
-                is Boolean -> JsonPrimitive(value)
-                is Int -> JsonPrimitive(value)
-                is Long -> JsonPrimitive(value)
-                is Float -> JsonPrimitive(value)
-                is Double -> JsonPrimitive(value)
-                is String -> JsonPrimitive(value)
-                is Date -> JsonPrimitive(value.time)
-                is JsonObject -> value
-                is JsonArray -> value
-                else -> JsonPrimitive(value.toString())
-            }
-            jsonEvent.add(key, jsonValue)
+            jsonEvent.add(key, value.toJsonElement())
         }
     }
 
@@ -119,4 +107,30 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             RumAttributes.ERROR_RESOURCE_URL
         )
     }
+}
+
+internal fun Any?.toJsonElement(): JsonElement {
+    return when (this) {
+        null -> JsonNull.INSTANCE
+        is Boolean -> JsonPrimitive(this)
+        is Int -> JsonPrimitive(this)
+        is Long -> JsonPrimitive(this)
+        is Float -> JsonPrimitive(this)
+        is Double -> JsonPrimitive(this)
+        is String -> JsonPrimitive(this)
+        is Date -> JsonPrimitive(this.time)
+        is Iterable<*> -> this.toJsonArray()
+        is JsonObject -> this
+        is JsonArray -> this
+        is JsonPrimitive -> this
+        else -> JsonPrimitive(toString())
+    }
+}
+
+internal fun Iterable<*>.toJsonArray(): JsonElement {
+    val array = JsonArray()
+    forEach {
+        array.add(it.toJsonElement())
+    }
+    return array
 }

@@ -7,9 +7,9 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.SystemTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -29,6 +29,7 @@ import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -97,20 +98,20 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
-    @LongForgery
-    var fakeTimeStamp: Long = 0L
+    lateinit var fakeEventTime: Time
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature::class.java.setStaticValue("timeProvider", mockTimeProvider)
+        fakeEventTime = Time()
+
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
         RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
 
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString()
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
+        mockEvent = mockEvent()
 
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimeStamp
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -120,13 +121,13 @@ internal class RumResourceScopeTest {
             fakeUrl,
             fakeMethod,
             fakeKey,
+            fakeEventTime,
             fakeAttributes
         )
     }
 
     @AfterEach
     fun `tear down`() {
-        RumFeature::class.java.setStaticValue("timeProvider", SystemTimeProvider())
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
         GlobalRum.globalAttributes.clear()
     }
@@ -142,9 +143,9 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
@@ -154,7 +155,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -186,9 +187,9 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         GlobalRum.globalAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
 
         Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
@@ -198,7 +199,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -232,8 +233,8 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
@@ -243,7 +244,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -279,8 +280,8 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
@@ -290,7 +291,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -487,7 +488,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -524,8 +525,8 @@ internal class RumResourceScopeTest {
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
@@ -535,7 +536,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -585,7 +586,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasResourceData {
-                    hasTimestamp(fakeTimeStamp)
+                    hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -605,5 +606,11 @@ internal class RumResourceScopeTest {
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)
+    }
+
+    private fun mockEvent(): RumRawEvent {
+        val event: RumRawEvent = mock()
+        whenever(event.eventTime) doReturn Time()
+        return event
     }
 }

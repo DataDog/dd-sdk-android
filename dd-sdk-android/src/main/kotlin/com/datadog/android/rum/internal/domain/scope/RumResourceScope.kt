@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
@@ -23,14 +24,15 @@ internal class RumResourceScope(
     val url: String,
     val method: String,
     val key: String,
+    eventTime: Time,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
     val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     var timing: ResourceTiming? = null
 
-    internal val eventTimestamp = RumFeature.timeProvider.getDeviceTimestamp()
-    internal val startedNanos: Long = System.nanoTime()
+    internal val eventTimestamp = eventTime.timestamp
+    internal val startedNanos: Long = eventTime.nanoTime
     private val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
@@ -72,8 +74,9 @@ internal class RumResourceScope(
         statusCode = event.statusCode
         size = event.size
 
-        if (!(waitForTiming && timing == null))
-            sendResource(kind, event.statusCode, event.size, writer)
+        if (!(waitForTiming && timing == null)) {
+            sendResource(kind, event.statusCode, event.size, event.eventTime, writer)
+        }
     }
 
     private fun onAddResourceTiming(
@@ -84,7 +87,7 @@ internal class RumResourceScope(
 
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(kind, statusCode, size, writer)
+            sendResource(kind, statusCode, size, event.eventTime, writer)
         }
     }
 
@@ -107,6 +110,7 @@ internal class RumResourceScope(
         kind: RumResourceKind,
         statusCode: Long?,
         size: Long?,
+        eventTime: Time,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
@@ -116,7 +120,7 @@ internal class RumResourceScope(
             resource = ResourceEvent.Resource(
                 type = kind.toSchemaType(),
                 url = url,
-                duration = System.nanoTime() - startedNanos,
+                duration = eventTime.nanoTime - startedNanos,
                 method = method.toMethod(),
                 statusCode = statusCode,
                 size = size,
@@ -204,6 +208,7 @@ internal class RumResourceScope(
                 event.url,
                 event.method,
                 event.key,
+                event.eventTime,
                 event.attributes
             )
         }
