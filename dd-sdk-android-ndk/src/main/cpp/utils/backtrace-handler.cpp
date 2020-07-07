@@ -57,7 +57,6 @@ namespace {
         }
         return symbol;
     }
-
 }
 
 namespace backtrace {
@@ -76,11 +75,9 @@ namespace backtrace {
             const int hexa_address_buffer_size = 20;
             char address_as_hexa[20];
             std::snprintf(address_as_hexa, hexa_address_buffer_size, "0x%x", buffer[idx]);
-
             const char *lineSymbol = get_line_symbol(addr);
-            backtrace.append("  ");
             backtrace.append(std::to_string(idx));
-            backtrace.append(": ");
+            backtrace.append(":");
             backtrace.append(address_as_hexa);
             backtrace.append("  ");
             backtrace.append(lineSymbol);

@@ -1,5 +1,4 @@
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.Dependencies.Versions
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
@@ -76,7 +75,7 @@ dependencies {
     implementation(Dependencies.Libraries.Elmyr)
 
     androidTestImplementation(project(":tools:unit"))
-    androidTestImplementation("net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}")
+    androidTestImplementation(Dependencies.Libraries.AssertJ)
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)
 

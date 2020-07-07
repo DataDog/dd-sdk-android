@@ -25,7 +25,7 @@ static const char *ERROR_KIND = "Native";
 static const char *LOGGER_NAME = "crash";
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static const char *SERVICE_NAME = "";
-static const char *STORAGE_DIR = nullptr;
+const char *STORAGE_DIR = nullptr;
 
 std::string get_serialized_log(int signal,
                                const char *signal_name,
