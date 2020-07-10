@@ -132,3 +132,8 @@ tasks.register("buildIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebugAndroidTest")
     dependsOn(":instrumented:integration:assembleDebug")
 }
+
+tasks.register("buildNdkIntegrationTestsArtifacts") {
+    dependsOn(":dd-sdk-android-ndk:assembleDebugAndroidTest")
+    dependsOn(":dd-sdk-android-ndk:assembleDebug")
+}
