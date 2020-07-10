@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.Dependencies
+import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -41,6 +42,8 @@ android {
         targetSdkVersion(AndroidConfig.TARGET_SDK)
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+        multiDexEnabled = true
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
                 cppFlags.add("-std=c++14")
@@ -58,6 +61,11 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -71,10 +79,16 @@ android {
 
     externalNativeBuild {
         cmake {
-            path = File("$projectDir/src/main/cpp/CMakeLists.txt")
+            path = File("$projectDir/CMakeLists.txt")
             version = Dependencies.Versions.CMakeVersion
         }
     }
+
+    packagingOptions {
+        exclude("META-INF/LICENSE.md")
+        exclude("META-INF/LICENSE-notice.md")
+    }
+
     ndkVersion = Dependencies.Versions.NdkVersion
 }
 
@@ -82,10 +96,16 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
+    implementation(Dependencies.Libraries.AndroidXMultidex)
 
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
+
+    androidTestImplementation(project(":tools:unit"))
+    androidTestImplementation(Dependencies.Libraries.IntegrationTests)
+    androidTestImplementation(Dependencies.Libraries.Gson)
+    androidTestImplementation(Dependencies.Libraries.AssertJ)
 
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)

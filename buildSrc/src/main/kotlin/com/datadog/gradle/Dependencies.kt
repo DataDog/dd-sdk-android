@@ -81,6 +81,7 @@ object Dependencies {
         const val KotlinReflect = "org.jetbrains.kotlin:kotlin-reflect:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
+        const val AssertJ = "net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}"
 
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
 
@@ -99,7 +100,8 @@ object Dependencies {
             "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-runtime-ktx:${Versions.AndroidXNavigation}"
         )
-        val AndroidXRecyclerView = "androidx.recyclerview:recyclerview:${Versions.AndroidXRecyclerView}"
+        val AndroidXRecyclerView =
+            "androidx.recyclerview:recyclerview:${Versions.AndroidXRecyclerView}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -111,7 +113,7 @@ object Dependencies {
 
         @JvmField
         val TestTools = arrayOf(
-            "net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}",
+            AssertJ,
             "com.github.xgouchet.Elmyr:core:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:inject:${Versions.Elmyr}",
             "com.github.xgouchet.Elmyr:junit5:${Versions.Elmyr}",
