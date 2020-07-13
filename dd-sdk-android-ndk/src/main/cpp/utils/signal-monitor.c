@@ -53,8 +53,8 @@ static const struct signal handled_signals[] = {
         {SIGILL,  "SIGILL",  "Illegal instruction"},
         {SIGTRAP, "SIGTRAP", "Trace/breakpoint trap"},
         {SIGABRT, "SIGABRT", "Abort program"},
-        {SIGBUS,  "SIGBUS",  "Floating-point exception"},
-        {SIGFPE,  "SIGFPE",  "Bus error (bad memory access)"},
+        {SIGBUS,  "SIGBUS",  "Bus error (bad memory access)"},
+        {SIGFPE,  "SIGFPE",  "Floating-point exception"},
         {SIGSEGV, "SIGSEGV", "Segmentation violation (invalid memory reference)"}
 };
 
