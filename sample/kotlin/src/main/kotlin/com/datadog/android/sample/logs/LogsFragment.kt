@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.log.Logger
@@ -23,6 +25,7 @@ class LogsFragment :
 
     private var interactionsCount = 0
     private lateinit var viewModel: LogsViewModel
+    private lateinit var spinner: AppCompatSpinner
 
     private val logger: Logger by lazy {
         Logger.Builder()
@@ -49,6 +52,21 @@ class LogsFragment :
         rootView.findViewById<View>(R.id.log_critical).setOnClickListener(this)
         rootView.findViewById<View>(R.id.start_foreground_service).setOnClickListener(this)
         rootView.findViewById<View>(R.id.simulate_ndk_crash).setOnClickListener(this)
+        spinner = rootView.findViewById(R.id.signal_type_spinner)
+        context?.let { context ->
+            spinner.adapter =
+                ArrayAdapter(
+                    context,
+                    android.R.layout.simple_spinner_item,
+                    listOf(
+                        NdkCrashType(SIGSEGV, "Invalid Memory Reference"),
+                        NdkCrashType(SIGABRT, "Abort Program"),
+                        NdkCrashType(SIGILL, "Illegal Instruction")
+                    )
+                ).also {
+                    it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
+        }
         return rootView
     }
 
@@ -78,7 +96,7 @@ class LogsFragment :
                 activity?.startService(serviceIntent)
             }
             R.id.simulate_ndk_crash -> {
-                simulateNdkCrash()
+                simulateNdkCrash((spinner.selectedItem as? NdkCrashType)?.signal ?: SIGILL)
             }
         }
     }
@@ -87,11 +105,22 @@ class LogsFragment :
 
     // region NDK
 
-    external fun simulateNdkCrash()
+    external fun simulateNdkCrash(signal: Int)
 
     // endregion
 
+    private data class NdkCrashType(val signal: Int, val label: String) {
+        override fun toString(): String {
+            return label
+        }
+    }
+
     companion object {
+
+        // NDK Crash signals
+        const val SIGILL = 4 // "Illegal instruction
+        const val SIGABRT = 6 // "Abort program"
+        const val SIGSEGV = 11 // "Segmentation violation (invalid memory reference)"
 
         fun newInstance(): LogsFragment {
             return LogsFragment()

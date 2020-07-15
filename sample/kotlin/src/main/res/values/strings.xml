@@ -27,4 +27,5 @@
     <string name="simulate_ndk_crash">Simulate NDK crash</string>
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>
     <string name="foreground_service_desc">Used to send logs from a different process</string>
+    <string name="signal_crash_spinner_prompt">Signal</string>
 </resources>
