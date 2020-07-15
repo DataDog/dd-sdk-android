@@ -25,7 +25,7 @@
           "role": {
             "type": "string",
             "description": "The artist's role.",
-            "enum" : ["singer", "guitarist", "pianist", "drummer", "bassist", "viloinist", "dj", "vocals", "other"]
+            "enum" : ["singer", "guitarist", "pianist", "drummer", "bassist", "violinist", "dj", "vocals", "other"]
           }
         }
       },

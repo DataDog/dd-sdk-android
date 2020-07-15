@@ -9,7 +9,7 @@ package com.datadog.gradle.plugin.jsonschema
 import com.squareup.kotlinpoet.TypeName
 
 data class DefinitionRef(
-    val definition: Definition,
+    val definition: JsonDefinition,
     val id: String,
     val typeName: TypeName,
     val className: String

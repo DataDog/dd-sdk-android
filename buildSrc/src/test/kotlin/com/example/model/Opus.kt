@@ -34,6 +34,9 @@ internal data class Opus(
         val role: Role? = null
     )
 
+    /**
+     * The artist's role.
+     */
     enum class Role {
         @SerializedName("singer")
         SINGER,
@@ -50,8 +53,8 @@ internal data class Opus(
         @SerializedName("bassist")
         BASSIST,
 
-        @SerializedName("viloinist")
-        VILOINIST,
+        @SerializedName("violinist")
+        VIOLINIST,
 
         @SerializedName("dj")
         DJ,

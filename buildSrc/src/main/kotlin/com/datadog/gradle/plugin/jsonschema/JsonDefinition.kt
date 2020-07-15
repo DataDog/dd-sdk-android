@@ -8,41 +8,18 @@ package com.datadog.gradle.plugin.jsonschema
 
 import com.google.gson.annotations.SerializedName
 
-data class Definition(
+data class JsonDefinition(
     @SerializedName("title") val title: String?,
     @SerializedName("description") val description: String?,
-    @SerializedName("type") val type: Type?,
+    @SerializedName("type") val type: JsonType?,
     @SerializedName("enum") val enum: List<String>?,
     @SerializedName("const") val constant: Any?,
     @SerializedName("\$ref") val ref: String?,
     @SerializedName("\$id") val id: String?,
     @SerializedName("required") val required: List<String>?,
     @SerializedName("uniqueItems") val uniqueItems: Boolean?,
-    @SerializedName("items") val items: Definition?,
-    @SerializedName("allOf") val allOf: List<Definition>?,
-    @SerializedName("properties") val properties: Map<String, Definition>?,
-    @SerializedName("definitions") val definitions: Map<String, Definition>?
+    @SerializedName("items") val items: JsonDefinition?,
+    @SerializedName("allOf") val allOf: List<JsonDefinition>?,
+    @SerializedName("properties") val properties: Map<String, JsonDefinition>?,
+    @SerializedName("definitions") val definitions: Map<String, JsonDefinition>?
 )
-
-enum class Type {
-    @SerializedName("null")
-    NULL,
-
-    @SerializedName("boolean")
-    BOOLEAN,
-
-    @SerializedName("object")
-    OBJECT,
-
-    @SerializedName("array")
-    ARRAY,
-
-    @SerializedName("number")
-    NUMBER,
-
-    @SerializedName("string")
-    STRING,
-
-    @SerializedName("integer")
-    INTEGER
-}
