@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.net.info
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -15,12 +14,13 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider :
-    BroadcastReceiver(),
+    ThreadSafeReceiver(),
     NetworkInfoProvider {
 
     private var networkInfo: NetworkInfo =
@@ -43,12 +43,11 @@ internal class BroadcastReceiverNetworkInfoProvider :
 
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        val firstIntent = context.registerReceiver(this, filter)
-        onReceive(context, firstIntent)
+        registerReceiver(context, filter).also { onReceive(context, it) }
     }
 
     override fun unregister(context: Context) {
-        context.unregisterReceiver(this)
+        unregisterReceiver(context)
     }
 
     override fun getLatestNetworkInfo(): NetworkInfo {

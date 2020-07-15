@@ -21,12 +21,16 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -59,6 +63,36 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
 
         testedProvider = BroadcastReceiverSystemInfoProvider()
+    }
+
+    @Test
+    fun `it will do nothing if unregister is called before register`() {
+        // when
+        testedProvider.unregister(mockContext)
+
+        // then
+        verifyZeroInteractions(mockContext)
+    }
+
+    @Test
+    fun `it will unregister the receiver only once`() {
+        // given
+        val countDownLatch = CountDownLatch(2)
+        testedProvider.register(mockContext)
+
+        // when
+        Thread {
+            testedProvider.unregister(mockContext)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            testedProvider.unregister(mockContext)
+            countDownLatch.countDown()
+        }.start()
+
+        // then
+        countDownLatch.await(3, TimeUnit.SECONDS)
+        verify(mockContext).unregisterReceiver(testedProvider)
     }
 
     @Test
