@@ -26,9 +26,7 @@ internal class RumEventForgeryFactory : ForgeryFactory<RumEvent> {
 
         return RumEvent(
             event = eventData,
-            attributes = forge.exhaustiveAttributes(),
-            userInfo = forge.getForgery(),
-            networkInfo = forge.getForgery()
+            attributes = forge.exhaustiveAttributes()
         )
     }
 }

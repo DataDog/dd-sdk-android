@@ -31,6 +31,11 @@ internal class ActionEventForgeryFactory :
                 url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
                 referrer = null
             ),
+            usr = ActionEvent.Usr(
+                id = forge.anHexadecimalString(),
+                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+            ),
             application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
             session = ActionEvent.Session(
                 id = forge.getForgery<UUID>().toString(),

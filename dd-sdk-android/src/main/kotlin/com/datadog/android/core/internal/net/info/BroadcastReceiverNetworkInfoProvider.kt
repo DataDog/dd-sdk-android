@@ -92,6 +92,7 @@ internal class BroadcastReceiverNetworkInfoProvider :
             in known5GSubtypes -> NetworkInfo.Connectivity.NETWORK_5G
             else -> NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER
         }
+        val cellularTechnology = getCellularTechnology(subtype)
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val telephonyMgr =
@@ -101,10 +102,37 @@ internal class BroadcastReceiverNetworkInfoProvider :
             NetworkInfo(
                 connectivity,
                 carrierName.toString(),
-                carrierId
+                carrierId,
+                cellularTechnology = cellularTechnology
             )
         } else {
-            NetworkInfo(connectivity)
+            NetworkInfo(connectivity, cellularTechnology = cellularTechnology)
+        }
+    }
+
+    private fun getCellularTechnology(subtype: Int): String? {
+        return when (subtype) {
+            TelephonyManager.NETWORK_TYPE_GPRS -> "GPRS"
+            TelephonyManager.NETWORK_TYPE_EDGE -> "Edge"
+            TelephonyManager.NETWORK_TYPE_CDMA -> "CDMA"
+            TelephonyManager.NETWORK_TYPE_1xRTT -> "CDMA1x"
+            TelephonyManager.NETWORK_TYPE_IDEN -> "iDen"
+            TelephonyManager.NETWORK_TYPE_GSM -> "GSM"
+            TelephonyManager.NETWORK_TYPE_UMTS -> "UMTS"
+            TelephonyManager.NETWORK_TYPE_EVDO_0 -> "CDMAEVDORev0"
+            TelephonyManager.NETWORK_TYPE_EVDO_A -> "CDMAEVDORevA"
+            TelephonyManager.NETWORK_TYPE_EVDO_B -> "CDMAEVDORevB"
+            TelephonyManager.NETWORK_TYPE_HSDPA -> "HSDPA"
+            TelephonyManager.NETWORK_TYPE_HSUPA -> "HSUPA"
+            TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA"
+            TelephonyManager.NETWORK_TYPE_EHRPD -> "eHRPD"
+            TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+"
+            TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD_SCDMA"
+            TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+            TelephonyManager.NETWORK_TYPE_IWLAN -> "IWLAN"
+            19 -> "LTE_CA"
+            TelephonyManager.NETWORK_TYPE_NR -> "New Radio"
+            else -> null
         }
     }
 

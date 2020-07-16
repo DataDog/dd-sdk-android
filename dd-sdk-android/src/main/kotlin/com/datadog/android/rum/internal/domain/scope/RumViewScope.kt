@@ -169,7 +169,9 @@ internal class RumViewScope(
         if (stopped) return
 
         val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
+        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
@@ -184,15 +186,19 @@ internal class RumViewScope(
                 id = context.viewId.orEmpty(),
                 url = context.viewUrl.orEmpty()
             ),
+            usr = ErrorEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
+            connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
             dd = ErrorEvent.Dd()
         )
         val rumEvent = RumEvent(
             event = errorEvent,
-            attributes = updatedAttributes,
-            userInfo = RumFeature.userInfoProvider.getUserInfo(),
-            networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
+            attributes = updatedAttributes
         )
         writer.write(rumEvent)
         errorCount++
@@ -252,6 +258,7 @@ internal class RumViewScope(
         version++
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
 
         val viewEvent = ViewEvent(
             date = eventTimestamp,
@@ -266,6 +273,11 @@ internal class RumViewScope(
                 error = ViewEvent.Error(errorCount),
                 crash = ViewEvent.Crash(crashCount)
             ),
+            usr = ViewEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.Session(id = context.sessionId, type = ViewEvent.Type.USER),
             dd = ViewEvent.Dd(documentVersion = version)
@@ -273,8 +285,7 @@ internal class RumViewScope(
 
         val rumEvent = RumEvent(
             event = viewEvent,
-            attributes = attributes,
-            userInfo = RumFeature.userInfoProvider.getUserInfo()
+            attributes = attributes
         )
         writer.write(rumEvent)
     }

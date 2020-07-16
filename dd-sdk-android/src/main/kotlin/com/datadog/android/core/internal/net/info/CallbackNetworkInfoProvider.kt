@@ -84,6 +84,8 @@ internal class CallbackNetworkInfoProvider :
             NetworkInfo.Connectivity.NETWORK_ETHERNET
         } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
             NetworkInfo.Connectivity.NETWORK_CELLULAR
+        } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
         } else {
             NetworkInfo.Connectivity.NETWORK_OTHER
         }

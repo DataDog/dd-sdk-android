@@ -143,8 +143,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -190,8 +188,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -234,8 +230,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -274,8 +268,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -311,8 +303,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -349,8 +339,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -385,8 +373,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -420,8 +406,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -455,8 +439,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -467,6 +449,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -492,8 +475,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -504,6 +485,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(nonFatalcount + fatalcount)
                     hasCrashCount(fatalcount)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -538,8 +520,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -550,6 +530,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -580,8 +561,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -592,6 +571,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -615,8 +595,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -627,6 +605,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -651,8 +630,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -663,6 +640,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -740,8 +718,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -752,6 +728,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -782,8 +759,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -794,6 +769,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -830,8 +806,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -842,6 +816,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -880,8 +855,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -892,6 +865,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -930,8 +904,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -941,6 +913,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -962,8 +935,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -974,6 +945,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1002,8 +974,6 @@ internal class RumActionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -1014,6 +984,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }

@@ -155,7 +155,10 @@ internal class RumActionScope(
 
         if (resourceCount > 0 || errorCount > 0 || viewTreeChangeCount > 0) {
             attributes.putAll(GlobalRum.globalAttributes)
+
             val context = getRumContext()
+            val user = RumFeature.userInfoProvider.getUserInfo()
+
             val actionEvent = ActionEvent(
                 date = eventTimestamp,
                 action = ActionEvent.Action(
@@ -176,12 +179,16 @@ internal class RumActionScope(
                     id = context.sessionId,
                     type = ActionEvent.Type.USER
                 ),
+                usr = ActionEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email
+                ),
                 dd = ActionEvent.Dd()
             )
             val rumEvent = RumEvent(
                 event = actionEvent,
-                attributes = attributes,
-                userInfo = RumFeature.userInfoProvider.getUserInfo()
+                attributes = attributes
             )
             writer.write(rumEvent)
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)

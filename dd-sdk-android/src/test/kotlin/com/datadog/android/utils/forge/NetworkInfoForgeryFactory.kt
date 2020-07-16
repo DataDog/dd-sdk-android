@@ -23,7 +23,8 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
             carrierId = if (forge.aBool()) forge.anInt(0, 10000) else -1,
             upKbps = forge.anInt(0, Int.MAX_VALUE),
             downKbps = forge.anInt(0, Int.MAX_VALUE),
-            strength = forge.anInt(-100, -30) // dBm for wifi signal
+            strength = forge.anInt(-100, -30), // dBm for wifi signal
+            cellularTechnology = forge.aNullable { anAlphabeticalString() }
         )
     }
 }

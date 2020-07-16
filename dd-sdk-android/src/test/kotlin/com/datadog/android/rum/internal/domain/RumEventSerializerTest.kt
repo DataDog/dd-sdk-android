@@ -6,8 +6,6 @@
 
 package com.datadog.android.rum.internal.domain
 
-import com.datadog.android.log.LogAttributes
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.domain.event.toJsonArray
@@ -84,6 +82,11 @@ internal class RumEventSerializerTest {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
+            .hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
@@ -139,6 +142,11 @@ internal class RumEventSerializerTest {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
+            .hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
@@ -184,6 +192,11 @@ internal class RumEventSerializerTest {
                     }
                 }
             }
+            .hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
@@ -226,31 +239,14 @@ internal class RumEventSerializerTest {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
+            .hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
-    }
-
-    @Test
-    fun `if user info is missing will not be serialized`(
-        @Forgery fakeEvent: RumEvent
-    ) {
-        val event = fakeEvent.copy(userInfo = null)
-        val serialized = underTest.serialize(event)
-
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
-    }
-
-    @Test
-    fun `if network info is missing will not be serialized`(
-        @Forgery fakeEvent: RumEvent
-    ) {
-        val event = fakeEvent.copy(networkInfo = null)
-        val serialized = underTest.serialize(event)
-
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, event)
     }
 
     @Test
@@ -266,8 +262,6 @@ internal class RumEventSerializerTest {
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
 
-        assertNetworkInfoMatches(event, jsonObject)
-        assertUserInfoMatches(event, jsonObject)
         assertThat(jsonObject)
             .hasField(key, value)
     }
@@ -279,75 +273,6 @@ internal class RumEventSerializerTest {
         event: RumEvent
     ) {
         assertCustomAttributesMatch(jsonObject, event)
-        assertNetworkInfoMatches(event, jsonObject)
-        assertUserInfoMatches(event, jsonObject)
-    }
-
-    private fun assertNetworkInfoMatches(event: RumEvent, jsonObject: JsonObject) {
-        val info = event.networkInfo
-        if (info != null) {
-            assertThat(jsonObject).apply {
-                hasField(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
-                if (!info.carrierName.isNullOrBlank()) {
-                    hasField(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
-                } else {
-                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
-                }
-                if (info.carrierId >= 0) {
-                    hasField(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
-                } else {
-                    doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
-                }
-                if (info.upKbps >= 0) {
-                    hasField(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
-                } else {
-                    doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
-                }
-                if (info.downKbps >= 0) {
-                    hasField(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
-                } else {
-                    doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
-                }
-                if (info.strength > Int.MIN_VALUE) {
-                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
-                } else {
-                    doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
-                }
-            }
-        } else {
-            assertThat(jsonObject)
-                .doesNotHaveField(LogAttributes.NETWORK_CONNECTIVITY)
-                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
-                .doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
-        }
-    }
-
-    private fun assertUserInfoMatches(event: RumEvent, jsonObject: JsonObject) {
-        val info = event.userInfo
-        if (info != null) {
-            assertThat(jsonObject).apply {
-                if (info.id.isNullOrEmpty()) {
-                    doesNotHaveField(RumAttributes.USER_ID)
-                } else {
-                    hasField(RumAttributes.USER_ID, info.id)
-                }
-                if (info.name.isNullOrEmpty()) {
-                    doesNotHaveField(RumAttributes.USER_NAME)
-                } else {
-                    hasField(RumAttributes.USER_NAME, info.name)
-                }
-                if (info.email.isNullOrEmpty()) {
-                    doesNotHaveField(RumAttributes.USER_EMAIL)
-                } else {
-                    hasField(RumAttributes.USER_EMAIL, info.email)
-                }
-            }
-        } else {
-            assertThat(jsonObject)
-                .doesNotHaveField(RumAttributes.USER_ID)
-                .doesNotHaveField(RumAttributes.USER_NAME)
-                .doesNotHaveField(RumAttributes.USER_EMAIL)
-        }
     }
 
     private fun assertCustomAttributesMatch(

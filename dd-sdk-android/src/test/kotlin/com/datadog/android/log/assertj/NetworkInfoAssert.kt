@@ -16,7 +16,8 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasConnectivity(expected: NetworkInfo.Connectivity): NetworkInfoAssert {
         assertThat(actual.connectivity)
             .overridingErrorMessage(
-                "Expected networkInfo to have connectivity $expected but was ${actual.connectivity}"
+                "Expected networkInfo to have connectivity $expected " +
+                    "but was ${actual.connectivity}"
             )
             .isEqualTo(expected)
         return this
@@ -25,7 +26,8 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasCarrierName(expected: String?): NetworkInfoAssert {
         assertThat(actual.carrierName)
             .overridingErrorMessage(
-                "Expected networkInfo to have carrierName $expected but was ${actual.carrierName}"
+                "Expected networkInfo to have carrierName $expected " +
+                    "but was ${actual.carrierName}"
             )
             .isEqualTo(expected)
         return this
@@ -34,7 +36,18 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasCarrierId(expected: Int): NetworkInfoAssert {
         assertThat(actual.carrierId)
             .overridingErrorMessage(
-                "Expected networkInfo to have carrierId $expected but was ${actual.carrierId}"
+                "Expected networkInfo to have carrierId $expected " +
+                    "but was ${actual.carrierId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasCellularTechnology(expected: String?): NetworkInfoAssert {
+        assertThat(actual.cellularTechnology)
+            .overridingErrorMessage(
+                "Expected networkInfo to have cellularTechnology $expected " +
+                    "but was ${actual.cellularTechnology}"
             )
             .isEqualTo(expected)
         return this
@@ -43,7 +56,8 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasUpSpeed(expected: Int): NetworkInfoAssert {
         assertThat(actual.upKbps)
             .overridingErrorMessage(
-                "Expected networkInfo to have upKbps $expected but was ${actual.upKbps}"
+                "Expected networkInfo to have upKbps $expected " +
+                    "but was ${actual.upKbps}"
             )
             .isEqualTo(expected)
         return this
@@ -52,7 +66,8 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasDownSpeed(expected: Int): NetworkInfoAssert {
         assertThat(actual.downKbps)
             .overridingErrorMessage(
-                "Expected networkInfo to have downKbps $expected but was ${actual.downKbps}"
+                "Expected networkInfo to have downKbps $expected " +
+                    "but was ${actual.downKbps}"
             )
             .isEqualTo(expected)
         return this
@@ -61,7 +76,8 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
     fun hasStrength(expected: Int): NetworkInfoAssert {
         assertThat(actual.strength)
             .overridingErrorMessage(
-                "Expected networkInfo to have strength $expected but was ${actual.strength}"
+                "Expected networkInfo to have strength $expected " +
+                    "but was ${actual.strength}"
             )
             .isEqualTo(expected)
         return this
