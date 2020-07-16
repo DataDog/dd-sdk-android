@@ -73,6 +73,61 @@
         }
       }
     },
+    "usr": {
+      "type": "object",
+      "description": "User properties",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the user"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email of the user"
+        }
+      }
+    },
+    "connectivity": {
+      "type": "object",
+      "description": "Device connectivity properties",
+      "required": [
+        "status",
+        "interfaces"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status of the device connectivity",
+          "enum": ["connected", "not_connected", "maybe"]
+        },
+        "interfaces": {
+          "type": "array",
+          "description": "The list of available network interfaces",
+          "items": {
+            "type": "string",
+            "enum": ["bluetooth", "cellular", "ethernet", "wifi", "wimax", "mixed", "other", "unknown", "none"]
+          }
+        },
+        "cellular": {
+          "type": "object",
+          "description": "Cellular connectivity properties",
+          "properties": {
+            "technology": {
+              "type": "string",
+              "description": "The type of a radio technology used for cellular connection"
+            },
+            "carrier_name": {
+              "type": "string",
+              "description": "The name of the SIM carrier"
+            }
+          }
+        }
+      }
+    },
     "_dd": {
       "type": "object",
       "description": "Internal properties",
@@ -82,6 +137,7 @@
       "properties": {
         "format_version": {
           "const": 2,
+          "type": "integer",
           "description": "Version of the RUM event format"
         }
       }
