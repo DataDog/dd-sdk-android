@@ -27,7 +27,7 @@ int run_test_suites() {
     // This test fails on Bitrise on the first backtrace line assertion even and was not able to
     // detect why so far. My guess is related with Linux environment, I actually logged the line
     // and checked the regEx on top and was passing locally. We will disable this test for now as
-    // the end to end integration test is passing succesfully.
+    // the end to end integration test is passing successfully.
     //RUN_SUITE(backtrace_generation);
     GREATEST_MAIN_END();
 }

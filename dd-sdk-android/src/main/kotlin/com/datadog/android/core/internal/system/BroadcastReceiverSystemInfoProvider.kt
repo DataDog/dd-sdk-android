@@ -6,17 +6,17 @@
 
 package com.datadog.android.core.internal.system
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
+import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 
 internal class BroadcastReceiverSystemInfoProvider :
-    BroadcastReceiver(), SystemInfoProvider {
+    ThreadSafeReceiver(), SystemInfoProvider {
 
     private var systemInfo: SystemInfo = SystemInfo()
 
@@ -49,7 +49,7 @@ internal class BroadcastReceiverSystemInfoProvider :
     }
 
     override fun unregister(context: Context) {
-        context.unregisterReceiver(this)
+        unregisterReceiver(context)
     }
 
     override fun getLatestSystemInfo(): SystemInfo {
@@ -63,8 +63,7 @@ internal class BroadcastReceiverSystemInfoProvider :
     private fun registerIntentFilter(context: Context, action: String) {
         val filter = IntentFilter()
         filter.addAction(action)
-        val intent = context.registerReceiver(this, filter)
-        onReceive(context, intent)
+        registerReceiver(context, filter)?.let { onReceive(context, it) }
     }
 
     private fun handleBatteryIntent(intent: Intent) {

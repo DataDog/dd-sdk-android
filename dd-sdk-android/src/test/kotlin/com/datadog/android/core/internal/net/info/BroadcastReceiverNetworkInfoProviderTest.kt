@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.net.info
 
-// import org.assertj.core.api.Assertions.assertThat
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -18,10 +17,14 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -45,12 +48,16 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Mock
     lateinit var mockContext: Context
+
     @Mock
     lateinit var mockConnectivityManager: ConnectivityManager
+
     @Mock
     lateinit var mockTelephonyManager: TelephonyManager
+
     @Mock
     lateinit var mockNetworkInfo: AndroidNetworkInfo
+
     @Mock
     lateinit var mockIntent: Intent
 
@@ -73,6 +80,36 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+    }
+
+    @Test
+    fun `it will do nothing if unregister is called before register`() {
+        // when
+        testedProvider.unregister(mockContext)
+
+        // then
+        verifyZeroInteractions(mockContext)
+    }
+
+    @Test
+    fun `it will unregister the receiver only once`() {
+        // given
+        val countDownLatch = CountDownLatch(2)
+        testedProvider.register(mockContext)
+
+        // when
+        Thread {
+            testedProvider.unregister(mockContext)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            testedProvider.unregister(mockContext)
+            countDownLatch.countDown()
+        }.start()
+
+        // then
+        countDownLatch.await(3, TimeUnit.SECONDS)
+        verify(mockContext).unregisterReceiver(testedProvider)
     }
 
     @Test
