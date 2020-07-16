@@ -9,6 +9,7 @@ add_library(
         integration-tests.cpp
         test_datetime_utils.cpp
         test_generate_backtrace.cpp
+        test_signal_monitor.cpp
         test_utils.cpp
         test_utils.h
 )
