@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -22,6 +23,7 @@ import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -563,6 +565,55 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(1)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `sends application start on ApplicationStarted event`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        fakeEvent = RumRawEvent.ApplicationStarted(Time())
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val now = System.nanoTime()
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+            assertThat(firstValue)
+                .hasNetworkInfo(null)
+                .hasActionData {
+                    hasTimestamp(testedScope.eventTimestamp)
+                    hasType(ActionEvent.Type1.APPLICATION_START)
+                    hasNoTarget()
+                    hasDurationLowerThan(now - Datadog.startupTimeNs)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+            assertThat(lastValue)
+                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)

@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -13,11 +14,13 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.UUID
+import kotlin.math.max
 
 internal class RumViewScope(
     internal val parentScope: RumScope,
@@ -83,6 +86,7 @@ internal class RumViewScope(
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
+            is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             else -> delegateEventToChildren(event, writer)
         }
 
@@ -308,6 +312,52 @@ internal class RumViewScope(
         loadingTime = event.loadingTime
         loadingType = event.loadingType
         sendViewUpdate(event, writer)
+    }
+
+    private fun onApplicationStarted(
+        event: RumRawEvent.ApplicationStarted,
+        writer: Writer<RumEvent>
+    ) {
+        val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
+
+        val actionEvent = ActionEvent(
+            date = eventTimestamp,
+            action = ActionEvent.Action(
+                type = ActionEvent.Type1.APPLICATION_START,
+                id = UUID.randomUUID().toString(),
+                loadingTime = getStartupTime(event)
+            ),
+            view = ActionEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty()
+            ),
+            usr = ActionEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
+            application = ActionEvent.Application(context.applicationId),
+            session = ActionEvent.Session(
+                id = context.sessionId,
+                type = ActionEvent.Type.USER
+            ),
+            dd = ActionEvent.Dd()
+        )
+        val rumEvent = RumEvent(
+            event = actionEvent,
+            attributes = emptyMap()
+        )
+        writer.write(rumEvent)
+
+        actionCount++
+        sendViewUpdate(event, writer)
+    }
+
+    private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
+        val now = event.eventTime.nanoTime
+        val startupTime = Datadog.startupTimeNs
+        return max(now - startupTime, 1L)
     }
 
     // endregion

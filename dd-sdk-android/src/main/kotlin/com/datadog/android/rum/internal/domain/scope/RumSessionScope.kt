@@ -6,17 +6,13 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.max
 
 internal class RumSessionScope(
     internal val parentScope: RumScope,
@@ -56,10 +52,11 @@ internal class RumSessionScope(
         }
 
         if (event is RumRawEvent.StartView) {
+            val viewScope = RumViewScope.fromEvent(this, event)
             if (!applicationDisplayed) {
-                onApplicationDisplayed(writer)
+                onApplicationDisplayed(event, viewScope, writer)
             }
-            activeChildrenScopes.add(RumViewScope.fromEvent(this, event))
+            activeChildrenScopes.add(viewScope)
         }
 
         return this
@@ -75,40 +72,12 @@ internal class RumSessionScope(
     // region Internal
 
     private fun onApplicationDisplayed(
+        event: RumRawEvent.StartView,
+        viewScope: RumViewScope,
         writer: Writer<RumEvent>
     ) {
         applicationDisplayed = true
-
-        val now = System.nanoTime()
-        val startupTime = Datadog.startupTimeNs
-        val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
-
-        val actionEvent = ActionEvent(
-            date = TimeUnit.NANOSECONDS.toMillis(startupTime),
-            action = ActionEvent.Action(
-                type = ActionEvent.Type1.APPLICATION_START,
-                id = sessionId,
-                loadingTime = max(now - startupTime, 1L)
-            ),
-            view = ActionEvent.View(id = RumContext.NULL_SESSION_ID, url = ""),
-            application = ActionEvent.Application(context.applicationId),
-            session = ActionEvent.Session(
-                id = context.sessionId,
-                type = ActionEvent.Type.USER
-            ),
-            usr = ActionEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email
-            ),
-            dd = ActionEvent.Dd()
-        )
-        val rumEvent = RumEvent(
-            event = actionEvent,
-            attributes = emptyMap()
-        )
-        writer.write(rumEvent)
+        viewScope.handleEvent(RumRawEvent.ApplicationStarted(event.eventTime), writer)
     }
 
     @Synchronized

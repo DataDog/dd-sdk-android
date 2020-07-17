@@ -15,7 +15,7 @@ import com.datadog.android.rum.internal.domain.model.ViewEvent
 
 internal sealed class RumRawEvent {
 
-    val eventTime = Time()
+    open val eventTime = Time()
 
     internal data class StartView(
         val key: Any,
@@ -98,4 +98,8 @@ internal sealed class RumRawEvent {
     internal class ResetSession : RumRawEvent()
 
     internal class KeepAlive : RumRawEvent()
+
+    internal data class ApplicationStarted(
+        override val eventTime: Time
+    ) : RumRawEvent()
 }

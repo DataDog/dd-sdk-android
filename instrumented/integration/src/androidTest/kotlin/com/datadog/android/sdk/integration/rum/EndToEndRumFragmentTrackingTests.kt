@@ -45,11 +45,20 @@ internal class EndToEndRumFragmentTrackingTests {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
         val fragmentAViewUrl = currentFragmentViewUrl()
-        // for update view time
+        // one for application start update
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
                 2,
+                currentFragmentExtras()
+            )
+        )
+
+        // for update view time
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentAViewUrl,
+                3,
                 currentFragmentExtras(),
                 extraViewAttributes = mapOf(
                     "loading_type" to "fragment_display"
@@ -66,7 +75,7 @@ internal class EndToEndRumFragmentTrackingTests {
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
-                3,
+                4,
                 currentFragmentExtras(),
                 extraViewAttributes = mapOf(
                     "loading_type" to "fragment_display"
