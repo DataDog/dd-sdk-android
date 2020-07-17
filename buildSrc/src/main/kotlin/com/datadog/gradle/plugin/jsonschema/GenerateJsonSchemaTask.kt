@@ -44,9 +44,11 @@ open class GenerateJsonSchemaTask : DefaultTask() {
 
         println("Found ${files.size} in input dir: $inputDir")
 
+        val reader = JsonSchemaReader(extension.nameMapping)
+        val generator = PokoGenerator(outputDir, extension.targetPackageName)
         files.forEach {
-            PokoGenerator(it, outputDir, extension.targetPackageName, extension.nameMapping)
-                .generate()
+            val type = reader.readSchema(it)
+            generator.generate(type)
         }
     }
 

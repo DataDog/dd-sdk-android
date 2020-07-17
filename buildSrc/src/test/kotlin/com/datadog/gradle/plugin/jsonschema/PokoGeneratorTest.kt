@@ -18,7 +18,7 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 class PokoGeneratorTest(
-    internal val inputSchema: String,
+    internal val inputType: TypeDefinition,
     internal val outputFile: String
 ) {
 
@@ -31,16 +31,10 @@ class PokoGeneratorTest(
     fun `generates a Poko file`() {
         tempDir = tempFolderRule.newFolder()
         val clazz = PokoGeneratorTest::class.java
-        val inputPath = clazz.getResource("/input/$inputSchema.json").file
         val outputPath = clazz.getResource("/output/$outputFile.kt").file
-        val testedGenerator = PokoGenerator(
-            File(inputPath),
-            tempDir,
-            "com.example.model",
-            emptyMap()
-        )
+        val testedGenerator = PokoGenerator(tempDir, "com.example.model")
 
-        testedGenerator.generate()
+        testedGenerator.generate(inputType)
 
         val generatedFile = Files.find(
             Paths.get(tempDir.toURI()),
@@ -52,7 +46,7 @@ class PokoGeneratorTest(
         val outputContent = File(outputPath).readText(Charsets.UTF_8)
         assertThat(generatedContent)
             .overridingErrorMessage(
-                "File $outputFile generated from schema $inputSchema didn't match expectation:\n" +
+                "File $outputFile generated from type \n$inputType \ndidn't match expectation:\n" +
                     "<<<<<<< EXPECTED\n" +
                     outputContent +
                     "=======\n" +
@@ -67,24 +61,24 @@ class PokoGeneratorTest(
         @Parameterized.Parameters
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf("minimal", "Person"),
-                arrayOf("required", "Product"),
-                arrayOf("nested", "Book"),
-                arrayOf("arrays", "Article"),
-                arrayOf("sets", "Video"),
-                arrayOf("definition", "Customer"),
-                arrayOf("definition_with_id", "Customer"),
-                arrayOf("enum", "Style"),
-                arrayOf("constant", "Location"),
-                arrayOf("constant_number", "Version"),
-                arrayOf("nested_enum", "DateTime"),
-                arrayOf("description", "Opus"),
-                arrayOf("top_level_definition", "Foo"),
-                arrayOf("types", "Demo"),
-                arrayOf("all_of", "User"),
-                arrayOf("external_description", "Delivery"),
-                arrayOf("external_nested_description", "Shipping"),
-                arrayOf("definition_name_conflict", "Conflict")
+                arrayOf(Article, "Article"),
+                arrayOf(Book, "Book"),
+                arrayOf(Conflict, "Conflict"),
+                arrayOf(Customer, "Customer"),
+                arrayOf(DateTime, "DateTime"),
+                arrayOf(Delivery, "Delivery"),
+                arrayOf(Demo, "Demo"),
+                arrayOf(Foo, "Foo"),
+                arrayOf(Person, "Person"),
+                arrayOf(Location, "Location"),
+                arrayOf(Opus, "Opus"),
+                arrayOf(Product, "Product"),
+                arrayOf(Shipping, "Shipping"),
+                arrayOf(Style, "Style"),
+                arrayOf(Version, "Version"),
+                arrayOf(Video, "Video"),
+                arrayOf(User, "User"),
+                arrayOf(UserMerged, "UserMerged")
             )
         }
     }
