@@ -114,7 +114,11 @@ internal class RumResourceScope(
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
+
         val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
+        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
+
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
@@ -135,6 +139,12 @@ internal class RumResourceScope(
                 id = context.viewId.orEmpty(),
                 url = context.viewUrl.orEmpty()
             ),
+            usr = ResourceEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
+            connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(context.applicationId),
             session = ResourceEvent.Session(
                 id = context.sessionId,
@@ -144,9 +154,7 @@ internal class RumResourceScope(
         )
         val rumEvent = RumEvent(
             event = resourceEvent,
-            attributes = attributes,
-            userInfo = RumFeature.userInfoProvider.getUserInfo(),
-            networkInfo = networkInfo
+            attributes = attributes
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
@@ -163,6 +171,9 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRum.globalAttributes)
 
         val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
+        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
+
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(
@@ -181,15 +192,19 @@ internal class RumResourceScope(
                 id = context.viewId.orEmpty(),
                 url = context.viewUrl.orEmpty()
             ),
+            usr = ErrorEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
+            connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
             dd = ErrorEvent.Dd()
         )
         val rumEvent = RumEvent(
             event = errorEvent,
-            attributes = attributes,
-            userInfo = RumFeature.userInfoProvider.getUserInfo(),
-            networkInfo = networkInfo
+            attributes = attributes
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)

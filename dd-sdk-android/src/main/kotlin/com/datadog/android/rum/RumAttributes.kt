@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogInterceptor
 
@@ -49,31 +48,6 @@ object RumAttributes {
      * Version of the current Datadog SDK.
      */
     const val SDK_VERSION: String = "sdk_version"
-
-    // endregion
-
-    // region Global Attributes
-
-    /**
-     * The user email. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_EMAIL: String = "usr.email"
-
-    /**
-     * The user identifier. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_ID: String = "usr.id"
-
-    /**
-     * The user friendly name. (String)
-     * This value is filled automatically by the [RumMonitor].
-     * @see [Datadog.setUserInfo]
-     */
-    const val USER_NAME: String = "usr.name"
 
     // endregion
 

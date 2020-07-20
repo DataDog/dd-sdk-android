@@ -28,7 +28,6 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
 import java.util.Locale
-import kotlin.IllegalStateException
 
 class PokoGenerator(
     internal val outputDir: File,

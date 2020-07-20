@@ -6,12 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
-import com.datadog.android.log.internal.user.UserInfo
-
 internal data class RumEvent(
     val event: Any,
-    val attributes: Map<String, Any?>,
-    val userInfo: UserInfo? = null,
-    val networkInfo: NetworkInfo? = null
+    val attributes: Map<String, Any?>
 )

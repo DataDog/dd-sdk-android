@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
@@ -110,6 +111,28 @@ internal class ActionEventAssert(actual: ActionEvent) :
                 "Expected event data to have view.id $expectedUrl but was ${actual.view.url}"
             )
             .isEqualTo(expectedUrl.orEmpty())
+        return this
+    }
+
+    fun hasUserInfo(expected: UserInfo?): ActionEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
         return this
     }
 

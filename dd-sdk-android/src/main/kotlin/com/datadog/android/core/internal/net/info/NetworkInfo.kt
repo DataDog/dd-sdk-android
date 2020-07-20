@@ -12,13 +12,20 @@ internal data class NetworkInfo(
     val carrierId: Int = -1,
     val upKbps: Int = -1,
     val downKbps: Int = -1,
-    val strength: Int = Int.MIN_VALUE
+    val strength: Int = Int.MIN_VALUE,
+    val cellularTechnology: String? = null
 ) {
+
+    fun isConnected(): Boolean {
+        return connectivity != Connectivity.NETWORK_NOT_CONNECTED
+    }
 
     internal enum class Connectivity(val serialized: String) {
         NETWORK_NOT_CONNECTED("network_not_connected"),
         NETWORK_ETHERNET("network_ethernet"),
         NETWORK_WIFI("network_wifi"),
+        NETWORK_WIMAX("network_wimax"),
+        NETWORK_BLUETOOTH("network_bluetooth"),
         NETWORK_2G("network_2g"),
         NETWORK_3G("network_3g"),
         NETWORK_4G("network_4g"),

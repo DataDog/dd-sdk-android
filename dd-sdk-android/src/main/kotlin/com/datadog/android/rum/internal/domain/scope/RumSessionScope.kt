@@ -78,9 +78,12 @@ internal class RumSessionScope(
         writer: Writer<RumEvent>
     ) {
         applicationDisplayed = true
+
         val now = System.nanoTime()
         val startupTime = Datadog.startupTimeNs
         val context = getRumContext()
+        val user = RumFeature.userInfoProvider.getUserInfo()
+
         val actionEvent = ActionEvent(
             date = TimeUnit.NANOSECONDS.toMillis(startupTime),
             action = ActionEvent.Action(
@@ -94,12 +97,16 @@ internal class RumSessionScope(
                 id = context.sessionId,
                 type = ActionEvent.Type.USER
             ),
+            usr = ActionEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
             dd = ActionEvent.Dd()
         )
         val rumEvent = RumEvent(
             event = actionEvent,
-            attributes = emptyMap(),
-            userInfo = RumFeature.userInfoProvider.getUserInfo()
+            attributes = emptyMap()
         )
         writer.write(rumEvent)
     }

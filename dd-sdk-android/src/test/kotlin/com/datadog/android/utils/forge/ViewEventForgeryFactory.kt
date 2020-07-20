@@ -34,6 +34,11 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 domComplete = forge.aNullable { aPositiveLong() },
                 loadEvent = forge.aNullable { aPositiveLong() }
             ),
+            usr = ViewEvent.Usr(
+                id = forge.anHexadecimalString(),
+                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+            ),
             application = ViewEvent.Application(forge.getForgery<UUID>().toString()),
             session = ViewEvent.Session(
                 id = forge.getForgery<UUID>().toString(),

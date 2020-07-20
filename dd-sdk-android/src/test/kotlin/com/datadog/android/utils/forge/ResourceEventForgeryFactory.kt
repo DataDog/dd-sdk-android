@@ -43,6 +43,11 @@ internal class ResourceEventForgeryFactory :
                 url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
                 referrer = null
             ),
+            usr = ResourceEvent.Usr(
+                id = forge.anHexadecimalString(),
+                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+            ),
             action = forge.aNullable { ResourceEvent.Action(getForgery<UUID>().toString()) },
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
             session = ResourceEvent.Session(

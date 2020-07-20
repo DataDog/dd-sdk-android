@@ -68,8 +68,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
 
-        testedProvider =
-            BroadcastReceiverNetworkInfoProvider()
+        testedProvider = BroadcastReceiverNetworkInfoProvider()
     }
 
     @Test
@@ -80,6 +79,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -125,6 +125,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -138,6 +139,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -150,6 +152,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -162,6 +165,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -174,6 +178,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -191,6 +196,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -209,6 +215,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(carrierName)
             .hasCarrierId(carrierId)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -226,6 +233,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -244,6 +252,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(carrierName)
             .hasCarrierId(carrierId)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -261,6 +270,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -279,6 +289,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(carrierName)
             .hasCarrierId(carrierId)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -296,6 +307,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -314,6 +326,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(carrierName)
             .hasCarrierId(carrierId)
+            .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
     @Test
@@ -331,6 +344,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -349,6 +363,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(carrierName)
             .hasCarrierId(carrierId)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -367,6 +382,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName("Unknown Carrier Name")
             .hasCarrierId(0)
+            .hasCellularTechnology(null)
     }
 
     @Test
@@ -379,6 +395,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
+            .hasCellularTechnology(null)
     }
 
     // region Internal
@@ -412,6 +429,12 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     // endregion
 
     companion object {
+
+        private val mobileSubtypeNames = arrayOf(
+            "unknown", "GPRS", "Edge", "UMTS", "CDMA", "CDMAEVDORev0", "CDMAEVDORevA", "CDMA1x",
+            "HSDPA", "HSUPA", "HSPA", "iDen", "CDMAEVDORevB", "LTE", "eHRPD", "HSPA+", "GSM",
+            "TD_SCDMA", "IWLAN", "LTE_CA", "New Radio"
+        )
 
         internal val knownMobileTypes = listOf(
             ConnectivityManager.TYPE_MOBILE,

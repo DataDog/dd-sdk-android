@@ -25,13 +25,6 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     override fun serialize(model: RumEvent): String {
         val json = gson.toJsonTree(model.event).asJsonObject
 
-        // User Info
-        addUserInfo(model, json)
-
-        // Network Info
-        addNetworkInfo(model, json)
-
-        // custom attributes
         addCustomAttributes(model, json)
 
         return json.toString()
@@ -40,44 +33,6 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // endregion
 
     // region Internal
-
-    private fun addUserInfo(model: RumEvent, root: JsonObject) {
-        val email = model.userInfo?.email
-        val id = model.userInfo?.id
-        val name = model.userInfo?.name
-
-        if (!email.isNullOrEmpty()) {
-            root.addProperty(RumAttributes.USER_EMAIL, email)
-        }
-        if (!id.isNullOrEmpty()) {
-            root.addProperty(RumAttributes.USER_ID, id)
-        }
-        if (!name.isNullOrEmpty()) {
-            root.addProperty(RumAttributes.USER_NAME, name)
-        }
-    }
-
-    private fun addNetworkInfo(model: RumEvent, root: JsonObject) {
-        val info = model.networkInfo
-        if (info != null) {
-            root.addProperty(RumAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
-            if (!info.carrierName.isNullOrBlank()) {
-                root.addProperty(RumAttributes.NETWORK_CARRIER_NAME, info.carrierName)
-            }
-            if (info.carrierId >= 0) {
-                root.addProperty(RumAttributes.NETWORK_CARRIER_ID, info.carrierId)
-            }
-            if (info.upKbps >= 0) {
-                root.addProperty(RumAttributes.NETWORK_UP_KBPS, info.upKbps)
-            }
-            if (info.downKbps >= 0) {
-                root.addProperty(RumAttributes.NETWORK_DOWN_KBPS, info.downKbps)
-            }
-            if (info.strength > Int.MIN_VALUE) {
-                root.addProperty(RumAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
-            }
-        }
-    }
 
     private fun addCustomAttributes(
         event: RumEvent,

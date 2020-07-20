@@ -276,8 +276,6 @@ internal class RumSessionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasActionData {
                     hasTimestamp(TimeUnit.NANOSECONDS.toMillis(Datadog.startupTimeNs))
                     hasType(ActionEvent.Type1.APPLICATION_START)
@@ -286,6 +284,7 @@ internal class RumSessionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasUserInfo(fakeUserInfo)
                     hasView(RumContext.NULL_SESSION_ID, "")
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(testedScope.sessionId)
@@ -312,8 +311,6 @@ internal class RumSessionScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasActionData {
                     hasTimestamp(TimeUnit.NANOSECONDS.toMillis(Datadog.startupTimeNs))
                     hasType(ActionEvent.Type1.APPLICATION_START)
@@ -322,13 +319,12 @@ internal class RumSessionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasUserInfo(fakeUserInfo)
                     hasView(RumContext.NULL_SESSION_ID, "")
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(testedScope.sessionId)
                 }
             assertThat(lastValue)
-                .hasUserInfo(fakeUserInfo)
-                .hasNetworkInfo(null)
                 .hasViewData {
                     hasName(name.replace('.', '/'))
                     hasDurationGreaterThan(1)
@@ -337,6 +333,7 @@ internal class RumSessionScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(testedScope.sessionId)
                 }

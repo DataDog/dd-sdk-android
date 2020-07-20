@@ -3,223 +3,161 @@
   "$id": "view-schema.json",
   "type": "object",
   "description": "Schema of all properties of a View event",
-  "required": [
-    "date",
-    "application",
-    "session",
-    "type",
-    "view",
-    "_dd"
-  ],
-  "properties": {
-    "date": {
-      "type": "integer",
-      "description": "Start of the event in ms from epoch",
-      "minimum": 0
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
     },
-    "application": {
-      "type": "object",
-      "description": "Application properties",
+    {
       "required": [
-        "id"
+        "type",
+        "view",
+        "_dd"
       ],
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "UUID of the application",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
-        }
-      }
-    },
-    "session": {
-      "type": "object",
-      "description": "Session properties",
-      "required": [
-        "id",
-        "type"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "UUID of the session",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
-        },
         "type": {
           "type": "string",
-          "description": "Type of the session",
-          "enum": ["user", "synthetics"]
-        }
-      }
-    },
-    "type": {
-      "type": "string",
-      "description": "RUM event type",
-      "const": "view"
-    },
-    "view": {
-      "type": "object",
-      "description": "View properties",
-      "required": [
-        "id",
-        "url",
-        "time_spent",
-        "action",
-        "error",
-        "resource"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "UUID of the view",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          "description": "RUM event type",
+          "const": "view"
         },
-        "referrer": {
-          "type": "string",
-          "description": "URL that linked to the initial view of the page"
-        },
-        "url": {
-          "type": "string",
-          "description": "URL of the view"
-        },
-        "loading_time": {
-          "type": "integer",
-          "description": "Duration in ns to the view is considered loaded",
-          "minimum": 0
-        },
-        "loading_type": {
-          "type": "string",
-          "description": "Type of the loading of the view",
-          "enum": [
-            "initial_load",
-            "route_change",
-            "activity_display",
-            "activity_redisplay",
-            "fragment_display",
-            "fragment_redisplay"
-          ]
-        },
-        "time_spent": {
-          "type": "integer",
-          "description": "Time spent on the view in ns",
-          "minimum": 0
-        },
-        "first_contentful_paint": {
-          "type": "integer",
-          "description": "Duration in ns to the first rendering",
-          "minimum": 0
-        },
-        "dom_complete": {
-          "type": "integer",
-          "description": "Duration in ns to the complete parsing and loading of the document and its sub resources",
-          "minimum": 0
-        },
-        "dom_content_loaded": {
-          "type": "integer",
-          "description": "Duration in ns to the complete parsing and loading of the document without its sub resources",
-          "minimum": 0
-        },
-        "dom_interactive": {
-          "type": "integer",
-          "description": "Duration in ns to the end of the parsing of the document",
-          "minimum": 0
-        },
-        "load_event": {
-          "type": "integer",
-          "description": "Duration in ns to the end of the load event handler execution",
-          "minimum": 0
-        },
-        "action": {
+        "view": {
           "type": "object",
-          "description": "Properties of the actions of the view",
+          "description": "View properties",
           "required": [
-            "count"
+            "id",
+            "url",
+            "time_spent",
+            "action",
+            "error",
+            "resource"
           ],
           "properties": {
-            "count": {
+            "loading_time": {
               "type": "integer",
-              "description": "Number of actions that occurred on the view",
+              "description": "Duration in ns to the view is considered loaded",
               "minimum": 0
+            },
+            "loading_type": {
+              "type": "string",
+              "description": "Type of the loading of the view",
+              "enum": ["initial_load", "route_change", "activity_display", "activity_redisplay", "fragment_display", "fragment_redisplay"]
+            },
+            "time_spent": {
+              "type": "integer",
+              "description": "Time spent on the view in ns",
+              "minimum": 0
+            },
+            "first_contentful_paint": {
+              "type": "integer",
+              "description": "Duration in ns to the first rendering",
+              "minimum": 0
+            },
+            "dom_complete": {
+              "type": "integer",
+              "description": "Duration in ns to the complete parsing and loading of the document and its sub resources",
+              "minimum": 0
+            },
+            "dom_content_loaded": {
+              "type": "integer",
+              "description": "Duration in ns to the complete parsing and loading of the document without its sub resources",
+              "minimum": 0
+            },
+            "dom_interactive": {
+              "type": "integer",
+              "description": "Duration in ns to the end of the parsing of the document",
+              "minimum": 0
+            },
+            "load_event": {
+              "type": "integer",
+              "description": "Duration in ns to the end of the load event handler execution",
+              "minimum": 0
+            },
+            "action": {
+              "type": "object",
+              "description": "Properties of the actions of the view",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of actions that occurred on the view",
+                  "minimum": 0
+                }
+              }
+            },
+            "error": {
+              "type": "object",
+              "description": "Properties of the errors of the view",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of errors that occurred on the view",
+                  "minimum": 0
+                }
+              }
+            },
+            "crash": {
+              "type": "object",
+              "description": "Properties of the crashes of the view",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of crashes that occurred on the view",
+                  "minimum": 0
+                }
+              }
+            },
+            "long_task": {
+              "type": "object",
+              "description": "Properties of the long tasks of the view",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of long tasks that occurred on the view",
+                  "minimum": 0
+                }
+              }
+            },
+            "resource": {
+              "type": "object",
+              "description": "Properties of the resources of the view",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of resources that occurred on the view",
+                  "minimum": 0
+                }
+              }
             }
           }
         },
-        "error": {
+        "_dd": {
           "type": "object",
-          "description": "Properties of the errors of the view",
+          "description": "Internal properties",
           "required": [
-            "count"
+            "document_version"
           ],
           "properties": {
-            "count": {
+            "document_version": {
               "type": "integer",
-              "description": "Number of errors that occurred on the view",
+              "description": "Version of the update of the view event",
               "minimum": 0
             }
           }
-        },
-        "crash": {
-          "type": "object",
-          "description": "Properties of the crashes of the view",
-          "required": [
-            "count"
-          ],
-          "properties": {
-            "count": {
-              "type": "integer",
-              "description": "Number of crashes that occurred on the view",
-              "minimum": 0
-            }
-          }
-        },
-        "long_task": {
-          "type": "object",
-          "description": "Properties of the long tasks of the view",
-          "required": [
-            "count"
-          ],
-          "properties": {
-            "count": {
-              "type": "integer",
-              "description": "Number of long tasks that occurred on the view",
-              "minimum": 0
-            }
-          }
-        },
-        "resource": {
-          "type": "object",
-          "description": "Properties of the resources of the view",
-          "required": [
-            "count"
-          ],
-          "properties": {
-            "count": {
-              "type": "integer",
-              "description": "Number of resources that occurred on the view",
-              "minimum": 0
-            }
-          }
-        }
-      }
-    },
-    "_dd": {
-      "type": "object",
-      "description": "Internal properties",
-      "required": [
-        "document_version",
-        "format_version"
-      ],
-      "properties": {
-        "format_version": {
-          "const": 2,
-          "description": "Version of the RUM event format"
-        },
-        "document_version": {
-          "type": "integer",
-          "description": "Version of the update of the view event",
-          "minimum": 0
         }
       }
     }
-  }
+  ]
 }
-
-

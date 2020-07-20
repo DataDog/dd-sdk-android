@@ -36,6 +36,11 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
                 referrer = null
             ),
+            usr = ErrorEvent.Usr(
+                id = forge.anHexadecimalString(),
+                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+            ),
             action = forge.aNullable { ErrorEvent.Action(getForgery<UUID>().toString()) },
             application = ErrorEvent.Application(forge.getForgery<UUID>().toString()),
             session = ErrorEvent.Session(

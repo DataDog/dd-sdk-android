@@ -162,9 +162,6 @@ object com.datadog.android.rum.RumAttributes
   const val SERVICE_NAME: String
   const val SOURCE: String
   const val SDK_VERSION: String
-  const val USER_EMAIL: String
-  const val USER_ID: String
-  const val USER_NAME: String
   const val TRACE_ID: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
