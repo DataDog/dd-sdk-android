@@ -111,7 +111,7 @@ Java_com_datadog_android_ndk_NdkCrashReportsPlugin_registerSignalHandler(
     STORAGE_DIR = env->GetStringUTFChars(storage_path, 0);
     SERVICE_NAME = env->GetStringUTFChars(service_name, 0);
     ENVIRONMENT = env->GetStringUTFChars(environment, 0);
-    install_signal_handlers(env);
+    install_signal_handlers();
 }
 
 extern "C" JNIEXPORT void JNICALL

@@ -20,7 +20,7 @@ extern "C" {
  * serialize to disk and invoke the previously-installed handler
  * @return true if monitoring started successfully
  */
-bool install_signal_handlers(JNIEnv *env);
+bool install_signal_handlers();
 
 /**
  * Stop monitoring for fatal exceptions and reinstall previously-installed

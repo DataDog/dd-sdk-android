@@ -24,6 +24,7 @@
     <string name="title_sendLog">Send a log</string>
     <string name="start_async_operation">Start Async Operation</string>
     <string name="start_foreground_service">Start foreground service</string>
+    <string name="simulate_anr">Simulate ANR</string>
     <string name="simulate_ndk_crash">Simulate NDK crash</string>
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>
     <string name="foreground_service_desc">Used to send logs from a different process</string>
