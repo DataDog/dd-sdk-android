@@ -81,6 +81,10 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
     val viewArguments = event.viewArguments
         .map { "$VIEW_ARGUMENTS_PREFIX${it.key}" to it.value }
         .toMap()
+    assertThat(this.getAsJsonObject("view"))
+        .containsAttributes(event.extraViewAttributes)
+    assertThat(this.getAsJsonObject("view"))
+        .containsAttributesMatchingPredicate(event.extraViewAttributesWithPredicate)
     assertThat(this).containsAttributes(viewArguments)
 }
 
@@ -95,8 +99,4 @@ private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {
         .hasField("view") {
             hasField("id", event.rumContext.viewId)
         }
-}
-
-private fun Map<String, Any?>.toContextAttributes(): Map<String, Any?> {
-    return map { "context.${it.key}" to it.value }.toMap()
 }

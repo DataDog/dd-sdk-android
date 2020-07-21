@@ -40,6 +40,25 @@ internal open class RumMockServerActivityTestRule<T : Activity>(
 
     // endregion
 
+    // region utils
+
+    fun performOnLifecycleCallbacks(action: (Application.ActivityLifecycleCallbacks) -> Unit) {
+        val application =
+            InstrumentationRegistry
+                .getInstrumentation()
+                .targetContext
+                .applicationContext as Application
+        val lifecycleCallbacks: ArrayList<Application.ActivityLifecycleCallbacks> =
+            application.getFieldValue(
+                "mActivityLifecycleCallbacks",
+                Application::class.java
+            )
+
+        lifecycleCallbacks.forEach(action)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun removeRumCallbacks() {

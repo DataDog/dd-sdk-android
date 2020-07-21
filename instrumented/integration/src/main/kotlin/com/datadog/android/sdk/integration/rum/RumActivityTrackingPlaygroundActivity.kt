@@ -6,8 +6,8 @@
 
 package com.datadog.android.sdk.integration.rum
 
-import android.app.Activity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
@@ -16,7 +16,7 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 
-internal class RumActivityTrackingPlaygroundActivity : Activity() {
+internal class RumActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // use the activity view tracking strategy
