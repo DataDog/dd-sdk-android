@@ -59,11 +59,15 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
                 vieName,
                 attributes
             )
+            // we still need to call onFinishedLoading here for API bellow 29 as the
+            // onPostResumed is not available on these devices.
+            viewLoadingTimer.onFinishedLoading(it)
         }
     }
 
     override fun onActivityPostResumed(activity: Activity) {
         super.onActivityPostResumed(activity)
+        // this method is only available from API 29 and above
         componentPredicate.runIfValid(activity) {
             viewLoadingTimer.onFinishedLoading(it)
         }

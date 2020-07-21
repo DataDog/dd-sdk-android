@@ -17,7 +17,9 @@ internal class ViewLoadingTimer {
 
     fun onStartLoading(view: Any) {
         viewsTimeAndState[view]?.let {
-            it.loadingStart = System.nanoTime()
+            if (it.loadingStart == null) {
+                it.loadingStart = System.nanoTime()
+            }
         }
     }
 
@@ -35,9 +37,6 @@ internal class ViewLoadingTimer {
             if (it.finishedLoadingOnce) {
                 it.firstTimeLoading = false
             }
-
-            it.loadingStart = null
-            it.finishedLoadingOnce = true
         }
     }
 
@@ -50,6 +49,7 @@ internal class ViewLoadingTimer {
             it.loadingTime = 0
             it.loadingStart = null
             it.firstTimeLoading = false
+            it.finishedLoadingOnce = true
         }
     }
 

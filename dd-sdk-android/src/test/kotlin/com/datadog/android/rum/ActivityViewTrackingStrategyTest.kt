@@ -194,6 +194,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     }
 
     @Test
+    fun `when resumed will notify the viewLoadingTimer for stopLoading`() {
+        // whenever
+        underTest.onActivityResumed(mockActivity)
+
+        // then
+        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
+    }
+
+    @Test
     fun `when postResumed and activity not whitelisted will do nothing`() {
         // given
         underTest = ActivityViewTrackingStrategy(trackExtras = false,
