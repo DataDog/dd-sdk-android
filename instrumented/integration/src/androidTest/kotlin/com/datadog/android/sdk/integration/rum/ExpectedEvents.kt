@@ -9,6 +9,7 @@ package com.datadog.android.sdk.integration.rum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
+import com.google.gson.JsonElement
 import java.util.concurrent.atomic.AtomicReference
 
 internal data class ExpectedRumContext(
@@ -34,6 +35,8 @@ internal data class ExpectedViewEvent(
     val docVersion: Int = 1,
     val viewArguments: Map<String, Any?> = mapOf(),
     val extraAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributesWithPredicate: Map<String, (JsonElement) -> Boolean> = mapOf(),
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 

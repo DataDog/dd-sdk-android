@@ -447,6 +447,29 @@ class JsonObjectAssert(actual: JsonObject) :
         return this
     }
 
+    /**
+     *  Verifies that the actual jsonObject contains attributes matching the
+     *  predicates in the given map.
+     *  @param expectedValue the Map of predicates to be asserted
+     */
+    @SuppressWarnings("FunctionMaxLength")
+    fun containsAttributesMatchingPredicate(expectedValue: Map<String, (JsonElement) -> Boolean>) {
+        expectedValue.forEach {
+            val predicate = it.value
+            val key = it.key
+            assertThat(actual.has(key))
+                .overridingErrorMessage(
+                    "Expected json object to have field named $key " +
+                        "but couldn't find one"
+                )
+                .isTrue()
+            assertThat(predicate(actual.get(key))).overridingErrorMessage(
+                "Expected json to validate the provided predicate " +
+                    "for field name $key but it did not"
+            ).isTrue()
+        }
+    }
+
     companion object {
 
         /**

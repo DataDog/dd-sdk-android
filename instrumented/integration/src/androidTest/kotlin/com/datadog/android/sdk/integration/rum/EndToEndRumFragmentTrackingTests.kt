@@ -39,84 +39,130 @@ internal class EndToEndRumFragmentTrackingTests {
     )
 
     @Test
-    fun verifyViewEvents() {
+    fun verifyViewEventsOnSwipe() {
         expectedEvents.add(ExpectedApplicationStart())
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
         val fragmentAViewUrl = currentFragmentViewUrl()
-        // add the first expected event (for view start)
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentAViewUrl,
-                2,
-                currentFragmentExtras()
-            )
-        )
         // for update view time
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
-                3,
-                currentFragmentExtras()
+                2,
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_display"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
             )
         )
+
+        // view stopped
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentAViewUrl,
+                3,
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_display"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
+            )
+        )
+
         // swipe to change the fragment
         onView(withId(R.id.tab_layout)).perform(swipeLeft())
         instrumentation.waitForIdleSync()
         Thread.sleep(200) // give time to the view id to update
         val fragmentBViewUrl = currentFragmentViewUrl()
         mockServerRule.activity.supportFragmentManager.fragments
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentBViewUrl,
-                2,
-                currentFragmentExtras()
-            )
-        )
         // for updating the time
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentBViewUrl,
-                3,
-                currentFragmentExtras()
-            )
-        )
-
-        // swipe to close the view
-        onView(withId(R.id.tab_layout)).perform(swipeLeft())
-        instrumentation.waitForIdleSync()
-        Thread.sleep(200) // give time to the view id to update
-
-        val fragmentCViewUrl = currentFragmentViewUrl()
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentCViewUrl,
                 2,
-                currentFragmentExtras()
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_display"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
             )
         )
-        // for updating the time
+        // view stopped
         expectedEvents.add(
             ExpectedViewEvent(
-                fragmentCViewUrl,
+                fragmentBViewUrl,
                 3,
-                currentFragmentExtras()
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_display"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
             )
         )
 
         // swipe to close the view
         onView(withId(R.id.tab_layout)).perform(swipeRight())
         instrumentation.waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
+        Thread.sleep(200) // give time to the view id to update
+
+        // for updating the time
         expectedEvents.add(
             ExpectedViewEvent(
-                fragmentBViewUrl,
+                fragmentAViewUrl,
                 2,
-                currentFragmentExtras()
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_redisplay"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
             )
         )
 
+        // view stopped
+        expectedEvents.add(
+            ExpectedViewEvent(
+                fragmentAViewUrl,
+                3,
+                currentFragmentExtras(),
+                extraViewAttributes = mapOf(
+                    "loading_type" to "fragment_redisplay"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
+            )
+        )
+
+        instrumentation.runOnMainSync {
+            instrumentation.callActivityOnPause(mockServerRule.activity)
+        }
+
+        instrumentation.waitForIdleSync()
+        Thread.sleep(INITIAL_WAIT_MS)
         checkSentRequests()
     }
 

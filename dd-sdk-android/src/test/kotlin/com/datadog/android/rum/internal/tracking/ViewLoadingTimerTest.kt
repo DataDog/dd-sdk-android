@@ -69,6 +69,44 @@ internal class ViewLoadingTimerTest {
     }
 
     @Test
+    fun `it returns the right time and view state when finishedLoading called multiple times`() {
+        // given
+        val view: Any = mock()
+        underTest.onCreated(view)
+        underTest.onStartLoading(view)
+        underTest.onFinishedLoading(view)
+        underTest.onFinishedLoading(view)
+
+        // when
+        val loadingTime = underTest.getLoadingTime(view)
+        val firstTimeLoading = underTest.isFirstTimeLoading(view)
+
+        // then
+        assertThat(loadingTime).isGreaterThan(0)
+        assertThat(firstTimeLoading).isTrue()
+    }
+
+    @Test
+    fun `at first launch it will compute the time between onCreate and onFinishedLoading`() {
+        // given
+        val view: Any = mock()
+        underTest.onCreated(view)
+        Thread.sleep(500) // to simulate a long first time layout rendering
+        underTest.onStartLoading(view)
+        underTest.onFinishedLoading(view)
+        val loadingTimeFirstLaunch = underTest.getLoadingTime(view)
+
+        // when
+        underTest.onPaused(view)
+        underTest.onStartLoading(view)
+        underTest.onFinishedLoading(view)
+        val loadingTimeSecondLaunch = underTest.getLoadingTime(view)
+
+        // then
+        assertThat(loadingTimeFirstLaunch).isGreaterThan(loadingTimeSecondLaunch)
+    }
+
+    @Test
     fun `it returns the right time and state for different views in different states`() {
         // given
         val view1: Any = mock()
@@ -105,8 +143,7 @@ internal class ViewLoadingTimerTest {
         underTest.onCreated(view)
         underTest.onStartLoading(view)
         underTest.onFinishedLoading(view)
-        underTest.onStartLoading(view)
-        underTest.onFinishedLoading(view)
+        underTest.onPaused(view)
         underTest.onFinishedLoading(view)
 
         // when

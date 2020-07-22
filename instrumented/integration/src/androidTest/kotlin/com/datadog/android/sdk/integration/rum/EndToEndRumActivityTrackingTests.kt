@@ -6,6 +6,7 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -41,26 +42,32 @@ internal class EndToEndRumActivityTrackingTests {
     fun verifyViewEvents() {
         expectedEvents.add(ExpectedApplicationStart())
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val viewUrl = mockServerRule.activity.javaClass.canonicalName!!.replace(
+        val activity = mockServerRule.activity
+        val viewUrl = activity.javaClass.canonicalName!!.replace(
             '.',
             '/'
         )
+
         instrumentation.waitForIdleSync()
+
+        // one for view loading time update
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
                 docVersion = 2,
-                viewArguments = expectedViewArguments
+                viewArguments = expectedViewArguments,
+                extraViewAttributes = mapOf(
+                    "loading_type" to "activity_display"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong >= 0
+                    }
+                )
             )
         )
-        // activity on pause
-        instrumentation.runOnMainSync {
-            instrumentation
-                .callActivityOnPause(mockServerRule.activity)
-        }
-        instrumentation.waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
-        // for view loading time update
+
+        // one for view stopped
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
@@ -69,6 +76,65 @@ internal class EndToEndRumActivityTrackingTests {
             )
         )
 
+        // activity on pause
+        instrumentation.runOnMainSync {
+            instrumentation.callActivityOnPause(activity)
+        }
+
+        instrumentation.waitForIdleSync()
+
+        // activity start - resume
+
+        instrumentation.runOnMainSync {
+            instrumentation.callActivityOnStart(activity)
+            instrumentation.callActivityOnResume(activity)
+            // this function is only available from Android Q and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // we cannot instrument the onPostResume so we had to improvise this
+                mockServerRule.performOnLifecycleCallbacks {
+                    it.onActivityPostResumed(activity)
+                }
+            }
+        }
+        instrumentation.waitForIdleSync()
+
+        // give time to view id to update
+        Thread.sleep(500)
+
+        // one for loading time update
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 2,
+                viewArguments = expectedViewArguments,
+                extraViewAttributes = mapOf(
+                    "loading_type" to "activity_redisplay"
+                ),
+                extraViewAttributesWithPredicate = mapOf(
+                    "loading_time" to { time ->
+                        time.asLong > 0
+                    }
+                )
+            )
+        )
+
+        // one for view stopped
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 3,
+                viewArguments = expectedViewArguments
+            )
+        )
+
+        // activity on pause
+        instrumentation.runOnMainSync {
+            instrumentation.callActivityOnPause(activity)
+        }
+        instrumentation.waitForIdleSync()
+
+        instrumentation.waitForIdleSync()
+        Thread.sleep(INITIAL_WAIT_MS)
         checkSentRequests()
     }
 
