@@ -4,21 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#ifndef DATETIME_H
-#define DATETIME_H
 
-#include "cstdint"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-uint64_t time_since_epoch();
+#include <jni.h>
+#include <string>
 
 
-void format_date(char *buffer, size_t buffer_size, const char *format);
+#ifndef STRINGUTILS_H
+#define STRINGUTILS_H
 
-#ifdef __cplusplus
+
+namespace stringutils {
+    std::string copy_to_string(JNIEnv *env, jstring from);
 }
+
 #endif
-#endif
+

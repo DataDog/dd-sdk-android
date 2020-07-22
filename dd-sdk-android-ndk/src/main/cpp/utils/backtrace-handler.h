@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+#include <string>
+
 #ifndef BACKTRACE_HANDLER_H
 #define BACKTRACE_HANDLER_H
 
@@ -13,7 +15,7 @@ extern "C" {
 
 namespace backtrace {
 
-    const char *generate_backtrace();
+    std::string generate_backtrace();
 }
 
 #ifdef __cplusplus

@@ -140,10 +140,4 @@ internal object TracesFeature {
     }
 
     // endregion
-
-    // region Constants
-
-    internal const val TRACES_UPLOAD_THREAD_NAME = "ddog-traces-upload"
-
-    // endregion
 }

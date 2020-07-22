@@ -7,10 +7,17 @@
 package com.datadog.android.rum
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.plugin.DatadogContext
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.tracing.internal.TracesFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -32,7 +39,6 @@ object GlobalRum {
 
     internal val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
     internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
-    internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
 
     internal var sessionInactivityNanos = DEFAULT_SESSION_INACTIVITY_NS
 
@@ -153,9 +159,30 @@ object GlobalRum {
 
     internal fun updateRumContext(newContext: RumContext) {
         activeContext.set(newContext)
+        val pluginContext = DatadogContext(
+            DatadogRumContext(
+                newContext.applicationId,
+                newContext.sessionId,
+                newContext.viewId
+            )
+        )
+        updateContextInPlugins(pluginContext, RumFeature.plugins)
+        updateContextInPlugins(pluginContext, CrashReportsFeature.plugins)
+        updateContextInPlugins(pluginContext, LogsFeature.plugins)
+        updateContextInPlugins(pluginContext, TracesFeature.plugins)
+    }
+
+    private fun updateContextInPlugins(
+        pluginContext: DatadogContext,
+        plugins: List<DatadogPlugin>
+    ) {
+        plugins.forEach {
+            it.onContextChanged(pluginContext)
+        }
     }
 
     // For Tests only
+
     @Suppress("unused")
     @JvmStatic
     private fun resetSession() {

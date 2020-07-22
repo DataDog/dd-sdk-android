@@ -7,6 +7,7 @@
 package com.datadog.android.ndk
 
 import android.util.Log
+import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import java.io.File
@@ -37,6 +38,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         }
     }
 
+    // region Plugin
     override fun register(config: DatadogPluginConfig) {
         if (!nativeLibraryLoaded) {
             return
@@ -61,6 +63,15 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         unregisterSignalHandler()
     }
 
+    override fun onContextChanged(context: DatadogContext) {
+        // TODO: RUMM-637 Only update the rum context if the `bundleWithRum` config attribute is true
+        context.rum?.let {
+            updateRumContext(it.applicationId, it.sessionId, it.viewId)
+        }
+    }
+
+    // endregion
+
     // region NDK
 
     private external fun registerSignalHandler(
@@ -70,6 +81,12 @@ class NdkCrashReportsPlugin : DatadogPlugin {
     )
 
     private external fun unregisterSignalHandler()
+
+    private external fun updateRumContext(
+        applicationId: String?,
+        sessionId: String?,
+        viewId: String?
+    )
 
     // endregion
 

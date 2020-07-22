@@ -4,6 +4,7 @@
 #include <android/log.h>
 #include <datadog-native-lib.h>
 #include "greatest/greatest.h"
+#include "utils/stringutils.h"
 
 // override the GREATES_PRINTF macro to use the android logcat
 #define GREATEST_FPRINTF(ignore, fmt, ...) __android_log_print(ANDROID_LOG_INFO, "DatadogNDKTests", fmt, ##__VA_ARGS__)
@@ -17,7 +18,27 @@ SUITE (signal_monitor);
 
 GREATEST_MAIN_DEFS();
 
-extern const char *STORAGE_DIR;
+TEST copy_jni_env_to_string(JNIEnv *jniEnv) {
+    jstring s = jniEnv->NewStringUTF("test string");
+    std::string copied_to = stringutils::copy_to_string(jniEnv, s);
+            ASSERT_STR_EQ("test string", copied_to.c_str());
+            PASS();
+}
+
+TEST copy_jni_env_to_string_when_source_is_null(JNIEnv *jniEnv) {
+    std::string copied_to = stringutils::copy_to_string(jniEnv, nullptr);
+            ASSERT_STR_EQ("", copied_to.c_str());
+            PASS();
+}
+
+int run_jni_env_dependent_tests(JNIEnv *env) {
+    int argc = 0;
+    char *argv[] = {};
+    GREATEST_MAIN_BEGIN();
+            RUN_TEST1(copy_jni_env_to_string, env);
+            RUN_TEST1(copy_jni_env_to_string_when_source_is_null, env);
+    GREATEST_MAIN_END();
+}
 
 int run_test_suites() {
     int argc = 0;
@@ -42,23 +63,36 @@ void test_generate_log(
 
 
 extern "C" JNIEXPORT int JNICALL
-Java_com_datadog_android_ndk_NdkTests_runNdkUnitTests(JNIEnv *env, jobject) {
+Java_com_datadog_android_ndk_NdkTests_runNdkSuitTests(JNIEnv *env, jobject) {
     return run_test_suites();
+}
+
+extern "C" JNIEXPORT int JNICALL
+Java_com_datadog_android_ndk_NdkTests_runNdkStandaloneTests(JNIEnv *env, jobject) {
+    return run_jni_env_dependent_tests(env);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_datadog_android_ndk_NdkTests_runNdkSignalHandlerIntegrationTest(JNIEnv *env, jobject thiz,
                                                                          jstring storage_dir,
+                                                                         jstring service_name,
+                                                                         jstring env_name,
+                                                                         jstring app_id,
+                                                                         jstring session_id,
+                                                                         jstring view_id,
                                                                          jint signal,
                                                                          jstring signal_name,
                                                                          jstring signal_message) {
 
-    STORAGE_DIR = env->GetStringUTFChars(storage_dir, 0);
+    updateMainContext(env, storage_dir, service_name, env_name);
+    updateRumContext(env, app_id, session_id, view_id);
     const int c_signal = (int) signal;
-    test_generate_log(c_signal,
-                      env->GetStringUTFChars(signal_name, 0),
-                      env->GetStringUTFChars(signal_message, 0));
+    const char *name = env->GetStringUTFChars(signal_name, 0);
+    const char *message = env->GetStringUTFChars(signal_message, 0);
+    test_generate_log(c_signal, name, message);
+    env->ReleaseStringUTFChars(signal_name, name);
+    env->ReleaseStringUTFChars(signal_message, message);
 }
 
 

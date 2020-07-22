@@ -133,11 +133,16 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+class com.datadog.android.plugin.DatadogContext
+  constructor(DatadogRumContext? = null)
 interface com.datadog.android.plugin.DatadogPlugin
   fun register(DatadogPluginConfig)
   fun unregister()
+  fun onContextChanged(DatadogContext)
 sealed class com.datadog.android.plugin.DatadogPluginConfig
   constructor(android.content.Context, String, String, String)
+class com.datadog.android.plugin.DatadogRumContext
+  constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature
   - LOG
   - CRASH

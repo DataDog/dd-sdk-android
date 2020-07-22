@@ -60,7 +60,7 @@ namespace {
 }
 
 namespace backtrace {
-    const char *generate_backtrace() {
+    std::string generate_backtrace() {
         // define the buffer which will hold pointers to stack memory addresses
         uintptr_t buffer[STACK_SIZE];
         // we will now unwind the stack and capture all the memory addresses up to STACK_SIZE in
@@ -83,7 +83,7 @@ namespace backtrace {
             backtrace.append(lineSymbol);
             backtrace.append("\\n");
         }
-        return backtrace.c_str();
+        return backtrace;
     }
 
 }
