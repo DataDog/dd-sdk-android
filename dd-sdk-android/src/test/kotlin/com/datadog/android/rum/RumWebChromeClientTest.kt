@@ -164,7 +164,7 @@ internal class RumWebChromeClientTest {
     }
 
     @Test
-    fun `onConsoleMessage forwards error log and sends Rum Error`() {
+    fun `onConsoleMessage forwards error log and sends RUM Error`() {
         whenever(mockConsoleMessage.messageLevel()) doReturn ConsoleMessage.MessageLevel.ERROR
 
         val result = testedClient.onConsoleMessage(mockConsoleMessage)

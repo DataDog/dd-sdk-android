@@ -19,9 +19,9 @@ import com.datadog.android.rum.internal.tracking.NoOpFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 
 /**
- * A [ViewTrackingStrategy] that will track [Fragment]s as RUM views.
+ * A [ViewTrackingStrategy] that will track [Fragment]s as RUM Views.
  *
- * Each fragment's lifecycle will be monitored to start and stop RUM views when relevant.
+ * Each fragment's lifecycle will be monitored to start and stop RUM Views when relevant.
  *
  * **Note**: This version of the [FragmentViewTrackingStrategy] is compatible with
  * the AndroidX Compat Library.

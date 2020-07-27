@@ -76,7 +76,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onPageStarted starts a Rum Resource`() {
+    fun `onPageStarted starts a RUM Resource`() {
         testedClient.onPageStarted(mockWebView, fakeUrl, mockBitmap)
 
         verify(mockRumMonitor).startResource(
@@ -95,7 +95,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onPageFinished stops a Rum Resource`() {
+    fun `onPageFinished stops a RUM Resource`() {
         testedClient.onPageFinished(mockWebView, fakeUrl)
 
         verify(mockRumMonitor).stopResource(
@@ -115,7 +115,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedError sends a Rum Error`(
+    fun `onReceivedError sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -130,7 +130,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedError with null description sends a Rum Error`(
+    fun `onReceivedError with null description sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -145,7 +145,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedError with null url sends a Rum Error`(
+    fun `onReceivedError with null url sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -161,7 +161,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `onReceivedError (request) sends a Rum Error`(
+    fun `onReceivedError (request) sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -184,7 +184,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `onReceivedError (request) with null request sends a Rum Error`(
+    fun `onReceivedError (request) with null request sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -204,7 +204,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `onReceivedError (request) with null error sends a Rum Error`(
+    fun `onReceivedError (request) with null error sends a RUM Error`(
         @IntForgery errorCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) description: String
     ) {
@@ -224,7 +224,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `onReceivedHttpError sends a Rum Error`(
+    fun `onReceivedHttpError sends a RUM Error`(
         @IntForgery statusCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
     ) {
@@ -247,7 +247,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `onReceivedHttpError with null response sends a Rum Error`(
+    fun `onReceivedHttpError with null response sends a RUM Error`(
         @IntForgery statusCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
     ) {
@@ -267,7 +267,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `onReceivedHttpError with null request sends a Rum Error`(
+    fun `onReceivedHttpError with null request sends a RUM Error`(
         @IntForgery statusCode: Int,
         @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
     ) {
@@ -286,7 +286,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedSslError sends a Rum Error`(
+    fun `onReceivedSslError sends a RUM Error`(
         @IntForgery primaryError: Int
     ) {
         val mockError: SslError = mock()
@@ -304,7 +304,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedSslError with null handler sends a Rum Error`(
+    fun `onReceivedSslError with null handler sends a RUM Error`(
         @IntForgery primaryError: Int
     ) {
         val mockError: SslError = mock()
@@ -322,7 +322,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedSslError with null error sends a Rum Error`(
+    fun `onReceivedSslError with null error sends a RUM Error`(
         @IntForgery primaryError: Int
     ) {
         testedClient.onReceivedSslError(mockWebView, mock(), null)

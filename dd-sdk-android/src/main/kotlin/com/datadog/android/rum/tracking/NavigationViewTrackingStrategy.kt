@@ -29,7 +29,7 @@ import java.util.WeakHashMap
 
 /**
  * A [ViewTrackingStrategy] that will track [Fragment]s within a NavigationHost
- * as RUM views.
+ * as RUM Views.
  *
  * @param navigationViewId the id of the NavHost view within the hosting [Activity].
  * @param trackArguments whether to track navigation arguments

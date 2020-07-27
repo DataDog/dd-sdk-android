@@ -37,7 +37,7 @@ internal class DatadogExceptionHandler(
         // write the log immediately
         writer.write(createLog(t, e))
 
-        // write a rum error too
+        // write a RUM Error too
         (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(MESSAGE, RumErrorSource.SOURCE, e)
 
         // trigger a task to send the logs ASAP

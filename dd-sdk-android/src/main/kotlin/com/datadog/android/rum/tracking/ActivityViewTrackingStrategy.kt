@@ -15,9 +15,9 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 
 /**
- * A [ViewTrackingStrategy] that will track [Activity] as RUM views.
+ * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.
  *
- * Each activity's lifecycle will be monitored to start and stop RUM views when relevant.
+ * Each activity's lifecycle will be monitored to start and stop RUM Views when relevant.
  * @param trackExtras whether to track Activity Intent extras
  * @param componentPredicate to accept the Activities that will be taken into account as
  * valid RUM View events.
