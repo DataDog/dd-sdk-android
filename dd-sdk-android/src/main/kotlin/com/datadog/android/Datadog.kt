@@ -205,6 +205,16 @@ object Datadog {
         return initialized.get()
     }
 
+    /**
+     * Clears all data that has not already been sent to Datadog servers.
+     */
+    fun clearAllData() {
+        LogsFeature.clearAllData()
+        CrashReportsFeature.clearAllData()
+        RumFeature.clearAllData()
+        TracesFeature.clearAllData()
+    }
+
     // Stop all Datadog work (for test purposes).
     @Suppress("unused")
     private fun stop() {

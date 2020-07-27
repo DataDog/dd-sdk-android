@@ -16,4 +16,6 @@ internal interface PersistenceStrategy<T : Any> {
     fun getWriter(): Writer<T>
 
     fun getReader(): Reader
+
+    fun clearAllData()
 }

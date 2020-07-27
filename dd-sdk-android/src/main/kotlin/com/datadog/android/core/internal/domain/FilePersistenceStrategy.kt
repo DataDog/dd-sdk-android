@@ -40,13 +40,13 @@ internal open class FilePersistenceStrategy<T : Any>(
         payloadDecoration.suffix
     )
 
-    // region Strategy methods
-
     protected val fileWriter = ImmediateFileWriter(
         fileOrchestrator,
         serializer,
         payloadDecoration.separator
     )
+
+    // region PersistenceStrategy
 
     override fun getWriter(): Writer<T> {
         return fileWriter
@@ -54,6 +54,10 @@ internal open class FilePersistenceStrategy<T : Any>(
 
     override fun getReader(): Reader {
         return fileReader
+    }
+
+    override fun clearAllData() {
+        fileReader.dropAllBatches()
     }
 
     // endregion
