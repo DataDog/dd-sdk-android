@@ -50,11 +50,20 @@ internal class EndToEndRumActivityTrackingTests {
 
         instrumentation.waitForIdleSync()
 
-        // one for view loading time update
+        // one for application start update
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
                 docVersion = 2,
+                viewArguments = expectedViewArguments
+            )
+        )
+
+        // one for view loading time update
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 3,
                 viewArguments = expectedViewArguments,
                 extraViewAttributes = mapOf(
                     "loading_type" to "activity_display"
@@ -71,7 +80,7 @@ internal class EndToEndRumActivityTrackingTests {
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
-                docVersion = 3,
+                docVersion = 4,
                 viewArguments = expectedViewArguments
             )
         )

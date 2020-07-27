@@ -93,13 +93,16 @@ internal class EndToEndRumGesturesTrackingTests {
         )
         return listOf(
             ExpectedApplicationStart(),
+            ExpectedViewEvent(
+                viewUrl, 2
+            ),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 "${mockServerRule.activity.button.javaClass.canonicalName}",
                 "button"
             ),
             ExpectedViewEvent(
-                viewUrl, 2
+                viewUrl, 3
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
@@ -115,7 +118,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedViewEvent(
                 viewUrl,
-                3
+                4
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
@@ -126,7 +129,7 @@ internal class EndToEndRumGesturesTrackingTests {
                 )
             ),
             ExpectedViewEvent(
-                viewUrl, 4
+                viewUrl, 5
             )
         )
     }

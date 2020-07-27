@@ -26,7 +26,8 @@ internal fun List<JsonObject>.verifyEventMatches(
     Assertions.assertThat(this.size)
         .withFailMessage(
             "We were expecting ${expected.size} rum " +
-                "events instead they were ${this.size}"
+                "events instead they were ${this.size}: \n" +
+                this.joinToString("\n") { "\t>> $it" }
         )
         .isEqualTo(expected.size)
 
