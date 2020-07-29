@@ -59,13 +59,9 @@ tasks.register("unitTestAll") {
         ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":sample:java:assembleDebug",
         ":sample:kotlin:assembleDebug",
-        ":sample:kotlin-timber:assembleDebug",
         ":tools:detekt:test",
         ":tools:unit:testDebugUnitTest",
-        ":tools:unit:testReleaseUnitTest",
-        ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug",
-        ":sample:kotlin-timber:assembleDebug"
+        ":tools:unit:testReleaseUnitTest"
     )
 }
 
@@ -111,15 +107,15 @@ tasks.register("jacocoReportAll") {
     dependsOn(
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-ktx:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-ndk:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ndk:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",
         ":tools:unit:jacocoTestDebugUnitTestReport",
-        ":tools:unit:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-ktx:jacocoTestReleaseUnitTestReport"
+        ":tools:unit:jacocoTestReleaseUnitTestReport"
     )
 }
 
