@@ -22,7 +22,7 @@
 
         <activity
             android:name=".NavActivity"
-            android:label="@string/activity_nav">
+            android:label="@string/title_main">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

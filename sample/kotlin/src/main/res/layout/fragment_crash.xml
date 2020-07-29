@@ -9,11 +9,12 @@
                                                    xmlns:tools="http://schemas.android.com/tools"
                                                    android:layout_width="match_parent"
                                                    android:layout_height="match_parent"
-                                                   tools:context=".traces.TracesFragment">
+                                                   android:padding="10dp"
+                                                   tools:context=".logs.LogsFragment">
 
 
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/async_operation"
+        android:id="@+id/java_crash"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
@@ -26,75 +27,72 @@
         app:layout_constraintTop_toTopOf="parent"/>
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/start_async_operation"
+        android:id="@+id/action_java_crash"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/button_start"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/async_operation"/>
-
-    <ProgressBar
-        android:id="@+id/spinner_async"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:indeterminate="false"
-        android:max="100"
-        android:min="0"
-        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_margin="8dp"
+        android:text="@string/button_crash"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_async_operation"
-        android:visibility="invisible"/>
-
+        app:layout_constraintTop_toBottomOf="@id/java_crash"/>
 
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/network_request"
+        android:id="@+id/native_crash"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:padding="16dp"
         android:layout_margin="8dp"
-        android:text="@string/msg_network_request"
+        android:text="@string/msg_native_crash"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spinner_async"/>
+        app:layout_constraintTop_toBottomOf="@+id/action_java_crash"/>
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/start_request"
+
+    <androidx.appcompat.widget.AppCompatSpinner
+        android:id="@+id/signal_type_spinner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/button_start"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/network_request"/>
-
-
-    <ProgressBar
-        android:id="@+id/spinner_request"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:indeterminate="true"
         android:layout_margin="8dp"
-        app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintEnd_toStartOf="@+id/request_status"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_request"
-        android:visibility="invisible"/>
+        app:layout_constraintTop_toBottomOf="@id/native_crash"
+        app:layout_constraintEnd_toStartOf="@id/action_ndk_crash"
+        android:prompt="@string/prompt_signal_crash"/>
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/request_status"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:visibility="invisible"
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/action_ndk_crash"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        app:layout_constraintStart_toEndOf="@id/spinner_request"
-        app:layout_constraintTop_toBottomOf="@id/start_request"
+        android:text="@string/button_crash"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:src="@drawable/ic_check_circle_green_24dp"
-    />
+        app:layout_constraintStart_toEndOf="@id/signal_type_spinner"
+        app:layout_constraintTop_toBottomOf="@id/native_crash"/>
 
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/anr"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:layout_margin="8dp"
+        android:text="@string/msg_anr"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/action_ndk_crash"/>
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/action_anr"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_anr"
+        android:layout_margin="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/anr"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

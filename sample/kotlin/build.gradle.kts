@@ -18,6 +18,7 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
+    id("kotlin-kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
@@ -47,21 +48,11 @@ android {
         }
     }
 
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions("version")
+    flavorDimensions("version", "ill")
     productFlavors {
         register("staging") {
             dimension = "version"
@@ -71,7 +62,25 @@ android {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
+
+        register("glide") {
+            dimension = "ill"
+        }
     }
+
+    sourceSets.named("main") {
+        java.srcDir("src/main/kotlin")
+    }
+    sourceSets.named("glide") {
+        java.srcDir("src/glide/kotlin")
+    }
+    sourceSets.named("test") {
+        java.srcDir("src/test/kotlin")
+    }
+    sourceSets.named("androidTest") {
+        java.srcDir("src/androidTest/kotlin")
+    }
+
     dexOptions {
         javaMaxHeapSize = "4g"
     }
@@ -88,7 +97,9 @@ android {
 dependencies {
 
     api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
+    api(project(":dd-sdk-android-timber"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -102,8 +113,14 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
+    implementation("com.github.bumptech.glide:glide:4.11.0")
+
+    // kapt("com.github.bumptech.glide:compiler:4.11.0")
+
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
+    implementation(Dependencies.Libraries.Timber)
 }
 
 kotlinConfig()

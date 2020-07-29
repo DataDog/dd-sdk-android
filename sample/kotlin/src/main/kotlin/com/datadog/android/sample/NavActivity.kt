@@ -10,22 +10,59 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
+import timber.log.Timber
 
 class NavActivity : AppCompatActivity() {
 
     lateinit var navController: NavController
+    lateinit var rootView: View
+
     // region Activity
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Timber.d("onStart")
 
         setContentView(R.layout.activity_nav)
+        rootView = findViewById(R.id.frame_container)
 
         navController = findNavController(R.id.nav_host_fragment)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Timber.d("onStart")
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        Timber.d("onRestart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Timber.d("onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Timber.d("onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Timber.d("onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Timber.d("onDestroy")
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -35,24 +72,17 @@ class NavActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val arguments = Bundle(2)
-        arguments.putInt("item.itemId", item.itemId)
-        arguments.putString("item.title", item.title.toString())
         var result = true
         when (item.itemId) {
-            R.id.navigation_logs -> navController.navigate(R.id.fragment_logs, arguments)
-            R.id.navigation_webview -> navController.navigate(R.id.fragment_webview, arguments)
-            R.id.navigation_traces -> navController.navigate(R.id.fragment_trace, arguments)
-            R.id.navigation_data_list -> navController.navigate(R.id.fragment_data_list, arguments)
-            R.id.navigation_view_pager -> {
-                startActivity(Intent(this, ViewPagerActivity::class.java))
+            R.id.set_user_info -> {
+                navController.navigate(R.id.fragment_user)
             }
             R.id.show_snack_bar -> {
-                Snackbar.make(
-                    this.window.decorView.rootView,
-                    "Demo message",
-                    Snackbar.LENGTH_LONG
-                ).show()
+                Snackbar.make(rootView, LIPSUM, Snackbar.LENGTH_LONG).show()
+            }
+            R.id.start_foreground_service -> {
+                val serviceIntent = Intent(this, LogsForegroundService::class.java)
+                startService(serviceIntent)
             }
             else -> result = super.onOptionsItemSelected(item)
         }
@@ -60,4 +90,8 @@ class NavActivity : AppCompatActivity() {
     }
 
     // endregion
+
+    companion object {
+        const val LIPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, …"
+    }
 }

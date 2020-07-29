@@ -22,7 +22,6 @@ class LogsForegroundService : Service() {
 
     private val logger: Logger by lazy {
         Logger.Builder()
-            .setServiceName("android-sample-kotlin")
             .setLoggerName("foreground_service")
             .setLogcatLogsEnabled(true)
             .build()

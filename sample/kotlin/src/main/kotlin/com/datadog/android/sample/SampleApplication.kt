@@ -6,16 +6,25 @@
 package com.datadog.android.sample
 
 import android.app.Application
+import android.os.Build
+import android.preference.PreferenceManager
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogConfig
+import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.sample.user.UserFragment
+import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.opentracing.util.GlobalTracer
+import timber.log.Timber
 
 class SampleApplication : Application() {
     companion object {
@@ -26,15 +35,34 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        initializeDatadog()
+        initializeTimber()
+    }
+
+    private fun initializeDatadog() {
+        Datadog.initialize(this, createDatadogConfig())
+        Datadog.setVerbosity(Log.VERBOSE)
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        setUserInfo(
+            prefs.getString(UserFragment.PREF_ID, null),
+            prefs.getString(UserFragment.PREF_NAME, null),
+            prefs.getString(UserFragment.PREF_EMAIL, null)
+        )
+
+        GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    }
+
+    private fun createDatadogConfig(): DatadogConfig {
         val environment = BuildConfig.FLAVOR
-        val configBuilder =
-            DatadogConfig.Builder(
-                BuildConfig.DD_CLIENT_TOKEN,
-                environment,
-                BuildConfig.DD_RUM_APPLICATION_ID
-            )
+        val configBuilder = DatadogConfig.Builder(
+            BuildConfig.DD_CLIENT_TOKEN,
+            environment,
+            BuildConfig.DD_RUM_APPLICATION_ID
+        )
+
         configBuilder
-            .setServiceName("android-sample-kotlin")
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .trackInteractions()
@@ -49,13 +77,36 @@ class SampleApplication : Application() {
         if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
         }
+        return configBuilder.build()
+    }
 
-        // Initialise Datadog
-        Datadog.initialize(this, configBuilder.build())
-        Datadog.setVerbosity(Log.VERBOSE)
+    private fun initializeTimber() {
+        val logger = Logger.Builder()
+            .setLoggerName("timber")
+            .setNetworkInfoEnabled(true)
+            .build()
 
-        // initialize the tracer here
-        GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        val device = JsonObject()
+        val abis = JsonArray()
+        try {
+            device.addProperty("api", Build.VERSION.SDK_INT)
+            device.addProperty("brand", Build.BRAND)
+            device.addProperty("manufacturer", Build.MANUFACTURER)
+            device.addProperty("model", Build.MODEL)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                for (abi in Build.SUPPORTED_ABIS) {
+                    abis.add(abi)
+                }
+            }
+        } catch (t: Throwable) {
+            // ignore
+        }
+        logger.addAttribute("device", device)
+        logger.addAttribute("supported_abis", abis)
+
+        logger.addTag("flavor", BuildConfig.FLAVOR)
+        logger.addTag("build_type", BuildConfig.BUILD_TYPE)
+
+        Timber.plant(DatadogTree(logger))
     }
 }

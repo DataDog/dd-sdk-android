@@ -13,5 +13,6 @@
 
     <!-- Main Palette -->
     <color name="datadog_violet">#632CA6</color>
+    <color name="datadog_grey">#E2EAE3</color>
 
 </resources>

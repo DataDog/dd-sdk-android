@@ -4,36 +4,24 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <item
-        android:id="@+id/navigation_logs"
-        android:icon="@drawable/ic_logs_black_24dp"
-        android:title="@string/title_logs" />
-
-    <item
-        android:id="@+id/navigation_webview"
-        android:icon="@drawable/ic_webview_black_24dp"
-        android:title="@string/title_webview" />
-
-    <item
-        android:id="@+id/navigation_traces"
-        android:icon="@drawable/ic_timeline_black_24dp"
-        android:title="@string/title_traces" />
-
-    <item
-        android:id="@+id/navigation_data_list"
-        android:icon="@drawable/ic_format_list_numbered_black_24dp"
-        android:title="@string/title_data_list" />
-
-    <item
-        android:id="@+id/navigation_view_pager"
-        android:icon="@drawable/ic_view_array_black_24dp"
-        android:title="@string/title_view_pager" />
+<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/show_snack_bar"
-        android:icon="@drawable/ic_message_black_24dp"
-        android:title="@string/title_show_snackbar" />
+        android:icon="@drawable/ic_message_white_24dp"
+        android:title="@string/title_snackbar"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/start_foreground_service"
+        android:icon="@drawable/ic_service_white_24dp"
+        android:title="@string/title_foreground_service"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/set_user_info"
+        android:icon="@drawable/ic_user_white_24dp"
+        android:title="@string/title_user_info"
+        app:showAsAction="ifRoom"/>
 
 </menu>
