@@ -59,6 +59,7 @@ object Dependencies {
         const val GoogleMaterial = "1.0.0"
 
         // Integrations
+        const val Glide = "4.11.0"
         const val Timber = "4.7.1"
 
         // Internal APIs
@@ -149,13 +150,21 @@ object Dependencies {
             "com.google.android.material:material:${Versions.GoogleMaterial}"
         )
 
+        // INTEGRATIONS
+
+        val Glide = arrayOf(
+            "com.github.bumptech.glide:annotations:${Versions.Glide}",
+            "com.github.bumptech.glide:glide:${Versions.Glide}",
+            "com.github.bumptech.glide:okhttp3-integration:${Versions.Glide}"
+        )
+        const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
+
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
 
         const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
         const val DetektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.Detekt}"
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
 
-        const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
         const val Robolectric = "org.robolectric:android-all:${Versions.Robolectric}"
     }
 
@@ -191,5 +200,9 @@ object Dependencies {
 
     object PluginNamespaces {
         const val Gradle = "org.gradle"
+    }
+
+    object AnnotationProcessors {
+        const val Glide = "com.github.bumptech.glide:compiler:${Versions.Glide}"
     }
 }

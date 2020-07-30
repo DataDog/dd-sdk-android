@@ -18,11 +18,11 @@ import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoPr
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.time.NoOpMutableTimeProvider
-import com.datadog.android.log.assertj.containsInstanceOf
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor

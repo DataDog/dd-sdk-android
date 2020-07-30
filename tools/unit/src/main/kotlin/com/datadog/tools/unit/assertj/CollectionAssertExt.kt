@@ -4,10 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.assertj
+package com.datadog.tools.unit.assertj
 
 import org.assertj.core.api.ListAssert
 
+/**
+ *  Verifies that the actual list contains at least one object which is an instance
+ *  of the provided class.
+ *
+ *  @param clazz the class object
+ */
 fun <T> ListAssert<T>.containsInstanceOf(clazz: Class<*>): ListAssert<T> {
 
     overridingErrorMessage(
