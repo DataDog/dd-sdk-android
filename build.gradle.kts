@@ -47,6 +47,16 @@ tasks.register("checkAll") {
     )
 }
 
+tasks.register("assembleAll") {
+    dependsOn(
+        ":dd-sdk-android:assemble",
+        ":dd-sdk-android-glide:assemble",
+        ":dd-sdk-android-ktx:assemble",
+        ":dd-sdk-android-timber:assemble",
+        ":dd-sdk-android-ndk:assemble"
+    )
+}
+
 tasks.register("unitTestAll") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",

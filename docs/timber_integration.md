@@ -1,6 +1,6 @@
 # Android Timber Integration
 
-Send automatically Timber logs to Datadog from your Android applications.
+Send automatically [Timber][1] logs to Datadog from your Android applications.
 
 **Note**: This package is an extension of the main package, so add both dependencies into your gradle file.
 
@@ -19,6 +19,8 @@ dependencies {
 
 ### Timber integration setup
 
+Once you've set up the Timber integration, all logs created with Timber will be also forwarded to Datadog via the provided Logger.
+
 ```kotlin
 val  logger = Logger.Builder()
         .setNetworkInfoEnabled(true)
@@ -28,3 +30,5 @@ val  logger = Logger.Builder()
 
 Timber.plant(DatadogTree(logger))
 ```
+
+[1]: https://github.com/JakeWharton/timber

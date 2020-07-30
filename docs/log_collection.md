@@ -217,6 +217,10 @@ This means that even if users open your application while being offline, no data
 
 The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
+## Extensions
+
+If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](timber_integration.md).
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
