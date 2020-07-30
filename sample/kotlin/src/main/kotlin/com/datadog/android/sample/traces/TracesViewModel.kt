@@ -11,11 +11,10 @@ import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.datadog.android.DatadogEventListener
+import com.datadog.android.DatadogInterceptor
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.sample.BuildConfig
-import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -69,8 +68,7 @@ class TracesViewModel : ViewModel() {
         }
 
         private val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(TracingInterceptor(listOf("shopist.io")))
-            .addInterceptor(RumInterceptor())
+            .addInterceptor(DatadogInterceptor(listOf("shopist.io")))
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
 

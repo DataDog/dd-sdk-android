@@ -18,6 +18,7 @@
     <string name="title_view_pager">View Pager</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
+    <string name="title_picture">Picture loading</string>
     <string name="title_user_info">User Info</string>
 
     <string name="msg_native_crash">Native Crash</string>

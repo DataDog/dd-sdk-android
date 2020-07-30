@@ -5,13 +5,8 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<resources>
-
-    <!-- Common -->
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-
-    <!-- Main Palette -->
-    <color name="datadog_violet">#632CA6</color>
-
-</resources>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ph_background_red"/>
+    <item android:drawable="@drawable/ic_dd_icon_red"
+          android:gravity="center"/>
+</layer-list>

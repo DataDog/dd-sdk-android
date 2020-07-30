@@ -46,6 +46,11 @@
         android:label="@string/title_data_list"/>
 
     <fragment
+        android:id="@+id/fragment_picture"
+        android:name="com.datadog.android.sample.picture.PictureFragment"
+        android:label="@string/title_picture"/>
+
+    <fragment
         android:id="@+id/fragment_user"
         android:name="com.datadog.android.sample.user.UserFragment"
         android:label="@string/title_user_info"

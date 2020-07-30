@@ -57,6 +57,7 @@ class HomeFragment :
             R.id.navigation_webview -> R.id.fragment_webview
             R.id.navigation_data_list -> R.id.fragment_data_list
             R.id.navigation_view_pager -> R.id.activity_view_pager
+            R.id.navigation_picture -> R.id.fragment_picture
             else -> null
         }
         if (destination != null) {

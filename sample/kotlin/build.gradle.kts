@@ -18,7 +18,7 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("android.extensions")
-    id("kotlin-kapt")
+    kotlin("kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
@@ -100,6 +100,7 @@ dependencies {
     api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
     api(project(":dd-sdk-android-timber"))
+    api(project(":dd-sdk-android-glide"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -113,9 +114,12 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
+    // Glide
     implementation("com.github.bumptech.glide:glide:4.11.0")
-
-    // kapt("com.github.bumptech.glide:compiler:4.11.0")
+    implementation("com.github.bumptech.glide:okhttp3-integration:4.11.0") {
+        exclude(group = "glide-parent")
+    }
+    kapt("com.github.bumptech.glide:compiler:4.11.0")
 
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
