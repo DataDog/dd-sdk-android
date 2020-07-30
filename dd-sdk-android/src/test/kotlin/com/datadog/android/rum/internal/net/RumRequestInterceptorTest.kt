@@ -106,7 +106,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `starts Rum Resource event on transformRequest`() {
+    fun `starts RUM Resource event on transformRequest`() {
         val transformedRequest = testedInterceptor.transformRequest(mockRequest)
 
         assertThat(transformedRequest).isSameAs(mockRequest)
@@ -120,7 +120,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `starts Rum Resource event with span info on transformRequest within Span`(
+    fun `starts RUM Resource event with span info on transformRequest within Span`(
         @LongForgery traceId: Long
     ) {
         doAnswer {
@@ -146,7 +146,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `starts Rum Resource event with request body length as attribute`(forge: Forge) {
+    fun `starts RUM Resource event with request body length as attribute`(forge: Forge) {
         val expectedBytesRead = forge.aLong()
         val mockedBody: RequestBody = mock {
             whenever(it.contentLength()).thenReturn(expectedBytesRead)
@@ -178,7 +178,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource on handleResponse (GET without ContentType)`(
+    fun `stops RUM Resource on handleResponse (GET without ContentType)`(
         @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -200,7 +200,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource on handleResponse (GET with ContentType)`(
+    fun `stops RUM Resource on handleResponse (GET with ContentType)`(
         @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -222,7 +222,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource on handleResponse (POST)`(
+    fun `stops RUM Resource on handleResponse (POST)`(
         @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -244,7 +244,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource on handleResponse (PUT)`(
+    fun `stops RUM Resource on handleResponse (PUT)`(
         @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -266,7 +266,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource on handleResponse (DELETE)`(
+    fun `stops RUM Resource on handleResponse (DELETE)`(
         @IntForgery(200, 300) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -288,7 +288,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource with Error on handleThrowable`(
+    fun `stops RUM Resource with Error on handleThrowable`(
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
         whenever(mockRequest.method()) doReturn fakeMethod
@@ -306,7 +306,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource and add Error on handleResponse 4xx`(
+    fun `stops RUM Resource and add Error on handleResponse 4xx`(
         @IntForgery(400, 500) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {
@@ -339,7 +339,7 @@ internal class RumRequestInterceptorTest {
     }
 
     @Test
-    fun `stops Rum Resource and add Error on handleResponse 5xx`(
+    fun `stops RUM Resource and add Error on handleResponse 5xx`(
         @IntForgery(500, 600) statusCode: Int,
         @StringForgery(StringForgeryType.ASCII) body: String
     ) {

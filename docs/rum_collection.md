@@ -91,9 +91,9 @@ Depending on your application's architecture, you can choose one of several impl
         .build()
     ```
 
-    This creates RUM resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error).
+    This creates RUM Resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in background, you can create a view manually as explained below.
 
-    **Note**: If you use multiple Interceptors, this one must be called first.
+    **Note**: If you also use multiple Interceptors, this one must be called first.
 
 5. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the provided [Event][6] listener as follows:
 

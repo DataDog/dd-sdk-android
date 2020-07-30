@@ -24,7 +24,7 @@ import com.datadog.android.rum.RumResourceKind
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
  *
- * This will map the page loading, and webview errors into Rum Resource and
+ * This will map the page loading, and webview errors into RUM Resource and
  * Error events respectively.
  */
 open class RumWebViewClient : WebViewClient() {

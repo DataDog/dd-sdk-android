@@ -18,7 +18,7 @@ import com.datadog.android.rum.RumErrorSource
  * A [WebViewClient] propagating all relevant events to Datadog.
  *
  * Any console message will be forwarded to an internal [Logger], and errors
- * will be sent to the [GlobalRum] monitor as Rum Errors.
+ * will be sent to the [GlobalRum] monitor as RUM Errors.
  */
 open class RumWebChromeClient
 internal constructor(private val logger: Logger) : WebChromeClient() {

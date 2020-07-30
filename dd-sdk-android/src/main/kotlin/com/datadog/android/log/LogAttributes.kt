@@ -248,7 +248,7 @@ object LogAttributes {
     const val RUM_SESSION_ID: String = "session_id"
 
     /**
-     * The id of the active RUM view. (String)
+     * The id of the active RUM View. (String)
      * This lets the RUM and Logs features to be linked.
      * This value is filled automatically by the [Logger].
      * @see [Logger.Builder.bundleWithRumEnabled]
