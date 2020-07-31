@@ -11,6 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -18,6 +19,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
@@ -25,11 +27,14 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -40,8 +45,12 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.noop.NoopTracerFactory
+import io.opentracing.util.GlobalTracer
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -101,15 +110,21 @@ internal class DatadogExceptionHandlerTest {
     @Forgery
     lateinit var fakeTime: Date
 
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeEnv: String
+
+    @StringForgery(StringForgeryType.HEXADECIMAL)
+    lateinit var fakeToken: String
+
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeTime.time
 
         val mockContext: Application = mockContext()
-        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        val config = DatadogConfig.Builder(fakeToken, fakeEnv).build()
+        Datadog.initialize(mockContext(), config)
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
@@ -128,6 +143,8 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.invokeMethod("stop")
+        GlobalTracer.get().setFieldValue("isRegistered", false)
+        GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
     }
@@ -153,12 +170,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
                 .hasTags(listOf("env:$envName"))
+                .hasAttributes(emptyMap())
         }
-        verify(mockRumMonitor).addCrash(
-            "Application crash detected",
-            RumErrorSource.SOURCE,
-            fakeThrowable
-        )
         verifyZeroInteractions(mockPreviousHandler)
     }
 
@@ -177,7 +190,7 @@ internal class DatadogExceptionHandlerTest {
                 eq(ExistingWorkPolicy.REPLACE),
                 argThat<OneTimeWorkRequest> {
                     this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                            this.tags.contains(TAG_DATADOG_UPLOAD)
+                        this.tags.contains(TAG_DATADOG_UPLOAD)
                 })
     }
 
@@ -200,6 +213,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
                 .hasTags(listOf("env:$envName"))
+                .hasAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -222,6 +236,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
                 .hasTags(emptyList())
+                .hasAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -251,7 +266,74 @@ internal class DatadogExceptionHandlerTest {
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestamp(fakeTime.time)
                 .hasTags(listOf("env:$envName"))
+                .hasAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
+    }
+
+    @Test
+    fun `add current span information when tracer is active`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) operation: String
+    ) {
+        val currentThread = Thread.currentThread()
+        val tracer = AndroidTracer.Builder().build()
+        val span = tracer.buildSpan(operation).start()
+        tracer.activateSpan(span)
+        GlobalTracer.registerIfAbsent(tracer)
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasAttributes(
+                    mapOf(
+                        LogAttributes.DD_TRACE_ID to tracer.traceId,
+                        LogAttributes.DD_SPAN_ID to tracer.spanId
+                    )
+                )
+        }
+        Datadog.invokeMethod("stop")
+    }
+
+    @Test
+    fun `register RUM Error with crash when RumMonitor registered`() {
+        val currentThread = Thread.currentThread()
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        verify(mockRumMonitor).addCrash(
+            "Application crash detected",
+            RumErrorSource.SOURCE,
+            fakeThrowable
+        )
+        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+    }
+
+    @Test
+    fun `add current RUM information when GlobalRum is active`(
+        @Forgery rumContext: RumContext
+    ) {
+        val currentThread = Thread.currentThread()
+        GlobalRum.updateRumContext(rumContext)
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasAttributes(
+                    mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumContext.viewId
+                    )
+                )
+        }
+        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 }

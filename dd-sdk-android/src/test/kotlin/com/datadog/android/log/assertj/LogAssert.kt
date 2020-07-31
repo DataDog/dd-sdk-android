@@ -62,6 +62,7 @@ internal class LogAssert(actual: Log) :
 
     fun hasAttributes(attributes: Map<String, Any?>): LogAssert {
         assertThat(actual.attributes)
+            .hasSameSizeAs(attributes)
             .containsAllEntriesOf(attributes)
         return this
     }
