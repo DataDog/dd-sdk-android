@@ -12,11 +12,13 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import io.opentracing.util.GlobalTracer
 import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
@@ -63,6 +65,21 @@ internal class DatadogExceptionHandler(
     // region Internal
 
     private fun createLog(thread: Thread, throwable: Throwable): Log {
+        val logAttrs = mutableMapOf<String, Any?>()
+        if (GlobalTracer.isRegistered()) {
+            val tracer = GlobalTracer.get()
+            val activeContext = tracer.activeSpan()?.context()
+            if (activeContext != null) {
+                logAttrs[LogAttributes.DD_TRACE_ID] = activeContext.toTraceId()
+                logAttrs[LogAttributes.DD_SPAN_ID] = activeContext.toSpanId()
+            }
+        }
+        if (GlobalRum.isRegistered()) {
+            val activeContext = GlobalRum.getRumContext()
+            logAttrs[LogAttributes.RUM_APPLICATION_ID] = activeContext.applicationId
+            logAttrs[LogAttributes.RUM_SESSION_ID] = activeContext.sessionId
+            logAttrs[LogAttributes.RUM_VIEW_ID] = activeContext.viewId
+        }
         return Log(
             serviceName = CoreFeature.serviceName,
             level = Log.CRASH,
@@ -73,7 +90,7 @@ internal class DatadogExceptionHandler(
             userInfo = userInfoProvider.getUserInfo(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
             timestamp = timeProvider.getServerTimestamp(),
-            attributes = emptyMap(),
+            attributes = logAttrs,
             tags = if (CrashReportsFeature.envTag.isEmpty()) {
                 emptyList()
             } else {
