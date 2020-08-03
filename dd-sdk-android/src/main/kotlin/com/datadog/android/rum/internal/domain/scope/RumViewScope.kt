@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -356,7 +355,7 @@ internal class RumViewScope(
 
     private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
         val now = event.eventTime.nanoTime
-        val startupTime = Datadog.startupTimeNs
+        val startupTime = event.applicationStartupNanos
         return max(now - startupTime, 1L)
     }
 

@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -40,6 +39,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -588,12 +588,14 @@ internal class RumViewScopeTest {
     @Test
     fun `sends application start on ApplicationStarted event`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @LongForgery(0) duration: Long
     ) {
-        fakeEvent = RumRawEvent.ApplicationStarted(Time())
+        val eventTime = Time()
+        val startedNanos = eventTime.nanoTime - duration
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        val now = System.nanoTime()
 
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
@@ -603,7 +605,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(testedScope.eventTimestamp)
                     hasType(ActionEvent.Type1.APPLICATION_START)
                     hasNoTarget()
-                    hasDurationLowerThan(now - Datadog.startupTimeNs)
+                    hasDuration(duration)
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)

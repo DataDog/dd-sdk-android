@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
@@ -26,6 +27,8 @@ internal class RumSessionScope(
     internal val sessionStartNs = AtomicLong(System.nanoTime())
     internal val lastUserInteractionNs = AtomicLong(0L)
 
+    internal var resetSessionTime: Long? = null
+
     internal var applicationDisplayed: Boolean = false
 
     init {
@@ -40,6 +43,8 @@ internal class RumSessionScope(
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
             sessionId = RumContext.NULL_SESSION_ID
+            resetSessionTime = System.nanoTime()
+            applicationDisplayed = false
         }
         updateSessionIdIfNeeded()
 
@@ -53,9 +58,8 @@ internal class RumSessionScope(
 
         if (event is RumRawEvent.StartView) {
             val viewScope = RumViewScope.fromEvent(this, event)
-            if (!applicationDisplayed) {
+
                 onApplicationDisplayed(event, viewScope, writer)
-            }
             activeChildrenScopes.add(viewScope)
         }
 
@@ -71,13 +75,19 @@ internal class RumSessionScope(
 
     // region Internal
 
-    private fun onApplicationDisplayed(
+    internal fun onApplicationDisplayed(
         event: RumRawEvent.StartView,
         viewScope: RumViewScope,
         writer: Writer<RumEvent>
     ) {
-        applicationDisplayed = true
-        viewScope.handleEvent(RumRawEvent.ApplicationStarted(event.eventTime), writer)
+        if (!applicationDisplayed) {
+            applicationDisplayed = true
+            val applicationStartTime = resetSessionTime ?: Datadog.startupTimeNs
+            viewScope.handleEvent(
+                RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
+                writer
+            )
+        }
     }
 
     @Synchronized
