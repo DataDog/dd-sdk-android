@@ -37,6 +37,8 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -462,5 +464,32 @@ internal class RumFeatureTest {
                 verify(it).unregister()
             }
         }
+    }
+
+    @Test
+    fun `clears all files on local storage on request`(
+        @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) content: String
+    ) {
+        val fakeDir = File(rootDir, RumFileStrategy.RUM_FOLDER)
+        fakeDir.mkdirs()
+        val fakeFile = File(fakeDir, fileName)
+        fakeFile.writeText(content)
+
+        // when
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider
+        )
+        RumFeature.clearAllData()
+
+        // Then
+        assertThat(fakeFile).doesNotExist()
     }
 }

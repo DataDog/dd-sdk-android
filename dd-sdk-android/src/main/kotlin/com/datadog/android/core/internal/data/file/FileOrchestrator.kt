@@ -26,8 +26,7 @@ internal class FileOrchestrator(
         rootDirectory.isDirectory
     }
 
-    private val fileFilter: FileFilter =
-        FileFilter()
+    private val fileFilter: FileFilter = FileFilter()
 
     private var previousFile: File? = null
     private var previousFileLogCount: Int = 0

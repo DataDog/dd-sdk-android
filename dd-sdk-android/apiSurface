@@ -5,6 +5,7 @@ object com.datadog.android.Datadog
   DEPRECATED fun initialize(android.content.Context, String, String, String? = null)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
+  fun clearAllData()
   fun setVerbosity(Int)
   fun setUserInfo(String? = null, String? = null, String? = null)
 class com.datadog.android.DatadogConfig

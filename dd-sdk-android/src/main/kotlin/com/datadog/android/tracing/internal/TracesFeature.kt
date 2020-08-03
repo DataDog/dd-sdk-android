@@ -82,6 +82,10 @@ internal object TracesFeature {
         initialized.set(true)
     }
 
+    fun clearAllData() {
+        persistenceStrategy.clearAllData()
+    }
+
     fun stop() {
         if (initialized.get()) {
             unregisterPlugins()

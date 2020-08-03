@@ -114,6 +114,10 @@ internal object RumFeature {
         return initialized.get()
     }
 
+    fun clearAllData() {
+        persistenceStrategy.clearAllData()
+    }
+
     fun stop() {
         if (initialized.get()) {
             unregisterPlugins()

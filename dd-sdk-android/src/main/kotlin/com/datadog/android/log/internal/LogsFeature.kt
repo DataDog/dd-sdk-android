@@ -102,6 +102,10 @@ internal object LogsFeature {
         return initialized.get()
     }
 
+    fun clearAllData() {
+        persistenceStrategy.clearAllData()
+    }
+
     fun stop() {
         if (initialized.get()) {
             unregisterPlugins()

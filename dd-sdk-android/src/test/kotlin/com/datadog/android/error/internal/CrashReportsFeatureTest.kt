@@ -29,6 +29,8 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -349,5 +351,32 @@ internal class CrashReportsFeatureTest {
         // then
         assertThat(CrashReportsFeature.dataUploadScheduler)
             .isInstanceOf(NoOpUploadScheduler::class.java)
+    }
+
+    @Test
+    fun `clears all files on local storage on request`(
+        @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) content: String
+    ) {
+        val fakeDir = File(rootDir, CrashLogFileStrategy.CRASH_REPORTS_FOLDER)
+        fakeDir.mkdirs()
+        val fakeFile = File(fakeDir, fileName)
+        fakeFile.writeText(content)
+
+        // when
+        CrashReportsFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            mockTimeProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor
+        )
+        CrashReportsFeature.clearAllData()
+
+        // Then
+        assertThat(fakeFile).doesNotExist()
     }
 }
