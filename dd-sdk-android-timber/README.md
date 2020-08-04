@@ -11,8 +11,8 @@ repositories {
 }
 
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-timber:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-timber:<latest-version>"
 }
 ```
 
@@ -39,14 +39,14 @@ class SampleApplication : Application() {
                 .setDatadogLogsEnabled(true)
                 .build();
 
-        // You can configure the logger's tags and attributes, as explained in the  [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android)
-
         Timber.plant(DatadogTree(logger))
     }
 }
 ```
 
 That's it, now all your Timber logs will be sent to Datadog automatically.
+
+You can configure the logger's tags and attributes, as explained in the  [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android)
 
 ## Contributing
 

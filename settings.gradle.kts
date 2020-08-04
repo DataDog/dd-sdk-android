@@ -36,16 +36,16 @@ pluginManagement {
 }
 
 include(":dd-sdk-android")
-include(":dd-sdk-android-timber")
+include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")
 include(":dd-sdk-android-ndk")
+include(":dd-sdk-android-timber")
 
 include(":instrumented:benchmark")
 include(":instrumented:integration")
 
 include(":sample:java")
 include(":sample:kotlin")
-include(":sample:kotlin-timber")
 
 include(":tools:detekt")
 include(":tools:unit")

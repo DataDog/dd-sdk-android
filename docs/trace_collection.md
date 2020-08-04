@@ -213,11 +213,15 @@ If you want to trace your OkHttp requests, you can add the provided [Interceptor
 
 ```kotlin
 val okHttpClient =  OkHttpClient.Builder()
-    .addInterceptor(DatadogInterceptor())
+    .addInterceptor(
+        DatadogInterceptor(
+            listOf("example.com", "example.eu")
+        )
+    )
     .build()
 ```
 
-This creates a span around each request processed by the OkHttpClient, with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
+This creates a span around each request processed by the OkHttpClient (matching the provided hosts), with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
 
 Because the way the OkHttp Request is executed (using a Thread pool), we are not able to link the request span with the span that triggered the request. You can still manually provide a parent Span in the `OkHttp Request.Builder` as follows:
 

@@ -5,43 +5,96 @@
   -->
 
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".traces.TracesFragment">
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="match_parent"
+                                                   tools:context=".traces.TracesFragment">
 
-    <TextView
-        android:id="@+id/title"
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/async_operation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:padding="16dp"
-        android:text="@string/title_sendLog"
-        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:layout_margin="8dp"
+        android:text="@string/msg_java_crash"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/start_async_operation"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/start_async_operation"
+        android:text="@string/button_start"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/async_operation"/>
 
     <ProgressBar
-        android:id="@+id/spinner"
-        android:layout_width="wrap_content"
+        android:id="@+id/spinner_async"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:indeterminate="true"
+        android:indeterminate="false"
+        android:max="100"
+        android:min="0"
+        style="?android:attr/progressBarStyleHorizontal"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/start_async_operation"
-        app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_async_operation"
         android:visibility="invisible"/>
+
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/network_request"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:layout_margin="8dp"
+        android:text="@string/msg_network_request"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spinner_async"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/start_request"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/button_start"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/network_request"/>
+
+
+    <ProgressBar
+        android:id="@+id/spinner_request"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:indeterminate="true"
+        android:layout_margin="8dp"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintEnd_toStartOf="@+id/request_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_request"
+        android:visibility="invisible"/>
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/request_status"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:visibility="invisible"
+        android:layout_margin="8dp"
+        app:layout_constraintStart_toEndOf="@id/spinner_request"
+        app:layout_constraintTop_toBottomOf="@id/start_request"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:src="@drawable/ic_check_circle_green_24dp"
+    />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

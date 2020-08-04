@@ -31,6 +31,7 @@ fun DependencyHandler.testCompile(dependencies: Array<String>) {
         add("testCompile", it)
     }
 }
+
 fun DependencyHandler.implementation(dependencies: Array<String>) {
     dependencies.forEach {
         add("implementation", it)

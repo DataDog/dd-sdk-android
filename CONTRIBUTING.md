@@ -30,7 +30,7 @@ This project hosts the following modules:
 You can build the SDK using the following Gradle command:
 
 ```shell script
-./gradlew :dd-sdk-android:assemble :dd-sdk-android-timber:assemble :dd-sdk-android-ktx:assemble
+./gradlew assembleAll
 ```
 
 ### Running the tests

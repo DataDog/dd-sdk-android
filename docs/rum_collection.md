@@ -148,6 +148,13 @@ This means that even if users open your application while being offline, no data
 
 The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
+
+## Extensions
+
+### Glide
+
+If your existing codebase is using Glide, you can send more information (as RUM Resources and Errors) to Datadog automatically by using the [dedicated library](glide_integration.md).
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}

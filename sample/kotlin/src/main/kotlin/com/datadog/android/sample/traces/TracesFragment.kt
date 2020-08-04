@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -19,7 +20,9 @@ import com.datadog.android.sample.R
 class TracesFragment : Fragment(), View.OnClickListener {
 
     lateinit var viewModel: TracesViewModel
-    lateinit var spinner: ProgressBar
+    lateinit var progressBarAsync: ProgressBar
+    lateinit var progressBarRequest: ProgressBar
+    lateinit var requestStatus: ImageView
 
     // region Fragment
 
@@ -30,7 +33,10 @@ class TracesFragment : Fragment(), View.OnClickListener {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_traces, container, false)
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
-        spinner = rootView.findViewById(R.id.spinner)
+        rootView.findViewById<Button>(R.id.start_request).setOnClickListener(this)
+        progressBarAsync = rootView.findViewById(R.id.spinner_async)
+        progressBarRequest = rootView.findViewById(R.id.spinner_request)
+        requestStatus = rootView.findViewById(R.id.request_status)
         return rootView
     }
 
@@ -42,7 +48,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
     override fun onDetach() {
         super.onDetach()
         viewModel.stopAsyncOperations()
-        spinner.visibility = View.INVISIBLE
+        progressBarAsync.visibility = View.INVISIBLE
     }
 
     // endregion
@@ -52,10 +58,33 @@ class TracesFragment : Fragment(), View.OnClickListener {
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.start_async_operation -> {
-                spinner.visibility = View.VISIBLE
+                progressBarAsync.visibility = View.VISIBLE
                 viewModel.startAsyncOperation(
+                    onProgress = {
+                        progressBarAsync.progress = it
+                    },
                     onDone = {
-                        spinner.visibility = View.INVISIBLE
+                        progressBarAsync.visibility = View.INVISIBLE
+                    })
+            }
+            R.id.start_request -> {
+                progressBarRequest.visibility = View.VISIBLE
+                requestStatus.visibility = View.INVISIBLE
+                viewModel.startRequest(
+                    onResponse = {
+                        requestStatus.setImageResource(R.drawable.ic_check_circle_green_24dp)
+                        requestStatus.visibility = View.VISIBLE
+                        progressBarRequest.visibility = View.INVISIBLE
+                    },
+                    onException = {
+                        requestStatus.setImageResource(R.drawable.ic_error_red_24dp)
+                        requestStatus.visibility = View.VISIBLE
+                        progressBarRequest.visibility = View.INVISIBLE
+                    },
+                    onCancel = {
+                        requestStatus.setImageResource(R.drawable.ic_cancel_red_24dp)
+                        requestStatus.visibility = View.VISIBLE
+                        progressBarRequest.visibility = View.INVISIBLE
                     })
             }
         }

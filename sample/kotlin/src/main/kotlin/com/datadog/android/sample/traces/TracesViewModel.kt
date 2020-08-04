@@ -6,33 +6,122 @@
 
 package com.datadog.android.sample.traces
 
+import android.annotation.SuppressLint
 import android.os.AsyncTask
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.datadog.android.DatadogEventListener
+import com.datadog.android.DatadogInterceptor
+import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
-import java.lang.Exception
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 
 class TracesViewModel : ViewModel() {
 
-    var asyncTask: AsyncTask<Unit, Unit, Unit>? = null
-    fun startAsyncOperation(onDone: () -> Unit = {}) {
-        asyncTask = Task(onDone)
-        asyncTask?.execute()
+    private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
+    private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
+
+    fun startAsyncOperation(
+        onProgress: (Int) -> Unit = {},
+        onDone: () -> Unit = {}
+    ) {
+        asyncOperationTask = AsyncOperationTask(onProgress, onDone)
+        asyncOperationTask?.execute()
+    }
+
+    fun startRequest(
+        onResponse: (Response) -> Unit,
+        onException: (Throwable) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        networkRequestTask = RequestTask(onResponse, onException, onCancel)
+        networkRequestTask?.execute()
     }
 
     fun stopAsyncOperations() {
-        asyncTask?.cancel(true)
-        asyncTask = null
+        asyncOperationTask?.cancel(true)
+        networkRequestTask?.cancel(true)
+        asyncOperationTask = null
+        networkRequestTask = null
     }
 
-    private class Task(val onDone: () -> Unit) : AsyncTask<Unit, Unit, Unit>() {
+    private class RequestTask(
+        private val onResponse: (Response) -> Unit,
+        private val onException: (Throwable) -> Unit,
+        private val onCancel: () -> Unit
+    ) : AsyncTask<Unit, Unit, RequestTask.Result>() {
+        private var currentActiveMainSpan: Span? = null
+
+        data class Result(
+            val response: Response?,
+            val exception: Exception?
+        )
+
+        override fun onPreExecute() {
+            super.onPreExecute()
+            currentActiveMainSpan = GlobalTracer.get().activeSpan()
+        }
+
+        private val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(DatadogInterceptor(listOf("shopist.io")))
+            .eventListenerFactory(DatadogEventListener.Factory())
+            .build()
+
+        @SuppressLint("LogNotTimber")
+        override fun doInBackground(vararg params: Unit?): Result {
+            val builder = Request.Builder()
+                .get()
+                .url("https://shopist.io/category_1.json")
+
+            if (currentActiveMainSpan != null) {
+                builder.tag(
+                    Span::class.java,
+                    currentActiveMainSpan
+                )
+            }
+            val request = builder.build()
+            return try {
+                val response = okHttpClient.newCall(request).execute()
+                val body = response.body()
+                if (body != null) {
+                    val content: String = body.string()
+                    // Necessary to consume the response
+                    Log.d("Response", content)
+                }
+                Result(response, null)
+            } catch (e: Exception) {
+                Result(null, e)
+            }
+        }
+
+        override fun onPostExecute(result: Result) {
+            super.onPostExecute(result)
+            if (!isCancelled) {
+                if (result.exception != null) {
+                    onException(result.exception)
+                } else if (result.response != null) {
+                    onResponse(result.response)
+                } else {
+                    onCancel()
+                }
+            }
+        }
+    }
+
+    private class AsyncOperationTask(
+        val onProgress: (Int) -> Unit,
+        val onDone: () -> Unit
+    ) : AsyncTask<Unit, Unit, Unit>() {
+
         var activeSpanInMainThread: Span? = null
 
         private val logger: Logger by lazy {
             Logger.Builder()
-                .setServiceName("android-sample-kotlin")
                 .setLoggerName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()
@@ -48,31 +137,25 @@ class TracesViewModel : ViewModel() {
         }
 
         override fun doInBackground(vararg params: Unit?) {
-            val spanBuilder = GlobalTracer.get()
-                .buildSpan("AsyncOperation")
-            activeSpanInMainThread?.let {
-                spanBuilder.asChildOf(it)
-            }
-            val span = spanBuilder.start()
-            if (isCancelled) {
-                return
-            }
-            try {
-                val scope = GlobalTracer.get().activateSpan(span)
+            withinSpan("AsyncOperation", activeSpanInMainThread) {
                 logger.v("Starting Async Operation...")
-                // just emulate an async operation here
-                Thread.sleep(10000)
+
+                for (i in 0..100) {
+                    if (isCancelled) {
+                        break
+                    }
+                    onProgress(i)
+                    Thread.sleep(((i * i).toDouble() / 100.0).toLong())
+                }
+
                 logger.v("Finishing Async Operation...")
-                scope.close()
-            } catch (e: Exception) {
-                span.log(e.message)
-            } finally {
-                span.finish()
             }
         }
 
         override fun onPostExecute(result: Unit?) {
-            onDone()
+            if (!isCancelled) {
+                onDone()
+            }
         }
     }
 }

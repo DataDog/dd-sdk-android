@@ -12,13 +12,13 @@
     android:padding="10dp"
     tools:context=".logs.LogsFragment">
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:padding="16dp"
-        android:text="@string/title_sendLog"
+        android:text="@string/title_logs"
         android:textAppearance="@style/TextAppearance.AppCompat.Title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -52,39 +52,5 @@
         app:layout_constraintStart_toEndOf="@id/log_error"
         app:layout_constraintTop_toBottomOf="@id/title" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/start_foreground_service"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/start_foreground_service"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/log_warning" />
-
-    <androidx.appcompat.widget.AppCompatSpinner
-        android:id="@+id/signal_type_spinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/start_foreground_service"
-        android:prompt="@string/signal_crash_spinner_prompt"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/simulate_ndk_crash"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/simulate_ndk_crash"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/signal_type_spinner"
-        app:layout_constraintTop_toBottomOf="@id/start_foreground_service" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/simulate_anr"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/simulate_anr"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/simulate_ndk_crash" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
