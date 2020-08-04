@@ -41,11 +41,17 @@ import okhttp3.Response
  * request information (url, method, status code, optional error). It will also propagate the span
  * and trace information in the request header to link it with backend spans.
  *
+ * Note: If you want to get more insights on the network requests (such as redirections), you can also add
+ * this interceptor as a Network level interceptor.
+ *
  * To use:
  * ```
- *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new DatadogInterceptor(listOf("yourdomain.com")))
- *       .build();
+ *     val tracedHosts = listOf("example.com", "example.eu")
+ *     OkHttpClient client = new OkHttpClient.Builder()
+ *         .addInterceptor(new DatadogInterceptor(tracedHosts))
+ *         // Optionally to get information about redirections and retries
+ *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
+ *         .build();
  * ```
  *
  * @param tracedHosts a list of all the hosts that you want to be automatically tracked
