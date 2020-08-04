@@ -15,6 +15,8 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
+import com.datadog.android.sample.server.LocalServer
+import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -25,6 +27,11 @@ class TracesViewModel : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
+    private var localServer: LocalServer = LocalServer()
+
+    init {
+        localServer.start("https://shopist.io/category_1.json")
+    }
 
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
@@ -67,8 +74,10 @@ class TracesViewModel : ViewModel() {
             currentActiveMainSpan = GlobalTracer.get().activeSpan()
         }
 
+        private val tracedHosts = listOf("shopist.io", "127.0.0.1")
         private val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(listOf("shopist.io")))
+            .addInterceptor(DatadogInterceptor(tracedHosts))
+            .addNetworkInterceptor(TracingInterceptor(tracedHosts))
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
 
@@ -76,7 +85,8 @@ class TracesViewModel : ViewModel() {
         override fun doInBackground(vararg params: Unit?): Result {
             val builder = Request.Builder()
                 .get()
-                .url("https://shopist.io/category_1.json")
+                // .url("https://shopist.io/category_1.json")
+                .url("http://127.0.0.1:8080/")
 
             if (currentActiveMainSpan != null) {
                 builder.tag(
@@ -95,6 +105,7 @@ class TracesViewModel : ViewModel() {
                 }
                 Result(response, null)
             } catch (e: Exception) {
+                Log.e("Response", "Error", e)
                 Result(null, e)
             }
         }

@@ -16,6 +16,7 @@ internal fun identifyRequest(request: Request): String {
     val method = request.method()
     val url = request.url()
     val body = request.body()
+    val tag = request.tag()
     return if (body == null || body == Util.EMPTY_REQUEST) {
         "$method•$url"
     } else {
