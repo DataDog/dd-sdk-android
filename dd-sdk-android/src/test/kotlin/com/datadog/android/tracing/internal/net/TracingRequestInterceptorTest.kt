@@ -43,6 +43,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Scope
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
@@ -99,6 +100,12 @@ internal class TracingRequestInterceptorTest {
     lateinit var mockSpan2: Span
 
     @Mock
+    lateinit var mockScope: Scope
+
+    @Mock
+    lateinit var mockScope2: Scope
+
+    @Mock
     lateinit var mockResponse: Response
 
     lateinit var mockDevLogHandler: LogHandler
@@ -146,9 +153,10 @@ internal class TracingRequestInterceptorTest {
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
-        whenever(mockLocalTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(any<Span>())) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()).doReturn(mockSpan, mockSpan2, null)
+        whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
+        whenever(mockTracer.activateSpan(mockSpan2)) doReturn mockScope2
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpan2.context()) doReturn mockSpanContext
         fakeBody = if (fakeMethod == "POST") RequestBody.create(null, fakeBodyContent) else null
@@ -199,10 +207,12 @@ internal class TracingRequestInterceptorTest {
         assertThat(transformedRequest.url()).isEqualTo(fakeRequest.url())
         assertThat(transformedRequest.method()).isEqualTo(fakeMethod)
         assertThat(transformedRequest.header(key)).isEqualTo(value)
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope, mockTracer) {
+            verify(mockTracer).activateSpan(mockSpan)
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
+            verify(mockScope, never()).close()
         }
     }
 
@@ -218,11 +228,13 @@ internal class TracingRequestInterceptorTest {
 
         assertThat(transformedRequest.url()).isEqualTo(fakeRequest.url())
         assertThat(transformedRequest.method()).isEqualTo(fakeMethod)
-        inOrder(mockSpanBuilder, mockSpan) {
+        inOrder(mockSpanBuilder, mockSpan, mockScope, mockTracer) {
             verify(mockSpanBuilder).asChildOf(mockParentSpan)
+            verify(mockTracer).activateSpan(mockSpan)
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
+            verify(mockScope, never()).close()
         }
     }
 
@@ -235,11 +247,12 @@ internal class TracingRequestInterceptorTest {
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
         testedInterceptor.handleResponse(transformedRequest, mockResponse)
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
     }
 
@@ -298,15 +311,17 @@ internal class TracingRequestInterceptorTest {
         val secondTransformedRequest = testedInterceptor.transformRequest(secondRequest)
         testedInterceptor.handleResponse(secondTransformedRequest, mockResponse)
 
-        inOrder(mockSpan, mockSpan2) {
+        inOrder(mockSpan, mockSpan2, mockScope, mockScope2) {
             verify(mockSpan).setTag("http.url", fakeUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
+            verify(mockScope).close()
             verify(mockSpan2).setTag("http.url", fakeSubdomainUrl)
             verify(mockSpan2).setTag("http.method", fakeMethod)
             verify(mockSpan2).setTag("http.status_code", statusCode)
             verify(mockSpan2).finish()
+            verify(mockScope2).close()
         }
     }
 
@@ -334,15 +349,17 @@ internal class TracingRequestInterceptorTest {
         val secondTransformedRequest = testedInterceptor.transformRequest(secondRequest)
         testedInterceptor.handleResponse(secondTransformedRequest, mockResponse)
 
-        inOrder(mockSpan, mockSpan2) {
+        inOrder(mockSpan, mockSpan2, mockScope, mockScope2) {
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
+            verify(mockScope).close()
             verify(mockSpan2).setTag("http.url", fakeSecondWhitelistedDomainUrl)
             verify(mockSpan2).setTag("http.method", fakeMethod)
             verify(mockSpan2).setTag("http.status_code", statusCode)
             verify(mockSpan2).finish()
+            verify(mockScope2).close()
         }
     }
 
@@ -387,7 +404,7 @@ internal class TracingRequestInterceptorTest {
         Thread(runnable2).start()
         countDownLatch.await(2, TimeUnit.SECONDS)
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             verify(mockSpan).setTag(
                 eq("http.url"),
                 argThat<String> {
@@ -399,8 +416,9 @@ internal class TracingRequestInterceptorTest {
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
-        inOrder(mockSpan2) {
+        inOrder(mockSpan2, mockScope2) {
             verify(mockSpan2).setTag(
                 eq("http.url"),
                 argThat<String> {
@@ -412,6 +430,7 @@ internal class TracingRequestInterceptorTest {
             verify(mockSpan2).setTag("http.method", fakeMethod)
             verify(mockSpan2).setTag("http.status_code", statusCode)
             verify(mockSpan2).finish()
+            verify(mockScope2).close()
         }
     }
 
@@ -423,13 +442,14 @@ internal class TracingRequestInterceptorTest {
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
         testedInterceptor.handleThrowable(transformedRequest, fakeThrowable)
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("error.msg", fakeThrowable.message)
             verify(mockSpan).setTag("error.type", fakeThrowable.javaClass.canonicalName)
             verify(mockSpan).setTag("error.stack", sw.toString())
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
     }
 
@@ -449,15 +469,19 @@ internal class TracingRequestInterceptorTest {
     @Test
     fun `uses the local tracer if no tracer is registered`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        whenever(mockLocalTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
+        whenever(mockLocalTracer.activateSpan(mockSpan)) doReturn mockScope
+        whenever(mockLocalTracer.activateSpan(mockSpan2)) doReturn mockScope2
 
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
 
         verifyZeroInteractions(mockTracer)
-        inOrder(mockLocalTracer, mockSpan) {
+        inOrder(mockLocalTracer, mockSpan, mockScope) {
             verify(mockLocalTracer).buildSpan("okhttp.request")
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan, never()).finish()
+            verify(mockScope, never()).close()
         }
         verify(mockDevLogHandler)
             .handleLog(Log.WARN, TracingRequestInterceptor.WARNING_DEFAULT_TRACER)
@@ -469,13 +493,16 @@ internal class TracingRequestInterceptorTest {
         @IntForgery(min = 200, max = 299) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        whenever(mockLocalTracer.buildSpan("okhttp.request")) doReturn mockSpanBuilder
+        whenever(mockLocalTracer.activateSpan(mockSpan)) doReturn mockScope
+        whenever(mockLocalTracer.activateSpan(mockSpan2)) doReturn mockScope2
 
         testedInterceptor.transformRequest(fakeRequest)
 
         GlobalTracer.registerIfAbsent(mockTracer)
         testedInterceptor.transformRequest(fakeRequest)
 
-        inOrder(mockSpan, mockSpan2, mockTracer, mockLocalTracer) {
+        inOrder(mockSpan, mockSpan2, mockTracer, mockLocalTracer, mockScope, mockScope2) {
             verify(mockLocalTracer).buildSpan("okhttp.request")
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
@@ -539,7 +566,7 @@ internal class TracingRequestInterceptorTest {
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
         testedInterceptor.handleThrowable(transformedRequest, fakeThrowable)
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("error.msg", fakeThrowable.message)
@@ -547,6 +574,7 @@ internal class TracingRequestInterceptorTest {
             verify(mockSpan).setTag("error.stack", sw.toString())
             verify(mockSpan).setTag(attributeKey, attributeValue)
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
     }
 
@@ -575,12 +603,13 @@ internal class TracingRequestInterceptorTest {
         val transformedRequest = testedInterceptor.transformRequest(fakeRequest)
         testedInterceptor.handleResponse(transformedRequest, mockResponse)
 
-        inOrder(mockSpan) {
+        inOrder(mockSpan, mockScope) {
             verify(mockSpan).setTag("http.url", fakeWhitelistedDomainUrl)
             verify(mockSpan).setTag("http.method", fakeMethod)
             verify(mockSpan).setTag("http.status_code", statusCode)
             verify(mockSpan).setTag(attributeKey, attributeValue)
             verify(mockSpan).finish()
+            verify(mockScope).close()
         }
     }
 

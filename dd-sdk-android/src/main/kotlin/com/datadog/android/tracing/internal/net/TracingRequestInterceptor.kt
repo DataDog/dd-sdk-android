@@ -14,6 +14,7 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.internal.TracesFeature
 import datadog.trace.api.DDTags
 import datadog.trace.api.interceptor.MutableSpan
+import io.opentracing.Scope
 import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.propagation.Format
@@ -48,6 +49,7 @@ internal class TracingRequestInterceptor(
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
 
     private val startedSpans = ConcurrentHashMap<String, Span>()
+    private val startedScopes = ConcurrentHashMap<String, Scope>()
 
     // region RequestInterceptor
 
@@ -58,18 +60,8 @@ internal class TracingRequestInterceptor(
 
         val tracer = resolveTracer()
         return if (tracer != null) {
-            val spanBuilder = tracer.buildSpan("okhttp.request")
-            request.tag(Span::class.java)?.let {
-                spanBuilder.asChildOf(it)
-            }
-            val span = spanBuilder.start()
-            val url = request.url().toString()
-            (span as? MutableSpan)?.resourceName = url
-            span.setTag(Tags.HTTP_URL.key, url)
-            span.setTag(Tags.HTTP_METHOD.key, request.method())
-            val transformedRequest = updateRequest(request, tracer, span)
-            startedSpans[identifyRequest(request)] = span
-            return transformedRequest
+            val span = traceRequest(tracer, request)
+            return updateRequest(request, tracer, span)
         } else {
             request
         }
@@ -77,7 +69,9 @@ internal class TracingRequestInterceptor(
 
     override fun handleResponse(request: Request, response: Response) {
         val statusCode = response.code()
-        val span = startedSpans.remove(identifyRequest(request))
+        val requestId = identifyRequest(request)
+        val span = startedSpans.remove(requestId)
+        val scope = startedScopes.remove(requestId)
         if (span != null) {
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
             if (statusCode in 400..499) {
@@ -89,11 +83,14 @@ internal class TracingRequestInterceptor(
             }
             tracedRequestListener.onRequestIntercepted(request, span, response, null)
             span.finish()
+            scope?.close()
         }
     }
 
     override fun handleThrowable(request: Request, throwable: Throwable) {
-        val span = startedSpans.remove(identifyRequest(request))
+        val requestId = identifyRequest(request)
+        val span = startedSpans.remove(requestId)
+        val scope = startedScopes.remove(requestId)
         if (span != null) {
             (span as? MutableSpan)?.isError = true
             span.setTag(DDTags.ERROR_MSG, throwable.message)
@@ -103,6 +100,7 @@ internal class TracingRequestInterceptor(
             span.setTag(DDTags.ERROR_STACK, sw.toString())
             tracedRequestListener.onRequestIntercepted(request, span, null, throwable)
             span.finish()
+            scope?.close()
         }
     }
 
@@ -153,6 +151,23 @@ internal class TracingRequestInterceptor(
         )
 
         return tracedRequestBuilder.build()
+    }
+
+    private fun traceRequest(tracer: Tracer, request: Request): Span {
+        val spanBuilder = tracer.buildSpan("okhttp.request")
+        request.tag(Span::class.java)?.let {
+            spanBuilder.asChildOf(it)
+        }
+        val span = spanBuilder.start()
+        val scope = tracer.activateSpan(span)
+        val url = request.url().toString()
+        (span as? MutableSpan)?.resourceName = url
+        span.setTag(Tags.HTTP_URL.key, url)
+        span.setTag(Tags.HTTP_METHOD.key, request.method())
+        val requestId = identifyRequest(request)
+        startedSpans[requestId] = span
+        startedScopes[requestId] = scope
+        return span
     }
 
     private fun isWhitelisted(request: Request): Boolean {
