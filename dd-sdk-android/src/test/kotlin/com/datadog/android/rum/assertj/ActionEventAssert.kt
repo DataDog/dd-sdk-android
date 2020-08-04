@@ -154,6 +154,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasDuration(expected: Long): ActionEventAssert {
+        assertThat(actual.action.loadingTime)
+            .overridingErrorMessage(
+                "Expected event data to have duration $expected " +
+                    "but was ${actual.action.loadingTime}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasDurationLowerThan(upperBound: Long): ActionEventAssert {
         assertThat(actual.action.loadingTime)
             .overridingErrorMessage(

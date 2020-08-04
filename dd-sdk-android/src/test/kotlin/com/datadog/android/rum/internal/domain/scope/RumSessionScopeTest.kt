@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -18,8 +19,10 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -254,6 +257,69 @@ internal class RumSessionScopeTest {
 
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `sends ApplicationStarted event on applicationDisplayed`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+
+        argumentCaptor<RumRawEvent> {
+            verify(childView).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ApplicationStarted
+            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+        }
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `sends ApplicationStarted event on applicationDisplayed only once`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+
+        argumentCaptor<RumRawEvent> {
+            verify(childView).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ApplicationStarted
+            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+        }
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `sends ApplicationStarted event on applicationDisplayed after ResetSession`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        val resetNanos = System.nanoTime()
+        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+
+        argumentCaptor<RumRawEvent> {
+            verify(childView, times(2)).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ApplicationStarted
+            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+            val event2 = lastValue as RumRawEvent.ApplicationStarted
+            assertThat(event2.applicationStartupNanos).isGreaterThanOrEqualTo(resetNanos)
+        }
         verifyZeroInteractions(mockWriter)
     }
 
