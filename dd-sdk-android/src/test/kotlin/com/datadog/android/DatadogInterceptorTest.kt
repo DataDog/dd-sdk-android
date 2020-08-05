@@ -1,0 +1,151 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android
+
+import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.tracing.TracingInterceptorTest
+import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Tracer
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
+internal class DatadogInterceptorTest : TracingInterceptorTest() {
+
+    override fun instantiateTestedInterceptor(
+        tracedHosts: List<String>,
+        factory: () -> Tracer
+    ): TracingInterceptor {
+        return DatadogInterceptor(tracedHosts, mockRequestListener, factory)
+    }
+
+    @Test
+    fun `starts and stop RUM Resource around successful request`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        setupFakeResponse(statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceId
+        )
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.UNKNOWN
+        }
+
+        testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(mockRumMonitor).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `starts and stop RUM Resource around failing request`(
+        @IntForgery(min = 400, max = 500) statusCode: Int
+    ) {
+        setupFakeResponse(statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceId
+        )
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.UNKNOWN
+        }
+
+        testedInterceptor.intercept(mockChain)
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(mockRumMonitor).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `starts and stop RUM Resource around throwing request`(
+        @Forgery throwable: Throwable
+    ) {
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val requestId = identifyRequest(fakeRequest)
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        inOrder(mockRumMonitor) {
+            verify(mockRumMonitor).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(mockRumMonitor).stopResourceWithError(
+                requestId,
+                null,
+                "OkHttp request error $fakeMethod $fakeUrl",
+                RumErrorSource.NETWORK,
+                throwable
+            )
+        }
+    }
+}
