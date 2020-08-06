@@ -54,4 +54,24 @@ object DatadogEndpoint {
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
     const val RUM_EU: String = "https://rum-http-intake.logs.datadoghq.eu"
+
+    /**
+     * Endpoint for the Network Time Protocol time syncing.
+     */
+    const val NTP_0: String = "0.datadog.pool.ntp.org"
+
+    /**
+     * Endpoint for the Network Time Protocol time syncing.
+     */
+    const val NTP_1: String = "1.datadog.pool.ntp.org"
+
+    /**
+     * Endpoint for the Network Time Protocol time syncing.
+     */
+    const val NTP_2: String = "2.datadog.pool.ntp.org"
+
+    /**
+     * Endpoint for the Network Time Protocol time syncing.
+     */
+    const val NTP_3: String = "3.datadog.pool.ntp.org"
 }

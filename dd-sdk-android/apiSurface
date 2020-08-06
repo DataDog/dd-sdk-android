@@ -36,6 +36,10 @@ object com.datadog.android.DatadogEndpoint
   const val TRACES_EU: String
   const val RUM_US: String
   const val RUM_EU: String
+  const val NTP_0: String
+  const val NTP_1: String
+  const val NTP_2: String
+  const val NTP_3: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
