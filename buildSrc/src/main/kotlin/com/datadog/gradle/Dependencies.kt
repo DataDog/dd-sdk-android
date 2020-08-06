@@ -13,6 +13,7 @@ object Dependencies {
         const val Kotlin = "1.3.61"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
+        const val KronosNTP = "0.0.1-alpha09"
 
         // Android
         const val AndroidToolsPlugin = "3.6.1"
@@ -85,6 +86,7 @@ object Dependencies {
         const val AssertJ = "net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}"
 
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
+        const val KronosNTP = "com.lyft.kronos:kronos-android:${Versions.KronosNTP}"
 
         const val AndroidXMultidex = "androidx.multidex:multidex:${Versions.AndroidXMultidex}"
 

@@ -6,24 +6,25 @@
 
 package com.datadog.android.core.internal.time
 
-/**
- * An implementation of [TimeProvider] which always returns the system time.
- */
-internal class SystemTimeProvider : TimeProvider {
+import com.lyft.kronos.Clock
+import java.util.concurrent.TimeUnit
 
-    // region TimeProvider
+internal class KronosTimeProvider(
+    private val clock: Clock
+) : TimeProvider {
 
     override fun getDeviceTimestamp(): Long {
         return System.currentTimeMillis()
     }
 
     override fun getServerTimestamp(): Long {
-        return System.currentTimeMillis()
+        return clock.getCurrentTimeMs()
     }
 
     override fun getServerOffsetNanos(): Long {
-        return 0
+        val server = clock.getCurrentTimeMs()
+        val device = System.currentTimeMillis()
+        val delta = server - device
+        return TimeUnit.MILLISECONDS.toNanos(delta)
     }
-
-    // endregion
 }
