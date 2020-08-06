@@ -93,7 +93,6 @@ internal class LoggerBuilderTest {
         assertThat(handler.serviceName).isEqualTo(CoreFeature.serviceName)
         assertThat(handler.loggerName).isEqualTo(packageName)
         assertThat(handler.networkInfoProvider).isNull()
-        assertThat(handler.timeProvider).isNotNull()
         assertThat(handler.writer).isNotNull()
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)

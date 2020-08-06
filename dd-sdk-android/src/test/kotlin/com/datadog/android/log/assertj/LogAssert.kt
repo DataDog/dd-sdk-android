@@ -11,6 +11,7 @@ import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class LogAssert(actual: Log) :
     AbstractObjectAssert<LogAssert, Log>(actual, LogAssert::class.java) {
@@ -51,12 +52,12 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasTimestamp(expected: Long): LogAssert {
+    fun hasTimestampAround(expected: Long): LogAssert {
         assertThat(actual.timestamp)
             .overridingErrorMessage(
                 "Expected log to have timestamp $expected but was ${actual.timestamp}"
             )
-            .isEqualTo(expected)
+            .isCloseTo(expected, Offset.offset(200L))
         return this
     }
 

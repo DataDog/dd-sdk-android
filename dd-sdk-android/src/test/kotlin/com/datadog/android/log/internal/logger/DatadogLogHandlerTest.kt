@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
@@ -39,7 +38,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
 import java.util.concurrent.CountDownLatch
@@ -70,7 +68,6 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeMessage: String
     lateinit var fakeTags: Set<String>
     lateinit var fakeAttributes: Map<String, Any?>
-    var fakeServerDate: Long = 0L
     var fakeLevel: Int = 0
 
     @Forgery
@@ -92,9 +89,6 @@ internal class DatadogLogHandlerTest {
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
@@ -105,12 +99,10 @@ internal class DatadogLogHandlerTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeLoggerName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
-        fakeServerDate = forge.aTimestamp()
         fakeLevel = forge.anInt(2, 8)
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeServerDate
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
 
@@ -119,7 +111,6 @@ internal class DatadogLogHandlerTest {
             fakeLoggerName,
             mockWriter,
             mockNetworkInfoProvider,
-            mockTimeProvider,
             mockUserInfoProvider
         )
     }
@@ -134,6 +125,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward log to LogWriter`() {
+        val now = System.currentTimeMillis()
 
         testedHandler.handleLog(
             fakeLevel,
@@ -152,7 +144,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(Thread.currentThread().name)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
@@ -163,6 +155,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward log to LogWriter with throwable`() {
+        val now = System.currentTimeMillis()
 
         testedHandler.handleLog(
             fakeLevel,
@@ -181,7 +174,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(Thread.currentThread().name)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
@@ -270,7 +263,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(Thread.currentThread().name)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(customTimestamp)
+                .hasTimestampAround(customTimestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
@@ -280,6 +273,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward log to LogWriter on background thread`(forge: Forge) {
+        val now = System.currentTimeMillis()
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val thread = Thread({
@@ -305,7 +299,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(threadName)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
@@ -315,6 +309,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward log to LogWriter without network info`() {
+        val now = System.currentTimeMillis()
         testedHandler.setFieldValue("networkInfoProvider", null as NetworkInfoProvider?)
 
         testedHandler.handleLog(
@@ -334,7 +329,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(Thread.currentThread().name)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(null)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)
@@ -344,6 +339,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward minimal log to LogWriter`() {
+        val now = System.currentTimeMillis()
         GlobalRum.isRegistered.set(false)
         testedHandler.setFieldValue("networkInfoProvider", null as NetworkInfoProvider?)
 
@@ -364,7 +360,7 @@ internal class DatadogLogHandlerTest {
                 .hasThreadName(Thread.currentThread().name)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(null)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(emptyMap())
@@ -469,7 +465,6 @@ internal class DatadogLogHandlerTest {
             fakeLoggerName,
             mockWriter,
             mockNetworkInfoProvider,
-            mockTimeProvider,
             mockUserInfoProvider,
             bundleWithTraces = false
         )
@@ -501,7 +496,6 @@ internal class DatadogLogHandlerTest {
             fakeLoggerName,
             mockWriter,
             mockNetworkInfoProvider,
-            mockTimeProvider,
             mockUserInfoProvider,
             bundleWithTraces = false,
             sampler = mockSampler
@@ -523,13 +517,13 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will sample in the logs when required`() {
         // given
+        val now = System.currentTimeMillis()
         whenever(mockSampler.sample()).thenReturn(true)
         testedHandler = DatadogLogHandler(
             fakeServiceName,
             fakeLoggerName,
             mockWriter,
             mockNetworkInfoProvider,
-            mockTimeProvider,
             mockUserInfoProvider,
             bundleWithTraces = false,
             sampler = mockSampler
@@ -553,7 +547,7 @@ internal class DatadogLogHandlerTest {
                 .hasLoggerName(fakeLoggerName)
                 .hasLevel(fakeLevel)
                 .hasMessage(fakeMessage)
-                .hasTimestamp(fakeServerDate)
+                .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasAttributes(fakeAttributes)

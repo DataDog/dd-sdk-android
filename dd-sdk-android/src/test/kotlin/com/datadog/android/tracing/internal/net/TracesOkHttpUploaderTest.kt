@@ -43,6 +43,6 @@ internal class TracesOkHttpUploaderTest : DataOkHttpUploaderTest<TracesOkHttpUpl
     }
 
     override fun expectedPathRegex(): String {
-        return "\\/v1\\/input\\/$fakeToken$"
+        return "^\\/v1\\/input\\/$fakeToken$"
     }
 }

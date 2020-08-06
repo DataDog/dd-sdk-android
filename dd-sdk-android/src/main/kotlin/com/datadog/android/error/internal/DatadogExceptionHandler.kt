@@ -10,7 +10,6 @@ import android.content.Context
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
@@ -23,7 +22,6 @@ import java.lang.ref.WeakReference
 
 internal class DatadogExceptionHandler(
     private val networkInfoProvider: NetworkInfoProvider?,
-    private val timeProvider: TimeProvider,
     private val userInfoProvider: UserInfoProvider,
     private val writer: Writer<Log>,
     appContext: Context?
@@ -89,7 +87,7 @@ internal class DatadogExceptionHandler(
             throwable = throwable,
             userInfo = userInfoProvider.getUserInfo(),
             networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
-            timestamp = timeProvider.getServerTimestamp(),
+            timestamp = System.currentTimeMillis(),
             attributes = logAttrs,
             tags = if (CrashReportsFeature.envTag.isEmpty()) {
                 emptyList()

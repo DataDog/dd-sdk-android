@@ -118,7 +118,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -137,7 +136,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -159,7 +157,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -179,7 +176,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -202,7 +198,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -223,7 +218,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -244,7 +238,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -275,7 +268,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -315,7 +307,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -343,7 +334,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
@@ -370,7 +360,6 @@ internal class CrashReportsFeatureTest {
             mockOkHttpClient,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
-            mockTimeProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
