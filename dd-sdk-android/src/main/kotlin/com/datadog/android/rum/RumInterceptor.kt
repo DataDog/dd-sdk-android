@@ -8,8 +8,6 @@ package com.datadog.android.rum
 
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogInterceptor
-import com.datadog.android.core.internal.net.CombinedInterceptor
-import com.datadog.android.rum.internal.net.RumRequestInterceptor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -34,5 +32,4 @@ import okhttp3.OkHttpClient
  *       .build();
  * ```
  */
-class RumInterceptor :
-    Interceptor by CombinedInterceptor(RumRequestInterceptor())
+class RumInterceptor : DatadogInterceptor(listOf(""))

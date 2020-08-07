@@ -52,8 +52,11 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callFailed(okhttp3.Call, java.io.IOException)
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
-class com.datadog.android.DatadogInterceptor : okhttp3.Interceptor
+open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
   constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+  companion object 
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -188,7 +191,7 @@ enum com.datadog.android.rum.RumErrorSource
   - LOGGER
   - AGENT
   - WEBVIEW
-class com.datadog.android.rum.RumInterceptor : okhttp3.Interceptor
+class com.datadog.android.rum.RumInterceptor : com.datadog.android.DatadogInterceptor
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -293,6 +296,9 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
     fun logErrorMessage(io.opentracing.Span, String)
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
-class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
+open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+  companion object 
 class com.datadog.tools.annotation.NoOpImplementation
