@@ -25,6 +25,7 @@ import java.lang.Long
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -121,7 +122,10 @@ internal class EndToEndTraceTest {
             .hasField(TRACE_ID_KEY, Long.toHexString((span.traceId.toLong())))
             .hasField(SPAN_ID_KEY, Long.toHexString((span.spanId.toLong())))
             .hasField(PARENT_ID_KEY, Long.toHexString((span.parentId.toLong())))
-            .hasField(START_TIMESTAMP_KEY, span.startTime)
+            .hasField(
+                START_TIMESTAMP_KEY, span.startTime,
+                Offset.offset(TimeUnit.MINUTES.toNanos(1))
+            )
             .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName)
             .hasField(OPERATION_NAME_KEY, span.operationName)

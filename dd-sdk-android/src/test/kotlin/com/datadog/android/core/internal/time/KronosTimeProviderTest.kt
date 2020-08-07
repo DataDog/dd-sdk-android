@@ -61,7 +61,10 @@ internal class KronosTimeProviderTest {
         val result = testedTimeProvider.getServerOffsetNanos()
 
         val expectedOffset = TimeUnit.MILLISECONDS.toNanos(fakeDate.time - now)
-        assertThat(result).isCloseTo(expectedOffset, Offset.offset(10000000L))
+        assertThat(result).isCloseTo(
+            expectedOffset,
+            Offset.offset(TimeUnit.MILLISECONDS.toNanos(1))
+        )
     }
 
     @Test

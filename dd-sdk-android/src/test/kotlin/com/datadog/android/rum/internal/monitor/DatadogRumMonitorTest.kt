@@ -368,6 +368,7 @@ internal class DatadogRumMonitorTest {
                 verifyZeroInteractions(mockScope)
                 val runnable = firstValue
                 runnable.run()
+                Thread.sleep(200)
                 verify(mockHandler).removeCallbacks(same(runnable))
                 verify(mockScope).handleEvent(
                     argThat { this is RumRawEvent.KeepAlive },
