@@ -6,37 +6,51 @@
 package com.datadog.android.sample
 
 import android.app.Application
+import android.content.Context
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogConfig
+import com.datadog.android.DatadogEventListener
+import com.datadog.android.DatadogInterceptor
 import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.sample.picture.PictureViewModel
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingInterceptor
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentracing.util.GlobalTracer
+import okhttp3.OkHttpClient
 import timber.log.Timber
 
 class SampleApplication : Application() {
-    companion object {
-        init {
-            System.loadLibrary("datadog-native-sample-lib")
-        }
-    }
+
+    private val tracedHosts = listOf("shopist.io")
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(DatadogInterceptor(tracedHosts))
+        .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+        .eventListenerFactory(DatadogEventListener.Factory())
+        .build()
 
     override fun onCreate() {
         super.onCreate()
+
         initializeDatadog()
+
         initializeTimber()
+
+        PictureViewModel.setup(this, okHttpClient)
     }
 
     private fun initializeDatadog() {
@@ -108,5 +122,16 @@ class SampleApplication : Application() {
         logger.addTag("build_type", BuildConfig.BUILD_TYPE)
 
         Timber.plant(DatadogTree(logger))
+    }
+
+    companion object {
+        init {
+            System.loadLibrary("datadog-native-sample-lib")
+        }
+
+        fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
+            val application = context.applicationContext as SampleApplication
+            return ViewModelFactory(application.okHttpClient)
+        }
     }
 }
