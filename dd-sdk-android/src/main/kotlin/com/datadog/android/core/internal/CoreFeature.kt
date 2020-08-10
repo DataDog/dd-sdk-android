@@ -11,8 +11,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Process
 import com.datadog.android.DatadogConfig
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
-import com.datadog.android.core.internal.net.NetworkTimeInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -20,12 +20,15 @@ import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.DatadogTimeProvider
-import com.datadog.android.core.internal.time.MutableTimeProvider
-import com.datadog.android.core.internal.time.NoOpMutableTimeProvider
+import com.datadog.android.core.internal.time.KronosTimeProvider
+import com.datadog.android.core.internal.time.LoggingSyncListener
+import com.datadog.android.core.internal.time.NoOpTimeProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.lyft.kronos.AndroidClockFactory
+import com.lyft.kronos.KronosClock
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -41,8 +44,8 @@ internal object CoreFeature {
 
     // region Constants
 
-    internal const val NETWORK_TIMEOUT_MS = DatadogTimeProvider.MAX_OFFSET_DEVIATION_MS / 2
-    private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5) // 5 seconds
+    internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
+    private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
     private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
 
     // endregion
@@ -51,11 +54,12 @@ internal object CoreFeature {
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
-    internal var timeProvider: MutableTimeProvider = NoOpMutableTimeProvider()
+    internal var timeProvider: TimeProvider = NoOpTimeProvider()
 
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
 
     internal var okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
+    internal lateinit var kronosClock: KronosClock
 
     internal var packageName: String = ""
     internal var packageVersion: String = ""
@@ -72,6 +76,19 @@ internal object CoreFeature {
         if (initialized.get()) {
             return
         }
+
+        kronosClock = AndroidClockFactory.createKronosClock(
+            appContext,
+            ntpHosts = listOf(
+                DatadogEndpoint.NTP_0,
+                DatadogEndpoint.NTP_1,
+                DatadogEndpoint.NTP_2,
+                DatadogEndpoint.NTP_3
+            ),
+            cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
+            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
+            syncListener = LoggingSyncListener()
+        ).apply { syncInBackground() }
 
         serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
@@ -102,7 +119,7 @@ internal object CoreFeature {
             }
             contextRef.clear()
 
-            timeProvider = NoOpMutableTimeProvider()
+            timeProvider = NoOpTimeProvider()
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
             userInfoProvider = NoOpMutableUserInfoProvider()
@@ -121,6 +138,7 @@ internal object CoreFeature {
         dataPersistenceExecutorService.shutdownNow()
     }
 
+    @Suppress("DEPRECATION")
     private fun readApplicationInformation(
         appContext: Context
     ) {
@@ -132,7 +150,7 @@ internal object CoreFeature {
 
     private fun setupInfoProviders(appContext: Context) {
         // Time Provider
-        timeProvider = DatadogTimeProvider(appContext)
+        timeProvider = KronosTimeProvider(kronosClock)
 
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider()
@@ -158,7 +176,6 @@ internal object CoreFeature {
         }
 
         okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(NetworkTimeInterceptor(timeProvider))
             .addInterceptor(GzipRequestInterceptor())
             .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)

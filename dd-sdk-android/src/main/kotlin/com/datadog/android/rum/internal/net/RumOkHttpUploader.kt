@@ -28,6 +28,7 @@ internal open class RumOkHttpUploader(
             "${RumAttributes.ENV}:${RumFeature.envName}"
         ).joinToString(",")
     }
+
     // region DataOkHttpUploader
 
     override fun setEndpoint(endpoint: String) {
@@ -36,7 +37,7 @@ internal open class RumOkHttpUploader(
 
     override fun buildQueryParams(): MutableMap<String, Any> {
         return mutableMapOf(
-            BATCH_TIME to System.currentTimeMillis(),
+            QP_BATCH_TIME to System.currentTimeMillis(),
             QP_SOURCE to DD_SOURCE_ANDROID,
             QP_TAGS to tags
         )
@@ -45,7 +46,6 @@ internal open class RumOkHttpUploader(
     // endregion
 
     companion object {
-        internal const val QP_SOURCE = "ddsource"
         internal const val QP_TAGS = "ddtags"
         internal const val UPLOAD_URL =
             "%s/v1/input/%s"

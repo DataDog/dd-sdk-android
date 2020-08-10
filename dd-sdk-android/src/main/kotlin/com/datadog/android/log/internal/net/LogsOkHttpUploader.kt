@@ -24,6 +24,7 @@ internal open class LogsOkHttpUploader(
 
     override fun buildQueryParams(): Map<String, Any> {
         return mutableMapOf(
+            QP_BATCH_TIME to System.currentTimeMillis(),
             QP_SOURCE to DD_SOURCE_ANDROID
         )
     }
@@ -31,8 +32,6 @@ internal open class LogsOkHttpUploader(
     // endregion
 
     companion object {
-        private const val QP_SOURCE = "ddsource"
-        private const val DD_SOURCE_ANDROID = "android"
         internal const val UPLOAD_URL = "%s/v1/input/%s"
 
         private fun buildUrl(endpoint: String, token: String): String {

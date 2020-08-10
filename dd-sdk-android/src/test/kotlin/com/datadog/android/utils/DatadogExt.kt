@@ -16,6 +16,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -38,6 +39,7 @@ inline fun <reified T : Context> mockContext(
     mockPackageInfo.versionCode = versionCode
     whenever(mockPackageMgr.getPackageInfo(packageName, 0)) doReturn mockPackageInfo
     whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()
+    whenever(mockContext.getSharedPreferences(any(), any())) doReturn mock()
 
     whenever(mockContext.applicationContext) doReturn mockContext
     whenever(mockContext.packageManager) doReturn mockPackageMgr

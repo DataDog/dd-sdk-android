@@ -17,7 +17,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
-import com.datadog.android.core.internal.time.NoOpMutableTimeProvider
+import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -117,7 +117,7 @@ internal class CoreFeatureTest {
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.timeProvider)
-            .isNotInstanceOf(NoOpMutableTimeProvider::class.java)
+            .isNotInstanceOf(NoOpTimeProvider::class.java)
     }
 
     @Test

@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -60,7 +59,6 @@ internal object CrashReportsFeature {
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
-        timeProvider: TimeProvider,
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
     ) {
@@ -82,7 +80,7 @@ internal object CrashReportsFeature {
             dataUploadThreadPoolExecutor
         )
         registerPlugins(appContext, config)
-        setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider, timeProvider)
+        setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider)
 
         initialized.set(true)
     }
@@ -135,13 +133,11 @@ internal object CrashReportsFeature {
     private fun setupExceptionHandler(
         appContext: Context,
         networkInfoProvider: NetworkInfoProvider,
-        userInfoProvider: UserInfoProvider,
-        timeProvider: TimeProvider
+        userInfoProvider: UserInfoProvider
     ) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         DatadogExceptionHandler(
             networkInfoProvider,
-            timeProvider,
             userInfoProvider,
             persistenceStrategy.getWriter(),
             appContext

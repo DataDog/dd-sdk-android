@@ -68,7 +68,7 @@ class TracesViewModel : ViewModel() {
         }
 
         private val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(listOf("shopist.io")))
+            .addInterceptor(DatadogInterceptor(listOf("datadoghq.com")))
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
 
@@ -76,7 +76,7 @@ class TracesViewModel : ViewModel() {
         override fun doInBackground(vararg params: Unit?): Result {
             val builder = Request.Builder()
                 .get()
-                .url("https://shopist.io/category_1.json")
+                .url("https://www.datadoghq.com/")
 
             if (currentActiveMainSpan != null) {
                 builder.tag(

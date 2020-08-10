@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.net
 
+import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
@@ -44,6 +45,9 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
     }
 
     override fun expectedPathRegex(): String {
-        return "\\/v1\\/input/${fakeToken}\\?ddsource=android$"
+        return "^\\/v1\\/input/$fakeToken" +
+            "\\?${DataOkHttpUploader.QP_BATCH_TIME}=\\d+" +
+            "&${DataOkHttpUploader.QP_SOURCE}=${DataOkHttpUploader.DD_SOURCE_ANDROID}" +
+            "$"
     }
 }

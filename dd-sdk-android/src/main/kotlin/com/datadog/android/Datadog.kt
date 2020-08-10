@@ -135,7 +135,6 @@ object Datadog {
                 config = featureConfig,
                 okHttpClient = CoreFeature.okHttpClient,
                 networkInfoProvider = CoreFeature.networkInfoProvider,
-                timeProvider = CoreFeature.timeProvider,
                 userInfoProvider = CoreFeature.userInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
                 dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor

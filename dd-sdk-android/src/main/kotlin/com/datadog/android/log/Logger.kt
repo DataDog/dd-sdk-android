@@ -298,11 +298,10 @@ internal constructor(private val handler: LogHandler) {
                     null
                 }
                 DatadogLogHandler(
-                    writer = LogsFeature.persistenceStrategy.getWriter(),
                     serviceName = serviceName,
                     loggerName = loggerName,
+                    writer = LogsFeature.persistenceStrategy.getWriter(),
                     networkInfoProvider = netInfoProvider,
-                    timeProvider = CoreFeature.timeProvider,
                     userInfoProvider = CoreFeature.userInfoProvider,
                     bundleWithTraces = bundleWithTraceEnabled,
                     bundleWithRum = bundleWithRumEnabled,

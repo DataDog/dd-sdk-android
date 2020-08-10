@@ -15,6 +15,7 @@ import java.math.BigInteger
 import java.util.Date
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 /**
  * Assertion methods for [JsonObject].
@@ -204,8 +205,13 @@ class JsonObjectAssert(actual: JsonObject) :
      *  Verifies that the actual jsonObject contains a field with the given name and Long value.
      *  @param name the field name
      *  @param expectedValue the expected value of the field
+     *  @param offset the ot
      */
-    fun hasField(name: String, expectedValue: Long): JsonObjectAssert {
+    fun hasField(
+        name: String,
+        expectedValue: Long,
+        offset: Offset<Long> = Offset.offset(0L)
+    ): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
                 "Expected json object to have field named $name but couldn't find one"
@@ -226,7 +232,7 @@ class JsonObjectAssert(actual: JsonObject) :
                 "Expected json object to have field $name value $expectedValue " +
                     "but was $value"
             )
-            .isEqualTo(expectedValue)
+            .isCloseTo(expectedValue, offset)
         return this
     }
 

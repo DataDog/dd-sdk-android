@@ -16,7 +16,6 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.log.LogAttributes
@@ -51,7 +50,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
-import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
@@ -84,9 +82,6 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
@@ -107,9 +102,6 @@ internal class DatadogExceptionHandlerTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
-    @Forgery
-    lateinit var fakeTime: Date
-
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnv: String
 
@@ -120,7 +112,6 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockTimeProvider.getServerTimestamp()) doReturn fakeTime.time
 
         val mockContext: Application = mockContext()
         val config = DatadogConfig.Builder(fakeToken, fakeEnv).build()
@@ -130,7 +121,6 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
         testedHandler = DatadogExceptionHandler(
             mockNetworkInfoProvider,
-            mockTimeProvider,
             mockUserInfoProvider,
             mockLogWriter,
             mockContext
@@ -157,6 +147,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
+        val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         argumentCaptor<Log> {
@@ -168,7 +159,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestamp(fakeTime.time)
+                .hasTimestampAround(now)
                 .hasTags(listOf("env:$envName"))
                 .hasAttributes(emptyMap())
         }
@@ -182,6 +173,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
+        val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         verify(mockWorkManager)
@@ -200,6 +192,7 @@ internal class DatadogExceptionHandlerTest {
         CrashReportsFeature.envName = envName
         val currentThread = Thread.currentThread()
 
+        val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         argumentCaptor<Log> {
@@ -211,7 +204,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestamp(fakeTime.time)
+                .hasTimestampAround(now)
                 .hasTags(listOf("env:$envName"))
                 .hasAttributes(emptyMap())
         }
@@ -223,6 +216,7 @@ internal class DatadogExceptionHandlerTest {
         CrashReportsFeature.envName = ""
         val currentThread = Thread.currentThread()
 
+        val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         argumentCaptor<Log> {
@@ -234,7 +228,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestamp(fakeTime.time)
+                .hasTimestampAround(now)
                 .hasTags(emptyList())
                 .hasAttributes(emptyMap())
         }
@@ -251,8 +245,9 @@ internal class DatadogExceptionHandlerTest {
             testedHandler.uncaughtException(Thread.currentThread(), fakeThrowable)
             latch.countDown()
         }, threadName)
-        thread.start()
 
+        val now = System.currentTimeMillis()
+        thread.start()
         latch.await(1, TimeUnit.SECONDS)
 
         argumentCaptor<Log> {
@@ -264,7 +259,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestamp(fakeTime.time)
+                .hasTimestampAround(now)
                 .hasTags(listOf("env:$envName"))
                 .hasAttributes(emptyMap())
         }
