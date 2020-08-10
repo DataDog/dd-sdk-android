@@ -17,6 +17,7 @@ import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -195,6 +196,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .setServiceName(serviceName)
             .build()
 
@@ -215,6 +217,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .setEnvironmentName(envName)
             .build()
 
@@ -272,6 +275,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .setEnvironmentName("\"'$envName'\"")
             .build()
 
@@ -348,6 +352,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .build()
 
         assertThat(config.coreConfig)
@@ -402,6 +407,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .build()
 
         assertThat(config.coreConfig)
@@ -464,6 +470,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .build()
 
         assertThat(config.coreConfig)
@@ -527,6 +534,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .build()
 
         assertThat(config.coreConfig)
@@ -639,6 +647,27 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `builder with RUM sampling`(
+        @FloatForgery(min = 0f, max = 100f) sampling: Float
+    ) {
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .setRumEnabled(true)
+            .sampleRumSessions(sampling)
+            .build()
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
+                    fakeEnvName,
+                    samplingRate = sampling
+                )
+            )
+    }
+
+    @Test
     fun `adding a plugin will register it to the specific feature`(forge: Forge) {
         val logsPlugin: DatadogPlugin = mock()
         val tracesPlugin: DatadogPlugin = mock()
@@ -648,6 +677,7 @@ class DatadogConfigBuilderTest {
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
             .addPlugin(logsPlugin, Feature.LOG)
             .addPlugin(tracesPlugin, Feature.TRACE)
             .addPlugin(rumPlugin, Feature.RUM)
