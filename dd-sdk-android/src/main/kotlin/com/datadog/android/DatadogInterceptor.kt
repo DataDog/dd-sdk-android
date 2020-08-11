@@ -110,7 +110,7 @@ internal constructor(
     /** @inheritdoc */
     override fun onRequestIntercepted(
         request: Request,
-        span: Span,
+        span: Span?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -130,7 +130,7 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response?,
-        span: Span
+        span: Span?
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response?.code()
@@ -141,14 +141,17 @@ internal constructor(
             mimeType == null -> RumResourceKind.UNKNOWN
             else -> RumResourceKind.fromMimeType(mimeType)
         }
+        val attributes = if (span == null) {
+            emptyMap<String, Any?>()
+        } else {
+            mapOf(RumAttributes.TRACE_ID to span.context().toTraceId())
+        }
         GlobalRum.get().stopResource(
             requestId,
             statusCode,
             getBodyLength(response),
             kind,
-            mapOf(
-                RumAttributes.TRACE_ID to span.context().toTraceId()
-            )
+            attributes
         )
     }
 
