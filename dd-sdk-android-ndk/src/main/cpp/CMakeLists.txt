@@ -11,6 +11,8 @@ add_library( # Sets the name of the library.
         utils/signal-monitor.h
         utils/fileutils.cpp
         utils/fileutils.h
+        utils/stringutils.cpp
+        utils/stringutils.h
         utils/datetime.cpp
         utils/datetime.h
         utils/backtrace-handler.cpp

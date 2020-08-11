@@ -6,9 +6,17 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -195,5 +203,55 @@ internal class GlobalRumTest {
         countDownLatch.await()
 
         assertThat(errors).isEqualTo(0)
+    }
+
+    @Test
+    fun `updates the rum context for all the provided plugins`(forge: Forge) {
+
+        // given
+        val applicationId = forge.aNumericalString()
+        val sessionId = forge.aNumericalString()
+        val viewId = forge.aNumericalString()
+        val crashFeaturePlugins: List<DatadogPlugin> =
+            forge.aList(forge.anInt(min = 1, max = 4)) {
+                mock<DatadogPlugin>()
+            }
+        val tracesFeaturePlugins: List<DatadogPlugin> =
+            forge.aList(forge.anInt(min = 1, max = 4)) {
+                mock<DatadogPlugin>()
+            }
+        val logsFeaturePlugins: List<DatadogPlugin> =
+            forge.aList(forge.anInt(min = 1, max = 4)) {
+                mock<DatadogPlugin>()
+            }
+        val rumFeaturePlugins: List<DatadogPlugin> =
+            forge.aList(forge.anInt(min = 1, max = 4)) {
+                mock<DatadogPlugin>()
+            }
+
+        CrashReportsFeature.plugins = crashFeaturePlugins
+        LogsFeature.plugins = logsFeaturePlugins
+        TracesFeature.plugins = tracesFeaturePlugins
+        RumFeature.plugins = rumFeaturePlugins
+
+        // when
+        GlobalRum.updateRumContext(
+            RumContext(
+                applicationId,
+                sessionId,
+                viewId
+            )
+        )
+
+        // then
+        val pluginsToAssert =
+            crashFeaturePlugins + tracesFeaturePlugins + logsFeaturePlugins + rumFeaturePlugins
+        pluginsToAssert.forEach {
+            verify(it).onContextChanged(argThat {
+                this.rum?.applicationId == applicationId &&
+                    this.rum?.sessionId == sessionId &&
+                    this.rum?.viewId == viewId
+            })
+        }
     }
 }

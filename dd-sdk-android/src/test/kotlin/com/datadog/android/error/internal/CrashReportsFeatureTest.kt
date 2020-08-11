@@ -273,6 +273,7 @@ internal class CrashReportsFeatureTest {
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
+
         // then
         val mockedPlugins = plugins.toTypedArray()
         inOrder(*mockedPlugins) {

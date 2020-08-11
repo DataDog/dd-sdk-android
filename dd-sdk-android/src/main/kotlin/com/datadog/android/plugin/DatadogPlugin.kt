@@ -28,4 +28,12 @@ interface DatadogPlugin {
      * was assigned will be stopped.
      */
     fun unregister()
+
+    /**
+     * Notify that the current context of the library was updated by one or more of the features.
+     * This method is always called from a worker thread.
+     * @param context the updated [DatadogContext].
+     *
+     */
+    fun onContextChanged(context: DatadogContext)
 }

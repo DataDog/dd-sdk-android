@@ -8,8 +8,9 @@
 #include "utils/backtrace-handler.h"
 
 TEST test_generate_backtrace(void) {
-    const char *backtrace = backtrace::generate_backtrace();
-    std::list<std::string> backtrace_lines = testutils::split_backtrace_into_lines(backtrace);
+    std::string backtrace = backtrace::generate_backtrace();
+    std::list<std::string> backtrace_lines = testutils::split_backtrace_into_lines(
+            backtrace.c_str());
     // we don't know if the stack is big enough to cover the required max size of 30
     unsigned int lines_count = backtrace_lines.size();
     const char *regex = "(\\d+):0[xX][0-9a-fA-F]+(\\s*)(.*)";

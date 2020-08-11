@@ -4,21 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#ifndef DATETIME_H
-#define DATETIME_H
+package com.datadog.android.plugin
 
-#include "cstdint"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-uint64_t time_since_epoch();
-
-
-void format_date(char *buffer, size_t buffer_size, const char *format);
-
-#ifdef __cplusplus
-}
-#endif
-#endif
+/**
+ * Provides general information about the current context of the library.
+ * @see DatadogRumContext
+ */
+data class DatadogContext(
+    val rum: DatadogRumContext? = null
+)
