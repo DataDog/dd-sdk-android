@@ -11,9 +11,13 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import java.util.UUID
 
-internal class RumApplicationScope(applicationId: UUID) : RumScope {
+internal class RumApplicationScope(
+    applicationId: UUID,
+    internal val samplingRate: Float
+) : RumScope {
+
     private val rumContext = RumContext(applicationId = applicationId.toString())
-    private val childScope: RumScope = RumSessionScope(this)
+    internal val childScope: RumScope = RumSessionScope(this, samplingRate)
 
     // region RumScope
 

@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.utils.forge.Configurator
@@ -31,6 +32,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -76,15 +78,37 @@ internal class DatadogRumMonitorTest {
 
     lateinit var fakeAttributes: Map<String, Any?>
 
+    @FloatForgery(min = 0f, max = 100f)
+    var fakeSamplingRate: Float = 0f
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
-        testedMonitor = DatadogRumMonitor(fakeApplicationId, mockWriter, mockHandler)
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockWriter,
+            mockHandler
+        )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
 
     @AfterEach
     fun `tear down`() {
+    }
+
+    @Test
+    fun `creates root scope`() {
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockWriter,
+            mockHandler
+        )
+
+        val rootScope = testedMonitor.rootScope
+        check(rootScope is RumApplicationScope)
+        assertThat(rootScope.samplingRate).isEqualTo(fakeSamplingRate)
     }
 
     @Test

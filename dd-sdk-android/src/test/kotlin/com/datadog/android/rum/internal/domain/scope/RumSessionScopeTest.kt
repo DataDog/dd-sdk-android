@@ -7,11 +7,11 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -28,6 +28,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -36,6 +37,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -73,6 +75,9 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
+    @FloatForgery(min = 0f, max = 100f)
+    var fakeSamplingRate: Float = 0f
+
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
 
@@ -83,7 +88,12 @@ internal class RumSessionScopeTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        testedScope = RumSessionScope(mockParentScope, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
@@ -92,9 +102,20 @@ internal class RumSessionScopeTest {
     fun `updates sessionId if first call`() {
         val context = testedScope.getRumContext()
 
-        assertThat(context.sessionId).isNotEqualTo(UUID(0, 0))
+        assertThat(context.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isEqualTo(testedScope.sessionId)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `returns context with null IDs if session not kept`() {
+        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        val context = testedScope.getRumContext()
+
+        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
     }
 
     @Test
@@ -176,6 +197,35 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `updates keepSession state based on sampling rate`() {
+        testedScope = RumSessionScope(
+            mockParentScope,
+            fakeSamplingRate,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        var sessions = 0
+        var sessionsKept = 0
+
+        repeat(512) {
+            testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+            val context = testedScope.getRumContext()
+            if (testedScope.keepSession) {
+                assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+                assertThat(context.sessionId).isEqualTo(testedScope.sessionId)
+            } else {
+                assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
+                assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+            }
+            sessions++
+            if (testedScope.keepSession) sessionsKept++
+        }
+
+        val actualRate = (sessionsKept.toFloat() * 100f) / sessions
+        assertThat(actualRate).isCloseTo(fakeSamplingRate, Offset.offset(5f))
+    }
+
+    @Test
     fun `does Nothing if childless and event not recognized`() {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -190,6 +240,25 @@ internal class RumSessionScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
+        assertThat(result).isSameAs(testedScope)
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `delegates to child scope with noop writer if session not kept`() {
+        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        testedScope.activeChildrenScopes.add(mockChildScope)
+
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        argumentCaptor<Writer<RumEvent>> {
+            verify(mockChildScope).handleEvent(same(mockEvent), capture())
+
+            assertThat(firstValue)
+                .isNotSameAs(mockWriter)
+                .isInstanceOf(NoOpWriter::class.java)
+        }
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
         verifyZeroInteractions(mockWriter)
@@ -320,6 +389,21 @@ internal class RumSessionScopeTest {
             val event2 = lastValue as RumRawEvent.ApplicationStarted
             assertThat(event2.applicationStartupNanos).isGreaterThanOrEqualTo(resetNanos)
         }
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `does not send ApplicationStarted event on applicationDisplayed if session not kept`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+    ) {
+        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        val result = testedScope.handleEvent(startViewEvent, mockWriter)
+
+        assertThat(testedScope.activeChildrenScopes).isNotEmpty()
+        assertThat(result).isSameAs(testedScope)
         verifyZeroInteractions(mockWriter)
     }
 

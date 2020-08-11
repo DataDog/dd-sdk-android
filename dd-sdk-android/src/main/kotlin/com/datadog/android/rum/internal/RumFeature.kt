@@ -52,6 +52,7 @@ internal object RumFeature {
     internal var endpointUrl: String = DatadogEndpoint.RUM_US
     internal var envName: String = ""
     internal var applicationId: UUID = UUID(0, 0)
+    internal var samplingRate: Float = 0f
 
     internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -87,6 +88,7 @@ internal object RumFeature {
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
         envName = config.envName
+        samplingRate = config.samplingRate
 
         config.gesturesTracker?.let { gesturesTracker = it }
         config.viewTrackingStrategy?.let { viewTrackingStrategy = it }
