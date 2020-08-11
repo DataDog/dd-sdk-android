@@ -1,14 +1,10 @@
 # Android RUM Collection
 
-<div class="alert alert-info">The Android RUM collection is in public beta, and is currently not supported by Datadog.</div>
-
 Send [Real User Monitoring data][1] to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side RUM library][2] and leverage the following features:
 
 * get a global idea about your app’s performance and demographics;
 * understand which resources are the slowest;
 * analyze errors by OS and device type.
-
-**Note**: RUM on Android is still experimental, and will be available in the `dd-sdk-android` library version `1.5.0` or higher. The `dd-sdk-android` library supports all Android versions from API level 19 (Kit-Kat).
 
 ## Setup
 
@@ -73,8 +69,7 @@ Depending on your application's architecture, you can choose one of several impl
   
   **Note**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
   
-  **Note**: By default RUM Monitor for View tracking runs in manual mode so if you decide not to provide a view tracking strategy you will have to manually send the
-  views by calling the start/stop View API methods yourself.
+  **Note**: By default, the library won't track any view. If you decide not to provide a view tracking strategy you will have to manually send the views by calling the `startView` and `stopView` methods yourself.
 
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -91,7 +86,7 @@ Depending on your application's architecture, you can choose one of several impl
         .build()
     ```
 
-    This creates RUM Resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in background, you can create a view manually as explained below.
+    This creates RUM Resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in the background, you can create a view manually, as explained below.
 
     **Note**: If you also use multiple Interceptors, this one must be called first.
 
@@ -142,11 +137,11 @@ Depending on your application's architecture, you can choose one of several impl
 
 ## Batch collection
 
-All the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
+All the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as the network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
 
 This means that even if users open your application while being offline, no data will be lost.
 
-The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
+The data on the disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
 
 ## Extensions
