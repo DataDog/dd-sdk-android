@@ -221,9 +221,19 @@ val okHttpClient =  OkHttpClient.Builder()
     .build()
 ```
 
-This creates a span around each request processed by the OkHttpClient (matching the provided hosts), with all the relevant information automatically filled (url, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog
+This creates a span around each request processed by the OkHttpClient (matching the provided hosts), with all the relevant information automatically filled (URL, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog.
 
-Because the way the OkHttp Request is executed (using a Thread pool), we are not able to link the request span with the span that triggered the request. You can still manually provide a parent Span in the `OkHttp Request.Builder` as follows:
+The interceptor tracks requests at the application level. You can also add a `TracingInterceptor` at the network level to get more details, for example when following redirections.
+
+ ```kotlin
+val tracedHosts = listOf("example.com", "example.eu")
+val okHttpClient =  OkHttpClient.Builder()
+    .addInterceptor(DatadogInterceptor(tracedHosts))
+    .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+    .build()
+ ```
+
+Because the way the OkHttp Request is executed (using a Thread pool), the request span won't be automatically linked with the span that triggered the request. You can manually provide a parent span in the `OkHttp Request.Builder` as follows:
 
 ```kotlin
 val request = Request.Builder()

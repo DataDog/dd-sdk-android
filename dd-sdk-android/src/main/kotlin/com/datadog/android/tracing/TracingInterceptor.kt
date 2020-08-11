@@ -95,9 +95,9 @@ internal constructor(
         val request = chain.request()
 
         return if (tracer == null || !isRequestTraceable(request)) {
-            chain.proceed(request)
+            intercept(chain, request)
         } else {
-            intercept(chain, request, tracer)
+            interceptAndTrace(chain, request, tracer)
         }
     }
 
@@ -110,17 +110,19 @@ internal constructor(
      * The given [Span] can be updated (e.g.: add custom tags / baggage items) before it is
      * finalized.
      * @param request the intercepted [Request]
-     * @param span the [Span] created around the [Request]
+     * @param span the [Span] created around the [Request] (or null if request is not traced)
      * @param response the [Request] response (or null if an error occurred)
      * @param throwable the error which occurred during the [Request] (or null)
      */
     protected open fun onRequestIntercepted(
         request: Request,
-        span: Span,
+        span: Span?,
         response: Response?,
         throwable: Throwable?
     ) {
-        tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
+        if (span != null) {
+            tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
+        }
     }
 
     // endregion
@@ -133,7 +135,7 @@ internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
-    private fun intercept(
+    private fun interceptAndTrace(
         chain: Interceptor.Chain,
         request: Request,
         tracer: Tracer
@@ -147,6 +149,21 @@ internal constructor(
             return response
         } catch (e: Throwable) {
             handleThrowable(request, e, span)
+            throw e
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
+    private fun intercept(
+        chain: Interceptor.Chain,
+        request: Request
+    ): Response {
+        try {
+            val response = chain.proceed(request)
+            onRequestIntercepted(request, null, response, null)
+            return response
+        } catch (e: Throwable) {
+            onRequestIntercepted(request, null, null, e)
             throw e
         }
     }
@@ -226,10 +243,10 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span
+        span: Span?
     ) {
         val statusCode = response.code()
-        span.setTag(Tags.HTTP_STATUS.key, statusCode)
+        span?.setTag(Tags.HTTP_STATUS.key, statusCode)
         if (statusCode in 400..499) {
             (span as? MutableSpan)?.setError(true)
         }
@@ -237,7 +254,7 @@ internal constructor(
             (span as? MutableSpan)?.setResourceName(RESOURCE_NAME_404)
         }
         onRequestIntercepted(request, span, response, null)
-        span.finish()
+        span?.finish()
     }
 
     private fun handleThrowable(

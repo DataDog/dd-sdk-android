@@ -41,11 +41,17 @@ import okhttp3.Response
  * request information (url, method, status code, optional error). It will also propagate the span
  * and trace information in the request header to link it with backend spans.
  *
+ * Note: If you want to get more insights on the network requests (such as redirections), you can also add
+ * this interceptor as a Network level interceptor.
+ *
  * To use:
  * ```
- *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new DatadogInterceptor(listOf("yourdomain.com")))
- *       .build();
+ *     val tracedHosts = listOf("example.com", "example.eu")
+ *     OkHttpClient client = new OkHttpClient.Builder()
+ *         .addInterceptor(new DatadogInterceptor(tracedHosts))
+ *         // Optionally to get information about redirections and retries
+ *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
+ *         .build();
  * ```
  *
  * @param tracedHosts a list of all the hosts that you want to be automatically tracked
@@ -104,7 +110,7 @@ internal constructor(
     /** @inheritdoc */
     override fun onRequestIntercepted(
         request: Request,
-        span: Span,
+        span: Span?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -124,7 +130,7 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response?,
-        span: Span
+        span: Span?
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response?.code()
@@ -135,14 +141,17 @@ internal constructor(
             mimeType == null -> RumResourceKind.UNKNOWN
             else -> RumResourceKind.fromMimeType(mimeType)
         }
+        val attributes = if (span == null) {
+            emptyMap<String, Any?>()
+        } else {
+            mapOf(RumAttributes.TRACE_ID to span.context().toTraceId())
+        }
         GlobalRum.get().stopResource(
             requestId,
             statusCode,
             getBodyLength(response),
             kind,
-            mapOf(
-                RumAttributes.TRACE_ID to span.context().toTraceId()
-            )
+            attributes
         )
     }
 

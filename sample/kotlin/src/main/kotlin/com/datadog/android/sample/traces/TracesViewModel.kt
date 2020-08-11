@@ -15,6 +15,8 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
+import com.datadog.android.sample.server.LocalServer
+import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
@@ -25,6 +27,11 @@ class TracesViewModel : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
+    private var localServer: LocalServer = LocalServer()
+
+    init {
+        localServer.start("https://shopist.io/category_1.json")
+    }
 
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
@@ -39,7 +46,7 @@ class TracesViewModel : ViewModel() {
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = RequestTask(onResponse, onException, onCancel)
+        networkRequestTask = RequestTask(localServer.getUrl(), onResponse, onException, onCancel)
         networkRequestTask?.execute()
     }
 
@@ -48,9 +55,11 @@ class TracesViewModel : ViewModel() {
         networkRequestTask?.cancel(true)
         asyncOperationTask = null
         networkRequestTask = null
+        localServer.stop()
     }
 
     private class RequestTask(
+        private val url: String,
         private val onResponse: (Response) -> Unit,
         private val onException: (Throwable) -> Unit,
         private val onCancel: () -> Unit
@@ -67,8 +76,10 @@ class TracesViewModel : ViewModel() {
             currentActiveMainSpan = GlobalTracer.get().activeSpan()
         }
 
+        private val tracedHosts = listOf("datadoghq.com", LocalServer.HOST)
         private val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(listOf("datadoghq.com")))
+            .addInterceptor(DatadogInterceptor(tracedHosts))
+            .addNetworkInterceptor(TracingInterceptor(tracedHosts))
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
 
@@ -77,6 +88,7 @@ class TracesViewModel : ViewModel() {
             val builder = Request.Builder()
                 .get()
                 .url("https://www.datadoghq.com/")
+                .url(url)
 
             if (currentActiveMainSpan != null) {
                 builder.tag(
@@ -95,6 +107,7 @@ class TracesViewModel : ViewModel() {
                 }
                 Result(response, null)
             } catch (e: Exception) {
+                Log.e("Response", "Error", e)
                 Result(null, e)
             }
         }

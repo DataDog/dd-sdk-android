@@ -85,6 +85,10 @@ android {
         javaMaxHeapSize = "4g"
     }
 
+    packagingOptions {
+        exclude("META-INF/*")
+    }
+
     externalNativeBuild {
         cmake {
             path = File("$projectDir/src/main/cpp/CMakeLists.txt")
@@ -114,12 +118,17 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
+    // Ktor (local web server)
+    implementation("io.ktor:ktor:1.2.5")
+    implementation("io.ktor:ktor-server-netty:1.2.5")
+    implementation("io.ktor:ktor-gson:1.2.5")
+
     // Glide
     implementation("com.github.bumptech.glide:glide:4.11.0")
     implementation("com.github.bumptech.glide:okhttp3-integration:4.11.0") {
         exclude(group = "glide-parent")
     }
-    kapt("com.github.bumptech.glide:compiler:4.11.0")
+    add("kapt", "com.github.bumptech.glide:compiler:4.11.0")
 
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)

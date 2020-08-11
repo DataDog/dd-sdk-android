@@ -59,7 +59,7 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
   constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+  override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
@@ -308,6 +308,6 @@ interface com.datadog.android.tracing.TracedRequestListener
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
 class com.datadog.tools.annotation.NoOpImplementation

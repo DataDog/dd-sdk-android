@@ -6,7 +6,14 @@
 package com.datadog.android.sample.webview
 
 import androidx.lifecycle.ViewModel
+import com.datadog.android.sample.server.LocalServer
 
 class WebViewModel : ViewModel() {
-    val url: String = "https://www.datadoghq.com/"
+
+    val localServer = LocalServer()
+    val url: String = localServer.getUrl()
+
+    init {
+        localServer.start("https://www.datadoghq.com/")
+    }
 }
