@@ -24,7 +24,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ComponentPredicateTest {
 
-    lateinit var underTest: ComponentPredicate<Activity>
+    lateinit var testedPredicate: ComponentPredicate<Activity>
 
     @Mock
     lateinit var mockValidActivity: Activity
@@ -34,7 +34,7 @@ class ComponentPredicateTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest = object : ComponentPredicate<Activity> {
+        testedPredicate = object : ComponentPredicate<Activity> {
             override fun accept(component: Activity): Boolean {
                 return component == mockValidActivity
             }
@@ -44,7 +44,7 @@ class ComponentPredicateTest {
     @Test
     fun `it will not execute operation if argument is not verified`() {
         var operationExecuted = false
-        underTest.runIfValid(mockInvalidActivity) {
+        testedPredicate.runIfValid(mockInvalidActivity) {
             operationExecuted = true
         }
         assertThat(operationExecuted).isFalse()
@@ -53,7 +53,7 @@ class ComponentPredicateTest {
     @Test
     fun `it will execute operation if argument is verified`() {
         var operationExecuted = false
-        underTest.runIfValid(mockValidActivity) {
+        testedPredicate.runIfValid(mockValidActivity) {
             operationExecuted = true
         }
         assertThat(operationExecuted).isTrue()

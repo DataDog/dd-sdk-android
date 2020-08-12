@@ -49,7 +49,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DeferredWriterTest {
 
-    lateinit var underTest: DeferredWriter<String>
+    lateinit var testedWriter: DeferredWriter<String>
 
     @Mock
     lateinit var mockDelegate: Writer<String>
@@ -69,7 +69,7 @@ internal class DeferredWriterTest {
             (it.arguments[0] as Runnable).run()
             mock()
         }
-        underTest = DeferredWriter(
+        testedWriter = DeferredWriter(
             mockDelegate,
             mockExecutorService,
             mockDataMigrator
@@ -81,7 +81,7 @@ internal class DeferredWriterTest {
         val model = forge.anAlphabeticalString()
 
         // when
-        underTest.write(model)
+        testedWriter.write(model)
 
         // then
         val inOrder = inOrder(mockDataMigrator, mockDelegate)
@@ -99,15 +99,15 @@ internal class DeferredWriterTest {
 
         // when
         Thread {
-            underTest.write(model1)
+            testedWriter.write(model1)
             countDownLatch.countDown()
         }.start()
         Thread {
-            underTest.write(model2)
+            testedWriter.write(model2)
             countDownLatch.countDown()
         }.start()
         Thread {
-            underTest.write(model3)
+            testedWriter.write(model3)
             countDownLatch.countDown()
         }.start()
 
@@ -130,17 +130,17 @@ internal class DeferredWriterTest {
         val model3 = forge.anAlphabeticalString()
 
         val countDownLatch = CountDownLatch(3)
-        val dataMigrated: AtomicBoolean = underTest.getFieldValue("dataMigrated")
+        val dataMigrated: AtomicBoolean = testedWriter.getFieldValue("dataMigrated")
         dataMigrated.set(false)
 
         // when
         Thread {
-            underTest.write(model1)
+            testedWriter.write(model1)
             countDownLatch.countDown()
         }.start()
 
         Thread {
-            underTest.write(model2)
+            testedWriter.write(model2)
             countDownLatch.countDown()
         }.start()
 
@@ -148,7 +148,7 @@ internal class DeferredWriterTest {
         dataMigrated.set(true)
 
         Thread {
-            underTest.write(model3)
+            testedWriter.write(model3)
             countDownLatch.countDown()
         }.start()
 
@@ -168,12 +168,12 @@ internal class DeferredWriterTest {
     fun `if no data migrator provided will not perform the migration step`(forge: Forge) {
         val model = forge.anAlphabeticalString()
         reset(mockExecutorService)
-        underTest = DeferredWriter(
+        testedWriter = DeferredWriter(
             mockDelegate,
             mockExecutorService
         )
         // when
-        underTest.write(model)
+        testedWriter.write(model)
 
         // then
         verify(mockExecutorService, times(1)).submit(any())
@@ -185,7 +185,7 @@ internal class DeferredWriterTest {
     fun `run delegate in deferred handler when writing a model`(forge: Forge) {
         val model = forge.anAlphabeticalString()
 
-        underTest.write(model)
+        testedWriter.write(model)
 
         verify(mockDelegate).write(model)
     }
@@ -195,7 +195,7 @@ internal class DeferredWriterTest {
     fun `run delegate in deferred handler when writing a models list`(forge: Forge) {
         val models: List<String> = forge.aList(size = 10) { forge.anAlphabeticalString() }
 
-        underTest.write(models)
+        testedWriter.write(models)
 
         verify(mockDelegate).write(models)
     }

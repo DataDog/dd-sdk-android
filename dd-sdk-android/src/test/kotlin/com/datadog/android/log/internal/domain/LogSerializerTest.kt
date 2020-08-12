@@ -39,16 +39,16 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LogSerializerTest {
 
-    lateinit var underTest: LogSerializer
+    lateinit var testedSerializer: LogSerializer
 
     @BeforeEach
     fun `set up`() {
-        underTest = LogSerializer()
+        testedSerializer = LogSerializer()
     }
 
     @Test
     fun `serializes full log as json`(@Forgery fakeLog: Log) {
-        val serialized = underTest.serialize(fakeLog)
+        val serialized = testedSerializer.serialize(fakeLog)
         assertLogMatches(serialized, fakeLog)
     }
 
@@ -62,7 +62,7 @@ internal class LogSerializerTest {
             tags = emptyList()
         )
 
-        val serialized = underTest.serialize(minimalLog)
+        val serialized = testedSerializer.serialize(minimalLog)
 
         assertLogMatches(serialized, minimalLog)
     }
@@ -77,7 +77,7 @@ internal class LogSerializerTest {
         val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
 
         // when
-        val serialized = underTest.serialize(logWithReservedAttributes)
+        val serialized = testedSerializer.serialize(logWithReservedAttributes)
 
         // then
         assertLogMatches(serialized, logWithoutAttributes)
@@ -93,7 +93,7 @@ internal class LogSerializerTest {
         val logWithReservedTags = fakeLog.copy(tags = listOf(reservedTag))
 
         // when
-        val serialized = underTest.serialize(logWithReservedTags)
+        val serialized = testedSerializer.serialize(logWithReservedTags)
 
         // then
         assertLogMatches(serialized, logWithoutTags)
@@ -105,7 +105,7 @@ internal class LogSerializerTest {
         val logWithoutNetworkInfo = fakeLog.copy(networkInfo = null)
 
         // when
-        val serialized = underTest.serialize(logWithoutNetworkInfo)
+        val serialized = testedSerializer.serialize(logWithoutNetworkInfo)
 
         // then
         assertLogMatches(serialized, logWithoutNetworkInfo)
@@ -117,7 +117,7 @@ internal class LogSerializerTest {
         val logWithoutThrowable = fakeLog.copy(throwable = null)
 
         // when
-        val serialized = underTest.serialize(logWithoutThrowable)
+        val serialized = testedSerializer.serialize(logWithoutThrowable)
 
         // then
         assertLogMatches(serialized, logWithoutThrowable)

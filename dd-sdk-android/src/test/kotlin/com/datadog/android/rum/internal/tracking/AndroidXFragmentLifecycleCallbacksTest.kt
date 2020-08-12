@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class AndroidXFragmentLifecycleCallbacksTest {
 
-    lateinit var underTest: AndroidXFragmentLifecycleCallbacks
+    lateinit var testedLifecycleCallbacks: AndroidXFragmentLifecycleCallbacks
 
     @Mock
     lateinit var mockFragment: Fragment
@@ -65,8 +65,6 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Mock
     lateinit var mockDialog: Dialog
 
-    lateinit var attributesMap: Map<String, Any?>
-
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
 
@@ -77,20 +75,22 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
-    lateinit var advancedMockRumMonitor: AdvancedRumMonitor
+    lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
+
+    lateinit var fakeAttributes: Map<String, Any?>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         RumFeature.gesturesTracker = mockGesturesTracker
 
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
-        attributesMap = forge.aMap { forge.aString() to forge.aString() }
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        fakeAttributes = forge.aMap { forge.aString() to forge.aString() }
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             AcceptAllSupportFragments(),
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
     }
 
@@ -98,7 +98,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     fun `when fragment attached, it will notify the timer`(
         forge: Forge
     ) {
-        underTest.onFragmentAttached(mock(), mockFragment, mockFragmentActivity)
+        testedLifecycleCallbacks.onFragmentAttached(mock(), mockFragment, mockFragmentActivity)
 
         verify(mockViewLoadingTimer).onCreated(mockFragment)
     }
@@ -107,8 +107,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     fun `when fragment attached, and not whitelisted will not interact with timer`(
         forge: Forge
     ) {
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
@@ -116,10 +116,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             },
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        underTest.onFragmentAttached(mock(), mockFragment, mockFragmentActivity)
+        testedLifecycleCallbacks.onFragmentAttached(mock(), mockFragment, mockFragmentActivity)
 
         verifyZeroInteractions(mockViewLoadingTimer)
     }
@@ -128,7 +128,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     fun `when fragment started, it will notify the timer`(
         forge: Forge
     ) {
-        underTest.onFragmentStarted(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentStarted(mock(), mockFragment)
 
         verify(mockViewLoadingTimer).onStartLoading(mockFragment)
     }
@@ -137,8 +137,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     fun `when fragment started, and not whitelisted will not interact with timer`(
         forge: Forge
     ) {
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
@@ -146,9 +146,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             },
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
-        underTest.onFragmentStarted(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentStarted(mock(), mockFragment)
 
         verifyZeroInteractions(mockViewLoadingTimer)
     }
@@ -162,7 +162,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         whenever(mockDialogFragment.dialog) doReturn mockDialog
         whenever(mockDialog.window) doReturn mockWindow
 
-        underTest.onFragmentActivityCreated(mock(), mockDialogFragment, null)
+        testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockDialogFragment, null)
 
         verify(mockGesturesTracker).startTracking(mockWindow, mockContext)
     }
@@ -171,7 +171,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     fun `when fragment activity created on Fragment, registers nothing`(forge: Forge) {
         whenever(mockFragment.context) doReturn mockContext
 
-        underTest.onFragmentActivityCreated(mock(), mockFragment, null)
+        testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockFragment, null)
 
         verifyZeroInteractions(mockGesturesTracker)
     }
@@ -179,12 +179,12 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `when fragment resumed it will start a view event`(forge: Forge) {
         // when
-        underTest.onFragmentResumed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
         // then
         verify(mockRumMonitor).startView(
             eq(mockFragment),
             eq(mockFragment.resolveViewName()),
-            eq(attributesMap)
+            eq(fakeAttributes)
         )
     }
 
@@ -204,10 +204,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             .thenReturn(expectedLoadingTime)
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment))
             .thenReturn(firsTimeLoading)
-        underTest.onFragmentResumed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
 
         verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
-        verify(advancedMockRumMonitor).updateViewLoadingTime(
+        verify(mockAdvancedRumMonitor).updateViewLoadingTime(
             mockFragment,
             expectedLoadingTime,
             expectedLoadingType
@@ -217,30 +217,30 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `when fragment resumed will do nothing if the fragment is not whitelisted`() {
         // given
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
                 }
             },
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
 
         // when
-        underTest.onFragmentResumed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
 
         // then
         verifyZeroInteractions(mockViewLoadingTimer)
         verifyZeroInteractions(mockRumMonitor)
-        verifyZeroInteractions(advancedMockRumMonitor)
+        verifyZeroInteractions(mockAdvancedRumMonitor)
     }
 
     @Test
     fun `when fragment paused it will mark the view as hidden in the timer`(forge: Forge) {
         // when
-        underTest.onFragmentPaused(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
         // then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
@@ -253,7 +253,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `when fragment paused it will stop a view event`(forge: Forge) {
         // when
-        underTest.onFragmentPaused(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
         // then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
@@ -264,30 +264,30 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `when fragment paused will do nothing if the fragment is not whitelisted`() {
         // given
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
                 }
             },
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
 
         // when
-        underTest.onFragmentPaused(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
 
         // then
         verifyZeroInteractions(mockRumMonitor)
-        verifyZeroInteractions(advancedMockRumMonitor)
+        verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
     fun `when fragment destroyed will remove view entry from timer`() {
         // when
-        underTest.onFragmentDestroyed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
         // then
         verify(mockViewLoadingTimer).onDestroyed(mockFragment)
@@ -296,41 +296,41 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `when fragment destroyed and not whitelisted will do nothing`() {
         // given
-        underTest = AndroidXFragmentLifecycleCallbacks(
-            { attributesMap },
+        testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
+            { fakeAttributes },
             object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
                 }
             },
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = advancedMockRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor
         )
 
         // when
-        underTest.onFragmentDestroyed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
         // then
         verifyZeroInteractions(mockRumMonitor)
-        verifyZeroInteractions(advancedMockRumMonitor)
+        verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
     fun `will register the callback to fragment manager when required`() {
         // when
-        underTest.register(mockFragmentActivity)
+        testedLifecycleCallbacks.register(mockFragmentActivity)
 
         // then
-        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(underTest, true)
+        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(testedLifecycleCallbacks, true)
     }
 
     @Test
     fun `will unregister the callback from the fragment manager when required`() {
         // when
-        underTest.unregister(mockFragmentActivity)
+        testedLifecycleCallbacks.unregister(mockFragmentActivity)
 
         // then
-        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(underTest)
+        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(testedLifecycleCallbacks)
     }
 }

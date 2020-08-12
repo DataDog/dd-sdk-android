@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogGesturesTrackerTest {
 
-    lateinit var underTest: DatadogGesturesTracker
+    lateinit var testedTracker: DatadogGesturesTracker
 
     @Mock
     lateinit var mockActivity: Activity
@@ -48,7 +48,7 @@ internal class DatadogGesturesTrackerTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest =
+        testedTracker =
             DatadogGesturesTracker(emptyArray())
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mockDecorView)
@@ -57,7 +57,7 @@ internal class DatadogGesturesTrackerTest {
     @Test
     fun `will start tracking the activity`() {
         // when
-        val spyTest = spy(underTest)
+        val spyTest = spy(testedTracker)
         doReturn(mockGestureDetector)
             .whenever(spyTest)
             .generateGestureDetector(mockActivity, mockDecorView)
@@ -79,7 +79,7 @@ internal class DatadogGesturesTrackerTest {
             )
 
         // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow).callback = null
@@ -98,7 +98,7 @@ internal class DatadogGesturesTrackerTest {
             )
 
         // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow).callback = previousCallback
@@ -107,7 +107,7 @@ internal class DatadogGesturesTrackerTest {
     @Test
     fun `stop will do nothing if the activity was not tracked`() {
         // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
         // then
         verify(mockWindow, never()).callback = any()

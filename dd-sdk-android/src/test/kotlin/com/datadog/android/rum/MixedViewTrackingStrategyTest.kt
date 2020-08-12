@@ -12,7 +12,6 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,23 +33,23 @@ import org.mockito.quality.Strictness
 internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
 
     @Mock
-    lateinit var mockedActivityViewTrackingStrategy: ActivityViewTrackingStrategy
+    lateinit var mockActivityViewTrackingStrategy: ActivityViewTrackingStrategy
 
     @Mock
-    lateinit var mockedFragmentViewTrackingStrategy: FragmentViewTrackingStrategy
+    lateinit var mockFragmentViewTrackingStrategy: FragmentViewTrackingStrategy
 
     @Mock
-    lateinit var mockedBundle: Bundle
+    lateinit var mockBundle: Bundle
 
     // region tests
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest =
+        testedStrategy =
             MixedViewTrackingStrategy(
-                mockedActivityViewTrackingStrategy,
-                mockedFragmentViewTrackingStrategy
+                mockActivityViewTrackingStrategy,
+                mockFragmentViewTrackingStrategy
             )
     }
 
@@ -60,12 +59,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     ) {
 
         // whenever
-        underTest.onActivityCreated(mockActivity, mockedBundle)
+        testedStrategy.onActivityCreated(mockActivity, mockBundle)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityCreated(mockActivity, mockedBundle)
-            verify(mockedFragmentViewTrackingStrategy).onActivityCreated(mockActivity, mockedBundle)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
+            verify(mockFragmentViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
         }
     }
 
@@ -74,12 +73,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
         // whenever
-        underTest.onActivityDestroyed(mockActivity)
+        testedStrategy.onActivityDestroyed(mockActivity)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityDestroyed(mockActivity)
-            verify(mockedFragmentViewTrackingStrategy).onActivityDestroyed(mockActivity)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityDestroyed(mockActivity)
+            verify(mockFragmentViewTrackingStrategy).onActivityDestroyed(mockActivity)
         }
     }
 
@@ -89,12 +88,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     ) {
 
         // whenever
-        underTest.onActivityStarted(mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityStarted(mockActivity)
-            verify(mockedFragmentViewTrackingStrategy).onActivityStarted(mockActivity)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityStarted(mockActivity)
+            verify(mockFragmentViewTrackingStrategy).onActivityStarted(mockActivity)
         }
     }
 
@@ -103,12 +102,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
         // whenever
-        underTest.onActivityStopped(mockActivity)
+        testedStrategy.onActivityStopped(mockActivity)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityStopped(mockActivity)
-            verify(mockedFragmentViewTrackingStrategy).onActivityStopped(mockActivity)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityStopped(mockActivity)
+            verify(mockFragmentViewTrackingStrategy).onActivityStopped(mockActivity)
         }
     }
 
@@ -118,12 +117,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     ) {
 
         // whenever
-        underTest.onActivityResumed(mockActivity)
+        testedStrategy.onActivityResumed(mockActivity)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityResumed(mockActivity)
-            verify(mockedFragmentViewTrackingStrategy).onActivityResumed(mockActivity)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityResumed(mockActivity)
+            verify(mockFragmentViewTrackingStrategy).onActivityResumed(mockActivity)
         }
     }
 
@@ -132,12 +131,12 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
         // whenever
-        underTest.onActivityPaused(mockActivity)
+        testedStrategy.onActivityPaused(mockActivity)
 
         // then
-        inOrder(mockedActivityViewTrackingStrategy, mockedFragmentViewTrackingStrategy) {
-            verify(mockedActivityViewTrackingStrategy).onActivityPaused(mockActivity)
-            verify(mockedFragmentViewTrackingStrategy).onActivityPaused(mockActivity)
+        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
+            verify(mockActivityViewTrackingStrategy).onActivityPaused(mockActivity)
+            verify(mockFragmentViewTrackingStrategy).onActivityPaused(mockActivity)
         }
     }
 

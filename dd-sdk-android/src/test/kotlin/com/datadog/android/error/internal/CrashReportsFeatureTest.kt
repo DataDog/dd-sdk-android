@@ -84,7 +84,7 @@ internal class CrashReportsFeatureTest {
     lateinit var fakePackageVersion: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -100,7 +100,7 @@ internal class CrashReportsFeatureTest {
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
     }
 
@@ -275,9 +275,9 @@ internal class CrashReportsFeatureTest {
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
 
         // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
         }
@@ -315,9 +315,9 @@ internal class CrashReportsFeatureTest {
         CrashReportsFeature.stop()
 
         // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).unregister()
             }
         }
@@ -349,7 +349,7 @@ internal class CrashReportsFeatureTest {
         @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) content: String
     ) {
-        val fakeDir = File(rootDir, CrashLogFileStrategy.CRASH_REPORTS_FOLDER)
+        val fakeDir = File(tempRootDir, CrashLogFileStrategy.CRASH_REPORTS_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)

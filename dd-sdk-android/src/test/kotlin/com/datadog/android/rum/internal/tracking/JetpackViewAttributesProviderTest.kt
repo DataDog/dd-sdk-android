@@ -34,19 +34,17 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class JetpackViewAttributesProviderTest {
 
-    @Mock
-    lateinit var mockedRecyclerView: RecyclerView
+    lateinit var testedAttributesProvider: JetpackViewAttributesProvider
 
     @Mock
-    lateinit var mockedTarget: View
+    lateinit var mockRecyclerView: RecyclerView
 
-    lateinit var underTest: JetpackViewAttributesProvider
-
-    // region Unit tests
+    @Mock
+    lateinit var mockTarget: View
 
     @BeforeEach
     fun `set up`() {
-        underTest =
+        testedAttributesProvider =
             JetpackViewAttributesProvider()
     }
 
@@ -58,42 +56,42 @@ internal class JetpackViewAttributesProviderTest {
         val expectedAdapterPosition = forge.anInt(
             min = 0, max = 20
         )
-        val mockedParent: ViewGroup = mock {
-            whenever(it.parent).thenReturn(mockedRecyclerView)
+        val mockParent: ViewGroup = mock {
+            whenever(it.parent).thenReturn(mockRecyclerView)
             whenever(it.layoutParams).thenReturn(mock<RecyclerView.LayoutParams>())
         }
-        whenever(mockedRecyclerView.getChildAdapterPosition(mockedParent)).thenReturn(
+        whenever(mockRecyclerView.getChildAdapterPosition(mockParent)).thenReturn(
             expectedAdapterPosition
         )
-        whenever(mockedTarget.parent).thenReturn(mockedParent)
+        whenever(mockTarget.parent).thenReturn(mockParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
         val parentId = forge.anInt()
-        whenever(mockedRecyclerView.id).thenReturn(parentId)
+        whenever(mockRecyclerView.id).thenReturn(parentId)
 
         val resourceIdName = forge.anAlphabeticalString()
         val mockResources = mock<Resources>()
         val hasResourceId = forge.aBool()
-        whenever(mockedRecyclerView.resources).thenReturn(mockResources)
+        whenever(mockRecyclerView.resources).thenReturn(mockResources)
         val expectedParentResourceId = if (hasResourceId) {
-            whenever(mockResources.getResourceEntryName(mockedRecyclerView.id))
+            whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenReturn(resourceIdName)
 
             resourceIdName
         } else {
-            whenever(mockResources.getResourceEntryName(mockedRecyclerView.id))
+            whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenThrow(Resources.NotFoundException(forge.aString()))
             "0x${parentId.toString(16)}"
         }
 
         // when
-        underTest.extractAttributes(mockedTarget, attributes)
+        testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
         // then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
                 RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
-                    mockedRecyclerView.javaClass.canonicalName,
+                    mockRecyclerView.javaClass.canonicalName,
                 RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to expectedParentResourceId
             )
         )
@@ -107,39 +105,39 @@ internal class JetpackViewAttributesProviderTest {
         val expectedAdapterPosition = forge.anInt(
             min = 0, max = 20
         )
-        whenever(mockedTarget.layoutParams).thenReturn(mock<RecyclerView.LayoutParams>())
-        whenever(mockedRecyclerView.getChildAdapterPosition(mockedTarget)).thenReturn(
+        whenever(mockTarget.layoutParams).thenReturn(mock<RecyclerView.LayoutParams>())
+        whenever(mockRecyclerView.getChildAdapterPosition(mockTarget)).thenReturn(
             expectedAdapterPosition
         )
-        whenever(mockedTarget.parent).thenReturn(mockedRecyclerView)
+        whenever(mockTarget.parent).thenReturn(mockRecyclerView)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
         val parentId = forge.anInt()
-        whenever(mockedRecyclerView.id).thenReturn(parentId)
+        whenever(mockRecyclerView.id).thenReturn(parentId)
 
         val resourceIdName = forge.anAlphabeticalString()
         val mockResources = mock<Resources>()
         val hasResourceId = forge.aBool()
-        whenever(mockedRecyclerView.resources).thenReturn(mockResources)
+        whenever(mockRecyclerView.resources).thenReturn(mockResources)
         val expectedParentResourceId = if (hasResourceId) {
-            whenever(mockResources.getResourceEntryName(mockedRecyclerView.id))
+            whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenReturn(resourceIdName)
 
             resourceIdName
         } else {
-            whenever(mockResources.getResourceEntryName(mockedRecyclerView.id))
+            whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenThrow(Resources.NotFoundException(forge.aString()))
             "0x${parentId.toString(16)}"
         }
 
         // when
-        underTest.extractAttributes(mockedTarget, attributes)
+        testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
         // then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
                 RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
-                    mockedRecyclerView.javaClass.canonicalName,
+                    mockRecyclerView.javaClass.canonicalName,
                 RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to expectedParentResourceId
             )
         )
@@ -150,18 +148,18 @@ internal class JetpackViewAttributesProviderTest {
         forge: Forge
     ) {
         // given
-        whenever(mockedTarget.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
+        whenever(mockTarget.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
         val adapterPosition = forge.anInt(
             min = 0, max = 20
         )
-        whenever(mockedRecyclerView.getChildAdapterPosition(mockedTarget)).thenReturn(
+        whenever(mockRecyclerView.getChildAdapterPosition(mockTarget)).thenReturn(
             adapterPosition
         )
-        whenever(mockedTarget.parent).thenReturn(mockedRecyclerView)
+        whenever(mockTarget.parent).thenReturn(mockRecyclerView)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
         // when
-        underTest.extractAttributes(mockedTarget, attributes)
+        testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
         // then
         assertThat(attributes).isEmpty()
@@ -172,21 +170,21 @@ internal class JetpackViewAttributesProviderTest {
         forge: Forge
     ) {
         // given
-        val mockedParent: ViewGroup = mock {
-            whenever(it.parent).thenReturn(mockedRecyclerView)
+        val mockParent: ViewGroup = mock {
+            whenever(it.parent).thenReturn(mockRecyclerView)
             whenever(it.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
         }
         val adapterPosition = forge.anInt(
             min = 0, max = 20
         )
-        whenever(mockedRecyclerView.getChildAdapterPosition(mockedParent)).thenReturn(
+        whenever(mockRecyclerView.getChildAdapterPosition(mockParent)).thenReturn(
             adapterPosition
         )
-        whenever(mockedTarget.parent).thenReturn(mockedParent)
+        whenever(mockTarget.parent).thenReturn(mockParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
         // when
-        underTest.extractAttributes(mockedTarget, attributes)
+        testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
         // then
         assertThat(attributes).isEmpty()
@@ -195,16 +193,14 @@ internal class JetpackViewAttributesProviderTest {
     @Test
     fun `will do nothing if the target is not a RecyclerView descendant`() {
         // given
-        val mockedParent: ViewParent = mock()
-        whenever(mockedTarget.parent).thenReturn(mockedParent)
+        val mockParent: ViewParent = mock()
+        whenever(mockTarget.parent).thenReturn(mockParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
         // when
-        underTest.extractAttributes(mockedTarget, attributes)
+        testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
         // then
         assertThat(attributes).isEmpty()
     }
-
-    // endregion
 }

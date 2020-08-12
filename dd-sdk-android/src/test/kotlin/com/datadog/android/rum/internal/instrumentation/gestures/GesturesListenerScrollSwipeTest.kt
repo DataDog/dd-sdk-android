@@ -83,7 +83,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = endUpEvent,
             hitTest = true,
@@ -99,16 +99,16 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
         // then
 
@@ -149,7 +149,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -165,16 +165,16 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
         // then
 
@@ -219,7 +219,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -240,24 +240,24 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         setupEventsForSwipeDirection(expectedDirection1, startDownEvent, endUpEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         setupEventsForSwipeDirection(expectedDirection2, startDownEvent, endUpEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
         // then
 
@@ -298,7 +298,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = false,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -309,16 +309,16 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
         // then
         verifyZeroInteractions(mockDatadogRumMonitor)
@@ -341,7 +341,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -352,16 +352,16 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onUp(endUpEvent)
+        testedListener.onUp(endUpEvent)
 
         // then
         verifyZeroInteractions(mockDatadogRumMonitor)
@@ -392,7 +392,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -408,17 +408,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
-        underTest.onUp(endUpEvent)
+        testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
+        testedListener.onUp(endUpEvent)
 
         // then
 
@@ -465,7 +465,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -486,26 +486,26 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
             RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
         // when
         setupEventsForSwipeDirection(expectedDirection1, startDownEvent, endUpEvent)
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
-        underTest.onUp(endUpEvent)
+        testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
+        testedListener.onUp(endUpEvent)
 
         setupEventsForSwipeDirection(expectedDirection2, startDownEvent, endUpEvent)
-        underTest.onDown(startDownEvent)
+        testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
-            underTest.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
-        underTest.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
-        underTest.onUp(endUpEvent)
+        testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
+        testedListener.onUp(endUpEvent)
 
         // then
 
@@ -541,7 +541,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             hitTest = true,
             forge = forge
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = startDownEvent,
             hitTest = true,
@@ -551,11 +551,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
         }
 
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
-        underTest.onUp(startDownEvent)
-        underTest.onDown(endUpEvent)
+        testedListener.onUp(startDownEvent)
+        testedListener.onDown(endUpEvent)
 
         verifyZeroInteractions(mockDatadogRumMonitor)
     }

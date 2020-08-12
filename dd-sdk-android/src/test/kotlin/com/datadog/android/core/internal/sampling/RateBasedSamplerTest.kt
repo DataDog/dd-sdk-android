@@ -31,15 +31,14 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RateBasedSamplerTest {
 
-    lateinit var underTest: RateBasedSampler
-    private var randomSampleRate: Float = 0.0f
+    lateinit var testedSampler: RateBasedSampler
 
-    // region Unit tests
+    private var randomSampleRate: Float = 0.0f
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         randomSampleRate = Random().nextFloat()
-        underTest = RateBasedSampler(randomSampleRate)
+        testedSampler = RateBasedSampler(randomSampleRate)
     }
 
     @Test
@@ -50,7 +49,7 @@ internal class RateBasedSamplerTest {
         repeat(testRepeats) {
             var validated = 0
             repeat(dataSize) {
-                val isValid = if (underTest.sample()) 1 else 0
+                val isValid = if (testedSampler.sample()) 1 else 0
                 validated += isValid
             }
             val computedSamplingRate = validated.toDouble() / dataSize.toDouble()
@@ -71,13 +70,13 @@ internal class RateBasedSamplerTest {
 
     @Test
     fun `when sample rate is 0 all values will be dropped`(forge: Forge) {
-        underTest = RateBasedSampler(0.0f)
+        testedSampler = RateBasedSampler(0.0f)
 
         var validated = 0
         val dataSize = 10
 
         repeat(dataSize) {
-            val isValid = if (underTest.sample()) 1 else 0
+            val isValid = if (testedSampler.sample()) 1 else 0
             validated += isValid
         }
 
@@ -86,18 +85,16 @@ internal class RateBasedSamplerTest {
 
     @Test
     fun `when sample rate is 1 all values will pass`(forge: Forge) {
-        underTest = RateBasedSampler(1.0f)
+        testedSampler = RateBasedSampler(1.0f)
 
         var validated = 0
         val dataSize = 10
 
         repeat(dataSize) {
-            val isValid = if (underTest.sample()) 1 else 0
+            val isValid = if (testedSampler.sample()) 1 else 0
             validated += isValid
         }
 
         assertThat(validated).isEqualTo(dataSize)
     }
-
-    // endregion
 }

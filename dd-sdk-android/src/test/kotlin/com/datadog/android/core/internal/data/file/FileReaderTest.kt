@@ -48,19 +48,19 @@ internal class FileReaderTest {
     lateinit var testedReader: FileReader
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @Mock
     lateinit var mockOrchestrator: Orchestrator
 
-    lateinit var prefix: String
-    lateinit var suffix: String
+    lateinit var fakePrefix: String
+    lateinit var fakeSuffix: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        prefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
-        suffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
-        testedReader = FileReader(mockOrchestrator, rootDir, prefix, suffix)
+        fakePrefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        fakeSuffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        testedReader = FileReader(mockOrchestrator, tempRootDir, fakePrefix, fakeSuffix)
     }
 
     @Test
@@ -78,7 +78,7 @@ internal class FileReaderTest {
         val secondBatch = testedReader.readNextBatch()
         checkNotNull(firstBatch)
 
-        assertThat(String(firstBatch.data)).isEqualTo("$prefix$data$suffix")
+        assertThat(String(firstBatch.data)).isEqualTo("$fakePrefix$data$fakeSuffix")
         assertThat(secondBatch).isNull()
         inOrder(mockOrchestrator) {
             verify(mockOrchestrator).getReadableFile(emptySet())
@@ -105,9 +105,9 @@ internal class FileReaderTest {
         val thirdBatch = testedReader.readNextBatch()
         checkNotNull(thirdBatch)
 
-        assertThat(String(firstBatch.data)).isEqualTo("$prefix$data$suffix")
+        assertThat(String(firstBatch.data)).isEqualTo("$fakePrefix$data$fakeSuffix")
         assertThat(secondBatch).isNull()
-        assertThat(String(thirdBatch.data)).isEqualTo("$prefix$data$suffix")
+        assertThat(String(thirdBatch.data)).isEqualTo("$fakePrefix$data$fakeSuffix")
         inOrder(mockOrchestrator) {
             verify(mockOrchestrator).getReadableFile(emptySet())
             verify(mockOrchestrator).getReadableFile(setOf(firstBatch.id))
@@ -134,7 +134,7 @@ internal class FileReaderTest {
 
         // then
         val persistedData = String(nextBatch.data)
-        assertThat(persistedData).isEqualTo("$prefix$data$suffix")
+        assertThat(persistedData).isEqualTo("$fakePrefix$data$fakeSuffix")
     }
 
     @Test
@@ -207,7 +207,7 @@ internal class FileReaderTest {
         // then
         val lockedFiles: MutableSet<String> = testedReader.getFieldValue("lockedFiles")
         assertThat(lockedFiles).isEmpty()
-        assertThat(rootDir.listFiles()).isEmpty()
+        assertThat(tempRootDir.listFiles()).isEmpty()
     }
 
     @Test
@@ -243,7 +243,7 @@ internal class FileReaderTest {
 
         // then
         val lockedFiles: MutableSet<String> = testedReader.getFieldValue("lockedFiles")
-        assertThat(rootDir.listFiles()).isEmpty()
+        assertThat(tempRootDir.listFiles()).isEmpty()
         assertThat(lockedFiles).isEmpty()
     }
 
@@ -365,7 +365,7 @@ internal class FileReaderTest {
     }
 
     private fun generateFile(fileName: String): File {
-        val file = File(rootDir, fileName)
+        val file = File(tempRootDir, fileName)
         file.createNewFile()
         return file
     }

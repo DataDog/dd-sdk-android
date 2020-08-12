@@ -42,7 +42,7 @@ import org.mockito.quality.Strictness
 internal class WorkManagerUtilsTest {
 
     @Mock
-    lateinit var mockedWorkManager: WorkManagerImpl
+    lateinit var mockWorkManager: WorkManagerImpl
 
     lateinit var mockAppContext: Application
 
@@ -65,13 +65,13 @@ internal class WorkManagerUtilsTest {
     @Test
     fun `it will cancel the worker if WorkManager was correctly instantiated`() {
         // given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // when
         cancelUploadWorker(mockContext())
 
         // then
-        verify(mockedWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
+        verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
     }
 
     @Test
@@ -80,19 +80,19 @@ internal class WorkManagerUtilsTest {
         cancelUploadWorker(mockContext())
 
         // then
-        verifyZeroInteractions(mockedWorkManager)
+        verifyZeroInteractions(mockWorkManager)
     }
 
     @Test
     fun `it will schedule the worker if WorkManager was correctly instantiated`() {
         // given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // when
         triggerUploadWorker(mockContext())
 
         // then
-        verify(mockedWorkManager).enqueueUniqueWork(
+        verify(mockWorkManager).enqueueUniqueWork(
             eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
@@ -107,6 +107,6 @@ internal class WorkManagerUtilsTest {
         triggerUploadWorker(mockContext())
 
         // then
-        verifyZeroInteractions(mockedWorkManager)
+        verifyZeroInteractions(mockWorkManager)
     }
 }

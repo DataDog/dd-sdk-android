@@ -46,16 +46,16 @@ internal class LoggerBuilderTest {
 
     lateinit var mockContext: Context
 
-    lateinit var packageName: String
+    lateinit var fakePackageName: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up Datadog`(forge: Forge) {
-        packageName = forge.anAlphabeticalString()
-        mockContext = mockContext(packageName, "")
-        whenever(mockContext.filesDir) doReturn rootDir
+        fakePackageName = forge.anAlphabeticalString()
+        mockContext = mockContext(fakePackageName, "")
+        whenever(mockContext.filesDir) doReturn tempRootDir
 
         Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
         Datadog.setVerbosity(AndroidLog.VERBOSE)
@@ -91,7 +91,7 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
         assertThat(handler.serviceName).isEqualTo(CoreFeature.serviceName)
-        assertThat(handler.loggerName).isEqualTo(packageName)
+        assertThat(handler.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.networkInfoProvider).isNull()
         assertThat(handler.writer).isNotNull()
         assertThat(handler.bundleWithTraces).isTrue()

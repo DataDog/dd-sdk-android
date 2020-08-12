@@ -54,7 +54,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class WindowCallbackWrapperTest {
 
-    lateinit var underTest: WindowCallbackWrapper
+    lateinit var testedCallbackWrapper: WindowCallbackWrapper
 
     @Mock
     lateinit var mockCallback: Window.Callback
@@ -71,11 +71,9 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
-    // region Unit Tests
-
     @BeforeEach
     fun `set up`() {
-        underTest = WindowCallbackWrapper(
+        testedCallbackWrapper = WindowCallbackWrapper(
             mockCallback,
             mockGestureDetector
         )
@@ -95,7 +93,7 @@ internal class WindowCallbackWrapperTest {
     fun `dispatchTouchEvent will delegate to wrapper`(forge: Forge) {
         // given
         val motionEvent: MotionEvent = mock()
-        val spyTest = spy(underTest)
+        val spyTest = spy(testedCallbackWrapper)
         val aBoolean = forge.aBool()
         whenever(mockCallback.dispatchTouchEvent(motionEvent)).thenReturn(aBoolean)
         doReturn(motionEvent).`when`(spyTest).copyEvent(motionEvent)
@@ -113,7 +111,7 @@ internal class WindowCallbackWrapperTest {
         // given
         val motionEvent: MotionEvent = mock()
         val copyMotionEvent: MotionEvent = mock()
-        val spyTest = spy(underTest)
+        val spyTest = spy(testedCallbackWrapper)
         doReturn(copyMotionEvent).`when`(spyTest).copyEvent(motionEvent)
 
         // when
@@ -140,7 +138,7 @@ internal class WindowCallbackWrapperTest {
         whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
 
         // when
-        assertThat(underTest.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+        assertThat(testedCallbackWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
 
         // then
         inOrder(mockCallback, mockRumMonitor) {
@@ -165,7 +163,7 @@ internal class WindowCallbackWrapperTest {
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
 
         // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        assertThat(testedCallbackWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
@@ -182,7 +180,7 @@ internal class WindowCallbackWrapperTest {
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)
 
         // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        assertThat(testedCallbackWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
@@ -200,7 +198,7 @@ internal class WindowCallbackWrapperTest {
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, keyCode)
 
         // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        assertThat(testedCallbackWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // then
         inOrder(mockRumMonitor, mockCallback) {
@@ -208,8 +206,6 @@ internal class WindowCallbackWrapperTest {
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
-
-    // endregion
 
     // region Internal
 

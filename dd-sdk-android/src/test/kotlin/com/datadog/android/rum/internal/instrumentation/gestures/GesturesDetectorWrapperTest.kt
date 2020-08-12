@@ -36,7 +36,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesDetectorWrapperTest {
 
-    lateinit var underTest: GesturesDetectorWrapper
+    lateinit var testedWrapper: GesturesDetectorWrapper
 
     @Mock
     lateinit var mockGesturesDetectorListener: GesturesListener
@@ -46,7 +46,7 @@ internal class GesturesDetectorWrapperTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest = GesturesDetectorWrapper(
+        testedWrapper = GesturesDetectorWrapper(
             mockGesturesDetectorListener,
             mockGesturesDetectorCompat
         )
@@ -55,7 +55,7 @@ internal class GesturesDetectorWrapperTest {
     @Test
     fun `it will delegate the events to the bundled compat detector`() {
         val event: MotionEvent = mock()
-        underTest.onTouchEvent(event)
+        testedWrapper.onTouchEvent(event)
         verify(mockGesturesDetectorCompat).onTouchEvent(event)
     }
 
@@ -64,7 +64,7 @@ internal class GesturesDetectorWrapperTest {
         val event: MotionEvent = mock {
             whenever(it.actionMasked).thenReturn(MotionEvent.ACTION_UP)
         }
-        underTest.onTouchEvent(event)
+        testedWrapper.onTouchEvent(event)
         inOrder(mockGesturesDetectorCompat, mockGesturesDetectorListener) {
             verify(mockGesturesDetectorCompat).onTouchEvent(event)
             verify(mockGesturesDetectorListener).onUp(event)

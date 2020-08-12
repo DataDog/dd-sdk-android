@@ -45,7 +45,7 @@ internal class ConditionalLogHandlerTest {
 
     var fakeLevel: Int = 0
 
-    var condition = false
+    var fakeCondition = false
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -60,13 +60,13 @@ internal class ConditionalLogHandlerTest {
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
 
         testedHandler = ConditionalLogHandler(mockDevLogHandler) { _, _ ->
-            condition
+            fakeCondition
         }
     }
 
     @Test
     fun `forwards log (condition true)`() {
-        condition = true
+        fakeCondition = true
 
         testedHandler.handleLog(
             fakeLevel,
@@ -87,7 +87,7 @@ internal class ConditionalLogHandlerTest {
 
     @Test
     fun `forwards log on background thread (condition true)`(forge: Forge) {
-        condition = true
+        fakeCondition = true
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val thread = Thread({
@@ -115,7 +115,7 @@ internal class ConditionalLogHandlerTest {
 
     @Test
     fun `forwards minimal log (condition true)`() {
-        condition = true
+        fakeCondition = true
 
         testedHandler.handleLog(
             fakeLevel,
@@ -136,7 +136,7 @@ internal class ConditionalLogHandlerTest {
 
     @Test
     fun `forwards log (condition false)`() {
-        condition = false
+        fakeCondition = false
 
         testedHandler.handleLog(
             fakeLevel,
@@ -151,7 +151,7 @@ internal class ConditionalLogHandlerTest {
 
     @Test
     fun `forwards log on background thread (condition false)`(forge: Forge) {
-        condition = false
+        fakeCondition = false
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
         val thread = Thread({
@@ -173,7 +173,7 @@ internal class ConditionalLogHandlerTest {
 
     @Test
     fun `forwards minimal log (condition false)`() {
-        condition = false
+        fakeCondition = false
 
         testedHandler.handleLog(
             fakeLevel,

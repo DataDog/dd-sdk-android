@@ -52,6 +52,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class SpanSerializerTest {
 
+    lateinit var testedSerializer: SpanSerializer
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
@@ -60,8 +62,6 @@ internal class SpanSerializerTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    lateinit var underTest: SpanSerializer
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnvName: String
@@ -77,7 +77,7 @@ internal class SpanSerializerTest {
         SpanForgeryFactory.TEST_TRACER.activeSpan()?.finish()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        underTest = SpanSerializer(
+        testedSerializer = SpanSerializer(
             mockTimeProvider,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
@@ -92,7 +92,7 @@ internal class SpanSerializerTest {
     ) {
         // given
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
-        val serialized = underTest.serialize(span)
+        val serialized = testedSerializer.serialize(span)
 
         // when
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -127,8 +127,8 @@ internal class SpanSerializerTest {
                 .start() as DDSpan
 
         // when
-        val serializedParent = JsonParser.parseString(underTest.serialize(parentSpan)).asJsonObject
-        val serializedChild = JsonParser.parseString(underTest.serialize(childSpan)).asJsonObject
+        val serializedParent = JsonParser.parseString(testedSerializer.serialize(parentSpan)).asJsonObject
+        val serializedChild = JsonParser.parseString(testedSerializer.serialize(childSpan)).asJsonObject
 
         // then
         val serializedParentSpan = serializedParent.getAsJsonArray("spans").first() as JsonObject

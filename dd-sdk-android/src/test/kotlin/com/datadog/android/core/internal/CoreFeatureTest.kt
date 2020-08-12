@@ -196,8 +196,8 @@ internal class CoreFeatureTest {
     fun `stop will shutdown the executors`() {
         // given
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
-        val mockedThreadPoolExecutor: ThreadPoolExecutor = mock()
-        CoreFeature.dataPersistenceExecutorService = mockedThreadPoolExecutor
+        val mockThreadPoolExecutor: ThreadPoolExecutor = mock()
+        CoreFeature.dataPersistenceExecutorService = mockThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
         CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
 
@@ -205,7 +205,7 @@ internal class CoreFeatureTest {
         CoreFeature.stop()
 
         // then
-        verify(mockedThreadPoolExecutor).shutdownNow()
+        verify(mockThreadPoolExecutor).shutdownNow()
         verify(mockScheduledThreadPoolExecutor).shutdownNow()
     }
 
@@ -236,9 +236,9 @@ internal class CoreFeatureTest {
         forge: Forge
     ) {
         // given
-        val mockedActivityManager = mock<ActivityManager>()
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
         val myProcess = mockAppProcessInfo(
             Process.myPid(),
@@ -250,7 +250,7 @@ internal class CoreFeatureTest {
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(myProcess, otherProcess)
             )
@@ -266,9 +266,9 @@ internal class CoreFeatureTest {
         forge: Forge
     ) {
         // given
-        val mockedActivityManager = mock<ActivityManager>()
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
         val myProcess = mockAppProcessInfo(
             Process.myPid(),
@@ -280,7 +280,7 @@ internal class CoreFeatureTest {
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(myProcess, otherProcess)
             )
@@ -295,9 +295,9 @@ internal class CoreFeatureTest {
     @Test
     fun `will mark it as main process by default if could not be found in the list`(forge: Forge) {
         // given
-        val mockedActivityManager = mock<ActivityManager>()
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
         val otherProcess = mockAppProcessInfo(
             Process.myPid() + 1,
@@ -305,7 +305,7 @@ internal class CoreFeatureTest {
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(otherProcess)
             )

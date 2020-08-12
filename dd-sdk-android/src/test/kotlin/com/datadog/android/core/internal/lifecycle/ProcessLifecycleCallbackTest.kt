@@ -40,6 +40,8 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ProcessLifecycleCallbackTest {
 
+    lateinit var testedCallback: ProcessLifecycleCallback
+
     lateinit var mockContext: Context
 
     @Mock
@@ -48,12 +50,10 @@ internal class ProcessLifecycleCallbackTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
-    lateinit var underTest: ProcessLifecycleCallback
-
     @BeforeEach
     fun `set up`() {
         mockContext = mockContext()
-        underTest = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
+        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
     }
 
     @AfterEach
@@ -73,7 +73,7 @@ internal class ProcessLifecycleCallbackTest {
             )
 
         // when
-        underTest.onStopped()
+        testedCallback.onStopped()
 
         // then
         verify(mockWorkManager).enqueueUniqueWork(
@@ -96,7 +96,7 @@ internal class ProcessLifecycleCallbackTest {
             )
 
         // when
-        underTest.onStopped()
+        testedCallback.onStopped()
     }
 
     @Test
@@ -111,7 +111,7 @@ internal class ProcessLifecycleCallbackTest {
             )
 
         // when
-        underTest.onStopped()
+        testedCallback.onStopped()
 
         // then
         verifyZeroInteractions(mockWorkManager)
@@ -119,7 +119,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and context ref is null will do nothing`() {
-        underTest.setFieldValue("contextWeakRef", WeakReference<Context>(null))
+        testedCallback.setFieldValue("contextWeakRef", WeakReference<Context>(null))
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -129,7 +129,7 @@ internal class ProcessLifecycleCallbackTest {
             )
 
         // when
-        underTest.onStopped()
+        testedCallback.onStopped()
 
         // then
         verifyZeroInteractions(mockWorkManager)
