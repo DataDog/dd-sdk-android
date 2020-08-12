@@ -52,6 +52,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+internal typealias NavLifecycleCallbacks =
+    NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks
+
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ApiLevelExtension::class),
@@ -102,7 +105,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         doReturn(mockNavView).whenever(mockActivity).findViewById<View>(fakeNavViewId)
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
-        mockNavDestination = getMockNavDestination(forge, fakeDestinationName)
+        mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
@@ -161,7 +164,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onActivityStarted(mockActivity)
 
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
-            any<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>(),
+            any<NavLifecycleCallbacks>(),
             eq(true)
         )
     }
@@ -182,11 +185,10 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onActivityStopped(mockActivity)
 
         // then
-        val argumentCaptor =
-            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
-        verify(mockFragmentManager)
-            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
-        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(argumentCaptor.firstValue)
+        argumentCaptor<NavLifecycleCallbacks> {
+            verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
+            verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(firstValue)
+        }
     }
 
     @Test
@@ -285,7 +287,7 @@ internal class NavigationViewTrackingStrategyTest {
         forge: Forge,
         @StringForgery(StringForgeryType.ALPHABETICAL) newDestinationName: String
     ) {
-        val newDestination = getMockNavDestination(forge, newDestinationName)
+        val newDestination = mockNavDestination(forge, newDestinationName)
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
         testedStrategy.onDestinationChanged(mockNavController, newDestination, null)
@@ -386,21 +388,18 @@ internal class NavigationViewTrackingStrategyTest {
 
     // region Internal
 
-    private fun setupFragmentCallbacks():
-        NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks {
+    private fun setupFragmentCallbacks(): NavLifecycleCallbacks {
         // given
         testedStrategy.onActivityStarted(mockActivity)
 
         // then
-        val argumentCaptor =
-            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
-        verify(mockFragmentManager)
-            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
-        argumentCaptor.firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
-        return argumentCaptor.firstValue
+        return argumentCaptor<NavLifecycleCallbacks> {
+            verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
+            firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        }.firstValue
     }
 
-    private fun getMockNavDestination(
+    private fun mockNavDestination(
         forge: Forge,
         name: String
     ): NavDestination {

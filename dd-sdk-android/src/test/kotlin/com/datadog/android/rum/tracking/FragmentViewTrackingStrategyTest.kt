@@ -498,20 +498,20 @@ internal class FragmentViewTrackingStrategyTest {
     // region Internal
 
     private fun mockFragmentWithArguments(forge: Forge): Fragment {
-        val arguments = arguments(forge)
+        val arguments = forgeFragmentArguments(forge)
         val fragment: Fragment = mock()
         whenever(fragment.arguments).thenReturn(arguments)
         return fragment
     }
 
     private fun mockDeprecatedFragmentWithArguments(forge: Forge): android.app.Fragment {
-        val arguments = arguments(forge)
+        val arguments = forgeFragmentArguments(forge)
         val fragment: android.app.Fragment = mock()
         whenever(fragment.arguments).thenReturn(arguments)
         return fragment
     }
 
-    private fun arguments(forge: Forge): Bundle {
+    private fun forgeFragmentArguments(forge: Forge): Bundle {
         val arguments = Bundle()
         for (i in 0..10) {
             val key = forge.anAlphabeticalString()

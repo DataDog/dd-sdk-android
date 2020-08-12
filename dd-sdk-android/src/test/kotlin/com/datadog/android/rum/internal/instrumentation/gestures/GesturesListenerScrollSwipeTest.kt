@@ -75,7 +75,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_LEFT,
             GesturesListener.SCROLL_DIRECTION_RIGHT
         )
-        setupEventsForSwipeDirection(expectedDirection, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
 
         val scrollingTarget: ScrollableView = mockView(
             id = targetId,
@@ -141,7 +141,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_LEFT,
             GesturesListener.SCROLL_DIRECTION_RIGHT
         )
-        setupEventsForSwipeDirection(expectedDirection, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
 
         val scrollingTarget: ScrollableListView = mockView(
             id = targetId,
@@ -246,14 +246,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // when
         testedListener.onDown(startDownEvent)
-        setupEventsForSwipeDirection(expectedDirection1, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection1)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
 
         testedListener.onDown(startDownEvent)
-        setupEventsForSwipeDirection(expectedDirection2, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection2)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
@@ -380,7 +380,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_LEFT,
             GesturesListener.SCROLL_DIRECTION_RIGHT
         )
-        setupEventsForSwipeDirection(expectedDirection, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val velocityX = forge.aFloat()
@@ -491,7 +491,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         )
 
         // when
-        setupEventsForSwipeDirection(expectedDirection1, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection1)
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
@@ -499,7 +499,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
         testedListener.onUp(endUpEvent)
 
-        setupEventsForSwipeDirection(expectedDirection2, startDownEvent, endUpEvent)
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection2)
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
@@ -599,10 +599,10 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
     }
 
-    private fun setupEventsForSwipeDirection(
-        direction: String,
+    private fun stubStopMotionEvent(
+        stopEvent: MotionEvent,
         startEvent: MotionEvent,
-        stopEvent: MotionEvent
+        direction: String
     ) {
         val initialStartX = startEvent.x
         val initialStartY = startEvent.y

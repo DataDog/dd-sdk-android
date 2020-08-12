@@ -67,6 +67,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .doReturn(mockConnectivityManager)
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
+        whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
 
         testedProvider = BroadcastReceiverNetworkInfoProvider()
     }
@@ -114,9 +115,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `read network info on register`() {
-        whenever(mockNetworkInfo.isConnected) doReturn true
-        whenever(mockNetworkInfo.type) doReturn ConnectivityManager.TYPE_WIFI
-        whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
+        stubNetworkInfo(ConnectivityManager.TYPE_WIFI, -1)
 
         testedProvider.register(mockContext)
         val networkInfo = testedProvider.getLatestNetworkInfo()
@@ -144,7 +143,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `not connected (connected but no internet)`() {
-        broadcastNetworkChangeEvent(-1 /* @hide ConnectivityManager.TYPE_NONE*/)
+        stubNetworkInfo(-1 /* @hide ConnectivityManager.TYPE_NONE*/, -1)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -157,7 +157,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `connected to wifi`() {
-        broadcastNetworkChangeEvent(ConnectivityManager.TYPE_WIFI)
+        stubNetworkInfo(ConnectivityManager.TYPE_WIFI, -1)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -170,7 +171,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `connected to ethernet`() {
-        broadcastNetworkChangeEvent(ConnectivityManager.TYPE_ETHERNET)
+        stubNetworkInfo(ConnectivityManager.TYPE_ETHERNET, -1)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -186,9 +188,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known2GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -205,9 +207,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known2GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -223,9 +225,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known3GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -242,9 +244,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known3GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -260,9 +262,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known4GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -279,9 +281,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known4GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -297,9 +299,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known5GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -316,9 +318,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anElementFrom(known5GSubtypes)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -334,9 +336,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anInt(min = 32)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -353,9 +355,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         val subtype = forge.anInt(min = 32)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
-        broadcastNetworkChangeEvent(
-            forge.anElementFrom(knownMobileTypes), subtype, carrierName, carrierId
-        )
+        stubNetworkInfo(forge.anElementFrom(knownMobileTypes), subtype)
+        stubTelephonyManager(carrierName, carrierId)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -369,12 +371,12 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile unknown carrier`(forge: Forge) {
-        broadcastNetworkChangeEvent(
+        stubNetworkInfo(
             forge.anElementFrom(knownMobileTypes),
-            TelephonyManager.NETWORK_TYPE_UNKNOWN,
-            null,
-            0
+            TelephonyManager.NETWORK_TYPE_UNKNOWN
         )
+        stubTelephonyManager(null, 0)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -387,7 +389,8 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `connected to unknown network`(forge: Forge) {
-        broadcastNetworkChangeEvent(forge.anInt(min = 6))
+        stubNetworkInfo(forge.anInt(min = 6), -1)
+        testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
@@ -400,13 +403,12 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     // region Internal
 
-    private fun broadcastNetworkChangeEvent(
-        networkType: Int,
-        networkSubtype: Int = -1,
-        carrierName: String? = null,
-        carrierId: Int = -1
-    ) {
-        // Setup AndroidNetworkInfo
+    private fun stubTelephonyManager(carrierName: String?, carrierId: Int) {
+        whenever(mockTelephonyManager.simCarrierIdName) doReturn carrierName
+        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId
+    }
+
+    private fun stubNetworkInfo(networkType: Int, networkSubtype: Int) {
         if (networkType < 0) {
             whenever(mockNetworkInfo.isConnected) doReturn false
             whenever(mockNetworkInfo.type) doReturn -1
@@ -415,15 +417,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             whenever(mockNetworkInfo.type) doReturn networkType
         }
         whenever(mockNetworkInfo.subtype) doReturn networkSubtype
-
-        // Setup Connectivity Manager
-        whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
-
-        // Setup Telephony Manager
-        whenever(mockTelephonyManager.simCarrierIdName) doReturn carrierName
-        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId
-
-        testedProvider.onReceive(mockContext, mockIntent)
     }
 
     // endregion

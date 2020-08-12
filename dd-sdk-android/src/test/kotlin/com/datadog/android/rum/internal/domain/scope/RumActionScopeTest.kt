@@ -997,9 +997,13 @@ internal class RumActionScopeTest {
         assertThat(result).isNull()
     }
 
+    // region Internal
+
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
     }
+
+    // endregion
 }

@@ -1123,9 +1123,13 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Internal
+
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
     }
+
+    // endregion
 }

@@ -67,8 +67,6 @@ internal class CoreFeatureTest {
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
 
-    // region UnitTests
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakePackageName = forge.anAlphabeticalString()
@@ -240,11 +238,11 @@ internal class CoreFeatureTest {
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = mockAppProcessInfo(
+        val myProcess = forgeAppProcessInfo(
             Process.myPid(),
             fakePackageName
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
@@ -270,11 +268,11 @@ internal class CoreFeatureTest {
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = mockAppProcessInfo(
+        val myProcess = forgeAppProcessInfo(
             Process.myPid(),
             fakePackageName + forge.anAlphabeticalString(size = 1)
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
@@ -299,7 +297,7 @@ internal class CoreFeatureTest {
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
@@ -317,11 +315,9 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
-    // endregion
-
     // region internal
 
-    private fun mockAppProcessInfo(
+    private fun forgeAppProcessInfo(
         processId: Int,
         processName: String
     ): ActivityManager.RunningAppProcessInfo {

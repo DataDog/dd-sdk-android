@@ -99,12 +99,12 @@ internal class SpanSerializerTest {
         val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
 
         // then
-        assertSpanMatches(span, spanObject, serverOffsetNanos)
+        assertJsonMatchesInputSpan(spanObject, span, serverOffsetNanos)
         assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
         val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
-        assertUserInfoMatches(fakeUserInfo, metaObj)
-        assertNetworkInfoMatches(fakeNetworkInfo, metaObj)
-        assertGlobalInfoMatches(metaObj)
+        assertJsonContainsUserInfo(metaObj, fakeUserInfo)
+        assertJsonContainsNetworkInfo(metaObj, fakeNetworkInfo)
+        assertJsonContainsGlobalInfo(metaObj)
 
         // close the span
         span.finish()
@@ -147,14 +147,14 @@ internal class SpanSerializerTest {
 
     // region Internal
 
-    private fun assertGlobalInfoMatches(jsonObject: JsonObject) {
+    private fun assertJsonContainsGlobalInfo(jsonObject: JsonObject) {
         assertThat(jsonObject)
             .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
     }
 
-    private fun assertSpanMatches(
-        span: DDSpan,
+    private fun assertJsonMatchesInputSpan(
         jsonObject: JsonObject,
+        span: DDSpan,
         serverOffsetNanos: Long
     ) {
         assertThat(jsonObject)
@@ -183,7 +183,10 @@ internal class SpanSerializerTest {
             }
     }
 
-    private fun assertNetworkInfoMatches(networkInfo: NetworkInfo?, jsonObject: JsonObject) {
+    private fun assertJsonContainsNetworkInfo(
+        jsonObject: JsonObject,
+        networkInfo: NetworkInfo?
+    ) {
         if (networkInfo != null) {
             assertThat(jsonObject).apply {
                 hasField(
@@ -233,7 +236,10 @@ internal class SpanSerializerTest {
         }
     }
 
-    private fun assertUserInfoMatches(userInfo: UserInfo, jsonObject: JsonObject) {
+    private fun assertJsonContainsUserInfo(
+        jsonObject: JsonObject,
+        userInfo: UserInfo
+    ) {
         assertThat(jsonObject).apply {
             if (userInfo.id.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_ID)

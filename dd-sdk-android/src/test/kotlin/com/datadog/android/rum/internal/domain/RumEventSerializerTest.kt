@@ -58,7 +58,7 @@ internal class RumEventSerializerTest {
         val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "resource")
             .hasField("date", event.date)
@@ -102,7 +102,7 @@ internal class RumEventSerializerTest {
         val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "action")
             .hasField("date", event.date)
@@ -162,7 +162,7 @@ internal class RumEventSerializerTest {
         val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "view")
             .hasField("date", event.date)
@@ -212,7 +212,7 @@ internal class RumEventSerializerTest {
         val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "error")
             .hasField("date", event.date)
@@ -268,14 +268,14 @@ internal class RumEventSerializerTest {
 
     // region Internal
 
-    private fun assertEventMatches(
+    private fun assertSerializedJsonMatchesInputEvent(
         jsonObject: JsonObject,
         event: RumEvent
     ) {
-        assertCustomAttributesMatch(jsonObject, event)
+        assertJsonContainsCustomAttributes(jsonObject, event)
     }
 
-    private fun assertCustomAttributesMatch(
+    private fun assertJsonContainsCustomAttributes(
         jsonObject: JsonObject,
         event: RumEvent
     ) {

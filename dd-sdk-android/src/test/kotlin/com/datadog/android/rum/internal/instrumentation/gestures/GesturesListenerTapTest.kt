@@ -125,7 +125,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(target, expectedResourceName)
+        verifyMonitorCalledWithUserAction(target, expectedResourceName)
     }
 
     @Test
@@ -162,7 +162,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(target, expectedResourceName)
+        verifyMonitorCalledWithUserAction(target, expectedResourceName)
     }
 
     @Test
@@ -204,7 +204,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(validTarget, expectedResourceName)
+        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -245,7 +245,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(validTarget, expectedResourceName)
+        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
     }
 
     @Test
@@ -301,7 +301,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(mockDecorView, expectedResourceName)
+        verifyMonitorCalledWithUserAction(mockDecorView, expectedResourceName)
     }
 
     @Test
@@ -338,7 +338,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
+        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
@@ -371,7 +371,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // then
-        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
+        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
@@ -439,7 +439,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         )
     }
 
-    private fun verifyUserAction(target: View, expectedResourceName: String) {
+    // region Internal
+
+    private fun verifyMonitorCalledWithUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
             eq(RumActionType.TAP),
             argThat { startsWith("${target.javaClass.simpleName}(") },
@@ -449,4 +451,6 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                     this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
+
+    // endregion
 }

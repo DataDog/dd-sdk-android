@@ -49,7 +49,7 @@ internal class LogSerializerTest {
     @Test
     fun `serializes full log as json`(@Forgery fakeLog: Log) {
         val serialized = testedSerializer.serialize(fakeLog)
-        assertLogMatches(serialized, fakeLog)
+        assertSerializedLogMatchesInputLog(serialized, fakeLog)
     }
 
     @Test
@@ -64,7 +64,7 @@ internal class LogSerializerTest {
 
         val serialized = testedSerializer.serialize(minimalLog)
 
-        assertLogMatches(serialized, minimalLog)
+        assertSerializedLogMatchesInputLog(serialized, minimalLog)
     }
 
     @Test
@@ -80,7 +80,7 @@ internal class LogSerializerTest {
         val serialized = testedSerializer.serialize(logWithReservedAttributes)
 
         // then
-        assertLogMatches(serialized, logWithoutAttributes)
+        assertSerializedLogMatchesInputLog(serialized, logWithoutAttributes)
     }
 
     @Test
@@ -96,7 +96,7 @@ internal class LogSerializerTest {
         val serialized = testedSerializer.serialize(logWithReservedTags)
 
         // then
-        assertLogMatches(serialized, logWithoutTags)
+        assertSerializedLogMatchesInputLog(serialized, logWithoutTags)
     }
 
     @Test
@@ -108,7 +108,7 @@ internal class LogSerializerTest {
         val serialized = testedSerializer.serialize(logWithoutNetworkInfo)
 
         // then
-        assertLogMatches(serialized, logWithoutNetworkInfo)
+        assertSerializedLogMatchesInputLog(serialized, logWithoutNetworkInfo)
     }
 
     @Test
@@ -120,10 +120,12 @@ internal class LogSerializerTest {
         val serialized = testedSerializer.serialize(logWithoutThrowable)
 
         // then
-        assertLogMatches(serialized, logWithoutThrowable)
+        assertSerializedLogMatchesInputLog(serialized, logWithoutThrowable)
     }
 
-    private fun assertLogMatches(
+    // region Internal
+
+    private fun assertSerializedLogMatchesInputLog(
         serializedObject: String,
         log: Log
     ) {
@@ -142,15 +144,18 @@ internal class LogSerializerTest {
             "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
 
-        assertNetworkInfoMatches(log, jsonObject)
-        assertUserInfoMatches(log, jsonObject)
+        assertJsonContainsNetworkInfo(jsonObject, log)
+        assertJsonContainsUserInfo(jsonObject, log)
 
-        assertAttributesMatch(log, jsonObject)
-        assertTagsMatch(jsonObject, log)
-        assertThrowableMatches(log, jsonObject)
+        assertJsonContainsCustomAttributes(jsonObject, log)
+        assertJsonContainsCustomTags(jsonObject, log)
+        assertJsonContainsThrowableInfo(jsonObject, log)
     }
 
-    private fun assertNetworkInfoMatches(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsNetworkInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject).apply {
@@ -189,7 +194,10 @@ internal class LogSerializerTest {
         }
     }
 
-    private fun assertAttributesMatch(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsCustomAttributes(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
@@ -210,7 +218,10 @@ internal class LogSerializerTest {
             }
     }
 
-    private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
+    private fun assertJsonContainsCustomTags(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val jsonTagString = (jsonObject[LogSerializer.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
 
         if (jsonTagString.isNullOrBlank()) {
@@ -226,7 +237,10 @@ internal class LogSerializerTest {
         }
     }
 
-    private fun assertThrowableMatches(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsThrowableInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val throwable = log.throwable
         if (throwable != null) {
             assertThat(jsonObject)
@@ -241,7 +255,10 @@ internal class LogSerializerTest {
         }
     }
 
-    private fun assertUserInfoMatches(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsUserInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val info = log.userInfo
         assertThat(jsonObject).apply {
             if (info.id.isNullOrEmpty()) {
@@ -261,6 +278,8 @@ internal class LogSerializerTest {
             }
         }
     }
+
+    // endregion
 
     companion object {
         internal val levels = arrayOf(

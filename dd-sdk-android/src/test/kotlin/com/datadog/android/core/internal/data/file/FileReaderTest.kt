@@ -68,7 +68,7 @@ internal class FileReaderTest {
         forge: Forge
     ) {
         val fileName = forge.anAlphabeticalString()
-        val file = generateFile(fileName)
+        val file = forgeTempFile(fileName)
         val data = forge.anAlphabeticalString()
         file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(any())) doReturn null
@@ -92,7 +92,7 @@ internal class FileReaderTest {
         forge: Forge
     ) {
         val fileName = forge.anAlphabeticalString()
-        val file = generateFile(fileName)
+        val file = forgeTempFile(fileName)
         val data = forge.anAlphabeticalString()
         file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(mutableSetOf())) doReturn file
@@ -123,7 +123,7 @@ internal class FileReaderTest {
     ) {
         // given
         val fileName = forge.anAlphabeticalString()
-        val file = generateFile(fileName)
+        val file = forgeTempFile(fileName)
         val data = forge.anAlphabeticalString()
         file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
@@ -197,7 +197,7 @@ internal class FileReaderTest {
     ) {
         // given
         val fileName = forge.anAlphabeticalString()
-        val file: File = generateFile(fileName)
+        val file: File = forgeTempFile(fileName)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
         testedReader.readNextBatch()
 
@@ -216,7 +216,7 @@ internal class FileReaderTest {
     ) {
         // given
         val fileName = forge.anAlphabeticalString()
-        val file: File = generateFile(fileName)
+        val file: File = forgeTempFile(fileName)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
         testedReader.readNextBatch()
         val notExistingFileName = forge.anAlphabeticalString()
@@ -234,8 +234,8 @@ internal class FileReaderTest {
         // given
         val fileName1 = forge.anAlphabeticalString()
         val fileName2 = forge.anAlphabeticalString()
-        val file1 = generateFile(fileName1)
-        val file2 = generateFile(fileName2)
+        val file1 = forgeTempFile(fileName1)
+        val file2 = forgeTempFile(fileName2)
         whenever(mockOrchestrator.getAllFiles()).thenReturn(arrayOf(file1, file2))
 
         // when
@@ -251,7 +251,7 @@ internal class FileReaderTest {
     fun `it will do nothing if the only available file to be sent is locked`(forge: Forge) {
         // given
         val inProgressFileName = forge.anAlphabeticalString()
-        val inProgressFile = generateFile(inProgressFileName)
+        val inProgressFile = forgeTempFile(inProgressFileName)
         val countDownLatch = CountDownLatch(2)
         whenever(mockOrchestrator.getReadableFile(emptySet()))
             .thenReturn(inProgressFile)
@@ -282,8 +282,8 @@ internal class FileReaderTest {
         // given
         val inProgressFileName = forge.anAlphabeticalString()
         val nextFileName = inProgressFileName + "_next"
-        val inProgressFile = generateFile(inProgressFileName)
-        val nextFile = generateFile(nextFileName)
+        val inProgressFile = forgeTempFile(inProgressFileName)
+        val nextFile = forgeTempFile(nextFileName)
         val countDownLatch = CountDownLatch(2)
         whenever(mockOrchestrator.getReadableFile(emptySet()))
             .thenReturn(inProgressFile)
@@ -314,8 +314,8 @@ internal class FileReaderTest {
         // given
         val inProgressFileName = forge.anAlphabeticalString()
         val nextFileName = inProgressFileName + "_next"
-        val inProgressFile = generateFile(inProgressFileName)
-        val nextFile = generateFile(nextFileName)
+        val inProgressFile = forgeTempFile(inProgressFileName)
+        val nextFile = forgeTempFile(nextFileName)
         val countDownLatch = CountDownLatch(2)
         whenever(mockOrchestrator.getReadableFile(emptySet()))
             .thenReturn(inProgressFile)
@@ -344,10 +344,10 @@ internal class FileReaderTest {
 
     @Test
     fun `it will not throw exception in case of concurrent access`(forge: Forge) {
-        val file1 = generateFile(forge.anAlphabeticalString())
-        val file2 = generateFile(forge.anAlphabeticalString())
-        val file3 = generateFile(forge.anAlphabeticalString())
-        val file4 = generateFile(forge.anAlphabeticalString())
+        val file1 = forgeTempFile(forge.anAlphabeticalString())
+        val file2 = forgeTempFile(forge.anAlphabeticalString())
+        val file3 = forgeTempFile(forge.anAlphabeticalString())
+        val file4 = forgeTempFile(forge.anAlphabeticalString())
         whenever(mockOrchestrator.getReadableFile(any()))
             .thenReturn(file1)
             .thenReturn(file2)
@@ -364,9 +364,13 @@ internal class FileReaderTest {
         countDownLatch.await(5, TimeUnit.SECONDS)
     }
 
-    private fun generateFile(fileName: String): File {
+    // region Internal
+
+    private fun forgeTempFile(fileName: String): File {
         val file = File(tempRootDir, fileName)
         file.createNewFile()
         return file
     }
+
+    // endregion
 }
