@@ -12,6 +12,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -49,13 +50,24 @@ internal class RumApplicationScopeTest {
     @Forgery
     lateinit var fakeApplicationId: UUID
 
+    @FloatForgery(min = 0f, max = 100f)
+    var fakeSamplingRate: Float = 0f
+
     @BeforeEach
     fun `set up`() {
-        testedScope = RumApplicationScope(fakeApplicationId)
+        testedScope = RumApplicationScope(fakeApplicationId, fakeSamplingRate)
     }
 
     @AfterEach
     fun `tear down`() {
+    }
+
+    @Test
+    fun `create child session scope with sampling rate`() {
+        val childScope = testedScope.childScope
+
+        check(childScope is RumSessionScope)
+        assertThat(childScope.samplingRate).isEqualTo(fakeSamplingRate)
     }
 
     @Test

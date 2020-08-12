@@ -51,6 +51,7 @@ private constructor(
         val applicationId: UUID,
         val endpointUrl: String,
         val envName: String,
+        val samplingRate: Float = 100.0f,
         val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
         val viewTrackingStrategy: ViewTrackingStrategy? = null,
@@ -331,6 +332,18 @@ private constructor(
                     crashReportConfig.copy(plugins = crashReportConfig.plugins + plugin)
             }
 
+            return this
+        }
+
+        /**
+         * Sets the sampling rate for RUM Sessions.
+         *
+         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * means no RUM event will be sent, 100 means all sessions will be kept.
+         *
+         */
+        fun sampleRumSessions(samplingRate: Float): Builder {
+            rumConfig = rumConfig.copy(samplingRate = samplingRate)
             return this
         }
 

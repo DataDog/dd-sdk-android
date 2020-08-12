@@ -25,11 +25,12 @@ import java.util.concurrent.TimeUnit
 
 internal class DatadogRumMonitor(
     applicationId: UUID,
+    internal val samplingRate: Float,
     private val writer: Writer<RumEvent>,
-    private val handler: Handler
+    internal val handler: Handler
 ) : RumMonitor, AdvancedRumMonitor {
 
-    private val rootScope: RumScope = RumApplicationScope(applicationId)
+    internal val rootScope: RumScope = RumApplicationScope(applicationId, samplingRate)
 
     internal val keepAliveRunnable = Runnable {
         handleEvent(RumRawEvent.KeepAlive())

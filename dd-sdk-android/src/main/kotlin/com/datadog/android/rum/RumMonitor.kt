@@ -186,6 +186,7 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = RumFeature.applicationId,
+                    samplingRate = RumFeature.samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper())
                 )
