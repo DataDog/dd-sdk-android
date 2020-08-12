@@ -135,6 +135,13 @@ Depending on your application's architecture, you can choose one of several impl
       }
    ```
 
+## Tracking widgets
+
+Most of the time, the widgets are displayed in the `AppWidgetHostView` provided by the HomeScreen application, and we are not
+able to provide auto-instrumentation for those components. To send UI interaction information from your widgets,  manually call our
+API. See one example approach in this sample application: 
+[Tracking widgets](https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget)
+
 ## Batch collection
 
 All the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as the network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
@@ -142,7 +149,6 @@ All the RUM events are first stored on the local device in batches. Each batch f
 This means that even if users open your application while being offline, no data will be lost.
 
 The data on the disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
-
 
 ## Extensions
 

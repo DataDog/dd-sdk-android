@@ -25,26 +25,24 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
     override fun onHandleIntent(intent: Intent?) {
         when (intent?.action) {
             LOAD_RANDOM_RESOURCE_ACTION -> {
-                handleActionWithRumContext(intent) {
-                    updateUIStatus(applicationContext, true)
-                    val okHttpClient = SampleApplication.getOkHttpClient(applicationContext)
-                    val builder = Request.Builder()
-                        .get()
-                        .url("https://www.datadoghq.com/")
 
-                    val request = builder.build()
-                    try {
-                        val response = okHttpClient.newCall(request).execute()
-                        val body = response.body()
-                        if (body != null) {
-                            val content: String = body.string()
-                            // Necessary to consume the response
-                            Timber.d("Response: $content")
-                        }
-                    } catch (e: Exception) {
-                        Timber.e("Error: ${e.message}")
+                val widgetName = intent.getStringExtra(WIDGET_NAME_ARG)
+                val widgetId = intent.getIntExtra(WIDGET_ID_ARG, 0)
+                val hasRumContext = widgetId != 0 && widgetName != null
+
+                if (hasRumContext) {
+                    GlobalRum.get().startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
+                    val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
+                    if (clickedTargetName != null) {
+                        GlobalRum.get()
+                            .addUserAction(RumActionType.CLICK, clickedTargetName, emptyMap())
                     }
-                    updateUIStatus(applicationContext, false)
+                }
+
+                performRequest()
+
+                if (hasRumContext) {
+                    GlobalRum.get().stopView(widgetId)
                 }
             }
             else -> {
@@ -52,23 +50,44 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
         }
     }
 
-    private inline fun handleActionWithRumContext(
-        intent: Intent,
-        actionHandler: () -> Unit
-    ) {
-        val widgetName = intent.getStringExtra(WIDGET_NAME_ARG)
-        val widgetId = intent.getIntExtra(WIDGET_ID_ARG, 0)
-        val hasRumData = widgetId != 0 && widgetName != null
-        if (hasRumData) {
-            GlobalRum.get().startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
-            val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
-            if (clickedTargetName != null) {
-                GlobalRum.get().addUserAction(RumActionType.CLICK, clickedTargetName, emptyMap())
+    private fun performRequest() {
+        updateUIStatus(applicationContext, true)
+        val okHttpClient = SampleApplication.getOkHttpClient(applicationContext)
+        val builder = Request.Builder()
+            .get()
+            .url("https://www.datadoghq.com/")
+
+        val request = builder.build()
+        try {
+            val response = okHttpClient.newCall(request).execute()
+            val body = response.body()
+            if (body != null) {
+                val content: String = body.string()
+                // Necessary to consume the response
+                Timber.d("Response: $content")
             }
+        } catch (e: Exception) {
+            Timber.e("Error: ${e.message}")
         }
-        actionHandler()
-        if (hasRumData) {
-            GlobalRum.get().stopView(widgetId)
+        updateUIStatus(applicationContext, false)
+    }
+
+    private fun updateUIStatus(context: Context, isLoading: Boolean) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        appWidgetManager.getAppWidgetIds(
+            ComponentName(
+                context,
+                DatadogWidgetsProvider::class.java
+            )
+        ).forEach {
+            val remoteViews = RemoteViews(
+                context.packageName,
+                R.layout.datadog_widget
+            )
+            val visibility = if (isLoading) View.VISIBLE else View.GONE
+            remoteViews.setTextViewText(R.id.status_field, context.getText(R.string.loading))
+            remoteViews.setViewVisibility(R.id.status_field, visibility)
+            appWidgetManager.updateAppWidget(it, remoteViews)
         }
     }
 
@@ -77,24 +96,5 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
         const val WIDGET_ID_ARG = "widget_id"
         const val WIDGET_NAME_ARG = "widget_name"
         const val WIDGET_CLICKED_TARGET_NAME = "widget_clicked_target_name"
-
-        internal fun updateUIStatus(context: Context, isLoading: Boolean) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            appWidgetManager.getAppWidgetIds(
-                ComponentName(
-                    context,
-                    DatadogWidgetsProvider::class.java
-                )
-            ).forEach {
-                val remoteViews = RemoteViews(
-                    context.packageName,
-                    R.layout.datadog_widget
-                )
-                val visibility = if (isLoading) View.VISIBLE else View.GONE
-                remoteViews.setTextViewText(R.id.status_field, context.getText(R.string.loading))
-                remoteViews.setViewVisibility(R.id.status_field, visibility)
-                appWidgetManager.updateAppWidget(it, remoteViews)
-            }
-        }
     }
 }

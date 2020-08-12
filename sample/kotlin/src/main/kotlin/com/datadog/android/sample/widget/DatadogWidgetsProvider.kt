@@ -41,46 +41,43 @@ class DatadogWidgetsProvider : AppWidgetProvider() {
         // Enter relevant functionality for when the last widget is disabled
     }
 
-    companion object {
+    private fun updateAppWidget(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int
+    ) {
+        val views = RemoteViews(
+            context.packageName,
+            R.layout.datadog_widget
+        )
+        val loadResourceIntent = buildLoadResourceIntent(context, appWidgetId)
+        val pendingIntent = PendingIntent.getService(
+            context.applicationContext,
+            0,
+            loadResourceIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        views.setOnClickPendingIntent(R.id.perform_http_request_button, pendingIntent)
 
-        internal fun updateAppWidget(
-            context: Context,
-            appWidgetManager: AppWidgetManager,
-            appWidgetId: Int
-        ) {
-            val views = RemoteViews(
-                context.packageName,
-                R.layout.datadog_widget
-            )
-            val loadResourceIntent = buildLoadResourceIntent(context, appWidgetId)
-            val pendingIntent = PendingIntent.getService(
-                context.applicationContext,
-                0,
-                loadResourceIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            views.setOnClickPendingIntent(R.id.perform_http_request_button, pendingIntent)
+        // Instruct the widget manager to update the widget
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
 
-            // Instruct the widget manager to update the widget
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
-
-        private fun buildLoadResourceIntent(
-            context: Context,
-            appWidgetId: Int
-        ): Intent {
-            val loadResourceIntent =
-                Intent(context.applicationContext, WidgetIntentService::class.java)
-                    .apply {
-                        action = WidgetIntentService.LOAD_RANDOM_RESOURCE_ACTION
-                        putExtra(WidgetIntentService.WIDGET_NAME_ARG, "DatadogWidget")
-                        putExtra(WidgetIntentService.WIDGET_ID_ARG, appWidgetId)
-                        val resources = context.applicationContext.resources
-                        val targetName =
-                            resources.getResourceEntryName(R.id.perform_http_request_button)
-                        putExtra(WidgetIntentService.WIDGET_CLICKED_TARGET_NAME, targetName)
-                    }
-            return loadResourceIntent
-        }
+    private fun buildLoadResourceIntent(
+        context: Context,
+        appWidgetId: Int
+    ): Intent {
+        val loadResourceIntent =
+            Intent(context.applicationContext, WidgetIntentService::class.java)
+                .apply {
+                    action = WidgetIntentService.LOAD_RANDOM_RESOURCE_ACTION
+                    putExtra(WidgetIntentService.WIDGET_NAME_ARG, "DatadogWidget")
+                    putExtra(WidgetIntentService.WIDGET_ID_ARG, appWidgetId)
+                    val resources = context.applicationContext.resources
+                    val targetName =
+                        resources.getResourceEntryName(R.id.perform_http_request_button)
+                    putExtra(WidgetIntentService.WIDGET_CLICKED_TARGET_NAME, targetName)
+                }
+        return loadResourceIntent
     }
 }
