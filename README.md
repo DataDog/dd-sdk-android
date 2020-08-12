@@ -4,6 +4,8 @@
 
 ## Getting Started
 
+### Log Collection
+
 See the dedicated [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android) to learn how to forward logs from your Android application to Datadog.
 
 ### Migrating from earlier versions
@@ -13,6 +15,22 @@ If you are using SDK version `0.2.5` or lower, take a look at the [Migration Gui
 ### Integrating with Timber
 
 If your existing codebase is already using Timber, you can migrate to Datadog easily by using the [dedicated library](dd-sdk-android-timber/README.md).
+
+### Integrating with Glide
+
+If you use Glide to load images in your application, take a look at our [dedicated library](dd-sdk-android-glide/README.md).
+
+### Integrating with Picasso
+
+If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
+
+```kotlin
+        val picasso = Picasso.Builder(context)
+                .downloader(OkHttp3Downloader(okHttpClient))
+                // …
+                .build()
+        Picasso.setSingletonInstance(picasso)
+```
 
 ## Looking up your logs
 

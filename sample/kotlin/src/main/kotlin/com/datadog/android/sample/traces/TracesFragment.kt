@@ -16,6 +16,7 @@ import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SampleApplication
 
 class TracesFragment : Fragment(), View.OnClickListener {
 
@@ -42,7 +43,8 @@ class TracesFragment : Fragment(), View.OnClickListener {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(TracesViewModel::class.java)
+        val factory = SampleApplication.getViewModelFactory(context!!)
+        viewModel = ViewModelProviders.of(this, factory).get(TracesViewModel::class.java)
     }
 
     override fun onDetach() {

@@ -10,27 +10,24 @@ import android.annotation.SuppressLint
 import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.datadog.android.DatadogEventListener
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.server.LocalServer
-import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-class TracesViewModel : ViewModel() {
+class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
     private var localServer: LocalServer = LocalServer()
 
     init {
-        localServer.start("https://shopist.io/category_1.json")
+        localServer.start("https://www.datadoghq.com/")
     }
 
     fun startAsyncOperation(
@@ -46,7 +43,13 @@ class TracesViewModel : ViewModel() {
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = RequestTask(localServer.getUrl(), onResponse, onException, onCancel)
+        networkRequestTask = RequestTask(
+            localServer.getUrl(),
+            okHttpClient,
+            onResponse,
+            onException,
+            onCancel
+        )
         networkRequestTask?.execute()
     }
 
@@ -60,6 +63,7 @@ class TracesViewModel : ViewModel() {
 
     private class RequestTask(
         private val url: String,
+        private val okHttpClient: OkHttpClient,
         private val onResponse: (Response) -> Unit,
         private val onException: (Throwable) -> Unit,
         private val onCancel: () -> Unit
@@ -76,18 +80,10 @@ class TracesViewModel : ViewModel() {
             currentActiveMainSpan = GlobalTracer.get().activeSpan()
         }
 
-        private val tracedHosts = listOf("datadoghq.com", LocalServer.HOST)
-        private val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(tracedHosts))
-            .addNetworkInterceptor(TracingInterceptor(tracedHosts))
-            .eventListenerFactory(DatadogEventListener.Factory())
-            .build()
-
         @SuppressLint("LogNotTimber")
         override fun doInBackground(vararg params: Unit?): Result {
             val builder = Request.Builder()
                 .get()
-                .url("https://www.datadoghq.com/")
                 .url(url)
 
             if (currentActiveMainSpan != null) {

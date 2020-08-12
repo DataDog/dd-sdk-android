@@ -66,6 +66,9 @@ android {
         register("glide") {
             dimension = "ill"
         }
+        register("picasso") {
+            dimension = "ill"
+        }
     }
 
     sourceSets.named("main") {
@@ -73,6 +76,9 @@ android {
     }
     sourceSets.named("glide") {
         java.srcDir("src/glide/kotlin")
+    }
+    sourceSets.named("picasso") {
+        java.srcDir("src/picasso/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -128,7 +134,9 @@ dependencies {
     implementation("com.github.bumptech.glide:okhttp3-integration:4.11.0") {
         exclude(group = "glide-parent")
     }
-    add("kapt", "com.github.bumptech.glide:compiler:4.11.0")
+    kapt("com.github.bumptech.glide:compiler:4.11.0")
+    // Picasso
+    implementation("com.squareup.picasso:picasso:2.8")
 
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
