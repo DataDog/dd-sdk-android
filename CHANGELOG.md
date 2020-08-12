@@ -1,13 +1,20 @@
 
-# 1.5.0 / 2020-??-??
+# 1.5.0 / 2020-08-12
 
 * [FEATURE] RUM: Add a RUM tracking feature:
     - Track User sessions
-    - Track Activities or Fragments as Views
-    - Track resources (network requests)
-    - Track User interactions
-* [FEATURE] RUM: Add helper Interceptor to trace OkHttp requests
-* [FEATURE] RUM: Add helper WebView client to trace Webview
+    - Track Activities or Fragments as Views (or use manual tracing)
+    - Track Resources (network requests)
+    - Track User interactions (Tap, Scroll, Swipe)
+    - Track Errors and crashes
+* [FEATURE] RUM: Add helper Interceptor to track OkHttp requests
+* [FEATURE] RUM: Add helper WebViewClient and WebChromeClient implementations to track WebView resources
+* [FEATURE] RUM: Add helper library to track Glide requests and errors
+* [FEATURE] CrashReport: Add a helper library to detect C/C++ crashes in Android NDK
+* [FEATURE] Global: add a method to clear all local unsent data
+* [BUGFIX] Trace: Fix clock skew issue in traced requests
+* [BUGFIX] Logger: Prevent Logcat noise from our SDK when running Robolectric tests
+* [IMPROVEMENT] Global: Enhance the SDK performance and ensure it works properly in a multi-process application
 * [OTHER] Global: The DatadogConfig needs a valid environment name (`envName`), applied to all features
 * [OTHER] Global: The serviceName by default will use your application's package name
 * [OTHER] Global: The logs and spans sent from the sdk can be found with the filter `source:android`
