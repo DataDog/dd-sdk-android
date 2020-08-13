@@ -6,10 +6,10 @@
 
 package com.datadog.android.core.internal.sampling
 
-import java.util.Random
+import java.security.SecureRandom
 
 internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
-    private val random by lazy { Random() }
+    private val random by lazy { SecureRandom() }
 
     override fun sample(): Boolean {
         if (sampleRate == 0f) {
