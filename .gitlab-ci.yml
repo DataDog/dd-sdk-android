@@ -1,6 +1,8 @@
 include:
   - 'https://gitlab-templates.ddbuild.io/slack-notifier/v1/template.yml'
 
+# SETUP
+
 variables:
   CURRENT_CI_IMAGE: "1"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
@@ -12,6 +14,8 @@ stages:
   - publish
   - notify
 
+# CI IMAGE
+
 ci-image:
   stage: ci-image
   when: manual
@@ -22,10 +26,13 @@ ci-image:
     - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
     - docker push $CI_IMAGE_DOCKER
 
+# STATIC ANALYSIS
+
 analysis:ktlint:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
+  timeout: 30m
   script:
     - git fetch --depth=1 origin master
     - ./gradlew :ktlintCheckAll --stacktrace
@@ -34,6 +41,7 @@ analysis:android-lint:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
+  timeout: 30m
   script:
     - git fetch --depth=1 origin master
     - ./gradlew :lintCheckAll --stacktrace
@@ -42,6 +50,7 @@ analysis:detekt:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
+  timeout: 30m
   script:
     - git fetch --depth=1 origin master
     - ./gradlew :detektAll --stacktrace
@@ -50,6 +59,7 @@ analysis:licenses:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
+  timeout: 30m
   script:
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace
@@ -58,17 +68,23 @@ analysis:api-surface:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
+  timeout: 30m
   script:
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace
+
+# TESTS
 
 test:unit:
   tags: [ "runner:docker", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: test
+  timeout: 1h
   script:
     - git fetch --depth=1 origin master
     - ./gradlew unitTestAll --stacktrace
+
+# PUBLISH ARTIFACTS ON BINTRAY
 
 publish:release:
   tags: [ "runner:docker", "size:large" ]
@@ -76,10 +92,23 @@ publish:release:
     - tags
   image: $CI_IMAGE_DOCKER
   stage: publish
+  timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android:bintrayUpload
+
+publish:release-glide:
+  tags: [ "runner:docker", "size:large" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - git fetch --depth=1 origin master
+    - ./gradlew :dd-sdk-android-glide:bintrayUpload
 
 publish:release-ktx:
   tags: [ "runner:docker", "size:large" ]
@@ -87,21 +116,11 @@ publish:release-ktx:
     - tags
   image: $CI_IMAGE_DOCKER
   stage: publish
+  timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android-ktx:bintrayUpload
-
-publish:release-timber:
-  tags: [ "runner:docker", "size:large" ]
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  script:
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-timber:bintrayUpload
 
 publish:release-ndk:
   tags: [ "runner:docker", "size:large" ]
@@ -109,10 +128,25 @@ publish:release-ndk:
     - tags
   image: $CI_IMAGE_DOCKER
   stage: publish
+  timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android-ndk:bintrayUpload
+
+publish:release-timber:
+  tags: [ "runner:docker", "size:large" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - git fetch --depth=1 origin master
+    - ./gradlew :dd-sdk-android-timber:bintrayUpload
+
+# SLACK NOTIFICATIONS
 
 notify:release:
   extends: .slack-notifier-base
