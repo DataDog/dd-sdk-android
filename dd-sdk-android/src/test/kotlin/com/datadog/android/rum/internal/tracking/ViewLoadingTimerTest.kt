@@ -33,24 +33,24 @@ internal class ViewLoadingTimerTest {
 
     @Test
     fun `it returns the right time and view state first time the view is created`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
         testedTimer.onFinishedLoading(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isGreaterThan(0)
         assertThat(firstTimeLoading).isTrue()
     }
 
     @Test
     fun `it returns the right time and view state when the view is resumed from background`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
@@ -59,36 +59,36 @@ internal class ViewLoadingTimerTest {
         testedTimer.onStartLoading(view)
         testedTimer.onFinishedLoading(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isGreaterThan(0)
         assertThat(firstTimeLoading).isFalse()
     }
 
     @Test
     fun `it returns the right time and view state when finishedLoading called multiple times`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
         testedTimer.onFinishedLoading(view)
         testedTimer.onFinishedLoading(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isGreaterThan(0)
         assertThat(firstTimeLoading).isTrue()
     }
 
     @Test
     fun `at first launch it will compute the time between onCreate and onFinishedLoading`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         Thread.sleep(500) // to simulate a long first time layout rendering
@@ -96,19 +96,19 @@ internal class ViewLoadingTimerTest {
         testedTimer.onFinishedLoading(view)
         val loadingTimeFirstLaunch = testedTimer.getLoadingTime(view)
 
-        // when
+        // When
         testedTimer.onPaused(view)
         testedTimer.onStartLoading(view)
         testedTimer.onFinishedLoading(view)
         val loadingTimeSecondLaunch = testedTimer.getLoadingTime(view)
 
-        // then
+        // Then
         assertThat(loadingTimeFirstLaunch).isGreaterThan(loadingTimeSecondLaunch)
     }
 
     @Test
     fun `it returns the right time and state for different views in different states`() {
-        // given
+        // Given
         val view1: Any = mock()
         val view2: Any = mock()
         testedTimer.onCreated(view1)
@@ -122,13 +122,13 @@ internal class ViewLoadingTimerTest {
         Thread.sleep(10)
         testedTimer.onFinishedLoading(view2)
 
-        // when
+        // When
         val loadingTimeView1 = testedTimer.getLoadingTime(view1)
         val firstTimeLoadingView1 = testedTimer.isFirstTimeLoading(view1)
         val loadingTimeView2 = testedTimer.getLoadingTime(view2)
         val firstTimeLoadingView2 = testedTimer.isFirstTimeLoading(view2)
 
-        // then
+        // Then
         assertThat(loadingTimeView1).isGreaterThan(0)
         assertThat(firstTimeLoadingView1).isTrue()
         assertThat(loadingTimeView2).isGreaterThan(0)
@@ -138,7 +138,7 @@ internal class ViewLoadingTimerTest {
 
     @Test
     fun `it returns false for firstTimeLoading if the view was resumed without being started`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
@@ -146,18 +146,18 @@ internal class ViewLoadingTimerTest {
         testedTimer.onPaused(view)
         testedTimer.onFinishedLoading(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isEqualTo(0)
         assertThat(firstTimeLoading).isFalse()
     }
 
     @Test
     fun `it will return false for firstTimeLoading after the view was hidden`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
@@ -165,18 +165,18 @@ internal class ViewLoadingTimerTest {
         testedTimer.onPaused(view)
         testedTimer.onFinishedLoading(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isEqualTo(0)
         assertThat(firstTimeLoading).isFalse()
     }
 
     @Test
     fun `it clear the references if the view is destroyed`() {
-        // given
+        // Given
         val view: Any = mock()
         testedTimer.onCreated(view)
         testedTimer.onStartLoading(view)
@@ -187,11 +187,11 @@ internal class ViewLoadingTimerTest {
         testedTimer.onPaused(view)
         testedTimer.onDestroyed(view)
 
-        // when
+        // When
         val loadingTime = testedTimer.getLoadingTime(view)
         val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
 
-        // then
+        // Then
         assertThat(loadingTime).isNull()
         assertThat(firstTimeLoading).isFalse()
     }

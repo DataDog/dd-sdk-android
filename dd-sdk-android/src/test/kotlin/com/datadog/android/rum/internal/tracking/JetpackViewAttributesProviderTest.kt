@@ -52,7 +52,7 @@ internal class JetpackViewAttributesProviderTest {
     fun `will add the adapter position event if the target is a RecyclerView nested child`(
         forge: Forge
     ) {
-        // given
+        // Given
         val expectedAdapterPosition = forge.anInt(
             min = 0, max = 20
         )
@@ -83,10 +83,10 @@ internal class JetpackViewAttributesProviderTest {
             "0x${parentId.toString(16)}"
         }
 
-        // when
+        // When
         testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
-        // then
+        // Then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
@@ -101,7 +101,7 @@ internal class JetpackViewAttributesProviderTest {
     fun `will add the adapter position if the target is a RecyclerView direct child`(
         forge: Forge
     ) {
-        // given
+        // Given
         val expectedAdapterPosition = forge.anInt(
             min = 0, max = 20
         )
@@ -129,10 +129,10 @@ internal class JetpackViewAttributesProviderTest {
             "0x${parentId.toString(16)}"
         }
 
-        // when
+        // When
         testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
-        // then
+        // Then
         assertThat(attributes).containsAllEntriesOf(
             mapOf(
                 RumAttributes.ACTION_TARGET_PARENT_INDEX to expectedAdapterPosition,
@@ -147,7 +147,7 @@ internal class JetpackViewAttributesProviderTest {
     fun `will do nothing if the target is not following the RecyclerView child protocol`(
         forge: Forge
     ) {
-        // given
+        // Given
         whenever(mockTarget.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
         val adapterPosition = forge.anInt(
             min = 0, max = 20
@@ -158,10 +158,10 @@ internal class JetpackViewAttributesProviderTest {
         whenever(mockTarget.parent).thenReturn(mockRecyclerView)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
-        // when
+        // When
         testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
-        // then
+        // Then
         assertThat(attributes).isEmpty()
     }
 
@@ -169,7 +169,7 @@ internal class JetpackViewAttributesProviderTest {
     fun `will do nothing if the direct child is not following the RecyclerView child protocol`(
         forge: Forge
     ) {
-        // given
+        // Given
         val mockParent: ViewGroup = mock {
             whenever(it.parent).thenReturn(mockRecyclerView)
             whenever(it.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
@@ -183,24 +183,24 @@ internal class JetpackViewAttributesProviderTest {
         whenever(mockTarget.parent).thenReturn(mockParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
-        // when
+        // When
         testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
-        // then
+        // Then
         assertThat(attributes).isEmpty()
     }
 
     @Test
     fun `will do nothing if the target is not a RecyclerView descendant`() {
-        // given
+        // Given
         val mockParent: ViewParent = mock()
         whenever(mockTarget.parent).thenReturn(mockParent)
         val attributes: MutableMap<String, Any?> = mutableMapOf()
 
-        // when
+        // When
         testedAttributesProvider.extractAttributes(mockTarget, attributes)
 
-        // then
+        // Then
         assertThat(attributes).isEmpty()
     }
 }

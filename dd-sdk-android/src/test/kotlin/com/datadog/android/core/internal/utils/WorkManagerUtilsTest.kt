@@ -64,34 +64,34 @@ internal class WorkManagerUtilsTest {
 
     @Test
     fun `it will cancel the worker if WorkManager was correctly instantiated`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
-        // when
+        // When
         cancelUploadWorker(mockContext())
 
-        // then
+        // Then
         verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
     }
 
     @Test
     fun `it will handle the cancel exception if WorkManager was not correctly instantiated`() {
-        // when
+        // When
         cancelUploadWorker(mockContext())
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 
     @Test
     fun `it will schedule the worker if WorkManager was correctly instantiated`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
-        // when
+        // When
         triggerUploadWorker(mockContext())
 
-        // then
+        // Then
         verify(mockWorkManager).enqueueUniqueWork(
             eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
@@ -103,10 +103,10 @@ internal class WorkManagerUtilsTest {
 
     @Test
     fun `it will handle the trigger exception if WorkManager was not correctly instantiated`() {
-        // when
+        // When
         triggerUploadWorker(mockContext())
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 }

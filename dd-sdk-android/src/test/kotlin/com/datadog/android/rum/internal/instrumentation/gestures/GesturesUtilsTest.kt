@@ -54,13 +54,13 @@ class GesturesUtilsTest {
 
     @Test
     fun `it will return resource entry name if found`(forge: Forge) {
-        // given
+        // Given
         val resourceId = forge.anInt()
         val resourceName = forge.aString()
         whenever(mockAppContext.resources).thenReturn(mockResources)
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(resourceName)
 
-        // when
+        // When
         assertThat(resourceIdName(resourceId)).isEqualTo(resourceName)
     }
 
@@ -68,11 +68,11 @@ class GesturesUtilsTest {
     fun `it will return the resource id as String hexa if Context resources are null`(
         forge: Forge
     ) {
-        // given
+        // Given
         val resourceId = forge.anInt()
         whenever(mockAppContext.resources).thenReturn(null)
 
-        // when
+        // When
         assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
@@ -81,7 +81,7 @@ class GesturesUtilsTest {
     fun `it will return the resource id as String hexa if resource name could not be found`(
         forge: Forge
     ) {
-        // given
+        // Given
         val resourceId = forge.anInt()
         whenever(mockAppContext.resources).thenReturn(mockResources)
         whenever(mockResources.getResourceEntryName(resourceId)).thenThrow(
@@ -90,7 +90,7 @@ class GesturesUtilsTest {
             )
         )
 
-        // when
+        // When
         assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
@@ -99,12 +99,12 @@ class GesturesUtilsTest {
     fun `it will return the resource id as String hexa if resource name was null`(
         forge: Forge
     ) {
-        // given
+        // Given
         val resourceId = forge.anInt()
         whenever(mockAppContext.resources).thenReturn(mockResources)
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(null)
 
-        // when
+        // When
         assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }

@@ -121,43 +121,43 @@ internal class FileReaderTest {
     fun `returns a valid batch if file exists and valid`(
         forge: Forge
     ) {
-        // given
+        // Given
         val fileName = forge.anAlphabeticalString()
         val file = forgeTempFile(fileName)
         val data = forge.anAlphabeticalString()
         file.writeText(data)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
 
-        // when
+        // When
         val nextBatch = testedReader.readNextBatch()
         checkNotNull(nextBatch)
 
-        // then
+        // Then
         val persistedData = String(nextBatch.data)
         assertThat(persistedData).isEqualTo("$fakePrefix$data$fakeSuffix")
     }
 
     @Test
     fun `returns a null batch if the file was already sent`() {
-        // given
+        // Given
         whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
 
-        // when
+        // When
         val nextBatch = testedReader.readNextBatch()
 
-        // then
+        // Then
         assertThat(nextBatch).isNull()
     }
 
     @Test
     fun `returns a null batch if the data is corrupted`() {
-        // given
+        // Given
         whenever(mockOrchestrator.getReadableFile(any())).doReturn(null)
 
-        // when
+        // When
         val nextBatch = testedReader.readNextBatch()
 
-        // then
+        // Then
         assertThat(nextBatch).isNull()
     }
 
@@ -165,14 +165,14 @@ internal class FileReaderTest {
     fun `returns null when orchestrator throws SecurityException`(
         forge: Forge
     ) {
-        // given
+        // Given
         val exception = SecurityException(forge.anAlphabeticalString())
         doThrow(exception).whenever(mockOrchestrator).getReadableFile(any())
 
-        // when
+        // When
         val nextBatch = testedReader.readNextBatch()
 
-        // then
+        // Then
         assertThat(nextBatch).isNull()
     }
 
@@ -180,14 +180,14 @@ internal class FileReaderTest {
     fun `returns null when orchestrator throws OutOfMemoryError`(
         forge: Forge
     ) {
-        // given
+        // Given
         val exception = OutOfMemoryError(forge.anAlphabeticalString())
         doThrow(exception).whenever(mockOrchestrator).getReadableFile(any())
 
-        // when
+        // When
         val nextBatch = testedReader.readNextBatch()
 
-        // then
+        // Then
         assertThat(nextBatch).isNull()
     }
 
@@ -195,16 +195,16 @@ internal class FileReaderTest {
     fun `drops the batch if the file exists`(
         forge: Forge
     ) {
-        // given
+        // Given
         val fileName = forge.anAlphabeticalString()
         val file: File = forgeTempFile(fileName)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
         testedReader.readNextBatch()
 
-        // then
+        // Then
         testedReader.dropBatch(fileName)
 
-        // then
+        // Then
         val lockedFiles: MutableSet<String> = testedReader.getFieldValue("lockedFiles")
         assertThat(lockedFiles).isEmpty()
         assertThat(tempRootDir.listFiles()).isEmpty()
@@ -214,34 +214,34 @@ internal class FileReaderTest {
     fun `does nothing when trying to drop a batch for a file that doesn't exist`(
         forge: Forge
     ) {
-        // given
+        // Given
         val fileName = forge.anAlphabeticalString()
         val file: File = forgeTempFile(fileName)
         whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
         testedReader.readNextBatch()
         val notExistingFileName = forge.anAlphabeticalString()
 
-        // when
+        // When
         testedReader.dropBatch(notExistingFileName)
 
-        // then
+        // Then
         val lockedFiles: MutableSet<String> = testedReader.getFieldValue("lockedFiles")
         assertThat(lockedFiles).containsOnly(fileName)
     }
 
     @Test
     fun `cleans the folder when dropping all batches`(forge: Forge) {
-        // given
+        // Given
         val fileName1 = forge.anAlphabeticalString()
         val fileName2 = forge.anAlphabeticalString()
         val file1 = forgeTempFile(fileName1)
         val file2 = forgeTempFile(fileName2)
         whenever(mockOrchestrator.getAllFiles()).thenReturn(arrayOf(file1, file2))
 
-        // when
+        // When
         testedReader.dropAllBatches()
 
-        // then
+        // Then
         val lockedFiles: MutableSet<String> = testedReader.getFieldValue("lockedFiles")
         assertThat(tempRootDir.listFiles()).isEmpty()
         assertThat(lockedFiles).isEmpty()
@@ -249,7 +249,7 @@ internal class FileReaderTest {
 
     @Test
     fun `it will do nothing if the only available file to be sent is locked`(forge: Forge) {
-        // given
+        // Given
         val inProgressFileName = forge.anAlphabeticalString()
         val inProgressFile = forgeTempFile(inProgressFileName)
         val countDownLatch = CountDownLatch(2)
@@ -261,7 +261,7 @@ internal class FileReaderTest {
         var batch1: Batch? = null
         var batch2: Batch? = null
 
-        // when
+        // When
         Thread {
             batch1 = testedReader.readNextBatch()
             Thread {
@@ -271,7 +271,7 @@ internal class FileReaderTest {
             countDownLatch.countDown()
         }.start()
 
-        // then
+        // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
         assertThat(batch1?.id).isEqualTo(inProgressFileName)
         assertThat(batch2).isNull()
@@ -279,7 +279,7 @@ internal class FileReaderTest {
 
     @Test
     fun `it will return the next file if the current one is locked`(forge: Forge) {
-        // given
+        // Given
         val inProgressFileName = forge.anAlphabeticalString()
         val nextFileName = inProgressFileName + "_next"
         val inProgressFile = forgeTempFile(inProgressFileName)
@@ -293,7 +293,7 @@ internal class FileReaderTest {
         var batch1: Batch? = null
         var batch2: Batch? = null
 
-        // when
+        // When
         Thread {
             batch1 = testedReader.readNextBatch()
             Thread {
@@ -303,7 +303,7 @@ internal class FileReaderTest {
             countDownLatch.countDown()
         }.start()
 
-        // then
+        // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
         assertThat(batch1?.id).isEqualTo(inProgressFileName)
         assertThat(batch2?.id).isEqualTo(nextFileName)
@@ -311,7 +311,7 @@ internal class FileReaderTest {
 
     @Test
     fun `it will return the released file`(forge: Forge) {
-        // given
+        // Given
         val inProgressFileName = forge.anAlphabeticalString()
         val nextFileName = inProgressFileName + "_next"
         val inProgressFile = forgeTempFile(inProgressFileName)
@@ -323,7 +323,7 @@ internal class FileReaderTest {
 
         var batch2: Batch? = null
 
-        // when
+        // When
         Thread {
             val batch1 = testedReader.readNextBatch()
             Thread {
@@ -337,7 +337,7 @@ internal class FileReaderTest {
             countDownLatch.countDown()
         }.start()
 
-        // then
+        // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
         assertThat(batch2?.id).isEqualTo(inProgressFileName)
     }

@@ -208,7 +208,7 @@ internal class GlobalRumTest {
     @Test
     fun `updates the rum context for all the provided plugins`(forge: Forge) {
 
-        // given
+        // Given
         val applicationId = forge.aNumericalString()
         val sessionId = forge.aNumericalString()
         val viewId = forge.aNumericalString()
@@ -234,7 +234,7 @@ internal class GlobalRumTest {
         TracesFeature.plugins = tracesFeaturePlugins
         RumFeature.plugins = rumFeaturePlugins
 
-        // when
+        // When
         GlobalRum.updateRumContext(
             RumContext(
                 applicationId,
@@ -243,7 +243,7 @@ internal class GlobalRumTest {
             )
         )
 
-        // then
+        // Then
         val pluginsToAssert =
             crashFeaturePlugins + tracesFeaturePlugins + logsFeaturePlugins + rumFeaturePlugins
         pluginsToAssert.forEach {

@@ -61,7 +61,7 @@ internal class FileOrchestratorTest {
     fun `getWritableFile will returns null if the rootDirectory is a File`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
-        // given
+        // Given
         val invalidRootDir = File(tempDir, "testPathName")
         invalidRootDir.createNewFile()
 
@@ -75,13 +75,13 @@ internal class FileOrchestratorTest {
                 MAX_DISK_SPACE
             )
 
-        // then
+        // Then
         assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
     }
 
     @Test
     fun `getReadableFile will return null if the rootDirectory is a File`() {
-        // given
+        // Given
         val invalidRootDir = File(tempDir, "testPathName")
         invalidRootDir.createNewFile()
 
@@ -95,7 +95,7 @@ internal class FileOrchestratorTest {
                 MAX_DISK_SPACE
             )
 
-        // then
+        // Then
         assertThat(testedOrchestrator.getReadableFile(emptySet())).isNull()
     }
 
@@ -103,7 +103,7 @@ internal class FileOrchestratorTest {
     fun `getWritableFile returns null if the rootDirectory can't be created`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
-        // given
+        // Given
         val corruptedRootDir = mock<File>()
         whenever(corruptedRootDir.mkdirs()).thenReturn(false)
 
@@ -117,13 +117,13 @@ internal class FileOrchestratorTest {
                 MAX_DISK_SPACE
             )
 
-        // then
+        // Then
         assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
     }
 
     @Test
     fun `getReadableFile returns null the rootDirectory can't be created`() {
-        // given
+        // Given
         val corruptedRootDir = mock<File>()
         whenever(corruptedRootDir.mkdirs()).thenReturn(false)
 
@@ -137,7 +137,7 @@ internal class FileOrchestratorTest {
                 MAX_DISK_SPACE
             )
 
-        // then
+        // Then
         assertThat(testedOrchestrator.getReadableFile(emptySet())).isNull()
     }
 

@@ -58,10 +58,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
 
-        // whenever
+        // Whenever
         testedStrategy.onActivityCreated(mockActivity, mockBundle)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
             verify(mockFragmentViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
@@ -72,10 +72,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     fun `when destroyed will delegate to the bundled strategies`(
         forge: Forge
     ) {
-        // whenever
+        // Whenever
         testedStrategy.onActivityDestroyed(mockActivity)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityDestroyed(mockActivity)
             verify(mockFragmentViewTrackingStrategy).onActivityDestroyed(mockActivity)
@@ -87,10 +87,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
 
-        // whenever
+        // Whenever
         testedStrategy.onActivityStarted(mockActivity)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityStarted(mockActivity)
             verify(mockFragmentViewTrackingStrategy).onActivityStarted(mockActivity)
@@ -101,10 +101,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     fun `when stopped will delegate to the bundled strategies`(
         forge: Forge
     ) {
-        // whenever
+        // Whenever
         testedStrategy.onActivityStopped(mockActivity)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityStopped(mockActivity)
             verify(mockFragmentViewTrackingStrategy).onActivityStopped(mockActivity)
@@ -116,10 +116,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
         forge: Forge
     ) {
 
-        // whenever
+        // Whenever
         testedStrategy.onActivityResumed(mockActivity)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityResumed(mockActivity)
             verify(mockFragmentViewTrackingStrategy).onActivityResumed(mockActivity)
@@ -130,10 +130,10 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     fun `when paused will delegate to the bundled strategies`(
         forge: Forge
     ) {
-        // whenever
+        // Whenever
         testedStrategy.onActivityPaused(mockActivity)
 
-        // then
+        // Then
         inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
             verify(mockActivityViewTrackingStrategy).onActivityPaused(mockActivity)
             verify(mockFragmentViewTrackingStrategy).onActivityPaused(mockActivity)

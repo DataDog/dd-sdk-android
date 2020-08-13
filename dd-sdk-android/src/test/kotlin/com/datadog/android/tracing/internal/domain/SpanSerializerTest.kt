@@ -90,15 +90,15 @@ internal class SpanSerializerTest {
         @Forgery span: DDSpan,
         @LongForgery serverOffsetNanos: Long
     ) {
-        // given
+        // Given
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
         val serialized = testedSerializer.serialize(span)
 
-        // when
+        // When
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
 
-        // then
+        // Then
         assertJsonMatchesInputSpan(spanObject, span, serverOffsetNanos)
         assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
         val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
@@ -112,7 +112,7 @@ internal class SpanSerializerTest {
 
     @Test
     fun `it will only add the metrics key top level for the top span`(forge: Forge) {
-        // given
+        // Given
         val parentSpan =
             spy(
                 SpanForgeryFactory.TEST_TRACER
@@ -126,11 +126,13 @@ internal class SpanSerializerTest {
                 .asChildOf(parentSpan)
                 .start() as DDSpan
 
-        // when
-        val serializedParent = JsonParser.parseString(testedSerializer.serialize(parentSpan)).asJsonObject
-        val serializedChild = JsonParser.parseString(testedSerializer.serialize(childSpan)).asJsonObject
+        // When
+        val serializedParent = JsonParser.parseString(testedSerializer.serialize(parentSpan))
+            .asJsonObject
+        val serializedChild = JsonParser.parseString(testedSerializer.serialize(childSpan))
+            .asJsonObject
 
-        // then
+        // Then
         val serializedParentSpan = serializedParent.getAsJsonArray("spans").first() as JsonObject
         val serializedChildSpan = serializedChild.getAsJsonArray("spans").first() as JsonObject
         assertThat(serializedParentSpan).hasField(SpanSerializer.TAG_METRICS) {

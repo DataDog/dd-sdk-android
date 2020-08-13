@@ -103,14 +103,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
 
         inOrder(mockDatadogRumMonitor) {
             verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
@@ -169,14 +169,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
 
         inOrder(mockDatadogRumMonitor) {
             verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
@@ -244,7 +244,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection1)
         intermediaryEvents.forEachIndexed { index, event ->
@@ -259,7 +259,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
 
         inOrder(mockDatadogRumMonitor) {
             verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
@@ -313,14 +313,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
         verifyZeroInteractions(mockDatadogRumMonitor)
     }
 
@@ -356,14 +356,14 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
         verifyZeroInteractions(mockDatadogRumMonitor)
     }
 
@@ -412,7 +412,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
@@ -420,7 +420,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
 
         inOrder(mockDatadogRumMonitor) {
             verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
@@ -490,7 +490,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockDecorView)
         )
 
-        // when
+        // When
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection1)
         testedListener.onDown(startDownEvent)
         intermediaryEvents.forEachIndexed { index, event ->
@@ -507,7 +507,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
         testedListener.onUp(endUpEvent)
 
-        // then
+        // Then
 
         inOrder(mockDatadogRumMonitor) {
             verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())

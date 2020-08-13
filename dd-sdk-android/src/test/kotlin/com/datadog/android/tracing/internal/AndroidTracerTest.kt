@@ -163,16 +163,16 @@ internal class AndroidTracerTest {
 
     @Test
     fun `it will build a valid Tracer`(forge: Forge) {
-        // given
+        // Given
         val threshold = forge.anInt(max = 100)
-        // when
+        // When
         val tracer = testedTracerBuilder
             .setServiceName(fakeServiceName)
             .setPartialFlushThreshold(threshold)
             .build()
         val properties = testedTracerBuilder.properties()
 
-        // then
+        // Then
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
         assertThat(span.serviceName).isEqualTo(fakeServiceName)
@@ -186,14 +186,14 @@ internal class AndroidTracerTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.HEXADECIMAL) value: String
     ) {
-        // when
+        // When
         val tracer = testedTracerBuilder
             .setServiceName(fakeServiceName)
             .addGlobalTag(key, value)
             .build()
         val properties = testedTracerBuilder.properties()
 
-        // then
+        // Then
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(operation).start() as DDSpan
         assertThat(span.serviceName).isEqualTo(fakeServiceName)
@@ -202,10 +202,10 @@ internal class AndroidTracerTest {
 
     @Test
     fun `it will build a valid Tracer with default values if not provided`(forge: Forge) {
-        // when
+        // When
         val tracer = testedTracerBuilder.build()
 
-        // then
+        // Then
         val properties = testedTracerBuilder.properties()
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
@@ -216,7 +216,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `it will delegate all the span log action to the logsHandler`(forge: Forge) {
-        // given
+        // Given
         val tracer = testedTracerBuilder.build()
         val logEvent = forge.anAlphabeticalString()
         val logMaps = forge.aMap {
@@ -225,13 +225,13 @@ internal class AndroidTracerTest {
         val logTimestamp = forge.aLong()
         val span = tracer.buildSpan(logEvent).start() as DDSpan
 
-        // when
+        // When
         span.log(logEvent)
         span.log(logTimestamp, logEvent)
         span.log(logMaps)
         span.log(logTimestamp, logMaps)
 
-        // then
+        // Then
         val inOrder = inOrder(mockLogsHandler)
         inOrder.verify(mockLogsHandler).log(logEvent, span)
         inOrder.verify(mockLogsHandler).log(logTimestamp, logEvent, span)
@@ -247,13 +247,13 @@ internal class AndroidTracerTest {
     fun `it will delegate to the right fields when logging a throwable for a span`(
         @Forgery throwable: Throwable
     ) {
-        // given
+        // Given
         val mockSpan: Span = mock()
 
-        // when
+        // When
         AndroidTracer.logThrowable(mockSpan, throwable)
 
-        // then
+        // Then
         argumentCaptor<Map<String, Any>>().apply {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
@@ -266,14 +266,14 @@ internal class AndroidTracerTest {
     fun `it will delegate to the right fields when logging an error message for a span`(
         forge: Forge
     ) {
-        // given
+        // Given
         val anErrorMessage: String = forge.aString()
         val mockSpan: Span = mock()
 
-        // when
+        // When
         AndroidTracer.logErrorMessage(mockSpan, anErrorMessage)
 
-        // then
+        // Then
         argumentCaptor<Map<String, Any>>().apply {
             verify(mockSpan).log(capture())
             assertThat(firstValue)

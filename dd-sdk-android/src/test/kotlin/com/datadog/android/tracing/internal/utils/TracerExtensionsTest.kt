@@ -54,21 +54,21 @@ class TracerExtensionsTest {
     @Test
     fun `it will return the trace id and span id if there is an active span`(forge: Forge) {
 
-        // when
+        // When
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
         tracer.activateSpan(span)
 
-        // then
+        // Then
         assertThat(tracer.traceId()).isEqualTo(span.traceId.toString())
         assertThat(tracer.spanId()).isEqualTo(span.spanId.toString())
     }
 
     @Test
     fun `it will return null for trace and span id if there is no active span`() {
-        // given
+        // Given
         val tracer = AndroidTracer.Builder().build()
 
-        // then
+        // Then
         assertThat(tracer.traceId()).isNull()
         assertThat(tracer.spanId()).isNull()
     }

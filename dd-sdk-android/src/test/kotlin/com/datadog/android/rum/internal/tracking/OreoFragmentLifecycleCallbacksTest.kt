@@ -189,9 +189,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment resumed it will start a view event`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).startView(
             eq(mockFragment),
             eq(mockFragment.resolveViewName()),
@@ -227,7 +227,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment resumed will do nothing if the fragment is not whitelisted`() {
-        // given
+        // Given
         testedLifecycleCallbacks = OreoFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -240,10 +240,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
@@ -251,9 +251,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused it will mark the view as hidden in the timer`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
             eq(emptyMap())
@@ -264,9 +264,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused it will stop a view event`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
             eq(emptyMap())
@@ -275,7 +275,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused will do nothing if the fragment is not whitelisted`() {
-        // given
+        // Given
         testedLifecycleCallbacks = OreoFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -288,10 +288,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
@@ -299,16 +299,16 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment destroyed will remove view entry from timer`() {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onDestroyed(mockFragment)
     }
 
     @Test
     fun `when fragment destroyed and not whitelisted will do nothing`() {
-        // given
+        // Given
         testedLifecycleCallbacks = OreoFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -321,10 +321,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
@@ -333,10 +333,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will register the callback to fragment manager on O`() {
-        // when
+        // When
         testedLifecycleCallbacks.register(mockActivity)
 
-        // then
+        // Then
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
             testedLifecycleCallbacks,
             true
@@ -346,30 +346,30 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will unregister the callback from fragment manager on O`() {
-        // when
+        // When
         testedLifecycleCallbacks.unregister(mockActivity)
 
-        // then
+        // Then
         verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(testedLifecycleCallbacks)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
     fun `it will do nothing when calling register on M`() {
-        // when
+        // When
         testedLifecycleCallbacks.register(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockFragmentManager)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
     fun `it will do nothing when calling unregister on M`() {
-        // when
+        // When
         testedLifecycleCallbacks.unregister(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockFragmentManager)
     }
 }

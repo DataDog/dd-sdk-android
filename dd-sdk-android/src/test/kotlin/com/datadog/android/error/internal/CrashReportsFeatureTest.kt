@@ -256,12 +256,12 @@ internal class CrashReportsFeatureTest {
     fun `it will register the provided plugin when feature is initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         CrashReportsFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -274,7 +274,7 @@ internal class CrashReportsFeatureTest {
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
 
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -297,7 +297,7 @@ internal class CrashReportsFeatureTest {
     fun `it unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -311,10 +311,10 @@ internal class CrashReportsFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor
         )
-        // when
+        // When
         CrashReportsFeature.stop()
 
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -325,10 +325,10 @@ internal class CrashReportsFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         CrashReportsFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -339,7 +339,7 @@ internal class CrashReportsFeatureTest {
             mockScheduledThreadPoolExecutor
         )
 
-        // then
+        // Then
         assertThat(CrashReportsFeature.dataUploadScheduler)
             .isInstanceOf(NoOpUploadScheduler::class.java)
     }
@@ -354,7 +354,7 @@ internal class CrashReportsFeatureTest {
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         CrashReportsFeature.initialize(
             mockAppContext,
             fakeConfig,

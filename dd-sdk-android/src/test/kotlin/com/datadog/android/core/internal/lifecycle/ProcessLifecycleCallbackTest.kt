@@ -63,7 +63,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and network is disconnected will schedule an upload worker`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -72,10 +72,10 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
+        // When
         testedCallback.onStopped()
 
-        // then
+        // Then
         verify(mockWorkManager).enqueueUniqueWork(
             eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
@@ -87,7 +87,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and work manager is not present will not throw exception`() {
-        // given
+        // Given
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
                 NetworkInfo(
@@ -95,13 +95,13 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
+        // When
         testedCallback.onStopped()
     }
 
     @Test
     fun `when process stopped and network is connected will do nothing`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -110,10 +110,10 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
+        // When
         testedCallback.onStopped()
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 
@@ -128,10 +128,10 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
+        // When
         testedCallback.onStopped()
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 }

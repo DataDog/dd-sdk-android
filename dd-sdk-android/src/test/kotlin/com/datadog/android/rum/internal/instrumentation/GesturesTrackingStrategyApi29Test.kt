@@ -42,9 +42,9 @@ internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStra
 
     @Test
     fun `when activity pre created it will start tracking gestures`(forge: Forge) {
-        // when
+        // When
         testedStrategy.onActivityPreCreated(mockActivity, mock())
-        // then
+        // Then
         verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
     }
 }

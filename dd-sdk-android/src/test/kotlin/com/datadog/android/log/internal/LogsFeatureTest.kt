@@ -208,12 +208,12 @@ internal class LogsFeatureTest {
     fun `it will register the provided plugin when feature was initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -225,7 +225,7 @@ internal class LogsFeatureTest {
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -247,7 +247,7 @@ internal class LogsFeatureTest {
     fun `it will unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -261,10 +261,10 @@ internal class LogsFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // when
+        // When
         LogsFeature.stop()
 
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -275,10 +275,10 @@ internal class LogsFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -289,7 +289,7 @@ internal class LogsFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // then
+        // Then
         assertThat(LogsFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 
@@ -303,7 +303,7 @@ internal class LogsFeatureTest {
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig,

@@ -124,7 +124,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeMediaType = MediaType.parse(mediaType)
-        fakeRequest = buildRequest(forge)
+        fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(emptyList()) { mockLocalTracer }
         TracesFeature.initialize(
             mockAppContext,
@@ -141,10 +141,11 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `starts and stop RUM Resource around successful request`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        setupFakeResponse(statusCode)
+        // Given
+        stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = emptyMap<String, Any?>()
         val requestId = identifyRequest(fakeRequest)
@@ -155,8 +156,10 @@ internal class DatadogInterceptorWithoutTracesTest {
             else -> RumResourceKind.UNKNOWN
         }
 
+        // When
         testedInterceptor.intercept(mockChain)
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,
@@ -175,10 +178,11 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `starts and stop RUM Resource around failing request`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for failing request`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
-        setupFakeResponse(statusCode)
+        // Given
+        stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = emptyMap<String, Any?>()
         val requestId = identifyRequest(fakeRequest)
@@ -189,8 +193,10 @@ internal class DatadogInterceptorWithoutTracesTest {
             else -> RumResourceKind.UNKNOWN
         }
 
+        // When
         testedInterceptor.intercept(mockChain)
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,
@@ -209,18 +215,21 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     @Test
-    fun `starts and stop RUM Resource around throwing request`(
+    fun `𝕄 starts and stop RUM Resource 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
+        // Given
         val expectedStartAttrs = emptyMap<String, Any?>()
         val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
+        // When
         assertThrows<Throwable>(throwable.message.orEmpty()) {
             testedInterceptor.intercept(mockChain)
         }
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,
@@ -240,7 +249,14 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     // region Internal
 
-    internal fun buildRequest(
+    private fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
+        fakeResponse = forgeResponse(statusCode)
+
+        whenever(chain.request()) doReturn fakeRequest
+        whenever(chain.proceed(any())) doReturn fakeResponse
+    }
+
+    private fun forgeRequest(
         forge: Forge,
         validHost: Boolean = true,
         configure: (Request.Builder) -> Unit = {}
@@ -270,8 +286,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         return builder.build()
     }
 
-    internal fun setupFakeResponse(statusCode: Int = 200) {
-
+    private fun forgeResponse(statusCode: Int): Response {
         val builder = Response.Builder()
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
@@ -279,11 +294,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             .message("HTTP $statusCode")
             .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
             .body(ResponseBody.create(fakeMediaType, fakeResponseBody))
-
-        fakeResponse = builder.build()
-
-        whenever(mockChain.request()) doReturn fakeRequest
-        whenever(mockChain.proceed(any())) doReturn fakeResponse
+        return builder.build()
     }
 
     // endregion

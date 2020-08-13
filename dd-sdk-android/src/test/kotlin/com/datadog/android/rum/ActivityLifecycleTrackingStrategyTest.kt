@@ -73,7 +73,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when register it will register as lifecycle callback`() {
-        // when
+        // When
         testedStrategy.register(mockAppContext)
 
         // verify
@@ -82,7 +82,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when unregister it will remove itself  as lifecycle callback`() {
-        // when
+        // When
         testedStrategy.unregister(mockAppContext)
 
         // verify
@@ -91,7 +91,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when register called with non application context will do nothing`() {
-        // when
+        // When
         testedStrategy.register(mockBadContext)
 
         // verify
@@ -100,7 +100,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when unregister called with non application context will do nothing`() {
-        // when
+        // When
         testedStrategy.unregister(mockBadContext)
 
         // verify

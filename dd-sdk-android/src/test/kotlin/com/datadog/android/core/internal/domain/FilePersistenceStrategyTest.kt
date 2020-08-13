@@ -322,11 +322,11 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `it will create and share one single writer instance`() {
-        // given
+        // Given
         val persistenceStrategy = getStrategy()
         val currentWriter = persistenceStrategy.getWriter()
 
-        // then
+        // Then
         assertThat(persistenceStrategy.getWriter()).isSameAs(currentWriter)
     }
 

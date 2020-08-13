@@ -258,12 +258,12 @@ internal class TracesFeatureTest {
     fun `it will register the provided plugin when feature is initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -277,7 +277,7 @@ internal class TracesFeatureTest {
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -299,7 +299,7 @@ internal class TracesFeatureTest {
     fun `it unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -316,10 +316,10 @@ internal class TracesFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // when
+        // When
         TracesFeature.stop()
 
-        // then
+        // Then
         val mockPlugins = plugins.toTypedArray()
         inOrder(*mockPlugins) {
             mockPlugins.forEach {
@@ -330,10 +330,10 @@ internal class TracesFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -346,7 +346,7 @@ internal class TracesFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // then
+        // Then
         assertThat(TracesFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 
@@ -360,7 +360,7 @@ internal class TracesFeatureTest {
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,

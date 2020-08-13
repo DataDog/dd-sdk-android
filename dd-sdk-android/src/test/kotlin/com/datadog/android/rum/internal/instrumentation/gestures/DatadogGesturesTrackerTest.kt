@@ -56,20 +56,20 @@ internal class DatadogGesturesTrackerTest {
 
     @Test
     fun `will start tracking the activity`() {
-        // when
+        // When
         val spyTest = spy(testedTracker)
         doReturn(mockGestureDetector)
             .whenever(spyTest)
             .generateGestureDetector(mockActivity, mockDecorView)
         spyTest.startTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = isA<WindowCallbackWrapper>()
     }
 
     @Test
     fun `will stop tracking the activity`() {
-        // given
+        // Given
         whenever(mockWindow.callback)
             .thenReturn(
                 WindowCallbackWrapper(
@@ -78,16 +78,16 @@ internal class DatadogGesturesTrackerTest {
                 )
             )
 
-        // when
+        // When
         testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = null
     }
 
     @Test
     fun `stop tracking the activity will restore the previous callback if was not null`() {
-        // given
+        // Given
         val previousCallback: Window.Callback = mock()
         whenever(mockWindow.callback)
             .thenReturn(
@@ -97,28 +97,28 @@ internal class DatadogGesturesTrackerTest {
                 )
             )
 
-        // when
+        // When
         testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = previousCallback
     }
 
     @Test
     fun `stop will do nothing if the activity was not tracked`() {
-        // when
+        // When
         testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow, never()).callback = any()
     }
 
     @Test
     fun `will not track an activity with no decor view`() {
-        // given
+        // Given
         whenever(mockWindow.decorView).thenReturn(null)
 
-        // then
+        // Then
         verify(mockWindow, never()).callback = any()
     }
 }

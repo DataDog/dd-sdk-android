@@ -80,10 +80,10 @@ internal class DeferredWriterTest {
     fun `migrates the data before doing anything else`(forge: Forge) {
         val model = forge.anAlphabeticalString()
 
-        // when
+        // When
         testedWriter.write(model)
 
-        // then
+        // Then
         val inOrder = inOrder(mockDataMigrator, mockDelegate)
         inOrder.verify(mockDataMigrator).migrateData()
         inOrder.verify(mockDelegate).write(model)
@@ -97,7 +97,7 @@ internal class DeferredWriterTest {
 
         val countDownLatch = CountDownLatch(3)
 
-        // when
+        // When
         Thread {
             testedWriter.write(model1)
             countDownLatch.countDown()
@@ -113,7 +113,7 @@ internal class DeferredWriterTest {
 
         countDownLatch.await(3000, TimeUnit.SECONDS)
 
-        // then
+        // Then
         inOrder(mockDataMigrator, mockDelegate) {
             verify(mockDataMigrator).migrateData()
             argumentCaptor<String>() {
@@ -133,7 +133,7 @@ internal class DeferredWriterTest {
         val dataMigrated: AtomicBoolean = testedWriter.getFieldValue("dataMigrated")
         dataMigrated.set(false)
 
-        // when
+        // When
         Thread {
             testedWriter.write(model1)
             countDownLatch.countDown()
@@ -154,7 +154,7 @@ internal class DeferredWriterTest {
 
         countDownLatch.await(3000, TimeUnit.SECONDS)
 
-        // then
+        // Then
         inOrder(mockDataMigrator, mockDelegate) {
             verify(mockDataMigrator).migrateData()
             argumentCaptor<String>() {
@@ -172,10 +172,10 @@ internal class DeferredWriterTest {
             mockDelegate,
             mockExecutorService
         )
-        // when
+        // When
         testedWriter.write(model)
 
-        // then
+        // Then
         verify(mockExecutorService, times(1)).submit(any())
         verifyNoMoreInteractions(mockExecutorService)
     }

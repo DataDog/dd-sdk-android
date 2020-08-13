@@ -178,9 +178,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment resumed it will start a view event`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).startView(
             eq(mockFragment),
             eq(mockFragment.resolveViewName()),
@@ -216,7 +216,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment resumed will do nothing if the fragment is not whitelisted`() {
-        // given
+        // Given
         testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -228,10 +228,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockViewLoadingTimer)
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
@@ -239,9 +239,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused it will mark the view as hidden in the timer`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
             eq(emptyMap())
@@ -252,9 +252,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused it will stop a view event`(forge: Forge) {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
-        // then
+        // Then
         verify(mockRumMonitor).stopView(
             eq(mockFragment),
             eq(emptyMap())
@@ -263,7 +263,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment paused will do nothing if the fragment is not whitelisted`() {
-        // given
+        // Given
         testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -275,10 +275,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
@@ -286,16 +286,16 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `when fragment destroyed will remove view entry from timer`() {
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onDestroyed(mockFragment)
     }
 
     @Test
     fun `when fragment destroyed and not whitelisted will do nothing`() {
-        // given
+        // Given
         testedLifecycleCallbacks = AndroidXFragmentLifecycleCallbacks(
             { fakeAttributes },
             object : ComponentPredicate<Fragment> {
@@ -307,10 +307,10 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             advancedRumMonitor = mockAdvancedRumMonitor
         )
 
-        // when
+        // When
         testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
         verifyZeroInteractions(mockAdvancedRumMonitor)
         verifyZeroInteractions(mockViewLoadingTimer)
@@ -318,19 +318,20 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @Test
     fun `will register the callback to fragment manager when required`() {
-        // when
+        // When
         testedLifecycleCallbacks.register(mockFragmentActivity)
 
-        // then
-        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(testedLifecycleCallbacks, true)
+        // Then
+        verify(mockFragmentManager)
+            .registerFragmentLifecycleCallbacks(testedLifecycleCallbacks, true)
     }
 
     @Test
     fun `will unregister the callback from the fragment manager when required`() {
-        // when
+        // When
         testedLifecycleCallbacks.unregister(mockFragmentActivity)
 
-        // then
+        // Then
         verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(testedLifecycleCallbacks)
     }
 }

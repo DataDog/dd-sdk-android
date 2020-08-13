@@ -48,10 +48,11 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `starts and stop RUM Resource around successful request`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        setupFakeResponse(statusCode)
+        // Given
+        stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceId
@@ -64,8 +65,10 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
             else -> RumResourceKind.UNKNOWN
         }
 
+        // When
         testedInterceptor.intercept(mockChain)
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,
@@ -84,10 +87,11 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `starts and stop RUM Resource around failing request`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for failing request`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
-        setupFakeResponse(statusCode)
+        // Given
+        stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceId
@@ -100,8 +104,10 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
             else -> RumResourceKind.UNKNOWN
         }
 
+        // When
         testedInterceptor.intercept(mockChain)
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,
@@ -120,18 +126,21 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
     }
 
     @Test
-    fun `starts and stop RUM Resource around throwing request`(
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
+        // Given
         val expectedStartAttrs = emptyMap<String, Any?>()
         val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
+        // When
         assertThrows<Throwable>(throwable.message.orEmpty()) {
             testedInterceptor.intercept(mockChain)
         }
 
+        // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startResource(
                 requestId,

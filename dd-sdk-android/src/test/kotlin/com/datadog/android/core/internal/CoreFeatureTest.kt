@@ -192,40 +192,40 @@ internal class CoreFeatureTest {
 
     @Test
     fun `stop will shutdown the executors`() {
-        // given
+        // Given
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
         val mockThreadPoolExecutor: ThreadPoolExecutor = mock()
         CoreFeature.dataPersistenceExecutorService = mockThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
         CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
 
-        // when
+        // When
         CoreFeature.stop()
 
-        // then
+        // Then
         verify(mockThreadPoolExecutor).shutdownNow()
         verify(mockScheduledThreadPoolExecutor).shutdownNow()
     }
 
     @Test
     fun `if custom service name not provided will use the package name`() {
-        // given
+        // Given
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(serviceName = null))
 
-        // then
+        // Then
         assertThat(CoreFeature.serviceName).isEqualTo(mockAppContext.packageName)
     }
 
     @Test
     fun `if custom service name provided will use this instead of the package name`(forge: Forge) {
-        // given
+        // Given
         val serviceName = forge.anAlphabeticalString()
         CoreFeature.initialize(
             mockAppContext,
             DatadogConfig.CoreConfig(serviceName = serviceName)
         )
 
-        // then
+        // Then
         assertThat(CoreFeature.serviceName).isEqualTo(serviceName)
     }
 
@@ -233,7 +233,7 @@ internal class CoreFeatureTest {
     fun `if this process name matches the package name it will be marked as main process`(
         forge: Forge
     ) {
-        // given
+        // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -253,17 +253,17 @@ internal class CoreFeatureTest {
                 listOf(myProcess, otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
     fun `if this process does not match the package name it will be marked as secondary process`(
         forge: Forge
     ) {
-        // given
+        // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -283,16 +283,16 @@ internal class CoreFeatureTest {
                 listOf(myProcess, otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isFalse()
     }
 
     @Test
     fun `will mark it as main process by default if could not be found in the list`(forge: Forge) {
-        // given
+        // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -308,10 +308,10 @@ internal class CoreFeatureTest {
                 listOf(otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 

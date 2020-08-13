@@ -371,7 +371,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will add the span id and trace id if we active an active tracer`(forge: Forge) {
-        // given
+        // Given
         val config =
             DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
                 .build()
@@ -381,7 +381,7 @@ internal class DatadogLogHandlerTest {
         tracer.activateSpan(span)
         GlobalTracer.registerIfAbsent(tracer)
 
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -390,7 +390,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
@@ -403,7 +403,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will not add trace deps if we do not have active an active tracer`(forge: Forge) {
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -412,7 +412,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
@@ -424,7 +424,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will add the Rum context`(forge: Forge) {
-        // given
+        // Given
         val config =
             DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
                 .build()
@@ -433,7 +433,7 @@ internal class DatadogLogHandlerTest {
         GlobalRum.updateRumContext(rumContext)
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -442,7 +442,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
@@ -459,7 +459,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will not add trace deps if the flag was set to false`(forge: Forge) {
-        // given
+        // Given
         testedHandler = DatadogLogHandler(
             fakeServiceName,
             fakeLoggerName,
@@ -468,7 +468,7 @@ internal class DatadogLogHandlerTest {
             mockUserInfoProvider,
             bundleWithTraces = false
         )
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -477,7 +477,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 
@@ -489,7 +489,7 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will sample out the logs when required`() {
-        // given
+        // Given
         whenever(mockSampler.sample()).thenReturn(false)
         testedHandler = DatadogLogHandler(
             fakeServiceName,
@@ -501,7 +501,7 @@ internal class DatadogLogHandlerTest {
             sampler = mockSampler
         )
 
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -510,13 +510,13 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         verifyZeroInteractions(mockWriter)
     }
 
     @Test
     fun `it will sample in the logs when required`() {
-        // given
+        // Given
         val now = System.currentTimeMillis()
         whenever(mockSampler.sample()).thenReturn(true)
         testedHandler = DatadogLogHandler(
@@ -529,7 +529,7 @@ internal class DatadogLogHandlerTest {
             sampler = mockSampler
         )
 
-        // when
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -538,7 +538,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // then
+        // Then
         argumentCaptor<Log>().apply {
             verify(mockWriter).write(capture())
 

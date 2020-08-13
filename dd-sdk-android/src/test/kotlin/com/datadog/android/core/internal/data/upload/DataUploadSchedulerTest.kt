@@ -46,10 +46,10 @@ internal class DataUploadSchedulerTest {
 
     @Test
     fun `when start it will schedule a runnable`() {
-        // when
+        // When
         testedScheduler.startScheduling()
 
-        // then
+        // Then
         verify(mockExecutor).schedule(
             any(),
             eq(DataUploadRunnable.DEFAULT_DELAY),
@@ -59,13 +59,13 @@ internal class DataUploadSchedulerTest {
 
     @Test
     fun `when stop it will try to remove the scheduled runnable`() {
-        // given
+        // Given
         testedScheduler.startScheduling()
 
-        // when
+        // When
         testedScheduler.stopScheduling()
 
-        // then
+        // Then
         val argumentCaptor = argumentCaptor<Runnable>()
         verify(mockExecutor).schedule(
             argumentCaptor.capture(),

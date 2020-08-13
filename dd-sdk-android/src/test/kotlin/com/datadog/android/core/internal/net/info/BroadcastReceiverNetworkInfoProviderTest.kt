@@ -85,20 +85,20 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @Test
     fun `it will do nothing if unregister is called before register`() {
-        // when
+        // When
         testedProvider.unregister(mockContext)
 
-        // then
+        // Then
         verifyZeroInteractions(mockContext)
     }
 
     @Test
     fun `it will unregister the receiver only once`() {
-        // given
+        // Given
         val countDownLatch = CountDownLatch(2)
         testedProvider.register(mockContext)
 
-        // when
+        // When
         Thread {
             testedProvider.unregister(mockContext)
             countDownLatch.countDown()
@@ -108,7 +108,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             countDownLatch.countDown()
         }.start()
 
-        // then
+        // Then
         countDownLatch.await(3, TimeUnit.SECONDS)
         verify(mockContext).unregisterReceiver(testedProvider)
     }

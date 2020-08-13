@@ -69,57 +69,57 @@ internal class LogSerializerTest {
 
     @Test
     fun `ignores reserved attributes`(@Forgery fakeLog: Log, forge: Forge) {
-        // given
+        // Given
         val logWithoutAttributes = fakeLog.copy(attributes = emptyMap())
         val attributes = forge.aMap {
             anElementFrom(*LogSerializer.reservedAttributes) to forge.anAsciiString()
         }.toMap()
         val logWithReservedAttributes = fakeLog.copy(attributes = attributes)
 
-        // when
+        // When
         val serialized = testedSerializer.serialize(logWithReservedAttributes)
 
-        // then
+        // Then
         assertSerializedLogMatchesInputLog(serialized, logWithoutAttributes)
     }
 
     @Test
     fun `ignores reserved tags keys`(@Forgery fakeLog: Log, forge: Forge) {
-        // given
+        // Given
         val logWithoutTags = fakeLog.copy(tags = emptyList())
         val key = forge.anElementFrom("host", "device", "source", "service")
         val value = forge.aNumericalString()
         val reservedTag = "$key:$value"
         val logWithReservedTags = fakeLog.copy(tags = listOf(reservedTag))
 
-        // when
+        // When
         val serialized = testedSerializer.serialize(logWithReservedTags)
 
-        // then
+        // Then
         assertSerializedLogMatchesInputLog(serialized, logWithoutTags)
     }
 
     @Test
     fun `serializes a log with no network info available`(@Forgery fakeLog: Log, forge: Forge) {
-        // given
+        // Given
         val logWithoutNetworkInfo = fakeLog.copy(networkInfo = null)
 
-        // when
+        // When
         val serialized = testedSerializer.serialize(logWithoutNetworkInfo)
 
-        // then
+        // Then
         assertSerializedLogMatchesInputLog(serialized, logWithoutNetworkInfo)
     }
 
     @Test
     fun `serializes a log with no throwable available`(@Forgery fakeLog: Log, forge: Forge) {
-        // given
+        // Given
         val logWithoutThrowable = fakeLog.copy(throwable = null)
 
-        // when
+        // When
         val serialized = testedSerializer.serialize(logWithoutThrowable)
 
-        // then
+        // Then
         assertSerializedLogMatchesInputLog(serialized, logWithoutThrowable)
     }
 

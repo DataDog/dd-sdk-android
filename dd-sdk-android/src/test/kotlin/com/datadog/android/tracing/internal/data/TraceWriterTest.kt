@@ -44,25 +44,25 @@ internal class TraceWriterTest {
 
     @Test
     fun `when data received it will be handled by the wrapped file writer`(forge: Forge) {
-        // given
+        // Given
         val spansList = ArrayList<DDSpan>(2).apply {
             add(forge.getForgery())
             add(forge.getForgery())
         }
 
-        // when
+        // When
         testedWriter.write(spansList)
 
-        // then
+        // Then
         verify(mockFilesWriter).write(spansList)
     }
 
     @Test
     fun `when null data received it will do nothing`(forge: Forge) {
-        // when
+        // When
         testedWriter.write(null)
 
-        // then
+        // Then
         verifyZeroInteractions(mockFilesWriter)
     }
 }

@@ -166,10 +166,10 @@ internal class ImmediateFileWriterTest {
         val modelValue = forge.anAlphabeticalString()
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
 
-        // when
+        // When
         testedWriter.write(modelValue)
 
-        // then
+        // Then
         verifyZeroInteractions(mockDeferredHandler)
     }
 
