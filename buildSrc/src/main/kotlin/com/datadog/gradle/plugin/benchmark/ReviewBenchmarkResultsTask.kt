@@ -8,14 +8,17 @@ package com.datadog.gradle.plugin.benchmark
 
 import java.io.File
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.TaskAction
 
 open class ReviewBenchmarkResultsTask : DefaultTask() {
 
+    @get: Input
     internal lateinit var extension: ReviewBenchmarkExtension
+    @get: InputDirectory
     internal lateinit var buildDir: File
-
+    @get: Input
     val visitor = BenchmarkJsonFileVisitor()
 
     init {

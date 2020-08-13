@@ -14,6 +14,7 @@ import org.gradle.api.tasks.TaskAction
 
 open class CheckApiSurfaceTask : DefaultTask() {
 
+    @InputFile
     lateinit var surfaceFile: File
 
     init {

@@ -16,7 +16,7 @@ object Dependencies {
         const val KronosNTP = "0.0.1-alpha09"
 
         // Android
-        const val AndroidToolsPlugin = "3.6.1"
+        const val AndroidToolsPlugin = "4.0.0"
         const val AndroidXAppCompat = "1.1.0"
         const val AndroidXCore = "1.2.0"
         const val AndroidXMultidex = "2.0.1"
@@ -43,7 +43,6 @@ object Dependencies {
         // Tools
         const val Detekt = "1.6.0"
         const val KtLint = "8.2.0"
-        const val DependencyVersion = "0.27.0"
         const val Dokka = "0.10.0"
         const val Bintray = "1.8.4"
         const val Unmock = "0.7.5"
@@ -185,23 +184,6 @@ object Dependencies {
         const val Gradle = "https://plugins.gradle.org/m2/"
         const val Google = "https://maven.google.com"
         const val Jitpack = "https://jitpack.io"
-    }
-
-    object PluginIds {
-        const val Android = "com.android.library"
-        const val Detetk = "io.gitlab.arturbosch.detekt"
-        const val KtLint = "org.jlleitschuh.gradle.ktlint"
-        const val DependencyVersion = "com.github.ben-manes.versions"
-        const val Kotlin = "org.jetbrains.kotlin"
-        const val KotlinJVM = "org.jetbrains.kotlin.jvm"
-        const val KotlinAndroid = "org.jetbrains.kotlin.android"
-        const val KotlinAndroidExtension = "org.jetbrains.kotlin.android.extensions"
-        const val Bintray = "com.jfrog.bintray"
-        const val Unmock = "de.mobilej.unmock"
-    }
-
-    object PluginNamespaces {
-        const val Gradle = "org.gradle"
     }
 
     object AnnotationProcessors {
