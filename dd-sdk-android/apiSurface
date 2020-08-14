@@ -30,6 +30,8 @@ class com.datadog.android.DatadogConfig
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun sampleRumSessions(Float): Builder
+    fun setBundleWithTraceEnabled(Boolean): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
   const val LOGS_EU: String

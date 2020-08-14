@@ -177,8 +177,8 @@ internal constructor(private val handler: LogHandler) {
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
-        private var bundleWithTraceEnabled: Boolean = true
-        private var bundleWithRumEnabled: Boolean = true
+        private var bundleWithTraceEnabled: Boolean = LogsFeature.bundleWithTracesEnabled
+        private var bundleWithRumEnabled: Boolean = LogsFeature.bundleWithRumEnabled
         private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
 

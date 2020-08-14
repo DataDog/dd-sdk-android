@@ -188,7 +188,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `buider can disable the bundle with trace feature`(@Forgery forge: Forge) {
+    fun `builder can disable the bundle with trace feature`(@Forgery forge: Forge) {
         val logger = Logger.Builder()
             .setBundleWithTraceEnabled(false)
             .build()

@@ -316,4 +316,56 @@ internal class LogsFeatureTest {
         // Then
         assertThat(fakeFile).doesNotExist()
     }
+
+    @Test
+    fun `M set the bundle with RUM option from Config W initialized`(forge: Forge) {
+        // GIVEN
+        val fakeBundleWithRumOption = forge.aBool()
+        fakeConfig = DatadogConfig.LogsConfig(
+            clientToken = forge.anHexadecimalString(),
+            endpointUrl = forge.getForgery<URL>().toString(),
+            envName = forge.anAlphabeticalString(),
+            bundleWithRum = fakeBundleWithRumOption
+        )
+
+        // WHEN
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+
+        // THEN
+        assertThat(LogsFeature.bundleWithRumEnabled).isEqualTo(fakeBundleWithRumOption)
+    }
+
+    @Test
+    fun `M set the bundle with Traces option from Config W initialized`(forge: Forge) {
+        // GIVEN
+        val fakeBundleWithTracesOption = forge.aBool()
+        fakeConfig = DatadogConfig.LogsConfig(
+            clientToken = forge.anHexadecimalString(),
+            endpointUrl = forge.getForgery<URL>().toString(),
+            envName = forge.anAlphabeticalString(),
+            bundleWithTraces = fakeBundleWithTracesOption
+        )
+
+        // WHEN
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig,
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService
+        )
+
+        // THEN
+        assertThat(LogsFeature.bundleWithTracesEnabled).isEqualTo(fakeBundleWithTracesOption)
+    }
 }

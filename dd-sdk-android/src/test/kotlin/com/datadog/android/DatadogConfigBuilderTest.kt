@@ -641,6 +641,90 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `M enable bundleWithRum by default in the Config W not provided in the builder`() {
+        // WHEN
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .build()
+
+        // THEN
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.LogsConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    bundleWithRum = true,
+                    bundleWithTraces = true
+                )
+            )
+    }
+
+    @Test
+    fun `M enable bundleWithTrace by default in the Config W not provided in the builder`() {
+        // WHEN
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .build()
+
+        // THEN
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.LogsConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    bundleWithRum = true,
+                    bundleWithTraces = true
+                )
+            )
+    }
+
+    @Test
+    fun `M update the bundleWithRum in the Config W provided in the builder`(forge: Forge) {
+        // GIVEN
+        val fakeBundleWithRumOption = forge.aBool()
+
+        // WHEN
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .setBundleWithRumEnabled(fakeBundleWithRumOption)
+            .build()
+
+        // THEN
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.LogsConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    bundleWithRum = fakeBundleWithRumOption,
+                    bundleWithTraces = true
+                )
+            )
+    }
+
+    @Test
+    fun `M update the bundleWithTrace in the Config W provided in the builder`(forge: Forge) {
+        // GIVEN
+        val fakeBundleWithTraceOption = forge.aBool()
+
+        // WHEN
+        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+            .setBundleWithTraceEnabled(fakeBundleWithTraceOption)
+            .build()
+
+        // THEN
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.LogsConfig(
+                    fakeClientToken,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName,
+                    bundleWithRum = true,
+                    bundleWithTraces = fakeBundleWithTraceOption
+                )
+            )
+    }
+
+    @Test
     fun `adding a plugin will register it to the specific feature`(forge: Forge) {
         val logsPlugin: DatadogPlugin = mock()
         val tracesPlugin: DatadogPlugin = mock()

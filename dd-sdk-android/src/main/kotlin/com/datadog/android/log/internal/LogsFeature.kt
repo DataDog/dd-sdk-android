@@ -63,6 +63,8 @@ internal object LogsFeature {
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var plugins: List<DatadogPlugin> = emptyList()
+    internal var bundleWithTracesEnabled = true
+    internal var bundleWithRumEnabled = true
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -82,6 +84,8 @@ internal object LogsFeature {
         endpointUrl = config.endpointUrl
         envName = config.envName
         appVersion = CoreFeature.packageVersion
+        bundleWithRumEnabled = config.bundleWithRum
+        bundleWithTracesEnabled = config.bundleWithTraces
         persistenceStrategy = LogFileStrategy(
             appContext,
             dataPersistenceExecutorService = dataPersistenceExecutor

@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import android.os.Build
+import com.datadog.android.log.Logger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
@@ -49,6 +50,8 @@ private constructor(
         val clientToken: String,
         val endpointUrl: String,
         val envName: String,
+        val bundleWithTraces: Boolean = true,
+        val bundleWithRum: Boolean = true,
         val plugins: List<DatadogPlugin> = emptyList()
     )
 
@@ -354,6 +357,32 @@ private constructor(
          */
         fun sampleRumSessions(samplingRate: Float): Builder {
             rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            return this
+        }
+
+        /**
+         * Enables the logs bundling with the current active trace. If the LOGGING feature is enabled
+         * all the logs sent from any [Logger] will be bundled with the current trace.
+         * @param enabled true by default
+         * Please note that this global configuration option can be overridden inside the
+         * [Logger.Builder].
+         * @see [Logger.Builder.setBundleWithTraceEnabled]
+         */
+        fun setBundleWithTraceEnabled(enabled: Boolean): Builder {
+            logsConfig = logsConfig.copy(bundleWithTraces = enabled)
+            return this
+        }
+
+        /**
+         * Enables the logs bundling with the current active View. If the LOGGING feature is enabled all
+         * the logs sent from any [Logger] will be bundled with the current view information.
+         * @param enabled true by default
+         * Please note that this global configuration option can be overridden inside the
+         * [Logger.Builder].
+         * @see [Logger.Builder.setBundleWithRumEnabled]
+         */
+        fun setBundleWithRumEnabled(enabled: Boolean): Builder {
+            logsConfig = logsConfig.copy(bundleWithRum = enabled)
             return this
         }
 

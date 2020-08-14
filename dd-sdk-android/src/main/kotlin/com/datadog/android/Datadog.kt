@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.EndpointUpdateStrategy
+import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
@@ -275,11 +276,11 @@ object Datadog {
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
-            "Please add the following code in your application's onCreate() method:\n" +
-            "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
+        "Please add the following code in your application's onCreate() method:\n" +
+        "Datadog.initialize(context, \"<CLIENT_TOKEN>\");"
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
-            "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     internal const val SHUTDOWN_THREAD = "datadog_shutdown"
 
