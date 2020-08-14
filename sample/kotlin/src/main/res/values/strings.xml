@@ -49,4 +49,8 @@
     <string name="hint_user_email">User email</string>
 
     <string name="load_picture">Load picture</string>
+    <string name="widget_description">Datadog Sample Widget</string>
+    <string name="add_widget">Add widget</string>
+    <string name="loading">Loading…</string>
+    <string name="load_resource">Perform http request</string>
 </resources>

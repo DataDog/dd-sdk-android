@@ -130,8 +130,12 @@ class SampleApplication : Application() {
         }
 
         fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
+            return ViewModelFactory(getOkHttpClient(context))
+        }
+
+        fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication
-            return ViewModelFactory(application.okHttpClient)
+            return application.okHttpClient
         }
     }
 }
