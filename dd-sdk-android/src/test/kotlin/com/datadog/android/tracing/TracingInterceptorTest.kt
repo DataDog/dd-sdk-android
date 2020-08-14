@@ -14,7 +14,6 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -130,7 +129,7 @@ internal open class TracingInterceptorTest {
     lateinit var fakeUrl: String
 
     @Forgery
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.TracesConfig
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakePackageName: String
@@ -146,9 +145,6 @@ internal open class TracingInterceptorTest {
 
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
-
-    @Forgery
-    lateinit var fakeRumContext: RumContext
 
     // endregion
 

@@ -55,7 +55,7 @@ internal object CrashReportsFeature {
     @Suppress("LongParameterList")
     fun initialize(
         appContext: Context,
-        config: DatadogConfig.FeatureConfig,
+        config: DatadogConfig.CrashReportsConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
@@ -144,7 +144,7 @@ internal object CrashReportsFeature {
         ).register()
     }
 
-    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.CrashReportsConfig) {
         plugins = config.plugins
         plugins.forEach {
             it.register(

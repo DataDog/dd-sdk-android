@@ -26,9 +26,9 @@ import java.util.UUID
  */
 class DatadogConfig
 private constructor(
-    internal val logsConfig: FeatureConfig?,
-    internal val tracesConfig: FeatureConfig?,
-    internal val crashReportConfig: FeatureConfig?,
+    internal val logsConfig: LogsConfig?,
+    internal val tracesConfig: TracesConfig?,
+    internal val crashReportConfig: CrashReportsConfig?,
     internal val rumConfig: RumConfig?,
     internal var coreConfig: CoreConfig
 ) {
@@ -38,9 +38,15 @@ private constructor(
         val serviceName: String? = null
     )
 
-    internal data class FeatureConfig(
+    internal data class CrashReportsConfig(
         val clientToken: String,
-        val applicationId: UUID,
+        val endpointUrl: String,
+        val envName: String,
+        val plugins: List<DatadogPlugin> = emptyList()
+    )
+
+    internal data class LogsConfig(
+        val clientToken: String,
         val endpointUrl: String,
         val envName: String,
         val plugins: List<DatadogPlugin> = emptyList()
@@ -55,6 +61,13 @@ private constructor(
         val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
         val viewTrackingStrategy: ViewTrackingStrategy? = null,
+        val plugins: List<DatadogPlugin> = emptyList()
+    )
+
+    internal data class TracesConfig(
+        val clientToken: String,
+        val endpointUrl: String,
+        val envName: String,
         val plugins: List<DatadogPlugin> = emptyList()
     )
 
@@ -93,21 +106,18 @@ private constructor(
         constructor(clientToken: String, envName: String, applicationId: String) :
             this(clientToken, envName, UUID.fromString(applicationId))
 
-        private var logsConfig: FeatureConfig = FeatureConfig(
+        private var logsConfig: LogsConfig = LogsConfig(
             clientToken,
-            applicationId,
             DatadogEndpoint.LOGS_US,
             envName
         )
-        private var tracesConfig: FeatureConfig = FeatureConfig(
+        private var tracesConfig: TracesConfig = TracesConfig(
             clientToken,
-            applicationId,
             DatadogEndpoint.TRACES_US,
             envName
         )
-        private var crashReportConfig: FeatureConfig = FeatureConfig(
+        private var crashReportConfig: CrashReportsConfig = CrashReportsConfig(
             clientToken,
-            applicationId,
             DatadogEndpoint.LOGS_US,
             envName
         )

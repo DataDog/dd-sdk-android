@@ -78,7 +78,7 @@ internal class CrashReportsFeatureTest {
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.CrashReportsConfig
 
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
@@ -89,9 +89,8 @@ internal class CrashReportsFeatureTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         CoreFeature.isMainProcess = true
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.CrashReportsConfig(
             clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             envName = forge.anAlphabeticalString()
         )
@@ -226,9 +225,8 @@ internal class CrashReportsFeatureTest {
         val clientToken = CrashReportsFeature.clientToken
         val endpointUrl = CrashReportsFeature.endpointUrl
 
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.CrashReportsConfig(
             clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             envName = forge.anAlphabeticalString()
         )

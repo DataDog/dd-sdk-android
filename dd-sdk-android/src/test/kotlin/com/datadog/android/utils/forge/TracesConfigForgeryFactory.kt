@@ -11,12 +11,11 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.net.URL
 
-internal class FeatureConfigForgeryFactory :
-    ForgeryFactory<DatadogConfig.FeatureConfig> {
-    override fun getForgery(forge: Forge): DatadogConfig.FeatureConfig {
-        return DatadogConfig.FeatureConfig(
+internal class TracesConfigForgeryFactory :
+    ForgeryFactory<DatadogConfig.TracesConfig> {
+    override fun getForgery(forge: Forge): DatadogConfig.TracesConfig {
+        return DatadogConfig.TracesConfig(
             clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             envName = forge.anAlphabeticalString()
         )

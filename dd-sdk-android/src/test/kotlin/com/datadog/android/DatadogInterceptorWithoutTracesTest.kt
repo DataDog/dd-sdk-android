@@ -14,7 +14,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
@@ -72,9 +71,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockChain: Interceptor.Chain
 
-    @Mock
-    lateinit var mockRequestListener: TracedRequestListener
-
     lateinit var mockDevLogHandler: LogHandler
 
     lateinit var mockAppContext: Context
@@ -102,7 +98,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var fakeUrl: String
 
     @Forgery
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.TracesConfig
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakePackageName: String

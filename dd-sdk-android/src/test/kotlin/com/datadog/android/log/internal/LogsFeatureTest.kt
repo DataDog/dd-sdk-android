@@ -74,7 +74,7 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: DatadogConfig.LogsConfig
 
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
@@ -85,9 +85,8 @@ internal class LogsFeatureTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         CoreFeature.isMainProcess = true
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.LogsConfig(
             clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             envName = forge.anAlphabeticalString()
         )
@@ -178,9 +177,8 @@ internal class LogsFeatureTest {
         val clientToken = LogsFeature.clientToken
         val endpointUrl = LogsFeature.endpointUrl
 
-        fakeConfig = DatadogConfig.FeatureConfig(
+        fakeConfig = DatadogConfig.LogsConfig(
             clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
             envName = forge.anAlphabeticalString()
         )

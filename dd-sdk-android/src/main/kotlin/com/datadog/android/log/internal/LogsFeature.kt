@@ -67,7 +67,7 @@ internal object LogsFeature {
     @Suppress("LongParameterList")
     fun initialize(
         appContext: Context,
-        config: DatadogConfig.FeatureConfig,
+        config: DatadogConfig.LogsConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider,
@@ -145,7 +145,7 @@ internal object LogsFeature {
         dataUploadScheduler.startScheduling()
     }
 
-    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.LogsConfig) {
         plugins = config.plugins
         plugins.forEach {
             it.register(

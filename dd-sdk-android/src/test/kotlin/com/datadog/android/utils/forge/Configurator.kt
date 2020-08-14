@@ -13,7 +13,10 @@ import fr.xgouchet.elmyr.jvm.useJvmFactories
 internal class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
-        forge.addFactory(FeatureConfigForgeryFactory())
+        forge.addFactory(CrashReportsConfigForgeryFactory())
+        forge.addFactory(LogsConfigForgeryFactory())
+        forge.addFactory(RumConfigForgeryFactory())
+        forge.addFactory(TracesConfigForgeryFactory())
         forge.addFactory(LogForgeryFactory())
         forge.addFactory(BatchForgeryFactory())
         forge.addFactory(ThrowableForgeryFactory())

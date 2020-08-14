@@ -46,7 +46,7 @@ internal object TracesFeature {
     @Suppress("LongParameterList")
     fun initialize(
         appContext: Context,
-        config: DatadogConfig.FeatureConfig,
+        config: DatadogConfig.TracesConfig,
         okHttpClient: OkHttpClient,
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
@@ -124,7 +124,7 @@ internal object TracesFeature {
         dataUploadScheduler.startScheduling()
     }
 
-    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
+    private fun registerPlugins(appContext: Context, config: DatadogConfig.TracesConfig) {
         plugins = config.plugins
         plugins.forEach {
             it.register(

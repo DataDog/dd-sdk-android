@@ -64,27 +64,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    UUID(0, 0),
                     DatadogEndpoint.TRACES_US,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    UUID(0, 0),
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
@@ -107,27 +104,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
@@ -151,27 +145,24 @@ class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
@@ -229,27 +220,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     envName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     envName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     envName
                 )
@@ -287,27 +275,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     envName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     envName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     envName
                 )
@@ -363,27 +348,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName
                 )
@@ -418,27 +400,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_EU,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_EU,
                     fakeEnvName
                 )
@@ -481,27 +460,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     logsUrl,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     tracesUrl,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     crashReportsUrl,
                     fakeEnvName
                 )
@@ -545,27 +521,24 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     logsUrl,
                     fakeEnvName
                 )
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     tracesUrl,
                     fakeEnvName
                 )
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     crashReportsUrl,
                     fakeEnvName
                 )
@@ -686,9 +659,8 @@ class DatadogConfigBuilderTest {
 
         assertThat(config.logsConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.LogsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName,
                     plugins = listOf(logsPlugin)
@@ -696,9 +668,8 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.tracesConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.TracesConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.TRACES_US,
                     fakeEnvName,
                     plugins = listOf(tracesPlugin)
@@ -706,9 +677,8 @@ class DatadogConfigBuilderTest {
             )
         assertThat(config.crashReportConfig)
             .isEqualTo(
-                DatadogConfig.FeatureConfig(
+                DatadogConfig.CrashReportsConfig(
                     fakeClientToken,
-                    fakeApplicationId,
                     DatadogEndpoint.LOGS_US,
                     fakeEnvName,
                     plugins = listOf(crashPlugin)
