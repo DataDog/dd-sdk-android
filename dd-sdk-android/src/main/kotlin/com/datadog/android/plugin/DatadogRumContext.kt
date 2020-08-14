@@ -15,5 +15,7 @@ package com.datadog.android.plugin
 data class DatadogRumContext(
     val applicationId: String? = null,
     val sessionId: String? = null,
-    val viewId: String? = null
+    val viewId: String? = null,
+    val bundleWithRum: Boolean = true,
+    val bundleWithTraces: Boolean = true
 )

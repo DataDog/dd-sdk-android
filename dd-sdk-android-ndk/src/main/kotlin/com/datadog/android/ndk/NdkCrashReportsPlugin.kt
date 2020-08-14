@@ -64,9 +64,10 @@ class NdkCrashReportsPlugin : DatadogPlugin {
     }
 
     override fun onContextChanged(context: DatadogContext) {
-        // TODO: RUMM-637 Only update the rum context if the `bundleWithRum` config attribute is true
         context.rum?.let {
-            updateRumContext(it.applicationId, it.sessionId, it.viewId)
+            if (it.bundleWithRum) {
+                updateRumContext(it.applicationId, it.sessionId, it.viewId)
+            }
         }
     }
 

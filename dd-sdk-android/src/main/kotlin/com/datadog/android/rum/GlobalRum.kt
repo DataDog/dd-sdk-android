@@ -163,7 +163,9 @@ object GlobalRum {
             DatadogRumContext(
                 newContext.applicationId,
                 newContext.sessionId,
-                newContext.viewId
+                newContext.viewId,
+                bundleWithRum = LogsFeature.bundleWithRumEnabled,
+                bundleWithTraces = LogsFeature.bundleWithTracesEnabled
             )
         )
         updateContextInPlugins(pluginContext, RumFeature.plugins)
