@@ -26,6 +26,7 @@ import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
@@ -89,7 +90,7 @@ internal class CoreFeatureTest {
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, times(3)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, atLeastOnce()).registerReceiver(broadcastReceiverCaptor.capture(), any())
 
         assertThat(broadcastReceiverCaptor.allValues)
             .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
@@ -102,10 +103,9 @@ internal class CoreFeatureTest {
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, times(2)).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, atLeastOnce()).registerReceiver(broadcastReceiverCaptor.capture(), any())
         assertThat(broadcastReceiverCaptor.allValues)
             .allMatch { it is BroadcastReceiverSystemInfoProvider }
-
         verify(mockConnectivityMgr)
             .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
     }
