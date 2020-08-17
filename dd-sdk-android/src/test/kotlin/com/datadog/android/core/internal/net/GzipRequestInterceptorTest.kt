@@ -61,7 +61,8 @@ internal class GzipRequestInterceptorTest {
 
     @Test
     fun `compress body when no encoding is used`() {
-        setupFakeResponse()
+        fakeResponse = forgeResponse()
+        stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -87,7 +88,8 @@ internal class GzipRequestInterceptorTest {
         fakeRequest = fakeRequest.newBuilder()
             .header("Content-Encoding", "identity")
             .build()
-        setupFakeResponse()
+        fakeResponse = forgeResponse()
+        stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -112,7 +114,8 @@ internal class GzipRequestInterceptorTest {
         fakeRequest = fakeRequest.newBuilder()
             .get()
             .build()
-        setupFakeResponse()
+        fakeResponse = forgeResponse()
+        stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -129,16 +132,16 @@ internal class GzipRequestInterceptorTest {
 
     // region Internal
 
-    private fun setupFakeResponse() {
-
+    private fun forgeResponse(): Response {
         val builder = Response.Builder()
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
             .code(200)
             .message("{}")
+        return builder.build()
+    }
 
-        fakeResponse = builder.build()
-
+    private fun stubChain() {
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doReturn fakeResponse
     }

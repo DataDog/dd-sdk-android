@@ -9,16 +9,19 @@ package com.datadog.android
 import android.os.Build
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
-import com.datadog.android.rum.assertj.RumConfigAssert
+import com.datadog.android.rum.assertj.RumConfigAssert.Companion.assertThat
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
@@ -36,26 +39,34 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings()
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class, seed = 0x5c0098fcL)
 class DatadogConfigBuilderTest {
 
+    lateinit var testedBuilder: DatadogConfig.Builder
+
+    @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeClientToken: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnvName: String
 
     @Forgery
     lateinit var fakeApplicationId: UUID
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeEnvName = forge.anAlphabeticalString()
-        fakeClientToken = forge.anHexadecimalString()
+    fun `set up`() {
+        testedBuilder = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
     }
 
     @Test
-    fun `builder returns sensible defaults without applicationId`() {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName)
-            .build()
+    fun `𝕄 use sensible defaults 𝕎 build() {no applicationId}`() {
+        // Given
+        val builder = DatadogConfig.Builder(fakeClientToken, fakeEnvName)
 
+        // When
+        val config = builder.build()
+
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -94,11 +105,18 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder returns sensible defaults with String applicationId`() {
-        val config =
-            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId.toString())
-                .build()
+    fun `𝕄 use sensible defaults 𝕎 build() {String applicationId}`() {
+        // Given
+        val builder = DatadogConfig.Builder(
+            fakeClientToken,
+            fakeEnvName,
+            fakeApplicationId.toString()
+        )
 
+        // When
+        val config = builder.build()
+
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -144,10 +162,11 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder returns sensible defaults with UUID applicationId`() {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
-            .build()
+    fun `𝕄 use sensible defaults 𝕎 build() {UUID applicationId}`() {
+        // When
+        val config = testedBuilder.build()
 
+        // Then
         assertThat(config.coreConfig)
         assertThat(config.logsConfig)
             .isEqualTo(
@@ -188,11 +207,11 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with custom service name`(
-        forge: Forge
+    fun `𝕄 build config with serviceName 𝕎 setServiceName() and build()`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) serviceName: String
     ) {
-        val serviceName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -200,6 +219,7 @@ class DatadogConfigBuilderTest {
             .setServiceName(serviceName)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -209,11 +229,11 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with custom env name`(
-        forge: Forge
+    fun `𝕄 build config with envName 𝕎 setEnvironmentName() and build()`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) envName: String
     ) {
-        val envName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -221,6 +241,7 @@ class DatadogConfigBuilderTest {
             .setEnvironmentName(envName)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -267,11 +288,11 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with invalid custom env name`(
-        forge: Forge
+    fun `𝕄 build config with envName 𝕎 setEnvironmentName() and build() {invalid envName}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) envName: String
     ) {
-        val envName = forge.anAlphabeticalString()
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -279,6 +300,7 @@ class DatadogConfigBuilderTest {
             .setEnvironmentName("\"'$envName'\"")
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -325,14 +347,16 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with all features disabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build config with all features disabled 𝕎 setXXXEnabled(false) and build()`() {
+        // When
+        val config = testedBuilder
             .setLogsEnabled(false)
             .setTracesEnabled(false)
             .setCrashReportsEnabled(false)
             .setRumEnabled(false)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -346,8 +370,9 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with US endpoints all features enabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build config with US endpoints 𝕎 useUSEndpoints() and build()`() {
+        // When
+        val config = testedBuilder
             .useUSEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
@@ -355,6 +380,7 @@ class DatadogConfigBuilderTest {
             .setRumEnabled(true)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -401,8 +427,9 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with EU endpoints all features enabled`() {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build config with EU endpoints 𝕎 useEUEndpoints() and build()`() {
+        // When
+        val config = testedBuilder
             .useEUEndpoints()
             .setLogsEnabled(true)
             .setTracesEnabled(true)
@@ -410,6 +437,7 @@ class DatadogConfigBuilderTest {
             .setRumEnabled(true)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -455,14 +483,14 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with custom secure endpoints all features enabled`(
-        forge: Forge
+    fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
+        @RegexForgery("https://[a-z]+\\.com") logsUrl: String,
+        @RegexForgery("https://[a-z]+\\.com") tracesUrl: String,
+        @RegexForgery("https://[a-z]+\\.com") crashReportsUrl: String,
+        @RegexForgery("https://[a-z]+\\.com") rumUrl: String
     ) {
-        val logsUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val tracesUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val crashReportsUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val rumUrl = forge.aStringMatching("https://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
@@ -473,6 +501,7 @@ class DatadogConfigBuilderTest {
             .setRumEnabled(true)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -519,14 +548,14 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with custom cleartext endpoints all features enabled`(
-        forge: Forge
+    fun `𝕄 build config with custom cleartext endpoints 𝕎 useCustomXXXEndpoint() and build()`(
+        @RegexForgery("http://[a-z]+\\.com") logsUrl: String,
+        @RegexForgery("http://[a-z]+\\.com") tracesUrl: String,
+        @RegexForgery("http://[a-z]+\\.com") crashReportsUrl: String,
+        @RegexForgery("http://[a-z]+\\.com") rumUrl: String
     ) {
-        val logsUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val tracesUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val crashReportsUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
@@ -537,6 +566,7 @@ class DatadogConfigBuilderTest {
             .setRumEnabled(true)
             .build()
 
+        // Then
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
@@ -582,19 +612,25 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with track gestures enabled`(forge: Forge) {
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val touchTargetExtraAttributesProviders =
-            Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
-                mock()
-            }
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build RUM config with gestures enabled 𝕎 trackInteractions() and build()`(
+        @RegexForgery("http://[a-z]+\\.com") rumUrl: String,
+        @IntForgery(0, 10) attributesCount: Int
+    ) {
+        // Given
+        val touchTargetExtraAttributesProviders = Array<ViewAttributesProvider>(attributesCount) {
+            mock()
+        }
+
+        // When
+        val config = testedBuilder
             .useCustomRumEndpoint(rumUrl)
             .trackInteractions(touchTargetExtraAttributesProviders)
             .build()
+
+        // Then
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()
-        RumConfigAssert.assertThat(rumConfig!!)
+        assertThat(rumConfig!!)
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
@@ -605,19 +641,23 @@ class DatadogConfigBuilderTest {
 
     @TestTargetApi(value = Build.VERSION_CODES.Q)
     @Test
-    fun `builder with track gestures enabled for Android Q`(forge: Forge) {
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val touchTargetExtraAttributesProviders =
-            Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
-                mock()
-            }
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build RUM config with gestures enabled 𝕎 trackInteractions() and build() {Android Q}`(
+        @RegexForgery("http://[a-z]+\\.com") rumUrl: String,
+        @IntForgery(0, 10) attributesCount: Int
+    ) {
+        // Given
+        val touchTargetExtraAttributesProviders = Array<ViewAttributesProvider>(attributesCount) {
+            mock()
+        }
+
+        // When
+        val config = testedBuilder
             .useCustomRumEndpoint(rumUrl)
             .trackInteractions(touchTargetExtraAttributesProviders)
             .build()
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()
-        RumConfigAssert.assertThat(rumConfig!!)
+        assertThat(rumConfig!!)
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
@@ -627,17 +667,22 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with track activities as views tracking strategy`(forge: Forge) {
-        val rumUrl = forge.aStringMatching("http://[a-z]+\\.com")
-        val strategy =
-            ActivityViewTrackingStrategy(true)
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+    fun `𝕄 build RUM config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`(
+        @RegexForgery("http://[a-z]+\\.com") rumUrl: String
+    ) {
+        // Given
+        val strategy = ActivityViewTrackingStrategy(true)
+
+        // When
+        val config = testedBuilder
             .useCustomRumEndpoint(rumUrl)
             .useViewTrackingStrategy(strategy)
             .build()
+
+        // Then
         val rumConfig: DatadogConfig.RumConfig? = config.rumConfig
         assertThat(rumConfig).isNotNull()
-        RumConfigAssert.assertThat(rumConfig!!)
+        assertThat(rumConfig!!)
             .hasClientToken(fakeClientToken)
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(rumUrl)
@@ -647,14 +692,16 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `builder with RUM sampling`(
+    fun `𝕄 build RUM config with sampling rate 𝕎 sampleRumSessions() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+        // When
+        val config = testedBuilder
             .setRumEnabled(true)
             .sampleRumSessions(sampling)
             .build()
 
+        // Then
         assertThat(config.rumConfig)
             .isEqualTo(
                 DatadogConfig.RumConfig(
@@ -668,12 +715,15 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `adding a plugin will register it to the specific feature`(forge: Forge) {
+    fun `𝕄 build config with plugin 𝕎 addPlugin() and build()`() {
+        // Given
         val logsPlugin: DatadogPlugin = mock()
         val tracesPlugin: DatadogPlugin = mock()
         val rumPlugin: DatadogPlugin = mock()
         val crashPlugin: DatadogPlugin = mock()
-        val config = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+
+        // When
+        val config = testedBuilder
             .setLogsEnabled(true)
             .setTracesEnabled(true)
             .setCrashReportsEnabled(true)
@@ -684,6 +734,7 @@ class DatadogConfigBuilderTest {
             .addPlugin(crashPlugin, Feature.CRASH)
             .build()
 
+        // Then
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(

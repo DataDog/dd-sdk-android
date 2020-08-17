@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -46,38 +45,38 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ImmediateFileWriterTest {
 
-    lateinit var underTest: ImmediateFileWriter<String>
+    lateinit var testedWriter: ImmediateFileWriter<String>
 
     @Mock
-    lateinit var mockedSerializer: Serializer<String>
+    lateinit var mockSerializer: Serializer<String>
 
     @Mock
-    lateinit var mockedOrchestrator: Orchestrator
+    lateinit var mockOrchestrator: Orchestrator
 
     @Mock
     lateinit var mockDeferredHandler: AndroidDeferredHandler
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockedSerializer.serialize(any())).doAnswer {
+        whenever(mockSerializer.serialize(any())).doAnswer {
             it.getArgument(0)
         }
         whenever(mockDeferredHandler.handle(any())) doAnswer {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        underTest = ImmediateFileWriter(
-            mockedOrchestrator,
-            mockedSerializer
+        testedWriter = ImmediateFileWriter(
+            mockOrchestrator,
+            mockSerializer
         )
     }
 
     @AfterEach
     fun `tear down`() {
-        rootDir.deleteRecursively()
+        tempRootDir.deleteRecursively()
     }
 
     @Test
@@ -85,10 +84,10 @@ internal class ImmediateFileWriterTest {
     fun `writes a valid model`(forge: Forge) {
         val model = forge.anAlphabeticalString()
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        val file = File(tempRootDir, fileNameToWriteTo)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
-        underTest.write(model)
+        testedWriter.write(model)
 
         assertThat(file.readText())
             .isEqualTo(model)
@@ -99,10 +98,10 @@ internal class ImmediateFileWriterTest {
     fun `writes a collection of models`(forge: Forge) {
         val models: List<String> = forge.aList { forge.anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        val file = File(tempRootDir, fileNameToWriteTo)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
-        underTest.write(models)
+        testedWriter.write(models)
 
         assertThat(file.readText().split(","))
             .isEqualTo(models)
@@ -113,11 +112,11 @@ internal class ImmediateFileWriterTest {
     fun `writes several models`(forge: Forge) {
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        val file = File(tempRootDir, fileNameToWriteTo)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
         models.forEach {
-            underTest.write(it)
+            testedWriter.write(it)
         }
 
         assertThat(file.readText())
@@ -128,18 +127,18 @@ internal class ImmediateFileWriterTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `writes several models with custom separator`(forge: Forge) {
         val separator = forge.anAsciiString()
-        underTest = ImmediateFileWriter(
-            mockedOrchestrator,
-            mockedSerializer,
+        testedWriter = ImmediateFileWriter(
+            mockOrchestrator,
+            mockSerializer,
             separator
         )
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        val file = File(tempRootDir, fileNameToWriteTo)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
         models.forEach {
-            underTest.write(it)
+            testedWriter.write(it)
         }
 
         assertThat(file.readText())
@@ -153,9 +152,9 @@ internal class ImmediateFileWriterTest {
     ) {
         val modelValue = forge.anAlphabeticalString()
         val exception = SecurityException(forge.anAlphabeticalString())
-        doThrow(exception).whenever(mockedOrchestrator).getWritableFile(any())
+        doThrow(exception).whenever(mockOrchestrator).getWritableFile(any())
 
-        underTest.write(modelValue)
+        testedWriter.write(modelValue)
 
         verifyZeroInteractions(mockDeferredHandler)
     }
@@ -165,12 +164,12 @@ internal class ImmediateFileWriterTest {
         forge: Forge
     ) {
         val modelValue = forge.anAlphabeticalString()
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(null)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
 
-        // when
-        underTest.write(modelValue)
+        // When
+        testedWriter.write(modelValue)
 
-        // then
+        // Then
         verifyZeroInteractions(mockDeferredHandler)
     }
 
@@ -180,15 +179,15 @@ internal class ImmediateFileWriterTest {
     ) {
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
+        val file = File(tempRootDir, fileNameToWriteTo)
         file.createNewFile()
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
         val outputStream = file.outputStream()
         val lock = outputStream.channel.lock()
         try {
             models.forEach {
-                underTest.write(it)
+                testedWriter.write(it)
             }
         } finally {
             lock.release()
@@ -203,21 +202,21 @@ internal class ImmediateFileWriterTest {
     fun `handles well the file locking when accessed from multiple threads`(forge: Forge) {
         val models = forge.aList(size = 10) { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(rootDir, fileNameToWriteTo)
+        val file = File(tempRootDir, fileNameToWriteTo)
         file.createNewFile()
-        whenever(mockedOrchestrator.getWritableFile(any())).thenReturn(file)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
         val countDownLatch = CountDownLatch(2)
 
         Thread {
             models.take(5).forEach {
-                underTest.write(it)
+                testedWriter.write(it)
             }
             countDownLatch.countDown()
         }.start()
 
         Thread {
             models.takeLast(5).forEach {
-                underTest.write(it)
+                testedWriter.write(it)
             }
             countDownLatch.countDown()
         }.start()

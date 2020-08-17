@@ -52,6 +52,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+internal typealias NavLifecycleCallbacks =
+    NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks
+
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ApiLevelExtension::class),
@@ -102,7 +105,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         doReturn(mockNavView).whenever(mockActivity).findViewById<View>(fakeNavViewId)
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
-        mockNavDestination = getMockNavDestination(forge, fakeDestinationName)
+        mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
@@ -161,7 +164,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onActivityStarted(mockActivity)
 
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
-            any<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>(),
+            any<NavLifecycleCallbacks>(),
             eq(true)
         )
     }
@@ -175,18 +178,17 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `unregisters fragment lifecycle callback onActivityStopped`() {
-        // given
+        // Given
         testedStrategy.onActivityStarted(mockActivity)
 
-        // when
+        // When
         testedStrategy.onActivityStopped(mockActivity)
 
-        // then
-        val argumentCaptor =
-            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
-        verify(mockFragmentManager)
-            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
-        verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(argumentCaptor.firstValue)
+        // Then
+        argumentCaptor<NavLifecycleCallbacks> {
+            verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
+            verify(mockFragmentManager).unregisterFragmentLifecycleCallbacks(firstValue)
+        }
     }
 
     @Test
@@ -285,7 +287,7 @@ internal class NavigationViewTrackingStrategyTest {
         forge: Forge,
         @StringForgery(StringForgeryType.ALPHABETICAL) newDestinationName: String
     ) {
-        val newDestination = getMockNavDestination(forge, newDestinationName)
+        val newDestination = mockNavDestination(forge, newDestinationName)
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
         testedStrategy.onDestinationChanged(mockNavController, newDestination, null)
@@ -318,7 +320,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `will update Rum event time when fragment resumed with the resolved key`(forge: Forge) {
-        // given
+        // Given
         whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
         val expectedLoadingTime = forge.aLong()
         val firsTimeLoading = forge.aBool()
@@ -334,10 +336,10 @@ internal class NavigationViewTrackingStrategyTest {
             .thenReturn(firsTimeLoading)
         val callback = setupFragmentCallbacks()
 
-        // when
+        // When
         callback.onFragmentResumed(mock(), mockFragment)
 
-        // then
+        // Then
         verify(mockRumMonitor).updateViewLoadingTime(
             mockNavDestination,
             expectedLoadingTime,
@@ -347,7 +349,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `will do nothing when fragment resumed is NavHostFragment`(forge: Forge) {
-        // given
+        // Given
         val navHostFragment: NavHostFragment = mock()
         whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
         val expectedLoadingTime = forge.aLong()
@@ -358,16 +360,16 @@ internal class NavigationViewTrackingStrategyTest {
             .thenReturn(firsTimeLoading)
         val callback = setupFragmentCallbacks()
 
-        // when
+        // When
         callback.onFragmentResumed(mock(), navHostFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
     fun `will do nothing when there is no currentDestination`(forge: Forge) {
-        // given
+        // Given
         whenever(mockNavController.currentDestination).thenReturn(null)
         val expectedLoadingTime = forge.aLong()
         val firsTimeLoading = forge.aBool()
@@ -377,30 +379,27 @@ internal class NavigationViewTrackingStrategyTest {
             .thenReturn(firsTimeLoading)
         val callback = setupFragmentCallbacks()
 
-        // when
+        // When
         callback.onFragmentResumed(mock(), mockFragment)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
     // region Internal
 
-    private fun setupFragmentCallbacks():
-        NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks {
-        // given
+    private fun setupFragmentCallbacks(): NavLifecycleCallbacks {
+        // Given
         testedStrategy.onActivityStarted(mockActivity)
 
-        // then
-        val argumentCaptor =
-            argumentCaptor<NavigationViewTrackingStrategy.NavControllerFragmentLifecycleCallbacks>()
-        verify(mockFragmentManager)
-            .registerFragmentLifecycleCallbacks(argumentCaptor.capture(), eq(true))
-        argumentCaptor.firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
-        return argumentCaptor.firstValue
+        // Then
+        return argumentCaptor<NavLifecycleCallbacks> {
+            verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
+            firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        }.firstValue
     }
 
-    private fun getMockNavDestination(
+    private fun mockNavDestination(
         forge: Forge,
         name: String
     ): NavDestination {

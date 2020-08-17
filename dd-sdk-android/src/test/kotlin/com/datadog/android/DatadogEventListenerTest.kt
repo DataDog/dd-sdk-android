@@ -94,18 +94,20 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `sends waitForTiming on response body start`() {
-
+    fun `𝕄 call waitForTiming() 𝕎 responseHeadersStart()`() {
+        // When
         testedListener.responseHeadersStart(mockCall)
 
+        // Then
         verify(mockMonitor).waitForResourceTiming(fakeKey)
         verifyNoMoreInteractions(mockMonitor, mockCall)
     }
 
     @Test
-    fun `sends timing information on header end (status code 400+)`(
+    fun `𝕄 send timing info 𝕎 responseHeadersEnd() for failing request`(
         @IntForgery(400, 600) statusCode: Int
     ) {
+        // Given
         fakeResponse = Response.Builder()
             .request(fakeRequest)
             .protocol(Protocol.HTTP_2)
@@ -113,6 +115,7 @@ internal class DatadogEventListenerTest {
             .message("lorem ipsum dolor sit amet…")
             .build()
 
+        // When
         testedListener.callStart(mockCall)
         Thread.sleep(10)
         testedListener.dnsStart(mockCall, fakeDomain)
@@ -131,6 +134,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
+        // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)
@@ -160,8 +164,8 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `sends timing information on call end (full)`() {
-
+    fun `𝕄 send timing info 𝕎 callEnd() for successful request`() {
+        // When
         testedListener.callStart(mockCall)
         Thread.sleep(10)
         testedListener.dnsStart(mockCall, fakeDomain)
@@ -186,6 +190,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.callEnd(mockCall)
 
+        // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)
@@ -217,10 +222,10 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `sends timing information on call failed (full)`(
+    fun `𝕄 send timing info 𝕎 callFailed() for throwing request`(
         @StringForgery(StringForgeryType.ALPHABETICAL) error: String
     ) {
-
+        // When
         testedListener.callStart(mockCall)
         Thread.sleep(10)
         testedListener.dnsStart(mockCall, fakeDomain)
@@ -245,6 +250,7 @@ internal class DatadogEventListenerTest {
         Thread.sleep(10)
         testedListener.callFailed(mockCall, IOException(error))
 
+        // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
                 verify(mockMonitor).waitForResourceTiming(fakeKey)

@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogGesturesTrackerTest {
 
-    lateinit var underTest: DatadogGesturesTracker
+    lateinit var testedTracker: DatadogGesturesTracker
 
     @Mock
     lateinit var mockActivity: Activity
@@ -48,7 +48,7 @@ internal class DatadogGesturesTrackerTest {
 
     @BeforeEach
     fun `set up`() {
-        underTest =
+        testedTracker =
             DatadogGesturesTracker(emptyArray())
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mockDecorView)
@@ -56,20 +56,20 @@ internal class DatadogGesturesTrackerTest {
 
     @Test
     fun `will start tracking the activity`() {
-        // when
-        val spyTest = spy(underTest)
+        // When
+        val spyTest = spy(testedTracker)
         doReturn(mockGestureDetector)
             .whenever(spyTest)
             .generateGestureDetector(mockActivity, mockDecorView)
         spyTest.startTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = isA<WindowCallbackWrapper>()
     }
 
     @Test
     fun `will stop tracking the activity`() {
-        // given
+        // Given
         whenever(mockWindow.callback)
             .thenReturn(
                 WindowCallbackWrapper(
@@ -78,16 +78,16 @@ internal class DatadogGesturesTrackerTest {
                 )
             )
 
-        // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        // When
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = null
     }
 
     @Test
     fun `stop tracking the activity will restore the previous callback if was not null`() {
-        // given
+        // Given
         val previousCallback: Window.Callback = mock()
         whenever(mockWindow.callback)
             .thenReturn(
@@ -97,28 +97,28 @@ internal class DatadogGesturesTrackerTest {
                 )
             )
 
-        // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        // When
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow).callback = previousCallback
     }
 
     @Test
     fun `stop will do nothing if the activity was not tracked`() {
-        // when
-        underTest.stopTracking(mockWindow, mockActivity)
+        // When
+        testedTracker.stopTracking(mockWindow, mockActivity)
 
-        // then
+        // Then
         verify(mockWindow, never()).callback = any()
     }
 
     @Test
     fun `will not track an activity with no decor view`() {
-        // given
+        // Given
         whenever(mockWindow.decorView).thenReturn(null)
 
-        // then
+        // Then
         verify(mockWindow, never()).callback = any()
     }
 }

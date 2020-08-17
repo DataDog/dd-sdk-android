@@ -47,47 +47,47 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest =
+        testedStrategy =
             ActivityViewTrackingStrategy(true)
-        underTest.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        testedStrategy.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
     }
 
     @Test
     fun `when created will notify the viewLoadingTimer`(forge: Forge) {
-        // when
-        underTest.onActivityCreated(mockActivity, null)
-        // then
+        // When
+        testedStrategy.onActivityCreated(mockActivity, null)
+        // Then
         verify(mockViewLoadingTimer).onCreated(mockActivity)
     }
 
     @Test
     fun `when created will do nothing if activity not whitelisted`(forge: Forge) {
-        // given
-        underTest = ActivityViewTrackingStrategy(true, componentPredicate = object :
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(true, componentPredicate = object :
             ComponentPredicate<Activity> {
             override fun accept(component: Activity): Boolean {
                 return false
             }
         })
-        // when
-        underTest.onActivityCreated(mockActivity, null)
-        // then
+        // When
+        testedStrategy.onActivityCreated(mockActivity, null)
+        // Then
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
     fun `when started will notify the viewLoadingTimer for startLoading`() {
-        // whenever
-        underTest.onActivityStarted(mockActivity)
+        // Whenever
+        testedStrategy.onActivityStarted(mockActivity)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onStartLoading(mockActivity)
     }
 
     @Test
     fun `when started and activity not whitelisted will do nothing`() {
-        // given
-        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
@@ -95,18 +95,18 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
                 }
             })
 
-        // whenever
-        underTest.onActivityStarted(mockActivity)
+        // Whenever
+        testedStrategy.onActivityStarted(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
     fun `when resumed it will start a view event`(forge: Forge) {
-        // when
-        underTest.onActivityResumed(mockActivity)
-        // then
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+        // Then
         verify(mockRumMonitor).startView(
             eq(mockActivity),
             eq(mockActivity.resolveViewName()),
@@ -118,7 +118,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     fun `when resumed will start a view event with intent extras as attributes`(
         forge: Forge
     ) {
-        // given
+        // Given
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>()
         for (i in 0..10) {
@@ -130,8 +130,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         whenever(mockIntent.extras).thenReturn(arguments)
         whenever(mockActivity.intent).thenReturn(mockIntent)
 
-        // whenever
-        underTest.onActivityResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityResumed(mockActivity)
 
         verify(mockRumMonitor).startView(
             eq(mockActivity),
@@ -144,8 +144,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     fun `when resumed and not tracking intent extras will send empty attributes`(
         forge: Forge
     ) {
-        // given
-        underTest =
+        // Given
+        testedStrategy =
             ActivityViewTrackingStrategy(false)
         val arguments = Bundle()
         for (i in 0..10) {
@@ -156,8 +156,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         whenever(mockIntent.extras).thenReturn(arguments)
         whenever(mockActivity.intent).thenReturn(mockIntent)
 
-        // whenever
-        underTest.onActivityResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityResumed(mockActivity)
 
         verify(mockRumMonitor).startView(
             eq(mockActivity),
@@ -168,8 +168,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
 
     @Test
     fun `when resumed will do nothing if activity is not whitelisted`() {
-        // given
-        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
@@ -177,35 +177,35 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
                 }
             })
 
-        // whenever
-        underTest.onActivityResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityResumed(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
     fun `when postResumed will notify the viewLoadingTimer for stopLoading`() {
-        // whenever
-        underTest.onActivityPostResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityPostResumed(mockActivity)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
     }
 
     @Test
     fun `when resumed will notify the viewLoadingTimer for stopLoading`() {
-        // whenever
-        underTest.onActivityResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityResumed(mockActivity)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
     }
 
     @Test
     fun `when postResumed and activity not whitelisted will do nothing`() {
-        // given
-        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
@@ -213,16 +213,16 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
                 }
             })
 
-        // whenever
-        underTest.onActivityPostResumed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityPostResumed(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
     fun `when paused it will update the view loading time and stop it in this order`(forge: Forge) {
-        // given
+        // Given
         val expectedLoadingTime = forge.aLong()
         val firsTimeLoading = forge.aBool()
         val expectedLoadingType =
@@ -236,10 +236,10 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity))
             .thenReturn(firsTimeLoading)
 
-        // when
-        underTest.onActivityPaused(mockActivity)
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
 
-        // then
+        // Then
         inOrder(mockRumMonitor, mockViewLoadingTimer) {
             verify(mockRumMonitor).updateViewLoadingTime(
                 mockActivity,
@@ -253,8 +253,8 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
 
     @Test
     fun `when paused will do nothing if activity is not whitelisted`() {
-        // given
-        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
@@ -262,26 +262,26 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
                 }
             })
 
-        // whenever
-        underTest.onActivityPaused(mockActivity)
+        // Whenever
+        testedStrategy.onActivityPaused(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
     fun `when activity destroyed will notify the viewLoadingTimer for onDestroy`() {
-        // whenever
-        underTest.onActivityDestroyed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityDestroyed(mockActivity)
 
-        // then
+        // Then
         verify(mockViewLoadingTimer).onDestroyed(mockActivity)
     }
 
     @Test
     fun `when activity destroyed and not whitelisted will do nothing`() {
-        // given
-        underTest = ActivityViewTrackingStrategy(trackExtras = false,
+        // Given
+        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
@@ -289,10 +289,10 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
                 }
             })
 
-        // whenever
-        underTest.onActivityDestroyed(mockActivity)
+        // Whenever
+        testedStrategy.onActivityDestroyed(mockActivity)
 
-        // then
+        // Then
         verifyZeroInteractions(mockViewLoadingTimer)
     }
 

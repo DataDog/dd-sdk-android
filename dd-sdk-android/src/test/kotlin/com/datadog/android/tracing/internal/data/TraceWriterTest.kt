@@ -8,7 +8,6 @@ package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import datadog.opentracing.DDSpan
@@ -33,37 +32,37 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TraceWriterTest {
 
-    lateinit var underTest: TraceWriter
+    lateinit var testedWriter: TraceWriter
 
     @Mock
-    lateinit var mockedFilesWriter: Writer<DDSpan>
+    lateinit var mockFilesWriter: Writer<DDSpan>
 
     @BeforeEach
     fun `set up`() {
-        underTest = TraceWriter(mockedFilesWriter)
+        testedWriter = TraceWriter(mockFilesWriter)
     }
 
     @Test
     fun `when data received it will be handled by the wrapped file writer`(forge: Forge) {
-        // given
+        // Given
         val spansList = ArrayList<DDSpan>(2).apply {
             add(forge.getForgery())
             add(forge.getForgery())
         }
 
-        // when
-        underTest.write(spansList)
+        // When
+        testedWriter.write(spansList)
 
-        // then
-        verify(mockedFilesWriter).write(spansList)
+        // Then
+        verify(mockFilesWriter).write(spansList)
     }
 
     @Test
     fun `when null data received it will do nothing`(forge: Forge) {
-        // when
-        underTest.write(null)
+        // When
+        testedWriter.write(null)
 
-        // then
-        verifyZeroInteractions(mockedFilesWriter)
+        // Then
+        verifyZeroInteractions(mockFilesWriter)
     }
 }

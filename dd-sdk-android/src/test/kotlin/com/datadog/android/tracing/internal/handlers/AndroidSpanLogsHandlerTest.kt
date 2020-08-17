@@ -48,13 +48,13 @@ internal class AndroidSpanLogsHandlerTest {
     lateinit var testedLogHandler: AndroidSpanLogsHandler
 
     @Mock
-    lateinit var mockedLogger: Logger
+    lateinit var mockLogger: Logger
 
     @Mock
-    lateinit var mockedSpan: DDSpan
+    lateinit var mockSpan: DDSpan
 
     @Mock
-    lateinit var mockedSpanContext: DDSpanContext
+    lateinit var mockSpanContext: DDSpanContext
 
     @LongForgery
     var fakeTraceId: Long = 0L
@@ -64,11 +64,11 @@ internal class AndroidSpanLogsHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockedSpan.traceId) doReturn BigInteger.valueOf(fakeTraceId)
-        whenever(mockedSpan.spanId) doReturn BigInteger.valueOf(fakeSpanId)
+        whenever(mockSpan.traceId) doReturn BigInteger.valueOf(fakeTraceId)
+        whenever(mockSpan.spanId) doReturn BigInteger.valueOf(fakeSpanId)
 
         testedLogHandler = AndroidSpanLogsHandler(
-            mockedLogger
+            mockLogger
         )
     }
 
@@ -76,9 +76,9 @@ internal class AndroidSpanLogsHandlerTest {
     fun `log event`(
         @StringForgery(StringForgeryType.ALPHABETICAL) event: String
     ) {
-        testedLogHandler.log(event, mockedSpan)
+        testedLogHandler.log(event, mockSpan)
 
-        verify(mockedLogger)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -96,9 +96,9 @@ internal class AndroidSpanLogsHandlerTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) event: String,
         @LongForgery timestampMicros: Long
     ) {
-        testedLogHandler.log(timestampMicros, event, mockedSpan)
+        testedLogHandler.log(timestampMicros, event, mockSpan)
 
-        verify(mockedLogger)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -123,9 +123,9 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(fields, mockedSpan)
+        testedLogHandler.log(fields, mockSpan)
 
-        verify(mockedLogger)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -146,9 +146,9 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(timestampMicros, fields, mockedSpan)
+        testedLogHandler.log(timestampMicros, fields, mockSpan)
 
-        verify(mockedLogger)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -173,13 +173,13 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(fieldsWithError, mockedSpan)
+        testedLogHandler.log(fieldsWithError, mockSpan)
 
-        verify(mockedSpan).setError(true)
-        verify(mockedSpan).setTag(DDTags.ERROR_MSG, throwable.message)
-        verify(mockedSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
-        verify(mockedSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
-        verify(mockedLogger)
+        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag(DDTags.ERROR_MSG, throwable.message)
+        verify(mockSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
+        verify(mockSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -204,13 +204,13 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(timestampMicros, fieldsWithError, mockedSpan)
+        testedLogHandler.log(timestampMicros, fieldsWithError, mockSpan)
 
-        verify(mockedSpan).setError(true)
-        verify(mockedSpan).setTag(DDTags.ERROR_MSG, throwable.message)
-        verify(mockedSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
-        verify(mockedSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
-        verify(mockedLogger)
+        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag(DDTags.ERROR_MSG, throwable.message)
+        verify(mockSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
+        verify(mockSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -241,13 +241,13 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(fieldsWithError, mockedSpan)
+        testedLogHandler.log(fieldsWithError, mockSpan)
 
-        verify(mockedSpan).setError(true)
-        verify(mockedSpan).setTag(DDTags.ERROR_MSG, message)
-        verify(mockedSpan).setTag(DDTags.ERROR_TYPE, kind)
-        verify(mockedSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
-        verify(mockedLogger)
+        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag(DDTags.ERROR_MSG, message)
+        verify(mockSpan).setTag(DDTags.ERROR_TYPE, kind)
+        verify(mockSpan).setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -275,13 +275,13 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(fieldsWithError, mockedSpan)
+        testedLogHandler.log(fieldsWithError, mockSpan)
 
-        verify(mockedSpan).setError(true)
-        verify(mockedSpan).setTag(DDTags.ERROR_MSG, throwable.message)
-        verify(mockedSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
-        verify(mockedSpan).setTag(DDTags.ERROR_STACK, stack)
-        verify(mockedLogger)
+        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag(DDTags.ERROR_MSG, throwable.message)
+        verify(mockSpan).setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
+        verify(mockSpan).setTag(DDTags.ERROR_STACK, stack)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
@@ -311,13 +311,13 @@ internal class AndroidSpanLogsHandlerTest {
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
-        testedLogHandler.log(fieldsWithError, mockedSpan)
+        testedLogHandler.log(fieldsWithError, mockSpan)
 
-        verify(mockedSpan).setError(true)
-        verify(mockedSpan).setTag(DDTags.ERROR_MSG, message)
-        verify(mockedSpan).setTag(DDTags.ERROR_TYPE, kind)
-        verify(mockedSpan).setTag(DDTags.ERROR_STACK, stack)
-        verify(mockedLogger)
+        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag(DDTags.ERROR_MSG, message)
+        verify(mockSpan).setTag(DDTags.ERROR_TYPE, kind)
+        verify(mockSpan).setTag(DDTags.ERROR_STACK, stack)
+        verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
                 AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,

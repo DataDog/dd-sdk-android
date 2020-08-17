@@ -44,9 +44,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal abstract class AbstractGesturesListenerTest {
 
-    lateinit var underTest: GesturesListener
+    lateinit var testedListener: GesturesListener
 
-    lateinit var decorView: View
+    lateinit var mockDecorView: View
 
     @Mock
     lateinit var mockAppContext: Application
@@ -95,7 +95,7 @@ internal abstract class AbstractGesturesListenerTest {
             locationOnScreenArray[0] = (forEvent.x).toInt() - forge.anInt(min = 1, max = 10)
             locationOnScreenArray[1] = (forEvent.y).toInt() - forge.anInt(min = 1, max = 10)
         }
-        val mockedView: T = mock {
+        val mockView: T = mock {
             whenever(it.id).thenReturn(id)
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
@@ -120,7 +120,7 @@ internal abstract class AbstractGesturesListenerTest {
             applyOthers(this.mock)
         }
 
-        return mockedView
+        return mockView
     }
 
     protected fun mockResourcesForTarget(target: View, expectedResourceName: String) {

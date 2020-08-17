@@ -41,11 +41,11 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumEventSerializerTest {
 
-    lateinit var underTest: RumEventSerializer
+    lateinit var testedSerializer: RumEventSerializer
 
     @BeforeEach
     fun `set up`() {
-        underTest = RumEventSerializer()
+        testedSerializer = RumEventSerializer()
     }
 
     @Test
@@ -55,10 +55,10 @@ internal class RumEventSerializerTest {
     ) {
         val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "resource")
             .hasField("date", event.date)
@@ -99,10 +99,10 @@ internal class RumEventSerializerTest {
     ) {
         val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "action")
             .hasField("date", event.date)
@@ -159,10 +159,10 @@ internal class RumEventSerializerTest {
     ) {
         val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "view")
             .hasField("date", event.date)
@@ -209,10 +209,10 @@ internal class RumEventSerializerTest {
     ) {
         val rumEvent = fakeEvent.copy(event = event)
 
-        val serialized = underTest.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "error")
             .hasField("date", event.date)
@@ -258,7 +258,7 @@ internal class RumEventSerializerTest {
         val value = forge.anAlphabeticalString()
         val event = fakeEvent.copy(attributes = mapOf(key to value))
 
-        val serialized = underTest.serialize(event)
+        val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
 
@@ -268,14 +268,14 @@ internal class RumEventSerializerTest {
 
     // region Internal
 
-    private fun assertEventMatches(
+    private fun assertSerializedJsonMatchesInputEvent(
         jsonObject: JsonObject,
         event: RumEvent
     ) {
-        assertCustomAttributesMatch(jsonObject, event)
+        assertJsonContainsCustomAttributes(jsonObject, event)
     }
 
-    private fun assertCustomAttributesMatch(
+    private fun assertJsonContainsCustomAttributes(
         jsonObject: JsonObject,
         event: RumEvent
     ) {

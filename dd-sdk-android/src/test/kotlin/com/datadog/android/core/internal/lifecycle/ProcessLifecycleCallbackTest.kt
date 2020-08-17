@@ -40,6 +40,8 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ProcessLifecycleCallbackTest {
 
+    lateinit var testedCallback: ProcessLifecycleCallback
+
     lateinit var mockContext: Context
 
     @Mock
@@ -48,12 +50,10 @@ internal class ProcessLifecycleCallbackTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
-    lateinit var underTest: ProcessLifecycleCallback
-
     @BeforeEach
     fun `set up`() {
         mockContext = mockContext()
-        underTest = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
+        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
     }
 
     @AfterEach
@@ -63,7 +63,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and network is disconnected will schedule an upload worker`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -72,10 +72,10 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
-        underTest.onStopped()
+        // When
+        testedCallback.onStopped()
 
-        // then
+        // Then
         verify(mockWorkManager).enqueueUniqueWork(
             eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
@@ -87,7 +87,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and work manager is not present will not throw exception`() {
-        // given
+        // Given
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
                 NetworkInfo(
@@ -95,13 +95,13 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
-        underTest.onStopped()
+        // When
+        testedCallback.onStopped()
     }
 
     @Test
     fun `when process stopped and network is connected will do nothing`() {
-        // given
+        // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -110,16 +110,16 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
-        underTest.onStopped()
+        // When
+        testedCallback.onStopped()
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 
     @Test
     fun `when process stopped and context ref is null will do nothing`() {
-        underTest.setFieldValue("contextWeakRef", WeakReference<Context>(null))
+        testedCallback.setFieldValue("contextWeakRef", WeakReference<Context>(null))
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(
@@ -128,10 +128,10 @@ internal class ProcessLifecycleCallbackTest {
                 )
             )
 
-        // when
-        underTest.onStopped()
+        // When
+        testedCallback.onStopped()
 
-        // then
+        // Then
         verifyZeroInteractions(mockWorkManager)
     }
 }

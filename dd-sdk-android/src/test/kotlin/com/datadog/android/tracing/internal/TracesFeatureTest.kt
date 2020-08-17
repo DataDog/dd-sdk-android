@@ -91,7 +91,7 @@ internal class TracesFeatureTest {
     lateinit var fakePackageVersion: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -107,7 +107,7 @@ internal class TracesFeatureTest {
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
     }
 
@@ -258,12 +258,12 @@ internal class TracesFeatureTest {
     fun `it will register the provided plugin when feature is initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -277,10 +277,10 @@ internal class TracesFeatureTest {
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
         }
@@ -299,7 +299,7 @@ internal class TracesFeatureTest {
     fun `it unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -316,13 +316,13 @@ internal class TracesFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // when
+        // When
         TracesFeature.stop()
 
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).unregister()
             }
         }
@@ -330,10 +330,10 @@ internal class TracesFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -346,7 +346,7 @@ internal class TracesFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // then
+        // Then
         assertThat(TracesFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 
@@ -355,12 +355,12 @@ internal class TracesFeatureTest {
         @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) content: String
     ) {
-        val fakeDir = File(rootDir, TracingFileStrategy.TRACES_FOLDER)
+        val fakeDir = File(tempRootDir, TracingFileStrategy.TRACES_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,

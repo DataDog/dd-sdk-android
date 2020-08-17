@@ -34,13 +34,13 @@ class FileExtensionsTest {
     @TempDir
     lateinit var tempDir: File
 
-    lateinit var prefix: String
-    lateinit var suffix: String
+    lateinit var fakePrefix: String
+    lateinit var fakeSuffix: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        prefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
-        suffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        fakePrefix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
+        fakeSuffix = forge.anAsciiString(size = forge.anInt(min = 2, max = 8))
     }
 
     @Test
@@ -50,8 +50,8 @@ class FileExtensionsTest {
         val dataToWrite = forge.anAlphaNumericalString()
         file.writeText(dataToWrite)
 
-        val readData = file.readBytes(prefix, suffix)
-        assertThat(String(readData)).isEqualTo("$prefix$dataToWrite$suffix")
+        val readData = file.readBytes(fakePrefix, fakeSuffix)
+        assertThat(String(readData)).isEqualTo("$fakePrefix$dataToWrite$fakeSuffix")
     }
 
     @Test
@@ -59,8 +59,8 @@ class FileExtensionsTest {
         val file = File(tempDir, "testFile")
         file.createNewFile()
 
-        val readData = file.readBytes(prefix, suffix)
-        assertThat(String(readData)).isEqualTo("$prefix$suffix")
+        val readData = file.readBytes(fakePrefix, fakeSuffix)
+        assertThat(String(readData)).isEqualTo("$fakePrefix$fakeSuffix")
     }
 
     @Test
@@ -70,7 +70,7 @@ class FileExtensionsTest {
         val spiedFile = spy(file)
         doReturn(Long.MAX_VALUE).whenever(spiedFile).length()
 
-        val readData = spiedFile.readBytes(prefix, suffix)
+        val readData = spiedFile.readBytes(fakePrefix, fakeSuffix)
         assertThat(readData).isEmpty()
     }
 }

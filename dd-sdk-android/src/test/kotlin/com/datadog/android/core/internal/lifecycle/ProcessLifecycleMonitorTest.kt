@@ -29,50 +29,54 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 internal class ProcessLifecycleMonitorTest {
 
-    lateinit var underTest: ProcessLifecycleMonitor
+    lateinit var testedMonitor: ProcessLifecycleMonitor
+
     @Mock
     lateinit var mockCallback: ProcessLifecycleMonitor.Callback
+
     @Mock
     lateinit var mockActivity1: Activity
+
     @Mock
     lateinit var mockActivity2: Activity
+
     @Mock
     lateinit var mockActivity3: Activity
 
     @BeforeEach
     fun `set up`() {
-        underTest = ProcessLifecycleMonitor(mockCallback)
+        testedMonitor = ProcessLifecycleMonitor(mockCallback)
     }
 
     @Test
     fun `triggers onStarted when process starts`() {
-        // when
-        underTest.onActivityStarted(mockActivity1)
+        // When
+        testedMonitor.onActivityStarted(mockActivity1)
 
-        // then
+        // Then
         verify(mockCallback).onStarted()
         verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
     fun `triggers onStarted only once when several activities are started`() {
-        // when
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityStarted(mockActivity2)
-        underTest.onActivityStarted(mockActivity3)
+        // When
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityStarted(mockActivity2)
+        testedMonitor.onActivityStarted(mockActivity3)
 
-        // then
+        // Then
         verify(mockCallback, times(1)).onStarted()
         verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
     fun `triggers onResume when process resumes`() {
-        // when
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
+        // When
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
 
-        // then
+        // Then
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onStarted()
         inOrder.verify(mockCallback).onResumed()
@@ -81,15 +85,15 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `triggers onResume only once when several activities are resumed`() {
-        // when
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
-        underTest.onActivityStarted(mockActivity2)
-        underTest.onActivityResumed(mockActivity2)
-        underTest.onActivityStarted(mockActivity3)
-        underTest.onActivityResumed(mockActivity3)
+        // When
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
+        testedMonitor.onActivityStarted(mockActivity2)
+        testedMonitor.onActivityResumed(mockActivity2)
+        testedMonitor.onActivityStarted(mockActivity3)
+        testedMonitor.onActivityResumed(mockActivity3)
 
-        // then
+        // Then
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onStarted()
         inOrder.verify(mockCallback).onResumed()
@@ -98,14 +102,14 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `triggers onPaused when process pauses`() {
-        // given
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
+        // Given
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
 
-        // when
-        underTest.onActivityPaused(mockActivity1)
+        // When
+        testedMonitor.onActivityPaused(mockActivity1)
 
-        // then
+        // Then
         verify(mockCallback).onResumed()
         verify(mockCallback).onStarted()
         verify(mockCallback).onPaused()
@@ -114,15 +118,15 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `triggers onStopped when process stops`() {
-        // given
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
+        // Given
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
 
-        // when
-        underTest.onActivityPaused(mockActivity1)
-        underTest.onActivityStopped(mockActivity1)
+        // When
+        testedMonitor.onActivityPaused(mockActivity1)
+        testedMonitor.onActivityStopped(mockActivity1)
 
-        // then
+        // Then
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onPaused()
         inOrder.verify(mockCallback).onStopped()
@@ -131,23 +135,23 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `triggers onStopped onPaused only once when several activities stop`() {
-        // given
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
-        underTest.onActivityStarted(mockActivity2)
-        underTest.onActivityResumed(mockActivity2)
-        underTest.onActivityStarted(mockActivity3)
-        underTest.onActivityResumed(mockActivity3)
-        underTest.onActivityPaused(mockActivity1)
+        // Given
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
+        testedMonitor.onActivityStarted(mockActivity2)
+        testedMonitor.onActivityResumed(mockActivity2)
+        testedMonitor.onActivityStarted(mockActivity3)
+        testedMonitor.onActivityResumed(mockActivity3)
+        testedMonitor.onActivityPaused(mockActivity1)
 
-        // when
-        underTest.onActivityStopped(mockActivity1)
-        underTest.onActivityPaused(mockActivity2)
-        underTest.onActivityStopped(mockActivity2)
-        underTest.onActivityPaused(mockActivity3)
-        underTest.onActivityStopped(mockActivity3)
+        // When
+        testedMonitor.onActivityStopped(mockActivity1)
+        testedMonitor.onActivityPaused(mockActivity2)
+        testedMonitor.onActivityStopped(mockActivity2)
+        testedMonitor.onActivityPaused(mockActivity3)
+        testedMonitor.onActivityStopped(mockActivity3)
 
-        // then
+        // Then
         val inOrder = inOrder(mockCallback)
         inOrder.verify(mockCallback).onPaused()
         inOrder.verify(mockCallback).onStopped()
@@ -156,24 +160,24 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `does not call onStopped onPaused if the activity was not resumed`() {
-        underTest.onActivityPaused(mockActivity1)
-        // when
-        underTest.onActivityStopped(mockActivity1)
+        testedMonitor.onActivityPaused(mockActivity1)
+        // When
+        testedMonitor.onActivityStopped(mockActivity1)
 
-        // then
+        // Then
         verifyZeroInteractions(mockCallback)
     }
 
     @Test
     fun `does not call onStopped if onPause was not call upfront`() {
-        // given
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
+        // Given
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
 
-        // when
-        underTest.onActivityStopped(mockActivity1)
+        // When
+        testedMonitor.onActivityStopped(mockActivity1)
 
-        // then
+        // Then
         verify(mockCallback).onStarted()
         verify(mockCallback).onResumed()
         verify(mockCallback, never()).onStopped()
@@ -183,24 +187,24 @@ internal class ProcessLifecycleMonitorTest {
     @Test
     fun `when starting activities from 2 different threads will only call onResumed once`() {
 
-        // given
+        // Given
         val countDownLatch = CountDownLatch(2)
 
-        // when
+        // When
         Thread {
-            underTest.onActivityStarted(mockActivity1)
-            underTest.onActivityResumed(mockActivity1)
+            testedMonitor.onActivityStarted(mockActivity1)
+            testedMonitor.onActivityResumed(mockActivity1)
             countDownLatch.countDown()
         }.start()
         Thread {
-            underTest.onActivityStarted(mockActivity2)
-            underTest.onActivityResumed(mockActivity2)
+            testedMonitor.onActivityStarted(mockActivity2)
+            testedMonitor.onActivityResumed(mockActivity2)
             countDownLatch.countDown()
         }.start()
 
         countDownLatch.await()
 
-        // then
+        // Then
         verify(mockCallback).onStarted()
         verify(mockCallback).onResumed()
         verifyNoMoreInteractions(mockCallback)
@@ -209,28 +213,28 @@ internal class ProcessLifecycleMonitorTest {
     @Test
     fun `when stopped from 2 different threads will only call onStooped once`() {
 
-        // given
-        underTest.onActivityStarted(mockActivity1)
-        underTest.onActivityResumed(mockActivity1)
-        underTest.onActivityStarted(mockActivity2)
-        underTest.onActivityResumed(mockActivity2)
+        // Given
+        testedMonitor.onActivityStarted(mockActivity1)
+        testedMonitor.onActivityResumed(mockActivity1)
+        testedMonitor.onActivityStarted(mockActivity2)
+        testedMonitor.onActivityResumed(mockActivity2)
         val countDownLatch = CountDownLatch(2)
 
-        // when
+        // When
         Thread {
-            underTest.onActivityPaused(mockActivity1)
-            underTest.onActivityStopped(mockActivity1)
+            testedMonitor.onActivityPaused(mockActivity1)
+            testedMonitor.onActivityStopped(mockActivity1)
             countDownLatch.countDown()
         }.start()
         Thread {
-            underTest.onActivityPaused(mockActivity2)
-            underTest.onActivityStopped(mockActivity2)
+            testedMonitor.onActivityPaused(mockActivity2)
+            testedMonitor.onActivityStopped(mockActivity2)
             countDownLatch.countDown()
         }.start()
 
         countDownLatch.await()
 
-        // then
+        // Then
         verify(mockCallback).onStarted()
         verify(mockCallback).onResumed()
         verify(mockCallback).onPaused()

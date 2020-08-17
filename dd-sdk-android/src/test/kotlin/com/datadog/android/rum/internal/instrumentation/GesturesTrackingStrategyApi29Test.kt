@@ -37,14 +37,14 @@ internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStra
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = GesturesTrackingStrategyApi29(mockGesturesTracker)
+        testedStrategy = GesturesTrackingStrategyApi29(mockGesturesTracker)
     }
 
     @Test
     fun `when activity pre created it will start tracking gestures`(forge: Forge) {
-        // when
-        underTest.onActivityPreCreated(mockActivity, mock())
-        // then
+        // When
+        testedStrategy.onActivityPreCreated(mockActivity, mock())
+        // Then
         verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
     }
 }

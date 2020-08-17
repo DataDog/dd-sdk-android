@@ -30,6 +30,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import java.util.Date
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -75,21 +76,11 @@ internal class LogFileStrategyTest :
         ) // consume all the queued messages
     }
 
-    @Test
-    fun `migrates the data from v0 to v1`() {
-        val oldDir = File(tempDir, LogFileStrategy.DATA_FOLDER_ROOT)
-        assertThat(oldDir).doesNotExist()
-    }
-
-    // endregion
-
-    // region utils
-
     override fun waitForNextBatch() {
         Thread.sleep(RECENT_DELAY_MS * 2)
     }
 
-    override fun minimalCopy(of: Log): Log {
+    override fun forgeMinimalCopy(of: Log): Log {
         return of.copy(
             throwable = null,
             networkInfo = null,
@@ -98,7 +89,7 @@ internal class LogFileStrategyTest :
         )
     }
 
-    override fun lightModel(forge: Forge): Log {
+    override fun forgeLightModel(forge: Forge): Log {
         return forge.getForgery<Log>().copy(
             serviceName = forge.anAlphabeticalString(size = forge.aTinyInt()),
             message = forge.anAlphabeticalString(size = forge.aTinyInt()),
@@ -109,7 +100,7 @@ internal class LogFileStrategyTest :
         )
     }
 
-    override fun bigModel(forge: Forge): Log {
+    override fun forgeHeavyModel(forge: Forge): Log {
         return Log(
             level = android.util.Log.ASSERT,
             serviceName = forge.anAlphabeticalString(size = 65536),
@@ -133,7 +124,7 @@ internal class LogFileStrategyTest :
         )
     }
 
-    override fun assertHasMatches(jsonObject: JsonObject, models: List<Log>) {
+    override fun assertJsonContainsModels(jsonObject: JsonObject, models: List<Log>) {
         val message = (jsonObject[LogAttributes.MESSAGE] as JsonPrimitive).asString
         val serviceName = (jsonObject[LogAttributes.SERVICE_NAME] as JsonPrimitive).asString
         val status = (jsonObject[LogAttributes.STATUS] as JsonPrimitive).asString
@@ -145,7 +136,7 @@ internal class LogFileStrategyTest :
         assertThat(roughMatches).isNotEmpty()
     }
 
-    override fun assertMatches(jsonObject: JsonObject, model: Log) {
+    override fun assertJsonMatchesModel(jsonObject: JsonObject, model: Log) {
         assertThat(jsonObject)
             .hasField(LogAttributes.MESSAGE, model.message)
             .hasField(LogAttributes.SERVICE_NAME, model.serviceName)
@@ -159,14 +150,27 @@ internal class LogFileStrategyTest :
             "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
         )
 
-        assertNetworkInfoMatches(model, jsonObject)
+        assertJsonContainsNetworkInfo(jsonObject, model)
 
-        assertFieldsMatch(model, jsonObject)
-        assertTagsMatch(jsonObject, model)
-        assertThrowableMatches(model, jsonObject)
+        assertJsonContainsCustomAttributes(jsonObject, model)
+        assertJsonContainsCustomTags(jsonObject, model)
+        assertJsonContainsThrowableInfo(jsonObject, model)
     }
 
-    private fun assertNetworkInfoMatches(log: Log, jsonObject: JsonObject) {
+    // endregion
+
+    @Test
+    fun `migrates the data from v0 to v1`() {
+        val oldDir = File(tempDir, LogFileStrategy.DATA_FOLDER_ROOT)
+        assertThat(oldDir).doesNotExist()
+    }
+
+    // region Internal
+
+    private fun assertJsonContainsNetworkInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject).apply {
@@ -181,6 +185,21 @@ internal class LogFileStrategyTest :
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
                 }
+                if (info.upKbps >= 0) {
+                    hasField(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
+                }
+                if (info.downKbps >= 0) {
+                    hasField(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
+                }
+                if (info.strength > Int.MIN_VALUE) {
+                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
+                } else {
+                    doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
+                }
             }
         } else {
             assertThat(jsonObject)
@@ -190,7 +209,10 @@ internal class LogFileStrategyTest :
         }
     }
 
-    private fun assertFieldsMatch(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsCustomAttributes(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         log.attributes
             .filter { it.key.isNotBlank() }
             .forEach {
@@ -206,31 +228,34 @@ internal class LogFileStrategyTest :
                     is Date -> assertThat(jsonObject).hasField(it.key, value.time)
                     is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
                     is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
-                    else -> assertThat(jsonObject).hasField(
-                        it.key,
-                        value.toString()
-                    )
+                    else -> assertThat(jsonObject).hasField(it.key, value.toString())
                 }
             }
     }
 
-    private fun assertTagsMatch(jsonObject: JsonObject, log: Log) {
+    private fun assertJsonContainsCustomTags(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val jsonTagString = (jsonObject[LogSerializer.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
 
         if (jsonTagString.isNullOrBlank()) {
-            assertThat(log.tags)
+            Assertions.assertThat(log.tags)
                 .isEmpty()
         } else {
             val tags = jsonTagString
                 .split(',')
                 .toList()
 
-            assertThat(tags)
+            Assertions.assertThat(tags)
                 .containsExactlyInAnyOrder(*log.tags.toTypedArray())
         }
     }
 
-    private fun assertThrowableMatches(log: Log, jsonObject: JsonObject) {
+    private fun assertJsonContainsThrowableInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
         val throwable = log.throwable
         if (throwable != null) {
             assertThat(jsonObject)
@@ -242,6 +267,30 @@ internal class LogFileStrategyTest :
                 .doesNotHaveField(LogAttributes.ERROR_KIND)
                 .doesNotHaveField(LogAttributes.ERROR_MESSAGE)
                 .doesNotHaveField(LogAttributes.ERROR_STACK)
+        }
+    }
+
+    private fun assertJsonContainsUserInfo(
+        jsonObject: JsonObject,
+        log: Log
+    ) {
+        val info = log.userInfo
+        assertThat(jsonObject).apply {
+            if (info.id.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_ID)
+            } else {
+                hasField(LogAttributes.USR_ID, info.id)
+            }
+            if (info.name.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_NAME)
+            } else {
+                hasField(LogAttributes.USR_NAME, info.name)
+            }
+            if (info.email.isNullOrEmpty()) {
+                doesNotHaveField(LogAttributes.USR_EMAIL)
+            } else {
+                hasField(LogAttributes.USR_EMAIL, info.email)
+            }
         }
     }
 

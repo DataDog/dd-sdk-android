@@ -38,7 +38,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal abstract class ActivityLifecycleTrackingStrategyTest {
 
-    lateinit var underTest: ActivityLifecycleTrackingStrategy
+    lateinit var testedStrategy: ActivityLifecycleTrackingStrategy
+
     @Mock
     lateinit var mockIntent: Intent
 
@@ -47,6 +48,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Mock
     lateinit var mockActivity: Activity
+
     @Mock
     lateinit var mockWindow: Window
 
@@ -71,26 +73,26 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when register it will register as lifecycle callback`() {
-        // when
-        underTest.register(mockAppContext)
+        // When
+        testedStrategy.register(mockAppContext)
 
         // verify
-        verify(mockAppContext).registerActivityLifecycleCallbacks(underTest)
+        verify(mockAppContext).registerActivityLifecycleCallbacks(testedStrategy)
     }
 
     @Test
     fun `when unregister it will remove itself  as lifecycle callback`() {
-        // when
-        underTest.unregister(mockAppContext)
+        // When
+        testedStrategy.unregister(mockAppContext)
 
         // verify
-        verify(mockAppContext).unregisterActivityLifecycleCallbacks(underTest)
+        verify(mockAppContext).unregisterActivityLifecycleCallbacks(testedStrategy)
     }
 
     @Test
     fun `when register called with non application context will do nothing`() {
-        // when
-        underTest.register(mockBadContext)
+        // When
+        testedStrategy.register(mockBadContext)
 
         // verify
         verifyZeroInteractions(mockBadContext)
@@ -98,8 +100,8 @@ internal abstract class ActivityLifecycleTrackingStrategyTest {
 
     @Test
     fun `when unregister called with non application context will do nothing`() {
-        // when
-        underTest.unregister(mockBadContext)
+        // When
+        testedStrategy.unregister(mockBadContext)
 
         // verify
         verifyZeroInteractions(mockBadContext)

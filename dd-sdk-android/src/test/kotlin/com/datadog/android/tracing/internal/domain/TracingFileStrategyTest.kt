@@ -108,15 +108,15 @@ internal class TracingFileStrategyTest :
         Thread.sleep(RECENT_DELAY_MS * 2)
     }
 
-    override fun minimalCopy(of: DDSpan): DDSpan {
+    override fun forgeMinimalCopy(of: DDSpan): DDSpan {
         return of.copy()
     }
 
-    override fun lightModel(forge: Forge): DDSpan {
+    override fun forgeLightModel(forge: Forge): DDSpan {
         return forge.getForgery()
     }
 
-    override fun bigModel(forge: Forge): DDSpan {
+    override fun forgeHeavyModel(forge: Forge): DDSpan {
 
         val maxBytesInSize = 256 * 1024
         val maxBytesInSizeForKeyValye = maxBytesInSize / 3
@@ -147,7 +147,7 @@ internal class TracingFileStrategyTest :
         return span as DDSpan
     }
 
-    override fun assertHasMatches(jsonObject: JsonObject, models: List<DDSpan>) {
+    override fun assertJsonContainsModels(jsonObject: JsonObject, models: List<DDSpan>) {
         val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
         val serviceName = spanObject.getString(SpanSerializer.TAG_SERVICE_NAME)
         val resourceName = spanObject.getString(SpanSerializer.TAG_RESOURCE)
@@ -166,7 +166,7 @@ internal class TracingFileStrategyTest :
         assertThat(roughMatches).isNotEmpty()
     }
 
-    override fun assertMatches(jsonObject: JsonObject, model: DDSpan) {
+    override fun assertJsonMatchesModel(jsonObject: JsonObject, model: DDSpan) {
         val spansArray = jsonObject.getAsJsonArray("spans")
         assertThat(spansArray).hasSize(1)
         val spanObject = spansArray.first() as JsonObject

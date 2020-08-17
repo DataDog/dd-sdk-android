@@ -25,39 +25,39 @@ import org.mockito.junit.jupiter.MockitoSettings
 @MockitoSettings()
 internal class LogFileDataMigratorTest {
 
-    lateinit var underTest: LogFileDataMigrator
+    lateinit var testedMigrator: LogFileDataMigrator
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
-    lateinit var v0DataFolder: File
+    lateinit var tempOldDir: File
 
     @BeforeEach
     fun `set up`() {
-        underTest =
-            LogFileDataMigrator(rootDir)
-        v0DataFolder = File(rootDir, LogFileStrategy.DATA_FOLDER_ROOT)
-        v0DataFolder.mkdirs()
+        testedMigrator =
+            LogFileDataMigrator(tempRootDir)
+        tempOldDir = File(tempRootDir, LogFileStrategy.DATA_FOLDER_ROOT)
+        tempOldDir.mkdirs()
     }
 
     @Test
     fun `will migrate all the data up to latest version`() {
-        underTest.migrateData()
+        testedMigrator.migrateData()
 
-        assertThat(v0DataFolder).doesNotExist()
+        assertThat(tempOldDir).doesNotExist()
     }
 
     @Test
     fun `will migrate data even if the old data directory does not exist`() {
-        v0DataFolder.deleteRecursively()
+        tempOldDir.deleteRecursively()
 
-        underTest.migrateData()
+        testedMigrator.migrateData()
 
-        assertThat(v0DataFolder).doesNotExist()
+        assertThat(tempOldDir).doesNotExist()
     }
 
     @AfterEach
     fun `tear down`() {
-        rootDir.deleteRecursively()
+        tempRootDir.deleteRecursively()
     }
 }

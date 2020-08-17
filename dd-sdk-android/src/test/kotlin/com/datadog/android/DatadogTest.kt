@@ -20,7 +20,6 @@ import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -29,7 +28,9 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -57,29 +58,31 @@ internal class DatadogTest {
 
     lateinit var mockAppContext: Application
 
-    @Mock
-    lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var mockDevLogHandler: LogHandler
 
+    @Mock
+    lateinit var mockConnectivityMgr: ConnectivityManager
+
+    @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
 
+    @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakePackageName: String
+
+    @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnvName: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeToken = forge.anHexadecimalString()
-        fakePackageName = forge.anAlphabeticalString()
-        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
-        fakeEnvName = forge.anAlphabeticalString()
-
+    fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
@@ -95,38 +98,47 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `ignores if initialize called more than once`() {
+    fun `𝕄 do nothing 𝕎 initialize() twice`() {
+        // Given
         Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
+        // When
         Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
 
+        // Then
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
                 Datadog.MESSAGE_ALREADY_INITIALIZED,
                 tags = setOf(
                     "${LogAttributes.ENV}:$fakeEnvName",
-                    "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion")
+                    "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion"
                 )
+            )
     }
 
     @Test
-    fun `stop called without initialize will do nothing`() {
+    fun `𝕄 do nothing 𝕎 stop() without initialize`() {
+        // When
         Datadog.invokeMethod("stop")
+
+        // Then
         verifyZeroInteractions(mockAppContext)
     }
 
     @Test
-    fun `does nothing on setEndpointUrl with Discard strategy`(
-        forge: Forge
+    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Discard strategy`(
+        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
     ) {
-        val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+        // Given
         Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
+        // When
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
 
+        // Then
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
@@ -139,15 +151,17 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `does nothing on setEndpointUrl with Update strategy`(
-        forge: Forge
+    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Update strategy`(
+        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
     ) {
-        val newEndpoint = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}")
+        // Given
         Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
         Datadog.setVerbosity(AndroidLog.VERBOSE)
 
+        // When
         Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
 
+        // Then
         verify(mockDevLogHandler)
             .handleLog(
                 AndroidLog.WARN,
@@ -160,34 +174,31 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `update user infos`(forge: Forge) {
-        val id = forge.anHexadecimalString()
-        val name = forge.anAlphabeticalString()
-        val email = forge.aStringMatching("\\w+@\\w+")
+    fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
+        @StringForgery(StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @RegexForgery("\\w+@\\w+") email: String
+    ) {
+        // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         CoreFeature.userInfoProvider = mockUserInfoProvider
 
+        // When
         Datadog.setUserInfo(id, name, email)
 
+        // Then
         verify(mockUserInfoProvider).setUserInfo(UserInfo(id, name, email))
     }
 
     @Test
-    fun `it will initialize the LifecycleMonitor`() {
-        // when
-        val application = mockAppContext
+    fun `𝕄 initialize the LifecycleMonitor 𝕎 initialize()`() {
+        // When
         Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
 
-        // then
+        // Then
         argumentCaptor<Application.ActivityLifecycleCallbacks> {
-            verify(application).registerActivityLifecycleCallbacks(capture())
+            verify(mockAppContext).registerActivityLifecycleCallbacks(capture())
             assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
         }
-    }
-
-    @Test
-    fun `it will not initialize the LifecycleMonitor if provided context is not App Context`() {
-        val mockContext = mockContext<Context>()
-        Datadog.initialize(mockContext, fakeToken, fakeEnvName)
     }
 }

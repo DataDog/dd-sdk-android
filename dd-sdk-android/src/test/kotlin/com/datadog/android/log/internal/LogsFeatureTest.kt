@@ -80,7 +80,7 @@ internal class LogsFeatureTest {
     lateinit var fakePackageVersion: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -96,7 +96,7 @@ internal class LogsFeatureTest {
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
     }
 
@@ -208,12 +208,12 @@ internal class LogsFeatureTest {
     fun `it will register the provided plugin when feature was initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -225,10 +225,10 @@ internal class LogsFeatureTest {
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
         }
@@ -247,7 +247,7 @@ internal class LogsFeatureTest {
     fun `it will unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -261,13 +261,13 @@ internal class LogsFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // when
+        // When
         LogsFeature.stop()
 
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).unregister()
             }
         }
@@ -275,10 +275,10 @@ internal class LogsFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -289,7 +289,7 @@ internal class LogsFeatureTest {
             mockPersistenceExecutorService
         )
 
-        // then
+        // Then
         assertThat(LogsFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 
@@ -298,12 +298,12 @@ internal class LogsFeatureTest {
         @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) content: String
     ) {
-        val fakeDir = File(rootDir, LogFileStrategy.LOGS_FOLDER)
+        val fakeDir = File(tempRootDir, LogFileStrategy.LOGS_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         LogsFeature.initialize(
             mockAppContext,
             fakeConfig,

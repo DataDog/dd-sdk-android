@@ -93,7 +93,7 @@ internal class RumFeatureTest {
     lateinit var fakePackageVersion: String
 
     @TempDir
-    lateinit var rootDir: File
+    lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -108,7 +108,7 @@ internal class RumFeatureTest {
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(rootDir)
+        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         CoreFeature.isMainProcess = true
     }
@@ -270,7 +270,7 @@ internal class RumFeatureTest {
 
     @Test
     fun `will not register any callback if no instrumentation feature enabled`() {
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -282,7 +282,7 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // then
+        // Then
         verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
             this is ViewTrackingStrategy || this is UserActionTrackingStrategy
         })
@@ -290,11 +290,11 @@ internal class RumFeatureTest {
 
     @Test
     fun `will register the strategy when tracking gestures enabled`() {
-        // given
+        // Given
         val trackGesturesStrategy: UserActionTrackingStrategy = mock()
         fakeConfig = fakeConfig.copy(userActionTrackingStrategy = trackGesturesStrategy)
 
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -306,17 +306,17 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // then
+        // Then
         verify(trackGesturesStrategy).register(mockAppContext)
     }
 
     @Test
     fun `will register the strategy when track screen strategy provided`() {
-        // given
+        // Given
         val viewTrackingStrategy: ViewTrackingStrategy = mock()
         fakeConfig = fakeConfig.copy(viewTrackingStrategy = viewTrackingStrategy)
 
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -328,13 +328,13 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // then
+        // Then
         verify(viewTrackingStrategy).register(mockAppContext)
     }
 
     @Test
     fun `will always register the viewTree strategy`() {
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -346,7 +346,7 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // then
+        // Then
         verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
             this is ViewTreeChangeTrackingStrategy
         })
@@ -354,10 +354,10 @@ internal class RumFeatureTest {
 
     @Test
     fun `will use a NoOpUploadScheduler if this is not the application main process`() {
-        // given
+        // Given
         CoreFeature.isMainProcess = false
 
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,
@@ -369,7 +369,7 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // then
+        // Then
         assertThat(RumFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
     }
 
@@ -398,12 +398,12 @@ internal class RumFeatureTest {
     fun `it will register the provided plugin when the feature is initialized`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
 
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig.copy(plugins = plugins),
@@ -417,10 +417,10 @@ internal class RumFeatureTest {
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
 
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).register(argumentCaptor.capture())
             }
         }
@@ -439,7 +439,7 @@ internal class RumFeatureTest {
     fun `it will unregister the provided plugin when stop called`(
         forge: Forge
     ) {
-        // given
+        // Given
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -454,13 +454,13 @@ internal class RumFeatureTest {
             mockUserInfoProvider
         )
 
-        // when
+        // When
         RumFeature.stop()
 
-        // then
-        val mockedPlugins = plugins.toTypedArray()
-        inOrder(*mockedPlugins) {
-            mockedPlugins.forEach {
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        inOrder(*mockPlugins) {
+            mockPlugins.forEach {
                 verify(it).unregister()
             }
         }
@@ -471,12 +471,12 @@ internal class RumFeatureTest {
         @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) content: String
     ) {
-        val fakeDir = File(rootDir, RumFileStrategy.RUM_FOLDER)
+        val fakeDir = File(tempRootDir, RumFileStrategy.RUM_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
 
-        // when
+        // When
         RumFeature.initialize(
             mockAppContext,
             fakeConfig,

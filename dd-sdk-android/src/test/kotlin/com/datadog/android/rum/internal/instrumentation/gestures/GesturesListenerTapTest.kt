@@ -65,7 +65,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     fun `onTap sends the right target when the ViewGroup and its child are both clickable`(
         forge: Forge
     ) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val container1: ViewGroup = mockView(
             id = forge.anInt(),
@@ -105,7 +105,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(1)).thenReturn(notVisibleInvalidTarget)
             whenever(it.getChildAt(2)).thenReturn(target)
         }
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -117,20 +117,20 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(target, expectedResourceName)
+        // Then
+        verifyMonitorCalledWithUserAction(target, expectedResourceName)
     }
 
     @Test
     fun `onTap dispatches an UserAction if target is ViewGroup and clickable`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val target: ViewGroup = mockView(
             id = forge.anInt(),
@@ -143,7 +143,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(mock())
             whenever(it.getChildAt(1)).thenReturn(mock())
         }
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -154,20 +154,20 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(target, expectedResourceName)
+        // Then
+        verifyMonitorCalledWithUserAction(target, expectedResourceName)
     }
 
     @Test
     fun `onTap ignores invisible or gone views`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val invalidTarget: View = mockView(
             id = forge.anInt(),
@@ -184,7 +184,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -196,20 +196,20 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(validTarget, expectedResourceName)
+        // Then
+        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
     }
 
     @Test
     fun `onTap ignores not clickable targets`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val invalidTarget: View = mockView(
             id = forge.anInt(),
@@ -225,7 +225,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -237,24 +237,24 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(validTarget, expectedResourceName)
+        // Then
+        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
     }
 
     @Test
     fun `onTap does nothing if no children present and decor view not clickable`(
         forge: Forge
     ) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -262,14 +262,14 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         ) {
             whenever(it.childCount).thenReturn(0)
         }
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
+        // Then
         verify(mockDevLogHandler)
             .handleLog(
                 Log.INFO,
@@ -280,9 +280,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
     @Test
     fun `onTap keeps decorView as target if visible and clickable`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = true,
@@ -291,22 +291,22 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         ) {
             whenever(it.childCount).thenReturn(0)
         }
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
         val expectedResourceName = forge.anAlphabeticalString()
-        mockResourcesForTarget(decorView, expectedResourceName)
+        mockResourcesForTarget(mockDecorView, expectedResourceName)
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(decorView, expectedResourceName)
+        // Then
+        verifyMonitorCalledWithUserAction(mockDecorView, expectedResourceName)
     }
 
     @Test
     fun `onTap adds the target id hexa if NFE while requesting resource id`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val targetId = forge.anInt()
         val validTarget: View = mockView(
@@ -316,7 +316,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = false,
@@ -330,20 +330,20 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                 forge.anAlphabeticalString()
             )
         )
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
+        // Then
+        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
     fun `onTap adds the target id hexa when getResourceEntryName returns null`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
         val targetId = forge.anInt()
         val validTarget: View = mockView(
@@ -353,7 +353,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = false,
@@ -363,27 +363,27 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(validTarget)
         }
         whenever(mockResources.getResourceEntryName(validTarget.id)).thenReturn(null)
-        underTest = GesturesListener(
-            WeakReference(decorView)
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView)
         )
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
-        verifyUserAction(validTarget, "0x${targetId.toString(16)}")
+        // Then
+        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
     }
 
     @Test
     fun `will not send any span if decor view view reference is null`(forge: Forge) {
-        // given
+        // Given
         val mockEvent: MotionEvent = forge.getForgery()
-        underTest = GesturesListener(WeakReference<View>(null))
+        testedListener = GesturesListener(WeakReference<View>(null))
 
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
+        // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
@@ -398,7 +398,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        decorView = mockView<ViewGroup>(
+        mockDecorView = mockView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
             hitTest = false,
@@ -424,14 +424,14 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             }
         }
 
-        underTest = GesturesListener(
-            WeakReference(decorView),
+        testedListener = GesturesListener(
+            WeakReference(mockDecorView),
             providers
         )
-        // when
-        underTest.onSingleTapUp(mockEvent)
+        // When
+        testedListener.onSingleTapUp(mockEvent)
 
-        // then
+        // Then
         verify(mockRumMonitor).addUserAction(
             RumActionType.TAP,
             targetName(validTarget, expectedResourceName),
@@ -439,7 +439,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         )
     }
 
-    private fun verifyUserAction(target: View, expectedResourceName: String) {
+    // region Internal
+
+    private fun verifyMonitorCalledWithUserAction(target: View, expectedResourceName: String) {
         verify(mockRumMonitor).addUserAction(
             eq(RumActionType.TAP),
             argThat { startsWith("${target.javaClass.simpleName}(") },
@@ -449,4 +451,6 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                     this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == expectedResourceName
             })
     }
+
+    // endregion
 }

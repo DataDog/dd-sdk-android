@@ -54,7 +54,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class WindowCallbackWrapperTest {
 
-    lateinit var underTest: WindowCallbackWrapper
+    lateinit var testedWrapper: WindowCallbackWrapper
 
     @Mock
     lateinit var mockCallback: Window.Callback
@@ -71,11 +71,9 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
-    // region Unit Tests
-
     @BeforeEach
     fun `set up`() {
-        underTest = WindowCallbackWrapper(
+        testedWrapper = WindowCallbackWrapper(
             mockCallback,
             mockGestureDetector
         )
@@ -93,40 +91,40 @@ internal class WindowCallbackWrapperTest {
 
     @Test
     fun `dispatchTouchEvent will delegate to wrapper`(forge: Forge) {
-        // given
+        // Given
         val motionEvent: MotionEvent = mock()
-        val spyTest = spy(underTest)
+        val spyTest = spy(testedWrapper)
         val aBoolean = forge.aBool()
         whenever(mockCallback.dispatchTouchEvent(motionEvent)).thenReturn(aBoolean)
         doReturn(motionEvent).`when`(spyTest).copyEvent(motionEvent)
 
-        // when
+        // When
         val returnedValue = spyTest.dispatchTouchEvent(motionEvent)
 
-        // then
+        // Then
         assertThat(returnedValue).isEqualTo(aBoolean)
         verify(mockCallback).dispatchTouchEvent(motionEvent)
     }
 
     @Test
     fun `dispatchTouchEvent will pass a copy of the event to the gesture detector`() {
-        // given
+        // Given
         val motionEvent: MotionEvent = mock()
         val copyMotionEvent: MotionEvent = mock()
-        val spyTest = spy(underTest)
+        val spyTest = spy(testedWrapper)
         doReturn(copyMotionEvent).`when`(spyTest).copyEvent(motionEvent)
 
-        // when
+        // When
         spyTest.dispatchTouchEvent(motionEvent)
 
-        // then
+        // Then
         verify(mockGestureDetector).onTouchEvent(copyMotionEvent)
         verify(copyMotionEvent).recycle()
     }
 
     @Test
     fun `menu item selection will trigger a Rum UserActionEvent`(forge: Forge) {
-        // given
+        // Given
         val returnValue = forge.aBool()
         val itemTitle = forge.aString()
         val featureId = forge.anInt()
@@ -139,10 +137,10 @@ internal class WindowCallbackWrapperTest {
         }
         whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
 
-        // when
-        assertThat(underTest.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+        // When
+        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
 
-        // then
+        // Then
         inOrder(mockCallback, mockRumMonitor) {
             verify(mockRumMonitor).addUserAction(
                 eq(RumActionType.TAP),
@@ -159,15 +157,15 @@ internal class WindowCallbackWrapperTest {
 
     @Test
     fun `pressing back button will trigger specific user action event`(forge: Forge) {
-        // given
+        // Given
         val returnedValue = forge.aBool()
         whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
 
-        // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        // When
+        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
-        // then
+        // Then
         inOrder(mockRumMonitor, mockCallback) {
             verify(mockRumMonitor).addUserAction(RumActionType.CUSTOM, "back", emptyMap())
             verify(mockCallback).dispatchKeyEvent(keyEvent)
@@ -176,15 +174,15 @@ internal class WindowCallbackWrapperTest {
 
     @Test
     fun `pressing back button will trigger user action event only on ACTION_UP`(forge: Forge) {
-        // given
+        // Given
         val returnedValue = forge.aBool()
         whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)
 
-        // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        // When
+        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
-        // then
+        // Then
         inOrder(mockRumMonitor, mockCallback) {
             verifyZeroInteractions(mockRumMonitor)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
@@ -193,23 +191,21 @@ internal class WindowCallbackWrapperTest {
 
     @Test
     fun `pressing any other key except back button will do nothing`(forge: Forge) {
-        // given
+        // Given
         val returnedValue = forge.aBool()
         whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
         val keyCode = forge.anInt(min = 5)
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, keyCode)
 
-        // when
-        assertThat(underTest.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        // When
+        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
-        // then
+        // Then
         inOrder(mockRumMonitor, mockCallback) {
             verifyZeroInteractions(mockRumMonitor)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
-
-    // endregion
 
     // region Internal
 

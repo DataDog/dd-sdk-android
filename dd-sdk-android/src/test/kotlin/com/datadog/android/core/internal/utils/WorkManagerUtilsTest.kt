@@ -42,7 +42,7 @@ import org.mockito.quality.Strictness
 internal class WorkManagerUtilsTest {
 
     @Mock
-    lateinit var mockedWorkManager: WorkManagerImpl
+    lateinit var mockWorkManager: WorkManagerImpl
 
     lateinit var mockAppContext: Application
 
@@ -64,35 +64,35 @@ internal class WorkManagerUtilsTest {
 
     @Test
     fun `it will cancel the worker if WorkManager was correctly instantiated`() {
-        // given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
+        // Given
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
-        // when
+        // When
         cancelUploadWorker(mockContext())
 
-        // then
-        verify(mockedWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
+        // Then
+        verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
     }
 
     @Test
     fun `it will handle the cancel exception if WorkManager was not correctly instantiated`() {
-        // when
+        // When
         cancelUploadWorker(mockContext())
 
-        // then
-        verifyZeroInteractions(mockedWorkManager)
+        // Then
+        verifyZeroInteractions(mockWorkManager)
     }
 
     @Test
     fun `it will schedule the worker if WorkManager was correctly instantiated`() {
-        // given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockedWorkManager)
+        // Given
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
-        // when
+        // When
         triggerUploadWorker(mockContext())
 
-        // then
-        verify(mockedWorkManager).enqueueUniqueWork(
+        // Then
+        verify(mockWorkManager).enqueueUniqueWork(
             eq(UPLOAD_WORKER_NAME),
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
@@ -103,10 +103,10 @@ internal class WorkManagerUtilsTest {
 
     @Test
     fun `it will handle the trigger exception if WorkManager was not correctly instantiated`() {
-        // when
+        // When
         triggerUploadWorker(mockContext())
 
-        // then
-        verifyZeroInteractions(mockedWorkManager)
+        // Then
+        verifyZeroInteractions(mockWorkManager)
     }
 }

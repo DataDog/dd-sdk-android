@@ -28,29 +28,29 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DataUploadSchedulerTest {
 
-    @Mock
-    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+    lateinit var testedScheduler: DataUploadScheduler
 
-    lateinit var dataUploadScheduler: DataUploadScheduler
+    @Mock
+    lateinit var mockExecutor: ScheduledThreadPoolExecutor
 
     @BeforeEach
     fun `set up`() {
-        dataUploadScheduler = DataUploadScheduler(
+        testedScheduler = DataUploadScheduler(
             mock(),
             mock(),
             mock(),
             mock(),
-            mockScheduledThreadPoolExecutor
+            mockExecutor
         )
     }
 
     @Test
     fun `when start it will schedule a runnable`() {
-        // when
-        dataUploadScheduler.startScheduling()
+        // When
+        testedScheduler.startScheduling()
 
-        // then
-        verify(mockScheduledThreadPoolExecutor).schedule(
+        // Then
+        verify(mockExecutor).schedule(
             any(),
             eq(DataUploadRunnable.DEFAULT_DELAY),
             eq(TimeUnit.MILLISECONDS)
@@ -59,19 +59,19 @@ internal class DataUploadSchedulerTest {
 
     @Test
     fun `when stop it will try to remove the scheduled runnable`() {
-        // given
-        dataUploadScheduler.startScheduling()
+        // Given
+        testedScheduler.startScheduling()
 
-        // when
-        dataUploadScheduler.stopScheduling()
+        // When
+        testedScheduler.stopScheduling()
 
-        // then
+        // Then
         val argumentCaptor = argumentCaptor<Runnable>()
-        verify(mockScheduledThreadPoolExecutor).schedule(
+        verify(mockExecutor).schedule(
             argumentCaptor.capture(),
             eq(DataUploadRunnable.DEFAULT_DELAY),
             eq(TimeUnit.MILLISECONDS)
         )
-        verify(mockScheduledThreadPoolExecutor).remove(argumentCaptor.firstValue)
+        verify(mockExecutor).remove(argumentCaptor.firstValue)
     }
 }

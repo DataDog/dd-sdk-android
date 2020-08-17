@@ -36,22 +36,22 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        underTest = GesturesTrackingStrategy(mockGesturesTracker)
+        testedStrategy = GesturesTrackingStrategy(mockGesturesTracker)
     }
 
     @Test
     fun `when activity resumed it will start tracking gestures`(forge: Forge) {
-        // when
-        underTest.onActivityResumed(mockActivity)
-        // then
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+        // Then
         verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
     }
 
     @Test
     fun `when activity paused it will stop tracking gestures`(forge: Forge) {
-        // when
-        underTest.onActivityPaused(mockActivity)
-        // then
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
+        // Then
         verify(mockGesturesTracker).stopTracking(mockWindow, mockActivity)
     }
 }

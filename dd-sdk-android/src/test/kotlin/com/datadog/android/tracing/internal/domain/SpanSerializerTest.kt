@@ -52,6 +52,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class SpanSerializerTest {
 
+    lateinit var testedSerializer: SpanSerializer
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
@@ -60,8 +62,6 @@ internal class SpanSerializerTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    lateinit var underTest: SpanSerializer
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnvName: String
@@ -77,7 +77,7 @@ internal class SpanSerializerTest {
         SpanForgeryFactory.TEST_TRACER.activeSpan()?.finish()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        underTest = SpanSerializer(
+        testedSerializer = SpanSerializer(
             mockTimeProvider,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
@@ -90,21 +90,21 @@ internal class SpanSerializerTest {
         @Forgery span: DDSpan,
         @LongForgery serverOffsetNanos: Long
     ) {
-        // given
+        // Given
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
-        val serialized = underTest.serialize(span)
+        val serialized = testedSerializer.serialize(span)
 
-        // when
+        // When
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
 
-        // then
-        assertSpanMatches(span, spanObject, serverOffsetNanos)
+        // Then
+        assertJsonMatchesInputSpan(spanObject, span, serverOffsetNanos)
         assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
         val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
-        assertUserInfoMatches(fakeUserInfo, metaObj)
-        assertNetworkInfoMatches(fakeNetworkInfo, metaObj)
-        assertGlobalInfoMatches(metaObj)
+        assertJsonContainsUserInfo(metaObj, fakeUserInfo)
+        assertJsonContainsNetworkInfo(metaObj, fakeNetworkInfo)
+        assertJsonContainsGlobalInfo(metaObj)
 
         // close the span
         span.finish()
@@ -112,7 +112,7 @@ internal class SpanSerializerTest {
 
     @Test
     fun `it will only add the metrics key top level for the top span`(forge: Forge) {
-        // given
+        // Given
         val parentSpan =
             spy(
                 SpanForgeryFactory.TEST_TRACER
@@ -126,11 +126,13 @@ internal class SpanSerializerTest {
                 .asChildOf(parentSpan)
                 .start() as DDSpan
 
-        // when
-        val serializedParent = JsonParser.parseString(underTest.serialize(parentSpan)).asJsonObject
-        val serializedChild = JsonParser.parseString(underTest.serialize(childSpan)).asJsonObject
+        // When
+        val serializedParent = JsonParser.parseString(testedSerializer.serialize(parentSpan))
+            .asJsonObject
+        val serializedChild = JsonParser.parseString(testedSerializer.serialize(childSpan))
+            .asJsonObject
 
-        // then
+        // Then
         val serializedParentSpan = serializedParent.getAsJsonArray("spans").first() as JsonObject
         val serializedChildSpan = serializedChild.getAsJsonArray("spans").first() as JsonObject
         assertThat(serializedParentSpan).hasField(SpanSerializer.TAG_METRICS) {
@@ -147,14 +149,14 @@ internal class SpanSerializerTest {
 
     // region Internal
 
-    private fun assertGlobalInfoMatches(jsonObject: JsonObject) {
+    private fun assertJsonContainsGlobalInfo(jsonObject: JsonObject) {
         assertThat(jsonObject)
             .hasField(LogAttributes.APPLICATION_VERSION, CoreFeature.packageVersion)
     }
 
-    private fun assertSpanMatches(
-        span: DDSpan,
+    private fun assertJsonMatchesInputSpan(
         jsonObject: JsonObject,
+        span: DDSpan,
         serverOffsetNanos: Long
     ) {
         assertThat(jsonObject)
@@ -183,7 +185,10 @@ internal class SpanSerializerTest {
             }
     }
 
-    private fun assertNetworkInfoMatches(networkInfo: NetworkInfo?, jsonObject: JsonObject) {
+    private fun assertJsonContainsNetworkInfo(
+        jsonObject: JsonObject,
+        networkInfo: NetworkInfo?
+    ) {
         if (networkInfo != null) {
             assertThat(jsonObject).apply {
                 hasField(
@@ -233,7 +238,10 @@ internal class SpanSerializerTest {
         }
     }
 
-    private fun assertUserInfoMatches(userInfo: UserInfo, jsonObject: JsonObject) {
+    private fun assertJsonContainsUserInfo(
+        jsonObject: JsonObject,
+        userInfo: UserInfo
+    ) {
         assertThat(jsonObject).apply {
             if (userInfo.id.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_ID)

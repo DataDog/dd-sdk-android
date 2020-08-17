@@ -109,18 +109,18 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val model = getBatchElements(batch).first() as JsonObject
-        assertMatches(model, fakeModel)
+        assertJsonMatchesModel(model, fakeModel)
     }
 
     @Test
     fun `writes minimal model as json`(forge: Forge) {
         val fakeModel = forge.getForgery(modelClass)
-        val minimalModel = minimalCopy(fakeModel)
+        val minimalModel = forgeMinimalCopy(fakeModel)
         testedWriter.write(minimalModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val jsonObject = getBatchElements(batch).first() as JsonObject
-        assertMatches(jsonObject, minimalModel)
+        assertJsonMatchesModel(jsonObject, minimalModel)
     }
 
     @Test
@@ -140,7 +140,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         val batchCount = min(maxMessagesPerPath, elements.size)
         for (i in 0 until batchCount) {
             val jsonObject = elements[i].asJsonObject
-            assertMatches(jsonObject, sentModels[i])
+            assertJsonMatchesModel(jsonObject, sentModels[i])
         }
     }
 
@@ -154,7 +154,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         testedWriter.write(nextModel)
         val batch = testedReader.readNextBatch()!!
         val jsonObject = getBatchElements(batch).first() as JsonObject
-        assertMatches(jsonObject, fakeModel)
+        assertJsonMatchesModel(jsonObject, fakeModel)
     }
 
     @Test
@@ -173,13 +173,13 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         val elements = getBatchElements(batch)
         elements.forEachIndexed { i, jsonElement ->
             val jsonObject = jsonElement.asJsonObject
-            assertHasMatches(jsonObject, fakeModels)
+            assertJsonContainsModels(jsonObject, fakeModels)
         }
     }
 
     @Test
     fun `don't write model if size is too big`(forge: Forge) {
-        val bigModel = bigModel(forge)
+        val bigModel = forgeHeavyModel(forge)
         testedWriter.write(bigModel)
         waitForNextBatch()
         val batch = testedReader.readNextBatch()
@@ -191,7 +191,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
     @Test
     fun `limit the number of models per batch`(forge: Forge) {
         val models = forge.aList(maxMessagesPerPath * 3) {
-            lightModel(forge)
+            forgeLightModel(forge)
         }
 
         models.forEach { testedWriter.write(it) }
@@ -209,11 +209,11 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
             .isEqualTo(maxMessagesPerPath)
         elements.forEachIndexed { i, model ->
             val jsonObject = model.asJsonObject
-            assertMatches(jsonObject, models[i])
+            assertJsonMatchesModel(jsonObject, models[i])
         }
         elements2.forEachIndexed { i, model ->
             val jsonObject = model.asJsonObject
-            assertMatches(jsonObject, models[i + maxMessagesPerPath])
+            assertJsonMatchesModel(jsonObject, models[i + maxMessagesPerPath])
         }
     }
 
@@ -322,11 +322,11 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     @Test
     fun `it will create and share one single writer instance`() {
-        // given
+        // Given
         val persistenceStrategy = getStrategy()
         val currentWriter = persistenceStrategy.getWriter()
 
-        // then
+        // Then
         assertThat(persistenceStrategy.getWriter()).isSameAs(currentWriter)
     }
 
@@ -334,29 +334,33 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
 
     // region Abstract
 
-    abstract fun minimalCopy(of: T): T
-    abstract fun lightModel(forge: Forge): T
-    abstract fun bigModel(forge: Forge): T
+    abstract fun forgeMinimalCopy(of: T): T
+    abstract fun forgeLightModel(forge: Forge): T
+    abstract fun forgeHeavyModel(forge: Forge): T
 
-    abstract fun assertHasMatches(
+    abstract fun assertJsonContainsModels(
         jsonObject: JsonObject,
         models: List<T>
     )
 
-    abstract fun assertMatches(
+    abstract fun assertJsonMatchesModel(
         jsonObject: JsonObject,
         model: T
     )
 
     // endregion
 
-    fun getBatchElements(batch: Batch): List<JsonElement> {
+    // region Internal
+
+    private fun getBatchElements(batch: Batch): List<JsonElement> {
         if (payloadDecoration == PayloadDecoration.JSON_ARRAY_DECORATION) {
             return batch.asJsonArray.toList()
         } else {
             return batch.lines.map { JsonParser.parseString(it) }
         }
     }
+
+    // endregion
 
     companion object {
 

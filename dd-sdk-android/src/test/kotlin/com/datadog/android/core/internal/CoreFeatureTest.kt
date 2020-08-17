@@ -67,8 +67,6 @@ internal class CoreFeatureTest {
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
 
-    // region UnitTests
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakePackageName = forge.anAlphabeticalString()
@@ -194,40 +192,40 @@ internal class CoreFeatureTest {
 
     @Test
     fun `stop will shutdown the executors`() {
-        // given
+        // Given
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
-        val mockedThreadPoolExecutor: ThreadPoolExecutor = mock()
-        CoreFeature.dataPersistenceExecutorService = mockedThreadPoolExecutor
+        val mockThreadPoolExecutor: ThreadPoolExecutor = mock()
+        CoreFeature.dataPersistenceExecutorService = mockThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
         CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
 
-        // when
+        // When
         CoreFeature.stop()
 
-        // then
-        verify(mockedThreadPoolExecutor).shutdownNow()
+        // Then
+        verify(mockThreadPoolExecutor).shutdownNow()
         verify(mockScheduledThreadPoolExecutor).shutdownNow()
     }
 
     @Test
     fun `if custom service name not provided will use the package name`() {
-        // given
+        // Given
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(serviceName = null))
 
-        // then
+        // Then
         assertThat(CoreFeature.serviceName).isEqualTo(mockAppContext.packageName)
     }
 
     @Test
     fun `if custom service name provided will use this instead of the package name`(forge: Forge) {
-        // given
+        // Given
         val serviceName = forge.anAlphabeticalString()
         CoreFeature.initialize(
             mockAppContext,
             DatadogConfig.CoreConfig(serviceName = serviceName)
         )
 
-        // then
+        // Then
         assertThat(CoreFeature.serviceName).isEqualTo(serviceName)
     }
 
@@ -235,93 +233,91 @@ internal class CoreFeatureTest {
     fun `if this process name matches the package name it will be marked as main process`(
         forge: Forge
     ) {
-        // given
-        val mockedActivityManager = mock<ActivityManager>()
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
-        val myProcess = mockAppProcessInfo(
+        val myProcess = forgeAppProcessInfo(
             Process.myPid(),
             fakePackageName
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(myProcess, otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
     fun `if this process does not match the package name it will be marked as secondary process`(
         forge: Forge
     ) {
-        // given
-        val mockedActivityManager = mock<ActivityManager>()
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
-        val myProcess = mockAppProcessInfo(
+        val myProcess = forgeAppProcessInfo(
             Process.myPid(),
             fakePackageName + forge.anAlphabeticalString(size = 1)
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(myProcess, otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isFalse()
     }
 
     @Test
     fun `will mark it as main process by default if could not be found in the list`(forge: Forge) {
-        // given
-        val mockedActivityManager = mock<ActivityManager>()
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockedActivityManager
+            mockActivityManager
         )
-        val otherProcess = mockAppProcessInfo(
+        val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
             forge.anAlphabeticalString()
         )
         otherProcess.processName = forge.anAlphabeticalString()
         otherProcess.pid = Process.myPid() + 1
-        whenever(mockedActivityManager.runningAppProcesses)
+        whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(
                 listOf(otherProcess)
             )
 
-        // when
+        // When
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
-        // then
+        // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
-    // endregion
-
     // region internal
 
-    private fun mockAppProcessInfo(
+    private fun forgeAppProcessInfo(
         processId: Int,
         processName: String
     ): ActivityManager.RunningAppProcessInfo {
