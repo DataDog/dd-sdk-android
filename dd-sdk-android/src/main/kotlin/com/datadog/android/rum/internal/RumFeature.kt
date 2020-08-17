@@ -61,12 +61,10 @@ internal object RumFeature {
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
-    internal var viewTrackingStrategy: ViewTrackingStrategy =
-        NoOpViewTrackingStrategy()
-    internal var actionTrackingStrategy: UserActionTrackingStrategy =
+    private var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
+    private var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
-    internal var viewTreeTrackingStrategy: TrackingStrategy =
-        ViewTreeChangeTrackingStrategy()
+    private var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
     internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")

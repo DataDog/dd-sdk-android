@@ -90,7 +90,8 @@ internal class CoreFeatureTest {
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, atLeastOnce()).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, atLeastOnce())
+            .registerReceiver(broadcastReceiverCaptor.capture(), any())
 
         assertThat(broadcastReceiverCaptor.allValues)
             .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
@@ -103,7 +104,8 @@ internal class CoreFeatureTest {
         CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, atLeastOnce()).registerReceiver(broadcastReceiverCaptor.capture(), any())
+        verify(mockAppContext, atLeastOnce())
+            .registerReceiver(broadcastReceiverCaptor.capture(), any())
         assertThat(broadcastReceiverCaptor.allValues)
             .allMatch { it is BroadcastReceiverSystemInfoProvider }
         verify(mockConnectivityMgr)

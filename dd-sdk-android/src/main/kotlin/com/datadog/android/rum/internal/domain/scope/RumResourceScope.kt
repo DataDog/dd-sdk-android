@@ -20,19 +20,19 @@ import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 
 internal class RumResourceScope(
-    val parentScope: RumScope,
-    val url: String,
-    val method: String,
-    val key: String,
+    internal val parentScope: RumScope,
+    internal val url: String,
+    internal val method: String,
+    internal val key: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
-    val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
-    var timing: ResourceTiming? = null
+    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    private var timing: ResourceTiming? = null
 
-    internal val eventTimestamp = eventTime.timestamp
-    internal val startedNanos: Long = eventTime.nanoTime
+    private val eventTimestamp = eventTime.timestamp
+    private val startedNanos: Long = eventTime.nanoTime
     private val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
@@ -51,6 +51,7 @@ internal class RumResourceScope(
             is RumRawEvent.StopResource -> onStopResource(event, writer)
             is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, writer)
         }
+
         return if (sent) null else this
     }
 
@@ -63,10 +64,10 @@ internal class RumResourceScope(
     // region  Internal
 
     private fun onStopResource(
-        event: RumRawEvent.StopResource?,
+        event: RumRawEvent.StopResource,
         writer: Writer<RumEvent>
     ) {
-        if (key != event?.key) return
+        if (key != event.key) return
 
         stopped = true
         attributes.putAll(event.attributes)
@@ -117,7 +118,6 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
-        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
@@ -172,7 +172,6 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
-        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val errorEvent = ErrorEvent(
             date = eventTimestamp,

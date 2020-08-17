@@ -52,7 +52,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasStackTrace(expected: String): ErrorEventAssert {
+    fun hasStackTrace(expected: String?): ErrorEventAssert {
         assertThat(actual.error.stack)
             .overridingErrorMessage(
                 "Expected event data to have error.stack $expected but was ${actual.error.stack}"

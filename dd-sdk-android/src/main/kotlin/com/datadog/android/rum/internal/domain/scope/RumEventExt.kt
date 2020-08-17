@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -124,13 +125,13 @@ internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
     }
 
     val cellular = if (cellularTechnology != null || carrierName != null) {
-            ResourceEvent.Cellular(
-                technology = cellularTechnology,
-                carrierName = carrierName
-            )
-        } else {
-            null
-        }
+        ResourceEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
     return ResourceEvent.Connectivity(
         status, interfaces, cellular
     )

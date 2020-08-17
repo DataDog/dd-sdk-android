@@ -124,7 +124,6 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.NdkVersion
-
 }
 
 dependencies {

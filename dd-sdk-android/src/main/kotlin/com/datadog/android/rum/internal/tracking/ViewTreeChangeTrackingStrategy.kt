@@ -35,7 +35,6 @@ internal class ViewTreeChangeTrackingStrategy :
 
     override fun onGlobalLayout() {
         val now = Time()
-        GlobalRum.addUserInteraction()
         (GlobalRum.get() as? AdvancedRumMonitor)?.viewTreeChanged(now)
     }
 
@@ -44,7 +43,8 @@ internal class ViewTreeChangeTrackingStrategy :
     // region Internal
 
     private fun getViewTreeObserver(activity: Activity): ViewTreeObserver? {
-        return activity.window?.decorView?.viewTreeObserver
+        val window = activity.window ?: return null
+        return window.decorView.viewTreeObserver
     }
 
     // endregion

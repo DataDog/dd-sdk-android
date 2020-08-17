@@ -32,6 +32,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -105,6 +106,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
+    @RepeatedTest(10)
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `read system info on register Lollipop`(
         @Forgery status: SystemInfo.BatteryStatus,
