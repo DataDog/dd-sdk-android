@@ -483,6 +483,62 @@ class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config with GOV endpoints 𝕎 useGovEndpoints() and build()`() {
+        // When
+        val config = testedBuilder
+            .useGovEndpoints()
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false
+                )
+            )
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_GOV,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_GOV,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_GOV,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_GOV,
+                    fakeEnvName
+                )
+            )
+    }
+
+    @Test
     fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
         @RegexForgery("https://[a-z]+\\.com") logsUrl: String,
         @RegexForgery("https://[a-z]+\\.com") tracesUrl: String,

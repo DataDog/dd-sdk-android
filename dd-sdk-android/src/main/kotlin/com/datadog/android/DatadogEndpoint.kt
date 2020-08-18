@@ -28,6 +28,14 @@ object DatadogEndpoint {
     const val LOGS_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     /**
+     * The endpoint for Logs (GovCloud compatible servers).
+     * Use this in your [DatadogConfig] if you log on
+     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    const val LOGS_GOV: String = "https://mobile-http-intake.logs.ddog-gov.com"
+
+    /**
      * The endpoint for Traces (US based servers), used by default by the SDK.
      * @see [initialize]
      */
@@ -42,6 +50,14 @@ object DatadogEndpoint {
     const val TRACES_EU: String = "https://public-trace-http-intake.logs.datadoghq.eu"
 
     /**
+     * The endpoint for Traces (GovCloud compatible servers).
+     * Use this in your [DatadogConfig] if you log on
+     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    const val TRACES_GOV: String = "https://public-trace-http-intake.logs.ddog-gov.com"
+
+    /**
      * The endpoint for Real User Monitoring (US based servers), used by default by the SDK.
      * @see [DatadogConfig]
      */
@@ -54,6 +70,14 @@ object DatadogEndpoint {
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
     const val RUM_EU: String = "https://rum-http-intake.logs.datadoghq.eu"
+
+    /**
+     * The endpoint for Real User Monitoring (GovCloud compatible servers).
+     * Use this in your [DatadogConfig] if you log on
+     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
+     * [app.datadoghq.com](https://app.datadoghq.com/)
+     */
+    const val RUM_GOV: String = "https://rum-http-intake.logs.ddog-gov.com"
 
     /**
      * Endpoint for the Network Time Protocol time syncing.

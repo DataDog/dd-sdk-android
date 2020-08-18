@@ -22,6 +22,7 @@ class com.datadog.android.DatadogConfig
     DEPRECATED fun setEnvironmentName(String): Builder
     fun useEUEndpoints(): Builder
     fun useUSEndpoints(): Builder
+    fun useGovEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
@@ -33,10 +34,13 @@ class com.datadog.android.DatadogConfig
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
   const val LOGS_EU: String
+  const val LOGS_GOV: String
   const val TRACES_US: String
   const val TRACES_EU: String
+  const val TRACES_GOV: String
   const val RUM_US: String
   const val RUM_EU: String
+  const val RUM_GOV: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
