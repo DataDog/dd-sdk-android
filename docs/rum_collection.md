@@ -156,6 +156,10 @@ The data on the disk will automatically be discarded if it gets too old to ensur
 
 If your existing codebase is using Glide, you can send more information (as RUM Resources and Errors) to Datadog automatically by using the [dedicated library](glide_integration.md).
 
+### Fresco
+
+If your existing codebase is using Fresco, you can send more information (as RUM Resources and Errors) to Datadog automatically by using the [dedicated library](fresco_integration.md).
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
