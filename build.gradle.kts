@@ -50,6 +50,7 @@ tasks.register("checkAll") {
 tasks.register("assembleAll") {
     dependsOn(
         ":dd-sdk-android:assemble",
+        ":dd-sdk-android-fresco:assemble",
         ":dd-sdk-android-glide:assemble",
         ":dd-sdk-android-ktx:assemble",
         ":dd-sdk-android-timber:assemble",
@@ -60,6 +61,7 @@ tasks.register("assembleAll") {
 tasks.register("unitTestRelease") {
     dependsOn(
         ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-fresco:testReleaseUnitTest",
         ":dd-sdk-android-glide:testReleaseUnitTest",
         ":dd-sdk-android-ktx:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
@@ -70,6 +72,7 @@ tasks.register("unitTestRelease") {
 tasks.register("unitTestDebug") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android-fresco:testDebugUnitTest",
         ":dd-sdk-android-glide:testDebugUnitTest",
         ":dd-sdk-android-ktx:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
@@ -97,6 +100,7 @@ tasks.register("unitTestAll") {
 tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
+        ":dd-sdk-android-fresco:ktlintCheck",
         ":dd-sdk-android-glide:ktlintCheck",
         ":dd-sdk-android-ktx:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
@@ -111,6 +115,7 @@ tasks.register("ktlintCheckAll") {
 tasks.register("lintCheckAll") {
     dependsOn(
         ":dd-sdk-android:lintRelease",
+        ":dd-sdk-android-fresco:lintRelease",
         ":dd-sdk-android-glide:lintRelease",
         ":dd-sdk-android-ktx:lintRelease",
         ":dd-sdk-android-timber:lintRelease",
@@ -121,6 +126,7 @@ tasks.register("lintCheckAll") {
 tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
+        ":dd-sdk-android-fresco:detekt",
         ":dd-sdk-android-glide:detekt",
         ":dd-sdk-android-ktx:detekt",
         ":dd-sdk-android-timber:detekt",
@@ -135,6 +141,8 @@ tasks.register("jacocoReportAll") {
     dependsOn(
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-fresco:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-glide:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-glide:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",

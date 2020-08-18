@@ -1,8 +1,8 @@
-# Datadog Integration for Glide
+# Datadog Integration for Fresco
 
 ## Getting Started 
 
-To include the Datadog integration for [Glide][1] in your project, simply add the
+To include the Datadog integration for [Fresco][1] in your project, simply add the
 following to your application's `build.gradle` file.
 
 ```
@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-glide:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-fresco:<latest-version>"
 }
 ```
 
@@ -40,16 +40,19 @@ class SampleApplication : Application() {
 }
 ```
 
-Following Glide's [Generated API documentation][2], you then need to create your own `GlideAppModule` with Datadog integrations by extending the `DatadogGlideModule`, as follow.
+Following Fresco's [Generated API documentation][2], you need to create your own `OkHttpImagePipelineConfigFactory` by providing your own `OkHttpClient` (configured with `DatadogInterceptor`). You can also add an instance of `DatadogFrescoCacheListener` in your `DiskCacheConfig`.
 
-Doing so will automatically track Glide's network requests (creating both APM Traces and RUM Resource events), and will also listen for disk cache and image transformation errors (creating RUM Error events).
+Doing so will automatically track Fresco's network requests (creating both APM Traces and RUM Resource events), and will also listen for disk cache errors (creating RUM Error events).
 
 ```kotlin
-@GlideModule
-class CustomGlideModule : 
-    DatadogGlideModule(
-        listOf("example.com", "example.eu")
-    )
+    val config = OkHttpImagePipelineConfigFactory.newBuilder(context, okHttpClient)
+        .setMainDiskCacheConfig(
+            DiskCacheConfig.newBuilder(context)
+                .setCacheEventListener(DatadogFrescoCacheListener())
+                .build()
+        )
+        .build()
+    Fresco.initialize(context, config)
 ```
 
 
@@ -63,5 +66,5 @@ would like to change. For more information, read the
 
 [Apache License, v2.0](../LICENSE)
 
-[1]: https://bumptech.github.io/glide/
-[2]: https://bumptech.github.io/glide/doc/generatedapi.html
+[1]: https://github.com/facebook/fresco
+[2]: https://frescolib.org/docs/index.html

@@ -31,6 +31,7 @@ import,androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source
 import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.facebook,MIT,Copyright (c) Facebook, Inc. and its affiliates
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
 import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
