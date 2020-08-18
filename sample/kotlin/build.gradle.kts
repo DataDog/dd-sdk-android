@@ -73,6 +73,9 @@ android {
         register("picasso") {
             dimension = "ill"
         }
+        register("fresco") {
+            dimension = "ill"
+        }
     }
 
     sourceSets.named("main") {
@@ -84,12 +87,17 @@ android {
     sourceSets.named("picasso") {
         java.srcDir("src/picasso/kotlin")
     }
+    sourceSets.named("fresco") {
+        java.srcDir("src/fresco/kotlin")
+        resources.srcDirs("src/fresco/res")
+    }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
+
 
     dexOptions {
         javaMaxHeapSize = "4g"
@@ -106,6 +114,7 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.NdkVersion
+
 }
 
 dependencies {
@@ -114,7 +123,8 @@ dependencies {
     api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
     api(project(":dd-sdk-android-timber"))
-    api(project(":dd-sdk-android-glide"))
+    "glideApi"(project(":dd-sdk-android-glide"))
+    "frescoApi"(project(":dd-sdk-android-fresco"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -133,14 +143,19 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:1.2.5")
     implementation("io.ktor:ktor-gson:1.2.5")
 
+    // Fresco
+    "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
+    "frescoImplementation"("com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}")
+
     // Glide
-    implementation("com.github.bumptech.glide:glide:4.11.0")
-    implementation("com.github.bumptech.glide:okhttp3-integration:4.11.0") {
+    "glideImplementation"("com.github.bumptech.glide:glide:${Dependencies.Versions.Glide}")
+    "glideImplementation"("com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}") {
         exclude(group = "glide-parent")
     }
-    kapt("com.github.bumptech.glide:compiler:4.11.0")
+    "kaptGlide"("com.github.bumptech.glide:compiler:${Dependencies.Versions.Glide}")
+
     // Picasso
-    implementation("com.squareup.picasso:picasso:2.8")
+    "picassoImplementation"("com.squareup.picasso:picasso:2.8")
 
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)

@@ -35,7 +35,7 @@ import timber.log.Timber
 
 class SampleApplication : Application() {
 
-    private val tracedHosts = listOf("datadoghq.com", "127.0.0.1")
+    private val tracedHosts = listOf("datadoghq.com", "127.0.0.1", "source.unsplash.com")
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(DatadogInterceptor(tracedHosts))

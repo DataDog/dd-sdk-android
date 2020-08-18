@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.AppCompatImageView
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
@@ -17,7 +17,7 @@ import com.datadog.android.sample.R
 class PictureFragment :
     Fragment(), View.OnClickListener {
 
-    private lateinit var picture: AppCompatImageView
+    private lateinit var picture: ImageView
     private lateinit var viewModel: PictureViewModel
 
     // region Fragment
