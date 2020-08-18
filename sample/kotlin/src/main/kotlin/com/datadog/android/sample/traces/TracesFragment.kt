@@ -53,6 +53,16 @@ class TracesFragment : Fragment(), View.OnClickListener {
         progressBarAsync.visibility = View.INVISIBLE
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.onPause()
+    }
+
     // endregion
 
     // region View.OnClickListener
