@@ -6,6 +6,7 @@ include:
 variables:
   CURRENT_CI_IMAGE: "1"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
+  GIT_DEPTH: 5
 
 stages:
   - ci-image
@@ -29,66 +30,86 @@ ci-image:
 # STATIC ANALYSIS
 
 analysis:ktlint:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :ktlintCheckAll --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
 
 analysis:android-lint:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :lintCheckAll --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:detekt:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :detektAll --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon
 
 analysis:licenses:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace --no-daemon
 
 analysis:api-surface:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
 
 # TESTS
 
-test:unit:
-  tags: [ "runner:docker", "size:large" ]
+test:debug:
+  tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
   script:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
-    - ./gradlew unitTestAll --stacktrace
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon
+
+test:release:
+  tags: [ "runner:main", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  script:
+    - git fetch --depth=1 origin master
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon
+
+test:tools:
+  tags: [ "runner:main", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  script:
+    - git fetch --depth=1 origin master
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon
 
 # PUBLISH ARTIFACTS ON BINTRAY
 
 publish:release:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -97,10 +118,10 @@ publish:release:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:bintrayUpload
+    - ./gradlew :dd-sdk-android:bintrayUpload --stacktrace --no-daemon
 
 publish:release-glide:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -109,10 +130,10 @@ publish:release-glide:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-glide:bintrayUpload
+    - ./gradlew :dd-sdk-android-glide:bintrayUpload --stacktrace --no-daemon
 
 publish:release-ktx:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -121,10 +142,10 @@ publish:release-ktx:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ktx:bintrayUpload
+    - ./gradlew :dd-sdk-android-ktx:bintrayUpload --stacktrace --no-daemon
 
 publish:release-ndk:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -133,10 +154,10 @@ publish:release-ndk:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ndk:bintrayUpload
+    - ./gradlew :dd-sdk-android-ndk:bintrayUpload --stacktrace --no-daemon
 
 publish:release-timber:
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -145,7 +166,7 @@ publish:release-timber:
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-timber:bintrayUpload
+    - ./gradlew :dd-sdk-android-timber:bintrayUpload --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 
