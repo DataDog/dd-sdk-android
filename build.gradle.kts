@@ -57,23 +57,40 @@ tasks.register("assembleAll") {
     )
 }
 
-tasks.register("unitTestAll") {
+tasks.register("unitTestRelease") {
+    dependsOn(
+        ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-glide:testReleaseUnitTest",
+        ":dd-sdk-android-ktx:testReleaseUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest",
+        ":dd-sdk-android-ndk:testReleaseUnitTest"
+    )
+}
+
+tasks.register("unitTestDebug") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
-        ":dd-sdk-android:testReleaseUnitTest",
         ":dd-sdk-android-glide:testDebugUnitTest",
-        ":dd-sdk-android-glide:testReleaseUnitTest",
         ":dd-sdk-android-ktx:testDebugUnitTest",
-        ":dd-sdk-android-ktx:testReleaseUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-android-ndk:testDebugUnitTest",
-        ":dd-sdk-android-ndk:testReleaseUnitTest",
-        ":sample:java:assembleDebug",
-        ":sample:kotlin:assembleDebug",
+        ":dd-sdk-android-ndk:testDebugUnitTest"
+    )
+}
+
+tasks.register("unitTestTools") {
+    dependsOn(
+        ":sample:java:assembleRelease",
+        ":sample:kotlin:assembleRelease",
         ":tools:detekt:test",
-        ":tools:unit:testDebugUnitTest",
         ":tools:unit:testReleaseUnitTest"
+    )
+}
+
+tasks.register("unitTestAll") {
+    dependsOn(
+        ":unitTestDebug",
+        ":unitTestRelease",
+        ":unitTestTools"
     )
 }
 
@@ -93,15 +110,10 @@ tasks.register("ktlintCheckAll") {
 
 tasks.register("lintCheckAll") {
     dependsOn(
-        ":dd-sdk-android:lintDebug",
         ":dd-sdk-android:lintRelease",
-        ":dd-sdk-android-glide:lintDebug",
         ":dd-sdk-android-glide:lintRelease",
-        ":dd-sdk-android-ktx:lintDebug",
         ":dd-sdk-android-ktx:lintRelease",
-        ":dd-sdk-android-timber:lintDebug",
         ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-android-ndk:lintDebug",
         ":dd-sdk-android-ndk:lintRelease"
     )
 }
