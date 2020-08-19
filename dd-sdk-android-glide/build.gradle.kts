@@ -65,6 +65,7 @@ android {
         isAbortOnError = true
         isCheckReleaseBuilds = false
         isCheckGeneratedSources = true
+        isIgnoreTestSources = true
     }
 }
 

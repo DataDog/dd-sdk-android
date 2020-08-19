@@ -40,9 +40,15 @@ class WebFragment : Fragment() {
         viewModel = ViewModelProviders.of(this).get(WebViewModel::class.java)
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onResume() {
+        super.onResume()
+        viewModel.onResume()
         webView.loadUrl(viewModel.url)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.onPause()
     }
 
     // endregion

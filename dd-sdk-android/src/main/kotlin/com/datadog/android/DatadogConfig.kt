@@ -237,6 +237,20 @@ private constructor(
         }
 
         /**
+         * Let the SDK target Datadog's Gov server.
+         *
+         * Call this if you log on [app.ddog-gov.com/](https://app.ddog-gov.com/).
+         */
+        fun useGovEndpoints(): Builder {
+            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
+            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
+            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
+            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
+            coreConfig = coreConfig.copy(needsClearTextHttp = false)
+            return this
+        }
+
+        /**
          * Let the SDK target a custom server for the logs feature.
          */
         fun useCustomLogsEndpoint(endpoint: String): Builder {

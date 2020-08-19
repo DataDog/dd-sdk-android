@@ -26,8 +26,12 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
     private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
     private var localServer: LocalServer = LocalServer()
 
-    init {
+    fun onResume() {
         localServer.start("https://www.datadoghq.com/")
+    }
+
+    fun onPause() {
+        localServer.stop()
     }
 
     fun startAsyncOperation(

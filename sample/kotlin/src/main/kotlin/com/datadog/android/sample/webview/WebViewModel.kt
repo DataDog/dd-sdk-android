@@ -13,7 +13,11 @@ class WebViewModel : ViewModel() {
     val localServer = LocalServer()
     val url: String = localServer.getUrl()
 
-    init {
+    fun onResume() {
         localServer.start("https://www.datadoghq.com/")
+    }
+
+    fun onPause() {
+        localServer.stop()
     }
 }

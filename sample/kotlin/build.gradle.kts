@@ -62,6 +62,10 @@ android {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
+        register("gov") {
+            dimension = "version"
+            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+        }
 
         register("glide") {
             dimension = "ill"

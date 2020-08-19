@@ -37,7 +37,9 @@ class LocalServer {
     }
 
     fun stop() {
-        engine?.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        Thread {
+            engine?.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }.start()
     }
 
     fun getUrl(): String {
