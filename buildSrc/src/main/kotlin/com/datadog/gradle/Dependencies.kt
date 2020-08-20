@@ -59,6 +59,7 @@ object Dependencies {
         const val GoogleMaterial = "1.0.0"
 
         // Integrations
+        const val Coil = "0.12.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
         const val Timber = "4.7.1"
@@ -150,6 +151,10 @@ object Dependencies {
         )
 
         // INTEGRATIONS
+
+        val Coil = arrayOf(
+            "io.coil-kt:coil:${Dependencies.Versions.Coil}"
+        )
 
         val Fresco = arrayOf(
             "com.facebook.fresco:fresco:${Versions.Fresco}",
