@@ -76,6 +76,9 @@ android {
         register("fresco") {
             dimension = "ill"
         }
+        register("coil") {
+            dimension = "ill"
+        }
     }
 
     sourceSets.named("main") {
@@ -91,6 +94,9 @@ android {
         java.srcDir("src/fresco/kotlin")
         resources.srcDirs("src/fresco/res")
     }
+    sourceSets.named("coil") {
+        java.srcDir("src/coil/kotlin")
+    }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
@@ -98,6 +104,10 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
 
     dexOptions {
         javaMaxHeapSize = "4g"
@@ -123,6 +133,7 @@ dependencies {
     api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
     api(project(":dd-sdk-android-timber"))
+    "coilApi"(project(":dd-sdk-android-coil"))
     "glideApi"(project(":dd-sdk-android-glide"))
     "frescoApi"(project(":dd-sdk-android-fresco"))
 
@@ -142,6 +153,9 @@ dependencies {
     implementation("io.ktor:ktor:1.2.5")
     implementation("io.ktor:ktor-server-netty:1.2.5")
     implementation("io.ktor:ktor-gson:1.2.5")
+
+    // Coil
+    "coilImplementation"("io.coil-kt:coil:${Dependencies.Versions.Coil}")
 
     // Fresco
     "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
