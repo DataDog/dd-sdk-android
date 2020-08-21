@@ -117,7 +117,18 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, false, attributes)
+            RumRawEvent.AddError(message, source, throwable, null, false, attributes)
+        )
+    }
+
+    override fun addErrorWithStacktrace(
+        message: String,
+        source: RumErrorSource,
+        stacktrace: String?,
+        attributes: Map<String, Any?>
+    ) {
+        handleEvent(
+            RumRawEvent.AddError(message, source, null, stacktrace, false, attributes)
         )
     }
 
@@ -151,7 +162,7 @@ internal class DatadogRumMonitor(
 
     override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+            RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
         )
     }
 

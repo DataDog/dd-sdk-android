@@ -269,7 +269,14 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            emptyMap()
+        )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -308,7 +315,14 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            emptyMap()
+        )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
@@ -344,9 +358,9 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, false, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then

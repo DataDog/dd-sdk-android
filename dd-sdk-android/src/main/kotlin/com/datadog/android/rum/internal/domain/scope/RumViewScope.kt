@@ -181,7 +181,7 @@ internal class RumViewScope(
             error = ErrorEvent.Error(
                 message = event.message,
                 source = event.source.toSchemaSource(),
-                stack = event.throwable?.loggableStackTrace(),
+                stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                 isCrash = event.isFatal
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
