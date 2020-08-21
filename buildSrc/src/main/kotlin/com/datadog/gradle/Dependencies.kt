@@ -59,11 +59,9 @@ object Dependencies {
         const val GoogleMaterial = "1.0.0"
 
         // Integrations
+        const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
         const val Timber = "4.7.1"
-
-        // Internal APIs
-        const val TracingOt = "0.45.0"
 
         // NDK
         const val NdkVersion = "21.3.6528147"
@@ -153,11 +151,17 @@ object Dependencies {
 
         // INTEGRATIONS
 
+        val Fresco = arrayOf(
+            "com.facebook.fresco:fresco:${Versions.Fresco}",
+            "com.facebook.fresco:imagepipeline-okhttp3:${Versions.Fresco}"
+        )
+
         val Glide = arrayOf(
             "com.github.bumptech.glide:annotations:${Versions.Glide}",
             "com.github.bumptech.glide:glide:${Versions.Glide}",
             "com.github.bumptech.glide:okhttp3-integration:${Versions.Glide}"
         )
+
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
 
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"

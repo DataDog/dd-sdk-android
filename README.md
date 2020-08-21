@@ -16,6 +16,10 @@ If you are using SDK version `0.2.5` or lower, take a look at the [Migration Gui
 
 If your existing codebase is already using Timber, you can migrate to Datadog easily by using the [dedicated library](dd-sdk-android-timber/README.md).
 
+### Integrating with Fresco
+
+If you use Fresco to load images in your application, take a look at our [dedicated library](dd-sdk-android-fresco/README.md).
+
 ### Integrating with Glide
 
 If you use Glide to load images in your application, take a look at our [dedicated library](dd-sdk-android-glide/README.md).
