@@ -2,7 +2,7 @@
 
 ## Getting Started 
 
-To include the Datadog integration for [Coil][1] in your project, simply add the
+To include the Datadog integration for [Coil][1] in your project, add the
 following to your application's `build.gradle` file.
 
 ```
@@ -16,11 +16,11 @@ dependencies {
 }
 ```
 
-### Initial Setup
+### Initial setup
 
-Before you can use the SDK, you need to setup the library with your application
-context, your Client token and your Application ID. 
-To generate a Client token and an Application ID please check **UX Monitoring > RUM Applications > New Application**
+Before using the SDK, set up the library with your application
+context, client token, and application ID. 
+To generate a client token and an application ID, check **UX Monitoring > RUM Applications > New Application**
 in the Datadog dashboard.
 
 ```kotlin
@@ -40,10 +40,9 @@ class SampleApplication : Application() {
 }
 ```
 
-Following Coil's [API documentation][2], you then need to:
+Follow Coil's [API documentation][2] to:
  
- - Create your own `ImageLoader` by providing your own `OkHttpClient` having the `DatadogInterceptor` attached,
-and register it.
+ - Create your own `ImageLoader` by providing your own OkHttpClient (configured with `DatadogInterceptor`).
 
 ```kotlin
     val imageLoader = ImageLoader.Builder(context).okHttpClient(okHttpClient).build()
@@ -58,12 +57,11 @@ and register it.
      }
  ```
 
-Doing so will automatically track Coil's network requests (creating both APM Traces and RUM Resource events), and will also listen for disk cache errors (creating RUM Error events).
+This automatically tracks Coil's network requests (creating both APM Traces and RUM Resource events), and listens for disk cache errors (creating RUM Error events).
 
 ## Contributing
 
-Pull requests are welcome, but please open an issue first to discuss what you
-would like to change. For more information, read the 
+For details on contributing, read the 
 [Contributing Guide](../CONTRIBUTING.md).
 
 ## License
