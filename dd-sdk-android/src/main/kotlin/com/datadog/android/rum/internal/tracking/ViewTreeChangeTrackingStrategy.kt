@@ -2,6 +2,7 @@ package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
 import android.view.ViewTreeObserver
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
@@ -33,8 +34,9 @@ internal class ViewTreeChangeTrackingStrategy :
     // region ViewTreeObserver.OnGlobalLayoutListener
 
     override fun onGlobalLayout() {
+        val now = Time()
         GlobalRum.addUserInteraction()
-        (GlobalRum.get() as? AdvancedRumMonitor)?.viewTreeChanged()
+        (GlobalRum.get() as? AdvancedRumMonitor)?.viewTreeChanged(now)
     }
 
     // endregion

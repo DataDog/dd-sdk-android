@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -297,13 +298,15 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `delegates viewTreeChanged to rootScope`() {
-        testedMonitor.viewTreeChanged()
+        val eventTime = Time()
+        testedMonitor.viewTreeChanged(eventTime)
         Thread.sleep(200)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
-            assertThat(firstValue).isInstanceOf(RumRawEvent.ViewTreeChanged::class.java)
+            check(firstValue is RumRawEvent.ViewTreeChanged)
+            assertThat(firstValue.eventTime).isEqualTo(eventTime)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
