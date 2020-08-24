@@ -30,6 +30,7 @@ internal class RumResourceScope(
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private var timing: ResourceTiming? = null
+    private val initialContext = parentScope.getRumContext()
 
     private val eventTimestamp = eventTime.timestamp
     private val startedNanos: Long = eventTime.nanoTime
@@ -56,7 +57,7 @@ internal class RumResourceScope(
     }
 
     override fun getRumContext(): RumContext {
-        return parentScope.getRumContext()
+        return initialContext
     }
 
     // endregion
