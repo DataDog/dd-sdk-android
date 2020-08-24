@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -17,7 +18,7 @@ internal interface AdvancedRumMonitor : RumMonitor {
 
     fun resetSession()
 
-    fun viewTreeChanged()
+    fun viewTreeChanged(eventTime: Time)
 
     fun waitForResourceTiming(key: String)
 

@@ -93,7 +93,9 @@ internal sealed class RumRawEvent {
 
     internal class SentError : RumRawEvent()
 
-    internal class ViewTreeChanged : RumRawEvent()
+    internal class ViewTreeChanged(
+        override val eventTime: Time
+    ) : RumRawEvent()
 
     internal class ResetSession : RumRawEvent()
 

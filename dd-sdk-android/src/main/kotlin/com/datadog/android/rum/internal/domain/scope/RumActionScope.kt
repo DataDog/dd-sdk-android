@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.RumFeature
@@ -45,6 +46,7 @@ internal class RumActionScope(
     internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
+    private var stopped = false
 
     // endregion
 
@@ -53,14 +55,15 @@ internal class RumActionScope(
         val isInactive = now - lastInteractionNanos > ACTION_INACTIVITY_NS
         val isLongDuration = now - startedNanos > ACTION_MAX_DURATION_NS
         ongoingResourceKeys.removeAll { it.get() == null }
-        val shouldStop = isInactive && ongoingResourceKeys.isEmpty() && !waitForStop
+        val isOngoing = waitForStop && !stopped
+        val shouldStop = isInactive && ongoingResourceKeys.isEmpty() && !isOngoing
 
         when {
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
             event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
             event is RumRawEvent.StopView -> onStopView(now, writer)
-            event is RumRawEvent.StopAction -> onStopAction(event, now, writer)
+            event is RumRawEvent.StopAction -> onStopAction(event, now)
             event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
             event is RumRawEvent.AddError -> onError(event, now, writer)
@@ -93,13 +96,13 @@ internal class RumActionScope(
 
     private fun onStopAction(
         event: RumRawEvent.StopAction,
-        now: Long,
-        writer: Writer<RumEvent>
+        now: Long
     ) {
         type = event.type
         name = event.name
         attributes.putAll(event.attributes)
-        sendAction(now, writer)
+        stopped = true
+        lastInteractionNanos = now
     }
 
     private fun onStartResource(
@@ -192,6 +195,11 @@ internal class RumActionScope(
             )
             writer.write(rumEvent)
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)
+        } else {
+            devLogger.i(
+                "RUM Action $actionId ($type on $name) was dropped " +
+                    "(no side effect was registered during its scope)"
+            )
         }
         sent = true
     }

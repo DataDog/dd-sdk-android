@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -60,7 +61,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumActionScopeTest {
+internal class RumContinuousActionScopeTest {
 
     lateinit var testedScope: RumActionScope
 
@@ -109,7 +110,7 @@ internal class RumActionScopeTest {
 
         testedScope = RumActionScope(
             mockParentScope,
-            false,
+            true,
             fakeEventTime,
             fakeType,
             fakeName,
@@ -124,7 +125,160 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResource+any)`(
+    fun `𝕄 doNothing 𝕎 handleEvent(any) {viewTreeChangeCount != 0}`(
+        @IntForgery(1) count: Int
+    ) {
+        // Given
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        testedScope.viewTreeChangeCount = count
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 doNothing 𝕎 handleEvent(any) {resourceCount != 0}`(
+        @LongForgery(1) count: Long
+    ) {
+        // Given
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        testedScope.resourceCount = count
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 doNothing 𝕎 handleEvent(any) {errorCount != 0}`(
+        @LongForgery(1) count: Long
+    ) {
+        // Given
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        testedScope.errorCount = count
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 doNothing 𝕎 handleEvent(any) {crashCount != 0}`(
+        @LongForgery(1) nonFatalcount: Long,
+        @LongForgery(1) fatalcount: Long
+    ) {
+        // Given
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        testedScope.errorCount = nonFatalcount + fatalcount
+        testedScope.crashCount = fatalcount
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
+        // Given
+        testedScope.viewTreeChangeCount = 1
+        Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action with updated data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!= 0)`(
+        @Forgery type: RumActionType,
+        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        forge: Forge
+    ) {
+        // Given
+        assumeTrue {
+            type != fakeType
+        }
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        testedScope.viewTreeChangeCount = 1
+
+        // When
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopAction(type, name, attributes)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTargetName(name)
+                    hasType(type)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
@@ -135,11 +289,13 @@ internal class RumActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
-        fakeEvent = RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap())
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(1000)
+        fakeEvent = RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap())
+        val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
-        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+        val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         argumentCaptor<RumEvent> {
@@ -150,8 +306,8 @@ internal class RumActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1000))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(1000))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -167,11 +323,12 @@ internal class RumActionScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
-        assertThat(result3).isNull()
+        assertThat(result3).isSameAs(testedScope)
+        assertThat(result4).isNull()
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithError+any)`(
+    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
@@ -183,10 +340,61 @@ internal class RumActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
-        fakeEvent = RumRawEvent.StopResourceWithError(key, statusCode, message, source, throwable)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(1000)
+        fakeEvent = RumRawEvent.StopResourceWithError(key, statusCode, message, source, throwable)
+        val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
+        val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(100))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
+                    hasResourceCount(0)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
+        assertThat(result4).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+    ) {
+        // Given
+        var key: Any? = Object()
+
+        // When
+        fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(1000)
+        key = null
+        fakeEvent = mockEvent()
+        System.gc()
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -198,10 +406,9 @@ internal class RumActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1000))
-                    hasResourceCount(0)
-                    hasErrorCount(1)
+                    hasResourceCount(1)
+                    hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -219,51 +426,7 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+any) missing resource key`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
-    ) {
-        // Given
-        var key: Any? = Object()
-
-        // When
-        fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
-        key = null
-        fakeEvent = mockEvent()
-        System.gc()
-        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(500))
-                    hasResourceCount(1)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-        assertThat(result2).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(AddError+any)`(
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(AddError+StopAction+any)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -271,8 +434,11 @@ internal class RumActionScopeTest {
         // When
         fakeEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(1000)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
-        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         argumentCaptor<RumEvent> {
@@ -283,7 +449,8 @@ internal class RumActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(100))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(1000))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(0)
@@ -298,7 +465,8 @@ internal class RumActionScopeTest {
         )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        assertThat(result2).isNull()
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isNull()
     }
 
     @Test
@@ -380,8 +548,10 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {viewTreeChangeCount != 0}`(
         @IntForgery(1) count: Int
     ) {
-        // When
+        // Given
         testedScope.viewTreeChangeCount = count
+
+        // When
         fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -527,212 +697,16 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(any) {viewTreeChangeCount != 0}`(
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount != 0}`(
         @IntForgery(1) count: Int
     ) {
         // Given
         testedScope.viewTreeChangeCount = count
 
         // When
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(any)`(
-        @IntForgery(1) count: Int,
-        forge: Forge
-    ) {
-        // Given
-        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
-        testedScope.viewTreeChangeCount = count
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        GlobalRum.globalAttributes.putAll(attributes)
-
-        // When
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(any) {resourceCount != 0}`(
-        @LongForgery(1, 1024) count: Long
-    ) {
-        // Given
-        testedScope.resourceCount = count
-
-        // When
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasResourceCount(count)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(any) {errorCount != 0}`(
-        @LongForgery(1, 1024) count: Long
-    ) {
-        // Given
-        testedScope.errorCount = count
-
-        // When
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasResourceCount(0)
-                    hasErrorCount(count)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(any) {crashCount != 0}`(
-        @LongForgery(1, 1024) nonFatalcount: Long,
-        @LongForgery(1, 1024) fatalcount: Long
-    ) {
-        // Given
-        testedScope.errorCount = nonFatalcount + fatalcount
-        testedScope.crashCount = fatalcount
-
-        // When
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<RumEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasErrorCount(nonFatalcount + fatalcount)
-                    hasCrashCount(fatalcount)
-                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-        }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action only once 𝕎 handleEvent(any) twice`(
-        @IntForgery(1, 1024) count: Int
-    ) {
-        // Given
-        testedScope.viewTreeChangeCount = count
-
-        // When
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -759,8 +733,222 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
+        assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(StopAction+any)`(
+        @IntForgery(1) count: Int,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        testedScope.viewTreeChangeCount = count
+        GlobalRum.globalAttributes.putAll(attributes)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {resourceCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.resourceCount = count
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {errorCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.errorCount = count
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(count)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {crashCount != 0}`(
+        @LongForgery(1, 1024) nonFatalcount: Long,
+        @LongForgery(1, 1024) fatalcount: Long
+    ) {
+        // Given
+        testedScope.errorCount = nonFatalcount + fatalcount
+        testedScope.crashCount = fatalcount
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasErrorCount(nonFatalcount + fatalcount)
+                    hasCrashCount(fatalcount)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action only once 𝕎 handleEvent(StopAction) + handleEvent(any) twice`(
+        @IntForgery(1, 1024) count: Int
+    ) {
+        // Given
+        testedScope.viewTreeChangeCount = count
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasActionData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+        assertThat(result3).isNull()
     }
 
     @Test
@@ -788,24 +976,22 @@ internal class RumActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        fakeEvent = mockEvent()
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         verifyZeroInteractions(mockWriter, mockParentScope)
-        assertThat(result).isNull()
+        assertThat(result).isSameAs(testedScope)
     }
 
     @Test
     fun `𝕄 doNothing 𝕎 handleEvent(any) before threshold`() {
         // Given
         testedScope.viewTreeChangeCount = 1
-        fakeEvent = mockEvent()
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         verifyZeroInteractions(mockWriter, mockParentScope)
@@ -828,6 +1014,28 @@ internal class RumActionScopeTest {
         verifyZeroInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 doNothing 𝕎 handleEvent(StartResource+StopAction+any)`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+    ) {
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
     }
 
     @Test
@@ -871,11 +1079,19 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
+    fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+StopAction+any)`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+    ) {
         // When
-        testedScope.viewTreeChangeCount = 1
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         argumentCaptor<RumEvent> {
@@ -886,8 +1102,8 @@ internal class RumActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasResourceCount(0)
+                    hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
@@ -901,12 +1117,16 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isNull()
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(ViewTreeChanged+any)`() {
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+ViewTreeChanged+any)`() {
         // When
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
         val duration = measureNanoTime {
             repeat(10) {
                 Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS / 3)
@@ -915,7 +1135,7 @@ internal class RumActionScopeTest {
         }
         testedScope.handleEvent(RumRawEvent.ViewTreeChanged(Time()), mockWriter)
         Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
         argumentCaptor<RumEvent> {
@@ -941,7 +1161,8 @@ internal class RumActionScopeTest {
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
     }
 
     // region Internal

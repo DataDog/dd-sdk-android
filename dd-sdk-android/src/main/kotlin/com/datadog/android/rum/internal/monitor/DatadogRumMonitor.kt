@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -130,9 +131,9 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun viewTreeChanged() {
+    override fun viewTreeChanged(eventTime: Time) {
         handleEvent(
-            RumRawEvent.ViewTreeChanged()
+            RumRawEvent.ViewTreeChanged(eventTime)
         )
     }
 
