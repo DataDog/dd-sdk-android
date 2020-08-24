@@ -8,15 +8,19 @@ package com.datadog.android.rum
 
 import android.content.Context
 import android.os.Looper
+import android.util.Log
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -59,8 +63,11 @@ internal class RumMonitorBuilderTest {
     @FloatForgery
     var fakeSamplingRate: Float = 0f
 
+    lateinit var mockDevLogHandler: LogHandler
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockDevLogHandler = mockDevLogHandler()
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = fakeApplicationId,
@@ -78,7 +85,8 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
-    fun `builds a default RumMonitor`() {
+    fun `M build a default monitor`() {
+        // GIVEN
         RumFeature.initialize(
             mockContext,
             fakeConfig,
@@ -90,8 +98,10 @@ internal class RumMonitorBuilderTest {
             mock()
         )
 
+        // WHEN
         val monitor = testedBuilder.build()
 
+        // THEN
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
@@ -106,9 +116,15 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
-    fun `builds nothing if RumFeature is not initialized`() {
+    fun `M do nothing W RumFeature is not initialized`() {
+        // WHEN
         val monitor = testedBuilder.build()
 
+        // THEN
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
+        )
         check(monitor is NoOpRumMonitor)
     }
 }
