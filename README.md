@@ -6,29 +6,33 @@
 
 ### Log Collection
 
-See the dedicated [Datadog Android log collection documentation](http://docs.datadoghq.com/logs/log_collection/android) to learn how to forward logs from your Android application to Datadog.
+See the dedicated [Datadog Android Log Collection documentation](http://docs.datadoghq.com/logs/log_collection/android) to learn how to forward logs from your Android application to Datadog.
 
-### Migrating from earlier versions
+### Real User Monitoring
 
-If you are using SDK version `0.2.5` or lower, take a look at the [Migration Guide](docs/Migrating_To_1.0.0.md). There are some breaking changes introduced in version `1.0.0`.
+See the dedicated [Datadog Android RUM Collection documentation](https://docs.datadoghq.com/real_user_monitoring/android/) to learn how to send RUM data from your Android application to Datadog.
 
-### Integrating with Timber
+## Log Integrations
 
-If your existing codebase is already using Timber, you can migrate to Datadog easily by using the [dedicated library](dd-sdk-android-timber/README.md).
+### Timber
 
-### Integrating with Coil
+If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](timber_integration.md).
+
+## RUM Integrations
+
+### Coil
 
 If you use Coil to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-coil/README.md).
 
-### Integrating with Fresco
+### Fresco
 
 If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-fresco/README.md).
 
-### Integrating with Glide
+### Glide
 
 If you use Glide to load images in your application, take a look at our [dedicated library](dd-sdk-android-glide/README.md).
 
-### Integrating with Picasso
+### Picasso
 
 If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
 
@@ -40,9 +44,26 @@ If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM i
         Picasso.setSingletonInstance(picasso)
 ```
 
+### Retrofit
+
+If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made with Retrofit.
+
+```kotlin
+        val retrofitClient = Retrofit.Builder()
+                .client(okHttpClient)
+                // …
+                .build()
+```
+
 ## Looking up your logs
 
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:mobile`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
+When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
+
+![Datadog Mobile Logs](docs/images/screenshot.png)
+
+## Looking up your logs
+
+When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
 
 ![Datadog Mobile Logs](docs/images/screenshot.png)
 

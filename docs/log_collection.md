@@ -128,7 +128,18 @@ class SampleApplication : Application() {
 
 ## Advanced logging
 
-### Initialization
+### Library Initialization
+
+The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
+
+| Method                           | Description                                                                                                                                                                                                                                                             |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as default value for the `service` [standard attribute][4] attached to all logs sent to Datadog (this can be overriden in each Logger).                                                                                                                                                           |
+| `setLogsEnabled(true)`     | Set to `true` to enable sending logs to Datadog.                                                                                                                                                                                                                                  |
+| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
+
+
+### Logger Initialization
 
 The following methods in `Logger.Builder` can be used when initializing the logger to send logs to Datadog:
 
@@ -138,11 +149,11 @@ The following methods in `Logger.Builder` can be used when initializing the logg
 | `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as value for the `service` [standard attribute][4] attached to all logs sent to Datadog.                                                                                                                                                           |
 | `setLogcatLogsEnabled(true)`     | Set to `true` to use Logcat as a logger.                                                                                                                                                                                                                                  |
 | `setDatadogLogsEnabled(true)`    | Set to `true` to send logs to Datadog.                                                                                                                                                                                                                                  |
-| `setBundleWithTraceEnabled(true)`| Set to `true` (default) to bundle the logs with the active trace in your application. This parameter shows all the logs sent during a specific trace by using the Datadog dashboard.                                                        |
+| `setBundleWithTraceEnabled(true)`| Set to `true` (default) to bundle the logs with the active trace in your application. This parameter lets you display all the logs sent during a specific trace by using the Datadog dashboard.                                                        |
+| `setBundleWithRumEnabled(true)`| Set to `true` (default) to bundle the logs with the current RUM context in your application. This parameter lets you display all the logs sent while a specific View is active by using the Datadog RUM Explorer.                                                        |
 | `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                                                  |
 | `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal to or higher than the provided level are logged to Android's Logcat.                                                                                                       |
 | `setSampleRate(<SAMPLE_RATE>)`   | Set the sampling rate for this logger. All the logs produced by the logger instance are randomly sampled according to the provided sample rate (default 1.0 = all logs). **Note**: The Logcat logs are not sampled.            |
-| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                                                       |
 
 ### Global configuration
@@ -219,7 +230,9 @@ The data on disk will automatically be discarded if it gets too old to ensure th
 
 ## Extensions
 
-If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](timber_integration.md).
+### Timber 
+
+If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-timber).
 
 ## Further Reading
 
