@@ -46,7 +46,7 @@ import okhttp3.OkHttpClient
 
 internal object RumFeature {
 
-    private val initialized = AtomicBoolean(false)
+    internal val initialized = AtomicBoolean(false)
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.RUM_US
