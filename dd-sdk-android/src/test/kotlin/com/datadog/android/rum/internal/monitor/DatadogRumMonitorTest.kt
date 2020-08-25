@@ -275,7 +275,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addError to rootScope`(
+    fun `M delegate to rootScope W addError`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -290,6 +290,30 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.stacktrace).isNull()
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate to rootScope W onAddErrorWithStacktrace`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String
+    ) {
+        testedMonitor.addErrorWithStacktrace(message, source, stacktrace, fakeAttributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isNull()
+            assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }

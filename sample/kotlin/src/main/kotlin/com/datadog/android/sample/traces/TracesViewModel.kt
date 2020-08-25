@@ -57,6 +57,21 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         networkRequestTask?.execute()
     }
 
+    fun start404Request(
+        onResponse: (Response) -> Unit,
+        onException: (Throwable) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        networkRequestTask = RequestTask(
+            "https://www.datadoghq.com/notfound",
+            okHttpClient,
+            onResponse,
+            onException,
+            onCancel
+        )
+        networkRequestTask?.execute()
+    }
+
     fun stopAsyncOperations() {
         asyncOperationTask?.cancel(true)
         networkRequestTask?.cancel(true)

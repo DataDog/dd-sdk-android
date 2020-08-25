@@ -869,7 +869,122 @@ internal class RumViewScopeTest {
     // region Error
 
     @Test
-    fun `sends Error and View event on AddError`(
+    fun `M send Error and View event W AddError {stacktrace and throwable}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String,
+        forge: Forge
+    ) {
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes()
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasErrorData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M send Error and View event W AddError {only stacktrace}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String,
+        forge: Forge
+    ) {
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes()
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            null,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasErrorData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M send Error and View event W AddError {only throwable}`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -877,7 +992,14 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            attributes
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -927,7 +1049,14 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, false, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            emptyMap()
+        )
         GlobalRum.globalAttributes.putAll(attributes)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -980,7 +1109,14 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes()
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            attributes
+        )
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -1030,7 +1166,14 @@ internal class RumViewScopeTest {
     ) {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-        fakeEvent = RumRawEvent.AddError(message, source, throwable, true, emptyMap())
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            emptyMap()
+        )
         GlobalRum.globalAttributes.putAll(attributes)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)

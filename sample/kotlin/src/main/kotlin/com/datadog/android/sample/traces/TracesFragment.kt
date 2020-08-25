@@ -35,6 +35,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
         val rootView = inflater.inflate(R.layout.fragment_traces, container, false)
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_request).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.start_404_request).setOnClickListener(this)
         progressBarAsync = rootView.findViewById(R.id.spinner_async)
         progressBarRequest = rootView.findViewById(R.id.spinner_request)
         requestStatus = rootView.findViewById(R.id.request_status)
@@ -84,22 +85,35 @@ class TracesFragment : Fragment(), View.OnClickListener {
                 requestStatus.visibility = View.INVISIBLE
                 viewModel.startRequest(
                     onResponse = {
-                        requestStatus.setImageResource(R.drawable.ic_check_circle_green_24dp)
-                        requestStatus.visibility = View.VISIBLE
-                        progressBarRequest.visibility = View.INVISIBLE
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
                     },
                     onException = {
-                        requestStatus.setImageResource(R.drawable.ic_error_red_24dp)
-                        requestStatus.visibility = View.VISIBLE
-                        progressBarRequest.visibility = View.INVISIBLE
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_error_red_24dp)
                     },
                     onCancel = {
-                        requestStatus.setImageResource(R.drawable.ic_cancel_red_24dp)
-                        requestStatus.visibility = View.VISIBLE
-                        progressBarRequest.visibility = View.INVISIBLE
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
+                    })
+            }
+            R.id.start_404_request -> {
+                viewModel.start404Request(
+                    onResponse = {
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
+                    },
+                    onException = {
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_error_red_24dp)
+
+                    },
+                    onCancel = {
+                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
                     })
             }
         }
+    }
+
+    private fun hideProgressBarAndUpdateRequestStatus(requestStatusDrawableId:Int) {
+        requestStatus.setImageResource(requestStatusDrawableId)
+        requestStatus.visibility = View.VISIBLE
+        progressBarRequest.visibility = View.INVISIBLE
     }
 
     // endregion
