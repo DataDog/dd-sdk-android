@@ -5,8 +5,9 @@
  */
 
 include(":dd-sdk-android")
-include(":dd-sdk-android-glide")
+include(":dd-sdk-android-coil")
 include(":dd-sdk-android-fresco")
+include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")
 include(":dd-sdk-android-ndk")
 include(":dd-sdk-android-timber")
