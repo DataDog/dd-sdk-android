@@ -22,7 +22,7 @@ import java.util.UUID
 import kotlin.math.max
 
 internal class RumViewScope(
-    internal val parentScope: RumScope,
+    private val parentScope: RumScope,
     key: Any,
     internal val name: String,
     eventTime: Time,
@@ -34,22 +34,23 @@ internal class RumViewScope(
     internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
-    internal var sessionId: String = parentScope.getRumContext().sessionId
+    private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
-    internal val startedNanos: Long = eventTime.nanoTime
+        private set
+    private val startedNanos: Long = eventTime.nanoTime
 
     internal val eventTimestamp = eventTime.timestamp
 
     internal var activeActionScope: RumScope? = null
     internal val activeResourceScopes = mutableMapOf<String, RumScope>()
 
-    internal var resourceCount: Long = 0
-    internal var actionCount: Long = 0
-    internal var errorCount: Long = 0
-    internal var crashCount: Long = 0
-    internal var version: Long = 1
-    internal var loadingTime: Long? = null
-    internal var loadingType: ViewEvent.LoadingType? = null
+    private var resourceCount: Long = 0
+    private var actionCount: Long = 0
+    private var errorCount: Long = 0
+    private var crashCount: Long = 0
+    private var version: Long = 1
+    private var loadingTime: Long? = null
+    private var loadingType: ViewEvent.LoadingType? = null
 
     internal var stopped: Boolean = false
 

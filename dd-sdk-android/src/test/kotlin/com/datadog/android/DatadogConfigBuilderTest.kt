@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoSettings
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings()
-@ForgeConfiguration(value = Configurator::class, seed = 0x5c0098fcL)
+@ForgeConfiguration(value = Configurator::class)
 class DatadogConfigBuilderTest {
 
     lateinit var testedBuilder: DatadogConfig.Builder

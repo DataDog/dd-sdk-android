@@ -171,6 +171,33 @@ internal class RumActionScopeTest {
     }
 
     @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopResource+any) {unknown key}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) key2: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery kind: RumResourceKind
+    ) {
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopResource(key2, statusCode, size, kind, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockParentScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithError+any)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
@@ -216,6 +243,33 @@ internal class RumActionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
+    }
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopResourceWithError+any) {unknown key}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) key2: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopResourceWithError(key2, statusCode, message, source, throwable)
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockParentScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
     }
 
     @Test

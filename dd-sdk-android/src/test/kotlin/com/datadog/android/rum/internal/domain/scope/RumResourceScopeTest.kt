@@ -27,13 +27,14 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atMost
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -133,21 +134,24 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on StopResource and notify parent`(
+    fun `𝕄 send Resource 𝕎 handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
+        // Given
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
 
+        // When
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -175,22 +179,72 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on StopResource and notify parent with global attributes`(
+    fun `𝕄 send Resource with initial context 𝕎 handleEvent(StopResource)`(
+        @Forgery context: RumContext,
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        whenever(mockParentScope.getRumContext()) doReturn context
+
+        // When
+        Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasResourceData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send Resource with global attributes 𝕎 handleEvent(StopResource)`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
         val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
+        // When
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -218,24 +272,27 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on StopResource with timing and notify parent`(
+    fun `𝕄 send Resource with timing 𝕎 handleEvent(AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
+        // Given
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
 
+        // When
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -265,24 +322,27 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on StopResource with unrelated timing event and notify parent`(
+    fun `𝕄 send Resource 𝕎 handleEvent(AddResourceTiming+StopResource) {unrelated timing}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
+        // Given
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
 
+        // When
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
         Thread.sleep(500)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -312,19 +372,22 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Error on StopResourceWithError and notify parent`(
+    fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithError)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
+        // Given
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
 
+        // When
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -352,24 +415,73 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Error on StopResourceWithError and notify parent with global attributes`(
+    fun `𝕄 send Error with initial context 𝕎 handleEvent(StopResourceWithError)`(
+        @Forgery context: RumContext,
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
+        whenever(mockParentScope.getRumContext()) doReturn context
+
+        // When
+        Thread.sleep(500)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasErrorData {
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentError>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send Error with global attributes 𝕎 handleEvent(StopResourceWithError)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
+        // Given
         val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         GlobalRum.globalAttributes.putAll(attributes)
-        mockEvent =
-            RumRawEvent.StopResourceWithError(fakeKey, statusCode, message, source, throwable)
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey, statusCode, message, source, throwable
+        )
 
+        // When
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
@@ -397,7 +509,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `ignores StopResource with different key`(
+    fun `𝕄 do nothing 𝕎 handleEvent(StopResource) with different key`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -412,12 +524,13 @@ internal class RumResourceScopeTest {
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verify(mockParentScope, atMost(1)).getRumContext()
+        verifyNoMoreInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `ignores StopResourceWithError with different key`(
+    fun `𝕄 do nothing 𝕎 handleEvent(StopResourceWithError) with different key`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
@@ -435,12 +548,13 @@ internal class RumResourceScopeTest {
         Thread.sleep(500)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verify(mockParentScope, atMost(1)).getRumContext()
+        verifyNoMoreInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `ignores StopResource if waiting for timing`(
+    fun `𝕄 do nothing 𝕎 handleEvent(WaitForResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -457,13 +571,14 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verify(mockParentScope, atMost(1)).getRumContext()
+        verifyNoMoreInteractions(mockWriter, mockParentScope)
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isSameAs(testedScope)
     }
 
     @Test
-    fun `send Resource on StopResource and notify parent if waiting for timing with different key`(
+    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+StopResource) {unrelated wait}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -508,7 +623,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on StopResource after waiting for timing and notify parent`(
+    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -557,7 +672,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `send Resource on Timing event after waitForTiming and stopResource and notify parent`(
+    fun `𝕄 send Resource 𝕎 handleEvent(WaitForResourceTiming+StopResource+AddResourceTiming)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,

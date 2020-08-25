@@ -138,6 +138,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @AfterEach
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
+        TracesFeature.stop()
     }
 
     @Test

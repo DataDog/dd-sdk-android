@@ -30,7 +30,7 @@ import org.mockito.quality.Strictness
 )
 
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class, seed = 0x4f36670aL)
+@ForgeConfiguration(Configurator::class)
 class TracerExtensionsTest {
 
     lateinit var tracer: AndroidTracer

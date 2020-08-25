@@ -20,7 +20,6 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -38,12 +37,8 @@ import java.util.concurrent.atomic.AtomicReference
 object GlobalRum {
 
     internal val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
-    internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
-
-    internal var sessionInactivityNanos = DEFAULT_SESSION_INACTIVITY_NS
 
     internal val sessionStartNs = AtomicLong(0L)
-    internal val lastUserInteractionNs = AtomicLong(0L)
 
     internal val isRegistered = AtomicBoolean(false)
     internal var monitor: RumMonitor = NoOpRumMonitor()
@@ -143,15 +138,6 @@ object GlobalRum {
     }
 
     // region Internal
-
-    internal fun addUserInteraction() {
-        val nanoTime = System.nanoTime()
-
-        val duration = nanoTime - lastUserInteractionNs.get()
-        if (!(duration >= sessionInactivityNanos)) {
-            lastUserInteractionNs.set(System.nanoTime())
-        }
-    }
 
     internal fun getRumContext(): RumContext {
         return activeContext.get()

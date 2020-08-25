@@ -46,7 +46,6 @@ internal class GlobalRumTest {
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.sessionStartNs.set(0L)
-        GlobalRum.lastUserInteractionNs.set(0L)
     }
 
     @AfterEach
@@ -55,7 +54,6 @@ internal class GlobalRumTest {
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.updateRumContext(RumContext())
         GlobalRum.sessionStartNs.set(0L)
-        GlobalRum.lastUserInteractionNs.set(0L)
     }
 
     @Test

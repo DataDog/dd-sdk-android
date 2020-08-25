@@ -29,16 +29,16 @@ internal class RumActionScope(
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
-    internal val eventTimestamp = eventTime.timestamp
+    private val eventTimestamp = eventTime.timestamp
     internal val actionId: String = UUID.randomUUID().toString()
-    internal var type: RumActionType = initialType
+    private var type: RumActionType = initialType
     internal var name: String = initialName
-    internal val startedNanos: Long = eventTime.nanoTime
-    internal var lastInteractionNanos: Long = startedNanos
+    private val startedNanos: Long = eventTime.nanoTime
+    private var lastInteractionNanos: Long = startedNanos
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
-    internal val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
+    private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
     internal var resourceCount: Long = 0
     internal var errorCount: Long = 0
@@ -209,7 +209,7 @@ internal class RumActionScope(
     companion object {
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 10000L
-        internal val ACTION_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_INACTIVITY_MS)
+        private val ACTION_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_INACTIVITY_MS)
         internal val ACTION_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_MAX_DURATION_MS)
 
         fun fromEvent(

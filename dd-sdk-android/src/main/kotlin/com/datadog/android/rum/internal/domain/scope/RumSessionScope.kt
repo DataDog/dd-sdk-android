@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 internal class RumSessionScope(
-    internal val parentScope: RumScope,
+    private val parentScope: RumScope,
     internal val samplingRate: Float,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -31,9 +31,9 @@ internal class RumSessionScope(
     internal val sessionStartNs = AtomicLong(System.nanoTime())
     internal val lastUserInteractionNs = AtomicLong(0L)
 
-    internal var resetSessionTime: Long? = null
+    private var resetSessionTime: Long? = null
 
-    internal var applicationDisplayed: Boolean = false
+    private var applicationDisplayed: Boolean = false
 
     private val random = SecureRandom()
     private val noOpWriter = NoOpWriter<RumEvent>()
