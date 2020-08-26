@@ -218,6 +218,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   class Builder
+    fun sampleRumSessions(Float): Builder
     fun build(): RumMonitor
     companion object 
 enum com.datadog.android.rum.RumResourceKind

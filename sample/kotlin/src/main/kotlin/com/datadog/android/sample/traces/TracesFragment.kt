@@ -101,7 +101,6 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onException = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_error_red_24dp)
-
                     },
                     onCancel = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
@@ -110,7 +109,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
         }
     }
 
-    private fun hideProgressBarAndUpdateRequestStatus(requestStatusDrawableId:Int) {
+    private fun hideProgressBarAndUpdateRequestStatus(requestStatusDrawableId: Int) {
         requestStatus.setImageResource(requestStatusDrawableId)
         requestStatus.visibility = View.VISIBLE
         progressBarRequest.visibility = View.INVISIBLE
