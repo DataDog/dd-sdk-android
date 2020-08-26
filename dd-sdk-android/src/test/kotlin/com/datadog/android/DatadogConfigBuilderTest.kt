@@ -7,15 +7,20 @@
 package com.datadog.android
 
 import android.os.Build
+import android.util.Log
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.RumConfigAssert.Companion.assertThat
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -40,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 )
 @MockitoSettings()
 @ForgeConfiguration(value = Configurator::class)
-class DatadogConfigBuilderTest {
+internal class DatadogConfigBuilderTest {
 
     lateinit var testedBuilder: DatadogConfig.Builder
 
@@ -53,8 +58,13 @@ class DatadogConfigBuilderTest {
     @Forgery
     lateinit var fakeApplicationId: UUID
 
+    lateinit var mockDevLogHandler: LogHandler
+
+    // region Unit Tests
+
     @BeforeEach
     fun `set up`() {
+        mockDevLogHandler = mockDevLogHandler()
         testedBuilder = DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
     }
 
@@ -834,4 +844,33 @@ class DatadogConfigBuilderTest {
                 )
             )
     }
+
+    @Test
+    fun `M do nothing W enabling RUM { APP_ID not provided }`() {
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName)
+                .setRumEnabled(true)
+                .build()
+        // THEN
+        assertThat(config.rumConfig).isNull()
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            DatadogConfig.Builder.RUM_NOT_INITIALISED_WARNING_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M not send any warning W disabling RUM { APP_ID not provided }`() {
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName)
+                .setRumEnabled(false)
+                .build()
+        // THEN
+        assertThat(config.rumConfig).isNull()
+        verifyZeroInteractions(mockDevLogHandler)
+    }
+
+    // endregion
 }

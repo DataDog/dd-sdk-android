@@ -10,7 +10,6 @@ import android.app.Activity
 import android.app.Fragment
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -181,7 +180,7 @@ interface RumMonitor {
          */
         fun build(): RumMonitor {
             return if (!RumFeature.isInitialized()) {
-                devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
@@ -191,6 +190,13 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper())
                 )
             }
+        }
+
+        companion object {
+            internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
+                "You're trying to create a RumMonitor instance, " +
+                    "but the RUM feature was disabled in your DatadogConfig. " +
+                    "No RUM data will be sent."
         }
     }
 }

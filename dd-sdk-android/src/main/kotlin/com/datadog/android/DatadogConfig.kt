@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import android.os.Build
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
@@ -179,6 +180,10 @@ private constructor(
          * @param enabled true by default
          */
         fun setRumEnabled(enabled: Boolean): Builder {
+            if (enabled && rumConfig.applicationId == UUID(0, 0)) {
+                devLogger.w(RUM_NOT_INITIALISED_WARNING_MESSAGE)
+                return this
+            }
             rumEnabled = enabled
             return this
         }
@@ -383,6 +388,15 @@ private constructor(
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers)
+        }
+
+        companion object {
+            internal const val RUM_NOT_INITIALISED_WARNING_MESSAGE =
+                "You're trying to enable RUM but no Application Id was provided. " +
+                    "Please use the following line to create your DatadogConfig:\n" +
+                    "val config = " +
+                    "DatadogConfig.Builder" +
+                    "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<APPLICATION_ID>\").build()"
         }
     }
 
