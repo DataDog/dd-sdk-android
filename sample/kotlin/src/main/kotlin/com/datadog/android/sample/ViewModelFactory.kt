@@ -8,15 +8,21 @@ package com.datadog.android.sample
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.datadog.android.sample.data.DataRepository
+import com.datadog.android.sample.data.RemoteDataSource
+import com.datadog.android.sample.datalist.DataListViewModel
 import com.datadog.android.sample.traces.TracesViewModel
 import okhttp3.OkHttpClient
 
-class ViewModelFactory(val okHttpClient: OkHttpClient) : ViewModelProvider.Factory {
+class ViewModelFactory(val okHttpClient: OkHttpClient, val remoteDataSource: RemoteDataSource) :
+    ViewModelProvider.Factory {
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         if (modelClass == TracesViewModel::class.java) {
-            @Suppress("UNCHECKED_CAST")
             return TracesViewModel(okHttpClient) as T
+        } else if (modelClass == DataListViewModel::class.java) {
+            return DataListViewModel(DataRepository(remoteDataSource)) as T
         } else {
             return modelClass.newInstance()
         }

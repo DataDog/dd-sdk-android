@@ -11,5 +11,7 @@ data class SampleAppConfig(
     val tracesEndpoint: String = "",
     val rumEndpoint: String = "",
     val token: String = "",
-    val appId: String = ""
+    val rumApplicationId: String = "",
+    val apiKey: String = "",
+    val applicationKey: String = ""
 )

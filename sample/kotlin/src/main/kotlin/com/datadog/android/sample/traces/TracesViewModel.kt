@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
+import com.datadog.android.sample.data.Result
 import com.datadog.android.sample.server.LocalServer
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
@@ -23,7 +24,7 @@ import okhttp3.Response
 class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
-    private var networkRequestTask: AsyncTask<Unit, Unit, RequestTask.Result>? = null
+    private var networkRequestTask: AsyncTask<Unit, Unit, Result>? = null
     private var localServer: LocalServer = LocalServer()
 
     fun onResume() {
@@ -86,13 +87,8 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         private val onResponse: (Response) -> Unit,
         private val onException: (Throwable) -> Unit,
         private val onCancel: () -> Unit
-    ) : AsyncTask<Unit, Unit, RequestTask.Result>() {
+    ) : AsyncTask<Unit, Unit, Result>() {
         private var currentActiveMainSpan: Span? = null
-
-        data class Result(
-            val response: Response?,
-            val exception: Exception?
-        )
 
         override fun onPreExecute() {
             super.onPreExecute()
@@ -120,22 +116,33 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
                     // Necessary to consume the response
                     Log.d("Response", content)
                 }
-                Result(response, null)
+                Result.Success(response)
             } catch (e: Exception) {
                 Log.e("Response", "Error", e)
-                Result(null, e)
+                Result.Failure(throwable = e)
             }
         }
 
         override fun onPostExecute(result: Result) {
             super.onPostExecute(result)
             if (!isCancelled) {
-                if (result.exception != null) {
-                    onException(result.exception)
-                } else if (result.response != null) {
-                    onResponse(result.response)
-                } else {
-                    onCancel()
+                handleResult(result)
+            }
+        }
+
+        private fun handleResult(
+            result: Result
+        ) {
+            when (result) {
+                is Result.Success<*> -> {
+                    onResponse(result.data as Response)
+                }
+                is Result.Failure -> {
+                    if (result.throwable != null) {
+                        onException(result.throwable)
+                    } else {
+                        onCancel()
+                    }
                 }
             }
         }

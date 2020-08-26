@@ -8,10 +8,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SampleApplication
+import com.datadog.android.sample.data.model.Log
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class DataListFragment : Fragment() {
@@ -26,10 +27,18 @@ class DataListFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(DataListViewModel::class.java)
+        viewModel =
+            SampleApplication.getViewModelFactory(context!!).create(DataListViewModel::class.java)
 
         viewModel.observeLiveData().observe(viewLifecycleOwner, Observer {
-            adapter.updateData(it)
+            when (it) {
+                is DataListViewModel.UIResponse.Success -> {
+                    adapter.updateData(it.data)
+                }
+                is DataListViewModel.UIResponse.Error -> {
+                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                }
+            }
         })
     }
 
@@ -54,7 +63,7 @@ class DataListFragment : Fragment() {
     internal inner class Adapter :
         RecyclerView.Adapter<Adapter.ViewHolder>() {
 
-        private val data: MutableList<String> = mutableListOf()
+        private val data: MutableList<Log> = mutableListOf()
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val itemView = LayoutInflater.from(parent.context).inflate(
@@ -75,34 +84,32 @@ class DataListFragment : Fragment() {
             holder.render(data[position])
         }
 
-        internal fun updateData(newData: List<String>) {
+        internal fun updateData(newData: List<Log>) {
             data.clear()
             data.addAll(newData)
             notifyDataSetChanged()
         }
 
         internal inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-            lateinit var model: String
+            lateinit var model: Log
 
             init {
                 view.setOnClickListener {
-                    Toast.makeText(view.context, "$model was clicked", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(
+                        view.context,
+                        "${model.attributes.message} was clicked",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
 
-            fun render(model: String) {
+            fun render(model: Log) {
                 this.model = model
-                view.findViewById<TextView>(R.id.textView).setText(model)
+                view.findViewById<TextView>(R.id.title).text = model.attributes.timestamp
+                view.findViewById<TextView>(R.id.body).text = model.attributes.message
             }
         }
     }
 
     // endregion
-
-    companion object {
-        fun newInstance(): DataListFragment {
-            return DataListFragment()
-        }
-    }
 }

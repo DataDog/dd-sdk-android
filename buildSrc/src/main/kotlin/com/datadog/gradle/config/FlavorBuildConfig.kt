@@ -43,11 +43,21 @@ fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
     flavor.buildConfigField(
         "String",
         "DD_RUM_APPLICATION_ID",
-        "\"${config.appId}\""
+        "\"${config.rumApplicationId}\""
     )
     flavor.buildConfigField(
         "String",
         "DD_CLIENT_TOKEN",
         "\"${config.token}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_API_KEY",
+        "\"${config.apiKey}\""
+    )
+    flavor.buildConfigField(
+        "String",
+        "DD_APPLICATION_KEY",
+        "\"${config.applicationKey}\""
     )
 }
