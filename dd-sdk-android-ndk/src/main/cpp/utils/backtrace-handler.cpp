@@ -74,7 +74,12 @@ namespace backtrace {
             void *addr = reinterpret_cast<void *>(buffer[idx]);
             const int hexa_address_buffer_size = 20;
             char address_as_hexa[20];
-            std::snprintf(address_as_hexa, hexa_address_buffer_size, "0x%x", buffer[idx]);
+            // in ARM_64 that pointer will be considered uint_64 but in ARM_32 will be uint_32
+            // so we will choose the formatting that fits both (lx = unsigned long long).
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wformat"
+            std::snprintf(address_as_hexa, hexa_address_buffer_size, "0x%lx", buffer[idx]);
+            #pragma clang diagnostic pop
             const char *lineSymbol = get_line_symbol(addr);
             backtrace.append(std::to_string(idx));
             backtrace.append(":");

@@ -7,15 +7,7 @@
 #include <string>
 #include <list>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 namespace testutils {
 
     std::list<std::string> split_backtrace_into_lines(const char *buffer);
 }
-
-#ifdef __cplusplus
-}
-#endif
