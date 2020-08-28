@@ -131,6 +131,8 @@ void crash_signal_intercepted(int signal, const char *signal_name, const char *e
 
     // dump the log into a new file
     char filename[200];
+     // The ARM_32 processors will use an unsigned long long to represent the uint_64. We will pick the
+    // String format that fits both ARM_32 and ARM_64 (llu).
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wformat"
     snprintf(filename, sizeof(filename), "%s/%llu", main_context.storage_dir.c_str(),

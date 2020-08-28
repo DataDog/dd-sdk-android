@@ -13,7 +13,7 @@ TEST test_generate_backtrace(void) {
             backtrace.c_str());
     // we don't know if the stack is big enough to cover the required max size of 30
     unsigned int lines_count = backtrace_lines.size();
-    const char *regex = "(\\d+):0[xX][0-9a-fA-F]+(\\s*)(.*)";
+    const char *regex = "(\\d+)(.*)0[xX][0-9a-fA-F]+(.*)";
             ASSERT(lines_count > 0 && lines_count <= 30);
     for (auto it = backtrace_lines.begin(); it != backtrace_lines.end(); ++it) {
                 ASSERT(std::regex_match(it->c_str(), std::regex(regex)));
