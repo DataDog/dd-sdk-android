@@ -74,7 +74,11 @@ Depending on your application's architecture, you can choose one of several impl
 3. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
     ```kotlin
-    val monitor = RumMonitor.Builder().build()
+    val monitor = RumMonitor.Builder()
+            // Optionally set a sampling between 0.0 and 100.0%
+            // Here 75% of the RUM Sessions will be sent to Datadog
+            .sampleRumSessions(75.0f)
+            .build()
     GlobalRum.registerIfAbsent(monitor)
     ```
 
@@ -90,7 +94,7 @@ Depending on your application's architecture, you can choose one of several impl
 
     **Note**: If you also use multiple Interceptors, this one must be called first.
 
-5. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the provided [Event][6] listener as follows:
+5. (Optional) If you want to get timing information in Resources (such as time to first byte, DNS resolution, etc.), you can add the [Event][6] listener factory as follows:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
@@ -135,7 +139,56 @@ Depending on your application's architecture, you can choose one of several impl
       }
    ```
 
-## Tracking widgets
+7. (Optional) If you want to add custom information as attributes to all RUM events, you can use the `GlobalRum` class.
+
+   ```kotlin
+      // Adds an attribute to all future RUM events
+      GlobalRum.addAttribute(key, value)
+
+      // Removes an attribute to all future RUM events
+      GlobalRum.removeAttribute(key)
+   ```
+
+## Advanced logging
+
+### Library Initialization
+
+The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
+
+| Method                           | Description                                                                                                                                                                                                                                                             |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as default value for the `service` [standard attribute][4] attached to all logs sent to Datadog (this can be overriden in each Logger).                                                                                                                                                           |
+| `setRumEnabled(true)`     | Set to `true` to enable sending RUM data to Datadog.                                                                                                                                                                                                                                  |
+| `trackInteractions(Array<ViewAttributesProvider>)` | Enables tracking User interactions (such as Tap, Scroll or Swipe). The parameter allow you to add custom attributes to the RUM Action events based on the widget with which the user interacted. |
+| `useViewTrackingStrategy(strategy)` | Defines the strategy used to track Views. Depending on your application's architecture, you can choose one of several implementations of `ViewTrackingStrategy` (see above) or implement your own. |
+| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
+
+### RumMonitor Initialization
+
+The following methods in `RumMonitor.Builder` can be used when creating the RumMonitor to track RUM data:
+
+| Method                           | Description                                                                                                                                                                                                                                                             |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `sampleRumSessions(float)`   | Sets the sampling rate for RUM Sessions. This method expects a value between 0 and 100, and is used as a percentage of Session for which data will be sent to Datadog. |
+
+### Manual Tracking
+
+If you need to manually track events, you can do so by getting the active `RumMonitor` instance, and call one of the following methods:
+
+| Method                           | Description                                                                                                                                                                                                                                                             |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `startView(<key>, <name>, <attributes>)`   | Notifies the RumMonitor that a new View just started. Most often, this method should be called in the frontmost `Activity` or `Fragment`'s `onResume()` method. |
+| `stopView(<key>, <attributes>)`   | Notifies the RumMonitor that the current View just stopped. Most often, this method should be called in the frontmost `Activity` or `Fragment`'s `onPause()` method. |
+| `addUserAction(<type>, <name>, <attributes>)`   | Notifies the RumMonitor that a user action just happened. |
+| `startUserAction(<type>, <name>, <attributes>)`   | Notifies the RumMonitor that a continuous user action just started (for example a user scrolling a list). |
+| `stopUserAction(<type>, <name>, <attributes>)`   | Notifies the RumMonitor that a continuous user action just stopped. |
+| `startResource(<key>, <method>, <url>, <attributes>)`   | Notifies the RumMonitor that the application started loading a resource with a given method (e.g.: `GET` or `POST`), at the given url. |
+| `stopResource(<key>, <status>, <size>, <kind> <attributes>)`   | Notifies the RumMonitor that a resource finished being loaded, with a given status (usually an HTTP status code), size (in bytes) and kind. |
+| `stopResourceWithError(<key>, <status>, <message>, <source>, <throwable>)` | Notifies the RumMonitor that a resource couldn't finished being loaded, because of an exception. |
+| `addError(<message>, <source>, <throwable>, <attributes>)` | Notifies the RumMonitor that an error occurred. |
+
+
+### Tracking widgets
 
 Most of the time, the widgets are displayed in the `AppWidgetHostView` provided by the HomeScreen application, and we are not
 able to provide auto-instrumentation for those components. To send UI interaction information from your widgets,  manually call our
@@ -152,13 +205,40 @@ The data on the disk will automatically be discarded if it gets too old to ensur
 
 ## Extensions
 
-### Glide
+### Coil
 
-If your existing codebase is using Glide, you can send more information (as RUM Resources and Errors) to Datadog automatically by using the [dedicated library](glide_integration.md).
+If you use Coil to load images in your application, take a look at Datadog's [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-coil).
 
 ### Fresco
 
-If your existing codebase is using Fresco, you can send more information (as RUM Resources and Errors) to Datadog automatically by using the [dedicated library](fresco_integration.md).
+If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-fresco).
+
+### Glide
+
+If you use Glide to load images in your application, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide).
+
+### Picasso
+
+If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
+
+```kotlin
+        val picasso = Picasso.Builder(context)
+                .downloader(OkHttp3Downloader(okHttpClient))
+                // …
+                .build()
+        Picasso.setSingletonInstance(picasso)
+```
+
+### Retrofit
+
+If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made with Retrofit.
+
+```kotlin
+        val retrofitClient = Retrofit.Builder()
+                .client(okHttpClient)
+                // …
+                .build()
+```
 
 ## Further Reading
 

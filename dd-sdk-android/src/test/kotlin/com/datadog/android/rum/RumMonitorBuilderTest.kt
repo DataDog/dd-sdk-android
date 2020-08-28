@@ -76,17 +76,7 @@ internal class RumMonitorBuilderTest {
             samplingRate = fakeSamplingRate
         )
         mockContext = mockContext()
-        testedBuilder = RumMonitor.Builder()
-    }
 
-    @AfterEach
-    fun `tear down`() {
-        RumFeature.stop()
-    }
-
-    @Test
-    fun `M build a default monitor`() {
-        // GIVEN
         RumFeature.initialize(
             mockContext,
             fakeConfig,
@@ -98,10 +88,20 @@ internal class RumMonitorBuilderTest {
             mock()
         )
 
-        // WHEN
+        testedBuilder = RumMonitor.Builder()
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        RumFeature.stop()
+    }
+
+    @Test
+    fun `𝕄 builds a default RumMonitor 𝕎 build()`() {
+        // When
         val monitor = testedBuilder.build()
 
-        // THEN
+        // Then
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
@@ -116,11 +116,37 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
-    fun `M do nothing W RumFeature is not initialized`() {
-        // WHEN
+    fun `𝕄 builds a RumMonitor with custom sampling 𝕎 build()`(
+        @FloatForgery(0f, 100f) samplingRate: Float
+    ) {
+        // When
+        val monitor = testedBuilder
+            .sampleRumSessions(samplingRate)
+            .build()
+
+        // Then
+        check(monitor is DatadogRumMonitor)
+        assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
+        assertThat(monitor.rootScope)
+            .overridingErrorMessage("Expecting rootscope to have applicationId $fakeApplicationId")
+            .matches {
+                (it as RumApplicationScope)
+                    .getRumContext()
+                    .applicationId == fakeApplicationId.toString()
+            }
+        assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
+        assertThat(monitor.samplingRate).isEqualTo(samplingRate)
+    }
+
+    @Test
+    fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
+        // Given
+        RumFeature.stop()
+
+        // When
         val monitor = testedBuilder.build()
 
-        // THEN
+        // Then
         verify(mockDevLogHandler).handleLog(
             Log.ERROR,
             RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE

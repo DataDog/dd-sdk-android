@@ -10,6 +10,7 @@ import android.app.Activity
 import android.app.Fragment
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -175,6 +176,19 @@ interface RumMonitor {
      */
     class Builder {
 
+        private var samplingRate: Float = RumFeature.samplingRate
+
+        /**
+         * Sets the sampling rate for RUM Sessions.
+         *
+         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * means no RUM event will be sent, 100 means all sessions will be kept.
+         */
+        fun sampleRumSessions(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
+            this.samplingRate = samplingRate
+            return this
+        }
+
         /**
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
@@ -185,7 +199,7 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = RumFeature.applicationId,
-                    samplingRate = RumFeature.samplingRate,
+                    samplingRate = samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper())
                 )
