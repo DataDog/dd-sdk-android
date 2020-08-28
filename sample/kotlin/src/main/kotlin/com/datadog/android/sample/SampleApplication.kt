@@ -22,26 +22,41 @@ import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.sample.data.RemoteDataSource
 import com.datadog.android.sample.picture.PictureViewModel
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
 class SampleApplication : Application() {
 
-    private val tracedHosts = listOf("datadoghq.com", "127.0.0.1")
+    private val tracedHosts = listOf(
+        "datadoghq.com",
+        "127.0.0.1"
+    )
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(DatadogInterceptor(tracedHosts))
         .addNetworkInterceptor(TracingInterceptor(tracedHosts))
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
+
+    private val retrofitClient = Retrofit.Builder()
+        .baseUrl("https://api.datadoghq.com/api/v2/")
+        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+        .client(okHttpClient)
+        .build()
+
+    private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     override fun onCreate() {
         super.onCreate()
@@ -130,12 +145,17 @@ class SampleApplication : Application() {
         }
 
         fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
-            return ViewModelFactory(getOkHttpClient(context))
+            return ViewModelFactory(getOkHttpClient(context), getDataSource(context))
         }
 
         fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication
             return application.okHttpClient
+        }
+
+        private fun getDataSource(context: Context): RemoteDataSource {
+            val application = context.applicationContext as SampleApplication
+            return application.retrofitBaseDataSource
         }
     }
 }

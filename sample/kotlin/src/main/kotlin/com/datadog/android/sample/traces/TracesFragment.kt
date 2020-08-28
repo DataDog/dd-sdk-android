@@ -81,8 +81,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     })
             }
             R.id.start_request -> {
-                progressBarRequest.visibility = View.VISIBLE
-                requestStatus.visibility = View.INVISIBLE
+                showProgressBarAndHideRequestStatus()
                 viewModel.startRequest(
                     onResponse = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
@@ -95,6 +94,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     })
             }
             R.id.start_404_request -> {
+                showProgressBarAndHideRequestStatus()
                 viewModel.start404Request(
                     onResponse = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
@@ -113,6 +113,11 @@ class TracesFragment : Fragment(), View.OnClickListener {
         requestStatus.setImageResource(requestStatusDrawableId)
         requestStatus.visibility = View.VISIBLE
         progressBarRequest.visibility = View.INVISIBLE
+    }
+
+    private fun showProgressBarAndHideRequestStatus() {
+        progressBarRequest.visibility = View.VISIBLE
+        requestStatus.visibility = View.INVISIBLE
     }
 
     // endregion

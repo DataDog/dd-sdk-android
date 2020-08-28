@@ -8,18 +8,36 @@ package com.datadog.android.sample.datalist
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.datadog.android.sample.data.DataRepository
+import com.datadog.android.sample.data.Result
+import com.datadog.android.sample.data.model.Log
 
-class DataListViewModel : ViewModel() {
+class DataListViewModel(val repository: DataRepository) : ViewModel(),
+    DataRepository.Callback<List<Log>> {
 
     val data = mutableListOf<String>()
-    val liveData = MutableLiveData<List<String>>()
+    val liveData = MutableLiveData<UIResponse>()
 
     fun onAddData() {
         data.add("Item ${data.size}")
-        liveData.value = data.toList()
+        repository.getLogs("source:android", this)
     }
 
-    fun observeLiveData(): LiveData<List<String>> {
+    fun observeLiveData(): LiveData<UIResponse> {
         return liveData
+    }
+
+    override fun onSuccess(result: Result.Success<List<Log>>) {
+        liveData.value = UIResponse.Success(result.data)
+    }
+
+    override fun onFailure(failure: Result.Failure) {
+        val errorMessage = failure.message ?: failure.throwable?.message ?: "Unknown error"
+        liveData.value = UIResponse.Error(errorMessage)
+    }
+
+    sealed class UIResponse {
+        class Success(val data: List<Log>) : UIResponse()
+        class Error(val message: String) : UIResponse()
     }
 }

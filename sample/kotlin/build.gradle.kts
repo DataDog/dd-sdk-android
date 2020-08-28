@@ -152,6 +152,8 @@ dependencies {
     implementation("io.ktor:ktor:1.2.5")
     implementation("io.ktor:ktor-server-netty:1.2.5")
     implementation("io.ktor:ktor-gson:1.2.5")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     // Coil
     "coilImplementation"("io.coil-kt:coil:${Dependencies.Versions.Coil}")
