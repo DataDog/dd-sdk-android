@@ -70,6 +70,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.AndroidXAnnotation)
     implementation(Dependencies.Libraries.OkHttp)
 
     testImplementation(project(":tools:unit"))
