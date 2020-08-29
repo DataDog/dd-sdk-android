@@ -1,0 +1,3 @@
+This is a Sample application showcasing the usage of the dd-sdk-android library.
+
+Feel free to roam through the source code to see how to use the Datadog SDK for Android to track logs, performances, crash reports and Real User Monitoring data.

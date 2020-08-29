@@ -53,10 +53,14 @@
     <fragment
         android:id="@+id/fragment_user"
         android:name="com.datadog.android.sample.user.UserFragment"
-        android:label="@string/title_user_info"
-        />
+        android:label="@string/title_user_info"/>
+
+    <fragment android:id="@+id/fragment_about"
+              android:name="com.datadog.android.sample.about.AboutFragment"
+              android:label="@string/title_about"/>
 
     <activity android:id="@+id/activity_view_pager"
               android:name="com.datadog.android.sample.ViewPagerActivity"
               android:label="@string/title_view_pager"/>
+
 </navigation>
