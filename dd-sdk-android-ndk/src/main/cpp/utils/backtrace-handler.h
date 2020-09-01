@@ -9,16 +9,9 @@
 #ifndef BACKTRACE_HANDLER_H
 #define BACKTRACE_HANDLER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 namespace backtrace {
 
     std::string generate_backtrace();
 }
 
-#ifdef __cplusplus
-}
-#endif
 #endif

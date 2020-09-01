@@ -41,7 +41,6 @@ namespace {
         return _URC_NO_REASON;
     }
 
-
     size_t capture_backtrace(uintptr_t *buffer, size_t max) {
         BacktraceState state = {buffer, buffer + max};
         // unwinds the backtrace and fills the buffer with stack lines addresses
@@ -49,42 +48,70 @@ namespace {
         return state.current - buffer;
     }
 
-    const char *get_line_symbol(const void *addr) {
-        const char *symbol = "";
-        Dl_info info;
-        if (dladdr(addr, &info) && info.dli_sname) {
-            symbol = info.dli_sname;
-        }
-        return symbol;
+    std::string address_to_hexa(uintptr_t address) {
+        char address_as_hexa[20];
+        // The ARM_32 processors will use an unsigned long long to represent a pointer so we will choose the
+        // String format that fits both ARM_32 and ARM_64 (lx).
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wformat"
+        std::snprintf(address_as_hexa, sizeof(address_as_hexa), "0x%lx", address);
+        #pragma clang diagnostic pop
+        return std::string(address_as_hexa);
     }
+
+    void get_info_from_address(const uintptr_t address, std::string *backtrace) {
+        backtrace->append(std::to_string(address));
+        Dl_info info;
+        int fetch_info_success = dladdr(reinterpret_cast<void *>(address), &info);
+        if (fetch_info_success) {
+
+            if (info.dli_fname) {
+                backtrace->append("  ");
+                backtrace->append(info.dli_fname);
+            }
+
+            backtrace->append("  ");
+            backtrace->append(address_to_hexa(address));
+
+            if (info.dli_sname) {
+                backtrace->append("  ");
+                backtrace->append(info.dli_sname);
+            }
+
+            if (info.dli_fbase) {
+                backtrace->append(" ");
+                backtrace->append("+");
+                backtrace->append(" ");
+                const uintptr_t address_offset =
+                        address - reinterpret_cast<uintptr_t>(info.dli_fbase);
+                backtrace->append(std::to_string(address_offset));
+            }
+
+        }
+
+        backtrace->append("\\n");
+    }
+
 }
 
 namespace backtrace {
+
     std::string generate_backtrace() {
         // define the buffer which will hold pointers to stack memory addresses
         uintptr_t buffer[STACK_SIZE];
         // we will now unwind the stack and capture all the memory addresses up to STACK_SIZE in
         // the buffer
         const size_t captured_stacksize = capture_backtrace(buffer, STACK_SIZE);
-
         std::string backtrace;
         for (size_t idx = 0; idx < captured_stacksize; ++idx) {
             // we will iterate through all the stack addresses and translate each address in
-            // readable information
-            void *addr = reinterpret_cast<void *>(buffer[idx]);
-            const int hexa_address_buffer_size = 20;
-            char address_as_hexa[20];
-            std::snprintf(address_as_hexa, hexa_address_buffer_size, "0x%x", buffer[idx]);
-            const char *lineSymbol = get_line_symbol(addr);
-            backtrace.append(std::to_string(idx));
-            backtrace.append(":");
-            backtrace.append(address_as_hexa);
-            backtrace.append("  ");
-            backtrace.append(lineSymbol);
-            backtrace.append("\\n");
+            // readable informationdsadsa
+            get_info_from_address(buffer[idx], &backtrace);
+
         }
         return backtrace;
     }
+
 
 }
 

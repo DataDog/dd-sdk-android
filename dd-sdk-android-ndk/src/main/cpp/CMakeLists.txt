@@ -27,3 +27,7 @@ target_link_libraries( # Specifies the target library.
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})
+set_target_properties(datadog-native-lib
+        PROPERTIES
+        COMPILE_OPTIONS
+        -Werror -Wall -pedantic)
