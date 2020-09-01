@@ -24,4 +24,10 @@
         android:title="@string/title_user_info"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/about"
+        android:icon="@drawable/ic_info_black_24"
+        android:title="@string/title_about"
+        app:showAsAction="ifRoom"
+        />
 </menu>

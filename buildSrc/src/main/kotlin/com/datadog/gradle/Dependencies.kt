@@ -17,10 +17,11 @@ object Dependencies {
 
         // Android
         const val AndroidToolsPlugin = "4.0.0"
-        const val AndroidXAppCompat = "1.1.0"
+        const val AndroidXAnnotations = "1.1.0"
+        const val AndroidXAppCompat = "1.2.0"
         const val AndroidXCore = "1.2.0"
         const val AndroidXMultidex = "2.0.1"
-        const val AndroidXNavigation = "2.2.0-rc02"
+        const val AndroidXNavigation = "2.3.0"
         const val AndroidXRecyclerView = "1.1.0"
         const val AndroidXWorkManager = "2.3.3"
 
@@ -55,7 +56,7 @@ object Dependencies {
         const val Espresso = "3.1.1"
 
         // Sample Apps
-        const val ConstraintLayout = "2.0.0-beta4"
+        const val ConstraintLayout = "2.0.1"
         const val GoogleMaterial = "1.0.0"
 
         // Integrations
@@ -93,16 +94,18 @@ object Dependencies {
             "androidx.test.ext:junit:1.1.1"
         )
 
-        val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
-        val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
-        val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
+        const val AndroidXAnnotation =
+            "androidx.annotation:annotation:${Versions.AndroidXAnnotations}"
+        const val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
+        const val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
         val AndroidXNavigation = arrayOf(
             "androidx.navigation:navigation-fragment-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-runtime-ktx:${Versions.AndroidXNavigation}"
         )
-        val AndroidXRecyclerView =
+        const val AndroidXRecyclerView =
             "androidx.recyclerview:recyclerview:${Versions.AndroidXRecyclerView}"
+        const val AndroidXWorkManager = "androidx.work:work-runtime:${Versions.AndroidXWorkManager}"
 
         @JvmField
         val JUnit5 = arrayOf(
@@ -152,9 +155,7 @@ object Dependencies {
 
         // INTEGRATIONS
 
-        val Coil = arrayOf(
-            "io.coil-kt:coil:${Dependencies.Versions.Coil}"
-        )
+        const val Coil = "io.coil-kt:coil:${Versions.Coil}"
 
         val Fresco = arrayOf(
             "com.facebook.fresco:fresco:${Versions.Fresco}",

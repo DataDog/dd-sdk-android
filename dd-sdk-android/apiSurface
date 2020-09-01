@@ -235,6 +235,18 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object 
+class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
+  constructor(java.io.InputStream, String)
+  override fun read(): Int
+  override fun read(ByteArray): Int
+  override fun read(ByteArray, Int, Int): Int
+  override fun available(): Int
+  override fun skip(Long): Long
+  override fun markSupported(): Boolean
+  override fun mark(Int)
+  override fun reset()
+  override fun close()
+  companion object 
 class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
 class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>

@@ -18,6 +18,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import kotlin.math.max
 
 internal class RumResourceScope(
     internal val parentScope: RumScope,
@@ -120,20 +121,29 @@ internal class RumResourceScope(
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
 
+        val finalTiming = timing
+        val duration = if (finalTiming == null) {
+            eventTime.nanoTime - startedNanos
+        } else {
+            // ensure we don't get weird graphs
+            // TODO RUMM-692 find out why we can have resource duration < timing.totalDuration()
+            max(eventTime.nanoTime - startedNanos, finalTiming.totalDuration())
+        }
+
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
                 type = kind.toSchemaType(),
                 url = url,
-                duration = eventTime.nanoTime - startedNanos,
+                duration = duration,
                 method = method.toMethod(),
                 statusCode = statusCode,
                 size = size,
-                dns = timing?.dns(),
-                connect = timing?.connect(),
-                ssl = timing?.ssl(),
-                firstByte = timing?.firstByte(),
-                download = timing?.download()
+                dns = finalTiming?.dns(),
+                connect = finalTiming?.connect(),
+                ssl = finalTiming?.ssl(),
+                firstByte = finalTiming?.firstByte(),
+                download = finalTiming?.download()
             ),
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
