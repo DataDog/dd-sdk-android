@@ -700,7 +700,8 @@ internal class RumResourceInputStreamTest {
                 assertThat(firstValue.connectDuration).isEqualTo(0L)
                 assertThat(firstValue.dnsDuration).isEqualTo(0L)
                 assertThat(firstValue.sslDuration).isEqualTo(0L)
-                assertThat(firstValue.firstByteDuration).isGreaterThan(
+                assertThat(firstValue.firstByteDuration).isEqualTo(0L)
+                assertThat(firstValue.downloadStart).isGreaterThan(
                     TimeUnit.MILLISECONDS.toNanos(500)
                 )
                 assertThat(firstValue.downloadDuration).isLessThanOrEqualTo(download)

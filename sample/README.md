@@ -7,12 +7,14 @@ For each flavor you will have to provide a config file named `[flavorName].json`
 
 Example of a sample app configuration file:
 ```json
-   {
-     "logsEndpoint": "YOUR PREFERRED ENDPOINT",
-     "tracesEndpoint": "YOUR PREFERRED ENDPOINT",
-     "rumEndpoint": "YOUR PREFERRED ENDPOINT",
-     "token": "YOUR APP TOKEN",
-     "appId": "YOUR RUM APP ID"
-   }
+    {
+        "logsEndpoint": "YOUR PREFERRED ENDPOINT",
+        "tracesEndpoint": "YOUR PREFERRED ENDPOINT",
+        "rumEndpoint": "YOUR PREFERRED ENDPOINT",
+        "token": "YOUR APP TOKEN",
+        "rumApplicationId": "YOUR RUM APPLICATION ID",
+        "apiKey": "YOUR API ID",
+        "applicationKey": "YOUR APPLICATION KEY"
+    }
 ```
 **Note** `logsEndpoint`, `tracesEndpoint` and `rumEndpoint` are not mandatory attributes, so if you want to use the default endpoints (production ones) you just omit them in the configuration file.

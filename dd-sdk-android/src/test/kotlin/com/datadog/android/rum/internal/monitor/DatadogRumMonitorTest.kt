@@ -345,7 +345,9 @@ internal class DatadogRumMonitorTest {
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
-            assertThat(firstValue).isEqualTo(RumRawEvent.WaitForResourceTiming(key))
+            val event = firstValue
+            check(event is RumRawEvent.WaitForResourceTiming)
+            assertThat(event.key).isEqualTo(key)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -361,7 +363,10 @@ internal class DatadogRumMonitorTest {
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
-            assertThat(firstValue).isEqualTo(RumRawEvent.AddResourceTiming(key, timing))
+            val event = firstValue
+            check(event is RumRawEvent.AddResourceTiming)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.timing).isEqualTo(timing)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -400,13 +405,11 @@ internal class DatadogRumMonitorTest {
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
-            assertThat(firstValue).isEqualTo(
-                RumRawEvent.UpdateViewLoadingTime(
-                    key,
-                    loadingTime,
-                    loadingType
-                )
-            )
+            val event = firstValue
+            check(event is RumRawEvent.UpdateViewLoadingTime)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.loadingTime).isEqualTo(loadingTime)
+            assertThat(event.loadingType).isEqualTo(loadingType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
