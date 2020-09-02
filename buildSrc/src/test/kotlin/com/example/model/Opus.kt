@@ -1,6 +1,9 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import kotlin.Long
 import kotlin.String
 import kotlin.collections.List
@@ -13,56 +16,73 @@ import kotlin.collections.List
  * @param duration The opus's duration in seconds
  */
 internal data class Opus(
-    @SerializedName("title")
     val title: String? = null,
-    @SerializedName("composer")
     val composer: String? = null,
-    @SerializedName("artists")
     val artists: List<Artist>? = null,
-    @SerializedName("duration")
     val duration: Long? = null
 ) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        if (title != null) json.addProperty("title", title)
+        if (composer != null) json.addProperty("composer", composer)
+        if (artists != null) {
+            val artistsArray = JsonArray(artists.size)
+            artists.forEach { artistsArray.add(it.toJson()) }
+            json.add("artists", artistsArray)
+        }
+        if (duration != null) json.addProperty("duration", duration)
+        return json
+    }
+
     /**
      * An artist and their role in an opus.
      * @param name The artist's name.
      * @param role The artist's role.
      */
     data class Artist(
-        @SerializedName("name")
         val name: String? = null,
-        @SerializedName("role")
         val role: Role? = null
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            if (name != null) json.addProperty("name", name)
+            if (role != null) json.add("role", role.toJson())
+            return json
+        }
+    }
 
     /**
      * The artist's role.
      */
     enum class Role {
-        @SerializedName("singer")
         SINGER,
 
-        @SerializedName("guitarist")
         GUITARIST,
 
-        @SerializedName("pianist")
         PIANIST,
 
-        @SerializedName("drummer")
         DRUMMER,
 
-        @SerializedName("bassist")
         BASSIST,
 
-        @SerializedName("violinist")
         VIOLINIST,
 
-        @SerializedName("dj")
         DJ,
 
-        @SerializedName("vocals")
         VOCALS,
 
-        @SerializedName("other")
-        OTHER
+        OTHER;
+
+        fun toJson(): JsonElement = when (this) {
+            SINGER -> JsonPrimitive("singer")
+            GUITARIST -> JsonPrimitive("guitarist")
+            PIANIST -> JsonPrimitive("pianist")
+            DRUMMER -> JsonPrimitive("drummer")
+            BASSIST -> JsonPrimitive("bassist")
+            VIOLINIST -> JsonPrimitive("violinist")
+            DJ -> JsonPrimitive("dj")
+            VOCALS -> JsonPrimitive("vocals")
+            OTHER -> JsonPrimitive("other")
+        }
     }
 }

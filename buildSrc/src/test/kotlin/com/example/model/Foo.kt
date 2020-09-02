@@ -1,12 +1,18 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlin.Long
 import kotlin.String
 
 internal data class Foo(
-    @SerializedName("bar")
     val bar: String? = null,
-    @SerializedName("baz")
     val baz: Long? = null
-)
+) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        if (bar != null) json.addProperty("bar", bar)
+        if (baz != null) json.addProperty("baz", baz)
+        return json
+    }
+}

@@ -17,7 +17,22 @@
     },
     "l": {
       "type": "null"
+    },
+    "ns": {
+      "type": "string"
+    },
+    "ni": {
+      "type": "integer"
+    },
+    "nn": {
+      "type": "number"
+    },
+    "nb": {
+      "type": "boolean"
+    },
+    "nl": {
+      "type": "null"
     }
   },
-  "required": ["s", "i", "n", "b"]
+  "required": ["s", "i", "n", "b", "l"]
 }

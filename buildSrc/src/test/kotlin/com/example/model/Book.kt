@@ -1,33 +1,49 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlin.Double
 import kotlin.Long
 import kotlin.String
 
 internal data class Book(
-    @SerializedName("bookId")
     val bookId: Long,
-    @SerializedName("title")
     val title: String,
-    @SerializedName("price")
     val price: Double,
-    @SerializedName("author")
     val author: Author
 ) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        json.addProperty("bookId", bookId)
+        json.addProperty("title", title)
+        json.addProperty("price", price)
+        json.add("author", author.toJson())
+        return json
+    }
+
     data class Author(
-        @SerializedName("firstName")
         val firstName: String,
-        @SerializedName("lastName")
         val lastName: String,
-        @SerializedName("contact")
         val contact: Contact
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            json.addProperty("firstName", firstName)
+            json.addProperty("lastName", lastName)
+            json.add("contact", contact.toJson())
+            return json
+        }
+    }
 
     data class Contact(
-        @SerializedName("phone")
         val phone: String? = null,
-        @SerializedName("email")
         val email: String? = null
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            if (phone != null) json.addProperty("phone", phone)
+            if (email != null) json.addProperty("email", email)
+            return json
+        }
+    }
 }
