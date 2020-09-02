@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.assertj.ByteArrayOutputStreamAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -20,6 +19,8 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -82,7 +83,7 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `writes a valid model`(forge: Forge) {
+    fun `𝕄 write a valid model 𝕎 write(model)`(forge: Forge) {
         val model = forge.anAlphabeticalString()
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(rootDir, fileNameToWriteTo)
@@ -96,7 +97,7 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `writes a collection of models`(forge: Forge) {
+    fun `𝕄 write a collection of models 𝕎 write(list)`(forge: Forge) {
         val models: List<String> = forge.aList { forge.anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(rootDir, fileNameToWriteTo)
@@ -110,7 +111,7 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `writes several models`(forge: Forge) {
+    fun `𝕄 write several models 𝕎 write()+`(forge: Forge) {
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(rootDir, fileNameToWriteTo)
@@ -126,7 +127,7 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `writes several models with custom separator`(forge: Forge) {
+    fun `𝕄 write several models with custom separator 𝕎 write()+`(forge: Forge) {
         val separator = forge.anAsciiString()
         underTest = ImmediateFileWriter(
             mockedOrchestrator,
@@ -148,7 +149,21 @@ internal class ImmediateFileWriterTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `does nothing when SecurityException was thrown while providing a file`(
+    fun `𝕄 do nothing 𝕎 write() and serialisation fails`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) model: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) errorMessage: String
+    ) {
+        val throwable = RuntimeException(errorMessage)
+        doThrow(throwable).whenever(mockedSerializer).serialize(model)
+
+        underTest.write(model)
+
+        verifyZeroInteractions(mockDeferredHandler)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.O)
+    fun `𝕄 do nothing 𝕎 write() with SecurityException thrown while providing a file`(
         forge: Forge
     ) {
         val modelValue = forge.anAlphabeticalString()
@@ -161,7 +176,7 @@ internal class ImmediateFileWriterTest {
     }
 
     @Test
-    fun `does nothing when FileOrchestrator returns a null file`(
+    fun `𝕄 do nothing 𝕎 write() and FileOrchestrator returns a null file`(
         forge: Forge
     ) {
         val modelValue = forge.anAlphabeticalString()
@@ -175,7 +190,7 @@ internal class ImmediateFileWriterTest {
     }
 
     @Test
-    fun `if the file is locked from same JVM(not our case) will handle correctly the exception`(
+    fun `𝕄 respect file locks 𝕎 write() on locked file`(
         forge: Forge
     ) {
         val models = forge.aList { anAlphabeticalString() }
@@ -200,7 +215,7 @@ internal class ImmediateFileWriterTest {
     }
 
     @Test
-    fun `handles well the file locking when accessed from multiple threads`(forge: Forge) {
+    fun `𝕄 lock and release file 𝕎 write() from multiple threads`(forge: Forge) {
         val models = forge.aList(size = 10) { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(rootDir, fileNameToWriteTo)

@@ -43,8 +43,14 @@ internal class ImmediateFileWriter<T : Any>(
 
     // region Internal
 
+    @SuppressWarnings("TooGenericExceptionCaught")
     private fun consume(model: T) {
-        val data = serializer.serialize(model)
+        val data = try {
+            serializer.serialize(model)
+        } catch (e: Throwable) {
+            sdkLogger.w("Unable to serialize ${model.javaClass.simpleName}", e)
+            return
+        }
 
         if (data.length >= MAX_ITEM_SIZE) {
             devLogger.e("Unable to persist data, serialized size is too big\n$data")
