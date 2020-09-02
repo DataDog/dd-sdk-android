@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.domain.event.toJsonArray
@@ -49,7 +50,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `serializes event`(
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(
         @Forgery fakeEvent: RumEvent,
         @Forgery event: ResourceEvent
     ) {
@@ -93,7 +94,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `serializes user action rum event`(
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ActionEvent`(
         @Forgery fakeEvent: RumEvent,
         @Forgery event: ActionEvent
     ) {
@@ -153,7 +154,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `serializes view rum event`(
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(
         @Forgery fakeEvent: RumEvent,
         @Forgery event: ViewEvent
     ) {
@@ -203,7 +204,7 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `serializes error rum event`(
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(
         @Forgery fakeEvent: RumEvent,
         @Forgery event: ErrorEvent
     ) {
@@ -250,7 +251,31 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `keep known custom attributes as is`(
+    fun `𝕄 serialize RUM event 𝕎 serialize() with unknown event`(
+        @Forgery fakeEvent: RumEvent,
+        @Forgery unknownEvent: UserInfo
+    ) {
+        val rumEvent = fakeEvent.copy(event = unknownEvent)
+
+        val serialized = underTest.serialize(rumEvent)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertEventMatches(jsonObject, rumEvent)
+        assertThat(jsonObject)
+            .doesNotHaveField("type")
+            .doesNotHaveField("date")
+            .doesNotHaveField("error")
+            .doesNotHaveField("action")
+            .doesNotHaveField("resource")
+            .doesNotHaveField("application")
+            .doesNotHaveField("session")
+            .doesNotHaveField("view")
+            .doesNotHaveField("usr")
+            .doesNotHaveField("_dd")
+    }
+
+    @Test
+    fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(
         @Forgery fakeEvent: RumEvent,
         forge: Forge
     ) {

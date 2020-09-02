@@ -8,7 +8,10 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.rum.RumAttributes
-import com.google.gson.Gson
+import com.datadog.android.rum.internal.domain.model.ActionEvent
+import com.datadog.android.rum.internal.domain.model.ErrorEvent
+import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -18,12 +21,10 @@ import java.util.Date
 
 internal class RumEventSerializer : Serializer<RumEvent> {
 
-    private val gson: Gson = Gson()
-
     // region Serializer
 
     override fun serialize(model: RumEvent): String {
-        val json = gson.toJsonTree(model.event).asJsonObject
+        val json = model.event.toJson().asJsonObject
 
         addCustomAttributes(model, json)
 
@@ -61,6 +62,16 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL
         )
+    }
+}
+
+private fun Any.toJson(): JsonElement {
+    return when (this) {
+        is ViewEvent -> toJson()
+        is ActionEvent -> toJson()
+        is ResourceEvent -> toJson()
+        is ErrorEvent -> toJson()
+        else -> JsonObject()
     }
 }
 
