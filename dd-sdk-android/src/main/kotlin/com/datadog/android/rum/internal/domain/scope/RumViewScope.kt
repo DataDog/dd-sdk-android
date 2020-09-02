@@ -263,6 +263,9 @@ internal class RumViewScope(
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
+        val deviceStateInfo = RumFeature.deviceInfoProvider.getLastDeviceStateInfo()
+        attributes["device_posture"] = deviceStateInfo.state.serializedName
+        attributes["display_type"] = deviceStateInfo.displayType?.serializedName
 
         val viewEvent = ViewEvent(
             date = eventTimestamp,

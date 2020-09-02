@@ -119,6 +119,9 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidXRecyclerView)
     implementation(Dependencies.Libraries.AndroidXNavigation)
 
+    // WindowManager
+    implementation("androidx.window:window:1.0.0-alpha01")
+
     api(Dependencies.Libraries.TracingOt)
     kapt(project(":tools:noopfactory"))
 

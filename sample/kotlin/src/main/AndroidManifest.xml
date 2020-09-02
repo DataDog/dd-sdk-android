@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.datadog.android.sample">
+          xmlns:tools="http://schemas.android.com/tools"
+          package="com.datadog.android.sample">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
         android:name=".SampleApplication"
@@ -17,28 +17,30 @@
         tools:ignore="GoogleAppIndexingWarning">
         <receiver android:name=".widget.DatadogWidgetsProvider">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
             </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/datadog_widget_info" />
+                android:resource="@xml/datadog_widget_info"/>
         </receiver>
 
         <activity
             android:name=".NavActivity"
-            android:label="@string/title_main">
+            android:label="@string/title_main"
+            android:configChanges="screenSize|screenLayout"
+            android:resizeableActivity="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".ViewPagerActivity" />
+        <activity android:name=".ViewPagerActivity"/>
 
         <service
             android:name=".service.LogsForegroundService"
-            android:process=":logsService" />
+            android:process=":logsService"/>
         <service android:name=".widget.WidgetIntentService"/>
     </application>
 

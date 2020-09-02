@@ -32,6 +32,9 @@ import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
+import com.datadog.android.rum.internal.tracking.DeviceInfoProvider
+import com.datadog.android.rum.internal.tracking.DeviceInfoTrackingStrategy
+import com.datadog.android.rum.internal.tracking.NoOpDeviceInfoProvider
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
@@ -59,6 +62,7 @@ internal object RumFeature {
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
+    internal var deviceInfoProvider: DeviceInfoProvider = NoOpDeviceInfoProvider()
 
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     private var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
@@ -104,6 +108,8 @@ internal object RumFeature {
             dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
         )
         registerTrackingStrategies(appContext)
+        this.deviceInfoProvider = DeviceInfoTrackingStrategy()
+        (this.deviceInfoProvider as DeviceInfoTrackingStrategy).register(appContext)
         this.userInfoProvider = userInfoProvider
         this.networkInfoProvider = networkInfoProvider
         registerPlugins(appContext, config)
@@ -122,6 +128,9 @@ internal object RumFeature {
         if (initialized.get()) {
             unregisterPlugins()
             dataUploadScheduler.stopScheduling()
+            CoreFeature.contextRef.get()?.let {
+                (this.deviceInfoProvider as DeviceInfoTrackingStrategy).unregister(it)
+            }
 
             unregisterTrackingStrategies(CoreFeature.contextRef.get())
 
