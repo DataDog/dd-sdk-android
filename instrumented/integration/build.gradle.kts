@@ -57,6 +57,19 @@ android {
         exclude("META-INF/LICENSE.md")
         exclude("META-INF/LICENSE-notice.md")
     }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            isUseProguard = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        getByName("debug") {
+            isMinifyEnabled = true
+            isUseProguard = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
 }
 
 repositories {
