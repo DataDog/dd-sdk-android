@@ -73,6 +73,12 @@ If you encounter any issue when using the Datadog SDK for Android, please take a
 the [troubleshooting checklist](docs/TROUBLESHOOTING.md), or at 
 the existing [issues](https://github.com/DataDog/dd-sdk-android/issues?q=is%3Aissue).
 
+## Warning
+
+We have not tested the SDK on Roku devices running with Android OS and we cannot guarantee that it will perform well.
+If you encounter any problems while using our SDK for these particular devices please contact us at [Datadog Support](https://docs.datadoghq.com/help/)
+or you can directly open an issue in our GitHub project.
+
 ## Contributing
 
 Pull requests are welcome. First, open an issue to discuss what you would like to change. For more information, read the [Contributing Guide](CONTRIBUTING.md).
