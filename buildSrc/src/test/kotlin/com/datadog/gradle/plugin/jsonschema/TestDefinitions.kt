@@ -159,7 +159,12 @@ val Demo = TypeDefinition.Class(
         TypeProperty("i", TypeDefinition.Primitive(JsonType.INTEGER), false),
         TypeProperty("n", TypeDefinition.Primitive(JsonType.NUMBER), false),
         TypeProperty("b", TypeDefinition.Primitive(JsonType.BOOLEAN), false),
-        TypeProperty("l", TypeDefinition.Null(), true)
+        TypeProperty("l", TypeDefinition.Null(), false),
+        TypeProperty("ns", TypeDefinition.Primitive(JsonType.STRING), true),
+        TypeProperty("ni", TypeDefinition.Primitive(JsonType.INTEGER), true),
+        TypeProperty("nn", TypeDefinition.Primitive(JsonType.NUMBER), true),
+        TypeProperty("nb", TypeDefinition.Primitive(JsonType.BOOLEAN), true),
+        TypeProperty("nl", TypeDefinition.Null(), true)
 
     )
 )

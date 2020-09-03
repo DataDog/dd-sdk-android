@@ -7,9 +7,7 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import android.databinding.tool.ext.joinToCamelCaseAsVar
-import com.google.gson.annotations.SerializedName
 import com.squareup.kotlinpoet.ANY
-import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -19,6 +17,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LIST
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.NOTHING
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -130,10 +129,11 @@ class PokoGenerator(
             enumBuilder.addEnumConstant(
                 value.toUpperCase(Locale.US),
                 TypeSpec.anonymousClassBuilder()
-                    .addAnnotation(value.serializedAnnotation())
                     .build()
             )
         }
+
+        enumBuilder.addFunction(generateEnumSerializer(definition))
 
         return enumBuilder
             .addKdoc(docBuilder.build())
@@ -154,10 +154,12 @@ class PokoGenerator(
         docBuilder: CodeBlock.Builder
     ) {
         val varName = property.name.variableName()
-        val type = property.type.asKotlinTypeName().copy(nullable = property.nullable)
+        val nullable = property.optional || property.type is TypeDefinition.Null
+        val type = property.type.asKotlinTypeName()
+            .copy(nullable = nullable)
 
         val constructorParamBuilder = ParameterSpec.builder(varName, type)
-        if (property.nullable) {
+        if (nullable) {
             constructorParamBuilder.defaultValue("null")
         }
         constructorBuilder.addParameter(constructorParamBuilder.build())
@@ -165,7 +167,6 @@ class PokoGenerator(
         typeBuilder.addProperty(
             PropertySpec.builder(varName, type)
                 .initializer(varName)
-                .addAnnotation(property.name.serializedAnnotation())
                 .build()
         )
 
@@ -207,8 +208,6 @@ class PokoGenerator(
             propertyBuilder.addKdoc(definition.description)
         }
 
-        propertyBuilder.addAnnotation(name.serializedAnnotation())
-
         typeBuilder.addProperty(propertyBuilder.build())
     }
 
@@ -249,6 +248,199 @@ class PokoGenerator(
         if (nonConstants > 0) {
             typeBuilder.addModifiers(KModifier.DATA)
         }
+
+        typeBuilder.addFunction(generateClassSerializer(definition))
+    }
+
+    // endregion
+
+    // region Serialization
+
+    /**
+     * Generates a function serializing the type to Json
+     * @param definition the class definition
+     */
+    private fun generateClassSerializer(definition: TypeDefinition.Class): FunSpec {
+        val funBuilder = FunSpec.builder(TO_JSON)
+            .returns(JSON_ELEMENT)
+
+        funBuilder.addStatement("val json = %T()", JSON_OBJECT)
+
+        definition.properties.forEach { p ->
+            appendPropertySerialization(p, funBuilder)
+        }
+
+        funBuilder.addStatement("return json")
+
+        return funBuilder.build()
+    }
+
+    /**
+     * Generates a function serializing the type to Json
+     * @param definition the enum class definition
+     */
+    private fun generateEnumSerializer(definition: TypeDefinition.Enum): FunSpec {
+        val funBuilder = FunSpec.builder(TO_JSON)
+            .returns(JSON_ELEMENT)
+
+        funBuilder.beginControlFlow("return when (this)")
+        definition.values.forEach { value ->
+            funBuilder.addStatement(
+                "%L -> %T(%S)",
+                value.toUpperCase(Locale.US),
+                JSON_PRIMITIVE,
+                value
+            )
+        }
+        funBuilder.endControlFlow()
+
+        return funBuilder.build()
+    }
+
+    /**
+     * Appends a property serialization to a [FunSpec.Builder].
+     * @param property the property definition
+     * @param funBuilder the `toJson()` [FunSpec] builder.
+     */
+    private fun appendPropertySerialization(
+        property: TypeProperty,
+        funBuilder: FunSpec.Builder
+    ) {
+
+        val varName = property.name.variableName()
+        when (property.type) {
+            is TypeDefinition.Constant -> appendConstantSerialization(
+                property.name,
+                property.type,
+                funBuilder
+            )
+            is TypeDefinition.Primitive -> appendPrimitiveSerialization(
+                property,
+                property.type,
+                varName,
+                funBuilder
+            )
+            is TypeDefinition.Null -> if (!property.optional) {
+                funBuilder.addStatement("json.add(%S, null)", property.name)
+            }
+            is TypeDefinition.Array -> appendArraySerialization(
+                property,
+                property.type,
+                varName,
+                funBuilder
+            )
+            is TypeDefinition.Class,
+            is TypeDefinition.Enum -> appendObjectSerialization(property, varName, funBuilder)
+        }
+    }
+
+    private fun appendObjectSerialization(
+        property: TypeProperty,
+        varName: String,
+        funBuilder: FunSpec.Builder
+    ) {
+        if (property.optional) {
+            funBuilder.addStatement(
+                "if (%L != null) json.add(%S, %L.%L())",
+                varName,
+                property.name,
+                varName,
+                TO_JSON
+            )
+        } else {
+            funBuilder.addStatement(
+                "json.add(%S, %L.%L())",
+                property.name,
+                varName, TO_JSON
+            )
+        }
+    }
+
+    private fun appendArraySerialization(
+        property: TypeProperty,
+        type: TypeDefinition.Array,
+        varName: String,
+        funBuilder: FunSpec.Builder
+    ) {
+        if (property.optional) {
+            funBuilder.beginControlFlow("if (%L != null)", varName)
+        }
+
+        funBuilder.addStatement("val %LArray = %T(%L.size)", varName, JSON_ARRAY, varName)
+        when (type.items) {
+            is TypeDefinition.Primitive -> funBuilder.addStatement(
+                "%L.forEach { %LArray.add(it) }",
+                varName,
+                varName
+            )
+            is TypeDefinition.Class,
+            is TypeDefinition.Enum -> funBuilder.addStatement(
+                "%L.forEach { %LArray.add(it.%L()) }",
+                varName,
+                varName,
+                TO_JSON
+            )
+        }
+
+        funBuilder.addStatement("json.add(%S, %LArray)", property.name, varName)
+
+        if (property.optional) {
+            funBuilder.endControlFlow()
+        }
+    }
+
+    /**
+     * Appends a primitive property serialization to a [FunSpec.Builder].
+     * @param property the property definition
+     * @param type the primitive type
+     * @param funBuilder the `toJson()` [FunSpec] builder.
+     */
+    @Suppress("NON_EXHAUSTIVE_WHEN")
+    private fun appendPrimitiveSerialization(
+        property: TypeProperty,
+        type: TypeDefinition.Primitive,
+        varName: String,
+        funBuilder: FunSpec.Builder
+    ) {
+        when (type.type) {
+            JsonType.BOOLEAN,
+            JsonType.NUMBER,
+            JsonType.STRING,
+            JsonType.INTEGER ->
+                if (property.optional) {
+                    funBuilder.addStatement(
+                        "if (%L != null) json.addProperty(%S, %L)",
+                        varName,
+                        property.name,
+                        varName
+                    )
+                } else {
+                    funBuilder.addStatement(
+                        "json.addProperty(%S, %L)",
+                        property.name,
+                        varName
+                    )
+                }
+        }
+    }
+
+    /**
+     * Appends a property serialization to a [FunSpec.Builder], with a constant default value.
+     * @param name the property json name
+     * @param definition the property definition
+     * @param funBuilder the `toJson()` [FunSpec] builder.
+     */
+    private fun appendConstantSerialization(
+        name: String,
+        definition: TypeDefinition.Constant,
+        funBuilder: FunSpec.Builder
+    ) {
+        val constantValue = definition.value
+        if (constantValue is String || constantValue is Number) {
+            funBuilder.addStatement("json.addProperty(%S, %L)", name, name.variableName())
+        } else {
+            throw IllegalStateException("Unable to generate serialization for constant type $definition")
+        }
     }
 
     // endregion
@@ -285,7 +477,7 @@ class PokoGenerator(
 
     private fun TypeDefinition.asKotlinTypeName(): TypeName {
         return when (this) {
-            is TypeDefinition.Null -> ANY_NULLABLE
+            is TypeDefinition.Null -> NOTHING
             is TypeDefinition.Primitive -> type.asKotlinTypeName()
             is TypeDefinition.Constant -> type.asKotlinTypeName()
             is TypeDefinition.Class -> {
@@ -310,27 +502,27 @@ class PokoGenerator(
 
     private fun JsonType?.asKotlinTypeName(): TypeName {
         return when (this) {
-            JsonType.NULL -> ANY_NULLABLE
+            JsonType.NULL -> NOTHING_NULLABLE
             JsonType.BOOLEAN -> BOOLEAN
             JsonType.NUMBER -> DOUBLE
             JsonType.STRING -> STRING
             JsonType.INTEGER -> LONG
-            else -> {
-                ANY_NULLABLE
-            }
+            else -> TODO()
         }
-    }
-
-    private fun String.serializedAnnotation(): AnnotationSpec {
-        return AnnotationSpec.builder(SerializedName::class.java)
-            .addMember("%S", this)
-            .build()
     }
 
     // endregion
 
     companion object {
 
+        private val NOTHING_NULLABLE = NOTHING.copy(nullable = true)
         private val ANY_NULLABLE = ANY.copy(nullable = true)
+
+        private val TO_JSON = "toJson"
+
+        private val JSON_ELEMENT = ClassName.bestGuess("com.google.gson.JsonElement")
+        private val JSON_OBJECT = ClassName.bestGuess("com.google.gson.JsonObject")
+        private val JSON_ARRAY = ClassName.bestGuess("com.google.gson.JsonArray")
+        private val JSON_PRIMITIVE = ClassName.bestGuess("com.google.gson.JsonPrimitive")
     }
 }

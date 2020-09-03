@@ -1,4 +1,8 @@
 
+# 1.5.1 / 2020-09-03
+
+* [BUGFIX] RUM: Make sure the RUM data is sent in applications obfuscated or shrunk with Proguard/R8
+
 # 1.5.0 / 2020-08-12
 
 * [FEATURE] RUM: Add a RUM tracking feature:

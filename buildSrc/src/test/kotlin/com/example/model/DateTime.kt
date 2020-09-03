@@ -1,67 +1,87 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import kotlin.Long
 
 internal data class DateTime(
-    @SerializedName("date")
     val date: Date? = null,
-    @SerializedName("time")
     val time: Time? = null
 ) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        if (date != null) json.add("date", date.toJson())
+        if (time != null) json.add("time", time.toJson())
+        return json
+    }
+
     data class Date(
-        @SerializedName("year")
         val year: Long? = null,
-        @SerializedName("month")
         val month: Month? = null,
-        @SerializedName("day")
         val day: Long? = null
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            if (year != null) json.addProperty("year", year)
+            if (month != null) json.add("month", month.toJson())
+            if (day != null) json.addProperty("day", day)
+            return json
+        }
+    }
 
     data class Time(
-        @SerializedName("hour")
         val hour: Long? = null,
-        @SerializedName("minute")
         val minute: Long? = null,
-        @SerializedName("seconds")
         val seconds: Long? = null
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            if (hour != null) json.addProperty("hour", hour)
+            if (minute != null) json.addProperty("minute", minute)
+            if (seconds != null) json.addProperty("seconds", seconds)
+            return json
+        }
+    }
 
     enum class Month {
-        @SerializedName("jan")
         JAN,
 
-        @SerializedName("feb")
         FEB,
 
-        @SerializedName("mar")
         MAR,
 
-        @SerializedName("apr")
         APR,
 
-        @SerializedName("may")
         MAY,
 
-        @SerializedName("jun")
         JUN,
 
-        @SerializedName("jul")
         JUL,
 
-        @SerializedName("aug")
         AUG,
 
-        @SerializedName("sep")
         SEP,
 
-        @SerializedName("oct")
         OCT,
 
-        @SerializedName("nov")
         NOV,
 
-        @SerializedName("dec")
-        DEC
+        DEC;
+
+        fun toJson(): JsonElement = when (this) {
+            JAN -> JsonPrimitive("jan")
+            FEB -> JsonPrimitive("feb")
+            MAR -> JsonPrimitive("mar")
+            APR -> JsonPrimitive("apr")
+            MAY -> JsonPrimitive("may")
+            JUN -> JsonPrimitive("jun")
+            JUL -> JsonPrimitive("jul")
+            AUG -> JsonPrimitive("aug")
+            SEP -> JsonPrimitive("sep")
+            OCT -> JsonPrimitive("oct")
+            NOV -> JsonPrimitive("nov")
+            DEC -> JsonPrimitive("dec")
+        }
     }
 }
