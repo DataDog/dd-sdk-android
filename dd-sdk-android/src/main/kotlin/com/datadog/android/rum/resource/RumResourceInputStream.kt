@@ -122,10 +122,8 @@ class RumResourceInputStream(
             (monitor as? AdvancedRumMonitor)?.addResourceTiming(
                 key,
                 ResourceTiming(
-                    firstByteStart = 1L,
-                    firstByteDuration = firstByte - callStart - 1L,
                     downloadStart = firstByte - callStart,
-                    downloadDuration = lastByte - firstByte - 1L
+                    downloadDuration = lastByte - firstByte
                 )
             )
             monitor.stopResource(
@@ -166,7 +164,7 @@ class RumResourceInputStream(
     // endregion
 
     companion object {
-        internal const val METHOD: String = "STREAM"
+        internal const val METHOD: String = "GET"
 
         internal const val ERROR_CLOSE = "Error closing input stream"
         internal const val ERROR_MARK = "Error marking input stream"

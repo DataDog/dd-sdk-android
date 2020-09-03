@@ -6,8 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import kotlin.math.max
-
 internal data class ResourceTiming(
     val dnsStart: Long = 0L,
     val dnsDuration: Long = 0L,
@@ -19,8 +17,4 @@ internal data class ResourceTiming(
     val firstByteDuration: Long = 0L,
     val downloadStart: Long = 0L,
     val downloadDuration: Long = 0L
-) {
-    fun totalDuration(): Long {
-        return max(downloadStart + downloadDuration, firstByteStart + firstByteDuration)
-    }
-}
+)
