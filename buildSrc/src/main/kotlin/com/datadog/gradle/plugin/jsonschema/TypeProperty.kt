@@ -9,7 +9,7 @@ package com.datadog.gradle.plugin.jsonschema
 data class TypeProperty(
     val name: String,
     val type: TypeDefinition,
-    val nullable: Boolean
+    val optional: Boolean
 ) {
     fun mergedWith(other: TypeProperty): TypeProperty {
         return if (this == other) {
@@ -18,7 +18,7 @@ data class TypeProperty(
             TypeProperty(
                 name,
                 type.mergedWith(other.type),
-                nullable || other.nullable
+                optional || other.optional
             )
         }
     }

@@ -1,24 +1,35 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlin.String
 
 internal data class UserMerged(
-    @SerializedName("email")
     val email: String? = null,
-    @SerializedName("phone")
     val phone: String? = null,
-    @SerializedName("info")
     val info: Info? = null,
-    @SerializedName("firstname")
     val firstname: String? = null,
-    @SerializedName("lastname")
     val lastname: String
 ) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        if (email != null) json.addProperty("email", email)
+        if (phone != null) json.addProperty("phone", phone)
+        if (info != null) json.add("info", info.toJson())
+        if (firstname != null) json.addProperty("firstname", firstname)
+        json.addProperty("lastname", lastname)
+        return json
+    }
+
     data class Info(
-        @SerializedName("notes")
         val notes: String? = null,
-        @SerializedName("source")
         val source: String? = null
-    )
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            if (notes != null) json.addProperty("notes", notes)
+            if (source != null) json.addProperty("source", source)
+            return json
+        }
+    }
 }

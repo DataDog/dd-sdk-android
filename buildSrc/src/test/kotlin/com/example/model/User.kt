@@ -1,25 +1,35 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import kotlin.String
 
 internal data class User(
-    @SerializedName("username")
     val username: String,
-    @SerializedName("host")
     val host: String,
-    @SerializedName("firstname")
     val firstname: String? = null,
-    @SerializedName("lastname")
     val lastname: String,
-    @SerializedName("contact_type")
     val contactType: ContactType
 ) {
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        json.addProperty("username", username)
+        json.addProperty("host", host)
+        if (firstname != null) json.addProperty("firstname", firstname)
+        json.addProperty("lastname", lastname)
+        json.add("contact_type", contactType.toJson())
+        return json
+    }
+
     enum class ContactType {
-        @SerializedName("personal")
         PERSONAL,
 
-        @SerializedName("professional")
-        PROFESSIONAL
+        PROFESSIONAL;
+
+        fun toJson(): JsonElement = when (this) {
+            PERSONAL -> JsonPrimitive("personal")
+            PROFESSIONAL -> JsonPrimitive("professional")
+        }
     }
 }

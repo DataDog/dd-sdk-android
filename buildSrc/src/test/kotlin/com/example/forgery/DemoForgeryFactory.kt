@@ -18,7 +18,12 @@ internal class DemoForgeryFactory : ForgeryFactory<Demo> {
             i = forge.aLong(),
             n = forge.aDouble(),
             b = forge.aBool(),
-            l = null
+            l = null,
+            ns = forge.aNullable { anAlphabeticalString() },
+            ni = forge.aNullable { forge.aLong() },
+            nn = forge.aNullable { forge.aDouble() },
+            nb = forge.aNullable { forge.aBool() },
+            nl = null
         )
     }
 }

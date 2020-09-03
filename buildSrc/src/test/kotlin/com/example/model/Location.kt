@@ -1,9 +1,15 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlin.String
 
 internal class Location {
-    @SerializedName("planet")
     val planet: String = "earth"
+
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        json.addProperty("planet", planet)
+        return json
+    }
 }

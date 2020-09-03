@@ -58,7 +58,7 @@ class PokoGeneratorTest(
 
     companion object {
         @JvmStatic
-        @Parameterized.Parameters
+        @Parameterized.Parameters(name = "{index}: {1}")
         fun data(): Collection<Array<Any>> {
             return listOf(
                 arrayOf(Article, "Article"),

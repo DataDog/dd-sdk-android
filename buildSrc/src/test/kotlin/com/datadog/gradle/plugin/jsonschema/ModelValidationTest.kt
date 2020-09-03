@@ -7,7 +7,6 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import com.example.forgery.ForgeryConfiguration
-import com.google.gson.Gson
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
@@ -34,8 +33,8 @@ class ModelValidationTest(
 
     @Test
     fun `validates model`() {
-        val gson = Gson()
         val type = Class.forName("com.example.model.$className")
+        val toJson = type.getDeclaredMethod("toJson")
         val schema = loadSchema(schemaResourcePath)
         val file = javaClass.getResource("/input/").file
         println(">> SCOPE PATH : file://$file")
@@ -47,9 +46,9 @@ class ModelValidationTest(
 
         repeat(10) {
             val entity = forge.getForgery(type)
-            val json = gson.toJson(entity, type)
+            val json = toJson.invoke(entity)
             try {
-                validator.validate(JSONObject(json))
+                validator.validate(JSONObject(json.toString()))
             } catch (e: Exception) {
                 throw RuntimeException(
                     "Failed to validate $schemaResourcePath:\n$entity\n$json\n", e
@@ -66,7 +65,7 @@ class ModelValidationTest(
 
     companion object {
         @JvmStatic
-        @Parameterized.Parameters
+        @Parameterized.Parameters(name = "{index}: {1}")
         fun data(): Collection<Array<Any>> {
             return listOf(
                 arrayOf("minimal", "Person"),

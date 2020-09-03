@@ -1,13 +1,19 @@
 package com.example.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlin.Double
 import kotlin.Long
 
 internal class Version {
-    @SerializedName("version")
     val version: Long = 42L
 
-    @SerializedName("delta")
     val delta: Double = 3.1415
+
+    fun toJson(): JsonElement {
+        val json = JsonObject()
+        json.addProperty("version", version)
+        json.addProperty("delta", delta)
+        return json
+    }
 }
