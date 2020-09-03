@@ -55,6 +55,17 @@ If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM 
                 .build()
 ```
 
+### Apollo (GraphQL)
+
+If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM information about all the queries performed through Apollo client.
+
+```kotlin
+        val apolloClient =  ApolloClient.builder()
+                 .okHttpClient(okHttpClient)
+                 .serverUrl(<APOLLO_SERVER_URL>)
+                 .build()
+```
+
 ## Looking up your logs
 
 When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
