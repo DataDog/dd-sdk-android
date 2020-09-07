@@ -257,10 +257,10 @@ internal class RumEventSerializerTest {
     ) {
         val rumEvent = fakeEvent.copy(event = unknownEvent)
 
-        val serialized = underTest.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(rumEvent)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertEventMatches(jsonObject, rumEvent)
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .doesNotHaveField("type")
             .doesNotHaveField("date")

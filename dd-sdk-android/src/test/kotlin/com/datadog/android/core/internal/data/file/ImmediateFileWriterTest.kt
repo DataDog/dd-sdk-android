@@ -154,9 +154,9 @@ internal class ImmediateFileWriterTest {
         @StringForgery(StringForgeryType.ALPHABETICAL) errorMessage: String
     ) {
         val throwable = RuntimeException(errorMessage)
-        doThrow(throwable).whenever(mockedSerializer).serialize(model)
+        doThrow(throwable).whenever(mockSerializer).serialize(model)
 
-        underTest.write(model)
+        testedWriter.write(model)
 
         verifyZeroInteractions(mockDeferredHandler)
     }
