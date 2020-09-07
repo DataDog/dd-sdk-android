@@ -384,6 +384,110 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 not take into account global attribute removal 𝕎 handleEvent(StopView) on active view`(
+        forge: Forge
+    ) {
+        // Given
+        GlobalRum.globalAttributes.clear()
+        val fakeGlobalAttributeKey = forge.anAlphabeticalString()
+        val fakeGlobalAttributeValue = forge.anAlphabeticalString()
+        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        testedScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes
+        )
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+
+        // When
+        GlobalRum.removeAttribute(fakeGlobalAttributeKey)
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 take into account global attribute update 𝕎 handleEvent(StopView) on active view`(
+        forge: Forge
+    ) {
+        // Given
+        GlobalRum.globalAttributes.clear()
+        val fakeGlobalAttributeKey = forge.anAlphabeticalString()
+        val fakeGlobalAttributeValue = forge.anAlphabeticalString()
+        val fakeGlobalAttributeNewValue =
+            fakeGlobalAttributeValue + forge.anAlphabeticalString(size = 2)
+        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        testedScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes
+        )
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
+
+        // When
+        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName.replace('.', '/'))
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `𝕄 send event once 𝕎 handleEvent(StopView) twice on active view`(
         forge: Forge
     ) {
@@ -1651,6 +1755,7 @@ internal class RumViewScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
+
     @Test
     fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on stopped view`(forge: Forge) {
         // Given
