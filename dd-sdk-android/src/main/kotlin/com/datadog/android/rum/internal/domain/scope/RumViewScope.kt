@@ -346,7 +346,7 @@ internal class RumViewScope(
         )
         val rumEvent = RumEvent(
             event = actionEvent,
-            attributes = emptyMap()
+            attributes = GlobalRum.globalAttributes
         )
         writer.write(rumEvent)
 
