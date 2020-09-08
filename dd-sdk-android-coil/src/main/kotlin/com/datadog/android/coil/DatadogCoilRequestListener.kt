@@ -24,7 +24,7 @@ class DatadogCoilRequestListener : ImageRequest.Listener {
 
     // region Listener
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onError(request: ImageRequest, throwable: Throwable) {
         GlobalRum.get().addError(
             REQUEST_ERROR_MESSAGE,

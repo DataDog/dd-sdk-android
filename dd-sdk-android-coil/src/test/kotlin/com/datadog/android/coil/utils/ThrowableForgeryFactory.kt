@@ -1,4 +1,4 @@
-package com.datadog.android.fresco.utils
+package com.datadog.android.coil.utils
 
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
