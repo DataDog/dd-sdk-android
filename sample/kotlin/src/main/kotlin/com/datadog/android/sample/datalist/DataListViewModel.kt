@@ -9,35 +9,56 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.datadog.android.sample.data.DataRepository
-import com.datadog.android.sample.data.Result
 import com.datadog.android.sample.data.model.Log
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.subjects.PublishSubject
 
-class DataListViewModel(val repository: DataRepository) : ViewModel(),
-    DataRepository.Callback<List<Log>> {
+class DataListViewModel(val repository: DataRepository) : ViewModel() {
 
+    val uiRequestSubject: PublishSubject<UIRequest> = PublishSubject.create()
+    var disposable: Disposable? = null
+    val performRequestObservable: Observable<UIResponse> =
+        uiRequestSubject
+            .switchMap { request ->
+                when (request) {
+                    is UIRequest.FetchData -> repository.getLogs("source:android")
+                        .toObservable()
+                        .map<UIResponse> {
+                            val data = it.data
+                            UIResponse.Success(data)
+                        }
+                        .onErrorReturn {
+                            UIResponse.Error(it.message ?: "Unknown Error")
+                        }
+                }
+            }
     val data = mutableListOf<String>()
     val liveData = MutableLiveData<UIResponse>()
 
-    fun onAddData() {
-        data.add("Item ${data.size}")
-        repository.getLogs("source:android", this)
+    fun performRequest(request: UIRequest) {
+        if (disposable == null) {
+            disposable = performRequestObservable
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        val data = it
+                        liveData.value = data
+                    }
+        }
+        uiRequestSubject.onNext(request)
     }
 
     fun observeLiveData(): LiveData<UIResponse> {
         return liveData
     }
 
-    override fun onSuccess(result: Result.Success<List<Log>>) {
-        liveData.value = UIResponse.Success(result.data)
-    }
-
-    override fun onFailure(failure: Result.Failure) {
-        val errorMessage = failure.message ?: failure.throwable?.message ?: "Unknown error"
-        liveData.value = UIResponse.Error(errorMessage)
-    }
-
     sealed class UIResponse {
         class Success(val data: List<Log>) : UIResponse()
         class Error(val message: String) : UIResponse()
+    }
+
+    sealed class UIRequest() {
+        object FetchData : UIRequest()
     }
 }

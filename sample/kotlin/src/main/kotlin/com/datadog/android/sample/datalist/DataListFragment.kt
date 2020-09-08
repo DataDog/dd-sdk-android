@@ -28,7 +28,7 @@ class DataListFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel =
-            SampleApplication.getViewModelFactory(context!!).create(DataListViewModel::class.java)
+            SampleApplication.getViewModelFactory(requireContext()).create(DataListViewModel::class.java)
 
         viewModel.observeLiveData().observe(viewLifecycleOwner, Observer {
             when (it) {
@@ -52,7 +52,7 @@ class DataListFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = adapter
         fab = rootView.findViewById(R.id.fab)
-        fab.setOnClickListener { viewModel.onAddData() }
+        fab.setOnClickListener { viewModel.performRequest(DataListViewModel.UIRequest.FetchData) }
         return rootView
     }
 

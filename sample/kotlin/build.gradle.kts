@@ -172,6 +172,10 @@ dependencies {
     // Picasso
     "picassoImplementation"("com.squareup.picasso:picasso:2.8")
 
+    // RxJava
+    implementation(Dependencies.Libraries.RxJava)
+    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)

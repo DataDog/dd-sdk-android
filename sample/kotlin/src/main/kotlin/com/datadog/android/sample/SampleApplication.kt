@@ -34,6 +34,7 @@ import com.google.gson.JsonObject
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
@@ -53,6 +54,7 @@ class SampleApplication : Application() {
     private val retrofitClient = Retrofit.Builder()
         .baseUrl("https://api.datadoghq.com/api/v2/")
         .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
         .client(okHttpClient)
         .build()
 

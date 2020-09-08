@@ -63,6 +63,7 @@ object Dependencies {
         const val Coil = "0.12.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
+        const val RxJava = "3.0.0"
         const val Timber = "4.7.1"
 
         // NDK
@@ -153,8 +154,7 @@ object Dependencies {
             "com.google.android.material:material:${Versions.GoogleMaterial}"
         )
 
-        // INTEGRATIONS
-
+        // Integrations
         const val Coil = "io.coil-kt:coil:${Versions.Coil}"
 
         val Fresco = arrayOf(
@@ -168,14 +168,14 @@ object Dependencies {
             "com.github.bumptech.glide:okhttp3-integration:${Versions.Glide}"
         )
 
+        const val RxJava = "io.reactivex.rxjava3:rxjava:${Versions.RxJava}"
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
 
-        const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
-
+        // Tools
         const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
         const val DetektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.Detekt}"
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
-
+        const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
         const val Robolectric = "org.robolectric:android-all:${Versions.Robolectric}"
     }
 

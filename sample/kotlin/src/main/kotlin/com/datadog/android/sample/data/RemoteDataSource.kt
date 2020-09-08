@@ -8,7 +8,7 @@ package com.datadog.android.sample.data
 
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.model.LogsCollection
-import retrofit2.Call
+import io.reactivex.rxjava3.core.Single
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Query
@@ -21,5 +21,5 @@ interface RemoteDataSource {
         "DD-APPLICATION-KEY:${BuildConfig.DD_APPLICATION_KEY}"
     )
     @GET("logs/events")
-    fun getLogs(@Query("filter[query]") query: String): Call<LogsCollection>
+    fun getLogs(@Query("filter[query]") query: String): Single<LogsCollection>
 }
