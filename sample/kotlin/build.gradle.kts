@@ -131,6 +131,7 @@ dependencies {
     api(project(":dd-sdk-android"))
     api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
+    api(project(":dd-sdk-android-rx"))
     api(project(":dd-sdk-android-timber"))
     "coilApi"(project(":dd-sdk-android-coil"))
     "glideApi"(project(":dd-sdk-android-glide"))

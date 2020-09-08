@@ -8,6 +8,7 @@ package com.datadog.android.sample.datalist
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.datadog.android.rx.sendErrorToDatadog
 import com.datadog.android.sample.data.DataRepository
 import com.datadog.android.sample.data.model.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -17,34 +18,32 @@ import io.reactivex.rxjava3.subjects.PublishSubject
 
 class DataListViewModel(val repository: DataRepository) : ViewModel() {
 
-    val uiRequestSubject: PublishSubject<UIRequest> = PublishSubject.create()
-    var disposable: Disposable? = null
-    val performRequestObservable: Observable<UIResponse> =
+    private val uiRequestSubject: PublishSubject<UIRequest> = PublishSubject.create()
+    private var disposable: Disposable? = null
+    private val performRequestObservable: Observable<UIResponse> =
         uiRequestSubject
             .switchMap { request ->
                 when (request) {
                     is UIRequest.FetchData -> repository.getLogs("source:android")
+                        .sendErrorToDatadog()
                         .toObservable()
                         .map<UIResponse> {
-                            val data = it.data
-                            UIResponse.Success(data)
+                            UIResponse.Success(it.data)
                         }
                         .onErrorReturn {
                             UIResponse.Error(it.message ?: "Unknown Error")
                         }
                 }
             }
-    val data = mutableListOf<String>()
-    val liveData = MutableLiveData<UIResponse>()
+    private val liveData = MutableLiveData<UIResponse>()
 
     fun performRequest(request: UIRequest) {
         if (disposable == null) {
             disposable = performRequestObservable
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        val data = it
-                        liveData.value = data
-                    }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    liveData.value = it
+                }
         }
         uiRequestSubject.onNext(request)
     }
