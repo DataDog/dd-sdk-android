@@ -752,12 +752,16 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ApplicationStarted) on active view`(
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(ApplicationStarted) on active view`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
-        @LongForgery(0) duration: Long
+        @LongForgery(0) duration: Long,
+        forge: Forge
     ) {
         // Given
+        GlobalRum.globalAttributes.clear()
+        val fakeGlobalAttributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         val eventTime = Time()
         val startedNanos = eventTime.nanoTime - duration
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
@@ -769,6 +773,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
+                .hasAttributes(fakeGlobalAttributes)
                 .hasNetworkInfo(null)
                 .hasActionData {
                     hasTimestamp(testedScope.eventTimestamp)
@@ -785,7 +790,7 @@ internal class RumViewScopeTest {
                 }
             assertThat(lastValue)
                 .hasNetworkInfo(null)
-                .hasAttributes(fakeAttributes)
+                .hasAttributes(fakeAttributes + fakeGlobalAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
