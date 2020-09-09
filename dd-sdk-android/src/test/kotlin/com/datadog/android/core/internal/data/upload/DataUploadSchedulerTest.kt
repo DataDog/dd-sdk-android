@@ -52,7 +52,7 @@ internal class DataUploadSchedulerTest {
         // Then
         verify(mockExecutor).schedule(
             any(),
-            eq(DataUploadRunnable.DEFAULT_DELAY),
+            eq(DataUploadRunnable.DEFAULT_DELAY_MS),
             eq(TimeUnit.MILLISECONDS)
         )
     }
@@ -69,7 +69,7 @@ internal class DataUploadSchedulerTest {
         val argumentCaptor = argumentCaptor<Runnable>()
         verify(mockExecutor).schedule(
             argumentCaptor.capture(),
-            eq(DataUploadRunnable.DEFAULT_DELAY),
+            eq(DataUploadRunnable.DEFAULT_DELAY_MS),
             eq(TimeUnit.MILLISECONDS)
         )
         verify(mockExecutor).remove(argumentCaptor.firstValue)
