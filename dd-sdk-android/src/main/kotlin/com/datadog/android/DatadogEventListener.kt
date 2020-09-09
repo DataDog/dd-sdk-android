@@ -16,10 +16,12 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
 import okhttp3.Call
+import okhttp3.Connection
 import okhttp3.EventListener
 import okhttp3.Handshake
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.Response
 
 /**
@@ -39,7 +41,7 @@ import okhttp3.Response
  * @see [Factory]
  */
 class DatadogEventListener
-internal constructor(val key: String) : EventListener() {
+internal constructor(val key: String, val delegate: EventListener = NONE) : EventListener() {
 
     private var callStart = 0L
 
@@ -60,26 +62,31 @@ internal constructor(val key: String) : EventListener() {
 
     // region EventListener
 
+    /** @inheritdoc */
     override fun callStart(call: Call) {
         super.callStart(call)
+        delegate.callStart(call)
         callStart = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
         super.dnsStart(call, domainName)
+        delegate.dnsStart(call, domainName)
         dnsStart = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun dnsEnd(call: Call, domainName: String, inetAddressList: MutableList<InetAddress>) {
         super.dnsEnd(call, domainName, inetAddressList)
+        delegate.dnsEnd(call, domainName, inetAddressList)
         dnsEnd = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         super.connectStart(call, inetSocketAddress, proxy)
+        delegate.connectStart(call, inetSocketAddress, proxy)
         connStart = System.nanoTime()
     }
 
@@ -91,24 +98,28 @@ internal constructor(val key: String) : EventListener() {
         protocol: Protocol?
     ) {
         super.connectEnd(call, inetSocketAddress, proxy, protocol)
+        delegate.connectEnd(call, inetSocketAddress, proxy, protocol)
         connEnd = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun secureConnectStart(call: Call) {
         super.secureConnectStart(call)
+        delegate.secureConnectStart(call)
         sslStart = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun secureConnectEnd(call: Call, handshake: Handshake?) {
         super.secureConnectEnd(call, handshake)
+        delegate.secureConnectEnd(call, handshake)
         sslEnd = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
+        delegate.responseHeadersStart(call)
         (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
         headersStart = System.nanoTime()
     }
@@ -116,6 +127,7 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
+        delegate.responseHeadersEnd(call, response)
         headersEnd = System.nanoTime()
         if (response.code() >= 400) {
             sendTiming()
@@ -125,25 +137,77 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun responseBodyStart(call: Call) {
         super.responseBodyStart(call)
+        delegate.responseBodyStart(call)
         bodyStart = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun responseBodyEnd(call: Call, byteCount: Long) {
         super.responseBodyEnd(call, byteCount)
+        delegate.responseBodyEnd(call, byteCount)
         bodyEnd = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun callEnd(call: Call) {
         super.callEnd(call)
+        delegate.callEnd(call)
         sendTiming()
     }
 
     /** @inheritdoc */
     override fun callFailed(call: Call, ioe: IOException) {
         super.callFailed(call, ioe)
+        delegate.callFailed(call, ioe)
         sendTiming()
+    }
+
+    /** @inheritdoc */
+    override fun connectFailed(
+        call: Call,
+        inetSocketAddress: InetSocketAddress,
+        proxy: Proxy,
+        protocol: Protocol?,
+        ioe: IOException
+    ) {
+        super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe)
+        delegate.connectFailed(call, inetSocketAddress, proxy, protocol, ioe)
+    }
+
+    /** @inheritdoc */
+    override fun connectionAcquired(call: Call, connection: Connection) {
+        super.connectionAcquired(call, connection)
+        delegate.connectionAcquired(call, connection)
+    }
+
+    /** @inheritdoc */
+    override fun connectionReleased(call: Call, connection: Connection) {
+        super.connectionReleased(call, connection)
+        delegate.connectionReleased(call, connection)
+    }
+
+    /** @inheritdoc */
+    override fun requestHeadersStart(call: Call) {
+        super.requestHeadersStart(call)
+        delegate.requestHeadersStart(call)
+    }
+
+    /** @inheritdoc */
+    override fun requestHeadersEnd(call: Call, request: Request) {
+        super.requestHeadersEnd(call, request)
+        delegate.requestHeadersEnd(call, request)
+    }
+
+    /** @inheritdoc */
+    override fun requestBodyStart(call: Call) {
+        super.requestBodyStart(call)
+        delegate.requestBodyStart(call)
+    }
+
+    /** @inheritdoc */
+    override fun requestBodyEnd(call: Call, byteCount: Long) {
+        super.requestBodyEnd(call, byteCount)
+        delegate.requestBodyEnd(call, byteCount)
     }
 
     // endregion
@@ -211,12 +275,23 @@ internal constructor(val key: String) : EventListener() {
      *       .eventListenerFactory(new DatadogEventListener.Factory())
      *       .build();
      * ```
+     *
+     * @param delegate Optionally you could provide another EventListener.Factory as delegate witch
+     * will get all events
      */
-    class Factory : EventListener.Factory {
+    class Factory(
+        val delegate: EventListener.Factory = NoOpEventListenerFactory()
+    ) : EventListener.Factory {
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
             val key = identifyRequest(call.request())
-            return DatadogEventListener(key)
+            return DatadogEventListener(key, delegate.create(call))
+        }
+    }
+
+    internal class NoOpEventListenerFactory : EventListener.Factory {
+        override fun create(call: Call): EventListener {
+            return NONE
         }
     }
 }

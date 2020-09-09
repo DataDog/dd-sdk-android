@@ -60,7 +60,15 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun responseBodyEnd(okhttp3.Call, Long)
   override fun callEnd(okhttp3.Call)
   override fun callFailed(okhttp3.Call, java.io.IOException)
+  override fun connectFailed(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?, java.io.IOException)
+  override fun connectionAcquired(okhttp3.Call, okhttp3.Connection)
+  override fun connectionReleased(okhttp3.Call, okhttp3.Connection)
+  override fun requestHeadersStart(okhttp3.Call)
+  override fun requestHeadersEnd(okhttp3.Call, okhttp3.Request)
+  override fun requestBodyStart(okhttp3.Call)
+  override fun requestBodyEnd(okhttp3.Call, Long)
   class Factory : okhttp3.EventListener.Factory
+    constructor(okhttp3.EventListener.Factory = NoOpEventListenerFactory())
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
   constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
