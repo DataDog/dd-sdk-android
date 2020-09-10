@@ -36,6 +36,7 @@ private constructor(
 
     internal data class CoreConfig(
         var needsClearTextHttp: Boolean = false,
+        val envName: String = "",
         val serviceName: String? = null
     )
 
@@ -119,7 +120,7 @@ private constructor(
             envName
         )
 
-        private var coreConfig = CoreConfig()
+        private var coreConfig = CoreConfig(envName = envName)
 
         private var logsEnabled: Boolean = true
         private var tracesEnabled: Boolean = true
@@ -205,11 +206,11 @@ private constructor(
          */
         @Deprecated("This property is now mandatory for initializing the SDK")
         fun setEnvironmentName(envName: String): Builder {
-            val validEnvName = envName.replace(Regex("[\"']+"), "")
-            logsConfig = logsConfig.copy(envName = validEnvName)
-            tracesConfig = tracesConfig.copy(envName = validEnvName)
-            crashReportConfig = crashReportConfig.copy(envName = validEnvName)
-            rumConfig = rumConfig.copy(envName = validEnvName)
+            logsConfig = logsConfig.copy(envName = envName)
+            tracesConfig = tracesConfig.copy(envName = envName)
+            crashReportConfig = crashReportConfig.copy(envName = envName)
+            rumConfig = rumConfig.copy(envName = envName)
+            coreConfig = coreConfig.copy(envName = envName)
             return this
         }
 

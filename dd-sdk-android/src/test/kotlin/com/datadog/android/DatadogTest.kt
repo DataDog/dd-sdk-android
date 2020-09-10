@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
@@ -32,6 +33,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
@@ -43,6 +45,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -79,7 +82,7 @@ internal class DatadogTest {
     @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @TempDir
@@ -97,6 +100,7 @@ internal class DatadogTest {
 
     @AfterEach
     fun `tear down`() {
+        Datadog.isDebug = false
         try {
             Datadog.invokeMethod("stop")
         } catch (e: IllegalStateException) {
@@ -163,6 +167,46 @@ internal class DatadogTest {
 
         // Then
         assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `M return false and log an error W initialize() {envName not valid, isDebug=false}`(
+        forge: Forge,
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        stubContextAsNotDebuggable(mockAppContext)
+        val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
+        val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, config)
+        val initialized = Datadog.isInitialized()
+
+        // Then
+        verify(mockDevLogHandler).handleLog(AndroidLog.ERROR, Datadog.MESSAGE_ENV_NAME_NOT_VALID)
+        assertThat(initialized).isFalse()
+    }
+
+    @Test
+    fun `M throw an exception W initialize() {envName not valid, isDebug=true}`(
+        forge: Forge,
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        stubContextAsDebuggable(mockAppContext)
+        val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
+        val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
+            .build()
+
+        // When
+        assertThatThrownBy {
+            Datadog.initialize(
+                mockAppContext,
+                config
+            )
+        }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
     }
 
     @Test
@@ -301,6 +345,20 @@ internal class DatadogTest {
                     "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion"
                 )
             )
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun stubContextAsDebuggable(mockContext: Context) {
+        val applicationInfo = mockContext.applicationInfo
+        applicationInfo.flags = ApplicationInfo.FLAG_DEBUGGABLE
+    }
+
+    private fun stubContextAsNotDebuggable(mockContext: Context) {
+        val applicationInfo = mockContext.applicationInfo
+        applicationInfo.flags = ApplicationInfo.FLAG_DEBUGGABLE.inv()
     }
 
     // endregion
