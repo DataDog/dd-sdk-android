@@ -18,6 +18,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import java.util.UUID
 
 internal class RumResourceScope(
     internal val parentScope: RumScope,
@@ -28,6 +29,7 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
+    internal val resourceId: String = UUID.randomUUID().toString()
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
@@ -126,6 +128,7 @@ internal class RumResourceScope(
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
+                id = resourceId,
                 type = kind.toSchemaType(),
                 url = url,
                 duration = duration,

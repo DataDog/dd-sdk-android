@@ -157,6 +157,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasResourceData {
+                    hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -204,6 +205,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasResourceData {
+                    hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -250,6 +252,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasResourceData {
+                    hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -298,6 +301,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasResourceData {
+                    hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -348,6 +352,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasResourceData {
+                    hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)

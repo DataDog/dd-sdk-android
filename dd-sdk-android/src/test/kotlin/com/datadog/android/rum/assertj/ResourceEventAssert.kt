@@ -9,6 +9,7 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
@@ -23,6 +24,17 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         actual,
         ResourceEventAssert::class.java
     ) {
+
+    fun hasId(expected: String): ResourceEventAssert {
+        assertThat(actual.resource.id)
+            .overridingErrorMessage(
+                "Expected event data to have resource.id $expected " +
+                    "but was ${actual.resource.id}"
+            )
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isEqualTo(expected)
+        return this
+    }
 
     fun hasTimestamp(
         expected: Long,
