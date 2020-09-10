@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
@@ -169,6 +170,60 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send Resource with trace info 𝕎 handleEvent(StopResource)`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeSpanId: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeTraceId: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes().toMutableMap()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        attributes[RumAttributes.TRACE_ID] = fakeTraceId
+        attributes[RumAttributes.SPAN_ID] = fakeSpanId
+
+        // When
+        Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasResourceData {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasTraceId(fakeTraceId)
+                    hasSpanId(fakeSpanId)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -217,6 +272,8 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -264,6 +321,8 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -314,6 +373,8 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -365,6 +426,8 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
                 }
         }
         verify(mockParentScope).handleEvent(

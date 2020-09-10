@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
@@ -118,6 +119,8 @@ internal class RumResourceScope(
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
+        val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
+        val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
 
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
@@ -157,7 +160,10 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ResourceEvent.Type.USER
             ),
-            dd = ResourceEvent.Dd()
+            dd = ResourceEvent.Dd(
+                traceId = traceId,
+                spanId = spanId
+            )
         )
         val rumEvent = RumEvent(
             event = resourceEvent,
