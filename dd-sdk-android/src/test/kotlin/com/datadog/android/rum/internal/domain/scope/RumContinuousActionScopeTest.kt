@@ -205,6 +205,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -255,6 +256,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasTargetName(name)
                     hasType(type)
@@ -303,6 +305,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -354,6 +357,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -403,6 +407,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -453,6 +458,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -499,6 +505,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -551,6 +558,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -589,6 +597,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -626,6 +635,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -663,6 +673,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -703,6 +714,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -743,6 +755,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -790,6 +803,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -831,6 +845,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -872,6 +887,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -915,6 +931,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -956,6 +973,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -1084,6 +1102,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -1127,6 +1146,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
@@ -1171,6 +1191,7 @@ internal class RumContinuousActionScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasActionData {
+                    hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)

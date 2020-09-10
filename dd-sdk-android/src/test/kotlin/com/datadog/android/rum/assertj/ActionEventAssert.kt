@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import org.assertj.core.api.AbstractObjectAssert
@@ -19,6 +20,28 @@ internal class ActionEventAssert(actual: ActionEvent) :
         actual,
         ActionEventAssert::class.java
     ) {
+
+    fun hasId(expected: String): ActionEventAssert {
+        assertThat(actual.action.id)
+            .overridingErrorMessage(
+                "Expected event data to have action.id $expected " +
+                    "but was ${actual.action.id}"
+            )
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNonNullId(): ActionEventAssert {
+        assertThat(actual.action.id)
+            .overridingErrorMessage(
+                "Expected event data to have non null action.id " +
+                    "but was ${actual.action.id}"
+            )
+            .isNotNull()
+            .isNotEqualTo(RumContext.NULL_UUID)
+        return this
+    }
 
     fun hasTimestamp(
         expected: Long,

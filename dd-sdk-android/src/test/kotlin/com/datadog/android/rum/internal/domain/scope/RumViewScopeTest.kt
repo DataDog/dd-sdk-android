@@ -776,6 +776,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeGlobalAttributes)
                 .hasNetworkInfo(null)
                 .hasActionData {
+                    hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
                     hasType(ActionEvent.Type1.APPLICATION_START)
                     hasNoTarget()
@@ -930,6 +931,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue)
                 .hasNetworkInfo(null)
                 .hasActionData {
+                    hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
                     hasType(ActionEvent.Type1.APPLICATION_START)
                     hasNoTarget()
