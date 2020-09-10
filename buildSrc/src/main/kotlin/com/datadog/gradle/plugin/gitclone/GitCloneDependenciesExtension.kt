@@ -6,15 +6,17 @@
 
 package com.datadog.gradle.plugin.gitclone
 
-open class GitCloneDependenciesExtension {
+import java.io.Serializable
 
-    internal class Dependency(
+open class GitCloneDependenciesExtension : Serializable {
+
+    internal data class Dependency(
         var originRepository: String,
         var originSubFolder: String,
         var excludedPrefixes: List<String>,
         var originRef: String,
         var destinationFolder: String
-    )
+    ) : Serializable
 
     internal val dependencies: MutableList<Dependency> = mutableListOf()
 
