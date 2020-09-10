@@ -448,7 +448,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 reduce delay between runs 𝕎 no batch availabled`(
+    fun `𝕄 increase delay between runs 𝕎 no batch available`(
         @IntForgery(16, 64) runCount: Int
     ) {
         // Given
@@ -479,7 +479,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `𝕄 reduce delay between runs 𝕎 batch fails and should be retried`(
+    fun `𝕄 increase delay between runs 𝕎 batch fails and should be retried`(
         @IntForgery(16, 64) runCount: Int,
         forge: Forge
     ) {
