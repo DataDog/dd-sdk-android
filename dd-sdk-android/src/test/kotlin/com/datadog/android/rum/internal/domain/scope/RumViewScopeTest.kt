@@ -774,7 +774,6 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(fakeGlobalAttributes)
-                .hasNetworkInfo(null)
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -790,7 +789,6 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
             assertThat(lastValue)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes + fakeGlobalAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
@@ -929,7 +927,6 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
-                .hasNetworkInfo(null)
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -945,7 +942,6 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
             assertThat(lastValue)
-                .hasNetworkInfo(null)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
