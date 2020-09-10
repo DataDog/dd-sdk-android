@@ -57,7 +57,13 @@ object RumAttributes {
      * Trace Id related to the resource loading. (Number)
      * This value is filled automatically by the [DatadogInterceptor].
      */
-    const val TRACE_ID: String = "trace_id"
+    const val TRACE_ID: String = "_dd.trace_id"
+
+    /**
+     * Span Id related to the resource loading. (Number)
+     * This value is filled automatically by the [DatadogInterceptor].
+     */
+    const val SPAN_ID: String = "_dd.span_id"
 
     // endregion
 
