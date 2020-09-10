@@ -33,7 +33,7 @@ internal class DataUploadScheduler(
     override fun startScheduling() {
         scheduledThreadPoolExecutor.schedule(
             runnable,
-            DataUploadRunnable.DEFAULT_DELAY,
+            DataUploadRunnable.DEFAULT_DELAY_MS,
             TimeUnit.MILLISECONDS
         )
     }

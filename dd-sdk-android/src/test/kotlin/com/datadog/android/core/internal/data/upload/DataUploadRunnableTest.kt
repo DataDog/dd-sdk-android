@@ -18,6 +18,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
@@ -195,7 +196,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `no batch to send`() {
+    fun `𝕄 do nothing 𝕎 no batch to send`() {
         whenever(mockReader.readNextBatch()) doReturn null
 
         testedRunnable.run()
@@ -204,9 +205,9 @@ internal class DataUploadRunnableTest {
         verify(mockReader, never()).releaseBatch(anyOrNull())
         verifyZeroInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
-            testedRunnable,
-            DataUploadRunnable.MAX_DELAY,
-            TimeUnit.MILLISECONDS
+            eq(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
         )
     }
 
@@ -376,43 +377,145 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `when has batches will increase the frequency up to a specific max`(
-        @Forgery batch: Batch
+    fun `𝕄 reduce delay between runs 𝕎 upload is successful`(
+        @Forgery batch: Batch,
+        @IntForgery(16, 64) runCount: Int
     ) {
+        // Given
         whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
         whenever(mockReader.readNextBatch()).doReturn(batch)
 
-        repeat(30) {
+        // When
+        repeat(runCount) {
             testedRunnable.run()
         }
 
-        val captor = argumentCaptor<Long>()
-        verify(mockThreadPoolExecutor, times(30))
-            .schedule(same(testedRunnable), captor.capture(), eq(TimeUnit.MILLISECONDS))
-        captor.allValues.reduce { previous, next ->
-            assertThat(next).isGreaterThanOrEqualTo(DataUploadRunnable.MIN_DELAY_MS)
-            assertThat(next).isLessThan(DataUploadRunnable.DEFAULT_DELAY)
-            next
+        // Then
+        argumentCaptor<Long> {
+            verify(mockThreadPoolExecutor, times(runCount))
+                .schedule(
+                    same(testedRunnable),
+                    capture(),
+                    eq(TimeUnit.MILLISECONDS)
+                )
+
+            allValues.reduce { previous, next ->
+                assertThat(next)
+                    .isLessThanOrEqualTo(previous)
+                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                next
+            }
         }
     }
 
     @Test
-    fun `when no more batches available the scheduler delay will be increased`(
-        @Forgery batch: Batch
+    fun `𝕄 reduce delay between runs 𝕎 batch fails and should be dropped`(
+        @Forgery batch: Batch,
+        @IntForgery(16, 64) runCount: Int,
+        forge: Forge
     ) {
-        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockReader.readNextBatch())
-            .doReturn(batch)
-            .doReturn(null)
+        // Given
+        whenever(mockDataUploader.upload(any())) doAnswer {
+            forge.anElementFrom(
+                UploadStatus.HTTP_REDIRECTION,
+                UploadStatus.HTTP_CLIENT_ERROR,
+                UploadStatus.UNKNOWN_ERROR
+            )
+        }
+        whenever(mockReader.readNextBatch()).doReturn(batch)
 
-        repeat(2) {
+        // When
+        repeat(runCount) {
             testedRunnable.run()
         }
 
-        val captor = argumentCaptor<Long>()
-        verify(mockThreadPoolExecutor, times(2))
-            .schedule(same(testedRunnable), captor.capture(), eq(TimeUnit.MILLISECONDS))
-        verify(mockThreadPoolExecutor).remove(same(testedRunnable))
-        assertThat(captor.lastValue).isEqualTo(DataUploadRunnable.MAX_DELAY)
+        // Then
+        argumentCaptor<Long> {
+            verify(mockThreadPoolExecutor, times(runCount))
+                .schedule(
+                    same(testedRunnable),
+                    capture(),
+                    eq(TimeUnit.MILLISECONDS)
+                )
+
+            allValues.reduce { previous, next ->
+                assertThat(next)
+                    .isLessThanOrEqualTo(previous)
+                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                next
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 increase delay between runs 𝕎 no batch available`(
+        @IntForgery(16, 64) runCount: Int
+    ) {
+        // Given
+        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockReader.readNextBatch()) doReturn null
+
+        // When
+        repeat(runCount) {
+            testedRunnable.run()
+        }
+
+        // Then
+        argumentCaptor<Long> {
+            verify(mockThreadPoolExecutor, times(runCount))
+                .schedule(
+                    same(testedRunnable),
+                    capture(),
+                    eq(TimeUnit.MILLISECONDS)
+                )
+
+            allValues.reduce { previous, next ->
+                assertThat(next)
+                    .isGreaterThanOrEqualTo(previous)
+                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                next
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 increase delay between runs 𝕎 batch fails and should be retried`(
+        @IntForgery(16, 64) runCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockDataUploader.upload(any())) doAnswer {
+            forge.aValueFrom(
+                UploadStatus::class.java, exclude = listOf(
+                    UploadStatus.SUCCESS,
+                    UploadStatus.HTTP_REDIRECTION,
+                    UploadStatus.HTTP_CLIENT_ERROR,
+                    UploadStatus.UNKNOWN_ERROR
+                )
+            )
+        }
+        whenever(mockReader.readNextBatch()) doReturn null
+
+        // When
+        repeat(runCount) {
+            testedRunnable.run()
+        }
+
+        // Then
+        argumentCaptor<Long> {
+            verify(mockThreadPoolExecutor, times(runCount))
+                .schedule(
+                    same(testedRunnable),
+                    capture(),
+                    eq(TimeUnit.MILLISECONDS)
+                )
+
+            allValues.reduce { previous, next ->
+                assertThat(next)
+                    .isGreaterThanOrEqualTo(previous)
+                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                next
+            }
+        }
     }
 }

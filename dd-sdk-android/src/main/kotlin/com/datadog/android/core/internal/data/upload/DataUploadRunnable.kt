@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.min
 
 internal class DataUploadRunnable(
     private val threadPoolExecutor: ScheduledThreadPoolExecutor,
@@ -27,8 +28,7 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider
 ) : UploadRunnable {
 
-    private var currentDelayInterval =
-        DEFAULT_DELAY
+    private var currentDelayInterval = DEFAULT_DELAY_MS
 
     //  region Runnable
 
@@ -36,11 +36,14 @@ internal class DataUploadRunnable(
         val batch = if (isNetworkAvailable() && isSystemReady()) {
             reader.readNextBatch()
         } else null
+
         if (batch != null) {
             consumeBatch(batch)
         } else {
-            delayTheRunnable()
+            increaseInterval()
         }
+
+        scheduleNextUpload()
     }
 
     // endregion
@@ -60,12 +63,9 @@ internal class DataUploadRunnable(
         return (batteryFullOrCharging || batteryLevel > LOW_BATTERY_THRESHOLD) && !powerSaveMode
     }
 
-    private fun delayTheRunnable() {
-        sdkLogger.i("There was no batch to be sent")
-        currentDelayInterval =
-            DEFAULT_DELAY
+    private fun scheduleNextUpload() {
         threadPoolExecutor.remove(this)
-        threadPoolExecutor.schedule(this, MAX_DELAY, TimeUnit.MILLISECONDS)
+        threadPoolExecutor.schedule(this, currentDelayInterval, TimeUnit.MILLISECONDS)
     }
 
     private fun consumeBatch(batch: Batch) {
@@ -73,24 +73,28 @@ internal class DataUploadRunnable(
         sdkLogger.i("Sending batch $batchId")
         val status = dataUploader.upload(batch.data)
         status.logStatus(dataUploader.javaClass.simpleName, batch.data.size)
-        if (status in dropableBatchStatus) {
+        if (status in droppableBatchStatus) {
             reader.dropBatch(batchId)
+            decreaseInterval()
         } else {
             reader.releaseBatch(batchId)
+            increaseInterval()
         }
-        currentDelayInterval = decreaseInterval()
-        threadPoolExecutor.schedule(this, currentDelayInterval, TimeUnit.MILLISECONDS)
     }
 
-    private fun decreaseInterval(): Long {
-        return max(MIN_DELAY_MS, currentDelayInterval * DELAY_PERCENT / 100)
+    private fun decreaseInterval() {
+        currentDelayInterval = max(MIN_DELAY_MS, currentDelayInterval * DECREASE_PERCENT / 100)
+    }
+
+    private fun increaseInterval() {
+        currentDelayInterval = min(MAX_DELAY_MS, currentDelayInterval * INCREASE_PERCENT / 100)
     }
 
     // endregion
 
     companion object {
 
-        private val dropableBatchStatus = setOf(
+        private val droppableBatchStatus = setOf(
             UploadStatus.SUCCESS,
             UploadStatus.HTTP_REDIRECTION,
             UploadStatus.HTTP_CLIENT_ERROR,
@@ -104,9 +108,10 @@ internal class DataUploadRunnable(
 
         private const val LOW_BATTERY_THRESHOLD = 10
 
-        const val DEFAULT_DELAY = 5000L // 5 seconds
+        const val DEFAULT_DELAY_MS = 5000L // 5 seconds
         const val MIN_DELAY_MS = 1000L // 1 second
-        const val MAX_DELAY = DEFAULT_DELAY * 4 // 20 seconds
-        const val DELAY_PERCENT = 90 // as 90 percent of
+        const val MAX_DELAY_MS = DEFAULT_DELAY_MS * 4 // 20 seconds
+        const val DECREASE_PERCENT = 90
+        const val INCREASE_PERCENT = 110
     }
 }
