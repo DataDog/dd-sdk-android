@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.fresco
+package com.datadog.android.coil
 
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import coil.request.ImageRequest
-import com.datadog.android.coil.DatadogCoilRequestListener
-import com.datadog.android.fresco.utils.Configurator
+import com.datadog.android.coil.utils.Configurator
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor

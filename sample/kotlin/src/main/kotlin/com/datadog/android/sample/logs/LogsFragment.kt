@@ -78,17 +78,4 @@ class LogsFragment :
             return label
         }
     }
-
-    companion object {
-
-        // NDK Crash signals
-        const val SIGILL = 4 // "Illegal instruction
-        const val SIGABRT = 6 // "Abort program"
-        const val SIGSEGV = 11 // "Segmentation violation (invalid memory reference)"
-        const val SIGQUIT = 3 // Application Non Responsive (ANR)
-
-        fun newInstance(): LogsFragment {
-            return LogsFragment()
-        }
-    }
 }

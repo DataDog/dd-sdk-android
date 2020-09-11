@@ -23,7 +23,7 @@ class DatadogFrescoCacheListener : CacheEventListener {
 
     // region CacheEventListener
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onMiss(cacheEvent: CacheEvent) {
         // NoOp
     }
@@ -39,32 +39,32 @@ class DatadogFrescoCacheListener : CacheEventListener {
         )
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onEviction(cacheEvent: CacheEvent) {
         // NoOp
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onHit(cacheEvent: CacheEvent) {
         // NoOp
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onCleared() {
         // NoOp
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onWriteAttempt(cacheEvent: CacheEvent) {
         // NoOp
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onWriteSuccess(cacheEvent: CacheEvent) {
         // NoOp
     }
 
-    /** @inheritdoc */
+    /** @inheritDoc */
     override fun onWriteException(cacheEvent: CacheEvent) {
         GlobalRum.get().addError(
             CACHE_ERROR_WRITE_MESSAGE,

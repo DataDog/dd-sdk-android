@@ -54,8 +54,9 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-fresco:assemble",
         ":dd-sdk-android-glide:assemble",
         ":dd-sdk-android-ktx:assemble",
-        ":dd-sdk-android-timber:assemble",
-        ":dd-sdk-android-ndk:assemble"
+        ":dd-sdk-android-ndk:assemble",
+        ":dd-sdk-android-rx:assemble",
+        ":dd-sdk-android-timber:assemble"
     )
 }
 
@@ -66,8 +67,9 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-fresco:testReleaseUnitTest",
         ":dd-sdk-android-glide:testReleaseUnitTest",
         ":dd-sdk-android-ktx:testReleaseUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-android-ndk:testReleaseUnitTest"
+        ":dd-sdk-android-ndk:testReleaseUnitTest",
+        ":dd-sdk-android-rx:testReleaseUnitTest",
+        ":dd-sdk-android-timber:testReleaseUnitTest"
     )
 }
 
@@ -78,8 +80,9 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-fresco:testDebugUnitTest",
         ":dd-sdk-android-glide:testDebugUnitTest",
         ":dd-sdk-android-ktx:testDebugUnitTest",
-        ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-ndk:testDebugUnitTest"
+        ":dd-sdk-android-ndk:testDebugUnitTest",
+        ":dd-sdk-android-rx:testDebugUnitTest",
+        ":dd-sdk-android-timber:testDebugUnitTest"
     )
 }
 
@@ -107,8 +110,9 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-fresco:ktlintCheck",
         ":dd-sdk-android-glide:ktlintCheck",
         ":dd-sdk-android-ktx:ktlintCheck",
-        ":dd-sdk-android-timber:ktlintCheck",
         ":dd-sdk-android-ndk:ktlintCheck",
+        ":dd-sdk-android-rx:ktlintCheck",
+        ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -123,8 +127,9 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-fresco:lintRelease",
         ":dd-sdk-android-glide:lintRelease",
         ":dd-sdk-android-ktx:lintRelease",
-        ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-android-ndk:lintRelease"
+        ":dd-sdk-android-ndk:lintRelease",
+        ":dd-sdk-android-rx:lintRelease",
+        ":dd-sdk-android-timber:lintRelease"
     )
 }
 
@@ -135,8 +140,9 @@ tasks.register("detektAll") {
         ":dd-sdk-android-fresco:detekt",
         ":dd-sdk-android-glide:detekt",
         ":dd-sdk-android-ktx:detekt",
-        ":dd-sdk-android-timber:detekt",
         ":dd-sdk-android-ndk:detekt",
+        ":dd-sdk-android-rx:detekt",
+        ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
         ":tools:unit:detekt"
@@ -157,6 +163,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android-ktx:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-ndk:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ndk:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-rx:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",

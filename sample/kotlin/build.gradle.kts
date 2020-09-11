@@ -131,6 +131,7 @@ dependencies {
     api(project(":dd-sdk-android"))
     api(project(":dd-sdk-android-ktx"))
     api(project(":dd-sdk-android-ndk"))
+    api(project(":dd-sdk-android-rx"))
     api(project(":dd-sdk-android-timber"))
     "coilApi"(project(":dd-sdk-android-coil"))
     "glideApi"(project(":dd-sdk-android-glide"))
@@ -172,6 +173,10 @@ dependencies {
     // Picasso
     "picassoImplementation"("com.squareup.picasso:picasso:2.8")
 
+    // RxJava
+    implementation(Dependencies.Libraries.RxJava)
+    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
