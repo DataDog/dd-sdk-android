@@ -759,12 +759,11 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        GlobalRum.globalAttributes.clear()
-        val fakeGlobalAttributes = forge.aMap { anHexadecimalString() to anAsciiString() }
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         val eventTime = Time()
         val startedNanos = eventTime.nanoTime - duration
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
+        GlobalRum.globalAttributes.putAll(attributes)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -773,7 +772,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
-                .hasAttributes(fakeGlobalAttributes)
+                .hasAttributes(attributes)
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -789,7 +788,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes + fakeGlobalAttributes)
+                .hasAttributes(fakeAttributes + attributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName.replace('.', '/'))
@@ -1495,7 +1494,6 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -1504,6 +1502,7 @@ internal class RumViewScopeTest {
             false,
             emptyMap()
         )
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
         // When
@@ -1619,7 +1618,6 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -1628,6 +1626,7 @@ internal class RumViewScopeTest {
             true,
             emptyMap()
         )
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
         // When
@@ -1823,6 +1822,15 @@ internal class RumViewScopeTest {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
+    }
+
+    private fun forgeGlobalAttributes(
+        forge: Forge,
+        existingAttributes: Map<String, Any?>
+    ): Map<String, Any?> {
+        val existingKeys = existingAttributes.keys
+        return forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
+            .filter { it.key !in existingKeys }
     }
 
     // endregion

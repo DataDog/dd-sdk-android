@@ -208,7 +208,7 @@ internal class RumActionScope(
 
     companion object {
         internal const val ACTION_INACTIVITY_MS = 100L
-        internal const val ACTION_MAX_DURATION_MS = 10000L
+        internal const val ACTION_MAX_DURATION_MS = 5000L
         private val ACTION_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_INACTIVITY_MS)
         internal val ACTION_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_MAX_DURATION_MS)
 
