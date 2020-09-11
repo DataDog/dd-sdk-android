@@ -20,6 +20,7 @@ import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
+import java.lang.IllegalArgumentException
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -73,6 +74,8 @@ object Datadog {
      * @param context your application context
      * @param config the configuration for the SDK library
      * @see [DatadogConfig]
+     * @throws IllegalArgumentException if the env name is using illegal characters and your
+     * application is in debug mode otherwise returns false and stops initializing the SDK
      */
     @Suppress("LongMethod")
     @JvmStatic
@@ -86,6 +89,12 @@ object Datadog {
         }
 
         val appContext = context.applicationContext
+        // the logic in this function depends on this value so always resolve isDebug first
+        isDebug = resolveIsDebug(context)
+
+        if (!validateCoreConfig(config.coreConfig)) {
+            return
+        }
 
         // always initialize Core Features first
         CoreFeature.initialize(appContext, config.coreConfig)
@@ -142,8 +151,6 @@ object Datadog {
         }
 
         setupLifecycleMonitorCallback(appContext)
-
-        isDebug = resolveIsDebug(context)
 
         initialized.set(true)
 
@@ -261,6 +268,19 @@ object Datadog {
 
     // region Internal Initialization
 
+    @Suppress("ThrowingInternalException")
+    private fun validateCoreConfig(config: DatadogConfig.CoreConfig): Boolean {
+        if (!config.envName.matches(Regex(ENV_NAME_VALIDATION_REG_EX))) {
+            if (isDebug) {
+                throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
+            } else {
+                devLogger.e(MESSAGE_ENV_NAME_NOT_VALID)
+                return false
+            }
+        }
+        return true
+    }
+
     private fun setupLifecycleMonitorCallback(appContext: Context) {
         if (appContext is Application) {
             val callback = ProcessLifecycleCallback(CoreFeature.networkInfoProvider, appContext)
@@ -284,6 +304,11 @@ object Datadog {
         "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
 
     internal const val SHUTDOWN_THREAD = "datadog_shutdown"
+    internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"
+    internal const val MESSAGE_ENV_NAME_NOT_VALID =
+        "The environment name should contain maximum 196 of the following allowed characters " +
+            "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
+            "In this case the Datadog SDK will not be initialised."
 
     // endregion
 }

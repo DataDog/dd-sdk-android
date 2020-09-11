@@ -80,7 +80,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -130,7 +131,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -178,6 +180,12 @@ internal class DatadogConfigBuilderTest {
 
         // Then
         assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
+                )
+            )
         assertThat(config.logsConfig)
             .isEqualTo(
                 DatadogConfig.FeatureConfig(
@@ -233,6 +241,7 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
+                    envName = fakeEnvName,
                     serviceName = serviceName
                 )
             )
@@ -255,66 +264,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
-                )
-            )
-        assertThat(config.logsConfig)
-            .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.LOGS_US,
-                    envName
-                )
-            )
-        assertThat(config.tracesConfig)
-            .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.TRACES_US,
-                    envName
-                )
-            )
-        assertThat(config.crashReportConfig)
-            .isEqualTo(
-                DatadogConfig.FeatureConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.LOGS_US,
-                    envName
-                )
-            )
-
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
+                    needsClearTextHttp = false,
                     envName = envName
-                )
-            )
-    }
-
-    @Test
-    fun `𝕄 build config with envName 𝕎 setEnvironmentName() and build() {invalid envName}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) envName: String
-    ) {
-        // When
-        val config = testedBuilder
-            .setLogsEnabled(true)
-            .setTracesEnabled(true)
-            .setCrashReportsEnabled(true)
-            .setRumEnabled(true)
-            .setEnvironmentName("\"'$envName'\"")
-            .build()
-
-        // Then
-        assertThat(config.coreConfig)
-            .isEqualTo(
-                DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
                 )
             )
         assertThat(config.logsConfig)
@@ -370,7 +321,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig).isNull()
@@ -394,7 +346,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -451,7 +404,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -507,7 +461,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -571,7 +526,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = false
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
@@ -636,7 +592,8 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.coreConfig)
             .isEqualTo(
                 DatadogConfig.CoreConfig(
-                    needsClearTextHttp = true
+                    needsClearTextHttp = true,
+                    envName = fakeEnvName
                 )
             )
         assertThat(config.logsConfig)
