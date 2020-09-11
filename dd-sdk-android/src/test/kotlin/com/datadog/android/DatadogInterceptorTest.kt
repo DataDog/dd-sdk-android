@@ -55,7 +55,8 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId
+            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.SPAN_ID to fakeSpanId
         )
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
@@ -94,7 +95,8 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId
+            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.SPAN_ID to fakeSpanId
         )
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()

@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
@@ -60,16 +59,6 @@ internal class RumEventAssert(actual: RumEvent) :
 
         ErrorEventAssert(actual.event as ErrorEvent).assert()
 
-        return this
-    }
-
-    fun hasNetworkInfo(expected: NetworkInfo?): RumEventAssert {
-        // assertThat(actual.networkInfo)
-        //     .overridingErrorMessage(
-        //         "Expected RUM event to have networkInfo $expected " +
-        //             "but was ${actual.networkInfo}"
-        //     )
-        //     .isEqualTo(expected)
         return this
     }
 

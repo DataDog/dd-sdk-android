@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
@@ -18,6 +19,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import java.util.UUID
 
 internal class RumResourceScope(
     internal val parentScope: RumScope,
@@ -28,6 +30,7 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>
 ) : RumScope {
 
+    internal val resourceId: String = UUID.randomUUID().toString()
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
@@ -116,6 +119,8 @@ internal class RumResourceScope(
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
+        val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
+        val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
 
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
@@ -126,6 +131,7 @@ internal class RumResourceScope(
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
+                id = resourceId,
                 type = kind.toSchemaType(),
                 url = url,
                 duration = duration,
@@ -154,7 +160,10 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ResourceEvent.Type.USER
             ),
-            dd = ResourceEvent.Dd()
+            dd = ResourceEvent.Dd(
+                traceId = traceId,
+                spanId = spanId
+            )
         )
         val rumEvent = RumEvent(
             event = resourceEvent,

@@ -144,7 +144,10 @@ internal constructor(
         val attributes = if (span == null) {
             emptyMap<String, Any?>()
         } else {
-            mapOf(RumAttributes.TRACE_ID to span.context().toTraceId())
+            mapOf(
+                RumAttributes.TRACE_ID to span.context().toTraceId(),
+                RumAttributes.SPAN_ID to span.context().toSpanId()
+            )
         }
         GlobalRum.get().stopResource(
             requestId,
