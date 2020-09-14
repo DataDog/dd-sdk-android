@@ -28,7 +28,7 @@ class DataListViewModel(val repository: DataRepository) : ViewModel() {
                         .sendErrorToDatadog()
                         .toObservable()
                         .map<UIResponse> {
-                            UIResponse.Success(it.data)
+                            UIResponse.Success(it)
                         }
                         .onErrorReturn {
                             UIResponse.Error(it.message ?: "Unknown Error")

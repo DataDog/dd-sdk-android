@@ -52,7 +52,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions("version", "ill")
+    flavorDimensions("version", "ill", "ls")
     productFlavors {
         register("staging") {
             dimension = "version"
@@ -79,6 +79,9 @@ android {
         register("coil") {
             dimension = "ill"
         }
+        register("sqlite") {
+            dimension = "ls"
+        }
     }
 
     sourceSets.named("main") {
@@ -96,6 +99,9 @@ android {
     }
     sourceSets.named("coil") {
         java.srcDir("src/coil/kotlin")
+    }
+    sourceSets.named("sqlite") {
+        java.srcDir("src/sqlite/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -181,6 +187,9 @@ dependencies {
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Timber)
+
+    // Stetho
+    api("com.facebook.stetho:stetho:1.5.1")
 }
 
 kotlinConfig()
