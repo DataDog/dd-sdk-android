@@ -234,9 +234,7 @@ internal class RumContinuousActionScopeTest {
         forge: Forge
     ) {
         // Given
-        assumeTrue {
-            type != fakeType
-        }
+        assumeTrue { type != fakeType }
         val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)

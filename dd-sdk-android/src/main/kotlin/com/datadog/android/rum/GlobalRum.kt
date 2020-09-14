@@ -16,7 +16,7 @@ import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
@@ -172,7 +172,7 @@ object GlobalRum {
     @Suppress("unused")
     @JvmStatic
     private fun resetSession() {
-        (monitor as? DatadogRumMonitor)?.resetSession()
+        (monitor as? AdvancedRumMonitor)?.resetSession()
     }
 
     // endregion

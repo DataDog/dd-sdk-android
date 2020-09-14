@@ -20,6 +20,7 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -162,7 +163,7 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `returns null when orchestrator throws SecurityException`(
+    fun `M return null W readNextBatch() and orchestrator throws SecurityException`(
         forge: Forge
     ) {
         // Given
@@ -177,7 +178,7 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `returns null when orchestrator throws OutOfMemoryError`(
+    fun `M returns null W readNextBatch() and orchestrator throws OutOfMemoryError`(
         forge: Forge
     ) {
         // Given
@@ -192,7 +193,25 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `drops the batch if the file exists`(
+    fun `M returns empty batch W readNextBatch() and file doesn't exist`(
+        @StringForgery dirName: String,
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(File(tempRootDir, dirName), fileName)
+        whenever(mockOrchestrator.getReadableFile(any())).thenReturn(file)
+
+        // When
+        val nextBatch = testedReader.readNextBatch()
+
+        // Then
+        assertThat(nextBatch?.data).isEmpty()
+        assertThat(nextBatch?.id).isEqualTo(file.name)
+    }
+
+    @Test
+    fun `M drop the batch W dropBatch() and file exists`(
         forge: Forge
     ) {
         // Given
@@ -211,7 +230,7 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `does nothing when trying to drop a batch for a file that doesn't exist`(
+    fun `M do nothing W dropBatch() and file doesn't exist`(
         forge: Forge
     ) {
         // Given
@@ -230,7 +249,7 @@ internal class FileReaderTest {
     }
 
     @Test
-    fun `cleans the folder when dropping all batches`(forge: Forge) {
+    fun `M clean root folder W dropAllBatches()`(forge: Forge) {
         // Given
         val fileName1 = forge.anAlphabeticalString()
         val fileName2 = forge.anAlphabeticalString()

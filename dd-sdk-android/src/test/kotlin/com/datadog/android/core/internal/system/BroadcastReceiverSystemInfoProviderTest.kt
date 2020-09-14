@@ -47,7 +47,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class, seed = 0xb1100d090b44cL)
 internal class BroadcastReceiverSystemInfoProviderTest {
 
     lateinit var testedProvider: BroadcastReceiverSystemInfoProvider
@@ -122,13 +122,11 @@ internal class BroadcastReceiverSystemInfoProviderTest {
             .doReturn(scaledLevel)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
         whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
-
         val powerSaveModeIntent: Intent = mock()
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
         whenever(powerSaveModeIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
-
-        whenever(mockContext.registerReceiver(same(testedProvider), any()))
-            .doReturn(batteryIntent, powerSaveModeIntent)
+        doReturn(batteryIntent, powerSaveModeIntent)
+            .whenever(mockContext).registerReceiver(same(testedProvider), any())
 
         testedProvider.register(mockContext)
         val systemInfo = testedProvider.getLatestSystemInfo()

@@ -16,6 +16,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
@@ -94,9 +95,9 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 call waitForTiming() 𝕎 responseHeadersStart()`() {
+    fun `𝕄 call waitForTiming() 𝕎 callStart()`() {
         // When
-        testedListener.responseHeadersStart(mockCall)
+        testedListener.callStart(mockCall)
 
         // Then
         verify(mockMonitor).waitForResourceTiming(fakeKey)
@@ -222,6 +223,39 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
+    fun `𝕄 send timing info 𝕎 callEnd() for successful request with reused pool`() {
+        // When
+        testedListener.callStart(mockCall)
+        Thread.sleep(10)
+        testedListener.responseBodyStart(mockCall)
+        Thread.sleep(10)
+        testedListener.responseBodyEnd(mockCall, fakeByteCount)
+        Thread.sleep(10)
+        testedListener.callEnd(mockCall)
+
+        // Then
+        argumentCaptor<ResourceTiming> {
+            inOrder(mockMonitor, mockCall) {
+                verify(mockMonitor).waitForResourceTiming(fakeKey)
+                verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
+                verifyNoMoreInteractions()
+            }
+
+            val timing = firstValue
+            assertThat(timing.dnsStart).isEqualTo(0L)
+            assertThat(timing.dnsDuration).isEqualTo(0L)
+            assertThat(timing.connectStart).isEqualTo(0L)
+            assertThat(timing.connectDuration).isEqualTo(0L)
+            assertThat(timing.sslStart).isEqualTo(0L)
+            assertThat(timing.sslDuration).isEqualTo(0L)
+            assertThat(timing.firstByteStart).isEqualTo(0L)
+            assertThat(timing.firstByteDuration).isEqualTo(0L)
+            assertThat(timing.downloadStart).isGreaterThan(TimeUnit.NANOSECONDS.toMillis(10L))
+            assertThat(timing.downloadDuration).isGreaterThan(TimeUnit.NANOSECONDS.toMillis(10L))
+        }
+    }
+
+    @Test
     fun `𝕄 send timing info 𝕎 callFailed() for throwing request`(
         @StringForgery(StringForgeryType.ALPHABETICAL) error: String
     ) {
@@ -279,6 +313,37 @@ internal class DatadogEventListenerTest {
             assertThat(timing.downloadStart)
                 .isGreaterThan(timing.firstByteStart + timing.firstByteDuration)
         }
+    }
+
+    @Test
+    fun `𝕄 doNothing 𝕎 call without RumMonitor`(
+        @IntForgery(400, 600) statusCode: Int
+    ) {
+        // Given
+        GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.isRegistered.set(false)
+
+        // When
+        testedListener.callStart(mockCall)
+        Thread.sleep(10)
+        testedListener.dnsStart(mockCall, fakeDomain)
+        Thread.sleep(10)
+        testedListener.dnsEnd(mockCall, fakeDomain, emptyList())
+        Thread.sleep(10)
+        testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
+        Thread.sleep(10)
+        testedListener.secureConnectStart(mockCall)
+        Thread.sleep(10)
+        testedListener.secureConnectEnd(mockCall, null)
+        Thread.sleep(10)
+        testedListener.connectEnd(mockCall, InetSocketAddress(0), Proxy.NO_PROXY, Protocol.HTTP_2)
+        Thread.sleep(10)
+        testedListener.responseHeadersStart(mockCall)
+        Thread.sleep(10)
+        testedListener.responseHeadersEnd(mockCall, fakeResponse)
+
+        // Then
+        verifyZeroInteractions(mockMonitor)
     }
 
     companion object {
