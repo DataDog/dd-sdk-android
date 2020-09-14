@@ -17,7 +17,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.lang.IllegalStateException
 
 internal class ImmediateFileWriter<T : Any>(
     private val fileOrchestrator: Orchestrator,
@@ -62,21 +61,18 @@ internal class ImmediateFileWriter<T : Any>(
     }
 
     private fun writeData(data: String) {
-        var file: File? = null
-        try {
-            val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
-            file = fileOrchestrator.getWritableFile(dataAsByteArray.size)
-            if (file != null) {
-                writeDataToFile(file, dataAsByteArray)
-            } else {
-                sdkLogger.e("Could not get a valid file")
-            }
-        } catch (e: FileNotFoundException) {
-            sdkLogger.e("Couldn't create an output stream to file ${file?.path}", e)
-        } catch (e: IOException) {
-            sdkLogger.e("Couldn't write data to file ${file?.path}", e)
+        val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
+        val file = try {
+            fileOrchestrator.getWritableFile(dataAsByteArray.size)
         } catch (e: SecurityException) {
-            sdkLogger.e("Couldn't access file ${file?.path}", e)
+            sdkLogger.e("Unable to access batch file directory", e)
+            null
+        }
+
+        if (file != null) {
+            writeDataToFile(file, dataAsByteArray)
+        } else {
+            sdkLogger.e("Could not get a valid file")
         }
     }
 
@@ -87,13 +83,11 @@ internal class ImmediateFileWriter<T : Any>(
                 lockFileAndWriteData(stream, file, dataAsByteArray)
             }
         } catch (e: IllegalStateException) {
-            sdkLogger.e(
-                "Exception when trying to lock the file: [${file.canonicalPath}] ", e
-            )
+            sdkLogger.e("Exception when trying to lock the file: [${file.canonicalPath}] ", e)
+        } catch (e: FileNotFoundException) {
+            sdkLogger.e("Couldn't create an output stream to file ${file.path}", e)
         } catch (e: IOException) {
-            sdkLogger.e(
-                "Exception when trying to write data to: [${file.canonicalPath}] ", e
-            )
+            sdkLogger.e("Exception when trying to write data to: [${file.canonicalPath}] ", e)
         }
     }
 

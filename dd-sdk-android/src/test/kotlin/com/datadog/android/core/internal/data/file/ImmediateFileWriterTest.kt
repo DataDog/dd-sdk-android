@@ -190,6 +190,24 @@ internal class ImmediateFileWriterTest {
     }
 
     @Test
+    fun `𝕄 do nothing 𝕎 write() and FileOrchestrator returns a file that doesn't exist`(
+        @StringForgery dirName: String,
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        val nonExistentDir = File(tempRootDir, dirName)
+        val file = File(nonExistentDir, fileName)
+        val modelValue = forge.anAlphabeticalString()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+
+        // When
+        testedWriter.write(modelValue)
+
+        // Then
+        verifyZeroInteractions(mockDeferredHandler)
+    }
+
+    @Test
     fun `𝕄 respect file locks 𝕎 write() on locked file`(
         forge: Forge
     ) {

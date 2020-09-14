@@ -71,7 +71,16 @@ internal class FileReader(
     private fun readNextFile(): Pair<File?, ByteArray> {
         val file = lockAndGetFile()
         return if (file != null) {
-            file to file.readBytes(withPrefix = prefix, withSuffix = suffix)
+            val data = try {
+                file.readBytes(withPrefix = prefix, withSuffix = suffix)
+            } catch (e: FileNotFoundException) {
+                sdkLogger.e("Couldn't create an input stream from file ${file?.path}", e)
+                ByteArray(0)
+            } catch (e: IOException) {
+                sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
+                ByteArray(0)
+            }
+            file to data
         } else {
             file to ByteArray(0)
         }
@@ -87,10 +96,6 @@ internal class FileReader(
                 }
                 file = readFile
             }
-        } catch (e: FileNotFoundException) {
-            sdkLogger.e("Couldn't create an input stream from file ${file?.path}", e)
-        } catch (e: IOException) {
-            sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
         } catch (e: SecurityException) {
             sdkLogger.e("Couldn't access file ${file?.path}", e)
             ByteArray(0)

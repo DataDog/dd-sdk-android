@@ -11,8 +11,10 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -57,7 +59,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `register monitor`() {
+    fun `M register monitor W registerIfAbsent()`() {
         val monitor: RumMonitor = mock()
 
         GlobalRum.registerIfAbsent(monitor)
@@ -67,7 +69,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `register monitor only once`() {
+    fun `M register monitor only once W registerIfAbsent() twice`() {
         val monitor: RumMonitor = mock()
         val monitor2: RumMonitor = mock()
 
@@ -79,7 +81,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `add global attributes`(
+    fun `M add global attributes W addAttribute()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ASCII) value: String
     ) {
@@ -90,7 +92,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `overwrite global attributes`(
+    fun `M overwrite global attributes W addAttribute() twice {same key different value}`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ASCII) value: String,
         @StringForgery(StringForgeryType.ASCII) value2: String
@@ -103,7 +105,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `remove global attributes`(
+    fun `M remove global attributes W addAttribute() and removeAttribute()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ASCII) value: String
     ) {
@@ -117,7 +119,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `add global attributes (multithreaded)`(
+    fun `M add global attributes W addAttribute() {multithreaded}`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String
     ) {
         var errors = 0
@@ -159,7 +161,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `remove global attributes (multithreaded)`(
+    fun `M remove global attributes W removeAttribute() {multithreaded}`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String
     ) {
         for (i in 0..128) {
@@ -204,7 +206,7 @@ internal class GlobalRumTest {
     }
 
     @Test
-    fun `updates the rum context for all the provided plugins`(forge: Forge) {
+    fun `M update plugins W updateRumContext()`(forge: Forge) {
 
         // Given
         val applicationId = forge.aNumericalString()
@@ -251,5 +253,18 @@ internal class GlobalRumTest {
                     this.rum?.viewId == viewId
             })
         }
+    }
+
+    @Test
+    fun `M reset monitor W resetSession()`() {
+        // Given
+        val monitor: AdvancedRumMonitor = mock()
+        GlobalRum.registerIfAbsent(monitor)
+
+        // When
+        GlobalRum.invokeMethod("resetSession")
+
+        // Then
+        verify(monitor).resetSession()
     }
 }

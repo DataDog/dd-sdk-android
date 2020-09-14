@@ -113,7 +113,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates startView to rootScope`(
+    fun `M delegate event to rootScope W startView()`(
         @StringForgery(StringForgeryType.ASCII) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -132,7 +132,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates stopView to rootScope`(
+    fun `M delegate event to rootScope W stopView()`(
         @StringForgery(StringForgeryType.ASCII) key: String
     ) {
         testedMonitor.stopView(key, fakeAttributes)
@@ -149,7 +149,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addUserAction to rootScope`(
+    fun `M delegate event to rootScope W addUserAction()`(
         @Forgery type: RumActionType,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -169,7 +169,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates startUserAction to rootScope`(
+    fun `M delegate event to rootScope W startUserAction()`(
         @Forgery type: RumActionType,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -189,7 +189,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates stopUserAction to rootScope`(
+    fun `M delegate event to rootScope W stopUserAction()`(
         @Forgery type: RumActionType,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -208,7 +208,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates startResource to rootScope`(
+    fun `M delegate event to rootScope W startResource()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
@@ -229,7 +229,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates stopResource to rootScope`(
+    fun `M delegate event to rootScope W stopResource()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @IntForgery(200, 600) statusCode: Int,
         @LongForgery(0, 1024) size: Long,
@@ -245,13 +245,35 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.statusCode).isEqualTo(statusCode.toLong())
             assertThat(event.kind).isEqualTo(kind)
+            assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
-    fun `delegates stopResourceWithError to rootScope`(
+    fun `M delegate event to rootScope W stopResource() {without status code nor size}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @Forgery kind: RumResourceKind
+    ) {
+        testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResource
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isNull()
+            assertThat(event.kind).isEqualTo(kind)
+            assertThat(event.size).isNull()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
@@ -275,7 +297,30 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate to rootScope W addError`(
+    fun `M delegate event to rootScope W stopResourceWithError() {without status code}`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        testedMonitor.stopResourceWithError(key, null, message, source, throwable)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithError
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isNull()
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W addError`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -298,7 +343,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate to rootScope W onAddErrorWithStacktrace`(
+    fun `M delegate event to rootScope W onAddErrorWithStacktrace`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String
@@ -321,7 +366,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates viewTreeChanged to rootScope`() {
+    fun `M delegate event to rootScope W viewTreeChanged()`() {
         val eventTime = Time()
         testedMonitor.viewTreeChanged(eventTime)
         Thread.sleep(200)
@@ -336,7 +381,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates waitForResourceTiming to rootScope`(
+    fun `M delegate event to rootScope W waitForResourceTiming()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String
     ) {
         testedMonitor.waitForResourceTiming(key)
@@ -353,7 +398,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addResourceTiming to rootScope`(
+    fun `M delegate event to rootScope W addResourceTiming()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @Forgery timing: ResourceTiming
     ) {
@@ -372,7 +417,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates addCrash to rootScope`(
+    fun `M delegate event to rootScope W addCrash()`(
         @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
@@ -394,7 +439,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `delegates updateViewLoadingTime to rootScope`(forge: Forge) {
+    fun `M delegate event to rootScope W updateViewLoadingTime()`(forge: Forge) {
         val key = forge.anAsciiString()
         val loadingTime = forge.aLong(min = 1)
         val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
@@ -410,6 +455,21 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.loadingTime).isEqualTo(loadingTime)
             assertThat(event.loadingType).isEqualTo(loadingType)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W resetSession()`() {
+
+        testedMonitor.resetSession()
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue
+            check(event is RumRawEvent.ResetSession)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

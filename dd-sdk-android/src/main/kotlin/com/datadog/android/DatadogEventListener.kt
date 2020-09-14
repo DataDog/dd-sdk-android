@@ -60,8 +60,10 @@ internal constructor(val key: String) : EventListener() {
 
     // region EventListener
 
+    /** @inheritdoc */
     override fun callStart(call: Call) {
         super.callStart(call)
+        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
         callStart = System.nanoTime()
     }
 
@@ -109,7 +111,6 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
-        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
         headersStart = System.nanoTime()
     }
 
