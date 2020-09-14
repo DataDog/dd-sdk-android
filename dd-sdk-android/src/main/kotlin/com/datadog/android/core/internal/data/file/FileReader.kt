@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 
 internal class FileReader(
     private val fileOrchestrator: Orchestrator,
@@ -75,10 +76,9 @@ internal class FileReader(
             } catch (e: FileNotFoundException) {
                 sdkLogger.e("Couldn't create an input stream from file ${file?.path}", e)
                 ByteArray(0)
-
-                // } catch (e: IOException) {
-                //     sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
-                // ByteArray(0)
+            } catch (e: IOException) {
+                sdkLogger.e("Couldn't read messages from file ${file?.path}", e)
+                ByteArray(0)
             }
             file to data
         } else {
