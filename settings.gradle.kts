@@ -11,6 +11,7 @@ include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")
 include(":dd-sdk-android-ndk")
 include(":dd-sdk-android-rx")
+include(":dd-sdk-android-sqlite")
 include(":dd-sdk-android-timber")
 
 include(":instrumented:benchmark")

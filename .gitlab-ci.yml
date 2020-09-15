@@ -192,6 +192,18 @@ publish:release-rx:
     - git fetch --depth=1 origin master
     - ./gradlew :dd-sdk-android-rx:bintrayUpload --stacktrace --no-daemon
 
+publish:release-sqlite:
+  tags: [ "runner:main", "size:large" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - git fetch --depth=1 origin master
+    - ./gradlew :dd-sdk-android-sqlite:bintrayUpload --stacktrace --no-daemon
+
 publish:release-timber:
   tags: [ "runner:main", "size:large" ]
   only:

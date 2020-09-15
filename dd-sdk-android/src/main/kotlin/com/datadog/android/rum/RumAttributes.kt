@@ -90,6 +90,18 @@ object RumAttributes {
      */
     const val ERROR_RESOURCE_URL: String = "error.resource.url"
 
+    /**
+     * The version of the Database that triggered the error.
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val ERROR_DATABASE_VERSION: String = "error.database.version"
+
+    /**
+     * The path of the Database that triggered the error.
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val ERROR_DATABASE_PATH: String = "error.database.path"
+
     // endregion
 
     // region Action

@@ -217,6 +217,10 @@ If you use Fresco to load images in your application, take a look at Datadog's [
 
 If you use Glide to load images in your application, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide).
 
+### SQLite
+
+If you use  SQLite to persist your data locally, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqlite).
+
 ### Picasso
 
 If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.

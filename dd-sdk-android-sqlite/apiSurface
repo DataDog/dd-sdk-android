@@ -1,0 +1,4 @@
+class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
+  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
+  override fun onCorruption(android.database.sqlite.SQLiteDatabase)
+  companion object 
