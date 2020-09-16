@@ -6,9 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
@@ -17,6 +19,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -25,6 +28,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -69,6 +73,8 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    lateinit var mockDevLogHandler: LogHandler
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -84,6 +90,8 @@ internal class RumSessionScopeTest {
     @BeforeEach
     fun `set up`() {
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
+
+        mockDevLogHandler = mockDevLogHandler()
 
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -226,15 +234,22 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `does Nothing if childless and event not recognized`() {
+    fun `M log warning W handleEvent() without child scope`() {
+        // Given
+        Datadog.setVerbosity(Log.VERBOSE)
+
+        // When
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
+        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verifyNoMoreInteractions(mockDevLogHandler, mockWriter)
     }
 
     @Test
-    fun `delegates to child scopes if event not recognized`() {
+    fun `M delegate to child scope W handleEvent()`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -242,11 +257,11 @@ internal class RumSessionScopeTest {
         verify(mockChildScope).handleEvent(mockEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
+        verifyZeroInteractions(mockWriter, mockDevLogHandler)
     }
 
     @Test
-    fun `delegates to child scope with noop writer if session not kept`() {
+    fun `M delegate to child scope with noop writer W handleEvent() and session not kept`() {
         testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
         testedScope.activeChildrenScopes.add(mockChildScope)
 
@@ -261,11 +276,11 @@ internal class RumSessionScopeTest {
         }
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
+        verifyZeroInteractions(mockWriter, mockDevLogHandler)
     }
 
     @Test
-    fun `updates child scope on StartView event`(
+    fun `M update child scope W handleEvent(StartView)`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
         forge: Forge
@@ -284,7 +299,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `updates child scope on StartView event with existing children`(
+    fun `M update child scope W handleEvent(StartView) event with existing children`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
         forge: Forge
@@ -305,7 +320,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `keeps children scope on child handled event`() {
+    fun `M keep children scope W handleEvent child returns non null`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
         whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn mockChildScope
 
@@ -317,7 +332,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `updates children scope on child handled event (null)`() {
+    fun `M remove children scope W handleEvent child returns null`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
         val newChildScope: RumScope = mock()
         whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
@@ -330,7 +345,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `sends ApplicationStarted event on applicationDisplayed`(
+    fun `M send ApplicationStarted event W applicationDisplayed`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -349,7 +364,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `sends ApplicationStarted event on applicationDisplayed only once`(
+    fun `M send ApplicationStarted event only once W applicationDisplayed`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -369,7 +384,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `sends ApplicationStarted event on applicationDisplayed after ResetSession`(
+    fun `M send ApplicationStarted event W applicationDisplayed after ResetSession`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {
@@ -393,7 +408,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `does not send ApplicationStarted event on applicationDisplayed if session not kept`(
+    fun `M do nothing W applicationDisplayed if session not kept`(
         @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
         @StringForgery(StringForgeryType.ALPHABETICAL) name: String
     ) {

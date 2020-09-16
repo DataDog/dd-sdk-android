@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -56,6 +57,8 @@ internal class RumSessionScope(
         updateSessionIdIfNeeded()
 
         val actualWriter = if (keepSession) writer else noOpWriter
+
+        val activeChildrenCount = activeChildrenScopes.size
         val iterator = activeChildrenScopes.iterator()
         while (iterator.hasNext()) {
             val scope = iterator.next().handleEvent(event, actualWriter)
@@ -69,6 +72,8 @@ internal class RumSessionScope(
 
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
+        } else if (activeChildrenCount == 0) {
+            devLogger.w(MESSAGE_MISSING_VIEW)
         }
 
         return this
@@ -125,5 +130,12 @@ internal class RumSessionScope(
     companion object {
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+
+        internal const val MESSAGE_MISSING_VIEW =
+            "A RUM event was detected, but no view is active. " +
+                "To track views automatically, try calling the " +
+                "DatadogConfig.Builder.useViewTrackingStrategy() method.\n" +
+                "You can also track views manually using the RumMonitor.startView() and " +
+                "RumMonitor.stopView() methods."
     }
 }
