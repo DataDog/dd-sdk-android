@@ -63,6 +63,7 @@ object Dependencies {
         const val Coil = "0.12.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
+        const val Room = "2.2.5"
         const val RxJava = "3.0.0"
         const val Timber = "4.7.1"
 
@@ -168,6 +169,7 @@ object Dependencies {
             "com.github.bumptech.glide:okhttp3-integration:${Versions.Glide}"
         )
 
+        const val Room = "androidx.room:room-runtime:${Versions.Room}"
         const val RxJava = "io.reactivex.rxjava3:rxjava:${Versions.RxJava}"
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
 
@@ -198,5 +200,6 @@ object Dependencies {
 
     object AnnotationProcessors {
         const val Glide = "com.github.bumptech.glide:compiler:${Versions.Glide}"
+        const val Room = "androidx.room:room-compiler:${Versions.Room}"
     }
 }
