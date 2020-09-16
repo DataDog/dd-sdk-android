@@ -186,6 +186,8 @@ object com.datadog.android.rum.RumAttributes
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
+  const val ERROR_DATABASE_VERSION: String
+  const val ERROR_DATABASE_PATH: String
   const val ACTION_TARGET_CLASS_NAME: String
   const val ACTION_TARGET_TITLE: String
   const val ACTION_TARGET_PARENT_INDEX: String
@@ -312,6 +314,10 @@ open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.Web
   override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
   override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
+  companion object 
+class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
+  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
+  override fun onCorruption(android.database.sqlite.SQLiteDatabase)
   companion object 
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder

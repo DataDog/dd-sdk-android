@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data
+package com.datadog.android.sample.data.remote
 
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.model.LogsCollection

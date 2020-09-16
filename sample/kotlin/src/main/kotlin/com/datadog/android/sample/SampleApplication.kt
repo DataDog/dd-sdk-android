@@ -22,12 +22,15 @@ import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
-import com.datadog.android.sample.data.RemoteDataSource
+import com.datadog.android.sample.data.db.DatadogSqliteHelper
+import com.datadog.android.sample.data.db.LocalDataSource
+import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.PictureViewModel
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
+import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -58,11 +61,13 @@ class SampleApplication : Application() {
         .client(okHttpClient)
         .build()
 
+    private val sqliteHelper = DatadogSqliteHelper(this)
+
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     override fun onCreate() {
         super.onCreate()
-
+        Stetho.initializeWithDefaults(this)
         initializeDatadog()
 
         initializeTimber()
@@ -147,7 +152,11 @@ class SampleApplication : Application() {
         }
 
         fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
-            return ViewModelFactory(getOkHttpClient(context), getDataSource(context))
+            return ViewModelFactory(
+                getOkHttpClient(context),
+                getRemoteDataSource(context),
+                LocalDataSource(context)
+            )
         }
 
         fun getOkHttpClient(context: Context): OkHttpClient {
@@ -155,7 +164,7 @@ class SampleApplication : Application() {
             return application.okHttpClient
         }
 
-        private fun getDataSource(context: Context): RemoteDataSource {
+        private fun getRemoteDataSource(context: Context): RemoteDataSource {
             val application = context.applicationContext as SampleApplication
             return application.retrofitBaseDataSource
         }

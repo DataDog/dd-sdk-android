@@ -6,12 +6,26 @@
 
 package com.datadog.android.sample.data
 
-import com.datadog.android.sample.data.model.LogsCollection
+import com.datadog.android.sample.data.db.LocalDataSource
+import com.datadog.android.sample.data.model.Log
+import com.datadog.android.sample.data.remote.RemoteDataSource
+import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.schedulers.Schedulers
 
-class DataRepository(private val remoteDataSource: RemoteDataSource) {
+class DataRepository(
+    private val remoteDataSource: RemoteDataSource,
+    private val localDataSource: LocalDataSource
+) {
 
-    fun getLogs(query: String): Single<LogsCollection> {
-        return remoteDataSource.getLogs(query)
+    fun getLogs(query: String): Flowable<List<Log>> {
+        return Single.concat(
+            localDataSource.fetchLogs(),
+            remoteDataSource.getLogs(query)
+                .observeOn(Schedulers.io())
+                .map { it.data }
+                .doOnSuccess {
+                    localDataSource.persistLogs(it)
+                })
     }
 }
