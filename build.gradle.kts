@@ -56,7 +56,6 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-ktx:assemble",
         ":dd-sdk-android-ndk:assemble",
         ":dd-sdk-android-rx:assemble",
-        ":dd-sdk-android-sqlite:assemble",
         ":dd-sdk-android-timber:assemble"
     )
 }
@@ -70,7 +69,6 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-ktx:testReleaseUnitTest",
         ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":dd-sdk-android-rx:testReleaseUnitTest",
-        ":dd-sdk-android-sqlite:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest"
     )
 }
@@ -84,7 +82,6 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-ktx:testDebugUnitTest",
         ":dd-sdk-android-ndk:testDebugUnitTest",
         ":dd-sdk-android-rx:testDebugUnitTest",
-        ":dd-sdk-android-sqlite:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest"
     )
 }
@@ -115,7 +112,6 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-ktx:ktlintCheck",
         ":dd-sdk-android-ndk:ktlintCheck",
         ":dd-sdk-android-rx:ktlintCheck",
-        ":dd-sdk-android-sqlite:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
@@ -133,7 +129,6 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-ktx:lintRelease",
         ":dd-sdk-android-ndk:lintRelease",
         ":dd-sdk-android-rx:lintRelease",
-        ":dd-sdk-android-sqlite:lintRelease",
         ":dd-sdk-android-timber:lintRelease"
     )
 }
@@ -146,7 +141,6 @@ tasks.register("detektAll") {
         ":dd-sdk-android-glide:detekt",
         ":dd-sdk-android-ktx:detekt",
         ":dd-sdk-android-ndk:detekt",
-        ":dd-sdk-android-sqlite:detekt",
         ":dd-sdk-android-rx:detekt",
         ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
@@ -171,8 +165,6 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android-ndk:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-rx:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-sqlite:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-sqlite:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",

@@ -219,7 +219,22 @@ If you use Glide to load images in your application, take a look at our [dedicat
 
 ### SQLite
 
-If you use  SQLite to persist your data locally, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqlite).
+Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide our implementation of the
+DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
+
+Doing so we will be able to detect whenever a database corruption was detected and send a relevant
+RUM error event for it.
+
+```kotlint
+   class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
+                                                     <DATABASE_NAME>, 
+                                                     <CursorFactory>, 
+                                                     <DATABASE_VERSION>, 
+                                                     DatadogDatabaseErrorHandler()) {
+     ...
+   
+   }
+```
 
 ### Picasso
 
@@ -266,3 +281,4 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [6]: https://square.github.io/okhttp/interceptors/
 [7]: https://square.github.io/okhttp/events/
+[8]: https://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper

@@ -315,6 +315,10 @@ open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.Web
   override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
   companion object 
+class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
+  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
+  override fun onCorruption(android.database.sqlite.SQLiteDatabase)
+  companion object 
 class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
