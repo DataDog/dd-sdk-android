@@ -27,6 +27,8 @@ plugins {
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     jacoco
+    id("realm-android")
+
 }
 
 android {
@@ -85,6 +87,9 @@ android {
         register("room") {
             dimension = "ls"
         }
+        register("realm") {
+            dimension = "ls"
+        }
     }
 
     sourceSets.named("main") {
@@ -105,6 +110,9 @@ android {
     }
     sourceSets.named("sqlite") {
         java.srcDir("src/sqlite/kotlin")
+    }
+    sourceSets.named("realm") {
+        java.srcDir("src/realm/kotlin")
     }
     sourceSets.named("room") {
         java.srcDir("src/room/kotlin")

@@ -34,7 +34,7 @@ class DatadogSqliteHelper(context: Context) :
 
         const val CREATE_DB_QUERY = """
             CREATE TABLE IF NOT EXISTS ${DatadogDbContract.Logs.TABLE_NAME}
-            (${BaseColumns._ID} INTEGER PRIMARY KEY,
+            (${BaseColumns._ID} TEXT PRIMARY KEY,
             ${DatadogDbContract.Logs.COLUMN_NAME_MESSAGE} TEXT,
             ${DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP} TEXT,
             ${DatadogDbContract.Logs.COLUMN_NAME_TTL} INTEGER

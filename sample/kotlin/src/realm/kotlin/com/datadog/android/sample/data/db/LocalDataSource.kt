@@ -11,12 +11,15 @@ import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
+import io.realm.Realm
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
 class LocalDataSource(val context: Context) {
 
-    private val logDao = LogsDatabase.getInstance(context).logDao()
+    init {
+        RealmFeature.initialise(context)
+    }
 
     // region LocalDataSource
 
@@ -36,27 +39,49 @@ class LocalDataSource(val context: Context) {
         val currentTimeInMillis = System.currentTimeMillis()
         val minTtlRequired = currentTimeInMillis - LOGS_EXPIRING_TTL_IN_MS
         // purge data first
-        logDao.purge(minTtlRequired)
+        purgeLogs(minTtlRequired)
         // add new data
-        logDao.insertAll(
-            logs.map {
-                LogRoom(
-                    uid = it.id,
+        Realm.getDefaultInstance().use { realm ->
+            realm.beginTransaction()
+            realm.insertOrUpdate(logs.map {
+                LogRealm(
+                    id = it.id,
                     message = it.attributes.message,
                     timestamp = it.attributes.timestamp,
                     ttl = currentTimeInMillis
                 )
             })
+            realm.commitTransaction()
+        }
     }
 
     private val fetchLogsCallable = Callable<List<Log>> {
-        val minTtlRequired =
-            System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS
-        logDao.getAll(minTtlRequired).map {
-            Log(
-                id = it.uid,
-                attributes = LogAttributes(message = it.message, timestamp = it.timestamp)
-            )
+        Realm.getDefaultInstance().use { realm ->
+            val minTtlRequired =
+                System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS
+            realm.where(LogRealm::class.java)
+                .greaterThanOrEqualTo(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)
+                .findAll()
+                .map {
+                    realm.copyFromRealm(it)
+                }
+                .map {
+                    Log(
+                        id = it.id,
+                        attributes = LogAttributes(message = it.message, timestamp = it.timestamp)
+                    )
+                }
+        }
+    }
+
+    private fun purgeLogs(minTtlRequired: Long) {
+        Realm.getDefaultInstance().use { realm ->
+            realm.beginTransaction()
+            realm.where(LogRealm::class.java)
+                .lessThan(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)
+                .findAll()
+                .deleteAllFromRealm()
+            realm.commitTransaction()
         }
     }
 

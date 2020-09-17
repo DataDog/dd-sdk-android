@@ -63,6 +63,7 @@ object Dependencies {
         const val Coil = "0.12.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
+        const val Realm = "6.0.2"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
         const val Timber = "4.7.1"
@@ -190,6 +191,7 @@ object Dependencies {
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
         const val Bintray = "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.Bintray}"
         const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
+        const val Realm = "io.realm:realm-gradle-plugin:${Versions.Realm}"
     }
 
     object Repositories {
