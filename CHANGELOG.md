@@ -1,3 +1,6 @@
+# 1.5.2 / 2020-09-18
+
+* [BUGFIX] Global: Prevent a crash when sending data. See [#377](https://github.com/DataDog/dd-sdk-android/issues/377) (Thanks @ronak-earnin)
 
 # 1.5.1 / 2020-09-03
 
