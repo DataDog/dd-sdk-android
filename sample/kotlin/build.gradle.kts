@@ -82,6 +82,9 @@ android {
         register("sqlite") {
             dimension = "ls"
         }
+        register("room") {
+            dimension = "ls"
+        }
     }
 
     sourceSets.named("main") {
@@ -102,6 +105,9 @@ android {
     }
     sourceSets.named("sqlite") {
         java.srcDir("src/sqlite/kotlin")
+    }
+    sourceSets.named("room") {
+        java.srcDir("src/room/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -178,6 +184,10 @@ dependencies {
 
     // Picasso
     "picassoImplementation"("com.squareup.picasso:picasso:2.8")
+
+    // Room
+    "roomImplementation"(Dependencies.Libraries.Room)
+    "kaptRoom"(Dependencies.AnnotationProcessors.Room)
 
     // RxJava
     implementation(Dependencies.Libraries.RxJava)

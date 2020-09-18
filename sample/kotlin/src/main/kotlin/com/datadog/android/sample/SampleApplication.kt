@@ -22,7 +22,6 @@ import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
-import com.datadog.android.sample.data.db.DatadogSqliteHelper
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.PictureViewModel
@@ -60,8 +59,6 @@ class SampleApplication : Application() {
         .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
         .client(okHttpClient)
         .build()
-
-    private val sqliteHelper = DatadogSqliteHelper(this)
 
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
