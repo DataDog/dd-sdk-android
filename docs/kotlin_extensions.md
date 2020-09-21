@@ -41,7 +41,21 @@ withinSpan(spanName, parentSpan){
 
 ```
 
-2. Extensions for OkHttp request builder:
+2. Closeable extension methods:
+
+```kotlin
+
+// Executes the given [block] function on the [Closeable] instance, intercepts any Exception and sends it in 
+// a RUM error event closing the [Closeable] instance afterwards.
+
+val closeable:Closeable
+closeable.useMonitored { 
+    // Your code here
+}
+
+```
+
+3. Extensions for OkHttp request builder:
 
 ```kotlin
 
