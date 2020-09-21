@@ -7,6 +7,7 @@
 package com.datadog.android.sample.data.db
 
 import android.content.Context
+import com.datadog.android.ktx.rum.useMonitored
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
 import io.reactivex.rxjava3.core.Single
@@ -41,7 +42,7 @@ class LocalDataSource(val context: Context) {
         // purge data first
         purgeLogs(minTtlRequired)
         // add new data
-        Realm.getDefaultInstance().use { realm ->
+        Realm.getDefaultInstance().useMonitored { realm ->
             realm.beginTransaction()
             realm.insertOrUpdate(logs.map {
                 LogRealm(
@@ -56,7 +57,7 @@ class LocalDataSource(val context: Context) {
     }
 
     private val fetchLogsCallable = Callable<List<Log>> {
-        Realm.getDefaultInstance().use { realm ->
+        Realm.getDefaultInstance().useMonitored { realm ->
             val minTtlRequired =
                 System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS
             realm.where(LogRealm::class.java)
@@ -75,7 +76,7 @@ class LocalDataSource(val context: Context) {
     }
 
     private fun purgeLogs(minTtlRequired: Long) {
-        Realm.getDefaultInstance().use { realm ->
+        Realm.getDefaultInstance().useMonitored { realm ->
             realm.beginTransaction()
             realm.where(LogRealm::class.java)
                 .lessThan(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)
