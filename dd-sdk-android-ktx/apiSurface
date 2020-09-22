@@ -5,4 +5,4 @@ fun asRumResource(String): java.io.InputStream
 fun parentSpan(io.opentracing.Span): okhttp3.Request.Builder
 fun setError(Throwable)
 fun setError(String)
-fun <T: Any> withinSpan(String, io.opentracing.Span? = null, io.opentracing.Span.() -> T?): T?
+fun <T: Any?> withinSpan(String, io.opentracing.Span? = null, Boolean = true, io.opentracing.Span.() -> T): T
