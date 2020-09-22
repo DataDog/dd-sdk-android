@@ -66,6 +66,7 @@ object Dependencies {
         const val Realm = "6.0.2"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
+        const val SQLDelight = "1.4.3"
         const val Timber = "4.7.1"
 
         // NDK
@@ -172,6 +173,7 @@ object Dependencies {
 
         const val Room = "androidx.room:room-runtime:${Versions.Room}"
         const val RxJava = "io.reactivex.rxjava3:rxjava:${Versions.RxJava}"
+        const val SQLDelight = "com.squareup.sqldelight:android-driver:${Versions.SQLDelight}"
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
 
         // Tools
@@ -192,6 +194,7 @@ object Dependencies {
         const val Bintray = "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Versions.Bintray}"
         const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
         const val Realm = "io.realm:realm-gradle-plugin:${Versions.Realm}"
+        const val SQLDelight = "com.squareup.sqldelight:gradle-plugin:${Versions.SQLDelight}"
     }
 
     object Repositories {
