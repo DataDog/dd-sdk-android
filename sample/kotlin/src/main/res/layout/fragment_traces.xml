@@ -48,6 +48,40 @@
         app:layout_constraintTop_toBottomOf="@id/start_async_operation"
         android:visibility="invisible"/>
 
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/coroutine_operation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:layout_margin="8dp"
+        android:text="@string/msg_coroutine_operation"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spinner_async"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/start_coroutine_operation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/button_start"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/coroutine_operation"/>
+
+    <ProgressBar
+        android:id="@+id/spinner_coroutine"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        style="?android:attr/progressBarStyleHorizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/start_coroutine_operation"
+        android:visibility="invisible"/>
+
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/network_request"
@@ -60,7 +94,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spinner_async"/>
+        app:layout_constraintTop_toBottomOf="@id/spinner_coroutine"/>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/start_request"
@@ -105,7 +139,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:src="@drawable/ic_check_circle_green_24dp"
     />
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -22,6 +22,7 @@ class TracesFragment : Fragment(), View.OnClickListener {
 
     lateinit var viewModel: TracesViewModel
     lateinit var progressBarAsync: ProgressBar
+    lateinit var progressBarCoroutine: ProgressBar
     lateinit var progressBarRequest: ProgressBar
     lateinit var requestStatus: ImageView
 
@@ -34,9 +35,11 @@ class TracesFragment : Fragment(), View.OnClickListener {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_traces, container, false)
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.start_coroutine_operation).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_request).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_404_request).setOnClickListener(this)
         progressBarAsync = rootView.findViewById(R.id.spinner_async)
+        progressBarCoroutine = rootView.findViewById(R.id.spinner_coroutine)
         progressBarRequest = rootView.findViewById(R.id.spinner_request)
         requestStatus = rootView.findViewById(R.id.request_status)
         return rootView
@@ -78,6 +81,14 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onDone = {
                         progressBarAsync.visibility = View.INVISIBLE
+                    })
+            }
+            R.id.start_coroutine_operation -> {
+                progressBarCoroutine.visibility = View.VISIBLE
+                progressBarCoroutine.isIndeterminate = true
+                viewModel.startCoroutineOperation(
+                    onDone = {
+                        progressBarCoroutine.visibility = View.INVISIBLE
                     })
             }
             R.id.start_request -> {

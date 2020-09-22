@@ -88,10 +88,9 @@ class SampleApplication : Application() {
     }
 
     private fun createDatadogConfig(): DatadogConfig {
-        val environment = BuildConfig.FLAVOR
         val configBuilder = DatadogConfig.Builder(
             BuildConfig.DD_CLIENT_TOKEN,
-            environment,
+            BuildConfig.FLAVOR_version,
             BuildConfig.DD_RUM_APPLICATION_ID
         )
 
