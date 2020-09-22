@@ -4,6 +4,7 @@ fun <T: Any?> asyncTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoro
 fun <T: Any?> awaitTraced(String): T
 fun <T: Any?> withContextTraced(String, kotlin.coroutines.CoroutineContext, CoroutineScopeSpan.() -> T): T
 interface com.datadog.android.ktx.coroutine.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, io.opentracing.Span
+fun <T> sendErrorToDatadog(): kotlinx.coroutines.flow.Flow<T>
 fun <T: java.io.Closeable, R> useMonitored((T) -> R): R
 fun getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING): java.io.InputStream
 fun getRawResAsRumResource(Int): java.io.InputStream
