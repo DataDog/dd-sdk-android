@@ -170,6 +170,7 @@ dependencies {
     "coilApi"(project(":dd-sdk-android-coil"))
     "glideApi"(project(":dd-sdk-android-glide"))
     "frescoApi"(project(":dd-sdk-android-fresco"))
+    "sqldelightApi"(project(":dd-sdk-android-sqldelight"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)

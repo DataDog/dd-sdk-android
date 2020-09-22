@@ -8,6 +8,8 @@ package com.datadog.android.sample.data.db
 
 import android.content.Context
 import com.datadog.android.sample.LogsDatabase
+import com.datadog.android.sqldelight.DatadogSqliteCallback
+import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 
 object Database {
@@ -21,6 +23,12 @@ object Database {
         }
 
     private fun setupDb(context: Context): LogsDatabase {
-        return LogsDatabase(AndroidSqliteDriver(LogsDatabase.Schema, context))
+        return LogsDatabase(
+            AndroidSqliteDriver(
+                LogsDatabase.Schema,
+                context,
+                callback = DatadogSqliteCallback(LogsDatabase.Schema)
+            )
+        )
     }
 }
