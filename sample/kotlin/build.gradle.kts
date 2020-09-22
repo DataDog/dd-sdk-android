@@ -35,6 +35,7 @@ sqldelight {
     database("LogsDatabase") {
         packageName = "com.datadog.android.sample"
         dialect = "sqlite:3.24"
+        sourceFolders = listOf("sqldelight")
     }
 }
 
