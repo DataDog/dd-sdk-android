@@ -219,10 +219,10 @@ If you use Glide to load images in your application, take a look at our [dedicat
 
 ### SQLite
 
-Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide our implementation of the
+Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide the implementation of the
 DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
 
-Doing so we will be able to detect whenever a database corruption was detected and send a relevant
+Doing this detects whenever a database is corrupted and sends a relevant
 RUM error event for it.
 
 ```kotlint

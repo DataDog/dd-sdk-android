@@ -8,4 +8,7 @@ package com.datadog.android.sample.data.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Log(@SerializedName("attributes") val attributes: LogAttributes)
+data class Log(
+    @SerializedName("id") val id: String,
+    @SerializedName("attributes") val attributes: LogAttributes
+)

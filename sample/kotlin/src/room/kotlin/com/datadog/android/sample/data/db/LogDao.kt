@@ -22,5 +22,4 @@ interface LogDao {
 
     @Query("DELETE FROM logs where ttl <= :minTtl")
     fun purge(minTtl: Long)
-
 }

@@ -9,6 +9,7 @@ package com.datadog.android.sample.data.db
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
+import android.provider.BaseColumns
 import com.datadog.android.sample.data.contentprovider.DatadogContentProvider
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
@@ -41,6 +42,7 @@ class LocalDataSource(val context: Context) {
         // add new data
         val contentValues = logs.map {
             ContentValues().apply {
+                put(BaseColumns._ID, it.id)
                 put(DatadogDbContract.Logs.COLUMN_NAME_MESSAGE, it.attributes.message)
                 put(DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP, it.attributes.timestamp)
                 put(DatadogDbContract.Logs.COLUMN_NAME_TTL, currentTimeInMillis)
@@ -61,6 +63,7 @@ class LocalDataSource(val context: Context) {
 
         override fun call(): List<Log> {
             val columns = arrayOf(
+                BaseColumns._ID,
                 DatadogDbContract.Logs.COLUMN_NAME_MESSAGE,
                 DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP,
                 DatadogDbContract.Logs.COLUMN_NAME_TTL
@@ -87,13 +90,16 @@ class LocalDataSource(val context: Context) {
         private fun fetchDataFromCursor(cursor: Cursor): List<Log> {
             val toReturn = mutableListOf<Log>()
             cursor.use {
+                val idColumnIndex =
+                    it.getColumnIndexOrThrow(BaseColumns._ID)
                 val messageColumnIndex =
                     it.getColumnIndexOrThrow(DatadogDbContract.Logs.COLUMN_NAME_MESSAGE)
                 val timestampColumnIndex =
                     it.getColumnIndexOrThrow(DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP)
                 while (it.moveToNext()) {
                     val log = Log(
-                        LogAttributes(
+                        id = it.getString(idColumnIndex),
+                        attributes = LogAttributes(
                             it.getString(messageColumnIndex),
                             it.getString(timestampColumnIndex)
                         )
