@@ -180,6 +180,10 @@
                   "minimum": 0
                 }
               }
+            },
+            "first_party": {
+              "type": "boolean",
+              "description": "Whether the resource is calling a first party host"
             }
           }
         },
