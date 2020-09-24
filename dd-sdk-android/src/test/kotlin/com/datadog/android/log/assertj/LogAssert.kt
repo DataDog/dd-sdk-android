@@ -61,16 +61,28 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
-    fun hasAttributes(attributes: Map<String, Any?>): LogAssert {
+    fun hasExactlyAttributes(attributes: Map<String, Any?>): LogAssert {
         assertThat(actual.attributes)
             .hasSameSizeAs(attributes)
             .containsAllEntriesOf(attributes)
         return this
     }
 
-    fun hasTags(tags: Collection<String>): LogAssert {
+    fun hasExactlyTags(tags: Collection<String>): LogAssert {
         assertThat(actual.tags)
             .containsExactlyInAnyOrder(*tags.toTypedArray())
+        return this
+    }
+
+    fun containsTags(tags: Collection<String>): LogAssert {
+        assertThat(actual.tags)
+            .contains(*tags.toTypedArray())
+        return this
+    }
+
+    fun containsAttributes(attributes: Map<String, Any?>): LogAssert {
+        assertThat(actual.attributes)
+            .containsAllEntriesOf(attributes)
         return this
     }
 

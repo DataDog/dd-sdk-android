@@ -147,8 +147,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
                 .hasThrowable(null)
         }
     }
@@ -177,8 +177,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
                 .hasThrowable(fakeThrowable)
         }
     }
@@ -266,8 +266,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(customTimestamp)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
         }
     }
 
@@ -302,8 +302,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
         }
     }
 
@@ -332,8 +332,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(null)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
         }
     }
 
@@ -363,8 +363,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(null)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(emptyMap())
-                .hasTags(emptyList())
+                .hasExactlyAttributes(emptyMap())
+                .hasExactlyTags(emptyList())
                 .hasThrowable(null)
         }
     }
@@ -550,8 +550,8 @@ internal class DatadogLogHandlerTest {
                 .hasTimestampAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasAttributes(fakeAttributes)
-                .hasTags(fakeTags)
+                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyTags(fakeTags)
         }
     }
 }

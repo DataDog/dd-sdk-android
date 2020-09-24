@@ -160,8 +160,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(listOf("env:$envName"))
+                .hasExactlyAttributes(emptyMap())
         }
         verifyZeroInteractions(mockPreviousHandler)
     }
@@ -205,8 +205,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(listOf("env:$envName"))
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -229,8 +229,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(emptyList())
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(emptyList())
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -260,8 +260,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(listOf("env:$envName"))
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }
@@ -282,7 +282,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
-                .hasAttributes(
+                .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.DD_TRACE_ID to tracer.traceId,
                         LogAttributes.DD_SPAN_ID to tracer.spanId
@@ -321,7 +321,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
-                .hasAttributes(
+                .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumContext.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumContext.sessionId,
