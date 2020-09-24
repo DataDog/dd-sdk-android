@@ -217,25 +217,6 @@ If you use Fresco to load images in your application, take a look at Datadog's [
 
 If you use Glide to load images in your application, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide).
 
-### SQLite
-
-Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide the implementation of the
-DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
-
-Doing this detects whenever a database is corrupted and sends a relevant
-RUM error event for it.
-
-```kotlint
-   class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
-                                                     <DATABASE_NAME>, 
-                                                     <CursorFactory>, 
-                                                     <DATABASE_VERSION>, 
-                                                     DatadogDatabaseErrorHandler()) {
-     ...
-   
-   }
-```
-
 ### Picasso
 
 If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
@@ -257,6 +238,29 @@ If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM 
                 .client(okHttpClient)
                 // …
                 .build()
+```
+
+### SQLDelight
+
+If you use SQLDelight, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqldelight).
+
+### SQLite
+
+Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide the implementation of the
+DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
+
+Doing this detects whenever a database is corrupted and sends a relevant
+RUM error event for it.
+
+```kotlint
+   class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
+                                                     <DATABASE_NAME>, 
+                                                     <CursorFactory>, 
+                                                     <DATABASE_VERSION>, 
+                                                     DatadogDatabaseErrorHandler()) {
+                                // …
+   
+   }
 ```
 
 ### Apollo (GraphQL)

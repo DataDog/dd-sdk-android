@@ -28,7 +28,15 @@ plugins {
     id("com.jfrog.bintray")
     jacoco
     id("realm-android")
+    id("com.squareup.sqldelight")
+}
 
+sqldelight {
+    database("LogsDatabase") {
+        packageName = "com.datadog.android.sample"
+        dialect = "sqlite:3.24"
+        sourceFolders = listOf("sqldelight")
+    }
 }
 
 android {
@@ -81,13 +89,16 @@ android {
         register("coil") {
             dimension = "ill"
         }
-        register("sqlite") {
-            dimension = "ls"
-        }
         register("room") {
             dimension = "ls"
         }
         register("realm") {
+            dimension = "ls"
+        }
+        register("sqldelight") {
+            dimension = "ls"
+        }
+        register("sqlite") {
             dimension = "ls"
         }
     }
@@ -107,6 +118,9 @@ android {
     }
     sourceSets.named("coil") {
         java.srcDir("src/coil/kotlin")
+    }
+    sourceSets.named("sqldelight") {
+        java.srcDir("src/sqldelight/kotlin")
     }
     sourceSets.named("sqlite") {
         java.srcDir("src/sqlite/kotlin")
@@ -156,6 +170,7 @@ dependencies {
     "coilApi"(project(":dd-sdk-android-coil"))
     "glideApi"(project(":dd-sdk-android-glide"))
     "frescoApi"(project(":dd-sdk-android-fresco"))
+    "sqldelightApi"(project(":dd-sdk-android-sqldelight"))
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -196,6 +211,9 @@ dependencies {
     // Room
     "roomImplementation"(Dependencies.Libraries.Room)
     "kaptRoom"(Dependencies.AnnotationProcessors.Room)
+
+    // SQLDelight
+    "sqldelightImplementation"(Dependencies.Libraries.SQLDelight)
 
     // RxJava
     implementation(Dependencies.Libraries.RxJava)

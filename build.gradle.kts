@@ -21,6 +21,7 @@ buildscript {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Bintray)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Unmock)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Realm)
+        classpath(com.datadog.gradle.Dependencies.ClassPaths.SQLDelight)
     }
 }
 
@@ -57,6 +58,7 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-ktx:assemble",
         ":dd-sdk-android-ndk:assemble",
         ":dd-sdk-android-rx:assemble",
+        ":dd-sdk-android-sqldelight:assemble",
         ":dd-sdk-android-timber:assemble"
     )
 }
@@ -70,6 +72,7 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-ktx:testReleaseUnitTest",
         ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":dd-sdk-android-rx:testReleaseUnitTest",
+        ":dd-sdk-android-sqldelight:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest"
     )
 }
@@ -83,6 +86,7 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-ktx:testDebugUnitTest",
         ":dd-sdk-android-ndk:testDebugUnitTest",
         ":dd-sdk-android-rx:testDebugUnitTest",
+        ":dd-sdk-android-sqldelight:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest"
     )
 }
@@ -113,6 +117,7 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-ktx:ktlintCheck",
         ":dd-sdk-android-ndk:ktlintCheck",
         ":dd-sdk-android-rx:ktlintCheck",
+        ":dd-sdk-android-sqldelight:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
@@ -130,6 +135,7 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-ktx:lintRelease",
         ":dd-sdk-android-ndk:lintRelease",
         ":dd-sdk-android-rx:lintRelease",
+        ":dd-sdk-android-sqldelight:lintRelease",
         ":dd-sdk-android-timber:lintRelease"
     )
 }
@@ -143,6 +149,7 @@ tasks.register("detektAll") {
         ":dd-sdk-android-ktx:detekt",
         ":dd-sdk-android-ndk:detekt",
         ":dd-sdk-android-rx:detekt",
+        ":dd-sdk-android-sqldelight:detekt",
         ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
@@ -166,6 +173,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android-ndk:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-rx:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-sqldelight:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-sqldelight:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
         ":tools:detekt:jacocoTestReport",

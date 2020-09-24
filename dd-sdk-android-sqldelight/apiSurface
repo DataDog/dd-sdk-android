@@ -1,0 +1,4 @@
+class com.datadog.android.sqldelight.DatadogSqliteCallback : com.squareup.sqldelight.android.AndroidSqliteDriver.Callback
+  constructor(com.squareup.sqldelight.db.SqlDriver.Schema)
+  override fun onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)
+  companion object 

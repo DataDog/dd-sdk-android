@@ -70,14 +70,14 @@ class CloseableExtTest {
     @Throws
     fun `M send an error event W exception in the block`(forge: Forge) {
         // GIVEN
-        var caughtException: Exception? = null
+        var caughtException: Throwable? = null
 
         // WHEN
         try {
             testMockCloseable.useMonitored {
                 throw fakeException
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             caughtException = e
         }
 
@@ -94,13 +94,13 @@ class CloseableExtTest {
     @Test
     fun `M close the closeable instance W exception in the block`(forge: Forge) {
         // GIVEN
-        var caughtException: Exception? = null
+        var caughtException: Throwable? = null
         // WHEN
         try {
             testMockCloseable.useMonitored {
                 throw fakeException
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             caughtException = e
         }
 

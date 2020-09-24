@@ -20,6 +20,6 @@ interface LogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(logs: List<LogRoom>)
 
-    @Query("DELETE FROM logs where ttl <= :minTtl")
+    @Query("DELETE FROM logs where ttl < :minTtl")
     fun purge(minTtl: Long)
 }
