@@ -37,7 +37,8 @@ private constructor(
     internal data class CoreConfig(
         var needsClearTextHttp: Boolean = false,
         val envName: String = "",
-        val serviceName: String? = null
+        val serviceName: String? = null,
+        val hosts: List<String> = emptyList()
     )
 
     internal data class FeatureConfig(
@@ -211,6 +212,19 @@ private constructor(
             crashReportConfig = crashReportConfig.copy(envName = envName)
             rumConfig = rumConfig.copy(envName = envName)
             coreConfig = coreConfig.copy(envName = envName)
+            return this
+        }
+
+        /**
+         * Sets the list of first party hosts.
+         * Requests made to a URL with any one of these hosts (or any subdomain) will:
+         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+         * @param hosts a list of all the hosts that you own.
+         * See [DatadogInterceptor]
+         */
+        fun setFirstPartyHosts(hosts: List<String>): Builder {
+            coreConfig = coreConfig.copy(hosts = hosts)
             return this
         }
 

@@ -20,6 +20,7 @@ class com.datadog.android.DatadogConfig
     fun setRumEnabled(Boolean): Builder
     fun setServiceName(String): Builder
     DEPRECATED fun setEnvironmentName(String): Builder
+    fun setFirstPartyHosts(List<String>): Builder
     fun useEUEndpoints(): Builder
     fun useUSEndpoints(): Builder
     fun useGovEndpoints(): Builder
