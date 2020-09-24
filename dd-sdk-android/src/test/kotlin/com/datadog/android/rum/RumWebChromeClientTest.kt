@@ -19,7 +19,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -52,10 +51,10 @@ internal class RumWebChromeClientTest {
     @Mock
     private lateinit var mockConsoleMessage: ConsoleMessage
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     private lateinit var fakeMessage: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     private lateinit var fakeSource: String
 
     @IntForgery(min = 0)

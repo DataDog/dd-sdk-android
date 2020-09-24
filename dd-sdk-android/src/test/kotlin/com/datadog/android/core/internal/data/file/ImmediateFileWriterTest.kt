@@ -20,7 +20,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -150,8 +149,8 @@ internal class ImmediateFileWriterTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 do nothing 𝕎 write() and serialisation fails`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) model: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) errorMessage: String
+        @StringForgery model: String,
+        @StringForgery errorMessage: String
     ) {
         val throwable = RuntimeException(errorMessage)
         doThrow(throwable).whenever(mockSerializer).serialize(model)

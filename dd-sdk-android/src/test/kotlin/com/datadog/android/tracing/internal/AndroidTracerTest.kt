@@ -100,7 +100,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `buildSpan will inject a parent context`(
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
         val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
@@ -117,7 +117,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `buildSpan will not inject a parent context if one exists`(
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
         val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
@@ -136,7 +136,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `buildSpan will inject RumContext if RumMonitor is Set`(
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         forge: Forge
     ) {
         val rumContext = forge.getForgery<RumContext>()
@@ -182,9 +182,9 @@ internal class AndroidTracerTest {
 
     @Test
     fun `it will build a valid Tracer with global tags`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) operation: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.HEXADECIMAL) value: String
+        @StringForgery operation: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) value: String
     ) {
         // When
         val tracer = testedTracerBuilder

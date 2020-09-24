@@ -40,7 +40,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -97,7 +96,7 @@ internal class NavigationViewTrackingStrategyTest {
     @IntForgery
     var fakeNavViewId: Int = 0
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeDestinationName: String
 
     @BeforeEach
@@ -285,7 +284,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `start new view onDestinationChanged`(
         forge: Forge,
-        @StringForgery(StringForgeryType.ALPHABETICAL) newDestinationName: String
+        @StringForgery newDestinationName: String
     ) {
         val newDestination = mockNavDestination(forge, newDestinationName)
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)

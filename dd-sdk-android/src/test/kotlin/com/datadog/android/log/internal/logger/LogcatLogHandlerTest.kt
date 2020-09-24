@@ -9,7 +9,6 @@ package com.datadog.android.log.internal.logger
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -22,7 +21,7 @@ internal class LogcatLogHandlerTest {
 
     lateinit var testedHandler: LogcatLogHandler
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeServiceName: String
 
     @BeforeEach

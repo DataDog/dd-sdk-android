@@ -19,7 +19,6 @@ import com.datadog.android.utils.mockContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
@@ -45,7 +44,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeEnvName: String
     lateinit var mockAppContext: Application
 

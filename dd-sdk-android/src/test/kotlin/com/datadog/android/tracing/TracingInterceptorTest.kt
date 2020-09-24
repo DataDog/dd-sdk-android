@@ -124,7 +124,7 @@ internal open class TracingInterceptorTest {
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
-    @StringForgery(StringForgeryType.ASCII)
+    @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeResponseBody: String
 
     lateinit var fakeUrl: String
@@ -132,7 +132,7 @@ internal open class TracingInterceptorTest {
     @Forgery
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakePackageName: String
 
     @RegexForgery("\\d(\\.\\d){3}")
@@ -141,10 +141,10 @@ internal open class TracingInterceptorTest {
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
 
     // endregion
@@ -193,8 +193,8 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 inject tracing header 𝕎 intercept() for any request`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         stubChain(mockChain, statusCode)
@@ -214,8 +214,8 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 inject tracing header 𝕎 intercept() for request with parent span`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
@@ -242,8 +242,8 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 update header with parent context 𝕎 intercept() for request with tracing headers`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @LongForgery(min = 0) traceId: Long,
         @LongForgery(min = 0) spanId: Long,
@@ -442,8 +442,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         stubChain(mockChain, statusCode)
         whenever(
@@ -467,8 +467,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for failing request`(
         @IntForgery(min = 400, max = 600) statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         stubChain(mockChain, statusCode)
         whenever(
@@ -492,8 +492,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())

@@ -60,7 +60,7 @@ internal class DatadogEventListenerTest {
     @Mock
     lateinit var mockCall: Call
 
-    @StringForgery(StringForgeryType.ASCII)
+    @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeKey: String
 
     @RegexForgery("[a-z]+\\.[a-z]{3}")
@@ -257,7 +257,7 @@ internal class DatadogEventListenerTest {
 
     @Test
     fun `𝕄 send timing info 𝕎 callFailed() for throwing request`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) error: String
+        @StringForgery error: String
     ) {
         // When
         testedListener.callStart(mockCall)

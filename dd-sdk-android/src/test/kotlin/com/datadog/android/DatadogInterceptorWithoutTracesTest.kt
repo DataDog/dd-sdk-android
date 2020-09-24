@@ -96,7 +96,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
-    @StringForgery(StringForgeryType.ASCII)
+    @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeResponseBody: String
 
     lateinit var fakeUrl: String
@@ -104,7 +104,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Forgery
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakePackageName: String
 
     @RegexForgery("\\d(\\.\\d){3}")

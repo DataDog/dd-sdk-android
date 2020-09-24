@@ -468,8 +468,8 @@ internal class RumFeatureTest {
 
     @Test
     fun `clears all files on local storage on request`(
-        @StringForgery(StringForgeryType.NUMERICAL) fileName: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) content: String
+        @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
+        @StringForgery content: String
     ) {
         val fakeDir = File(tempRootDir, RumFileStrategy.RUM_FOLDER)
         fakeDir.mkdirs()

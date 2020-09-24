@@ -9,7 +9,6 @@ package com.datadog.android.core.internal.net
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
@@ -37,7 +36,7 @@ internal class RequestUniqueIdentifierTest {
     @RegexForgery("x-[a-z]+/[a-z]+")
     private lateinit var fakeContentType: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     private lateinit var fakeBody: String
 
     @Test

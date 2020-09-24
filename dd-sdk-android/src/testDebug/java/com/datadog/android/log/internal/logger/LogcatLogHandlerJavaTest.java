@@ -24,7 +24,7 @@ public class LogcatLogHandlerJavaTest {
 
     LogcatLogHandler testedHandler;
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     String fakeServiceName;
 
     @BeforeEach

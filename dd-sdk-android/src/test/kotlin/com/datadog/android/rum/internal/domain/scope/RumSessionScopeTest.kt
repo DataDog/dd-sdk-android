@@ -35,7 +35,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
@@ -281,8 +280,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M update child scope W handleEvent(StartView)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery key: String,
+        @StringForgery name: String,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
@@ -300,8 +299,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M update child scope W handleEvent(StartView) event with existing children`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery key: String,
+        @StringForgery name: String,
         forge: Forge
     ) {
         testedScope.activeChildrenScopes.add(mockChildScope)
@@ -346,8 +345,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M send ApplicationStarted event W applicationDisplayed`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
@@ -365,8 +364,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M send ApplicationStarted event only once W applicationDisplayed`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
@@ -385,8 +384,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M send ApplicationStarted event W applicationDisplayed after ResetSession`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
@@ -409,8 +408,8 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M do nothing W applicationDisplayed if session not kept`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())

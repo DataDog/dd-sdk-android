@@ -72,10 +72,10 @@ internal class DatadogTest {
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakePackageName: String
 
     @RegexForgery("\\d(\\.\\d){3}")
@@ -118,8 +118,8 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) id: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
         @RegexForgery("\\w+@\\w+") email: String
     ) {
         // Given
@@ -135,8 +135,8 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) id: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
         @RegexForgery("\\w+@\\w+") email: String
     ) {
         // Given

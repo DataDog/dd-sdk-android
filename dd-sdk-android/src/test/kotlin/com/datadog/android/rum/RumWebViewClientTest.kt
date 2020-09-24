@@ -27,7 +27,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
@@ -117,7 +116,7 @@ internal class RumWebViewClientTest {
     @Test
     fun `onReceivedError sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         testedClient.onReceivedError(mockWebView, errorCode, description, fakeUrl)
 
@@ -132,7 +131,7 @@ internal class RumWebViewClientTest {
     @Test
     fun `onReceivedError with null description sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         testedClient.onReceivedError(mockWebView, errorCode, null, fakeUrl)
 
@@ -147,7 +146,7 @@ internal class RumWebViewClientTest {
     @Test
     fun `onReceivedError with null url sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         testedClient.onReceivedError(mockWebView, errorCode, description, null)
 
@@ -163,7 +162,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.M)
     fun `onReceivedError (request) sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         val mockRequest: WebResourceRequest = mock()
         val mockError: WebResourceError = mock()
@@ -186,7 +185,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.M)
     fun `onReceivedError (request) with null request sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         val mockError: WebResourceError = mock()
         whenever(mockError.description) doReturn description
@@ -206,7 +205,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.M)
     fun `onReceivedError (request) with null error sends a RUM Error`(
         @IntForgery errorCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) description: String
+        @StringForgery description: String
     ) {
         val mockRequest: WebResourceRequest = mock()
         val mockUri: Uri = mock()
@@ -226,7 +225,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `onReceivedHttpError sends a RUM Error`(
         @IntForgery statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
+        @StringForgery reasonPhrase: String
     ) {
         val mockRequest: WebResourceRequest = mock()
         val mockResponse: WebResourceResponse = mock()
@@ -249,7 +248,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `onReceivedHttpError with null response sends a RUM Error`(
         @IntForgery statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
+        @StringForgery reasonPhrase: String
     ) {
         val mockRequest: WebResourceRequest = mock()
         val mockUri: Uri = mock()
@@ -269,7 +268,7 @@ internal class RumWebViewClientTest {
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `onReceivedHttpError with null request sends a RUM Error`(
         @IntForgery statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) reasonPhrase: String
+        @StringForgery reasonPhrase: String
     ) {
         val mockResponse: WebResourceResponse = mock()
         whenever(mockResponse.reasonPhrase) doReturn reasonPhrase

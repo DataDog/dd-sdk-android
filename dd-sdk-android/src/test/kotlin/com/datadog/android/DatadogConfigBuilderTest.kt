@@ -49,10 +49,10 @@ internal class DatadogConfigBuilderTest {
 
     lateinit var testedBuilder: DatadogConfig.Builder
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeClientToken: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeEnvName: String
 
     @Forgery
@@ -226,7 +226,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with serviceName 𝕎 setServiceName() and build()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) serviceName: String
+        @StringForgery serviceName: String
     ) {
         // When
         val config = testedBuilder
@@ -249,7 +249,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with envName 𝕎 setEnvironmentName() and build()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) envName: String
+        @StringForgery envName: String
     ) {
         // When
         val config = testedBuilder

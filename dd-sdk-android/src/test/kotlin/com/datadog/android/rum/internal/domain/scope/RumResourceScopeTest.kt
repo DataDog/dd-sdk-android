@@ -187,8 +187,8 @@ internal class RumResourceScopeTest {
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
-        @StringForgery(StringForgeryType.HEXADECIMAL) fakeSpanId: String,
-        @StringForgery(StringForgeryType.HEXADECIMAL) fakeTraceId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeSpanId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeTraceId: String,
         forge: Forge
     ) {
         // Given
@@ -441,7 +441,7 @@ internal class RumResourceScopeTest {
 
     @Test
     fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithError)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -485,7 +485,7 @@ internal class RumResourceScopeTest {
     @Test
     fun `𝕄 send Error with initial context 𝕎 handleEvent(StopResourceWithError)`(
         @Forgery context: RumContext,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -529,7 +529,7 @@ internal class RumResourceScopeTest {
 
     @Test
     fun `𝕄 send Error with global attributes 𝕎 handleEvent(StopResourceWithError)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
         @Forgery throwable: Throwable,
@@ -599,7 +599,7 @@ internal class RumResourceScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StopResourceWithError) with different key`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
         @Forgery throwable: Throwable,
