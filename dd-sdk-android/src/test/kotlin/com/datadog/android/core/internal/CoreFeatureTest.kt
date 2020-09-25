@@ -30,14 +30,14 @@ import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import okhttp3.ConnectionSpec
@@ -69,7 +69,7 @@ internal class CoreFeatureTest {
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
 
-    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @BeforeEach
@@ -138,6 +138,16 @@ internal class CoreFeatureTest {
 
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+    }
+
+    @Test
+    fun `initializes first party hosts detector`(
+        @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
+    ) {
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(hosts = hosts))
+
+        val lowercaseHosts = hosts.map { it.toLowerCase(Locale.US) }
+        assertThat(CoreFeature.firstPartyHostDetector.knownHosts).containsAll(lowercaseHosts)
     }
 
     @Test

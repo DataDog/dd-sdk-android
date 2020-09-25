@@ -13,7 +13,7 @@ internal class FirstPartyHostDetector(
     hosts: List<String>
 ) {
     // As per
-    private val knownHosts = hosts.map { it.toLowerCase(Locale.US) }
+    internal val knownHosts = hosts.map { it.toLowerCase(Locale.US) }
 
     fun isFirstPartyUrl(url: HttpUrl): Boolean {
         val host = url.host()

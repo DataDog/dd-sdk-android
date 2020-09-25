@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
@@ -55,6 +56,7 @@ internal object CoreFeature {
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
+    internal var firstPartyHostDetector = FirstPartyHostDetector(emptyList())
 
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
 
@@ -110,6 +112,8 @@ internal object CoreFeature {
                 TimeUnit.MILLISECONDS,
                 LinkedBlockingDeque()
             )
+
+        firstPartyHostDetector = FirstPartyHostDetector(config.hosts)
         initialized.set(true)
     }
 
@@ -125,6 +129,7 @@ internal object CoreFeature {
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()
             userInfoProvider = NoOpMutableUserInfoProvider()
+            firstPartyHostDetector = FirstPartyHostDetector(emptyList())
             serviceName = ""
             packageName = ""
             packageVersion = ""
