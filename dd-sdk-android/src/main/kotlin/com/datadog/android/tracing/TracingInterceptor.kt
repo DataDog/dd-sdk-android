@@ -7,6 +7,7 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.DatadogInterceptor
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
@@ -58,6 +59,7 @@ import okhttp3.Response
  */
 open class TracingInterceptor
 internal constructor(
+    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
     internal val tracedHosts: List<String>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val localTracerFactory: () -> Tracer
@@ -82,10 +84,21 @@ internal constructor(
      * @param tracedRequestListener a listener for automatically created [Span]s
      */
     @JvmOverloads
+    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
     ) : this(tracedHosts, tracedRequestListener, { AndroidTracer.Builder().build() })
+
+    /**
+     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
+     *
+     * @param tracedRequestListener a listener for automatically created [Span]s
+     */
+    @JvmOverloads
+    constructor(
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+    ) : this(emptyList(), tracedRequestListener, { AndroidTracer.Builder().build() })
 
     // region Interceptor
 
@@ -130,8 +143,9 @@ internal constructor(
     // region Internal
 
     private fun isRequestTraceable(request: Request): Boolean {
-        val host = request.url().host()
-        return host.matches(hostRegex)
+        val url = request.url()
+        return CoreFeature.firstPartyHostDetector.isFirstPartyUrl(url) ||
+            url.host().matches(hostRegex)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")

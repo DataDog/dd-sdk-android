@@ -334,7 +334,8 @@ class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
+  DEPRECATED constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
+  constructor(TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
