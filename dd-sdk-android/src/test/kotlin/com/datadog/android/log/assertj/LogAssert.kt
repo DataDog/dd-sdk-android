@@ -61,6 +61,15 @@ internal class LogAssert(actual: Log) :
         return this
     }
 
+    fun hasTimestamp(expected: Long): LogAssert {
+        assertThat(actual.timestamp)
+            .overridingErrorMessage(
+                "Expected log to have timestamp $expected but was ${actual.timestamp}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasExactlyAttributes(attributes: Map<String, Any?>): LogAssert {
         assertThat(actual.attributes)
             .hasSameSizeAs(attributes)
@@ -93,6 +102,16 @@ internal class LogAssert(actual: Log) :
                     "but was ${actual.networkInfo}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun doesNotHaveNetworkInfo(): LogAssert {
+        assertThat(actual.networkInfo)
+            .overridingErrorMessage(
+                "Expected log to not have a networkInfo " +
+                    "but instead it had ${actual.networkInfo}"
+            )
+            .isNull()
         return this
     }
 

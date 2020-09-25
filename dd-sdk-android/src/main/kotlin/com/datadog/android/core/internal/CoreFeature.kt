@@ -65,6 +65,7 @@ internal object CoreFeature {
     internal var packageVersion: String = ""
     internal var serviceName: String = ""
     internal var isMainProcess: Boolean = true
+    internal var envName: String = ""
 
     internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
     internal lateinit var dataPersistenceExecutorService: ExecutorService
@@ -93,6 +94,7 @@ internal object CoreFeature {
         serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
         isMainProcess = resolveIsMainProcess(appContext)
+        envName = config.envName
 
         readApplicationInformation(appContext)
 
