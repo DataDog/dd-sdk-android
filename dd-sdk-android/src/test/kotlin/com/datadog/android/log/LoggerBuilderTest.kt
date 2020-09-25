@@ -90,9 +90,9 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
-        assertThat(handler.serviceName).isEqualTo(CoreFeature.serviceName)
-        assertThat(handler.loggerName).isEqualTo(fakePackageName)
-        assertThat(handler.networkInfoProvider).isNull()
+        assertThat(handler.logGenerator.serviceName).isEqualTo(CoreFeature.serviceName)
+        assertThat(handler.logGenerator.loggerName).isEqualTo(fakePackageName)
+        assertThat(handler.logGenerator.networkInfoProvider).isNull()
         assertThat(handler.writer).isNotNull()
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
@@ -108,7 +108,7 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
-        assertThat(handler.serviceName).isEqualTo(serviceName)
+        assertThat(handler.logGenerator.serviceName).isEqualTo(serviceName)
     }
 
     @Test
@@ -172,7 +172,7 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
-        assertThat(handler.networkInfoProvider).isNotNull()
+        assertThat(handler.logGenerator.networkInfoProvider).isNotNull()
     }
 
     @Test
@@ -184,7 +184,7 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.getFieldValue("handler")
-        assertThat(handler.loggerName).isEqualTo(loggerName)
+        assertThat(handler.logGenerator.loggerName).isEqualTo(loggerName)
     }
 
     @Test

@@ -8,7 +8,6 @@ package com.datadog.android.log
 
 import android.util.Log
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonArray
@@ -26,7 +25,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,16 +50,8 @@ internal class LoggerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        LogsFeature.envName = ""
-        LogsFeature.appVersion = ""
         fakeMessage = forge.anAlphabeticalString()
         testedLogger = Logger(mockLogHandler)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        LogsFeature.envName = ""
-        LogsFeature.appVersion = ""
     }
 
     // region Log
@@ -706,62 +696,6 @@ internal class LoggerTest {
     // endregion
 
     // region Tags
-
-    @Test
-    fun `adds env tag if present`(forge: Forge) {
-        val envName = forge.anAlphabeticalString()
-        LogsFeature.envName = envName
-
-        testedLogger.i(fakeMessage)
-
-        verify(mockLogHandler)
-            .handleLog(
-                Log.INFO,
-                fakeMessage,
-                null,
-                emptyMap(),
-                setOf("${LogAttributes.ENV}:$envName")
-            )
-    }
-
-    @Test
-    fun `adds app version tag if present`(forge: Forge) {
-        val appVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
-        LogsFeature.appVersion = appVersion
-
-        testedLogger.i(fakeMessage)
-
-        verify(mockLogHandler)
-            .handleLog(
-                Log.INFO,
-                fakeMessage,
-                null,
-                emptyMap(),
-                setOf("${LogAttributes.APPLICATION_VERSION}:$appVersion")
-            )
-    }
-
-    @Test
-    fun `adds app version tag and env tag if both present`(forge: Forge) {
-        val appVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
-        LogsFeature.appVersion = appVersion
-        val envName = forge.anAlphabeticalString()
-        LogsFeature.envName = envName
-
-        testedLogger.i(fakeMessage)
-
-        verify(mockLogHandler)
-            .handleLog(
-                Log.INFO,
-                fakeMessage,
-                null,
-                emptyMap(),
-                setOf(
-                    "${LogAttributes.ENV}:$envName",
-                    "${LogAttributes.APPLICATION_VERSION}:$appVersion"
-                )
-            )
-    }
 
     @Test
     fun `add simple tag to logger`(forge: Forge) {
