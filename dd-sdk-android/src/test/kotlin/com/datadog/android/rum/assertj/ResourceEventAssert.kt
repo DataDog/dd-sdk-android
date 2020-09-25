@@ -366,6 +366,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasFirstParty(expected: Boolean?): ResourceEventAssert {
+        assertThat(actual.resource.firstParty)
+            .overridingErrorMessage(
+                "Expected event data to have resource.first_party $expected " +
+                    "but was ${actual.resource.firstParty}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

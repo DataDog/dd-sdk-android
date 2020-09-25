@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -111,6 +112,7 @@ internal class RumResourceScope(
         )
     }
 
+    @Suppress("LongMethod")
     private fun sendResource(
         kind: RumResourceKind,
         statusCode: Long?,
@@ -127,6 +129,7 @@ internal class RumResourceScope(
 
         val finalTiming = timing
         val duration = eventTime.nanoTime - startedNanos
+        val isFirstParty = CoreFeature.firstPartyHostDetector.isFirstPartyUrl(url)
 
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
@@ -142,7 +145,8 @@ internal class RumResourceScope(
                 connect = finalTiming?.connect(),
                 ssl = finalTiming?.ssl(),
                 firstByte = finalTiming?.firstByte(),
-                download = finalTiming?.download()
+                download = finalTiming?.download(),
+                firstParty = if (isFirstParty) true else null
             ),
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(

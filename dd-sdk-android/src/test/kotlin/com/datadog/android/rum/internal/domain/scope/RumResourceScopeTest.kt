@@ -6,8 +6,10 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -27,8 +29,10 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atMost
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
@@ -85,6 +89,9 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     @RegexForgery("http(s?)://[a-z]+.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
@@ -117,6 +124,8 @@ internal class RumResourceScopeTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
+        CoreFeature.firstPartyHostDetector = mockDetector
 
         testedScope = RumResourceScope(
             mockParentScope,
@@ -132,6 +141,7 @@ internal class RumResourceScopeTest {
     fun `tear down`() {
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
         GlobalRum.globalAttributes.clear()
+        CoreFeature.firstPartyHostDetector = FirstPartyHostDetector(emptyList())
     }
 
     @Test
@@ -172,6 +182,57 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasFirstParty(null)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send first party Resource 𝕎 handleEvent(StopResource)`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // When
+        Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasResourceData {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
+                    hasFirstParty(true)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -224,6 +285,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(fakeTraceId)
                     hasSpanId(fakeSpanId)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -274,6 +336,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -323,6 +386,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -375,6 +439,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -428,6 +493,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -679,6 +745,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -727,6 +794,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -777,6 +845,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasFirstParty(null)
                 }
         }
         verify(mockParentScope).handleEvent(
