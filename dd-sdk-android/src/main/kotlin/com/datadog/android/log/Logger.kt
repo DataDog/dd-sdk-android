@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -298,11 +299,15 @@ internal constructor(private val handler: LogHandler) {
                     null
                 }
                 DatadogLogHandler(
-                    serviceName = serviceName,
-                    loggerName = loggerName,
+                    logGenerator = LogGenerator(
+                        serviceName,
+                        loggerName,
+                        netInfoProvider,
+                        CoreFeature.userInfoProvider,
+                        CoreFeature.envName,
+                        CoreFeature.packageVersion
+                    ),
                     writer = LogsFeature.persistenceStrategy.getWriter(),
-                    networkInfoProvider = netInfoProvider,
-                    userInfoProvider = CoreFeature.userInfoProvider,
                     bundleWithTraces = bundleWithTraceEnabled,
                     bundleWithRum = bundleWithRumEnabled,
                     sampler = RateBasedSampler(sampleRate)
@@ -477,17 +482,7 @@ internal constructor(private val handler: LogHandler) {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)
-
-        val combinedTags = mutableSetOf<String>()
-        combinedTags.addAll(tags)
-        if (LogsFeature.envTag.isNotEmpty()) {
-            combinedTags.add(LogsFeature.envTag)
-        }
-        if (LogsFeature.appVersionTag.isNotEmpty()) {
-            combinedTags.add(LogsFeature.appVersionTag)
-        }
-
-        handler.handleLog(level, message, throwable, combinedAttributes, combinedTags, timestamp)
+        handler.handleLog(level, message, throwable, combinedAttributes, tags, timestamp)
     }
 
     private fun addTagInternal(tag: String) {

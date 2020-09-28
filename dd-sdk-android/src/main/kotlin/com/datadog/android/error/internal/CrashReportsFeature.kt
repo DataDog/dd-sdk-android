@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.plugin.DatadogPlugin
@@ -35,18 +36,6 @@ internal object CrashReportsFeature {
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
-    internal var envName: String = ""
-        set(value) {
-            field = value
-            envTag = if (value.isEmpty()) {
-                ""
-            } else {
-                "env:$value"
-            }
-        }
-    internal var envTag: String = ""
-        private set
-
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
@@ -69,7 +58,6 @@ internal object CrashReportsFeature {
 
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
-        envName = config.envName
 
         persistenceStrategy = CrashLogFileStrategy(appContext)
         setupUploader(
@@ -99,7 +87,6 @@ internal object CrashReportsFeature {
             uploader = NoOpDataUploader()
             dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
-            envName = ""
             endpointUrl = DatadogEndpoint.LOGS_US
 
             initialized.set(false)
@@ -137,10 +124,16 @@ internal object CrashReportsFeature {
     ) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         DatadogExceptionHandler(
-            networkInfoProvider,
-            userInfoProvider,
-            persistenceStrategy.getWriter(),
-            appContext
+            LogGenerator(
+                CoreFeature.serviceName,
+                DatadogExceptionHandler.LOGGER_NAME,
+                networkInfoProvider,
+                userInfoProvider,
+                CoreFeature.envName,
+                CoreFeature.packageVersion
+            ),
+            writer = persistenceStrategy.getWriter(),
+            appContext = appContext
         ).register()
     }
 

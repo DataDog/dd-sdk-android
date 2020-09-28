@@ -10,8 +10,10 @@ import android.app.Application
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
+import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfo
@@ -21,6 +23,7 @@ import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
@@ -44,6 +47,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -102,28 +106,33 @@ internal class DatadogExceptionHandlerTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
-    lateinit var fakeEnv: String
-
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
+
+    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-
         val mockContext: Application = mockContext()
-        val config = DatadogConfig.Builder(fakeToken, fakeEnv).build()
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName).build()
         Datadog.initialize(mockContext(), config)
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
         testedHandler = DatadogExceptionHandler(
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockLogWriter,
-            mockContext
+            LogGenerator(
+                CoreFeature.serviceName,
+                DatadogExceptionHandler.LOGGER_NAME,
+                mockNetworkInfoProvider,
+                mockUserInfoProvider,
+                CoreFeature.envName,
+                CoreFeature.packageVersion
+            ),
+            writer = mockLogWriter,
+            appContext = mockContext
         )
         testedHandler.register()
     }
@@ -140,9 +149,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `log exception when caught with no previous handler`(forge: Forge) {
-        val envName = forge.anAlphaNumericalString()
-        CrashReportsFeature.envName = envName
+    fun `M log exception W caught with no previous handler`(forge: Forge) {
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
@@ -160,14 +167,19 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(
+                    listOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                    )
+                )
+                .hasExactlyAttributes(emptyMap())
         }
         verifyZeroInteractions(mockPreviousHandler)
     }
 
     @Test
-    fun `schedules the worker when logging an exception`(forge: Forge) {
+    fun `M schedule the worker W logging an exception`(forge: Forge) {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
@@ -187,9 +199,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `log exception when caught`(forge: Forge) {
-        val envName = forge.anAlphaNumericalString()
-        CrashReportsFeature.envName = envName
+    fun `M log exception W caught`(forge: Forge) {
         val currentThread = Thread.currentThread()
 
         val now = System.currentTimeMillis()
@@ -205,40 +215,19 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(
+                    listOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                    )
+                )
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
     @Test
-    fun `log exception when caught without env name`(forge: Forge) {
-        CrashReportsFeature.envName = ""
-        val currentThread = Thread.currentThread()
-
-        val now = System.currentTimeMillis()
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        argumentCaptor<Log> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected")
-                .hasLevel(Log.CRASH)
-                .hasThrowable(fakeThrowable)
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasTimestampAround(now)
-                .hasTags(emptyList())
-                .hasAttributes(emptyMap())
-        }
-        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
-    }
-
-    @Test
-    fun `log exception when caught on background thread`(forge: Forge) {
-        val envName = forge.anAlphaNumericalString()
-        CrashReportsFeature.envName = envName
+    fun `M log exception W caught on background thread`(forge: Forge) {
         val latch = CountDownLatch(1)
         val threadName = forge.anAlphabeticalString()
         val thread = Thread({
@@ -260,14 +249,19 @@ internal class DatadogExceptionHandlerTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
-                .hasTags(listOf("env:$envName"))
-                .hasAttributes(emptyMap())
+                .hasExactlyTags(
+                    listOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                    )
+                )
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }
 
     @Test
-    fun `add current span information when tracer is active`(
+    fun `M add current span information W tracer is active`(
         @StringForgery(StringForgeryType.ALPHABETICAL) operation: String
     ) {
         val currentThread = Thread.currentThread()
@@ -282,7 +276,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
-                .hasAttributes(
+                .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.DD_TRACE_ID to tracer.traceId,
                         LogAttributes.DD_SPAN_ID to tracer.spanId
@@ -293,7 +287,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `register RUM Error with crash when RumMonitor registered`() {
+    fun `M register RUM Error with crash W RumMonitor registered`() {
         val currentThread = Thread.currentThread()
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
@@ -308,7 +302,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `add current RUM information when GlobalRum is active`(
+    fun `M add current RUM information W GlobalRum is active`(
         @Forgery rumContext: RumContext
     ) {
         val currentThread = Thread.currentThread()
@@ -321,7 +315,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
-                .hasAttributes(
+                .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumContext.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumContext.sessionId,

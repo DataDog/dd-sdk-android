@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
@@ -36,29 +35,6 @@ internal object LogsFeature {
 
     internal var clientToken: String = ""
     internal var endpointUrl: String = DatadogEndpoint.LOGS_US
-    internal var envName: String = ""
-        set(value) {
-            field = value
-            envTag = if (value.isEmpty()) {
-                ""
-            } else {
-                "${LogAttributes.ENV}:$value"
-            }
-        }
-    internal var envTag: String = ""
-        private set
-
-    internal var appVersion: String = ""
-        set(value) {
-            field = value
-            appVersionTag = if (value.isEmpty()) {
-                ""
-            } else {
-                "${LogAttributes.APPLICATION_VERSION}:$value"
-            }
-        }
-    internal var appVersionTag = ""
-
     internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
@@ -80,8 +56,6 @@ internal object LogsFeature {
 
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
-        envName = config.envName
-        appVersion = CoreFeature.packageVersion
         persistenceStrategy = LogFileStrategy(
             appContext,
             dataPersistenceExecutorService = dataPersistenceExecutor
@@ -113,8 +87,6 @@ internal object LogsFeature {
             persistenceStrategy = NoOpPersistenceStrategy()
             dataUploadScheduler = NoOpUploadScheduler()
             clientToken = ""
-            envName = ""
-            appVersion = ""
             endpointUrl = DatadogEndpoint.LOGS_US
 
             initialized.set(false)

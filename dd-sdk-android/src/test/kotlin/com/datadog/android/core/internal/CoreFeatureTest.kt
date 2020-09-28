@@ -35,6 +35,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -67,6 +68,9 @@ internal class CoreFeatureTest {
     lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
+
+    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -262,6 +266,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
+    @Test
     fun `if this process does not match the package name it will be marked as secondary process`(
         forge: Forge
     ) {
@@ -315,6 +320,15 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
+    }
+
+    @Test
+    fun `M initialise the env name W provided from Config`() {
+        // WHEN
+        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(envName = fakeEnvName))
+
+        // THEN
+        assertThat(CoreFeature.envName).isEqualTo(fakeEnvName)
     }
 
     // region internal
