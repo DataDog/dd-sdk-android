@@ -67,7 +67,6 @@ class CloseableExtTest {
     }
 
     @Test
-    @Throws
     fun `M send an error event W exception in the block`(forge: Forge) {
         // GIVEN
         var caughtException: Throwable? = null
