@@ -185,6 +185,27 @@ internal class FirstPartyHostDetectorTest {
         assertThat(result).isFalse()
     }
 
+    @Test
+    fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
+        // Given
+        val detector = FirstPartyHostDetector(emptyList())
+
+        // When
+        val result = detector.isEmpty()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `𝕄 return false 𝕎 isEmpty() {non empty host list}`() {
+        // When
+        val result = testedDetector.isEmpty()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
     companion object {
         private const val HOST_REGEX = "([a-z][a-z0-9_~-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
     }

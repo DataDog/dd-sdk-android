@@ -569,6 +569,23 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `𝕄 warn 𝕎 init() with no known host`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        whenever(mockDetector.isEmpty()) doReturn true
+
+        testedInterceptor = instantiateTestedInterceptor(emptyList()) { mockLocalTracer }
+
+        verifyZeroInteractions(mockTracer, mockLocalTracer)
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                TracingInterceptor.WARNING_TRACING_NO_HOSTS
+            )
+    }
+
+    @Test
     fun `𝕄 create only one local tracer 𝕎 intercept() called from multiple threads`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {

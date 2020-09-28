@@ -26,4 +26,8 @@ internal class FirstPartyHostDetector(
         val httpUrl = HttpUrl.parse(url) ?: return false
         return isFirstPartyUrl(httpUrl)
     }
+
+    fun isEmpty(): Boolean {
+        return knownHosts.isEmpty()
+    }
 }

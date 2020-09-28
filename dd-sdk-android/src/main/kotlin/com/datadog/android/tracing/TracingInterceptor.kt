@@ -57,6 +57,7 @@ import okhttp3.Response
  * @param tracedRequestListener a listener for automatically created [Span]s
  *
  */
+@Suppress("StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
     @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
@@ -74,6 +75,12 @@ internal constructor(
             tracedHosts.joinToString("|") { "^(.*\\.)*${it.replace(".", "\\.")}" }
         }
     )
+
+    init {
+        if (tracedHosts.isEmpty() && CoreFeature.firstPartyHostDetector.isEmpty()) {
+            devLogger.w(WARNING_TRACING_NO_HOSTS)
+        }
+    }
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
@@ -293,6 +300,12 @@ internal constructor(
 
         internal const val HEADER_CT = "Content-Type"
 
+        internal const val WARNING_TRACING_NO_HOSTS =
+            "You added a TracingInterceptor to your OkHttpClient, " +
+                "but you did not specify any first party hosts. " +
+                "Your requests won't be traced.\n" +
+                "To set a list of known hosts, you can use the " +
+                "DatadogConfig.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you did not enable the TracesFeature. " +
