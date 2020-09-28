@@ -27,6 +27,7 @@
     <string name="msg_anr">App Not Responding</string>
     <string name="msg_async_operation">Async Operation (~5s)</string>
     <string name="msg_network_request">Network Request (~1s)</string>
+    <string name="msg_coroutine_operation">Coroutine operations (~5s)</string>
     <string name="msg_rum_use_cases">RUM use cases</string>
 
     <string name="button_warning">⚠️</string>

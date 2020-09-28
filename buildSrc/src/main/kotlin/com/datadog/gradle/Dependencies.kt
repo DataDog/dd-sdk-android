@@ -68,6 +68,7 @@ object Dependencies {
         const val RxJava = "3.0.0"
         const val SQLDelight = "1.4.3"
         const val Timber = "4.7.1"
+        const val Coroutines = "1.3.9"
 
         // NDK
         const val NdkVersion = "21.3.6528147"
@@ -158,6 +159,7 @@ object Dependencies {
         )
 
         // Integrations
+
         const val Coil = "io.coil-kt:coil:${Versions.Coil}"
 
         val Fresco = arrayOf(
@@ -176,7 +178,13 @@ object Dependencies {
         const val SQLDelight = "com.squareup.sqldelight:android-driver:${Versions.SQLDelight}"
         const val Timber = "com.jakewharton.timber:timber:${Versions.Timber}"
 
+        val Coroutines = arrayOf(
+            "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.Coroutines}",
+            "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.Coroutines}"
+        )
+
         // Tools
+
         const val DetektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.Detekt}"
         const val DetektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.Detekt}"
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"

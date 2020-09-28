@@ -10,13 +10,29 @@ import android.annotation.SuppressLint
 import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.datadog.android.ktx.coroutine.CoroutineScopeSpan
+import com.datadog.android.ktx.coroutine.asyncTraced
+import com.datadog.android.ktx.coroutine.awaitTraced
+import com.datadog.android.ktx.coroutine.launchTraced
+import com.datadog.android.ktx.coroutine.sendErrorToDatadog
+import com.datadog.android.ktx.coroutine.withContextTraced
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.Result
 import com.datadog.android.sample.server.LocalServer
 import io.opentracing.Span
+import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
+import java.util.Random
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -26,6 +42,8 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, Result>? = null
     private var localServer: LocalServer = LocalServer()
+
+    private val scope = MainScope()
 
     fun onResume() {
         localServer.start("https://www.datadoghq.com/")
@@ -41,6 +59,19 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
     ) {
         asyncOperationTask = AsyncOperationTask(onProgress, onDone)
         asyncOperationTask?.execute()
+    }
+
+    fun startCoroutineOperation(
+        onDone: () -> Unit = {}
+    ) {
+        scope.launchTraced("startCoroutineOperation", Dispatchers.Main) {
+
+            setTag("flavor", BuildConfig.FLAVOR)
+            performTask(this)
+            performFlowTask()
+
+            onDone()
+        }
     }
 
     fun startRequest(
@@ -80,6 +111,74 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         networkRequestTask = null
         localServer.stop()
     }
+
+    // region Flow/Coroutine
+
+    private suspend fun performTask(scope: CoroutineScopeSpan) {
+        delay(100)
+
+        val deferred = scope.asyncTraced("coroutine async", Dispatchers.IO) {
+            setTag("flavor", BuildConfig.FLAVOR)
+            delay(2000)
+            42
+        }
+        delay(100)
+
+        withContextTraced("coroutine unconfined task", Dispatchers.Unconfined) {
+            setTag("flavor", BuildConfig.FLAVOR)
+            delay(500)
+        }
+
+        delay(100)
+
+        withContextTraced("coroutine task", Dispatchers.Default) {
+            setTag("flavor", BuildConfig.FLAVOR)
+            delay(500)
+        }
+
+        delay(100)
+
+        val x = deferred.awaitTraced("coroutine await")
+        scope.log(mapOf(Fields.MESSAGE to "The answer to life, the universe and everything is… $x"))
+    }
+
+    @SuppressLint("DefaultLocale")
+    private suspend fun performFlowTask() {
+
+        delay(100)
+        withContextTraced("coroutine flow collect", Dispatchers.Default) {
+            try {
+                setTag("flavor", BuildConfig.FLAVOR)
+                getFlow()
+                    .sendErrorToDatadog()
+                    .map { it.capitalize() }
+                    .filter { it.length > 4 }
+                    .collect {
+                        if (Random().nextInt(5) == 0) {
+                            error("Your flow just dried out…")
+                        } else {
+                            log(mapOf(Fields.MESSAGE to "got user $it"))
+                        }
+                    }
+            } catch (e: Throwable) {
+                log(mapOf(Fields.ERROR_OBJECT to e))
+            }
+        }
+    }
+
+    private fun getFlow(): Flow<String> {
+        return flow {
+            val names = listOf("jake", "cassie", "marco", "rachel", "tobias", "ax", "david")
+            for (name in names) {
+                delay(500)
+                emit(name)
+            }
+        }
+    }
+
+    // endregion
+
+    // region RequestTask
 
     private class RequestTask(
         private val url: String,
@@ -148,6 +247,10 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         }
     }
 
+    // endregion
+
+    // region AsyncOperationTask
+
     private class AsyncOperationTask(
         val onProgress: (Int) -> Unit,
         val onDone: () -> Unit
@@ -193,4 +296,6 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
             }
         }
     }
+
+    // endregion
 }

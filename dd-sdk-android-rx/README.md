@@ -28,14 +28,12 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>").build()
         Datadog.initialize(this, config)
 
-        val  logger = Logger.Builder()
-                .setNetworkInfoEnabled(true)
-                .setLogcatLogsEnabled(true)
-                .setDatadogLogsEnabled(true)
-                .build();
+        val monitor = RumMonitor.Builder().build()
+        GlobalRum.registerIfAbsent(monitor)
     }
 }
 ```

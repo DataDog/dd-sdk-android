@@ -26,31 +26,34 @@ fun Span.setError(message: String) {
 /**
  * Wraps the provided lambda within a [Span].
  * @param operationName the name of the [Span] created around the lambda
- * @param parentSpan the parent [Span]. By default this is null
+ * @param parentSpan the parent [Span] (default is `null`)
+ * @param activate whether the created [Span] should be made active for the current thread
+ * (default is `true`)
  * @param block the lambda function traced by this newly created [Span]
  *
  */
 @SuppressWarnings("TooGenericExceptionCaught")
-inline fun <T : Any> withinSpan(
+inline fun <T : Any?> withinSpan(
     operationName: String,
     parentSpan: Span? = null,
-    block: Span.() -> T?
-): T? {
+    activate: Boolean = true,
+    block: Span.() -> T
+): T {
     val tracer = GlobalTracer.get()
 
     val span = tracer.buildSpan(operationName)
         .asChildOf(parentSpan)
         .start()
-    val scope = tracer.activateSpan(span)
+
+    val scope = if (activate) tracer.activateSpan(span) else null
 
     return try {
-        val result = span.block()
-        result
+        span.block()
     } catch (e: Throwable) {
         span.setError(e)
         throw e
     } finally {
         span.finish()
-        scope.close()
+        scope?.close()
     }
 }

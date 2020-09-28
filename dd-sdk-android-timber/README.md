@@ -33,12 +33,11 @@ class SampleApplication : Application() {
         val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN).build()
         Datadog.initialize(this, config)
 
-        val  logger = Logger.Builder()
+        val logger = Logger.Builder()
                 .setNetworkInfoEnabled(true)
                 .setLogcatLogsEnabled(true)
                 .setDatadogLogsEnabled(true)
                 .build();
-
         Timber.plant(DatadogTree(logger))
     }
 }

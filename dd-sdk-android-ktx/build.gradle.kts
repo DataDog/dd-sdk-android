@@ -15,6 +15,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
 
 plugins {
@@ -70,6 +71,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android"))
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.Coroutines)
     implementation(Dependencies.Libraries.AndroidXAnnotation)
     implementation(Dependencies.Libraries.OkHttp)
 
