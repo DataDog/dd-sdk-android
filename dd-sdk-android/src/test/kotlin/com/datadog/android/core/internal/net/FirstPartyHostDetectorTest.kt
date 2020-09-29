@@ -186,6 +186,18 @@ internal class FirstPartyHostDetectorTest {
     }
 
     @Test
+    fun `𝕄 return false 𝕎 isFirstParty(String) {invalid url}`(
+        @StringForgery notAUrl: String,
+        forge: Forge
+    ) {
+        // When
+        val result = testedDetector.isFirstPartyUrl(notAUrl)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
     fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
         // Given
         val detector = FirstPartyHostDetector(emptyList())
