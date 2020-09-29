@@ -1,0 +1,21 @@
+# https://docs.codecov.io/docs/codecovyml-reference
+codecov:
+  notify:
+    require_ci_to_pass: no
+    wait_for_ci: no
+
+comment:
+  behavior: default
+  layout: header, diff, tree
+  require_changes: false
+  require_base: no
+
+coverage:
+  precision: 2
+  range: "75..95"
+  round: nearest
+
+ignore:
+  - build
+  - .*/build/.*
+  - .*/src/test/.*

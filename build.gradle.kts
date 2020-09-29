@@ -80,14 +80,23 @@ tasks.register("unitTestRelease") {
 tasks.register("unitTestDebug") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:testDebugUnitTest",
+        ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-fresco:testDebugUnitTest",
+        ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-glide:testDebugUnitTest",
+        ":dd-sdk-android-glide:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ktx:testDebugUnitTest",
+        ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ndk:testDebugUnitTest",
+        ":dd-sdk-android-ndk:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-rx:testDebugUnitTest",
+        ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
-        ":dd-sdk-android-timber:testDebugUnitTest"
+        ":dd-sdk-android-sqldelight:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport"
     )
 }
 
