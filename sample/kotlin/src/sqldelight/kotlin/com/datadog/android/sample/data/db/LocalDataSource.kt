@@ -7,10 +7,13 @@
 package com.datadog.android.sample.data.db
 
 import android.content.Context
+import com.datadog.android.log.Logger
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
+import com.datadog.android.sqldelight.transactionTraced
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
+import timber.log.Timber
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
@@ -38,7 +41,9 @@ class LocalDataSource(val context: Context) {
         // purge data first
         logsDatabase.logsQueries.purgeLogs(minTtlRequired)
         // add new data
-        logsDatabase.logsQueries.transaction {
+        logsDatabase.logsQueries.transactionTraced("Adding data to Logs DB") {
+
+            setTag("logs_count", logs.size)
             logs.forEach {
                 logsDatabase.logsQueries.insertLog(
                     it.id,
@@ -46,6 +51,9 @@ class LocalDataSource(val context: Context) {
                     it.attributes.timestamp,
                     currentTimeInMillis
                 )
+            }
+            afterCommit {
+                Timber.d("All the logs were successfully persisted into local DB")
             }
         }
     }
