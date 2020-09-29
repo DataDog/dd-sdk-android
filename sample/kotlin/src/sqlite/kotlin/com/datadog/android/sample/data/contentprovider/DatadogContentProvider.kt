@@ -12,6 +12,7 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
+import com.datadog.android.ktx.sqlite.transactionTraced
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.db.DatadogSqliteHelper
 
@@ -100,8 +101,7 @@ class DatadogContentProvider : ContentProvider() {
     // region internal
 
     private fun insertLogs(db: SQLiteDatabase, contentValues: Array<out ContentValues>): Int {
-        db.beginTransaction()
-        try {
+        db.transactionTraced("Adding data to Logs DB") {
             contentValues.forEach { value ->
                 db.insertWithOnConflict(
                     DatadogDbContract.Logs.TABLE_NAME,
@@ -110,10 +110,7 @@ class DatadogContentProvider : ContentProvider() {
                     SQLiteDatabase.CONFLICT_REPLACE
                 )
             }
-            db.setTransactionSuccessful()
             return contentValues.size
-        } finally {
-            db.endTransaction()
         }
     }
 
