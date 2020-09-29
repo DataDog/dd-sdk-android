@@ -6,6 +6,8 @@
 
 package com.datadog.android
 
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -66,9 +68,15 @@ import okhttp3.Response
 open class DatadogInterceptor
 internal constructor(
     tracedHosts: List<String>,
-    tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+    tracedRequestListener: TracedRequestListener,
+    firstPartyHostDetector: FirstPartyHostDetector,
     localTracerFactory: () -> Tracer
-) : TracingInterceptor(tracedHosts, tracedRequestListener, localTracerFactory) {
+) : TracingInterceptor(
+    tracedHosts,
+    tracedRequestListener,
+    firstPartyHostDetector,
+    localTracerFactory
+) {
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
@@ -87,7 +95,12 @@ internal constructor(
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
-    ) : this(tracedHosts, tracedRequestListener, { AndroidTracer.Builder().build() })
+    ) : this(
+        tracedHosts,
+        tracedRequestListener,
+        CoreFeature.firstPartyHostDetector,
+        { AndroidTracer.Builder().build() }
+    )
 
     // region Interceptor
 

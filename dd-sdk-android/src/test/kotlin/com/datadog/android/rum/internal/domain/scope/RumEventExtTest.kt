@@ -53,7 +53,7 @@ internal class RumEventExtTest {
 
     @Test
     fun `𝕄 return GET 𝕎 toMethod() {invalid name}`(
-        @StringForgery(StringForgeryType.NUMERICAL) name: String
+        @StringForgery(type = StringForgeryType.NUMERICAL) name: String
     ) {
         // When
         val result = name.toMethod()
@@ -79,7 +79,7 @@ internal class RumEventExtTest {
 
     @Test
     fun `𝕄 return GET 𝕎 toErrorMethod() {invalid name}`(
-        @StringForgery(StringForgeryType.NUMERICAL) name: String
+        @StringForgery(type = StringForgeryType.NUMERICAL) name: String
     ) {
         // When
         val result = name.toErrorMethod()

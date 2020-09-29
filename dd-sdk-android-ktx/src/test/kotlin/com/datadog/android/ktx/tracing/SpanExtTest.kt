@@ -12,7 +12,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Scope
@@ -90,7 +89,7 @@ class SpanExtTest {
 
     @Test
     fun `M log error message W setError(String)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String
+        @StringForgery message: String
     ) {
         val mockSpan: Span = mock()
 
@@ -106,6 +105,7 @@ class SpanExtTest {
 
     @Test
     fun `M create span around lambda W withinSpan(name){}`(
+        @StringForgery operationName: String,
         @LongForgery result: Long
     ) {
         var lambdaCalled = false
@@ -127,7 +127,7 @@ class SpanExtTest {
 
     @Test
     fun `M create span and scope around lambda W withinSpan(name, parent){}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) operationName: String,
+        @StringForgery operationName: String,
         @LongForgery result: Long
     ) {
         var lambdaCalled = false
@@ -148,6 +148,7 @@ class SpanExtTest {
 
     @Test
     fun `M create span and scope around lambda W withinSpan(name, parent){} throwing error`(
+        @StringForgery operationName: String,
         @Forgery throwable: Throwable,
         @LongForgery result: Long
     ) {

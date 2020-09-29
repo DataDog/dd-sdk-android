@@ -44,7 +44,7 @@ internal class DatadogInterceptorTest : TracingInterceptorTest() {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        return DatadogInterceptor(tracedHosts, mockRequestListener, factory)
+        return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
     }
 
     @Test

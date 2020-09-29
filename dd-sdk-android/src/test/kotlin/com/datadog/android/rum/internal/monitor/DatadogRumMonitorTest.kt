@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -74,6 +75,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockHandler: Handler
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -89,7 +93,8 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             mockWriter,
-            mockHandler
+            mockHandler,
+            mockDetector
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
@@ -104,7 +109,8 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             mockWriter,
-            mockHandler
+            mockHandler,
+            mockDetector
         )
 
         val rootScope = testedMonitor.rootScope
@@ -114,8 +120,8 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W startView()`(
-        @StringForgery(StringForgeryType.ASCII) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
     ) {
         testedMonitor.startView(key, name, fakeAttributes)
         Thread.sleep(200)
@@ -133,7 +139,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopView()`(
-        @StringForgery(StringForgeryType.ASCII) key: String
+        @StringForgery(type = StringForgeryType.ASCII) key: String
     ) {
         testedMonitor.stopView(key, fakeAttributes)
         Thread.sleep(200)
@@ -151,7 +157,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W addUserAction()`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery name: String
     ) {
         testedMonitor.addUserAction(type, name, fakeAttributes)
         Thread.sleep(200)
@@ -171,7 +177,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W startUserAction()`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery name: String
     ) {
         testedMonitor.startUserAction(type, name, fakeAttributes)
         Thread.sleep(200)
@@ -191,7 +197,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W stopUserAction()`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery name: String
     ) {
         testedMonitor.stopUserAction(type, name, fakeAttributes)
         Thread.sleep(200)
@@ -209,8 +215,8 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W startResource()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         testedMonitor.startResource(key, method, url, fakeAttributes)
@@ -230,7 +236,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopResource()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery key: String,
         @IntForgery(200, 600) statusCode: Int,
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
@@ -253,7 +259,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopResource() {without status code nor size}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery key: String,
         @Forgery kind: RumResourceKind
     ) {
         testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
@@ -274,8 +280,8 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopResourceWithError()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery key: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @IntForgery(200, 600) statusCode: Int,
         @Forgery throwable: Throwable
@@ -298,8 +304,8 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopResourceWithError() {without status code}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery key: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -321,7 +327,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W addError`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -344,9 +350,9 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W onAddErrorWithStacktrace`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String
+        @StringForgery stacktrace: String
     ) {
         testedMonitor.addErrorWithStacktrace(message, source, stacktrace, fakeAttributes)
         Thread.sleep(200)
@@ -382,7 +388,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W waitForResourceTiming()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         testedMonitor.waitForResourceTiming(key)
         Thread.sleep(200)
@@ -399,7 +405,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W addResourceTiming()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery key: String,
         @Forgery timing: ResourceTiming
     ) {
         testedMonitor.addResourceTiming(key, timing)
@@ -418,7 +424,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W addCrash()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {

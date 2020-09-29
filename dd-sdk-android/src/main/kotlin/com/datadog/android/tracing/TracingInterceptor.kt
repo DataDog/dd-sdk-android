@@ -7,6 +7,8 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.DatadogInterceptor
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
@@ -56,10 +58,13 @@ import okhttp3.Response
  * @param tracedRequestListener a listener for automatically created [Span]s
  *
  */
+@Suppress("StringLiteralDuplication")
 open class TracingInterceptor
-internal constructor(
+@JvmOverloads internal constructor(
+    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
     internal val tracedHosts: List<String>,
     internal val tracedRequestListener: TracedRequestListener,
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
     internal val localTracerFactory: () -> Tracer
 ) : Interceptor {
 
@@ -73,6 +78,12 @@ internal constructor(
         }
     )
 
+    init {
+        if (tracedHosts.isEmpty() && firstPartyHostDetector.isEmpty()) {
+            devLogger.w(WARNING_TRACING_NO_HOSTS)
+        }
+    }
+
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
@@ -82,10 +93,31 @@ internal constructor(
      * @param tracedRequestListener a listener for automatically created [Span]s
      */
     @JvmOverloads
+    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
-    ) : this(tracedHosts, tracedRequestListener, { AndroidTracer.Builder().build() })
+    ) : this(
+        tracedHosts,
+        tracedRequestListener,
+        CoreFeature.firstPartyHostDetector,
+        { AndroidTracer.Builder().build() }
+    )
+
+    /**
+     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
+     *
+     * @param tracedRequestListener a listener for automatically created [Span]s
+     */
+    @JvmOverloads
+    constructor(
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+    ) : this(
+        emptyList(),
+        tracedRequestListener,
+        CoreFeature.firstPartyHostDetector,
+        { AndroidTracer.Builder().build() }
+    )
 
     // region Interceptor
 
@@ -130,8 +162,9 @@ internal constructor(
     // region Internal
 
     private fun isRequestTraceable(request: Request): Boolean {
-        val host = request.url().host()
-        return host.matches(hostRegex)
+        val url = request.url()
+        return firstPartyHostDetector.isFirstPartyUrl(url) ||
+            url.host().matches(hostRegex)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -279,6 +312,12 @@ internal constructor(
 
         internal const val HEADER_CT = "Content-Type"
 
+        internal const val WARNING_TRACING_NO_HOSTS =
+            "You added a TracingInterceptor to your OkHttpClient, " +
+                "but you did not specify any first party hosts. " +
+                "Your requests won't be traced.\n" +
+                "To set a list of known hosts, you can use the " +
+                "DatadogConfig.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you did not enable the TracesFeature. " +

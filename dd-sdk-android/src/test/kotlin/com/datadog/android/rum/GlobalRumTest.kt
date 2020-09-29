@@ -82,8 +82,8 @@ internal class GlobalRumTest {
 
     @Test
     fun `M add global attributes W addAttribute()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ASCII) value: String
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ASCII) value: String
     ) {
         GlobalRum.addAttribute(key, value)
 
@@ -93,9 +93,9 @@ internal class GlobalRumTest {
 
     @Test
     fun `M overwrite global attributes W addAttribute() twice {same key different value}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ASCII) value: String,
-        @StringForgery(StringForgeryType.ASCII) value2: String
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ASCII) value: String,
+        @StringForgery(type = StringForgeryType.ASCII) value2: String
     ) {
         GlobalRum.addAttribute(key, value)
         GlobalRum.addAttribute(key, value2)
@@ -106,8 +106,8 @@ internal class GlobalRumTest {
 
     @Test
     fun `M remove global attributes W addAttribute() and removeAttribute()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ASCII) value: String
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ASCII) value: String
     ) {
         GlobalRum.addAttribute(key, value)
         assertThat(GlobalRum.globalAttributes)
@@ -120,7 +120,7 @@ internal class GlobalRumTest {
 
     @Test
     fun `M add global attributes W addAttribute() {multithreaded}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         var errors = 0
         val countDownLatch = CountDownLatch(2)
@@ -162,7 +162,7 @@ internal class GlobalRumTest {
 
     @Test
     fun `M remove global attributes W removeAttribute() {multithreaded}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         for (i in 0..128) {
             GlobalRum.addAttribute("$key$i", "value-$i")

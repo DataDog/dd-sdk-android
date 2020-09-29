@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
@@ -34,6 +35,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import datadog.opentracing.DDSpanContext
 import datadog.trace.api.interceptor.MutableSpan
+import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -51,6 +53,7 @@ import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.Protocol
@@ -110,6 +113,9 @@ internal open class TracingInterceptorTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     // endregion
 
     // region Fakes
@@ -124,7 +130,7 @@ internal open class TracingInterceptorTest {
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
-    @StringForgery(StringForgeryType.ASCII)
+    @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeResponseBody: String
 
     lateinit var fakeUrl: String
@@ -132,7 +138,7 @@ internal open class TracingInterceptorTest {
     @Forgery
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakePackageName: String
 
     @RegexForgery("\\d(\\.\\d){3}")
@@ -141,10 +147,10 @@ internal open class TracingInterceptorTest {
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
 
     // endregion
@@ -165,7 +171,7 @@ internal open class TracingInterceptorTest {
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeMediaType = MediaType.parse(mediaType)
-        fakeRequest = forgeRequest(forge)
+        fakeRequest = forgeRequest(forge, false)
         val tracedHosts = listOf(fakeHostIp, fakeHostName)
         testedInterceptor = instantiateTestedInterceptor(tracedHosts) { mockLocalTracer }
         TracesFeature.initialize(
@@ -173,6 +179,8 @@ internal open class TracingInterceptorTest {
             fakeConfig,
             mock(), mock(), mock(), mock(), mock(), mock(), mock()
         )
+        doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
         GlobalTracer.registerIfAbsent(mockTracer)
@@ -188,13 +196,13 @@ internal open class TracingInterceptorTest {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        return TracingInterceptor(tracedHosts, mockRequestListener, factory)
+        return TracingInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
     }
 
     @Test
     fun `𝕄 inject tracing header 𝕎 intercept() for any request`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         stubChain(mockChain, statusCode)
@@ -213,9 +221,32 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `𝕄 inject tracing header 𝕎 intercept() for any request with legacy host regex`(
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        fakeRequest = forgeRequest(forge, true)
+        stubChain(mockChain, statusCode)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
+    }
+
+    @Test
     fun `𝕄 inject tracing header 𝕎 intercept() for request with parent span`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
@@ -224,6 +255,7 @@ internal open class TracingInterceptorTest {
         whenever(parentSpan.context()) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(parentSpanContext)) doReturn mockSpanBuilder
         fakeRequest = forgeRequest(forge) { it.tag(Span::class.java, parentSpan) }
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -242,8 +274,8 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 update header with parent context 𝕎 intercept() for request with tracing headers`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @LongForgery(min = 0) traceId: Long,
         @LongForgery(min = 0) spanId: Long,
@@ -253,6 +285,7 @@ internal open class TracingInterceptorTest {
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
         fakeRequest = forgeRequest(forge)
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -442,8 +475,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         stubChain(mockChain, statusCode)
         whenever(
@@ -467,8 +500,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for failing request`(
         @IntForgery(min = 400, max = 600) statusCode: Int,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         stubChain(mockChain, statusCode)
         whenever(
@@ -492,8 +525,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 call the listener 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable,
-        @StringForgery(StringForgeryType.ALPHABETICAL) tagKey: String,
-        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) tagValue: String
+        @StringForgery tagKey: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -530,6 +563,23 @@ internal open class TracingInterceptorTest {
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `𝕄 warn 𝕎 init() with no known host`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        whenever(mockDetector.isEmpty()) doReturn true
+
+        testedInterceptor = instantiateTestedInterceptor(emptyList()) { mockLocalTracer }
+
+        verifyZeroInteractions(mockTracer, mockLocalTracer)
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                TracingInterceptor.WARNING_TRACING_NO_HOSTS
+            )
     }
 
     @Test
@@ -572,14 +622,14 @@ internal open class TracingInterceptorTest {
 
     private fun forgeRequest(
         forge: Forge,
-        validHost: Boolean = true,
+        validHost: Boolean = false,
         configure: (Request.Builder) -> Unit = {}
     ): Request {
         val protocol = forge.anElementFrom("http", "https")
         val host = if (validHost) {
             forge.anElementFrom(fakeHostIp, fakeHostName)
         } else {
-            forge.aString(3) { anAlphabeticalChar() } + fakeHostName
+            forge.aString(3) { anAlphabeticalChar(Case.LOWER) } + fakeHostName
         }
 
         val path = forge.anAlphaNumericalString()
@@ -614,8 +664,7 @@ internal open class TracingInterceptorTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN =
-            "([a-z0-9]|[a-z0-9][a-z0-9\\-][a-z0-9])\\.([a-z0-9]|[a-z0-9][a-z0-9\\-])[a-z0-9]"
+        const val HOSTNAME_PATTERN = "([a-z][a-z0-9_~-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         const val IPV4_PATTERN =
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"

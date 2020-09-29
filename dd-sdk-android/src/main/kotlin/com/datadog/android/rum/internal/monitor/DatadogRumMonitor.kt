@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -28,10 +29,15 @@ internal class DatadogRumMonitor(
     applicationId: UUID,
     internal val samplingRate: Float,
     private val writer: Writer<RumEvent>,
-    internal val handler: Handler
+    internal val handler: Handler,
+    firstPartyHostDetector: FirstPartyHostDetector
 ) : RumMonitor, AdvancedRumMonitor {
 
-    internal val rootScope: RumScope = RumApplicationScope(applicationId, samplingRate)
+    internal val rootScope: RumScope = RumApplicationScope(
+        applicationId,
+        samplingRate,
+        firstPartyHostDetector
+    )
 
     internal val keepAliveRunnable = Runnable {
         handleEvent(RumRawEvent.KeepAlive())

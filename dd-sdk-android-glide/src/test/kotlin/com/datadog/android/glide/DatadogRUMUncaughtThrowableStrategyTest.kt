@@ -13,7 +13,6 @@ import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.RuntimeException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -41,7 +40,7 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeName: String
 
     @BeforeEach
@@ -59,7 +58,7 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
 
     @Test
     fun `handles throwable`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String
+        @StringForgery message: String
     ) {
         val throwable = RuntimeException(message)
 

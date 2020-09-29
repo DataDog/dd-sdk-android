@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class RumSessionScope(
     private val parentScope: RumScope,
     internal val samplingRate: Float,
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -68,7 +70,7 @@ internal class RumSessionScope(
         }
 
         if (event is RumRawEvent.StartView) {
-            val viewScope = RumViewScope.fromEvent(this, event)
+            val viewScope = RumViewScope.fromEvent(this, event, firstPartyHostDetector)
 
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)

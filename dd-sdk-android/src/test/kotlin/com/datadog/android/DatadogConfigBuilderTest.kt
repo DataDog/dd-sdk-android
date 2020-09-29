@@ -49,10 +49,10 @@ internal class DatadogConfigBuilderTest {
 
     lateinit var testedBuilder: DatadogConfig.Builder
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeClientToken: String
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeEnvName: String
 
     @Forgery
@@ -226,7 +226,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with serviceName 𝕎 setServiceName() and build()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) serviceName: String
+        @StringForgery serviceName: String
     ) {
         // When
         val config = testedBuilder
@@ -249,7 +249,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with envName 𝕎 setEnvironmentName() and build()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) envName: String
+        @StringForgery envName: String
     ) {
         // When
         val config = testedBuilder
@@ -629,6 +629,67 @@ internal class DatadogConfigBuilderTest {
                     fakeClientToken,
                     fakeApplicationId,
                     rumUrl,
+                    fakeEnvName
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() and build()`(
+        @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = hosts
+                )
+            )
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_US,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName
+                )
+            )
+
+        assertThat(config.rumConfig)
+            .isEqualTo(
+                DatadogConfig.RumConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.RUM_US,
                     fakeEnvName
                 )
             )

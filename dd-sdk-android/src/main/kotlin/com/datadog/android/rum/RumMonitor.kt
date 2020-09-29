@@ -11,6 +11,7 @@ import android.app.Fragment
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -201,7 +202,8 @@ interface RumMonitor {
                     applicationId = RumFeature.applicationId,
                     samplingRate = samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
-                    handler = Handler(Looper.getMainLooper())
+                    handler = Handler(Looper.getMainLooper()),
+                    firstPartyHostDetector = CoreFeature.firstPartyHostDetector
                 )
             }
         }

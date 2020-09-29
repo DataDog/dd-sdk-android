@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -27,7 +28,8 @@ internal class RumResourceScope(
     internal val method: String,
     internal val key: String,
     eventTime: Time,
-    initialAttributes: Map<String, Any?>
+    initialAttributes: Map<String, Any?>,
+    internal val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -111,6 +113,7 @@ internal class RumResourceScope(
         )
     }
 
+    @Suppress("LongMethod")
     private fun sendResource(
         kind: RumResourceKind,
         statusCode: Long?,
@@ -127,6 +130,7 @@ internal class RumResourceScope(
 
         val finalTiming = timing
         val duration = eventTime.nanoTime - startedNanos
+        val isFirstParty = firstPartyHostDetector.isFirstPartyUrl(url)
 
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
@@ -142,7 +146,8 @@ internal class RumResourceScope(
                 connect = finalTiming?.connect(),
                 ssl = finalTiming?.ssl(),
                 firstByte = finalTiming?.firstByte(),
-                download = finalTiming?.download()
+                download = finalTiming?.download(),
+                firstParty = if (isFirstParty) true else null
             ),
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
@@ -228,7 +233,8 @@ internal class RumResourceScope(
     companion object {
         fun fromEvent(
             parentScope: RumScope,
-            event: RumRawEvent.StartResource
+            event: RumRawEvent.StartResource,
+            firstPartyHostDetector: FirstPartyHostDetector
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -236,7 +242,8 @@ internal class RumResourceScope(
                 event.method,
                 event.key,
                 event.eventTime,
-                event.attributes
+                event.attributes,
+                firstPartyHostDetector
             )
         }
     }

@@ -10,7 +10,6 @@ import android.util.Log
 import com.datadog.android.log.Logger
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -35,7 +34,7 @@ class DatadogTreeTest {
     @Mock
     lateinit var mockLogger: Logger
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeMessage: String
 
     @BeforeEach

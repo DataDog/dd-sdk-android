@@ -262,7 +262,7 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M add current span information W tracer is active`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) operation: String
+        @StringForgery operation: String
     ) {
         val currentThread = Thread.currentThread()
         val tracer = AndroidTracer.Builder().build()

@@ -38,7 +38,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
@@ -80,7 +79,7 @@ internal class RumContinuousActionScopeTest {
     @Forgery
     lateinit var fakeType: RumActionType
 
-    @StringForgery(StringForgeryType.ALPHABETICAL)
+    @StringForgery
     lateinit var fakeName: String
 
     lateinit var fakeKey: ByteArray
@@ -230,7 +229,7 @@ internal class RumContinuousActionScopeTest {
     @Test
     fun `𝕄 send Action with updated data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!= 0)`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery name: String,
         forge: Forge
     ) {
         // Given
@@ -279,8 +278,8 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -330,11 +329,11 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -382,7 +381,7 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // Given
@@ -430,7 +429,7 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(AddError+StopAction+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -482,7 +481,7 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(AddError) {isFatal=true}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -526,7 +525,7 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(AddError{isFatal=false}+AddError{isFatal=true})`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
@@ -1044,8 +1043,8 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 doNothing 𝕎 handleEvent(StartResource+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When
@@ -1062,8 +1061,8 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 doNothing 𝕎 handleEvent(StartResource+StopAction+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When
@@ -1084,8 +1083,8 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When
@@ -1125,8 +1124,8 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+StopAction+any)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When

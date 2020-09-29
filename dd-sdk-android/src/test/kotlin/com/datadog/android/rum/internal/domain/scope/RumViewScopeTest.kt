@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -42,7 +43,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
@@ -88,6 +88,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     @RegexForgery("([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
 
@@ -132,7 +135,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -208,8 +212,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartView) on stopped view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         // Given
         testedScope.stopped = true
@@ -227,8 +231,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(StartView) on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         // When
         val result = testedScope.handleEvent(
@@ -262,10 +266,10 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event once 𝕎 handleEvent(StartView) twice on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) key2: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name2: String
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @StringForgery key2: String,
+        @StringForgery name2: String
     ) {
         // When
         val result = testedScope.handleEvent(
@@ -397,7 +401,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -450,7 +455,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -534,7 +540,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 returns not null 𝕎 handleEvent(StopView) and a resource is still active`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
+        @StringForgery key: String,
         forge: Forge
     ) {
         // Given
@@ -612,8 +618,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StopView) on active view without matching key`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery key: String,
+        @StringForgery name: String,
         forge: Forge
     ) {
         // Given
@@ -753,8 +759,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(ApplicationStarted) on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery key: String,
+        @StringForgery name: String,
         @LongForgery(0) duration: Long,
         forge: Forge
     ) {
@@ -909,8 +915,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events 𝕎 handleEvent(ApplicationStarted) on stopped view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery key: String,
+        @StringForgery name: String,
         @LongForgery(0) duration: Long
     ) {
         // Given
@@ -963,8 +969,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(KeepAlive) on stopped view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         // Given
         testedScope.stopped = true
@@ -982,8 +988,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(KeepAlive) on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String
+        @StringForgery key: String,
+        @StringForgery name: String
     ) {
         // When
         val result = testedScope.handleEvent(
@@ -1022,7 +1028,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 create ActionScope 𝕎 handleEvent(StartAction)`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
@@ -1049,7 +1055,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartAction) with active child ActionScope`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
@@ -1072,7 +1078,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartAction) on stopped view`(
         @Forgery type: RumActionType,
-        @StringForgery(StringForgeryType.ALPHABETICAL) name: String,
+        @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
@@ -1141,8 +1147,8 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -1168,12 +1174,13 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
     @Test
     fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) method: String,
+        @StringForgery key: String,
+        @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -1198,11 +1205,12 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
     @Test
     fun `𝕄 send event to children ResourceScopes 𝕎 handleEvent(StartView) on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         // Given
         testedScope.activeResourceScopes[key] = mockChildScope
@@ -1219,7 +1227,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event to children ResourceScopes 𝕎 handleEvent(StartView) on stopped view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         // Given
         testedScope.stopped = true
@@ -1237,7 +1245,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 remove child ResourceScope 𝕎 handleEvent() returns null`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key: String
+        @StringForgery key: String
     ) {
         // Given
         testedScope.activeResourceScopes[key] = mockChildScope
@@ -1259,10 +1267,10 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events 𝕎 handleEvent(AddError) on active view`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String,
+        @StringForgery stacktrace: String,
         forge: Forge
     ) {
         // Given
@@ -1318,9 +1326,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send Error and View event 𝕎 AddError {throwable=null}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String,
+        @StringForgery stacktrace: String,
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
@@ -1375,7 +1383,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send Error and View event 𝕎 AddError {stacktrace=null}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -1434,7 +1442,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @BoolForgery fatal: Boolean,
         forge: Forge
@@ -1487,7 +1495,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events with global attributes 𝕎 handleEvent(AddError)`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -1551,7 +1559,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events 𝕎 handleEvent(AddError) {isFatal=true}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -1611,7 +1619,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send events with global attributes 𝕎 handleEvent(AddError) {isFatal=true}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
@@ -1675,7 +1683,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(AddError) on stopped view {throwable}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @BoolForgery fatal: Boolean,
@@ -1697,9 +1705,9 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(AddError) on stopped view {stacktrace}`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
+        @StringForgery message: String,
         @Forgery source: RumErrorSource,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stacktrace: String,
+        @StringForgery stacktrace: String,
         @BoolForgery fatal: Boolean,
         forge: Forge
     ) {

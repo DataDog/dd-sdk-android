@@ -21,7 +21,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.log.Fields
@@ -74,7 +73,7 @@ internal class AndroidSpanLogsHandlerTest {
 
     @Test
     fun `log event`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) event: String
+        @StringForgery event: String
     ) {
         testedLogHandler.log(event, mockSpan)
 
@@ -93,7 +92,7 @@ internal class AndroidSpanLogsHandlerTest {
 
     @Test
     fun `log event with timestamp`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) event: String,
+        @StringForgery event: String,
         @LongForgery timestampMicros: Long
     ) {
         testedLogHandler.log(timestampMicros, event, mockSpan)
@@ -224,8 +223,8 @@ internal class AndroidSpanLogsHandlerTest {
     fun `log map with throwable and overriden error fields`(
         forge: Forge,
         @Forgery throwable: Throwable,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) kind: String
+        @StringForgery message: String,
+        @StringForgery kind: String
     ) {
         val fields = forge.aMap<String, Any?> { aNumericalString() to anAsciiString() }
         val fieldsWithError = fields.toMutableMap()
@@ -260,7 +259,7 @@ internal class AndroidSpanLogsHandlerTest {
     fun `log map with throwable and stack trace`(
         forge: Forge,
         @Forgery throwable: Throwable,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stack: String
+        @StringForgery stack: String
     ) {
         val fields = forge.aMap<String, Any?> { aNumericalString() to anAsciiString() }
         val fieldsWithError = fields.toMutableMap()
@@ -293,9 +292,9 @@ internal class AndroidSpanLogsHandlerTest {
     @Test
     fun `log map with error fields`(
         forge: Forge,
-        @StringForgery(StringForgeryType.ALPHABETICAL) stack: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) message: String,
-        @StringForgery(StringForgeryType.ALPHABETICAL) kind: String
+        @StringForgery stack: String,
+        @StringForgery message: String,
+        @StringForgery kind: String
     ) {
         val fields = forge.aMap<String, Any?> { aNumericalString() to anAsciiString() }
         val fieldsWithError = fields.toMutableMap()
