@@ -51,6 +51,25 @@ RUM error event for it.
                 ))
 ```
 
+### Extension methods for traced transactions
+
+If you are using SQLDelight transactions, you can trace the transaction block using the following 2 methods:
+
+```kotlin
+    database.yourQuery.transactionTraced("<SPAN_NAME>", noEnclosing){    
+        // …
+    }
+```
+
+```kotlin
+    val result = database.yourQuery.transactionTracedWithResult("<SPAN_NAME>", noEnclosing){    
+        // …
+    }
+```
+
+They behave as the default methods (`transaction(noEnclosing,block)`, `transactionWithResult(noEnclosing,block`) and they simply require a span name as an 
+extra argument.
+
 ## Contributing
 
 Pull requests are welcome, but please open an issue first to discuss what you
