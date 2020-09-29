@@ -10,7 +10,6 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
@@ -182,7 +181,6 @@ internal open class TracingInterceptorTest {
         )
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
-        CoreFeature.firstPartyHostDetector = mockDetector
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
         GlobalTracer.registerIfAbsent(mockTracer)
@@ -192,14 +190,13 @@ internal open class TracingInterceptorTest {
     fun `tear down`() {
         GlobalRum.isRegistered.set(false)
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        CoreFeature.firstPartyHostDetector = FirstPartyHostDetector(emptyList())
     }
 
     open fun instantiateTestedInterceptor(
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        return TracingInterceptor(tracedHosts, mockRequestListener, factory)
+        return TracingInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
     }
 
     @Test

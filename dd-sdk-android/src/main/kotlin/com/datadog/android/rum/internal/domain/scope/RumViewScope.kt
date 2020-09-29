@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
@@ -26,7 +27,8 @@ internal class RumViewScope(
     key: Any,
     internal val name: String,
     eventTime: Time,
-    initialAttributes: Map<String, Any?>
+    initialAttributes: Map<String, Any?>,
+    internal val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {
 
     internal val urlName = name.replace('.', '/')
@@ -162,7 +164,9 @@ internal class RumViewScope(
         val updatedEvent = event.copy(
             attributes = addExtraAttributes(event.attributes)
         )
-        activeResourceScopes[event.key] = RumResourceScope.fromEvent(this, updatedEvent)
+        activeResourceScopes[event.key] = RumResourceScope.fromEvent(
+            this, updatedEvent, firstPartyHostDetector
+        )
     }
 
     private fun onAddError(
@@ -366,14 +370,16 @@ internal class RumViewScope(
 
         internal fun fromEvent(
             parentScope: RumScope,
-            event: RumRawEvent.StartView
+            event: RumRawEvent.StartView,
+            firstPartyHostDetector: FirstPartyHostDetector
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
                 event.key,
                 event.name,
                 event.eventTime,
-                event.attributes
+                event.attributes,
+                firstPartyHostDetector
             )
         }
     }

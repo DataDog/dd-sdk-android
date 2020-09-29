@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -72,6 +73,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -98,6 +102,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             100f,
+            mockDetector,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -118,7 +123,13 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `returns context with null IDs if session not kept`() {
-        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        testedScope = RumSessionScope(
+            mockParentScope,
+            0f,
+            mockDetector,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
         val context = testedScope.getRumContext()
 
         assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
@@ -208,6 +219,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             fakeSamplingRate,
+            mockDetector,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -261,7 +273,13 @@ internal class RumSessionScopeTest {
 
     @Test
     fun `M delegate to child scope with noop writer W handleEvent() and session not kept`() {
-        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        testedScope = RumSessionScope(
+            mockParentScope,
+            0f,
+            mockDetector,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
         testedScope.activeChildrenScopes.add(mockChildScope)
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -294,6 +312,7 @@ internal class RumSessionScopeTest {
         assertThat(viewScope.keyRef.get()).isEqualTo(key)
         assertThat(viewScope.name).isEqualTo(name)
         assertThat(viewScope.attributes).isEqualTo(attributes)
+        assertThat(viewScope.firstPartyHostDetector).isSameAs(mockDetector)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -315,6 +334,7 @@ internal class RumSessionScopeTest {
         assertThat(viewScope.keyRef.get()).isEqualTo(key)
         assertThat(viewScope.name).isEqualTo(name)
         assertThat(viewScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(viewScope.firstPartyHostDetector).isSameAs(mockDetector)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -411,7 +431,13 @@ internal class RumSessionScopeTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
-        testedScope = RumSessionScope(mockParentScope, 0f, TEST_INACTIVITY_NS, TEST_MAX_DURATION_NS)
+        testedScope = RumSessionScope(
+            mockParentScope,
+            0f,
+            mockDetector,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
         val result = testedScope.handleEvent(startViewEvent, mockWriter)

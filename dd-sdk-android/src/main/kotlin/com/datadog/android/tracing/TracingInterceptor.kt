@@ -8,6 +8,7 @@ package com.datadog.android.tracing
 
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
@@ -59,10 +60,11 @@ import okhttp3.Response
  */
 @Suppress("StringLiteralDuplication")
 open class TracingInterceptor
-internal constructor(
+@JvmOverloads internal constructor(
     @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
     internal val tracedHosts: List<String>,
     internal val tracedRequestListener: TracedRequestListener,
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
     internal val localTracerFactory: () -> Tracer
 ) : Interceptor {
 
@@ -77,7 +79,7 @@ internal constructor(
     )
 
     init {
-        if (tracedHosts.isEmpty() && CoreFeature.firstPartyHostDetector.isEmpty()) {
+        if (tracedHosts.isEmpty() && firstPartyHostDetector.isEmpty()) {
             devLogger.w(WARNING_TRACING_NO_HOSTS)
         }
     }
@@ -95,7 +97,12 @@ internal constructor(
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
-    ) : this(tracedHosts, tracedRequestListener, { AndroidTracer.Builder().build() })
+    ) : this(
+        tracedHosts,
+        tracedRequestListener,
+        CoreFeature.firstPartyHostDetector,
+        { AndroidTracer.Builder().build() }
+    )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
@@ -105,7 +112,12 @@ internal constructor(
     @JvmOverloads
     constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
-    ) : this(emptyList(), tracedRequestListener, { AndroidTracer.Builder().build() })
+    ) : this(
+        emptyList(),
+        tracedRequestListener,
+        CoreFeature.firstPartyHostDetector,
+        { AndroidTracer.Builder().build() }
+    )
 
     // region Interceptor
 
@@ -151,7 +163,7 @@ internal constructor(
 
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
-        return CoreFeature.firstPartyHostDetector.isFirstPartyUrl(url) ||
+        return firstPartyHostDetector.isFirstPartyUrl(url) ||
             url.host().matches(hostRegex)
     }
 

@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -74,6 +75,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockHandler: Handler
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     @Forgery
     lateinit var fakeApplicationId: UUID
 
@@ -89,7 +93,8 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             mockWriter,
-            mockHandler
+            mockHandler,
+            mockDetector
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
@@ -104,7 +109,8 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             mockWriter,
-            mockHandler
+            mockHandler,
+            mockDetector
         )
 
         val rootScope = testedMonitor.rootScope

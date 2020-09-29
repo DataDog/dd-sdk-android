@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -87,6 +88,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     @RegexForgery("([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
 
@@ -131,7 +135,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -396,7 +401,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -449,7 +455,8 @@ internal class RumViewScopeTest {
             fakeKey,
             fakeName,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1167,6 +1174,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
     @Test
@@ -1197,6 +1205,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
     @Test

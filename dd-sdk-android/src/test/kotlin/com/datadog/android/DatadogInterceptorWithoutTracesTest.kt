@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.content.Context
 import android.util.Log
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
@@ -82,6 +83,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockDetector: FirstPartyHostDetector
+
     // endregion
 
     // region Fakes
@@ -125,7 +129,11 @@ internal class DatadogInterceptorWithoutTracesTest {
             "/" + forge.anAlphabeticalString()
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
-        testedInterceptor = DatadogInterceptor(emptyList()) { mockLocalTracer }
+        testedInterceptor = DatadogInterceptor(
+            emptyList(),
+            mockRequestListener,
+            mockDetector
+        ) { mockLocalTracer }
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,

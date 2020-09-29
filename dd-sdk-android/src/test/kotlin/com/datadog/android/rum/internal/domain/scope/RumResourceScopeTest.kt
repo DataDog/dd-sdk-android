@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
@@ -125,7 +124,6 @@ internal class RumResourceScopeTest {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
-        CoreFeature.firstPartyHostDetector = mockDetector
 
         testedScope = RumResourceScope(
             mockParentScope,
@@ -133,7 +131,8 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes
+            fakeAttributes,
+            mockDetector
         )
     }
 
@@ -141,7 +140,6 @@ internal class RumResourceScopeTest {
     fun `tear down`() {
         RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
         GlobalRum.globalAttributes.clear()
-        CoreFeature.firstPartyHostDetector = FirstPartyHostDetector(emptyList())
     }
 
     @Test

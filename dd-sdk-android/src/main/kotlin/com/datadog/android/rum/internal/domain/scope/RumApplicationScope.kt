@@ -7,17 +7,19 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import java.util.UUID
 
 internal class RumApplicationScope(
     applicationId: UUID,
-    internal val samplingRate: Float
+    internal val samplingRate: Float,
+    private val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {
 
     private val rumContext = RumContext(applicationId = applicationId.toString())
-    internal val childScope: RumScope = RumSessionScope(this, samplingRate)
+    internal val childScope: RumScope = RumSessionScope(this, samplingRate, firstPartyHostDetector)
 
     // region RumScope
 
