@@ -6,6 +6,7 @@
 
 package com.datadog.android.ktx.sqlite
 
+import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
 import com.datadog.android.ktx.utils.Configurator
 import com.datadog.tools.unit.setStaticValue
@@ -13,6 +14,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -85,10 +87,10 @@ class SqliteDatabaseExtTest {
         var transactionExecuted = false
 
         // WHEN
-        mockDatabase.transactionTraced(
+        transactionExecuted = mockDatabase.transactionTraced(
             fakeOperationName, true
         ) {
-            transactionExecuted = true
+            true
         }
 
         // THEN
@@ -113,10 +115,10 @@ class SqliteDatabaseExtTest {
         var transactionExecuted = false
 
         // WHEN
-        mockDatabase.transactionTraced(
+        transactionExecuted = mockDatabase.transactionTraced(
             fakeOperationName, false
         ) {
-            transactionExecuted = true
+            true
         }
 
         // THEN
@@ -141,10 +143,10 @@ class SqliteDatabaseExtTest {
         var transactionExecuted = false
 
         // WHEN
-        mockDatabase.transactionTraced(
+        transactionExecuted = mockDatabase.transactionTraced(
             fakeOperationName, false
         ) {
-            transactionExecuted = true
+            true
         }
 
         // THEN
@@ -188,5 +190,49 @@ class SqliteDatabaseExtTest {
             verify(mockDatabase).beginTransaction()
             verify(mockDatabase).endTransaction()
         }
+    }
+
+    @Test
+    fun `M decorate the Span from lambda W transactionTraced`(forge: Forge) {
+        // GIVEN
+        val fakeTagKey = forge.anAlphabeticalString()
+        val fakeTagValue = forge.anAlphabeticalString()
+        whenever(mockTracer.activeSpan()) doReturn mockParentSpan
+        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        var transactionExecuted = false
+
+        // WHEN
+        transactionExecuted = mockDatabase.transactionTraced(
+            fakeOperationName, false
+        ) {
+            setTag(fakeTagKey, fakeTagValue)
+            true
+        }
+
+        // THEN
+        assertThat(transactionExecuted).isTrue()
+        verify(mockSpan).setTag(fakeTagKey, fakeTagValue)
+    }
+
+    @Test
+    fun `M execute the lambda on the SQLiteDatabase instance W transactionTraced`(forge: Forge) {
+        // GIVEN
+        val fakeTable = forge.anAlphabeticalString()
+        val contentValues = ContentValues()
+        whenever(mockTracer.activeSpan()) doReturn mockParentSpan
+        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        var transactionExecuted = false
+
+        // WHEN
+        transactionExecuted = mockDatabase.transactionTraced(
+            fakeOperationName, false
+        ) { mockDatabase ->
+            mockDatabase.insert(fakeTable, null, contentValues)
+            true
+        }
+
+        // THEN
+        assertThat(transactionExecuted).isTrue()
+        verify(mockDatabase).insert(fakeTable, null, contentValues)
     }
 }

@@ -126,8 +126,12 @@ If you're using Kotlin Coroutine Flow, you can propagate Flow errors to your RUM
 If you are using SQLiteDatabase to persist data locally, you can trace the database transaction using the following method:
 
 ```kotlin
-   sqliteDatabase.transactionTraced("<SPAN_NAME>",isExclusive){
+   sqliteDatabase.transactionTraced("<SPAN_NAME>",isExclusive){ database ->
         // Your queries here
+        database.insert("<TABLE_NAME>", null, contentValues)
+
+        // Decorate the Span
+        setTag("<TAG_KEY>", "<TAG_VALUE>")
    } 
 ```
 It behaves like the `SQLiteDatabase.transaction` method provided in the `core-ktx` AndroidX package and only requires a span operation name.
