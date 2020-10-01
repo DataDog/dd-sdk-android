@@ -12,7 +12,7 @@ object AndroidConfig {
 
     const val TARGET_SDK = 30
     const val MIN_SDK = 19
-    const val BUILD_TOOLS_VERSION = "30.0.1"
+    const val BUILD_TOOLS_VERSION = "30.0.2"
 
     val VERSION = Version(1, 5, 2, Version.Type.Release)
 }
