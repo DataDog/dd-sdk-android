@@ -19,11 +19,11 @@ object Dependencies {
         const val AndroidToolsPlugin = "4.0.1"
         const val AndroidXAnnotations = "1.1.0"
         const val AndroidXAppCompat = "1.2.0"
-        const val AndroidXCore = "1.2.0"
+        const val AndroidXCore = "1.3.1"
         const val AndroidXMultidex = "2.0.1"
         const val AndroidXNavigation = "2.3.0"
         const val AndroidXRecyclerView = "1.1.0"
-        const val AndroidXWorkManager = "2.3.3"
+        const val AndroidXWorkManager = "2.4.0"
 
         // DD-TRACE-OT
         const val OpenTracing = "0.32.0"
