@@ -10,7 +10,7 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.3.61"
+        const val Kotlin = "1.4.0"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
         const val KronosNTP = "0.0.1-alpha09"
