@@ -46,7 +46,8 @@ class LocalDataSource(val context: Context) {
                     timestamp = it.attributes.timestamp,
                     ttl = currentTimeInMillis
                 )
-            })
+            }
+        )
     }
 
     private val fetchLogsCallable = Callable<List<Log>> {

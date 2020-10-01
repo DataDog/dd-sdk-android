@@ -449,7 +449,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
                     this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == expectedResourceName
-            })
+            }
+        )
     }
 
     // endregion

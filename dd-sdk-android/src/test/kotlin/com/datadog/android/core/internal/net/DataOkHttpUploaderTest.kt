@@ -275,7 +275,8 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
             MockResponse()
                 .throttleBody(
                     THROTTLE_RATE,
-                    THROTTLE_PERIOD_MS, TimeUnit.MILLISECONDS
+                    THROTTLE_PERIOD_MS,
+                    TimeUnit.MILLISECONDS
                 )
                 .setBody(
                     "{ 'success': 'ok', 'message': 'Lorem ipsum dolor sit amet, " +

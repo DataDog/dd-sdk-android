@@ -97,8 +97,9 @@ internal class WorkManagerUtilsTest {
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
                 this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                        this.tags.contains(TAG_DATADOG_UPLOAD)
-            })
+                    this.tags.contains(TAG_DATADOG_UPLOAD)
+            }
+        )
     }
 
     @Test

@@ -43,7 +43,7 @@ object Dependencies {
 
         // Tools
         const val Detekt = "1.6.0"
-        const val KtLint = "8.2.0"
+        const val KtLint = "9.4.0"
         const val Dokka = "0.10.0"
         const val Bintray = "1.8.4"
         const val Unmock = "0.7.5"

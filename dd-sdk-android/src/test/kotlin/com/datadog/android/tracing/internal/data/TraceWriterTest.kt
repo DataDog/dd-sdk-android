@@ -96,7 +96,9 @@ internal class TraceWriterTest {
         val errorMessagesCaptor = argumentCaptor<String>()
         val stackTracesCaptor = argumentCaptor<String>()
         verify(mockAdvancedRumMonitor, times(2)).addErrorWithStacktrace(
-            errorMessagesCaptor.capture(), eq(RumErrorSource.SOURCE), stackTracesCaptor.capture(),
+            errorMessagesCaptor.capture(),
+            eq(RumErrorSource.SOURCE),
+            stackTracesCaptor.capture(),
             eq(emptyMap())
         )
         errorMessagesCaptor.allValues.forEachIndexed { index, message ->
@@ -118,12 +120,16 @@ internal class TraceWriterTest {
     fun `M send a RUM Error event W onWritingErrorSpan {no error type}(`(forge: Forge) {
         // GIVEN
         val spansList = ArrayList<DDSpan>(2).apply {
-            add(forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_TYPE, null)
-            })
-            add(forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_TYPE, null)
-            })
+            add(
+                forgeErrorSpan(forge).apply {
+                    this.context().setTag(DDTags.ERROR_TYPE, null)
+                }
+            )
+            add(
+                forgeErrorSpan(forge).apply {
+                    this.context().setTag(DDTags.ERROR_TYPE, null)
+                }
+            )
         }
 
         // WHEN
@@ -133,7 +139,9 @@ internal class TraceWriterTest {
         val errorMessagesCaptor = argumentCaptor<String>()
         val stackTracesCaptor = argumentCaptor<String>()
         verify(mockAdvancedRumMonitor, times(2)).addErrorWithStacktrace(
-            errorMessagesCaptor.capture(), eq(RumErrorSource.SOURCE), stackTracesCaptor.capture(),
+            errorMessagesCaptor.capture(),
+            eq(RumErrorSource.SOURCE),
+            stackTracesCaptor.capture(),
             eq(emptyMap())
         )
         errorMessagesCaptor.allValues.forEachIndexed { index, message ->
@@ -155,12 +163,16 @@ internal class TraceWriterTest {
     fun `M send a RUM Error event W onWritingErrorSpan {no error message}(`(forge: Forge) {
         // GIVEN
         val spansList = ArrayList<DDSpan>(2).apply {
-            add(forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_MSG, null)
-            })
-            add(forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_MSG, null)
-            })
+            add(
+                forgeErrorSpan(forge).apply {
+                    this.context().setTag(DDTags.ERROR_MSG, null)
+                }
+            )
+            add(
+                forgeErrorSpan(forge).apply {
+                    this.context().setTag(DDTags.ERROR_MSG, null)
+                }
+            )
         }
 
         // WHEN
@@ -170,7 +182,9 @@ internal class TraceWriterTest {
         val errorMessagesCaptor = argumentCaptor<String>()
         val stackTracesCaptor = argumentCaptor<String>()
         verify(mockAdvancedRumMonitor, times(2)).addErrorWithStacktrace(
-            errorMessagesCaptor.capture(), eq(RumErrorSource.SOURCE), stackTracesCaptor.capture(),
+            errorMessagesCaptor.capture(),
+            eq(RumErrorSource.SOURCE),
+            stackTracesCaptor.capture(),
             eq(emptyMap())
         )
         errorMessagesCaptor.allValues.forEachIndexed { index, message ->

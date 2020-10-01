@@ -123,7 +123,8 @@ internal class EndToEndTraceTest {
             .hasField(SPAN_ID_KEY, Long.toHexString((span.spanId.toLong())))
             .hasField(PARENT_ID_KEY, Long.toHexString((span.parentId.toLong())))
             .hasField(
-                START_TIMESTAMP_KEY, span.startTime,
+                START_TIMESTAMP_KEY,
+                span.startTime,
                 Offset.offset(TimeUnit.MINUTES.toNanos(1))
             )
             .hasField(DURATION_KEY, span.durationNano)
@@ -165,7 +166,14 @@ internal class EndToEndTraceTest {
         private const val TAG_EVENT = "event"
         private const val TAG_LOGGER_NAME = "logger.name"
         private val levels = arrayOf(
-            "debug", "debug", "trace", "debug", "info", "warn", "error", "critical"
+            "debug",
+            "debug",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "critical"
         )
     }
 }

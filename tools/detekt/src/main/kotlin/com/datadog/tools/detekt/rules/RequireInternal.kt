@@ -35,7 +35,8 @@ class RequireInternal : Rule() {
         if ((isCheckMethod || isCheckNotNullMethod) && !expression.isContainingEntryPointPublic()) {
             report(
                 CodeSmell(
-                    issue, Entity.from(expression),
+                    issue,
+                    Entity.from(expression),
                     message = "A require is called from an internal or private part of the code."
                 )
             )

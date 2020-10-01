@@ -196,11 +196,15 @@ dependencies {
 
     // Fresco
     "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
-    "frescoImplementation"("com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}")
+    "frescoImplementation"(
+        "com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}"
+    )
 
     // Glide
     "glideImplementation"("com.github.bumptech.glide:glide:${Dependencies.Versions.Glide}")
-    "glideImplementation"("com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}") {
+    "glideImplementation"(
+        "com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}"
+    ) {
         exclude(group = "glide-parent")
     }
     "kaptGlide"("com.github.bumptech.glide:compiler:${Dependencies.Versions.Glide}")

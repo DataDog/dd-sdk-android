@@ -81,7 +81,8 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onDone = {
                         progressBarAsync.visibility = View.INVISIBLE
-                    })
+                    }
+                )
             }
             R.id.start_coroutine_operation -> {
                 progressBarCoroutine.visibility = View.VISIBLE
@@ -89,7 +90,8 @@ class TracesFragment : Fragment(), View.OnClickListener {
                 viewModel.startCoroutineOperation(
                     onDone = {
                         progressBarCoroutine.visibility = View.INVISIBLE
-                    })
+                    }
+                )
             }
             R.id.start_request -> {
                 showProgressBarAndHideRequestStatus()
@@ -102,7 +104,8 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onCancel = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
-                    })
+                    }
+                )
             }
             R.id.start_404_request -> {
                 showProgressBarAndHideRequestStatus()
@@ -115,7 +118,8 @@ class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onCancel = {
                         hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
-                    })
+                    }
+                )
             }
         }
     }

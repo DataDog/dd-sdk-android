@@ -31,7 +31,8 @@ internal class WindowCallbackWrapper(
             gesturesDetector.onTouchEvent(copy)
         } catch (e: Exception) {
             sdkLogger.e(
-                "$TAG: error while processing the MotionEvent", e
+                "$TAG: error while processing the MotionEvent",
+                e
             )
         } finally {
             sdkLogger.v("$TAG: Recycling the MotionEvent copy")

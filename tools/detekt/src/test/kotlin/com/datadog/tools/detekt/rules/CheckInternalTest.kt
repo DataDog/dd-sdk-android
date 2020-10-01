@@ -19,13 +19,14 @@ class CheckInternalTest {
     @Test
     fun `detekt check in internal class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private")
-        val code = """
+        val code =
+            """
             $visibility class Foo {
                 fun bar() {
                     check(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -34,7 +35,8 @@ class CheckInternalTest {
     @Test
     fun `detekt check in internal class in public class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private")
-        val code = """
+        val code =
+            """
             class Top {
                 $visibility class Foo {
                     fun bar() {
@@ -42,7 +44,7 @@ class CheckInternalTest {
                     }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -51,13 +53,14 @@ class CheckInternalTest {
     @Test
     fun `detekt check in internal method of public class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private", "protected")
-        val code = """
+        val code =
+            """
             class Foo {
                 $visibility fun bar() {
                     check(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -65,13 +68,14 @@ class CheckInternalTest {
 
     @Test
     fun `ignore check in public method of public class`() {
-        val code = """
+        val code =
+            """
             class Foo {
                 fun bar() {
                     check(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(0)
@@ -80,13 +84,14 @@ class CheckInternalTest {
     @Test
     fun `detekt checkNotNull in internal class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private")
-        val code = """
+        val code =
+            """
             $visibility class Foo {
                 fun bar() {
                     checkNotNull(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -95,7 +100,8 @@ class CheckInternalTest {
     @Test
     fun `detekt checkNotNull in internal class in public class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private")
-        val code = """
+        val code =
+            """
             class Top {
                 $visibility class Foo {
                     fun bar() {
@@ -103,7 +109,7 @@ class CheckInternalTest {
                     }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -112,13 +118,14 @@ class CheckInternalTest {
     @Test
     fun `detekt checkNotNull in internal method of public class`(forge: Forge) {
         val visibility = forge.anElementFrom("internal", "private", "protected")
-        val code = """
+        val code =
+            """
             class Foo {
                 $visibility fun bar() {
                     checkNotNull(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(1)
@@ -126,13 +133,14 @@ class CheckInternalTest {
 
     @Test
     fun `ignore checkNotNull in public method of public class`() {
-        val code = """
+        val code =
+            """
             class Foo {
                 fun bar() {
                     checkNotNull(1 < 0) { "Oups" }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = CheckInternal().lint(code)
         assertThat(findings).hasSize(0)

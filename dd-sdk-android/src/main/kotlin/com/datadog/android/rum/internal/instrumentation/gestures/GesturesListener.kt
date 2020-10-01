@@ -89,7 +89,9 @@ internal class GesturesListener(
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
                 rumMonitor.startUserAction(
-                    RumActionType.CUSTOM, "", emptyMap()
+                    RumActionType.CUSTOM,
+                    "",
+                    emptyMap()
                 )
             } else {
                 return false

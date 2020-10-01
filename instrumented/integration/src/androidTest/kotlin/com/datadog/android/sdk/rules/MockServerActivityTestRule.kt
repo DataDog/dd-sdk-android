@@ -53,17 +53,19 @@ internal open class MockServerActivityTestRule<T : Activity>(
             }
         requests.clear()
         mockWebServer.start()
-        mockWebServer.setDispatcher(object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                if (keepRequests) {
-                    handleRequest(request)
-                } else {
-                    Log.w(TAG, "Dropping @request:$request")
-                }
+        mockWebServer.setDispatcher(
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    if (keepRequests) {
+                        handleRequest(request)
+                    } else {
+                        Log.w(TAG, "Dropping @request:$request")
+                    }
 
-                return mockResponse(200)
+                    return mockResponse(200)
+                }
             }
-        })
+        )
 
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
         RuntimeConfig.logsEndpointUrl = fakeEndpoint + "/$LOGS_URL_SUFFIX"

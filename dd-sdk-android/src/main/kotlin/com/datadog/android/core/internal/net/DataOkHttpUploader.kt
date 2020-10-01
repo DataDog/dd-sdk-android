@@ -94,14 +94,17 @@ internal abstract class DataOkHttpUploader(
         var firstAdded = false
         return buildQueryParams()
             .asSequence()
-            .fold(baseUrl, { url, entry ->
-                if (firstAdded) {
-                    "$url&${entry.key}=${entry.value}"
-                } else {
-                    firstAdded = true
-                    "$url?${entry.key}=${entry.value}"
+            .fold(
+                baseUrl,
+                { url, entry ->
+                    if (firstAdded) {
+                        "$url&${entry.key}=${entry.value}"
+                    } else {
+                        firstAdded = true
+                        "$url?${entry.key}=${entry.value}"
+                    }
                 }
-            })
+            )
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {

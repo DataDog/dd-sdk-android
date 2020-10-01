@@ -150,7 +150,8 @@ internal class WindowCallbackWrapperTest {
                     this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
                         this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
                         this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
-                })
+                }
+            )
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
     }

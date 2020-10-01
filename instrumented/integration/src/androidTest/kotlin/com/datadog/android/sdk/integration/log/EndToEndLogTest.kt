@@ -49,16 +49,16 @@ internal class EndToEndLogTest {
         requests
             .filter { it.url?.isLogsUrl() ?: false }
             .forEach { request ->
-            assertThat(request.headers)
-                .isNotNull
-                .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_JSON)
-                .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
+                assertThat(request.headers)
+                    .isNotNull
+                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_JSON)
+                    .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
 
-            request.jsonBody!!.asJsonArray.forEach {
-                Log.i("EndToEndLogTest", "adding log $it")
-                logObjects.add(it.asJsonObject)
+                request.jsonBody!!.asJsonArray.forEach {
+                    Log.i("EndToEndLogTest", "adding log $it")
+                    logObjects.add(it.asJsonObject)
+                }
             }
-        }
 
         // Check log contents
         val messagesSent = mockServerRule.activity.getSentMessages()
@@ -131,7 +131,14 @@ internal class EndToEndLogTest {
         private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         internal val levels = arrayOf(
-            "debug", "debug", "trace", "debug", "info", "warn", "error", "critical"
+            "debug",
+            "debug",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "critical"
         )
     }
 }

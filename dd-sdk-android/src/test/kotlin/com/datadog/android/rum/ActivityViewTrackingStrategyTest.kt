@@ -63,12 +63,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when created will do nothing if activity not whitelisted`(forge: Forge) {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(true, componentPredicate = object :
-            ComponentPredicate<Activity> {
-            override fun accept(component: Activity): Boolean {
-                return false
+        testedStrategy = ActivityViewTrackingStrategy(
+            true,
+            componentPredicate = object :
+                ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
+                    return false
+                }
             }
-        })
+        )
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
         // Then
@@ -87,13 +90,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when started and activity not whitelisted will do nothing`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
+        testedStrategy = ActivityViewTrackingStrategy(
+            trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // Whenever
         testedStrategy.onActivityStarted(mockActivity)
@@ -169,13 +174,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when resumed will do nothing if activity is not whitelisted`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
+        testedStrategy = ActivityViewTrackingStrategy(
+            trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // Whenever
         testedStrategy.onActivityResumed(mockActivity)
@@ -205,13 +212,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when postResumed and activity not whitelisted will do nothing`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
+        testedStrategy = ActivityViewTrackingStrategy(
+            trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // Whenever
         testedStrategy.onActivityPostResumed(mockActivity)
@@ -254,13 +263,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when paused will do nothing if activity is not whitelisted`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
+        testedStrategy = ActivityViewTrackingStrategy(
+            trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // Whenever
         testedStrategy.onActivityPaused(mockActivity)
@@ -281,13 +292,15 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Test
     fun `when activity destroyed and not whitelisted will do nothing`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(trackExtras = false,
+        testedStrategy = ActivityViewTrackingStrategy(
+            trackExtras = false,
             componentPredicate = object :
                 ComponentPredicate<Activity> {
                 override fun accept(component: Activity): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // Whenever
         testedStrategy.onActivityDestroyed(mockActivity)

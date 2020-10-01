@@ -28,18 +28,23 @@ class DataListFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel =
-            SampleApplication.getViewModelFactory(requireContext()).create(DataListViewModel::class.java)
+            SampleApplication.getViewModelFactory(requireContext()).create(
+                DataListViewModel::class.java
+            )
 
-        viewModel.observeLiveData().observe(viewLifecycleOwner, Observer {
-            when (it) {
-                is DataListViewModel.UIResponse.Success -> {
-                    adapter.updateData(it.data)
-                }
-                is DataListViewModel.UIResponse.Error -> {
-                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+        viewModel.observeLiveData().observe(
+            viewLifecycleOwner,
+            Observer {
+                when (it) {
+                    is DataListViewModel.UIResponse.Success -> {
+                        adapter.updateData(it.data)
+                    }
+                    is DataListViewModel.UIResponse.Error -> {
+                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
-        })
+        )
     }
 
     override fun onCreateView(

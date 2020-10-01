@@ -23,16 +23,18 @@ internal class DeferredWriter<T : Any>(
 
     init {
         if (dataMigrator != null) {
-            executorService.submit(Runnable {
-                dataMigrator.migrateData()
-                dataMigrated.set(true)
-                // we make sure we consume everything from the message queue
-                synchronized(messagesQueue) {
-                    while (messagesQueue.isNotEmpty()) {
-                        messagesQueue.remove().run()
+            executorService.submit(
+                Runnable {
+                    dataMigrator.migrateData()
+                    dataMigrated.set(true)
+// we make sure we consume everything from the message queue
+                    synchronized(messagesQueue) {
+                        while (messagesQueue.isNotEmpty()) {
+                            messagesQueue.remove().run()
+                        }
                     }
                 }
-            })
+            )
         } else {
             dataMigrated.set(true)
         }
@@ -41,15 +43,19 @@ internal class DeferredWriter<T : Any>(
     // region Writer
 
     override fun write(model: T) {
-        handleRunnable(Runnable {
-            writer.write(model)
-        })
+        handleRunnable(
+            Runnable {
+                writer.write(model)
+            }
+        )
     }
 
     override fun write(models: List<T>) {
-        handleRunnable(Runnable {
-            writer.write(models)
-        })
+        handleRunnable(
+            Runnable {
+                writer.write(models)
+            }
+        )
     }
 
     // endregion

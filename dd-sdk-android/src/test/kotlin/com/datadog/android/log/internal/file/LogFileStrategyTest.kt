@@ -30,7 +30,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import java.io.File
 import java.util.Date
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -240,14 +239,14 @@ internal class LogFileStrategyTest :
         val jsonTagString = (jsonObject[LogSerializer.TAG_DATADOG_TAGS] as? JsonPrimitive)?.asString
 
         if (jsonTagString.isNullOrBlank()) {
-            Assertions.assertThat(log.tags)
+            assertThat(log.tags)
                 .isEmpty()
         } else {
             val tags = jsonTagString
                 .split(',')
                 .toList()
 
-            Assertions.assertThat(tags)
+            assertThat(tags)
                 .containsExactlyInAnyOrder(*log.tags.toTypedArray())
         }
     }

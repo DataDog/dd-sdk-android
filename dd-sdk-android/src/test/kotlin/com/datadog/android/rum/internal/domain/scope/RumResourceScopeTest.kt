@@ -606,7 +606,11 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
         GlobalRum.globalAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResourceWithError(
-            fakeKey, statusCode, message, source, throwable
+            fakeKey,
+            statusCode,
+            message,
+            source,
+            throwable
         )
 
         // When

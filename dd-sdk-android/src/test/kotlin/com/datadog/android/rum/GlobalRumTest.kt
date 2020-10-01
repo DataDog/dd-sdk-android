@@ -247,11 +247,13 @@ internal class GlobalRumTest {
         val pluginsToAssert =
             crashFeaturePlugins + tracesFeaturePlugins + logsFeaturePlugins + rumFeaturePlugins
         pluginsToAssert.forEach {
-            verify(it).onContextChanged(argThat {
-                this.rum?.applicationId == applicationId &&
-                    this.rum?.sessionId == sessionId &&
-                    this.rum?.viewId == viewId
-            })
+            verify(it).onContextChanged(
+                argThat {
+                    this.rum?.applicationId == applicationId &&
+                        this.rum?.sessionId == sessionId &&
+                        this.rum?.viewId == viewId
+                }
+            )
         }
     }
 

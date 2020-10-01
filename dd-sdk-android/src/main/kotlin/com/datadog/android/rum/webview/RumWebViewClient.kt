@@ -38,7 +38,8 @@ open class RumWebViewClient : WebViewClient() {
             val key = url
             GlobalRum.get().startResource(
                 key,
-                METHOD_GET, url
+                METHOD_GET,
+                url
             )
         }
     }

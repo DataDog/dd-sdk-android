@@ -75,7 +75,12 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
 
     private fun logRandom() {
         val level = forge.anElementFrom(
-            Log.DEBUG, Log.VERBOSE, Log.INFO, Log.WARN, Log.ERROR, Log.ASSERT
+            Log.DEBUG,
+            Log.VERBOSE,
+            Log.INFO,
+            Log.WARN,
+            Log.ERROR,
+            Log.ASSERT
         )
         val message = forge.anAlphabeticalString()
         log(level, message)

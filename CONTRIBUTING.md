@@ -180,6 +180,15 @@ class Foo :Observable(), Runnable {
     
     // endregion
 }
+
+```
+There is also a gradle task that you can use to automatically format the code following the
+required styling rules:
+
+```console
+
+./gradlew :dd-sdk-android:ktlintFormat
+
 ```
 
 ### #TestMatters

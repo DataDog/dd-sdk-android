@@ -22,7 +22,8 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
 
     override fun onActivityPaused(activity: Activity) {
         if (activitiesResumedCounter.decrementAndGet() == 0 &&
-            !wasPaused.getAndSet(true)) {
+            !wasPaused.getAndSet(true)
+        ) {
             // trigger on process paused
             callback.onPaused()
         }
