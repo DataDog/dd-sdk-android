@@ -93,7 +93,12 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidXMultidex)
     implementation(Dependencies.Libraries.Elmyr)
 
-    androidTestImplementation(project(":tools:unit"))
+    androidTestImplementation(project(":tools:unit")) {
+        // We need to exclude this otherwise R8 will fail while trying to desugar a function
+        // available only for API 26 and above
+        exclude(group = "org.junit.jupiter")
+        exclude(group = "org.mockito")
+    }
     androidTestImplementation(Dependencies.Libraries.AssertJ)
     androidTestImplementation(Dependencies.Libraries.IntegrationTests)
     androidTestImplementation(Dependencies.Libraries.OkHttpMock)

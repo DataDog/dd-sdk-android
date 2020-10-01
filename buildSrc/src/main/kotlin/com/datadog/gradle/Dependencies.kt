@@ -29,10 +29,10 @@ object Dependencies {
         const val OpenTracing = "0.32.0"
 
         // JUnit
-        const val JUnitJupiter = "5.5.2"
-        const val JUnitPlatform = "1.5.2"
-        const val JUnitVintage = "5.5.2"
-        const val JunitMockitoExt = "3.2.0"
+        const val JUnitJupiter = "5.6.2"
+        const val JUnitPlatform = "1.6.2"
+        const val JUnitVintage = "5.6.2"
+        const val JunitMockitoExt = "3.5.13"
 
         // Tests Tools
         const val AssertJ = "0.2.1"
