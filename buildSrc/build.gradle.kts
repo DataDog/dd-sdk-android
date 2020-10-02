@@ -41,7 +41,7 @@ dependencies {
     implementation("com.android.tools.build:gradle:4.0.1")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.10")
     implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
 
     // check api surface

@@ -16,18 +16,17 @@ fun Project.javadocConfig() {
 
     @Suppress("UnstableApiUsage")
     tasks.register("generateJavadoc", Jar::class.java) {
-        dependsOn("dokka")
+        dependsOn("dokkaJavadoc")
         archiveClassifier.convention("javadoc")
         from("${buildDir.canonicalPath}/reports/javadoc")
     }
 
     tasks.withType(DokkaTask::class.java) {
-        outputFormat = "javadoc"
-        outputDirectory = "${buildDir.canonicalPath}/reports/javadoc"
+        val toOutputDirectory = file("${buildDir.canonicalPath}/reports/javadoc")
+        outputDirectory.set(toOutputDirectory)
         doFirst {
-            val outputDir = File(outputDirectory)
-            if (!outputDir.exists()) {
-                outputDir.mkdirs()
+            if (!toOutputDirectory.exists()) {
+                toOutputDirectory.mkdirs()
             }
         }
     }
