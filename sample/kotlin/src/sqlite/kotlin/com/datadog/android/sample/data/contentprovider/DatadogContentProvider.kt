@@ -101,15 +101,16 @@ class DatadogContentProvider : ContentProvider() {
     // region internal
 
     private fun insertLogs(db: SQLiteDatabase, contentValues: Array<out ContentValues>): Int {
-        db.transactionTraced("Adding data to Logs DB") {
+        db.transactionTraced("Adding data to Logs DB") { database ->
             contentValues.forEach { value ->
-                db.insertWithOnConflict(
+                database.insertWithOnConflict(
                     DatadogDbContract.Logs.TABLE_NAME,
                     null,
                     value,
                     SQLiteDatabase.CONFLICT_REPLACE
                 )
             }
+            setTag("logs_count", contentValues.size)
             return contentValues.size
         }
     }

@@ -23,7 +23,7 @@ import io.opentracing.util.GlobalTracer
 inline fun <T> SQLiteDatabase.transactionTraced(
     operationName: String,
     exclusive: Boolean = true,
-    body: SQLiteDatabase.() -> T
+    body: Span.(SQLiteDatabase) -> T
 ): T {
     val parentSpan = GlobalTracer.get().activeSpan()
     withinSpan(operationName, parentSpan, true) {
@@ -33,7 +33,7 @@ inline fun <T> SQLiteDatabase.transactionTraced(
             beginTransactionNonExclusive()
         }
         try {
-            val result = body()
+            val result = this.body(this@transactionTraced)
             setTransactionSuccessful()
             return result
         } finally {
@@ -41,3 +41,5 @@ inline fun <T> SQLiteDatabase.transactionTraced(
         }
     }
 }
+
+// endregion
