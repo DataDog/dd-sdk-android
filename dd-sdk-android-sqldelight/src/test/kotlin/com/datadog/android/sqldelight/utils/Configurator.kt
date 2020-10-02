@@ -4,7 +4,7 @@
  * Copyright 2016-2020 Datadog, Inc.
  */
 
-package com.datadog.android.fresco.utils
+package com.datadog.android.sqldelight.utils
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
