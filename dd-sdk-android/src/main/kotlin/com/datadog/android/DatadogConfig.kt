@@ -359,11 +359,13 @@ private constructor(
         fun addPlugin(plugin: DatadogPlugin, feature: Feature): Builder {
             when (feature) {
                 Feature.RUM -> rumConfig = rumConfig.copy(plugins = rumConfig.plugins + plugin)
-                Feature.TRACE -> tracesConfig =
-                    tracesConfig.copy(plugins = tracesConfig.plugins + plugin)
+                Feature.TRACE ->
+                    tracesConfig =
+                        tracesConfig.copy(plugins = tracesConfig.plugins + plugin)
                 Feature.LOG -> logsConfig = logsConfig.copy(plugins = logsConfig.plugins + plugin)
-                Feature.CRASH -> crashReportConfig =
-                    crashReportConfig.copy(plugins = crashReportConfig.plugins + plugin)
+                Feature.CRASH ->
+                    crashReportConfig =
+                        crashReportConfig.copy(plugins = crashReportConfig.plugins + plugin)
             }
 
             return this
@@ -391,19 +393,19 @@ private constructor(
             gesturesTracker: GesturesTracker
         ):
             UserActionTrackingStrategy {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                GesturesTrackingStrategyApi29(gesturesTracker)
-            } else {
-                GesturesTrackingStrategy(gesturesTracker)
+                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    GesturesTrackingStrategyApi29(gesturesTracker)
+                } else {
+                    GesturesTrackingStrategy(gesturesTracker)
+                }
             }
-        }
 
         private fun gestureTracker(customProviders: Array<ViewAttributesProvider>):
             DatadogGesturesTracker {
-            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
-            val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers)
-        }
+                val defaultProviders = arrayOf(JetpackViewAttributesProvider())
+                val providers = customProviders + defaultProviders
+                return DatadogGesturesTracker(providers)
+            }
 
         companion object {
             internal const val RUM_NOT_INITIALISED_WARNING_MESSAGE =

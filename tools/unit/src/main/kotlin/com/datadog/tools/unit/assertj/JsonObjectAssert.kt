@@ -103,7 +103,8 @@ class JsonObjectAssert(actual: JsonObject) :
             .overridingErrorMessage(
                 "Expected json object to have field $name with value \"%s\" " +
                     "but was \"%s\"",
-                expectedValue, value
+                expectedValue,
+                value
             )
             .isEqualTo(expectedValue)
         return this
@@ -134,7 +135,8 @@ class JsonObjectAssert(actual: JsonObject) :
             .overridingErrorMessage(
                 "Expected json object to have field $name with value matching \"%s\" " +
                     "but was \"%s\"",
-                regex, value
+                regex,
+                value
             )
             .matches(regex)
 

@@ -24,15 +24,16 @@ class DataListViewModel(val repository: DataRepository) : ViewModel() {
         uiRequestSubject
             .switchMap { request ->
                 when (request) {
-                    is UIRequest.FetchData -> repository.getLogs("source:android")
-                        .sendErrorToDatadog()
-                        .toObservable()
-                        .map<UIResponse> {
-                            UIResponse.Success(it)
-                        }
-                        .onErrorReturn {
-                            UIResponse.Error(it.message ?: "Unknown Error")
-                        }
+                    is UIRequest.FetchData ->
+                        repository.getLogs("source:android")
+                            .sendErrorToDatadog()
+                            .toObservable()
+                            .map<UIResponse> {
+                                UIResponse.Success(it)
+                            }
+                            .onErrorReturn {
+                                UIResponse.Error(it.message ?: "Unknown Error")
+                            }
                 }
             }
     private val liveData = MutableLiveData<UIResponse>()

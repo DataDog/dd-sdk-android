@@ -10,29 +10,29 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.3.61"
+        const val Kotlin = "1.4.0"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
         const val KronosNTP = "0.0.1-alpha09"
 
         // Android
-        const val AndroidToolsPlugin = "4.0.0"
+        const val AndroidToolsPlugin = "4.0.1"
         const val AndroidXAnnotations = "1.1.0"
         const val AndroidXAppCompat = "1.2.0"
-        const val AndroidXCore = "1.2.0"
+        const val AndroidXCore = "1.3.1"
         const val AndroidXMultidex = "2.0.1"
         const val AndroidXNavigation = "2.3.0"
         const val AndroidXRecyclerView = "1.1.0"
-        const val AndroidXWorkManager = "2.3.3"
+        const val AndroidXWorkManager = "2.4.0"
 
         // DD-TRACE-OT
         const val OpenTracing = "0.32.0"
 
         // JUnit
-        const val JUnitJupiter = "5.5.2"
-        const val JUnitPlatform = "1.5.2"
-        const val JUnitVintage = "5.5.2"
-        const val JunitMockitoExt = "3.2.0"
+        const val JUnitJupiter = "5.6.2"
+        const val JUnitPlatform = "1.6.2"
+        const val JUnitVintage = "5.6.2"
+        const val JunitMockitoExt = "3.5.13"
 
         // Tests Tools
         const val AssertJ = "0.2.1"
@@ -43,17 +43,17 @@ object Dependencies {
 
         // Tools
         const val Detekt = "1.6.0"
-        const val KtLint = "8.2.0"
-        const val Dokka = "0.10.0"
+        const val KtLint = "9.4.0"
+        const val Dokka = "1.4.10"
         const val Bintray = "1.8.4"
         const val Unmock = "0.7.5"
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
         // AndroidJunit
-        const val AndroidJunitRunner = "1.2.0"
-        const val AndroidExtJunit = "1.1.1"
-        const val AndroidJunitCore = "1.2.0"
-        const val Espresso = "3.1.1"
+        const val AndroidJunitRunner = "1.3.0"
+        const val AndroidExtJunit = "1.1.2"
+        const val AndroidJunitCore = "1.3.0"
+        const val Espresso = "3.3.0"
 
         // Sample Apps
         const val ConstraintLayout = "2.0.1"

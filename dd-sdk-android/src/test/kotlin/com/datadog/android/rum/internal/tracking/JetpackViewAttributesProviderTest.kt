@@ -54,7 +54,8 @@ internal class JetpackViewAttributesProviderTest {
     ) {
         // Given
         val expectedAdapterPosition = forge.anInt(
-            min = 0, max = 20
+            min = 0,
+            max = 20
         )
         val mockParent: ViewGroup = mock {
             whenever(it.parent).thenReturn(mockRecyclerView)
@@ -103,7 +104,8 @@ internal class JetpackViewAttributesProviderTest {
     ) {
         // Given
         val expectedAdapterPosition = forge.anInt(
-            min = 0, max = 20
+            min = 0,
+            max = 20
         )
         whenever(mockTarget.layoutParams).thenReturn(mock<RecyclerView.LayoutParams>())
         whenever(mockRecyclerView.getChildAdapterPosition(mockTarget)).thenReturn(
@@ -150,7 +152,8 @@ internal class JetpackViewAttributesProviderTest {
         // Given
         whenever(mockTarget.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
         val adapterPosition = forge.anInt(
-            min = 0, max = 20
+            min = 0,
+            max = 20
         )
         whenever(mockRecyclerView.getChildAdapterPosition(mockTarget)).thenReturn(
             adapterPosition
@@ -175,7 +178,8 @@ internal class JetpackViewAttributesProviderTest {
             whenever(it.layoutParams).thenReturn(mock<LinearLayout.LayoutParams>())
         }
         val adapterPosition = forge.anInt(
-            min = 0, max = 20
+            min = 0,
+            max = 20
         )
         whenever(mockRecyclerView.getChildAdapterPosition(mockParent)).thenReturn(
             adapterPosition

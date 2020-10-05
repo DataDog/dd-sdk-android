@@ -32,7 +32,8 @@ class DatadogSqliteHelper(context: Context) :
 
     companion object {
 
-        const val CREATE_DB_QUERY = """
+        const val CREATE_DB_QUERY =
+            """
             CREATE TABLE IF NOT EXISTS ${DatadogDbContract.Logs.TABLE_NAME}
             (${BaseColumns._ID} TEXT PRIMARY KEY,
             ${DatadogDbContract.Logs.COLUMN_NAME_MESSAGE} TEXT,
@@ -40,7 +41,8 @@ class DatadogSqliteHelper(context: Context) :
             ${DatadogDbContract.Logs.COLUMN_NAME_TTL} INTEGER
             )
         """
-        const val DELETE_DB_QUERY = """
+        const val DELETE_DB_QUERY =
+            """
             DROP TABLE IF EXISTS ${DatadogDbContract.Logs.TABLE_NAME}
         """
     }

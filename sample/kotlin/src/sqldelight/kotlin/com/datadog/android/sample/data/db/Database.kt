@@ -9,7 +9,6 @@ package com.datadog.android.sample.data.db
 import android.content.Context
 import com.datadog.android.sample.LogsDatabase
 import com.datadog.android.sqldelight.DatadogSqliteCallback
-import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 
 object Database {

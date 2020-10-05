@@ -36,9 +36,10 @@ internal class RumGestureTrackerAssert(actual: DatadogGesturesTracker) :
 
     fun hasCustomTargetAttributesProviders(customProviders: Array<ViewAttributesProvider>):
         RumGestureTrackerAssert {
-        assertThat(actual.targetAttributesProviders).containsAll(customProviders.toMutableList())
-        return this
-    }
+            assertThat(actual.targetAttributesProviders)
+                .containsAll(customProviders.toMutableList())
+            return this
+        }
 
     // endregion
 

@@ -60,7 +60,8 @@ class TodoWithoutTask : Rule() {
         if (comment != null && comment.isInvalid()) {
             report(
                 CodeSmell(
-                    issue, Entity.from(comment),
+                    issue,
+                    Entity.from(comment),
                     message = "A comment with TODO is missing a task number."
                 )
             )

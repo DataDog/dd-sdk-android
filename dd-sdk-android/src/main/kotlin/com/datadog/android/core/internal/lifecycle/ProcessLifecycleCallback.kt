@@ -32,8 +32,10 @@ internal class ProcessLifecycleCallback(
     }
 
     override fun onStopped() {
-        val isOffline = (networkInfoProvider.getLatestNetworkInfo().connectivity
-                == NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        val isOffline = (
+            networkInfoProvider.getLatestNetworkInfo().connectivity
+                == NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            )
         if (isOffline) {
             contextWeakRef.get()?.let {
                 triggerUploadWorker(it)

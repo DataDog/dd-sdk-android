@@ -196,9 +196,11 @@ class SqlDelightExtTest {
         assertThat(caughtException).isEqualTo(fakeException)
         verify(mockSpanBuilder).asChildOf(null as Span?)
         inOrder(mockSpan, mockScope) {
-            verify(mockSpan).log(argThat<Map<String, Any?>> {
-                this[Fields.ERROR_OBJECT] == fakeException
-            })
+            verify(mockSpan).log(
+                argThat<Map<String, Any?>> {
+                    this[Fields.ERROR_OBJECT] == fakeException
+                }
+            )
             verify(mockSpan).finish()
             verify(mockScope).close()
         }
@@ -224,9 +226,11 @@ class SqlDelightExtTest {
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
         verify(mockSpanBuilder).asChildOf(null as Span?)
-        verify(mockSpan).log(argThat<Map<String, Any?>> {
-            this[Fields.ERROR_OBJECT] == fakeException
-        })
+        verify(mockSpan).log(
+            argThat<Map<String, Any?>> {
+                this[Fields.ERROR_OBJECT] == fakeException
+            }
+        )
     }
 
     @Test
@@ -382,9 +386,11 @@ class SqlDelightExtTest {
         assertThat(caughtException).isEqualTo(fakeException)
         verify(mockSpanBuilder).asChildOf(null as Span?)
         inOrder(mockSpan, mockScope) {
-            verify(mockSpan).log(argThat<Map<String, Any?>> {
-                this[Fields.ERROR_OBJECT] == fakeException
-            })
+            verify(mockSpan).log(
+                argThat<Map<String, Any?>> {
+                    this[Fields.ERROR_OBJECT] == fakeException
+                }
+            )
             verify(mockSpan).finish()
             verify(mockScope).close()
         }
@@ -413,9 +419,11 @@ class SqlDelightExtTest {
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
         verify(mockSpanBuilder).asChildOf(null as Span?)
-        verify(mockSpan).log(argThat<Map<String, Any?>> {
-            this[Fields.ERROR_OBJECT] == fakeException
-        })
+        verify(mockSpan).log(
+            argThat<Map<String, Any?>> {
+                this[Fields.ERROR_OBJECT] == fakeException
+            }
+        )
     }
 
     @Test

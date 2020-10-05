@@ -283,9 +283,11 @@ internal class RumFeatureTest {
         )
 
         // Then
-        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(argThat {
-            this is ViewTrackingStrategy || this is UserActionTrackingStrategy
-        })
+        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(
+            argThat {
+                this is ViewTrackingStrategy || this is UserActionTrackingStrategy
+            }
+        )
     }
 
     @Test
@@ -347,9 +349,11 @@ internal class RumFeatureTest {
         )
 
         // Then
-        verify(mockAppContext).registerActivityLifecycleCallbacks(argThat {
-            this is ViewTreeChangeTrackingStrategy
-        })
+        verify(mockAppContext).registerActivityLifecycleCallbacks(
+            argThat {
+                this is ViewTreeChangeTrackingStrategy
+            }
+        )
     }
 
     @Test

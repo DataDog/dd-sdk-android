@@ -127,7 +127,10 @@ internal class DatadogLogConstraints : LogConstraints {
         private const val MAX_ATTR_COUNT = 256
 
         private val reservedTagKeys = setOf(
-            "host", "device", "source", "service"
+            "host",
+            "device",
+            "source",
+            "service"
         )
     }
 }

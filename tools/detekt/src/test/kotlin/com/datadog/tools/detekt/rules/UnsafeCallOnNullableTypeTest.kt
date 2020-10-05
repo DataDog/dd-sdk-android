@@ -18,11 +18,12 @@ internal class UnsafeCallOnNullableTypeTest {
 
     @Test
     fun `detekt unsafe call on nullable type`(forge: Forge) {
-        val code = """
+        val code =
+            """
                 fun test(str: String?) {
                     println(str!!.length)
                 }
-                """.trimIndent()
+            """.trimIndent()
 
         val findings = UnsafeCallOnNullableType().lint(code)
         assertThat(findings).hasSize(1)
@@ -30,12 +31,13 @@ internal class UnsafeCallOnNullableTypeTest {
 
     @Test
     fun `does not detekt unsafe call on comments`(forge: Forge) {
-        val code = """
+        val code =
+            """
                 fun test(str: String) {
                     // was println(str!!.length)
                     println(str.length)
                 }
-                """.trimIndent()
+            """.trimIndent()
 
         val findings = UnsafeCallOnNullableType().lint(code)
         assertThat(findings).hasSize(0)
@@ -43,11 +45,12 @@ internal class UnsafeCallOnNullableTypeTest {
 
     @Test
     fun `does not detekt safe call on nullable type`(forge: Forge) {
-        val code = """
+        val code =
+            """
                 fun test(str: String?) {
                     println(str?.length)
                 }
-                """.trimIndent()
+            """.trimIndent()
 
         val findings = UnsafeCallOnNullableType().lint(code)
         assertThat(findings).hasSize(0)
@@ -55,11 +58,12 @@ internal class UnsafeCallOnNullableTypeTest {
 
     @Test
     fun `does not detekt safe call in combination with the elvis operator`(forge: Forge) {
-        val code = """
+        val code =
+            """
                 fun test(str: String?) {
                     println(str?.length ?: 0)
                 }
-                """.trimIndent()
+            """.trimIndent()
 
         val findings = UnsafeCallOnNullableType().lint(code)
         assertThat(findings).hasSize(0)

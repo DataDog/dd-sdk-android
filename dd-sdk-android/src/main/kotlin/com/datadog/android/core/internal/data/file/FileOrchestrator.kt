@@ -137,7 +137,7 @@ internal class FileOrchestrator(
         if (sizeToFree > 0) {
             sdkLogger.w(
                 "Too much disk space used ($sizeOnDisk / $maxDiskSpace): " +
-                        "cleaning up to free $sizeToFree bytes…"
+                    "cleaning up to free $sizeToFree bytes…"
             )
             files.asSequence()
                 .fold(sizeToFree) { remainingSizeToFree, file ->

@@ -46,7 +46,8 @@ internal constructor(private val logger: Logger) : WebChromeClient() {
                     message,
                     RumErrorSource.WEBVIEW,
                     null,
-                    attributes)
+                    attributes
+                )
             } else {
                 logger.log(level.toLogLevel(), message, null, attributes)
             }

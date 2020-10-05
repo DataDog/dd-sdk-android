@@ -53,7 +53,9 @@ internal open class RumOkHttpUploader(
         private fun buildUrl(endpoint: String, token: String): String {
             return String.format(
                 Locale.US,
-                UPLOAD_URL, endpoint, token
+                UPLOAD_URL,
+                endpoint,
+                token
             )
         }
     }

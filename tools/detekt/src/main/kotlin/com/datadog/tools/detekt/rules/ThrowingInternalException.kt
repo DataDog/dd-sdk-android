@@ -32,7 +32,8 @@ class ThrowingInternalException : Rule() {
         if (!expression.isContainingEntryPointPublic()) {
             report(
                 CodeSmell(
-                    issue, Entity.from(expression),
+                    issue,
+                    Entity.from(expression),
                     message = "An exception is thrown from an internal or private part of the code."
                 )
             )

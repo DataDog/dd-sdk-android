@@ -44,14 +44,16 @@ class LocalDataSource(val context: Context) {
         // add new data
         Realm.getDefaultInstance().useMonitored { realm ->
             realm.beginTransaction()
-            realm.insertOrUpdate(logs.map {
-                LogRealm(
-                    id = it.id,
-                    message = it.attributes.message,
-                    timestamp = it.attributes.timestamp,
-                    ttl = currentTimeInMillis
-                )
-            })
+            realm.insertOrUpdate(
+                logs.map {
+                    LogRealm(
+                        id = it.id,
+                        message = it.attributes.message,
+                        timestamp = it.attributes.timestamp,
+                        ttl = currentTimeInMillis
+                    )
+                }
+            )
             realm.commitTransaction()
         }
     }

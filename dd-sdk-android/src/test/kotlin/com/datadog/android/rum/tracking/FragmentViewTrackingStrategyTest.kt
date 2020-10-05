@@ -172,12 +172,14 @@ internal class FragmentViewTrackingStrategyTest {
         // Given
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
-        testedStrategy = FragmentViewTrackingStrategy(trackArguments = true,
+        testedStrategy = FragmentViewTrackingStrategy(
+            trackArguments = true,
             supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
                 }
-            })
+            }
+        )
 
         // When
         testedStrategy.onActivityStarted(mockAndroidxActivity)
@@ -347,12 +349,14 @@ internal class FragmentViewTrackingStrategyTest {
     ) {
         // Given
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
-        testedStrategy = FragmentViewTrackingStrategy(trackArguments = true,
+        testedStrategy = FragmentViewTrackingStrategy(
+            trackArguments = true,
             defaultFragmentComponentPredicate = object : ComponentPredicate<android.app.Fragment> {
                 override fun accept(component: android.app.Fragment): Boolean {
                     return false
                 }
-            })
+            }
+        )
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -476,11 +480,13 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockAndroidxFragmentManager, mockDefaultFragmentManager) {
             verify(mockAndroidxFragmentManager)
                 .registerFragmentLifecycleCallbacks(
-                    androidXArgumentCaptor.capture(), eq(true)
+                    androidXArgumentCaptor.capture(),
+                    eq(true)
                 )
             verify(mockDefaultFragmentManager)
                 .registerFragmentLifecycleCallbacks(
-                    baseArgumentCaptor.capture(), eq(true)
+                    baseArgumentCaptor.capture(),
+                    eq(true)
                 )
             verify(mockAndroidxFragmentManager)
                 .unregisterFragmentLifecycleCallbacks(

@@ -26,6 +26,7 @@ class DataRepository(
                 .map { it.data }
                 .doOnSuccess {
                     localDataSource.persistLogs(it)
-                })
+                }
+        )
     }
 }

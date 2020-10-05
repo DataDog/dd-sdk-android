@@ -304,16 +304,19 @@ internal class DatadogLogHandlerTest {
         val now = System.currentTimeMillis()
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
-        val thread = Thread({
-            testedHandler.handleLog(
-                fakeLevel,
-                fakeMessage,
-                fakeThrowable,
-                fakeAttributes,
-                fakeTags
-            )
-            countDownLatch.countDown()
-        }, threadName)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    fakeThrowable,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
 
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)

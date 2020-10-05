@@ -111,42 +111,52 @@ reviewBenchmark {
 
     // Logs Benchmarks
     addThreshold(
-        "benchmark_create_one_log", 1
+        "benchmark_create_one_log",
+        1
     )
     addThreshold(
-        "benchmark_create_one_log_with_throwable", 1
+        "benchmark_create_one_log_with_throwable",
+        1
     )
     addThreshold(
-        "benchmark_create_one_log_with_tags", 1
+        "benchmark_create_one_log_with_tags",
+        1
     )
     addThreshold(
-        "benchmark_create_one_log_with_attributes", 1
+        "benchmark_create_one_log_with_attributes",
+        1
     )
 
     // Traces Benchmarks
     addThreshold(
-        "benchmark_creating_span", 1
+        "benchmark_creating_span",
+        1
     )
     addThreshold(
-        "benchmark_creating_span_with_throwable", 1
+        "benchmark_creating_span_with_throwable",
+        1
     )
     addThreshold(
         "benchmark_creating_spans_with_baggage_items_and_logs",
         1
     )
     addThreshold(
-        "benchmark_creating_heavy_load_of_spans", 300
+        "benchmark_creating_heavy_load_of_spans",
+        300
     )
     addThreshold(
-        "benchmark_creating_medium_load_of_spans", 150
+        "benchmark_creating_medium_load_of_spans",
+        150
     )
 
     // Logs I/O Benchmarks
     addThreshold(
-        "benchmark_write_logs_on_disk", 60
+        "benchmark_write_logs_on_disk",
+        60
     )
     addThreshold(
-        "benchmark_read_logs_from_disk", 60
+        "benchmark_read_logs_from_disk",
+        60
     )
 
     // Rum - Gesture Tracker Benchmarks
@@ -165,31 +175,38 @@ reviewBenchmark {
     // RUM - Public API Benchmarks
 
     addThreshold(
-        "benchmark_start_view", 1 // 1 Millisecond
+        "benchmark_start_view",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_stop_view", 1 // 1 Millisecond
+        "benchmark_stop_view",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_start_resource", 1 // 1 Millisecond
+        "benchmark_start_resource",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_stop_resource", 1 // 1 Millisecond
+        "benchmark_stop_resource",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_start_action", 1 // 1 Millisecond
+        "benchmark_start_action",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_stop_action", 1 // 1 Millisecond
+        "benchmark_stop_action",
+        1 // 1 Millisecond
     )
 
     addThreshold(
-        "benchmark_add_error", 1 // 1 Millisecond
+        "benchmark_add_error",
+        1 // 1 Millisecond
     )
 
     // those values are very big due to Bitrise emulator which is too slow. We will need to see

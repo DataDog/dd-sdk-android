@@ -165,7 +165,9 @@ internal class RumViewScope(
             attributes = addExtraAttributes(event.attributes)
         )
         activeResourceScopes[event.key] = RumResourceScope.fromEvent(
-            this, updatedEvent, firstPartyHostDetector
+            this,
+            updatedEvent,
+            firstPartyHostDetector
         )
     }
 

@@ -486,7 +486,8 @@ internal class DataUploadRunnableTest {
         // Given
         whenever(mockDataUploader.upload(any())) doAnswer {
             forge.aValueFrom(
-                UploadStatus::class.java, exclude = listOf(
+                UploadStatus::class.java,
+                exclude = listOf(
                     UploadStatus.SUCCESS,
                     UploadStatus.HTTP_REDIRECTION,
                     UploadStatus.HTTP_CLIENT_ERROR,

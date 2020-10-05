@@ -45,11 +45,13 @@ class RumManualApiBenchmark {
     @Before
     fun setUp() {
         mockWebServer = MockWebServer().apply { start() }
-        mockWebServer.setDispatcher(object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return mockResponse(200)
+        mockWebServer.setDispatcher(
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    return mockResponse(200)
+                }
             }
-        })
+        )
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context

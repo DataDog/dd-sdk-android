@@ -16,7 +16,8 @@ import com.datadog.android.core.internal.utils.devLogger
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
  * based implementation of the [TrackingStrategy].
  */
-abstract class ActivityLifecycleTrackingStrategy : Application.ActivityLifecycleCallbacks,
+abstract class ActivityLifecycleTrackingStrategy :
+    Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
     // region TrackingStrategy

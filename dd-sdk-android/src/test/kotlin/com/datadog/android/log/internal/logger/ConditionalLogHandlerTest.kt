@@ -90,16 +90,19 @@ internal class ConditionalLogHandlerTest {
         fakeCondition = true
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
-        val thread = Thread({
-            testedHandler.handleLog(
-                fakeLevel,
-                fakeMessage,
-                fakeThrowable,
-                fakeAttributes,
-                fakeTags
-            )
-            countDownLatch.countDown()
-        }, threadName)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    fakeThrowable,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
 
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
@@ -154,16 +157,19 @@ internal class ConditionalLogHandlerTest {
         fakeCondition = false
         val threadName = forge.anAlphabeticalString()
         val countDownLatch = CountDownLatch(1)
-        val thread = Thread({
-            testedHandler.handleLog(
-                fakeLevel,
-                fakeMessage,
-                fakeThrowable,
-                fakeAttributes,
-                fakeTags
-            )
-            countDownLatch.countDown()
-        }, threadName)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    fakeThrowable,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
 
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)

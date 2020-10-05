@@ -19,13 +19,14 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             class Foo {
                 fun bar() {
                     // TODO $comment
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)
@@ -34,7 +35,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number in multiline comment`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             class Foo {
                 fun bar() {
                     /*
@@ -42,7 +44,7 @@ class TodoWithoutTaskTest {
                      */
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)
@@ -51,7 +53,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number in property doc comment`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             class Foo {
             
                 /**
@@ -60,7 +63,7 @@ class TodoWithoutTaskTest {
                  */
                 lateinit var property : String 
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)
@@ -69,7 +72,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number in method doc comment`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             class Foo {
             
                 /**
@@ -79,7 +83,7 @@ class TodoWithoutTaskTest {
                 fun bar() {
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)
@@ -88,7 +92,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number in class doc comment`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             /**
              * TODO $comment
              */
@@ -96,7 +101,7 @@ class TodoWithoutTaskTest {
                 fun bar() {
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)
@@ -105,7 +110,8 @@ class TodoWithoutTaskTest {
     @Test
     fun `detekt todo without task number in object doc comment`(forge: Forge) {
         val comment = forge.aStringMatching("\\w+( \\w+)*")
-        val code = """
+        val code =
+            """
             /**
              * TODO $comment
              */
@@ -113,7 +119,7 @@ class TodoWithoutTaskTest {
                 fun bar() {
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val findings = TodoWithoutTask().lint(code)
         assertThat(findings).hasSize(1)

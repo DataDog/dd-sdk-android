@@ -82,7 +82,8 @@ internal class ProcessLifecycleCallbackTest {
             argThat<OneTimeWorkRequest> {
                 this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
                     this.tags.contains(TAG_DATADOG_UPLOAD)
-            })
+            }
+        )
     }
 
     @Test

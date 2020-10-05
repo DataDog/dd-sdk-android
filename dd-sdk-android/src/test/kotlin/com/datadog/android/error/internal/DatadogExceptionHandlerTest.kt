@@ -195,7 +195,8 @@ internal class DatadogExceptionHandlerTest {
                 argThat<OneTimeWorkRequest> {
                     this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
                         this.tags.contains(TAG_DATADOG_UPLOAD)
-                })
+                }
+            )
     }
 
     @Test
@@ -230,10 +231,13 @@ internal class DatadogExceptionHandlerTest {
     fun `M log exception W caught on background thread`(forge: Forge) {
         val latch = CountDownLatch(1)
         val threadName = forge.anAlphabeticalString()
-        val thread = Thread({
-            testedHandler.uncaughtException(Thread.currentThread(), fakeThrowable)
-            latch.countDown()
-        }, threadName)
+        val thread = Thread(
+            {
+                testedHandler.uncaughtException(Thread.currentThread(), fakeThrowable)
+                latch.countDown()
+            },
+            threadName
+        )
 
         val now = System.currentTimeMillis()
         thread.start()

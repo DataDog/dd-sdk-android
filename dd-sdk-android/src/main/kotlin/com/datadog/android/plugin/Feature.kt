@@ -10,8 +10,8 @@ package com.datadog.android.plugin
  * Provides the available feature for which a [DatadogPlugin] can be assigned.
  */
 enum class Feature {
-        LOG,
-        CRASH,
-        TRACE,
-        RUM
-    }
+    LOG,
+    CRASH,
+    TRACE,
+    RUM
+}

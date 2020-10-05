@@ -94,7 +94,8 @@ internal class EndToEndRumGesturesTrackingTests {
         return listOf(
             ExpectedApplicationStart(),
             ExpectedViewEvent(
-                viewUrl, 2
+                viewUrl,
+                2
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
@@ -102,7 +103,8 @@ internal class EndToEndRumGesturesTrackingTests {
                 "button"
             ),
             ExpectedViewEvent(
-                viewUrl, 3
+                viewUrl,
+                3
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
@@ -129,7 +131,8 @@ internal class EndToEndRumGesturesTrackingTests {
                 )
             ),
             ExpectedViewEvent(
-                viewUrl, 5
+                viewUrl,
+                5
             )
         )
     }

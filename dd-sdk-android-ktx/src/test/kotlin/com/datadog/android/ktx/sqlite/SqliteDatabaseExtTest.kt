@@ -88,7 +88,8 @@ class SqliteDatabaseExtTest {
 
         // WHEN
         transactionExecuted = mockDatabase.transactionTraced(
-            fakeOperationName, true
+            fakeOperationName,
+            true
         ) {
             true
         }
@@ -116,7 +117,8 @@ class SqliteDatabaseExtTest {
 
         // WHEN
         transactionExecuted = mockDatabase.transactionTraced(
-            fakeOperationName, false
+            fakeOperationName,
+            false
         ) {
             true
         }
@@ -144,7 +146,8 @@ class SqliteDatabaseExtTest {
 
         // WHEN
         transactionExecuted = mockDatabase.transactionTraced(
-            fakeOperationName, false
+            fakeOperationName,
+            false
         ) {
             true
         }
@@ -203,7 +206,8 @@ class SqliteDatabaseExtTest {
 
         // WHEN
         transactionExecuted = mockDatabase.transactionTraced(
-            fakeOperationName, false
+            fakeOperationName,
+            false
         ) {
             setTag(fakeTagKey, fakeTagValue)
             true
@@ -225,7 +229,8 @@ class SqliteDatabaseExtTest {
 
         // WHEN
         transactionExecuted = mockDatabase.transactionTraced(
-            fakeOperationName, false
+            fakeOperationName,
+            false
         ) { mockDatabase ->
             mockDatabase.insert(fakeTable, null, contentValues)
             true

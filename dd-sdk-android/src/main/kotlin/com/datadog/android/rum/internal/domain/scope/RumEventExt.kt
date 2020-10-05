@@ -133,7 +133,9 @@ internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
         null
     }
     return ResourceEvent.Connectivity(
-        status, interfaces, cellular
+        status,
+        interfaces,
+        cellular
     )
 }
 
@@ -167,6 +169,8 @@ internal fun NetworkInfo.toErrorConnectivity(): ErrorEvent.Connectivity {
         null
     }
     return ErrorEvent.Connectivity(
-        status, interfaces, cellular
+        status,
+        interfaces,
+        cellular
     )
 }

@@ -175,14 +175,14 @@ dependencies {
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
     implementation(Dependencies.Libraries.AndroidXNavigation)
-    implementation("androidx.appcompat:appcompat:1.1.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta4")
-    implementation("com.google.android.material:material:1.0.0")
+    implementation("androidx.appcompat:appcompat:1.2.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.0.1")
+    implementation("com.google.android.material:material:1.2.1")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
-    implementation("androidx.navigation:navigation-fragment:2.1.0")
-    implementation("androidx.navigation:navigation-ui:2.1.0")
+    implementation("androidx.navigation:navigation-fragment:2.3.0")
+    implementation("androidx.navigation:navigation-ui:2.3.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
-    implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
+    implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
 
     // Ktor (local web server)
     implementation("io.ktor:ktor:1.2.5")
@@ -196,11 +196,15 @@ dependencies {
 
     // Fresco
     "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
-    "frescoImplementation"("com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}")
+    "frescoImplementation"(
+        "com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}"
+    )
 
     // Glide
     "glideImplementation"("com.github.bumptech.glide:glide:${Dependencies.Versions.Glide}")
-    "glideImplementation"("com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}") {
+    "glideImplementation"(
+        "com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}"
+    ) {
         exclude(group = "glide-parent")
     }
     "kaptGlide"("com.github.bumptech.glide:compiler:${Dependencies.Versions.Glide}")
