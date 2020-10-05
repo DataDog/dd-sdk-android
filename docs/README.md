@@ -9,3 +9,4 @@ This folder has dedicated documentation for:
 * [NDK extensions](kotlin_extensions.md).
 * [Timber API integration](timber_integration.md).
 * [Migrating from earlier versions to the v1.0 of the dd-sdk-android](Migrating_To_1.0.0.md).
+* [SDK Perfomance](sdk_performance.md)
