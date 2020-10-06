@@ -95,8 +95,8 @@ class SampleApplication : Application() {
         )
 
         configBuilder
-            .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
+            .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
             .trackInteractions()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
