@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Activity
-import android.view.View
 import android.view.Window
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -41,9 +40,6 @@ internal class DatadogGesturesTrackerTest {
     lateinit var mockWindow: Window
 
     @Mock
-    lateinit var mockDecorView: View
-
-    @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
@@ -51,7 +47,6 @@ internal class DatadogGesturesTrackerTest {
         testedTracker =
             DatadogGesturesTracker(emptyArray())
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(mockWindow.decorView).thenReturn(mockDecorView)
     }
 
     @Test
@@ -60,7 +55,7 @@ internal class DatadogGesturesTrackerTest {
         val spyTest = spy(testedTracker)
         doReturn(mockGestureDetector)
             .whenever(spyTest)
-            .generateGestureDetector(mockActivity, mockDecorView)
+            .generateGestureDetector(mockActivity, mockWindow)
         spyTest.startTracking(mockWindow, mockActivity)
 
         // Then

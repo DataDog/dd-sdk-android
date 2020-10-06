@@ -10,6 +10,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.AbsListView
 import androidx.core.view.ScrollingView
 import com.datadog.android.core.internal.utils.devLogger
@@ -23,11 +24,9 @@ import java.util.LinkedList
 import kotlin.math.abs
 
 internal class GesturesListener(
-    private val decorViewReference: WeakReference<View>,
+    private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray()
-
-) :
-    GestureDetector.OnGestureListener {
+) : GestureDetector.OnGestureListener {
 
     private val coordinatesContainer = IntArray(2)
     private var scrollEventType: RumActionType? = null
@@ -35,6 +34,7 @@ internal class GesturesListener(
     private var scrollTargetReference: WeakReference<View?> = WeakReference(null)
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
+
     // region GesturesListener
 
     override fun onShowPress(e: MotionEvent) {
@@ -42,7 +42,7 @@ internal class GesturesListener(
     }
 
     override fun onSingleTapUp(e: MotionEvent): Boolean {
-        val decorView: View? = decorViewReference.get()
+        val decorView = windowReference.get()?.decorView
         handleTapUp(decorView, e)
         return false
     }
@@ -55,7 +55,8 @@ internal class GesturesListener(
     }
 
     fun onUp(event: MotionEvent) {
-        closeScrollOrSwipeEventIfAny(decorViewReference.get(), event)
+        val decorView = windowReference.get()?.decorView
+        closeScrollOrSwipeEventIfAny(decorView, event)
         resetScrollEventParameters()
     }
 
@@ -65,7 +66,6 @@ internal class GesturesListener(
         velocityX: Float,
         velocityY: Float
     ): Boolean {
-
         scrollEventType = RumActionType.SWIPE
         return false
     }
@@ -77,7 +77,7 @@ internal class GesturesListener(
         distanceY: Float
     ): Boolean {
         val rumMonitor = GlobalRum.get()
-        val decorView = decorViewReference.get()
+        val decorView = windowReference.get()?.decorView
         if (decorView == null || rumMonitor !is DatadogRumMonitor) {
             return false
         }
