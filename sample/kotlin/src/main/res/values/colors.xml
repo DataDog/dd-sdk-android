@@ -12,6 +12,8 @@
     <color name="black">#000000</color>
 
     <!-- Main Palette -->
-    <color name="datadog_violet">#632CA6</color>
+    <color name="datadog_violet">#A538AF</color>
+    <color name="datadog_violet_dark">#5B34A0</color>
+    <color name="datadog_violet_darkest">#0F0616</color>
 
 </resources>

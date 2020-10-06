@@ -29,6 +29,8 @@ class NavActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         Timber.d("onStart")
 
+        setTheme(R.style.Sample_Theme_Custom)
+
         setContentView(R.layout.activity_nav)
         rootView = findViewById(R.id.frame_container)
 
