@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
-import android.view.View
 import android.view.Window
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
@@ -19,22 +18,15 @@ internal class DatadogGesturesTracker(
     // region GesturesTracker
 
     override fun startTracking(window: Window?, context: Context) {
-        val decorView = window?.decorView
-
-        // Even though the decorView is marked as NonNul I've seen cases where this was null.
-        // Better to be safe here.
         @Suppress("SENSELESS_COMPARISON")
-        if (window == null || decorView == null) {
+        if (window == null) {
             return
         }
 
         val toWrap = window.callback ?: NoOpWindowCallback()
-        // we cannot reuse a GestureDetector as we can have multiple activities
-        // running in the same time
-        window.callback = WindowCallbackWrapper(
-            toWrap,
-            generateGestureDetector(context, decorView)
-        )
+        val gesturesDetector = generateGestureDetector(context, window)
+
+        window.callback = WindowCallbackWrapper(toWrap, gesturesDetector)
     }
 
     override fun stopTracking(window: Window?, context: Context) {
@@ -58,12 +50,12 @@ internal class DatadogGesturesTracker(
 
     internal fun generateGestureDetector(
         context: Context,
-        decorView: View
+        window: Window
     ): GesturesDetectorWrapper {
         return GesturesDetectorWrapper(
             context,
             GesturesListener(
-                WeakReference(decorView),
+                WeakReference(window),
                 targetAttributesProviders
             )
         )

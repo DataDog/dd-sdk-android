@@ -11,6 +11,7 @@ import android.content.res.Resources
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.GlobalRum
@@ -18,6 +19,7 @@ import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -54,6 +56,9 @@ internal abstract class AbstractGesturesListenerTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockWindow: Window
+
     // region Tests
 
     @BeforeEach
@@ -74,6 +79,20 @@ internal abstract class AbstractGesturesListenerTest {
     // endregion
 
     // region Internal
+
+    protected inline fun <reified T : View> mockDecorView(
+        id: Int,
+        forEvent: MotionEvent,
+        hitTest: Boolean,
+        clickable: Boolean = false,
+        visible: Boolean = true,
+        forge: Forge,
+        applyOthers: (T) -> Unit = {}
+    ): T {
+        val decorView = mockView<T>(id, forEvent, hitTest, clickable, visible, forge, applyOthers)
+        whenever(mockWindow.decorView) doReturn decorView
+        return decorView
+    }
 
     protected inline fun <reified T : View> mockView(
         id: Int,
