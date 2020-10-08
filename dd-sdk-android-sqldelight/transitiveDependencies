@@ -1,0 +1,17 @@
+Dependencies List
+
+androidx.annotation:annotation:1.1.0                            :   27 Kb
+androidx.sqlite:sqlite:2.1.0                                    :   10 Kb
+com.squareup.okhttp3:okhttp:3.12.6                              :  413 Kb
+com.squareup.okio:okio:1.15.0                                   :   86 Kb
+com.squareup.sqldelight:android-driver:1.4.3                    :   22 Kb
+com.squareup.sqldelight:runtime-jvm:1.4.3                       :   42 Kb
+org.jetbrains.kotlin:kotlin-android-extensions-runtime:1.3.61   :    8 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.4.0                 :  186 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.4.0                   :    3 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.0                   :   15 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.4.0                        : 1452 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              :    2 Mb
+

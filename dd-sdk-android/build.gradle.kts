@@ -34,6 +34,7 @@ plugins {
     id("thirdPartyLicences")
     id("apiSurface")
     id("jsonschema2poko")
+    id("transitiveDependencies")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     id("de.mobilej.unmock")

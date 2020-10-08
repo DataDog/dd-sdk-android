@@ -27,6 +27,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("apiSurface")
+    id("transitiveDependencies")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
     jacoco

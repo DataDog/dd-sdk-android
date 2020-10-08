@@ -179,8 +179,6 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.0.0-beta4")
     implementation("com.google.android.material:material:1.0.0")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
-    implementation("androidx.navigation:navigation-fragment:2.1.0")
-    implementation("androidx.navigation:navigation-ui:2.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.1.0")
 
