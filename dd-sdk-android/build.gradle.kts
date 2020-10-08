@@ -108,27 +108,33 @@ android {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
+
+    // Network
     implementation(Dependencies.Libraries.OkHttp)
+    implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.KronosNTP)
 
-    implementation(Dependencies.Libraries.AndroidXWorkManager)
+    // Android Instrumentation
     implementation(Dependencies.Libraries.AndroidXCore)
-    implementation(Dependencies.Libraries.AndroidXAppCompat)
-    implementation(Dependencies.Libraries.AndroidXRecyclerView)
     implementation(Dependencies.Libraries.AndroidXNavigation)
+    implementation(Dependencies.Libraries.AndroidXRecyclerView)
+    implementation(Dependencies.Libraries.AndroidXWorkManager)
 
-    api(Dependencies.Libraries.TracingOt)
+    // OpenTracing
+    api(Dependencies.Libraries.OpenTracing)
+
+    // Generate NoOp implementations
     kapt(project(":tools:noopfactory"))
 
+    // Testing
     testImplementation(project(":tools:unit"))
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation(Dependencies.Libraries.OkHttpMock)
-
     unmock(Dependencies.Libraries.Robolectric)
 
+    // Static Analysis
     detekt(project(":tools:detekt"))
     detekt(Dependencies.Libraries.DetektCli)
 }
