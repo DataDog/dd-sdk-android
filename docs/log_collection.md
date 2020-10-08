@@ -243,4 +243,4 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [4]: https://docs.datadoghq.com/logs/processing/attributes_naming_convention/
 [5]: https://docs.datadoghq.com/tagging/
-[6]" https://docs.datadoghq.com/real_user_monitoring/installation/?tab=us
+[6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
