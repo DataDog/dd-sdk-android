@@ -24,7 +24,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context and your [Datadog client token][2]. You also need to provide an Application ID (see our [RUM Getting Started page][6]). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
+2. Initialize the library with your application context and the [Datadog client token][2] and Application ID generated when you create a new RUM applicaiton in the Datadog UI (see our [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
