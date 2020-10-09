@@ -48,13 +48,8 @@ open class TransitiveDependenciesTask : DefaultTask() {
 
         val sortedArtifacts = if (sortByName) {
             configuration.files {
-                System.err.println("Dependency: " + it.toString())
-                if (it is ProjectDependency) {
-                    System.err.println("Ignoring module dependency: ${it.dependencyProject}")
-                    false
-                } else {
-                    true
-                }
+                // ProjectDependency (i.e. local modules) don't have a file associated
+                it !is ProjectDependency
             }.sortedBy { it.absolutePath }
         } else {
             configuration.sortedBy { -it.length() }
