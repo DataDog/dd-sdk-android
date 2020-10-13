@@ -15,12 +15,9 @@ import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
 import datadog.opentracing.DDTracer
 import datadog.opentracing.LogHandler
-import datadog.opentracing.propagation.ExtractedContext
 import datadog.trace.api.Config
-import datadog.trace.api.sampling.PrioritySampling
 import io.opentracing.Span
 import io.opentracing.log.Fields
-import java.math.BigInteger
 import java.security.SecureRandom
 import java.util.Properties
 import java.util.Random
@@ -36,29 +33,16 @@ import java.util.Random
 class AndroidTracer internal constructor(
     config: Config,
     writer: TraceWriter,
+    random: Random,
     private val logsHandler: LogHandler,
-    private val random: Random,
     private val bundleWithRum: Boolean
-) : DDTracer(config, writer) {
+) : DDTracer(config, writer, random) {
 
     // region Tracer
 
     override fun buildSpan(operationName: String): DDSpanBuilder {
-        // On Android, the same zygote is reused for every single application,
-        // meaning that the ThreadLocalRandom reuses the same exact state,
-        // resulting in conflicting TraceIds.
-        // To mitigate this, we recompute our own trace id and override it here
-        val parentContext = activeSpan()?.context() ?: ExtractedContext(
-            BigInteger(TRACE_ID_BIT_SIZE, random),
-            BigInteger.ZERO,
-            PrioritySampling.UNSET,
-            null,
-            emptyMap(),
-            emptyMap()
-        )
         return DDSpanBuilder(operationName, scopeManager())
             .withLogHandler(logsHandler)
-            .asChildOf(parentContext)
             .withRumContext()
     }
 
@@ -92,8 +76,8 @@ class AndroidTracer internal constructor(
             return AndroidTracer(
                 config(),
                 TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
-                logsHandler,
                 random,
+                logsHandler,
                 bundleWithRumEnabled
             )
         }

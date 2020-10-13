@@ -39,6 +39,8 @@ import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
 import java.math.BigInteger
 import java.util.Random
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -103,16 +105,29 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
-        val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
+        val tracer = testedTracerBuilder
+            .build()
+
+        val span = tracer.buildSpan(operationName).start() as DDSpan
+
+        assertThat(span.traceId)
+            .isGreaterThan(BigInteger.valueOf(0L))
+    }
+
+    @Test
+    fun `buildSpan will generate a random Span id`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @LongForgery seed: Long
+    ) {
+        val expectedSpanId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
         val tracer = testedTracerBuilder
             .withRandom(Random(seed))
             .build()
 
         val span = tracer.buildSpan(operationName).start() as DDSpan
 
-        val traceId = span.traceId
-        assertThat(traceId)
-            .isEqualTo(expectedTraceId)
+        assertThat(span.spanId)
+            .isEqualTo(expectedSpanId)
     }
 
     @Test
@@ -120,18 +135,16 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         @LongForgery seed: Long
     ) {
-        val expectedTraceId = BigInteger(AndroidTracer.TRACE_ID_BIT_SIZE, Random(seed))
         val tracer = testedTracerBuilder
-            .withRandom(Random(seed))
             .build()
 
-        val span = tracer.buildSpan(operationName).start()
+        val span = tracer.buildSpan(operationName).start() as DDSpan
         tracer.activateSpan(span)
         val subSpan = tracer.buildSpan(operationName).start() as DDSpan
 
         val traceId = subSpan.traceId
         assertThat(traceId)
-            .isEqualTo(expectedTraceId)
+            .isEqualTo(span.traceId)
     }
 
     @Test
@@ -280,6 +293,34 @@ internal class AndroidTracerTest {
                 .containsEntry(Fields.MESSAGE, anErrorMessage)
                 .containsOnlyKeys(Fields.MESSAGE)
         }
+    }
+
+    @Test
+    fun `M generate a different trace id W new tracer is created`(forge: Forge) {
+        // Given
+        val countDownLatch = CountDownLatch(2)
+        val tracer1: AndroidTracer
+        val tracer2: AndroidTracer
+        val span1: DDSpan
+        val span2: DDSpan
+
+        // When
+        Thread().run {
+            tracer1 = AndroidTracer.Builder().build()
+            span1 = tracer1.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
+            countDownLatch.countDown()
+        }
+        Thread().run {
+            tracer2 = AndroidTracer.Builder().build()
+            span2 = tracer2.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(10, TimeUnit.SECONDS)
+
+        // Then
+        val traceIdSpan1 = span1.traceId
+        val traceIdSpan2 = span2.traceId
+        assertThat(traceIdSpan1).isNotEqualTo(traceIdSpan2)
     }
 
     // endregion
