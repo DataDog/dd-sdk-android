@@ -11,16 +11,21 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import android.util.Log
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -47,9 +52,12 @@ internal class CallbackNetworkInfoProviderTest {
     lateinit var mockNetwork: Network
     @Mock
     lateinit var mockCapabilities: NetworkCapabilities
+    @Mock
+    lateinit var mockDevLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
+        mockDevLogHandler = mockDevLogHandler()
         whenever(mockCapabilities.hasTransport(any())) doReturn false
 
         testedProvider =
@@ -268,7 +276,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `registers callback`() {
+    fun `M register callback W register()`() {
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
         whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
@@ -279,7 +287,66 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `unregisters callback`() {
+    fun `M register callback safely W register() with SecurityException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-852 in some cases the device throws a SecurityException on register
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+
+        verify(manager).registerDefaultNetworkCallback(testedProvider)
+    }
+
+    @Test
+    fun `M warn developers W register() with SecurityException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-852 in some cases the device throws a SecurityException on register
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_REGISTER,
+                exception
+            )
+    }
+
+    @Test
+    fun `M assume network is available W register() with SecurityException + getLatestNetworkInfo`(
+        @StringForgery message: String
+    ) {
+        // RUMM-852 in some cases the device throws a SecurityException on register
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+            .hasUpSpeed(-1)
+            .hasDownSpeed(-1)
+    }
+
+    @Test
+    fun `M unregister callback W unregister()`() {
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
         whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
@@ -287,5 +354,43 @@ internal class CallbackNetworkInfoProviderTest {
         testedProvider.unregister(context)
 
         verify(manager).unregisterNetworkCallback(testedProvider)
+    }
+
+    @Test
+    fun `M unregister callback safely W unregister() with SecurityException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-852 in some cases the device throws a SecurityException on register
+        // Since we can't reproduce, let's assume it could happen on unregister too
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.unregisterNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.unregister(context)
+
+        verify(manager).unregisterNetworkCallback(testedProvider)
+    }
+
+    @Test
+    fun `M warn developers W unregister() with SecurityException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-852 in some cases the device throws a SecurityException on register
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.unregisterNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.unregister(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+                exception
+            )
     }
 }
