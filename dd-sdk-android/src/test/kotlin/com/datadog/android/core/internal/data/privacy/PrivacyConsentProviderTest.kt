@@ -46,7 +46,7 @@ internal class PrivacyConsentProviderTest {
 
     @Test
     fun `M hold PENDING consent by default W initialised`(forge: Forge) {
-        assertThat(testedConsentProvider.getLastConsent()).isEqualTo(Consent.PENDING)
+        assertThat(testedConsentProvider.getConsent()).isEqualTo(Consent.PENDING)
     }
 
     @Test
@@ -110,7 +110,7 @@ internal class PrivacyConsentProviderTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         // THEN
-        assertThat(testedConsentProvider.getLastConsent()).isEqualTo(fakedConsent2)
+        assertThat(testedConsentProvider.getConsent()).isEqualTo(fakedConsent2)
     }
 
     @Test
@@ -138,7 +138,7 @@ internal class PrivacyConsentProviderTest {
         countDownLatch.await(1, TimeUnit.SECONDS)
 
         // THEN
-        assertThat(testedConsentProvider.getLastConsent()).isIn(fakeConsent1, fakeConsent2)
+        assertThat(testedConsentProvider.getConsent()).isIn(fakeConsent1, fakeConsent2)
         verify(mockedCallback).onConsentUpdated(
             argForWhich {
                 this == Consent.PENDING || this == fakeConsent2

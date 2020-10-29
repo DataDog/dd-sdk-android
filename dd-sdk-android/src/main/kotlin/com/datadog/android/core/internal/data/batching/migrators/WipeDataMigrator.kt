@@ -4,8 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.privacy
+package com.datadog.android.core.internal.data.batching.migrators
 
-internal interface ConsentProviderCallback {
-    fun onConsentUpdated(previousConsent: Consent, newConsent: Consent)
+internal class WipeDataMigrator(val folderPath: String) : BatchedDataMigrator {
+    override fun migrateData() {
+    }
 }
