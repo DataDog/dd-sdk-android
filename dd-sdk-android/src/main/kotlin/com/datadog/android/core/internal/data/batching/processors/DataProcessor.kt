@@ -4,8 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.privacy
+package com.datadog.android.core.internal.data.batching.processors
 
-internal interface ConsentProviderCallback {
-    fun onConsentUpdated(previousConsent: Consent, newConsent: Consent)
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
+internal interface DataProcessor<T : Any> {
+
+    fun consume(event: T)
 }

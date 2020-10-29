@@ -6,7 +6,12 @@
 
 package com.datadog.android.core.internal.data.batching
 
-internal interface ConsentAwareDataHandler<T> {
+import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
+import com.datadog.android.core.internal.data.privacy.Consent
 
-    fun consume(event: T)
+internal interface MigratorFactory {
+    fun resolveMigrator(
+        prevConsentFlag: Consent?,
+        newConsentFlag: Consent
+    ): BatchedDataMigrator
 }
