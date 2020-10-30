@@ -12,6 +12,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 
 @TargetApi(Build.VERSION_CODES.N)
@@ -50,15 +51,26 @@ internal class CallbackNetworkInfoProvider :
     //region NetworkInfoProvider
 
     override fun register(context: Context) {
-        val connectivityMgr =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        connectivityMgr.registerDefaultNetworkCallback(this)
+        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            connMgr.registerDefaultNetworkCallback(this)
+        } catch (e: SecurityException) {
+            // RUMM-852 On some devices we get a SecurityException with message
+            // "package does not belong to 10411"
+            devLogger.e(ERROR_REGISTER, e)
+            networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+        }
     }
 
     override fun unregister(context: Context) {
-        val connectivityMgr =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        connectivityMgr.unregisterNetworkCallback(this)
+        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            connMgr.unregisterNetworkCallback(this)
+        } catch (e: SecurityException) {
+            // RUMM-852 On some devices we get a SecurityException with message
+            // "package does not belong to 10411"
+            devLogger.e(ERROR_UNREGISTER, e)
+        }
     }
 
     override fun getLatestNetworkInfo(): NetworkInfo {
@@ -92,4 +104,10 @@ internal class CallbackNetworkInfoProvider :
     }
 
     // endregion
+
+    companion object {
+        internal const val ERROR_REGISTER = "We couldn't register a Network Callback, " +
+            "the network information reported will be less accurate."
+        internal const val ERROR_UNREGISTER = "We couldn't unregister the Network Callback"
+    }
 }

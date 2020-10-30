@@ -78,7 +78,7 @@ object Dependencies {
     object Libraries {
 
         @JvmField
-        val TracingOt = arrayOf(
+        val OpenTracing = arrayOf(
             "io.opentracing:opentracing-api:${Versions.OpenTracing}",
             "io.opentracing:opentracing-noop:${Versions.OpenTracing}",
             "io.opentracing:opentracing-util:${Versions.OpenTracing}"
@@ -104,8 +104,7 @@ object Dependencies {
         const val AndroidXAppCompat = "androidx.appcompat:appcompat:${Versions.AndroidXAppCompat}"
         const val AndroidXCore = "androidx.core:core:${Versions.AndroidXCore}"
         val AndroidXNavigation = arrayOf(
-            "androidx.navigation:navigation-fragment-ktx:${Versions.AndroidXNavigation}",
-            "androidx.navigation:navigation-ui-ktx:${Versions.AndroidXNavigation}",
+            "androidx.navigation:navigation-fragment:${Versions.AndroidXNavigation}",
             "androidx.navigation:navigation-runtime-ktx:${Versions.AndroidXNavigation}"
         )
         const val AndroidXRecyclerView =
