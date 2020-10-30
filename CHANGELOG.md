@@ -1,3 +1,25 @@
+# 1.6.0 / 2020-10-31
+
+* [BUGFIX] RUM: Extend continuous RUM action scope if Resources are still active
+* [BUGFIX] RUM: Resources are linked with the wrong Action
+* [BUGFIX] Global: Validate the env value passed in the DatadogConfig.Builder
+* [BUGFIX] RUM: prevent `trackInterations()` from messing with the Application's theme
+* [BUGFIX] Global: Remove unnecessary transitive dependencies from library [#396](https://github.com/DataDog/dd-sdk-android/issues/396) (Thanks @rashadsookram)
+* [BUGFIX] Global: Prevent a crash in CallbackNetworkProvider
+
+* [FEATURE] Global: Provide an RxJava integration (`dd-sdk-android-rx`)
+* [FEATURE] Global: Provide a Coil integration (`dd-sdk-android-coil`)
+* [FEATURE] Global: Provide a Fresco integration (`dd-sdk-android-coil`)
+* [FEATURE] Global: Provide a SQLDelight integration (`dd-sdk-android-sqldelight`)
+* [FEATURE] Global: Provide a Kotlin Coroutines/Flow integration (`dd-sdk-android-ktx`)
+* [FEATURE] Global: Provide an extension for SQLiteDatabase integration (`dd-sdk-android-ktx`)
+* [FEATURE] RUM: Add a utility to track various resource loading (`RumResourceInputStream`)
+* [FEATURE] RUM: Add an extensions to track Android resources and assets as RUM Resources (`dd-sdk-android-ktx`)
+* [FEATURE] RUM: Add the APM trace information in the RUM Resource
+* [FEATURE] RUM: Track spans with error as RUM Error
+* [IMPROVEMENT] Global: Delay the upload of data in case of network exceptions
+* [IMPROVEMENT] CrashReport: Add application information in crashes
+
 # 1.5.2 / 2020-09-18
 
 * [BUGFIX] Global: Prevent a crash when sending data. See [#377](https://github.com/DataDog/dd-sdk-android/issues/377) (Thanks @ronak-earnin)
@@ -48,7 +70,7 @@
 * [FEATURE] Logs: Add sampling option in the Logger
 * [IMPROVEMENT] Logs: Make the log operations thread safe
 * [BUGFIX] Logs: Fix rare crash on upload requests
-* [BUGFIX] Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks @alparp27)
+* [BUGFIX] Global: Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks @alparp27)
 
 
 # 1.3.1 / 2020-04-30
