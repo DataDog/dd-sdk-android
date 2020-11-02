@@ -9,6 +9,7 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -57,7 +58,10 @@ internal class LoggerBuilderTest {
         mockContext = mockContext(fakePackageName, "")
         whenever(mockContext.filesDir) doReturn tempRootDir
 
-        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
+        Datadog.initialize(
+            mockContext,
+            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anHexadecimalString()).build()
+        )
         Datadog.setVerbosity(AndroidLog.VERBOSE)
     }
 
