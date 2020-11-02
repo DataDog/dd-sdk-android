@@ -267,74 +267,42 @@ internal class DatadogTest {
 
     // region Deprecated
 
-    @Test
-    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Discard strategy`(
-        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
-    ) {
-        // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
-
-        // When
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
-
-        // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
-            )
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Update strategy`(
-        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
-    ) {
-        // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
-
-        // When
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
-
-        // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
-            )
-    }
-
-    @Test
-    fun `𝕄 initialize the LifecycleMonitor 𝕎 initialize()`() {
-        // When
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-
-        // Then
-        argumentCaptor<Application.ActivityLifecycleCallbacks> {
-            verify(mockAppContext).registerActivityLifecycleCallbacks(capture())
-            assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
-        }
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 initialize() twice`() {
-        // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
-
-        // When
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-
-        // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                Datadog.MESSAGE_ALREADY_INITIALIZED
-            )
-    }
-
     // endregion
+
+    @Test
+    fun `𝕄 return true 𝕎 initialize(context, config) + isInitialized()`(
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, config)
+        val initialized = Datadog.isInitialized()
+
+        // Then
+        assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `𝕄 initialize features 𝕎 initialize(context, config) deprecated method`(
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, config)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isTrue()
+    }
 
     // region Internal
 

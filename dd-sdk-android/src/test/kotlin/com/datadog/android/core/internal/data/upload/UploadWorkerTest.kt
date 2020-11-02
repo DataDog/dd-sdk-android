@@ -11,6 +11,7 @@ import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -58,22 +59,31 @@ internal class UploadWorkerTest {
 
     @Mock
     lateinit var mockContext: Context
+
     @Mock
     lateinit var mockLogsStrategy: PersistenceStrategy<Log>
+
     @Mock
     lateinit var mockTracesStrategy: PersistenceStrategy<DDSpan>
+
     @Mock
     lateinit var mockCrashReportsStrategy: PersistenceStrategy<Log>
+
     @Mock
     lateinit var mockLogsReader: Reader
+
     @Mock
     lateinit var mockTracesReader: Reader
+
     @Mock
     lateinit var mockCrashReportsReader: Reader
+
     @Mock
     lateinit var mockLogsUploader: LogsOkHttpUploader
+
     @Mock
     lateinit var mockTracesUploader: TracesOkHttpUploader
+
     @Mock
     lateinit var mockCrashReportsUploader: LogsOkHttpUploader
 
@@ -87,7 +97,10 @@ internal class UploadWorkerTest {
         whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReportsReader
 
         mockContext = mockContext()
-        Datadog.initialize(mockContext, "CLIENT_TOKEN", "ENVIRONMENT")
+        Datadog.initialize(
+            mockContext,
+            DatadogConfig.Builder("CLIENT_TOKEN", "ENVIRONMENT").build()
+        )
 
         LogsFeature.persistenceStrategy = mockLogsStrategy
         LogsFeature.uploader = mockLogsUploader
