@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.Consent
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import java.util.stream.Stream

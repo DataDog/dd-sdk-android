@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.privacy
 
+import com.datadog.android.privacy.Consent
 import java.util.LinkedList
 
 internal class PrivacyConsentProvider(consent: Consent = Consent.PENDING) :

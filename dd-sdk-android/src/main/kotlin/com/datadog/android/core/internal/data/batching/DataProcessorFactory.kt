@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.Consent
 
 internal class DataProcessorFactory<T : Any>(
     private val permissionGrantedProcessorFactory:

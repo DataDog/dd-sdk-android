@@ -1,7 +1,8 @@
 object com.datadog.android.Datadog
   DEPRECATED const val DATADOG_US: String
   DEPRECATED const val DATADOG_EU: String
-  fun initialize(android.content.Context, DatadogConfig)
+  DEPRECATED fun initialize(android.content.Context, DatadogConfig)
+  fun initialize(android.content.Context, com.datadog.android.privacy.Consent, DatadogConfig)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
   fun clearAllData()
@@ -162,6 +163,10 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
+enum com.datadog.android.privacy.Consent
+  - GRANTED
+  - NOT_GRANTED
+  - PENDING
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean

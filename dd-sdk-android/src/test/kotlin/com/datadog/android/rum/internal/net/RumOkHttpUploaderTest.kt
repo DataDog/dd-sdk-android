@@ -12,6 +12,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
+import com.datadog.android.privacy.Consent
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.forge.Configurator
@@ -41,6 +42,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
 
     @RegexForgery("([a-z]+\\.)+[a-z]+")
     lateinit var fakePackageName: String
+
     @RegexForgery("\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
@@ -55,7 +57,10 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         CoreFeature.initialize(
             mockAppContext,
-            DatadogConfig.CoreConfig(needsClearTextHttp = forge.aBool())
+            forge.aValueFrom(Consent::class.java),
+            DatadogConfig.CoreConfig(
+                needsClearTextHttp = forge.aBool()
+            )
         )
     }
 

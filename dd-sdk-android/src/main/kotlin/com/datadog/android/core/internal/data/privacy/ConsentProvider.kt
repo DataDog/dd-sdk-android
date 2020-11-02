@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.privacy
 
+import com.datadog.android.privacy.Consent
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

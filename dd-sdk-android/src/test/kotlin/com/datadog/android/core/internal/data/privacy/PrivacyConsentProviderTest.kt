@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.privacy
 
+import com.datadog.android.privacy.Consent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argForWhich
 import com.nhaarman.mockitokotlin2.eq

@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.data.batching
 import com.datadog.android.core.internal.data.batching.migrators.MoveDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.WipeDataMigrator
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.Consent
 import fr.xgouchet.elmyr.Forge
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
