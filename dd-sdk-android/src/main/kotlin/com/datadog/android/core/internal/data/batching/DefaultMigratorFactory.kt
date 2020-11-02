@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigr
 import com.datadog.android.core.internal.data.batching.migrators.MoveDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.WipeDataMigrator
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.Consent
 
 internal class DefaultMigratorFactory(
     private val pendingFolderPath: String,

@@ -18,6 +18,7 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.privacy.Consent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import java.lang.IllegalArgumentException
@@ -76,11 +77,42 @@ object Datadog {
      * @see [DatadogConfig]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
+     * @deprecated Use the [Datadog.initialize] instead which requires a privacy [Consent] parameter.
+     */
+    @Deprecated(
+        "This method is deprecated and uses the [Consent.GRANTED] " +
+            "flag as a default privacy consent.This means that the SDK will start recording " +
+            "and sending data immediately after initialisation without waiting " +
+            "for the user's privacy consent.",
+        ReplaceWith(
+            expression = "Datadog.initialize(context, Consent.PENDING, config)",
+            imports = ["com.datadog.android.privacy.Consent"]
+        )
+    )
+    @Suppress("LongMethod")
+    @JvmStatic
+    fun initialize(
+        context: Context,
+        config: DatadogConfig
+    ) {
+        initialize(context, Consent.GRANTED, config)
+    }
+
+    /**
+     * Initializes the Datadog SDK.
+     * @param context your application context
+     * @param config the configuration for the SDK library
+     * @param privacyConsent as the initial state of the Privacy consent flag.
+     * @see [DatadogConfig]
+     * @see [Consent]
+     * @throws IllegalArgumentException if the env name is using illegal characters and your
+     * application is in debug mode otherwise returns false and stops initializing the SDK
      */
     @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
+        privacyConsent: Consent,
         config: DatadogConfig
     ) {
         if (initialized.get()) {
@@ -97,7 +129,7 @@ object Datadog {
         }
 
         // always initialize Core Features first
-        CoreFeature.initialize(appContext, config.coreConfig)
+        CoreFeature.initialize(appContext, privacyConsent, config.coreConfig)
 
         config.logsConfig?.let { featureConfig ->
             LogsFeature.initialize(

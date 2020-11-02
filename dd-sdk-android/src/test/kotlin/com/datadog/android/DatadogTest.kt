@@ -12,13 +12,12 @@ import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.privacy.Consent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
@@ -26,7 +25,6 @@ import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -35,13 +33,11 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import java.util.Locale
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -78,17 +74,20 @@ internal class DatadogTest {
     @StringForgery
     lateinit var fakePackageName: String
 
-    @RegexForgery("\\d(\\.\\d){3}")
+    @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
-    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @TempDir
     lateinit var tempRootDir: File
 
+    lateinit var fakeConsent: Consent
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeConsent = forge.aValueFrom(Consent::class.java)
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
@@ -120,7 +119,7 @@ internal class DatadogTest {
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @RegexForgery("\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -137,7 +136,7 @@ internal class DatadogTest {
     fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @RegexForgery("\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -153,7 +152,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 initialize() + isInitialized()`(
+    fun `𝕄 return true 𝕎 initialize(context, consent, config) + isInitialized()`(
         @Forgery applicationId: UUID
     ) {
         // Given
@@ -161,11 +160,26 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
         assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `𝕄 initialisze the ConsentProvider 𝕎 initializing)`(
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, fakeConsent, config)
+
+        // Then
+        assertThat(CoreFeature.consentProvider.getConsent()).isEqualTo(fakeConsent)
     }
 
     @Test
@@ -180,7 +194,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -203,6 +217,7 @@ internal class DatadogTest {
         assertThatThrownBy {
             Datadog.initialize(
                 mockAppContext,
+                fakeConsent,
                 config
             )
         }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
@@ -228,7 +243,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -255,7 +270,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -283,6 +298,21 @@ internal class DatadogTest {
 
         // Then
         assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `𝕄 bypass GDPR by default 𝕎 initialize(context, config) + isInitialized()`(
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, config)
+
+        // Then
+        assertThat(CoreFeature.consentProvider.getConsent()).isEqualTo(Consent.GRANTED)
     }
 
     @Test
