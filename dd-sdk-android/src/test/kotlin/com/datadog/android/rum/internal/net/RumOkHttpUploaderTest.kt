@@ -12,7 +12,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.forge.Configurator
@@ -57,7 +57,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         CoreFeature.initialize(
             mockAppContext,
-            forge.aValueFrom(Consent::class.java),
+            forge.aValueFrom(TrackingConsent::class.java),
             DatadogConfig.CoreConfig(
                 needsClearTextHttp = forge.aBool()
             )

@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.data.privacy
 
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 
 internal interface ConsentProviderCallback {
-    fun onConsentUpdated(previousConsent: Consent, newConsent: Consent)
+    fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent)
 }

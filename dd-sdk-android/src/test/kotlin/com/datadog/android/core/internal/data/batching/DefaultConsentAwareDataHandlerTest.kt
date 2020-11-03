@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.data.batching
 import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
 import com.datadog.android.core.internal.data.privacy.ConsentProvider
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
@@ -61,11 +61,11 @@ internal class DefaultConsentAwareDataHandlerTest {
 
     lateinit var underTest: DefaultConsentAwareDataHandler<String>
 
-    lateinit var fakeInitialConsent: Consent
+    lateinit var fakeInitialConsent: TrackingConsent
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeInitialConsent = forge.aValueFrom(Consent::class.java)
+        fakeInitialConsent = forge.aValueFrom(TrackingConsent::class.java)
         whenever(mockedConsentProvider.getConsent())
             .thenReturn(fakeInitialConsent)
         whenever(mockedMigratorFactory.resolveMigrator(null, fakeInitialConsent))
@@ -96,8 +96,11 @@ internal class DefaultConsentAwareDataHandlerTest {
     fun `M migrate data W consent changed`(forge: Forge) {
         // GIVEN
         // should be a value different than current one as this is the contract with the
-        // PrivacyConsentProvider
-        val fakeNewConsent = forge.aValueFrom(Consent::class.java, listOf(fakeInitialConsent))
+        // TrackingConsentProvider
+        val fakeNewConsent = forge.aValueFrom(
+            TrackingConsent::class.java,
+            listOf(fakeInitialConsent)
+        )
         whenever(
             mockedMigratorFactory.resolveMigrator(
                 fakeInitialConsent,
@@ -125,7 +128,8 @@ internal class DefaultConsentAwareDataHandlerTest {
     fun `M process data W requested after updating the consent`(forge: Forge) {
         // GIVEN
         val mockedNewProcessor: DataProcessor<String> = mock()
-        val fakeNewConsent = forge.aValueFrom(Consent::class.java, listOf(fakeInitialConsent))
+        val fakeNewConsent =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(fakeInitialConsent))
         whenever(
             mockedMigratorFactory.resolveMigrator(
                 fakeInitialConsent,
@@ -151,7 +155,8 @@ internal class DefaultConsentAwareDataHandlerTest {
     @Test
     fun `M be synchronous W in concurrent usage`(forge: Forge) {
         // GIVEN
-        val fakeNewConsent = forge.aValueFrom(Consent::class.java, listOf(fakeInitialConsent))
+        val fakeNewConsent =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(fakeInitialConsent))
         val mockedNewProcessor: DataProcessor<String> = mock()
         val countDownLatch = CountDownLatch(2)
         whenever(

@@ -14,12 +14,14 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
 import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.data.privacy.ConsentProvider
+import com.datadog.android.core.internal.data.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -69,14 +71,14 @@ internal class CoreFeatureTest {
     lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
-    lateinit var fakeConsent: Consent
+    lateinit var fakeConsent: TrackingConsent
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeConsent = forge.aValueFrom(Consent::class.java)
+        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
@@ -371,7 +373,34 @@ internal class CoreFeatureTest {
         )
 
         // THEN
-        assertThat(CoreFeature.consentProvider.getConsent()).isEqualTo(fakeConsent)
+        assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `M use a NoOpConsentProvider by default`() {
+        assertThat(CoreFeature.trackingConsentProvider)
+            .isInstanceOf(NoOpConsentProvider::class.java)
+    }
+
+    @Test
+    fun `M unregister an use a NoOpConsentProvider W stopped`() {
+        // GIVEN
+        val mockedConsentProvider: ConsentProvider = mock()
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(envName = fakeEnvName)
+        )
+        CoreFeature.trackingConsentProvider = mockedConsentProvider
+
+        // WHEN
+        CoreFeature.stop()
+
+        // THEN
+        verify(mockedConsentProvider).unregisterAllCallbacks()
+        assertThat(CoreFeature.trackingConsentProvider).isInstanceOf(
+            NoOpConsentProvider::class.java
+        )
     }
 
     // region internal

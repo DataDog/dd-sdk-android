@@ -12,12 +12,13 @@ import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.data.privacy.ConsentProvider
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
@@ -83,11 +84,11 @@ internal class DatadogTest {
     @TempDir
     lateinit var tempRootDir: File
 
-    lateinit var fakeConsent: Consent
+    lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeConsent = forge.aValueFrom(Consent::class.java)
+        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
@@ -168,7 +169,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 initialisze the ConsentProvider 𝕎 initializing)`(
+    fun `𝕄 initialize the ConsentProvider 𝕎 initializing)`(
         @Forgery applicationId: UUID
     ) {
         // Given
@@ -179,7 +180,21 @@ internal class DatadogTest {
         Datadog.initialize(mockAppContext, fakeConsent, config)
 
         // Then
-        assertThat(CoreFeature.consentProvider.getConsent()).isEqualTo(fakeConsent)
+        assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `M update the ConsentProvider W setConsent`(forge: Forge) {
+        // GIVEN
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val mockedConsentProvider: ConsentProvider = mock()
+        CoreFeature.trackingConsentProvider = mockedConsentProvider
+
+        // WHEN
+        Datadog.setTrackingConsent(fakeConsent)
+
+        // THEN
+        verify(CoreFeature.trackingConsentProvider).setConsent(fakeConsent)
     }
 
     @Test
@@ -282,8 +297,6 @@ internal class DatadogTest {
 
     // region Deprecated
 
-    // endregion
-
     @Test
     fun `𝕄 return true 𝕎 initialize(context, config) + isInitialized()`(
         @Forgery applicationId: UUID
@@ -312,7 +325,8 @@ internal class DatadogTest {
         Datadog.initialize(mockAppContext, config)
 
         // Then
-        assertThat(CoreFeature.consentProvider.getConsent()).isEqualTo(Consent.GRANTED)
+        assertThat(CoreFeature.trackingConsentProvider.getConsent())
+            .isEqualTo(TrackingConsent.GRANTED)
     }
 
     @Test
@@ -333,6 +347,8 @@ internal class DatadogTest {
         assertThat(TracesFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
     }
+
+    // endregion
 
     // region Internal
 

@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import java.util.stream.Stream
@@ -23,7 +23,7 @@ internal class DataProcessorFactoryTest {
     @ParameterizedTest
     @MethodSource("provideProcessorStatesData")
     fun `M generate the right processor W required`(
-        consent: Consent,
+        consent: TrackingConsent,
         expected: DataProcessor<String>
     ) {
 
@@ -59,15 +59,15 @@ internal class DataProcessorFactoryTest {
             initMocks()
             return Stream.of(
                 Arguments.arguments(
-                    Consent.PENDING,
+                    TrackingConsent.PENDING,
                     mockedPermissionPendingDataProcessor
                 ),
                 Arguments.arguments(
-                    Consent.GRANTED,
+                    TrackingConsent.GRANTED,
                     mockedPermissionGrantedDataProcessor
                 ),
                 Arguments.arguments(
-                    Consent.NOT_GRANTED,
+                    TrackingConsent.NOT_GRANTED,
                     mockedNoOpDataProcessor
                 )
             )

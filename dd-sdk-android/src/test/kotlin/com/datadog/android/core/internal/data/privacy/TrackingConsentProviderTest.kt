@@ -6,12 +6,14 @@
 
 package com.datadog.android.core.internal.data.privacy
 
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argForWhich
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -33,27 +35,27 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class PrivacyConsentProviderTest {
+internal class TrackingConsentProviderTest {
 
-    lateinit var testedConsentProvider: PrivacyConsentProvider
+    lateinit var testedConsentProvider: TrackingConsentProvider
 
     @Mock
     lateinit var mockedCallback: ConsentProviderCallback
 
     @BeforeEach
     fun `set up`() {
-        testedConsentProvider = PrivacyConsentProvider(Consent.PENDING)
+        testedConsentProvider = TrackingConsentProvider(TrackingConsent.PENDING)
     }
 
     @Test
     fun `M hold PENDING consent by default W initialised`(forge: Forge) {
-        assertThat(testedConsentProvider.getConsent()).isEqualTo(Consent.PENDING)
+        assertThat(testedConsentProvider.getConsent()).isEqualTo(TrackingConsent.PENDING)
     }
 
     @Test
     fun `M update last consent W required`(forge: Forge) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(Consent::class.java)
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
 
         // WHEN
         testedConsentProvider.setConsent(fakeConsent)
@@ -65,21 +67,23 @@ internal class PrivacyConsentProviderTest {
     @Test
     fun `M notify callbacks W updating consent`(forge: Forge) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(Consent::class.java, listOf(Consent.PENDING))
+        val fakeConsent =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         testedConsentProvider.registerCallback(mockedCallback)
 
         // WHEN
         testedConsentProvider.setConsent(fakeConsent)
 
         // THEN
-        verify(mockedCallback).onConsentUpdated(Consent.PENDING, fakeConsent)
+        verify(mockedCallback).onConsentUpdated(TrackingConsent.PENDING, fakeConsent)
         verifyNoMoreInteractions(mockedCallback)
     }
 
     @Test
     fun `M not notify callbacks W updating consent with same value`(forge: Forge) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(Consent::class.java, listOf(Consent.PENDING))
+        val fakeConsent =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         testedConsentProvider.registerCallback(mockedCallback)
         testedConsentProvider.setConsent(fakeConsent)
 
@@ -87,15 +91,59 @@ internal class PrivacyConsentProviderTest {
         testedConsentProvider.setConsent(fakeConsent)
 
         // THEN
-        verify(mockedCallback).onConsentUpdated(Consent.PENDING, fakeConsent)
+        verify(mockedCallback).onConsentUpdated(TrackingConsent.PENDING, fakeConsent)
         verifyNoMoreInteractions(mockedCallback)
+    }
+
+    @Test
+    fun `M unregister all callbacks W requested`(forge: Forge) {
+        // GIVEN
+        val fakeConsent =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
+        val anotherMockedCallback: ConsentProviderCallback = mock()
+        testedConsentProvider.registerCallback(anotherMockedCallback)
+        testedConsentProvider.registerCallback(mockedCallback)
+
+        // WHEN
+        testedConsentProvider.unregisterAllCallbacks()
+        testedConsentProvider.setConsent(fakeConsent)
+
+        // THEN
+        verifyZeroInteractions(mockedCallback)
+        verifyZeroInteractions(anotherMockedCallback)
+    }
+
+    @Test
+    fun `M unregister first W called asynchronously`(forge: Forge) {
+        // GIVEN
+        val fakeConsent = forge.aValueFrom(
+            TrackingConsent::class.java,
+            listOf(TrackingConsent.PENDING)
+        )
+        testedConsentProvider.registerCallback(mockedCallback)
+        val countDownLatch = CountDownLatch(2)
+
+        // WHEN
+        Thread {
+            testedConsentProvider.unregisterAllCallbacks()
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            Thread.sleep(1)
+            testedConsentProvider.setConsent(fakeConsent)
+            countDownLatch.countDown()
+        }.start()
+
+        // THEN
+        verifyZeroInteractions(mockedCallback)
     }
 
     @Test
     fun `M always return the right value W updating from multiple threads`(forge: Forge) {
         // GIVEN
-        val fakedConsent1 = forge.aValueFrom(Consent::class.java)
-        val fakedConsent2 = forge.aValueFrom(Consent::class.java, listOf(Consent.PENDING))
+        val fakedConsent1 = forge.aValueFrom(TrackingConsent::class.java)
+        val fakedConsent2 =
+            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         val countDownLatch = CountDownLatch(2)
 
         // WHEN
@@ -117,8 +165,8 @@ internal class PrivacyConsentProviderTest {
     @Test
     fun `M notify the registered callback W registering from different threads`(forge: Forge) {
         // GIVEN
-        val fakeConsent1 = Consent.GRANTED
-        val fakeConsent2 = Consent.NOT_GRANTED
+        val fakeConsent1 = TrackingConsent.GRANTED
+        val fakeConsent2 = TrackingConsent.NOT_GRANTED
         val countDownLatch = CountDownLatch(3)
 
         // WHEN
@@ -142,13 +190,13 @@ internal class PrivacyConsentProviderTest {
         assertThat(testedConsentProvider.getConsent()).isIn(fakeConsent1, fakeConsent2)
         verify(mockedCallback).onConsentUpdated(
             argForWhich {
-                this == Consent.PENDING || this == fakeConsent2
+                this == TrackingConsent.PENDING || this == fakeConsent2
             },
             eq(fakeConsent1)
         )
         verify(mockedCallback).onConsentUpdated(
             argForWhich {
-                this == Consent.PENDING || this == fakeConsent1
+                this == TrackingConsent.PENDING || this == fakeConsent1
             },
             eq(fakeConsent2)
         )
