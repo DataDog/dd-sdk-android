@@ -13,7 +13,7 @@ import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultConsentAwareDataHandler<T : Any>(
 
-    private val consentProvider: ConsentProvider,
+    consentProvider: ConsentProvider,
     private val processorsFactory: DataProcessorFactory<T>,
     private val migratorsFactory: MigratorFactory
 ) : ConsentAwareDataHandler<T>, ConsentProviderCallback {
