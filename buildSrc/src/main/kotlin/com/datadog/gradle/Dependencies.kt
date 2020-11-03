@@ -60,7 +60,7 @@ object Dependencies {
         const val GoogleMaterial = "1.0.0"
 
         // Integrations
-        const val Coil = "0.12.0"
+        const val Coil = "1.0.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
         const val Realm = "6.0.2"
