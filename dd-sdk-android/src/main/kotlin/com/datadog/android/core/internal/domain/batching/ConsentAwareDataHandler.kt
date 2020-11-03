@@ -9,4 +9,6 @@ package com.datadog.android.core.internal.domain.batching
 internal interface ConsentAwareDataHandler<T> {
 
     fun consume(event: T)
+
+    fun consume(events: List<T>)
 }

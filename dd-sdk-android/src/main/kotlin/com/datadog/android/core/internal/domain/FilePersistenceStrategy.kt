@@ -21,12 +21,8 @@ internal open class FilePersistenceStrategy<T : Any>(
 ) : PersistenceStrategy<T> {
 
     private val fileOrchestrator = FileOrchestrator(
-        rootDirectory = dataDirectory,
-        recentDelayMs = filePersistenceConfig.recentDelayMs,
-        maxBatchSize = filePersistenceConfig.maxBatchSize,
-        maxLogPerBatch = filePersistenceConfig.maxItemsPerBatch,
-        oldFileThreshold = filePersistenceConfig.oldFileThreshold,
-        maxDiskSpace = filePersistenceConfig.maxDiskSpace
+        dataDirectory,
+        filePersistenceConfig
     )
 
     private val fileReader = FileReader(
