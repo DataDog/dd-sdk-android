@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.file
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -60,10 +61,12 @@ internal class LogFileStrategyTest :
     override fun getStrategy(): PersistenceStrategy<Log> {
         return LogFileStrategy(
             context = mockContext,
-            recentDelayMs = RECENT_DELAY_MS,
-            maxBatchSize = MAX_BATCH_SIZE,
-            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE,
+            filePersistenceConfig = FilePersistenceConfig(
+                recentDelayMs = RECENT_DELAY_MS,
+                maxBatchSize = MAX_BATCH_SIZE,
+                maxItemsPerBatch = MAX_MESSAGES_PER_BATCH,
+                maxDiskSpace = MAX_DISK_SPACE
+            ),
             dataPersistenceExecutorService = mockExecutorService
         )
     }

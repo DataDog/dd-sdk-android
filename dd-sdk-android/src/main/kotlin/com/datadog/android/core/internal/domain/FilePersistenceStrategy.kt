@@ -16,21 +16,17 @@ import java.io.File
 internal open class FilePersistenceStrategy<T : Any>(
     dataDirectory: File,
     serializer: Serializer<T>,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE,
+    filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig(),
     payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION
 ) : PersistenceStrategy<T> {
 
     private val fileOrchestrator = FileOrchestrator(
         rootDirectory = dataDirectory,
-        recentDelayMs = recentDelayMs,
-        maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxItemsPerBatch,
-        oldFileThreshold = oldFileThreshold,
-        maxDiskSpace = maxDiskSpace
+        recentDelayMs = filePersistenceConfig.recentDelayMs,
+        maxBatchSize = filePersistenceConfig.maxBatchSize,
+        maxLogPerBatch = filePersistenceConfig.maxItemsPerBatch,
+        oldFileThreshold = filePersistenceConfig.oldFileThreshold,
+        maxDiskSpace = filePersistenceConfig.maxDiskSpace
     )
 
     private val fileReader = FileReader(
@@ -61,12 +57,4 @@ internal open class FilePersistenceStrategy<T : Any>(
     }
 
     // endregion
-
-    companion object {
-        internal const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
-        internal const val MAX_ITEMS_PER_BATCH: Int = 500
-        internal const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
-        internal const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
-        internal const val MAX_DELAY_BETWEEN_MESSAGES_MS = 5000L
-    }
 }

@@ -8,26 +8,20 @@ package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class LogFileStrategy(
     context: Context,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE,
+    filePersistenceConfig: FilePersistenceConfig =
+        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_LOGS_MS),
     dataPersistenceExecutorService: ExecutorService
 ) : AsyncWriterFilePersistenceStrategy<Log>(
     File(context.filesDir, LOGS_FOLDER),
     LogSerializer(),
-    recentDelayMs,
-    maxBatchSize,
-    maxLogPerBatch,
-    oldFileThreshold,
-    maxDiskSpace,
+    filePersistenceConfig,
     PayloadDecoration.JSON_ARRAY_DECORATION,
     LogFileDataMigrator(context.filesDir),
     dataPersistenceExecutorService
