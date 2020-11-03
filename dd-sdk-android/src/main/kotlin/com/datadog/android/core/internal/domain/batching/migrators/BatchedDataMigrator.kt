@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching.migrators
+package com.datadog.android.core.internal.domain.batching.migrators
 
 import com.datadog.tools.annotation.NoOpImplementation
 

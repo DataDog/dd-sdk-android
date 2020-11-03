@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching
+package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
-import com.datadog.android.core.internal.data.batching.migrators.MoveDataMigrator
-import com.datadog.android.core.internal.data.batching.migrators.NoOpBatchedDataMigrator
-import com.datadog.android.core.internal.data.batching.migrators.WipeDataMigrator
+import com.datadog.android.core.internal.domain.batching.migrators.BatchedDataMigrator
+import com.datadog.android.core.internal.domain.batching.migrators.MoveDataMigrator
+import com.datadog.android.core.internal.domain.batching.migrators.NoOpBatchedDataMigrator
+import com.datadog.android.core.internal.domain.batching.migrators.WipeDataMigrator
 import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultMigratorFactory(

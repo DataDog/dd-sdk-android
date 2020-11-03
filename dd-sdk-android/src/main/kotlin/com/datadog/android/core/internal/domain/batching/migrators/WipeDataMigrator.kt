@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching
+package com.datadog.android.core.internal.domain.batching.migrators
 
-internal interface ConsentAwareDataHandler<T> {
-
-    fun consume(event: T)
+internal class WipeDataMigrator(val folderPath: String) : BatchedDataMigrator {
+    override fun migrateData() {
+        // TODO RUMM-838
+    }
 }

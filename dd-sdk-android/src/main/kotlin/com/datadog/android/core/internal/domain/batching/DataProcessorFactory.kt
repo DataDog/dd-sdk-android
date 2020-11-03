@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching
+package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.android.core.internal.data.batching.processors.DataProcessor
+import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
 import com.datadog.android.privacy.TrackingConsent
 
 internal class DataProcessorFactory<T : Any>(

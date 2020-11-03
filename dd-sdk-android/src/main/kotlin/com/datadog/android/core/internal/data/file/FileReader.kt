@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.data.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException

@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.data.file
 
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
