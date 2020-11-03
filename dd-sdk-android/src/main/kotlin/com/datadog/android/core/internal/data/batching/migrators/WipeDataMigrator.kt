@@ -8,5 +8,6 @@ package com.datadog.android.core.internal.data.batching.migrators
 
 internal class WipeDataMigrator(val folderPath: String) : BatchedDataMigrator {
     override fun migrateData() {
+        // TODO RUMM-838
     }
 }

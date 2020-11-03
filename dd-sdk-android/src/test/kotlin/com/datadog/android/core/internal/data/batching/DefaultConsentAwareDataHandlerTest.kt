@@ -59,7 +59,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     @Mock
     lateinit var mockedProcessor: DataProcessor<String>
 
-    lateinit var underTest: DefaultConsentAwareDataHandler<String>
+    lateinit var testedHandler: DefaultConsentAwareDataHandler<String>
 
     lateinit var fakeInitialConsent: TrackingConsent
 
@@ -79,7 +79,7 @@ internal class DefaultConsentAwareDataHandlerTest {
         ).thenReturn(
             mockedProcessor
         )
-        underTest = DefaultConsentAwareDataHandler(
+        testedHandler = DefaultConsentAwareDataHandler(
             mockedConsentProvider,
             mockProcessorFactory,
             mockedMigratorFactory
@@ -89,7 +89,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     @Test
     fun `M register as callback for ConsentProvider W initialising`() {
         // THEN
-        verify(mockedConsentProvider).registerCallback(underTest)
+        verify(mockedConsentProvider).registerCallback(testedHandler)
     }
 
     @Test
@@ -109,16 +109,16 @@ internal class DefaultConsentAwareDataHandlerTest {
         ).thenReturn(mockedMigrator)
 
         // WHEN
-        underTest.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
+        testedHandler.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
 
         // THEN
         verify(mockedMigrator).migrateData()
     }
 
     @Test
-    fun `M process data W requested`(forge: Forge) {
+    fun `M process data W requested`() {
         // WHEN
-        underTest.consume(fakeEvent)
+        testedHandler.consume(fakeEvent)
 
         // THEN
         verify(mockedProcessor).consume(fakeEvent)
@@ -143,10 +143,10 @@ internal class DefaultConsentAwareDataHandlerTest {
         ).thenReturn(
             mockedNewProcessor
         )
-        underTest.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
+        testedHandler.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
 
         // WHEN
-        underTest.consume(fakeEvent)
+        testedHandler.consume(fakeEvent)
 
         // THEN
         verify(mockedNewProcessor).consume(fakeEvent)
@@ -175,13 +175,13 @@ internal class DefaultConsentAwareDataHandlerTest {
 
         // WHEN
         Thread {
-            underTest.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
+            testedHandler.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
             countDownLatch.countDown()
         }.start()
         Thread {
             // Give time to first thread to acquire the lock
             Thread.sleep(1)
-            underTest.consume(fakeEvent)
+            testedHandler.consume(fakeEvent)
             countDownLatch.countDown()
         }.start()
 

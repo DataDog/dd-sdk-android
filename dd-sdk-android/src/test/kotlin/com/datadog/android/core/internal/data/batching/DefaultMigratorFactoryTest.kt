@@ -19,7 +19,7 @@ import org.junit.jupiter.params.provider.MethodSource
 
 internal class DefaultMigratorFactoryTest {
 
-    lateinit var underTest: DefaultMigratorFactory
+    lateinit var testedFactory: DefaultMigratorFactory
 
     @ParameterizedTest
     @MethodSource("provideMigratorStatesData")
@@ -32,10 +32,10 @@ internal class DefaultMigratorFactoryTest {
     ) {
 
         // GIVEN
-        underTest = DefaultMigratorFactory(pendingFolderPath, acceptedFolderPath)
+        testedFactory = DefaultMigratorFactory(pendingFolderPath, acceptedFolderPath)
 
         // WHEN
-        val migrator = underTest.resolveMigrator(previousConsentFlag, newConsentFlag)
+        val migrator = testedFactory.resolveMigrator(previousConsentFlag, newConsentFlag)
 
         // THEN
         when (expected) {
