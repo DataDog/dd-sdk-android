@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.data.batching
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
 import com.datadog.android.core.internal.data.privacy.ConsentProvider
 import com.datadog.android.core.internal.data.privacy.ConsentProviderCallback
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultConsentAwareDataHandler<T : Any>(
 
@@ -33,7 +33,7 @@ internal class DefaultConsentAwareDataHandler<T : Any>(
     }
 
     @Synchronized
-    override fun onConsentUpdated(previousConsent: Consent, newConsent: Consent) {
+    override fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent) {
         processor = resolveProcessor(previousConsent, newConsent)
     }
 
@@ -42,8 +42,8 @@ internal class DefaultConsentAwareDataHandler<T : Any>(
     // region Internal
 
     private fun resolveProcessor(
-        prevConsentFlag: Consent?,
-        newConsentFlag: Consent
+        prevConsentFlag: TrackingConsent?,
+        newConsentFlag: TrackingConsent
     ): DataProcessor<T> {
         val migrator = migratorsFactory.resolveMigrator(prevConsentFlag, newConsentFlag)
         migrator.migrateData()

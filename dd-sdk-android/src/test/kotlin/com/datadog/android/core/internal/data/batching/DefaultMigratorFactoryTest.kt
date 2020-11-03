@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.data.batching
 import com.datadog.android.core.internal.data.batching.migrators.MoveDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.WipeDataMigrator
-import com.datadog.android.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
@@ -24,8 +24,8 @@ internal class DefaultMigratorFactoryTest {
     @ParameterizedTest
     @MethodSource("provideMigratorStatesData")
     fun `M generate the right migrator W required`(
-        previousConsentFlag: Consent,
-        newConsentFlag: Consent,
+        previousConsentFlag: TrackingConsent,
+        newConsentFlag: TrackingConsent,
         pendingFolderPath: String,
         acceptedFolderPath: String,
         expected: ExpectedMigrator
@@ -66,66 +66,66 @@ internal class DefaultMigratorFactoryTest {
             return Stream.of(
                 // initial state migrator
                 Arguments.arguments(
-                    Consent.PENDING,
-                    Consent.PENDING,
+                    TrackingConsent.PENDING,
+                    TrackingConsent.PENDING,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 Arguments.arguments(
-                    Consent.PENDING,
-                    Consent.NOT_GRANTED,
+                    TrackingConsent.PENDING,
+                    TrackingConsent.NOT_GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.WipeMigrator(pendingFolderPath)
                 ),
                 Arguments.arguments(
-                    Consent.PENDING,
-                    Consent.GRANTED,
+                    TrackingConsent.PENDING,
+                    TrackingConsent.GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.MoveMigrator(pendingFolderPath, grantedFolderPath)
                 ),
                 // initial state migrator
                 Arguments.arguments(
-                    Consent.GRANTED,
-                    Consent.GRANTED,
+                    TrackingConsent.GRANTED,
+                    TrackingConsent.GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 Arguments.arguments(
-                    Consent.GRANTED,
-                    Consent.PENDING,
+                    TrackingConsent.GRANTED,
+                    TrackingConsent.PENDING,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 Arguments.arguments(
-                    Consent.GRANTED,
-                    Consent.NOT_GRANTED,
+                    TrackingConsent.GRANTED,
+                    TrackingConsent.NOT_GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 // initial state migrator
                 Arguments.arguments(
-                    Consent.NOT_GRANTED,
-                    Consent.NOT_GRANTED,
+                    TrackingConsent.NOT_GRANTED,
+                    TrackingConsent.NOT_GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 Arguments.arguments(
-                    Consent.NOT_GRANTED,
-                    Consent.PENDING,
+                    TrackingConsent.NOT_GRANTED,
+                    TrackingConsent.PENDING,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
                 ),
                 Arguments.arguments(
-                    Consent.NOT_GRANTED,
-                    Consent.GRANTED,
+                    TrackingConsent.NOT_GRANTED,
+                    TrackingConsent.GRANTED,
                     pendingFolderPath,
                     grantedFolderPath,
                     ExpectedMigrator.NoOpMigrator
