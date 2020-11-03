@@ -9,6 +9,7 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.DeferredWriter
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -84,10 +85,12 @@ internal class TracingFileStrategyTest :
             timeProvider = mockTimeProvider,
             networkInfoProvider = mockNetworkInfoProvider,
             userInfoProvider = mockUserInfoProvider,
-            recentDelayMs = RECENT_DELAY_MS,
-            maxBatchSize = MAX_BATCH_SIZE,
-            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE,
+            filePersistenceConfig = FilePersistenceConfig(
+                recentDelayMs = RECENT_DELAY_MS,
+                maxBatchSize = MAX_BATCH_SIZE,
+                maxItemsPerBatch = MAX_MESSAGES_PER_BATCH,
+                maxDiskSpace = MAX_DISK_SPACE
+            ),
             dataPersistenceExecutorService = mockExecutorService
         )
     }
@@ -188,7 +191,5 @@ internal class TracingFileStrategyTest :
     companion object {
         private const val RECENT_DELAY_MS = 150L
         private const val MAX_DISK_SPACE = 16 * 32 * 1024L
-
-        private const val HEX_RAD = 16
     }
 }

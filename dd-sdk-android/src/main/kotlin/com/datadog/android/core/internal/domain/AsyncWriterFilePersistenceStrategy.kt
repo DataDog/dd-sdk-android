@@ -15,22 +15,14 @@ import java.util.concurrent.ExecutorService
 internal abstract class AsyncWriterFilePersistenceStrategy<T : Any>(
     dataDirectory: File,
     serializer: Serializer<T>,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE,
+    filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig(),
     payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
     private val dataMigrator: DataMigrator? = null,
     private val dataPersistenceExecutorService: ExecutorService
 ) : FilePersistenceStrategy<T>(
     dataDirectory,
     serializer,
-    recentDelayMs,
-    maxBatchSize,
-    maxItemsPerBatch,
-    oldFileThreshold,
-    maxDiskSpace,
+    filePersistenceConfig,
     payloadDecoration
 ) {
 
