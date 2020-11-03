@@ -12,7 +12,7 @@ import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler

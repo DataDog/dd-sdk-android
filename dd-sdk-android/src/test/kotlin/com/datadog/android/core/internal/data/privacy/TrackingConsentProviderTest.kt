@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.data.privacy
 
+import com.datadog.android.core.internal.privacy.ConsentProviderCallback
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argForWhich

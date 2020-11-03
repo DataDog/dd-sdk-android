@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.privacy
+package com.datadog.android.core.internal.privacy
 
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.annotation.NoOpImplementation
