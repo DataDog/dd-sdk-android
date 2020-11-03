@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.domain.Batch
+import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfo

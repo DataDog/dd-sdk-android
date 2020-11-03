@@ -4,12 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching.processors
+package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.tools.annotation.NoOpImplementation
-
-@NoOpImplementation
-internal interface DataProcessor<T : Any> {
+internal interface ConsentAwareDataHandler<T> {
 
     fun consume(event: T)
 }

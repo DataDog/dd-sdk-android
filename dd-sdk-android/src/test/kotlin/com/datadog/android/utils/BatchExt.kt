@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils
 
-import com.datadog.android.core.internal.domain.Batch
+import com.datadog.android.core.internal.data.file.Batch
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

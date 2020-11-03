@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching.migrators
+package com.datadog.android.core.internal.domain.batching.migrators
 
-internal class WipeDataMigrator(val folderPath: String) : BatchedDataMigrator {
+internal class MoveDataMigrator(
+    val pendingFolderPath: String,
+    val approvedFolderPath: String
+) : BatchedDataMigrator {
     override fun migrateData() {
         // TODO RUMM-838
     }

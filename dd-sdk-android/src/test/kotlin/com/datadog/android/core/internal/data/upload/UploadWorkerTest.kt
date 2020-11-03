@@ -13,7 +13,7 @@ import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.domain.Batch
+import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.error.internal.CrashReportsFeature
