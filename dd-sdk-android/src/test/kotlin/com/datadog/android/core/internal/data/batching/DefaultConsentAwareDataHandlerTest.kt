@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.inOrder

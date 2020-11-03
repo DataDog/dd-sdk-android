@@ -7,8 +7,8 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
-import com.datadog.android.core.internal.data.privacy.ConsentProviderCallback
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProviderCallback
 import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultConsentAwareDataHandler<T : Any>(

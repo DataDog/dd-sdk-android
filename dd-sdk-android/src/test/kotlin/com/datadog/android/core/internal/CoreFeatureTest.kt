@@ -14,10 +14,10 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
 import com.datadog.android.DatadogConfig
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
-import com.datadog.android.core.internal.data.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
