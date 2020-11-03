@@ -33,6 +33,11 @@ internal class DefaultConsentAwareDataHandler<T : Any>(
     }
 
     @Synchronized
+    override fun consume(events: List<T>) {
+        processor.consume(events)
+    }
+
+    @Synchronized
     override fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent) {
         processor = resolveProcessor(previousConsent, newConsent)
     }

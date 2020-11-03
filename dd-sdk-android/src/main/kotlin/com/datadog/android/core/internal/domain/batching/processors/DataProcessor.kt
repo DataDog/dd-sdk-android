@@ -12,4 +12,6 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface DataProcessor<T : Any> {
 
     fun consume(event: T)
+
+    fun consume(events: List<T>)
 }
