@@ -18,6 +18,7 @@ import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import java.lang.IllegalArgumentException
@@ -76,11 +77,43 @@ object Datadog {
      * @see [DatadogConfig]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
+     * @deprecated Use the [Datadog.initialize] instead which requires
+     * a privacy [TrackingConsent] parameter.
+     */
+    @Deprecated(
+        "This method is deprecated and uses the [TrackingConsent.GRANTED] " +
+            "flag as a default privacy consent.This means that the SDK will start recording " +
+            "and sending data immediately after initialisation without waiting " +
+            "for the user's consent to be tracked.",
+        ReplaceWith(
+            expression = "Datadog.initialize(context, TrackingConsent.PENDING, config)",
+            imports = ["com.datadog.android.privacy.TrackingConsent"]
+        )
+    )
+    @Suppress("LongMethod")
+    @JvmStatic
+    fun initialize(
+        context: Context,
+        config: DatadogConfig
+    ) {
+        initialize(context, TrackingConsent.GRANTED, config)
+    }
+
+    /**
+     * Initializes the Datadog SDK.
+     * @param context your application context
+     * @param trackingConsent as the initial state of the tracking consent flag.
+     * @param config the configuration for the SDK library
+     * @see [DatadogConfig]
+     * @see [TrackingConsent]
+     * @throws IllegalArgumentException if the env name is using illegal characters and your
+     * application is in debug mode otherwise returns false and stops initializing the SDK
      */
     @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
+        trackingConsent: TrackingConsent,
         config: DatadogConfig
     ) {
         if (initialized.get()) {
@@ -97,7 +130,7 @@ object Datadog {
         }
 
         // always initialize Core Features first
-        CoreFeature.initialize(appContext, config.coreConfig)
+        CoreFeature.initialize(appContext, trackingConsent, config.coreConfig)
 
         config.logsConfig?.let { featureConfig ->
             LogsFeature.initialize(
@@ -163,32 +196,6 @@ object Datadog {
     }
 
     /**
-     * Initializes the Datadog SDK.
-     * @param context your application context
-     * @param clientToken your API key of type Client Token
-     * @param envName the environment special attribute which will be sent with each event.
-     * (e.g. "staging" vs. "production")
-     * @param endpointUrl (optional) the endpoint url to target, or null to use the default. Possible values are
-     * [DATADOG_US], [DATADOG_EU] or a custom endpoint.
-     * @deprecated Use the [initialize] method with a [DatadogConfig] instance
-     */
-    @JvmStatic
-    @JvmOverloads
-    @Deprecated("Use the initialize method with a DatadogConfig instance")
-    fun initialize(
-        context: Context,
-        clientToken: String,
-        envName: String,
-        endpointUrl: String? = null
-    ) {
-        val config = DatadogConfig.Builder(clientToken, envName)
-            .useCustomLogsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
-            .useCustomCrashReportsEndpoint(endpointUrl ?: DatadogEndpoint.LOGS_US)
-            .build()
-        initialize(context, config)
-    }
-
-    /**
      * Changes the endpoint to which logging data is sent.
      * @param endpointUrl the endpoint url to target, or null to use the default.
      * Possible values are [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
@@ -247,6 +254,16 @@ object Datadog {
     @JvmStatic
     fun setVerbosity(level: Int) {
         libraryVerbosity = level
+    }
+
+    /**
+     * Sets the tracking consent regarding the data collection for the Datadog library.
+     *
+     * @param consent which can take one of the values
+     * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
+     */
+    fun setTrackingConsent(consent: TrackingConsent) {
+        CoreFeature.trackingConsentProvider.setConsent(consent)
     }
 
     /**

@@ -11,6 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -51,8 +52,10 @@ internal class WorkManagerUtilsTest {
         mockAppContext = mockContext()
         Datadog.initialize(
             mockAppContext,
-            forge.anAlphabeticalString(),
-            forge.anHexadecimalString()
+            DatadogConfig.Builder(
+                forge.anAlphabeticalString(),
+                forge.anHexadecimalString()
+            ).build()
         )
     }
 

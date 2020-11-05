@@ -12,13 +12,13 @@ import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.data.privacy.ConsentProvider
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
@@ -26,7 +26,6 @@ import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -35,13 +34,11 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import java.util.Locale
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -78,17 +75,20 @@ internal class DatadogTest {
     @StringForgery
     lateinit var fakePackageName: String
 
-    @RegexForgery("\\d(\\.\\d){3}")
+    @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
-    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @TempDir
     lateinit var tempRootDir: File
 
+    lateinit var fakeConsent: TrackingConsent
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
@@ -120,7 +120,7 @@ internal class DatadogTest {
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @RegexForgery("\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -137,7 +137,7 @@ internal class DatadogTest {
     fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @RegexForgery("\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -153,7 +153,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 initialize() + isInitialized()`(
+    fun `𝕄 return true 𝕎 initialize(context, consent, config) + isInitialized()`(
         @Forgery applicationId: UUID
     ) {
         // Given
@@ -161,11 +161,40 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
         assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `𝕄 initialize the ConsentProvider 𝕎 initializing)`(
+        @Forgery applicationId: UUID
+    ) {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, fakeConsent, config)
+
+        // Then
+        assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `M update the ConsentProvider W setConsent`(forge: Forge) {
+        // GIVEN
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val mockedConsentProvider: ConsentProvider = mock()
+        CoreFeature.trackingConsentProvider = mockedConsentProvider
+
+        // WHEN
+        Datadog.setTrackingConsent(fakeConsent)
+
+        // THEN
+        verify(CoreFeature.trackingConsentProvider).setConsent(fakeConsent)
     }
 
     @Test
@@ -180,7 +209,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -203,6 +232,7 @@ internal class DatadogTest {
         assertThatThrownBy {
             Datadog.initialize(
                 mockAppContext,
+                fakeConsent,
                 config
             )
         }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
@@ -228,7 +258,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -255,7 +285,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(mockAppContext, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -268,70 +298,54 @@ internal class DatadogTest {
     // region Deprecated
 
     @Test
-    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Discard strategy`(
-        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
+    fun `𝕄 return true 𝕎 initialize(context, config) + isInitialized()`(
+        @Forgery applicationId: UUID
     ) {
         // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
 
         // When
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.DISCARD_OLD_DATA)
+        Datadog.initialize(mockAppContext, config)
+        val initialized = Datadog.isInitialized()
 
         // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
-            )
+        assertThat(initialized).isTrue()
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 setEndpointUrl() with Update strategy`(
-        @RegexForgery("https://[a-z]+\\.[a-z]{3}") newEndpoint: String
+    fun `𝕄 bypass GDPR by default 𝕎 initialize(context, config) + isInitialized()`(
+        @Forgery applicationId: UUID
     ) {
         // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
 
         // When
-        Datadog.setEndpointUrl(newEndpoint, EndpointUpdateStrategy.SEND_OLD_DATA_TO_NEW_ENDPOINT)
+        Datadog.initialize(mockAppContext, config)
 
         // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                String.format(Locale.US, Datadog.MESSAGE_DEPRECATED, "setEndpointUrl()")
-            )
+        assertThat(CoreFeature.trackingConsentProvider.getConsent())
+            .isEqualTo(TrackingConsent.GRANTED)
     }
 
     @Test
-    fun `𝕄 initialize the LifecycleMonitor 𝕎 initialize()`() {
-        // When
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-
-        // Then
-        argumentCaptor<Application.ActivityLifecycleCallbacks> {
-            verify(mockAppContext).registerActivityLifecycleCallbacks(capture())
-            assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
-        }
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 initialize() twice`() {
+    fun `𝕄 initialize features 𝕎 initialize(context, config) deprecated method`(
+        @Forgery applicationId: UUID
+    ) {
         // Given
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
+            .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
+        Datadog.initialize(mockAppContext, config)
 
         // Then
-        verify(mockDevLogHandler)
-            .handleLog(
-                AndroidLog.WARN,
-                Datadog.MESSAGE_ALREADY_INITIALIZED
-            )
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isTrue()
     }
 
     // endregion

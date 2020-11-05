@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 
 internal class DataProcessorFactory<T : Any>(
     private val permissionGrantedProcessorFactory:
@@ -18,11 +18,11 @@ internal class DataProcessorFactory<T : Any>(
 ) {
 
     fun resolveProcessor(
-        consent: Consent
+        consent: TrackingConsent
     ): DataProcessor<T> {
         return when (consent) {
-            Consent.GRANTED -> permissionGrantedProcessorFactory()
-            Consent.PENDING -> permissionPendingProcessorFactory()
+            TrackingConsent.GRANTED -> permissionGrantedProcessorFactory()
+            TrackingConsent.PENDING -> permissionPendingProcessorFactory()
             else -> {
                 noOpProcessorFactory()
             }

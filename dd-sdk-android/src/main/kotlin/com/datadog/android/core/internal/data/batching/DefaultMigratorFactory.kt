@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigr
 import com.datadog.android.core.internal.data.batching.migrators.MoveDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.data.batching.migrators.WipeDataMigrator
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultMigratorFactory(
     private val pendingFolderPath: String,
@@ -18,15 +18,15 @@ internal class DefaultMigratorFactory(
 ) : MigratorFactory {
 
     override fun resolveMigrator(
-        prevConsentFlag: Consent?,
-        newConsentFlag: Consent
+        prevConsentFlag: TrackingConsent?,
+        newConsentFlag: TrackingConsent
     ): BatchedDataMigrator {
 
         return when (prevConsentFlag to newConsentFlag) {
-            Consent.PENDING to Consent.NOT_GRANTED -> {
+            TrackingConsent.PENDING to TrackingConsent.NOT_GRANTED -> {
                 WipeDataMigrator(pendingFolderPath)
             }
-            Consent.PENDING to Consent.GRANTED -> {
+            TrackingConsent.PENDING to TrackingConsent.GRANTED -> {
                 MoveDataMigrator(pendingFolderPath, approvedFolderPath)
             }
             else -> NoOpBatchedDataMigrator()

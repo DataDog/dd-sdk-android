@@ -12,6 +12,9 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.internal.data.privacy.ConsentProvider
+import com.datadog.android.core.internal.data.privacy.NoOpConsentProvider
+import com.datadog.android.core.internal.data.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -28,6 +31,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import java.lang.ref.WeakReference
@@ -71,9 +75,11 @@ internal object CoreFeature {
 
     internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
     internal lateinit var dataPersistenceExecutorService: ExecutorService
+    internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
 
     fun initialize(
         appContext: Context,
+        consent: TrackingConsent,
         config: DatadogConfig.CoreConfig
     ) {
         if (initialized.get()) {
@@ -93,6 +99,7 @@ internal object CoreFeature {
             syncListener = LoggingSyncListener()
         ).apply { syncInBackground() }
 
+        trackingConsentProvider = TrackingConsentProvider(consent)
         serviceName = config.serviceName ?: appContext.packageName
         contextRef = WeakReference(appContext)
         isMainProcess = resolveIsMainProcess(appContext)
@@ -125,6 +132,8 @@ internal object CoreFeature {
             }
             contextRef.clear()
 
+            trackingConsentProvider.unregisterAllCallbacks()
+            trackingConsentProvider = NoOpConsentProvider()
             timeProvider = NoOpTimeProvider()
             systemInfoProvider = NoOpSystemInfoProvider()
             networkInfoProvider = NoOpNetworkInfoProvider()

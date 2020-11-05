@@ -7,11 +7,11 @@
 package com.datadog.android.core.internal.data.batching
 
 import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
-import com.datadog.android.core.internal.data.privacy.Consent
+import com.datadog.android.privacy.TrackingConsent
 
 internal interface MigratorFactory {
     fun resolveMigrator(
-        prevConsentFlag: Consent?,
-        newConsentFlag: Consent
+        prevConsentFlag: TrackingConsent?,
+        newConsentFlag: TrackingConsent
     ): BatchedDataMigrator
 }

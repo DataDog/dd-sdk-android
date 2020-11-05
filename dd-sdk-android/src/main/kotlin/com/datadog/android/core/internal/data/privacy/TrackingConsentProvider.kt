@@ -6,15 +6,16 @@
 
 package com.datadog.android.core.internal.data.privacy
 
+import com.datadog.android.privacy.TrackingConsent
 import java.util.LinkedList
 
-internal class PrivacyConsentProvider(consent: Consent = Consent.PENDING) :
+internal class TrackingConsentProvider(consent: TrackingConsent = TrackingConsent.PENDING) :
     ConsentProvider {
 
     private val callbacks: LinkedList<ConsentProviderCallback> = LinkedList()
 
     @Volatile
-    private var consent: Consent
+    private var consent: TrackingConsent
 
     // region ConsentProvider
 
@@ -22,14 +23,14 @@ internal class PrivacyConsentProvider(consent: Consent = Consent.PENDING) :
         this.consent = consent
     }
 
-    override fun getConsent(): Consent {
+    override fun getConsent(): TrackingConsent {
         return consent
     }
 
     // We need to synchronize everything as we are not sure from which thread the client
     // will update the consent and initialize the SDK.
     @Synchronized
-    override fun setConsent(consent: Consent) {
+    override fun setConsent(consent: TrackingConsent) {
         if (consent == this.consent) {
             return
         }
@@ -43,11 +44,16 @@ internal class PrivacyConsentProvider(consent: Consent = Consent.PENDING) :
         callbacks.add(callback)
     }
 
+    @Synchronized
+    override fun unregisterAllCallbacks() {
+        callbacks.clear()
+    }
+
     // endregion
 
     // region Internal
 
-    private fun notifyCallbacks(previous: Consent, new: Consent) {
+    private fun notifyCallbacks(previous: TrackingConsent, new: TrackingConsent) {
         callbacks.forEach {
             it.onConsentUpdated(previous, new)
         }
