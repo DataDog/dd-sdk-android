@@ -14,7 +14,10 @@ import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -78,6 +81,16 @@ fun resolveTagName(caller: Any, defaultIfNotDebug: String? = null): String {
     } else {
         tag.substring(0, min(tag.length, 23))
     }
+}
+
+internal fun mockSdkLogHandler(mockHandler: LogHandler): LogHandler {
+    val originalHandler = sdkLogger.getFieldValue<LogHandler, Logger>("handler")
+    sdkLogger.setFieldValue("handler", mockHandler)
+    return originalHandler
+}
+
+internal fun restoreSdkLogHandler(originalHandler: LogHandler) {
+    sdkLogger.setFieldValue("handler", originalHandler)
 }
 
 internal fun mockDevLogHandler(): LogHandler {
