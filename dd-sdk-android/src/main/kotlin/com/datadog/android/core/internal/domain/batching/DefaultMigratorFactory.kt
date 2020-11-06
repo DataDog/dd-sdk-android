@@ -11,10 +11,12 @@ import com.datadog.android.core.internal.domain.batching.migrators.MoveDataMigra
 import com.datadog.android.core.internal.domain.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.domain.batching.migrators.WipeDataMigrator
 import com.datadog.android.privacy.TrackingConsent
+import java.util.concurrent.ExecutorService
 
 internal class DefaultMigratorFactory(
     private val pendingFolderPath: String,
-    private val approvedFolderPath: String
+    private val approvedFolderPath: String,
+    private val executorService: ExecutorService
 ) : MigratorFactory {
 
     override fun resolveMigrator(
@@ -24,10 +26,14 @@ internal class DefaultMigratorFactory(
 
         return when (prevConsentFlag to newConsentFlag) {
             TrackingConsent.PENDING to TrackingConsent.NOT_GRANTED -> {
-                WipeDataMigrator(pendingFolderPath)
+                WipeDataMigrator(pendingFolderPath, executorService)
             }
             TrackingConsent.PENDING to TrackingConsent.GRANTED -> {
-                MoveDataMigrator(pendingFolderPath, approvedFolderPath)
+                MoveDataMigrator(pendingFolderPath, approvedFolderPath, executorService)
+            }
+            // We need this to make sure we clear the current folder when initializing the SDK
+            null to TrackingConsent.PENDING -> {
+                WipeDataMigrator(pendingFolderPath, executorService)
             }
             else -> NoOpBatchedDataMigrator()
         }

@@ -184,6 +184,23 @@ internal class FileHandlerTest {
     }
 
     @Test
+    fun `M create the destination directory if does not exists W moveFiles`(forge: Forge) {
+        // GIVEN
+        fakeSourceDirectory.mkdirs()
+
+        // WHEN
+        val success = testedFileHandler.moveFiles(
+            fakeSourceDirectory,
+            fakeDestinationDirectory
+        )
+
+        // THEN
+        assertThat(success).isTrue()
+        val destinationDirectoryFiles = fakeDestinationDirectory.listFiles()
+        assertThat(destinationDirectoryFiles).isEmpty()
+    }
+
+    @Test
     fun `M return false W moveFiles { renameFile fails with NPE }`(forge: Forge) {
         // GIVEN
         val fakeNpe = NullPointerException(forge.anAlphabeticalString())
@@ -263,7 +280,7 @@ internal class FileHandlerTest {
         }
 
         // WHEN
-        val success = testedFileHandler.clearFile(mockDirectory)
+        val success = testedFileHandler.deleteFileOrDirectory(mockDirectory)
 
         // THEN
         assertThat(success).isTrue()
@@ -278,7 +295,7 @@ internal class FileHandlerTest {
         }
 
         // WHEN
-        val success = testedFileHandler.clearFile(mockFile)
+        val success = testedFileHandler.deleteFileOrDirectory(mockFile)
 
         // THEN
         assertThat(success).isFalse()
@@ -296,7 +313,7 @@ internal class FileHandlerTest {
         }
 
         // WHEN
-        testedFileHandler.clearFile(mockFile)
+        testedFileHandler.deleteFileOrDirectory(mockFile)
 
         // THEN
         verify(mockLogHandler).handleLog(

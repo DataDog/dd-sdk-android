@@ -15,7 +15,7 @@ internal class FileHandler {
     // region FileHandler
 
     @SuppressWarnings("TooGenericExceptionCaught")
-    fun clearFile(source: File): Boolean {
+    fun deleteFileOrDirectory(source: File): Boolean {
         return try {
             source.deleteRecursively()
         } catch (e: Throwable) {
@@ -43,6 +43,7 @@ internal class FileHandler {
             )
             return false
         }
+        destinationDirectory.mkdirs()
 
         val files = sourceDirectory.listFiles()
         if (files == null || files.isEmpty()) {
