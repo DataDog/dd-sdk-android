@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.data
 
-import com.datadog.android.core.internal.domain.Batch
+import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**

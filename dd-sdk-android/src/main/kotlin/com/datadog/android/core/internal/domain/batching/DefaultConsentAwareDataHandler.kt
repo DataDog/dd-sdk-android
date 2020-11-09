@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching
+package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
-import com.datadog.android.core.internal.data.privacy.ConsentProviderCallback
+import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProviderCallback
 import com.datadog.android.privacy.TrackingConsent
 
 internal class DefaultConsentAwareDataHandler<T : Any>(
@@ -30,6 +30,11 @@ internal class DefaultConsentAwareDataHandler<T : Any>(
     @Synchronized
     override fun consume(event: T) {
         processor.consume(event)
+    }
+
+    @Synchronized
+    override fun consume(events: List<T>) {
+        processor.consume(events)
     }
 
     @Synchronized

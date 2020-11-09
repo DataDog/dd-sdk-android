@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching
+package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.android.core.internal.data.batching.migrators.BatchedDataMigrator
-import com.datadog.android.core.internal.data.batching.processors.DataProcessor
-import com.datadog.android.core.internal.data.privacy.ConsentProvider
+import com.datadog.android.core.internal.domain.batching.migrators.BatchedDataMigrator
+import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.inOrder
@@ -116,12 +116,24 @@ internal class DefaultConsentAwareDataHandlerTest {
     }
 
     @Test
-    fun `M process data W requested`() {
+    fun `M process event W requested`() {
         // WHEN
         testedHandler.consume(fakeEvent)
 
         // THEN
         verify(mockedProcessor).consume(fakeEvent)
+    }
+
+    @Test
+    fun `M process collection of events W requested`(forge: Forge) {
+        // GIVEN
+        val fakeEvents = forge.aList { forge.aString() }
+
+        // WHEN
+        testedHandler.consume(fakeEvents)
+
+        // THEN
+        verify(mockedProcessor).consume(fakeEvents)
     }
 
     @Test
@@ -153,7 +165,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     }
 
     @Test
-    fun `M be synchronous W in concurrent usage`(forge: Forge) {
+    fun `M be synchronous W consume { event } in concurrent usage`(forge: Forge) {
         // GIVEN
         val fakeNewConsent =
             forge.aValueFrom(TrackingConsent::class.java, listOf(fakeInitialConsent))
@@ -195,6 +207,55 @@ internal class DefaultConsentAwareDataHandlerTest {
             verify(mockedNoOpMigrator).migrateData()
             verify(mockedMigrator).migrateData()
             verify(mockedNewProcessor).consume(fakeEvent)
+        }
+    }
+
+    @Test
+    fun `M be synchronous W consume { events } in concurrent usage`(forge: Forge) {
+        // GIVEN
+        val fakeEvents = forge.aList { forge.aString() }
+        val fakeNewConsent = forge.aValueFrom(
+            TrackingConsent::class.java,
+            listOf(fakeInitialConsent)
+        )
+        val mockedNewProcessor: DataProcessor<String> = mock()
+        val countDownLatch = CountDownLatch(2)
+        whenever(
+            mockedMigratorFactory.resolveMigrator(
+                fakeInitialConsent,
+                fakeNewConsent
+            )
+        ).thenReturn(mockedMigrator)
+        whenever(
+            mockProcessorFactory.resolveProcessor(
+                fakeNewConsent
+            )
+        ).thenReturn(
+            mockedNewProcessor
+        )
+
+        // WHEN
+        Thread {
+            testedHandler.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
+            countDownLatch.countDown()
+        }.start()
+        Thread {
+            // Give time to first thread to acquire the lock
+            Thread.sleep(1)
+            testedHandler.consume(fakeEvents)
+            countDownLatch.countDown()
+        }.start()
+
+        // THEN
+        countDownLatch.await(1, TimeUnit.SECONDS)
+        inOrder(
+            mockedNoOpMigrator,
+            mockedMigrator,
+            mockedNewProcessor
+        ) {
+            verify(mockedNoOpMigrator).migrateData()
+            verify(mockedMigrator).migrateData()
+            verify(mockedNewProcessor).consume(fakeEvents)
         }
     }
 }

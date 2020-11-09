@@ -4,12 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.batching.processors
+package com.datadog.android.core.internal.domain.batching.migrators
 
-import com.datadog.tools.annotation.NoOpImplementation
-
-@NoOpImplementation
-internal interface DataProcessor<T : Any> {
-
-    fun consume(event: T)
+internal class WipeDataMigrator(val folderPath: String) : BatchedDataMigrator {
+    override fun migrateData() {
+        // TODO RUMM-838
+    }
 }

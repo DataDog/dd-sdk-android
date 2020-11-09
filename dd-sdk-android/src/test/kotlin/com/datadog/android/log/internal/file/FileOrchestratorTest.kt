@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
@@ -49,11 +50,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 tempLogsDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
     }
 
@@ -68,13 +71,14 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 invalidRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
-
         // Then
         assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
     }
@@ -88,11 +92,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 invalidRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then
@@ -110,11 +116,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 corruptedRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then
@@ -130,11 +138,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 corruptedRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then

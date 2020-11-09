@@ -4,19 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.privacy
+package com.datadog.android.core.internal.domain.batching.migrators
 
-import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface ConsentProvider {
-
-    fun getConsent(): TrackingConsent
-
-    fun setConsent(consent: TrackingConsent)
-
-    fun registerCallback(callback: ConsentProviderCallback)
-
-    fun unregisterAllCallbacks()
+internal interface BatchedDataMigrator {
+    fun migrateData()
 }

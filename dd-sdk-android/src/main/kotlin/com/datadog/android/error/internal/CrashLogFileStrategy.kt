@@ -7,6 +7,7 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.log.internal.domain.Log
@@ -16,19 +17,12 @@ import java.io.File
 
 internal class CrashLogFileStrategy(
     context: Context,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE
+    filePersistenceConfig: FilePersistenceConfig =
+        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_LOGS_MS)
 ) : FilePersistenceStrategy<Log>(
     File(context.filesDir, CRASH_REPORTS_FOLDER),
     LogSerializer(),
-    recentDelayMs,
-    maxBatchSize,
-    maxLogPerBatch,
-    oldFileThreshold,
-    maxDiskSpace,
+    filePersistenceConfig,
     PayloadDecoration.JSON_ARRAY_DECORATION
 ) {
     companion object {

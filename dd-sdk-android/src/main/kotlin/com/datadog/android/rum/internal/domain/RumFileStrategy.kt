@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
@@ -16,20 +17,13 @@ import java.util.concurrent.ExecutorService
 
 internal class RumFileStrategy(
     context: Context,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_LOGS_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxLogPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE,
+    filePersistenceConfig: FilePersistenceConfig =
+        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_RUM_EVENTS_MS),
     dataPersistenceExecutorService: ExecutorService
 ) : AsyncWriterFilePersistenceStrategy<RumEvent>(
     File(context.filesDir, RUM_FOLDER),
     RumEventSerializer(),
-    recentDelayMs,
-    maxBatchSize,
-    maxLogPerBatch,
-    oldFileThreshold,
-    maxDiskSpace,
+    filePersistenceConfig,
     PayloadDecoration.NEW_LINE_DECORATION,
     dataPersistenceExecutorService = dataPersistenceExecutorService
 ) {
@@ -37,6 +31,6 @@ internal class RumFileStrategy(
         internal const val TRACES_DATA_VERSION = 1
         internal const val DATA_FOLDER_ROOT = "dd-rum"
         internal const val RUM_FOLDER = "$DATA_FOLDER_ROOT-v$TRACES_DATA_VERSION"
-        internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
+        internal const val MAX_DELAY_BETWEEN_RUM_EVENTS_MS = 5000L
     }
 }

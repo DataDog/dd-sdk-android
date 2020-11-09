@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.domain
+package com.datadog.android.core.internal.data.file
 
 /**
  * Represent a batch of logs read from a persisted location.

@@ -19,7 +19,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 internal class ImmediateFileWriter<T : Any>(
-    private val fileOrchestrator: Orchestrator,
+    internal val fileOrchestrator: Orchestrator,
     private val serializer: Serializer<T>,
     separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
 ) : Writer<T> {

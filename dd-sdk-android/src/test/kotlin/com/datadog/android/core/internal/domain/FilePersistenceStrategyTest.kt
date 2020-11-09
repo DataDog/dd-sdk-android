@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.lines
