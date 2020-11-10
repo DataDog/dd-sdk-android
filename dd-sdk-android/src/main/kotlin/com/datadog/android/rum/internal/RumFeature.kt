@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -76,7 +77,8 @@ internal object RumFeature {
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
         dataPersistenceExecutor: ExecutorService,
-        userInfoProvider: UserInfoProvider
+        userInfoProvider: UserInfoProvider,
+        trackingConsentProvider: ConsentProvider
     ) {
         if (initialized.get()) {
             return
@@ -94,6 +96,7 @@ internal object RumFeature {
 
         persistenceStrategy = RumFileStrategy(
             appContext,
+            trackingConsentProvider = trackingConsentProvider,
             dataPersistenceExecutorService = dataPersistenceExecutor
         )
         setupUploader(

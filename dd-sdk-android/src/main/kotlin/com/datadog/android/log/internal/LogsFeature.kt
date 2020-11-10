@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
@@ -48,7 +49,8 @@ internal object LogsFeature {
         networkInfoProvider: NetworkInfoProvider,
         systemInfoProvider: SystemInfoProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService
+        dataPersistenceExecutor: ExecutorService,
+        trackingConsentProvider: ConsentProvider
     ) {
         if (initialized.get()) {
             return
@@ -58,6 +60,7 @@ internal object LogsFeature {
         endpointUrl = config.endpointUrl
         persistenceStrategy = LogFileStrategy(
             appContext,
+            trackingConsentProvider = trackingConsentProvider,
             dataPersistenceExecutorService = dataPersistenceExecutor
         )
         setupUploader(

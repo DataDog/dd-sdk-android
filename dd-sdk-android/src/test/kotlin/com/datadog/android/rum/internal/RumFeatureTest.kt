@@ -12,8 +12,9 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.plugin.DatadogPlugin
@@ -87,6 +88,8 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
 
+    lateinit var trackingConsentProvider: ConsentProvider
+
     lateinit var fakeConfig: DatadogConfig.RumConfig
 
     lateinit var fakePackageName: String
@@ -97,6 +100,7 @@ internal class RumFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        trackingConsentProvider = TrackingConsentProvider()
         fakeConfig = DatadogConfig.RumConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
@@ -129,7 +133,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         assertThat(RumFeature.applicationId).isEqualTo(fakeConfig.applicationId)
@@ -148,12 +153,13 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = RumFeature.persistenceStrategy
         assertThat(persistenceStrategy)
-            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+            .isInstanceOf(RumFileStrategy::class.java)
         val reader = RumFeature.persistenceStrategy.getReader()
         val suffix: String = reader.getFieldValue("suffix")
         assertThat(suffix).isEqualTo("")
@@ -171,7 +177,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         val dataUploadScheduler = RumFeature.dataUploadScheduler
@@ -190,7 +197,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         assertThat(RumFeature.userInfoProvider).isEqualTo(mockUserInfoProvider)
@@ -207,7 +215,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         val clientToken = RumFeature.clientToken
@@ -228,7 +237,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
         val persistenceStrategy = RumFeature.persistenceStrategy
         val dataUploadScheduler = RumFeature.dataUploadScheduler
@@ -253,7 +263,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
         val persistenceStrategy2 = RumFeature.persistenceStrategy
         val dataUploadScheduler2 = RumFeature.dataUploadScheduler
@@ -279,7 +290,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // Then
@@ -305,7 +317,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // Then
@@ -327,7 +340,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // Then
@@ -345,7 +359,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // Then
@@ -370,7 +385,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // Then
@@ -387,7 +403,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
         val monitor: DatadogRumMonitor = mock()
         GlobalRum.isRegistered.set(false)
@@ -416,7 +433,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -434,7 +452,7 @@ internal class RumFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featurePersistenceDirName).isEqualTo(RumFileStrategy.RUM_FOLDER)
+            assertThat(it.featurePersistenceDirName).isEqualTo(RumFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
         }
     }
@@ -455,7 +473,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
 
         // When
@@ -475,7 +494,7 @@ internal class RumFeatureTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery content: String
     ) {
-        val fakeDir = File(tempRootDir, RumFileStrategy.RUM_FOLDER)
+        val fakeDir = File(tempRootDir, RumFileStrategy.AUTHORIZED_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
@@ -489,7 +508,8 @@ internal class RumFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            trackingConsentProvider
         )
         RumFeature.clearAllData()
 

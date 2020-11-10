@@ -10,19 +10,23 @@ import com.datadog.android.core.internal.data.Writer
 import java.util.concurrent.ExecutorService
 
 internal class DefaultDataProcessor<T : Any>(
-    internal val executorService: ExecutorService,
-    internal val writer: Writer<T>
+    val executorService: ExecutorService,
+    val dataWriter: Writer<T>
 ) : DataProcessor<T> {
 
     override fun consume(event: T) {
         executorService.submit {
-            writer.write(event)
+            dataWriter.write(event)
         }
     }
 
     override fun consume(events: List<T>) {
         executorService.submit {
-            writer.write(events)
+            dataWriter.write(events)
         }
+    }
+
+    override fun getWriter(): Writer<T> {
+        return dataWriter
     }
 }

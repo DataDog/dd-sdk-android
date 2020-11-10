@@ -31,15 +31,20 @@ sealed class DatadogPluginConfig(
             context,
             envName,
             serviceName,
-            CrashLogFileStrategy.CRASH_REPORTS_FOLDER
+            CrashLogFileStrategy.AUTHORIZED_FOLDER
         )
 
     internal class LogsPluginConfig(context: Context, envName: String, serviceName: String) :
-        DatadogPluginConfig(context, envName, serviceName, LogFileStrategy.LOGS_FOLDER)
+        DatadogPluginConfig(context, envName, serviceName, LogFileStrategy.AUTHORIZED_FOLDER)
 
     internal class TracingPluginConfig(context: Context, envName: String, serviceName: String) :
-        DatadogPluginConfig(context, envName, serviceName, TracingFileStrategy.TRACES_FOLDER)
+        DatadogPluginConfig(
+            context,
+            envName,
+            serviceName,
+            TracingFileStrategy.AUTHORIZED_FOLDER
+        )
 
     internal class RumPluginConfig(context: Context, envName: String, serviceName: String) :
-        DatadogPluginConfig(context, envName, serviceName, RumFileStrategy.RUM_FOLDER)
+        DatadogPluginConfig(context, envName, serviceName, RumFileStrategy.AUTHORIZED_FOLDER)
 }

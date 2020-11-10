@@ -15,6 +15,8 @@ import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -35,6 +37,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
@@ -78,6 +81,11 @@ internal class CrashReportsFeatureTest {
     @Mock
     lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 
+    @Mock
+    lateinit var mockedPersistenceExecutorService: ExecutorService
+
+    lateinit var trackingConsentProvider: ConsentProvider
+
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
     lateinit var fakePackageName: String
@@ -89,6 +97,7 @@ internal class CrashReportsFeatureTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         CoreFeature.isMainProcess = true
+        trackingConsentProvider = TrackingConsentProvider()
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
@@ -119,7 +128,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
@@ -137,7 +148,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val uploader = CrashReportsFeature.uploader
@@ -158,7 +171,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val clientToken = CrashReportsFeature.clientToken
@@ -177,7 +192,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -199,7 +216,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
         CrashReportsFeature.stop()
 
@@ -219,7 +238,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy = CrashReportsFeature.persistenceStrategy
         val uploader = CrashReportsFeature.uploader
@@ -239,7 +260,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy2 = CrashReportsFeature.persistenceStrategy
         val uploader2 = CrashReportsFeature.uploader
@@ -269,7 +292,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -288,7 +313,7 @@ internal class CrashReportsFeatureTest {
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
             assertThat(it.featurePersistenceDirName)
-                .isEqualTo(CrashLogFileStrategy.CRASH_REPORTS_FOLDER)
+                .isEqualTo(CrashLogFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
         }
     }
@@ -309,7 +334,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
         // When
         CrashReportsFeature.stop()
@@ -336,7 +363,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // Then
@@ -349,7 +378,7 @@ internal class CrashReportsFeatureTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery content: String
     ) {
-        val fakeDir = File(tempRootDir, CrashLogFileStrategy.CRASH_REPORTS_FOLDER)
+        val fakeDir = File(tempRootDir, CrashLogFileStrategy.AUTHORIZED_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
@@ -362,7 +391,9 @@ internal class CrashReportsFeatureTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor
+            mockScheduledThreadPoolExecutor,
+            mockedPersistenceExecutorService,
+            trackingConsentProvider
         )
         CrashReportsFeature.clearAllData()
 

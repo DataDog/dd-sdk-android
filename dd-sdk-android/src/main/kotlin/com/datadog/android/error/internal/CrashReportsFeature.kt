@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
@@ -25,6 +26,7 @@ import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
@@ -49,7 +51,9 @@ internal object CrashReportsFeature {
         networkInfoProvider: NetworkInfoProvider,
         userInfoProvider: UserInfoProvider,
         systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
+        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
+        dataPersistenceExecutor: ExecutorService,
+        trackingConsentProvider: ConsentProvider
     ) {
 
         if (initialized.get()) {
@@ -59,7 +63,11 @@ internal object CrashReportsFeature {
         clientToken = config.clientToken
         endpointUrl = config.endpointUrl
 
-        persistenceStrategy = CrashLogFileStrategy(appContext)
+        persistenceStrategy = CrashLogFileStrategy(
+            appContext,
+            dataPersistenceExecutorService = dataPersistenceExecutor,
+            trackingConsentProvider = trackingConsentProvider
+        )
         setupUploader(
             endpointUrl,
             okHttpClient,

@@ -12,8 +12,9 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.plugin.DatadogPlugin
@@ -74,6 +75,8 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
+    lateinit var trackingConsentProvider: ConsentProvider
+
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
     lateinit var fakePackageName: String
@@ -84,6 +87,7 @@ internal class LogsFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        trackingConsentProvider = TrackingConsentProvider()
         CoreFeature.isMainProcess = true
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
@@ -115,13 +119,14 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = LogsFeature.persistenceStrategy
 
         assertThat(persistenceStrategy)
-            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+            .isInstanceOf(LogFileStrategy::class.java)
     }
 
     @Test
@@ -133,7 +138,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -151,7 +157,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val clientToken = LogsFeature.clientToken
@@ -171,7 +178,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy = LogsFeature.persistenceStrategy
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -191,7 +199,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy2 = LogsFeature.persistenceStrategy
         val dataUploadScheduler2 = LogsFeature.dataUploadScheduler
@@ -221,7 +230,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -238,7 +248,7 @@ internal class LogsFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.LOGS_FOLDER)
+            assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
         }
     }
@@ -258,7 +268,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // When
@@ -286,7 +297,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // Then
@@ -298,7 +310,7 @@ internal class LogsFeatureTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery content: String
     ) {
-        val fakeDir = File(tempRootDir, LogFileStrategy.LOGS_FOLDER)
+        val fakeDir = File(tempRootDir, LogFileStrategy.AUTHORIZED_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
@@ -311,7 +323,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         LogsFeature.clearAllData()
 

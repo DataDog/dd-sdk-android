@@ -6,12 +6,14 @@
 
 package com.datadog.android.core.internal.domain.batching.processors
 
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface DataProcessor<T : Any> {
-
     fun consume(event: T)
 
     fun consume(events: List<T>)
+
+    fun getWriter(): Writer<T>
 }

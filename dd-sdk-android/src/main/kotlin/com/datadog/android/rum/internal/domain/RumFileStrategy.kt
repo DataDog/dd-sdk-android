@@ -7,9 +7,10 @@
 package com.datadog.android.rum.internal.domain
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
+import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
@@ -19,18 +20,23 @@ internal class RumFileStrategy(
     context: Context,
     filePersistenceConfig: FilePersistenceConfig =
         FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_RUM_EVENTS_MS),
-    dataPersistenceExecutorService: ExecutorService
-) : AsyncWriterFilePersistenceStrategy<RumEvent>(
-    File(context.filesDir, RUM_FOLDER),
+    dataPersistenceExecutorService: ExecutorService,
+    trackingConsentProvider: ConsentProvider
+) : FilePersistenceStrategy<RumEvent>(
+    File(context.filesDir, INTERMEDIATE_DATA_FOLDER),
+    File(context.filesDir, AUTHORIZED_FOLDER),
     RumEventSerializer(),
+    dataPersistenceExecutorService,
     filePersistenceConfig,
     PayloadDecoration.NEW_LINE_DECORATION,
-    dataPersistenceExecutorService = dataPersistenceExecutorService
+    trackingConsentProvider
 ) {
     companion object {
-        internal const val TRACES_DATA_VERSION = 1
-        internal const val DATA_FOLDER_ROOT = "dd-rum"
-        internal const val RUM_FOLDER = "$DATA_FOLDER_ROOT-v$TRACES_DATA_VERSION"
+        internal const val VERSION = 1
+        internal const val ROOT = "dd-rum"
+        internal const val INTERMEDIATE_DATA_FOLDER =
+            "$ROOT-pending-v$VERSION"
+        internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
         internal const val MAX_DELAY_BETWEEN_RUM_EVENTS_MS = 5000L
     }
 }
