@@ -14,7 +14,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 
 internal class FileReader(
-    private val fileOrchestrator: Orchestrator,
+    internal val fileOrchestrator: Orchestrator,
     private val dataDirectory: File,
     private val prefix: CharSequence = "",
     private val suffix: CharSequence = ""

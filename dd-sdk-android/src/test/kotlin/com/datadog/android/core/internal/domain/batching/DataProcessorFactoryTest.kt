@@ -6,28 +6,24 @@
 
 package com.datadog.android.core.internal.domain.batching
 
-import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
-import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.NoOpDataProcessor
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
 import java.util.concurrent.ExecutorService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -43,13 +39,6 @@ internal class DataProcessorFactoryTest {
 
     lateinit var testedFactory: DataProcessorFactory<String>
 
-    lateinit var fakeIntermediaryFolderPath: String
-
-    lateinit var fakeTargetFolderPath: String
-
-    @TempDir
-    lateinit var rootDirectory: File
-
     @Mock
     lateinit var mockedExecutorService: ExecutorService
 
@@ -57,64 +46,58 @@ internal class DataProcessorFactoryTest {
     lateinit var mockedSerializer: Serializer<String>
 
     @Mock
-    lateinit var mockedIntermediaryFileOrchestrator: FileOrchestrator
+    lateinit var mockedIntermediateFileOrchestrator: Orchestrator
 
     @Mock
-    lateinit var mockedTargetFileOrchestrator: FileOrchestrator
+    lateinit var mockedTargetFileOrchestrator: Orchestrator
+
+    lateinit var fakeEventsSeparator: CharSequence
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeIntermediaryFolderPath =
-            rootDirectory.absolutePath + forge.aStringMatching("[a-zA-z]+/[a-zA-z]")
-        fakeTargetFolderPath =
-            rootDirectory.absolutePath + forge.aStringMatching("[a-zA-z]+/[a-zA-z]")
+        fakeEventsSeparator = forge.aString(size = 2)
         testedFactory = DataProcessorFactory(
-            fakeIntermediaryFolderPath,
-            fakeTargetFolderPath,
-            FilePersistenceConfig(),
+            mockedIntermediateFileOrchestrator,
+            mockedTargetFileOrchestrator,
             mockedSerializer,
+            fakeEventsSeparator,
             mockedExecutorService
+
         )
-    }
-
-    @Test
-    fun `M initialise correctly WHEN consent { PENDING, GRANTED }`() {
-        // WHEN
-        val processor = testedFactory.resolveProcessor(TrackingConsent.PENDING)
-
-        // THEN
-        assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            assertThat(it.executorService).isEqualTo(mockedExecutorService)
-            assertThat(it.writer).isInstanceOf(ImmediateFileWriter::class.java)
-        }
     }
 
     @Test
     fun `M use provide the appropriate processor W consent { PENDING }`() {
         // WHEN
-        val spyFactory = spy(testedFactory)
-        doReturn(mockedIntermediaryFileOrchestrator).whenever(spyFactory)
-            .buildFileOrchestrator(fakeIntermediaryFolderPath)
-        val processor = spyFactory.resolveProcessor(TrackingConsent.PENDING)
+        val processor = testedFactory.resolveProcessor(TrackingConsent.PENDING)
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            assertThat((it.writer as ImmediateFileWriter).fileOrchestrator)
-                .isEqualTo(mockedIntermediaryFileOrchestrator)
+            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
+            assertThat(immediateFileWriter.fileOrchestrator)
+                .isEqualTo(mockedIntermediateFileOrchestrator)
         }
+    }
+
+    @Test
+    fun `M reset the intermediateOrchestrator W consent { PENDING }`() {
+        // WHEN
+        testedFactory.resolveProcessor(TrackingConsent.PENDING)
+
+        // THEN
+        verify(mockedIntermediateFileOrchestrator).reset()
+        verifyNoMoreInteractions(mockedIntermediateFileOrchestrator)
     }
 
     @Test
     fun `M use provide the appropriate processor W consent { GRANTED }`() {
         // WHEN
-        val spyFactory = spy(testedFactory)
-        doReturn(mockedTargetFileOrchestrator).whenever(spyFactory)
-            .buildFileOrchestrator(fakeTargetFolderPath)
-        val processor = spyFactory.resolveProcessor(TrackingConsent.GRANTED)
+        val processor = testedFactory.resolveProcessor(TrackingConsent.GRANTED)
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            assertThat((it.writer as ImmediateFileWriter).fileOrchestrator)
+            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
+            assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedTargetFileOrchestrator)
         }
     }

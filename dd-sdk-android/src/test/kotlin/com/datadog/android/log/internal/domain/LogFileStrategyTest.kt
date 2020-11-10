@@ -4,19 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing.internal.domain
+package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -36,8 +31,8 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class TracingFileStrategyTest {
-    lateinit var testedStrategy: TracingFileStrategy
+internal class LogFileStrategyTest {
+    lateinit var testedStrategy: LogFileStrategy
 
     lateinit var mockedContext: Context
 
@@ -46,28 +41,12 @@ internal class TracingFileStrategyTest {
 
     lateinit var trackingConsentProvider: TrackingConsentProvider
 
-    @Mock
-    lateinit var mockedTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockedNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
-    lateinit var mockedUserInfoProvider: UserInfoProvider
-
-    @StringForgery(type = StringForgeryType.ALPHABETICAL)
-    lateinit var fakeEnvName: String
-
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
         trackingConsentProvider = TrackingConsentProvider()
-        testedStrategy = TracingFileStrategy(
+        testedStrategy = LogFileStrategy(
             mockedContext,
-            timeProvider = mockedTimeProvider,
-            networkInfoProvider = mockedNetworkInfoProvider,
-            userInfoProvider = mockedUserInfoProvider,
-            envName = fakeEnvName,
             dataPersistenceExecutorService = mockExecutorService,
             trackingConsentProvider = trackingConsentProvider
         )
@@ -79,17 +58,17 @@ internal class TracingFileStrategyTest {
         val expectedIntermediateFolderPath =
             absolutePath +
                 File.separator +
-                TracingFileStrategy.INTERMEDIATE_DATA_FOLDER
+                LogFileStrategy.INTERMEDIATE_DATA_FOLDER
         val expectedAuthorizedFolderPath =
             absolutePath +
                 File.separator +
-                TracingFileStrategy.AUTHORIZED_FOLDER
+                LogFileStrategy.AUTHORIZED_FOLDER
         PersistenceStrategyAssert
             .assertThat(testedStrategy)
             .hasIntermediateStorageFolder(expectedIntermediateFolderPath)
             .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
-            .hasConfig(FilePersistenceConfig(TracingFileStrategy.MAX_DELAY_BETWEEN_SPANS_MS))
+            .hasConfig(FilePersistenceConfig(LogFileStrategy.MAX_DELAY_BETWEEN_LOGS_MS))
     }
 }

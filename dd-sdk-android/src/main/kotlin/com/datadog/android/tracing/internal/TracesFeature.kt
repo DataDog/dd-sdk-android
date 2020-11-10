@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -53,7 +54,8 @@ internal object TracesFeature {
         systemInfoProvider: SystemInfoProvider,
         timeProvider: TimeProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService
+        dataPersistenceExecutor: ExecutorService,
+        trackingConsentProvider: ConsentProvider
     ) {
         if (initialized.get()) {
             return
@@ -64,11 +66,12 @@ internal object TracesFeature {
 
         persistenceStrategy = TracingFileStrategy(
             appContext,
-            timeProvider,
-            networkInfoProvider,
-            userInfoProvider,
+            timeProvider = timeProvider,
+            networkInfoProvider = networkInfoProvider,
+            userInfoProvider = userInfoProvider,
             envName = config.envName,
-            dataPersistenceExecutorService = dataPersistenceExecutor
+            dataPersistenceExecutorService = dataPersistenceExecutor,
+            trackingConsentProvider = trackingConsentProvider
         )
         setupUploader(
             endpointUrl,

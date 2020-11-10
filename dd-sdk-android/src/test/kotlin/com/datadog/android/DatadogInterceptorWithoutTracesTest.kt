@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
@@ -137,7 +138,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
-            mock(), mock(), mock(), mock(), mock(), mock(), mock()
+            mock(), mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
         )
 
         GlobalRum.registerIfAbsent(mockRumMonitor)

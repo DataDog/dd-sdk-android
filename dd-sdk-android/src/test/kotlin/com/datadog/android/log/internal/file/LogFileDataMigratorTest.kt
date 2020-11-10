@@ -36,7 +36,7 @@ internal class LogFileDataMigratorTest {
     fun `set up`() {
         testedMigrator =
             LogFileDataMigrator(tempRootDir)
-        tempOldDir = File(tempRootDir, LogFileStrategy.DATA_FOLDER_ROOT)
+        tempOldDir = File(tempRootDir, LogFileStrategy.INTERMEDIATE_DATA_FOLDER)
         tempOldDir.mkdirs()
     }
 

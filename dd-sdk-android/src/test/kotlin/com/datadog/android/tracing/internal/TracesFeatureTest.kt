@@ -10,12 +10,13 @@ import android.app.Application
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -85,6 +86,8 @@ internal class TracesFeatureTest {
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
+    lateinit var trackingConsentProvider: ConsentProvider
+
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
     lateinit var fakePackageName: String
@@ -96,6 +99,7 @@ internal class TracesFeatureTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         CoreFeature.isMainProcess = true
+        trackingConsentProvider = TrackingConsentProvider()
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
@@ -128,15 +132,17 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
-            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
-        val writer = TracesFeature.persistenceStrategy.getWriter()
-        val delegateWriter: Writer<*> = writer.getFieldValue("writer")
-        val serializer: Serializer<*> = delegateWriter.getFieldValue("serializer")
+            .isInstanceOf(TracingFileStrategy::class.java)
+        val consentAwareDataWriter =
+            TracesFeature.persistenceStrategy.getWriter() as ConsentAwareDataWriter
+        val writer = consentAwareDataWriter.getInternalWriter()
+        val serializer: Serializer<*> = writer.getFieldValue("serializer")
         val envName: String = serializer.getFieldValue("envName")
         assertThat(envName).isEqualTo(fakeConfig.envName)
     }
@@ -153,15 +159,17 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = TracesFeature.persistenceStrategy
         assertThat(persistenceStrategy)
-            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
-        val writer = TracesFeature.persistenceStrategy.getWriter()
-        val delegateWriter: Writer<*> = writer.getFieldValue("writer")
-        val serializer: Serializer<*> = delegateWriter.getFieldValue("serializer")
+            .isInstanceOf(TracingFileStrategy::class.java)
+        val consentAwareDataWriter =
+            TracesFeature.persistenceStrategy.getWriter() as ConsentAwareDataWriter
+        val writer = consentAwareDataWriter.getInternalWriter()
+        val serializer: Serializer<*> = writer.getFieldValue("serializer")
         val envName: String = serializer.getFieldValue("envName")
         assertThat(envName).isEqualTo("")
     }
@@ -177,7 +185,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val dataUploadScheduler = TracesFeature.dataUploadScheduler
@@ -197,7 +206,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val clientToken = TracesFeature.clientToken
@@ -219,7 +229,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy = TracesFeature.persistenceStrategy
         val dataUploadScheduler = TracesFeature.dataUploadScheduler
@@ -241,7 +252,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy2 = TracesFeature.persistenceStrategy
         val dataUploadScheduler2 = TracesFeature.dataUploadScheduler
@@ -273,7 +285,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -290,7 +303,8 @@ internal class TracesFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featurePersistenceDirName).isEqualTo(TracingFileStrategy.TRACES_FOLDER)
+            assertThat(it.featurePersistenceDirName)
+                .isEqualTo(TracingFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
         }
     }
@@ -313,7 +327,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // When
@@ -343,7 +358,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // Then
@@ -355,7 +371,7 @@ internal class TracesFeatureTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery content: String
     ) {
-        val fakeDir = File(tempRootDir, TracingFileStrategy.TRACES_FOLDER)
+        val fakeDir = File(tempRootDir, TracingFileStrategy.AUTHORIZED_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
@@ -370,7 +386,8 @@ internal class TracesFeatureTest {
             mockSystemInfoProvider,
             mockTimeProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         TracesFeature.clearAllData()
 

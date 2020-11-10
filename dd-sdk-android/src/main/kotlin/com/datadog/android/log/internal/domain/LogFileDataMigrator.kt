@@ -16,7 +16,7 @@ internal class LogFileDataMigrator(
     private val patches: MutableMap<String, (File) -> Unit> = HashMap()
 
     init {
-        patches[LogFileStrategy.DATA_FOLDER_ROOT] = {
+        patches[LogFileStrategy.INTERMEDIATE_DATA_FOLDER] = {
             if (it.exists()) {
                 it.deleteRecursively()
             }

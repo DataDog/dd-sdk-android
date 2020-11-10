@@ -36,7 +36,7 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DefaultConsentAwareDataHandlerTest {
+internal class DefaultConsentAwareDataWriterTest {
 
     @Mock
     lateinit var mockedConsentProvider: ConsentProvider
@@ -59,7 +59,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     @Mock
     lateinit var mockedProcessor: DataProcessor<String>
 
-    lateinit var testedHandler: DefaultConsentAwareDataHandler<String>
+    lateinit var testedHandler: DefaultConsentAwareDataWriter<String>
 
     lateinit var fakeInitialConsent: TrackingConsent
 
@@ -79,7 +79,7 @@ internal class DefaultConsentAwareDataHandlerTest {
         ).thenReturn(
             mockedProcessor
         )
-        testedHandler = DefaultConsentAwareDataHandler(
+        testedHandler = DefaultConsentAwareDataWriter(
             mockedConsentProvider,
             mockProcessorFactory,
             mockedMigratorFactory
@@ -118,7 +118,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     @Test
     fun `M process event W requested`() {
         // WHEN
-        testedHandler.consume(fakeEvent)
+        testedHandler.write(fakeEvent)
 
         // THEN
         verify(mockedProcessor).consume(fakeEvent)
@@ -130,7 +130,7 @@ internal class DefaultConsentAwareDataHandlerTest {
         val fakeEvents = forge.aList { forge.aString() }
 
         // WHEN
-        testedHandler.consume(fakeEvents)
+        testedHandler.write(fakeEvents)
 
         // THEN
         verify(mockedProcessor).consume(fakeEvents)
@@ -158,14 +158,14 @@ internal class DefaultConsentAwareDataHandlerTest {
         testedHandler.onConsentUpdated(fakeInitialConsent, fakeNewConsent)
 
         // WHEN
-        testedHandler.consume(fakeEvent)
+        testedHandler.write(fakeEvent)
 
         // THEN
         verify(mockedNewProcessor).consume(fakeEvent)
     }
 
     @Test
-    fun `M be synchronous W consume { event } in concurrent usage`(forge: Forge) {
+    fun `M be synchronous W write { event } in concurrent usage`(forge: Forge) {
         // GIVEN
         val fakeNewConsent =
             forge.aValueFrom(TrackingConsent::class.java, listOf(fakeInitialConsent))
@@ -193,7 +193,7 @@ internal class DefaultConsentAwareDataHandlerTest {
         Thread {
             // Give time to first thread to acquire the lock
             Thread.sleep(1)
-            testedHandler.consume(fakeEvent)
+            testedHandler.write(fakeEvent)
             countDownLatch.countDown()
         }.start()
 
@@ -211,7 +211,7 @@ internal class DefaultConsentAwareDataHandlerTest {
     }
 
     @Test
-    fun `M be synchronous W consume { events } in concurrent usage`(forge: Forge) {
+    fun `M be synchronous W write { events } in concurrent usage`(forge: Forge) {
         // GIVEN
         val fakeEvents = forge.aList { forge.aString() }
         val fakeNewConsent = forge.aValueFrom(
@@ -242,7 +242,7 @@ internal class DefaultConsentAwareDataHandlerTest {
         Thread {
             // Give time to first thread to acquire the lock
             Thread.sleep(1)
-            testedHandler.consume(fakeEvents)
+            testedHandler.write(fakeEvents)
             countDownLatch.countDown()
         }.start()
 
