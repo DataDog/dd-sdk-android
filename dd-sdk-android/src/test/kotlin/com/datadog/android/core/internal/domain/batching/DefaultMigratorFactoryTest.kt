@@ -10,7 +10,9 @@ import com.datadog.android.core.internal.domain.batching.migrators.MoveDataMigra
 import com.datadog.android.core.internal.domain.batching.migrators.NoOpBatchedDataMigrator
 import com.datadog.android.core.internal.domain.batching.migrators.WipeDataMigrator
 import com.datadog.android.privacy.TrackingConsent
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import java.util.concurrent.ExecutorService
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.params.ParameterizedTest
@@ -24,7 +26,7 @@ internal class DefaultMigratorFactoryTest {
     @ParameterizedTest
     @MethodSource("provideMigratorStatesData")
     fun `M generate the right migrator W required`(
-        previousConsentFlag: TrackingConsent,
+        previousConsentFlag: TrackingConsent?,
         newConsentFlag: TrackingConsent,
         pendingFolderPath: String,
         acceptedFolderPath: String,
@@ -32,7 +34,8 @@ internal class DefaultMigratorFactoryTest {
     ) {
 
         // GIVEN
-        testedFactory = DefaultMigratorFactory(pendingFolderPath, acceptedFolderPath)
+        testedFactory =
+            DefaultMigratorFactory(pendingFolderPath, acceptedFolderPath, mockExecutorService)
 
         // WHEN
         val migrator = testedFactory.resolveMigrator(previousConsentFlag, newConsentFlag)
@@ -58,6 +61,7 @@ internal class DefaultMigratorFactoryTest {
     companion object {
 
         var forge = Forge()
+        val mockExecutorService: ExecutorService = mock()
 
         @JvmStatic
         fun provideMigratorStatesData(): Stream<Arguments> {
@@ -65,6 +69,13 @@ internal class DefaultMigratorFactoryTest {
             val grantedFolderPath = forge.aStringMatching("[a-zA-z]+/[a-zA-z]")
             return Stream.of(
                 // initial state migrator
+                Arguments.arguments(
+                    null,
+                    TrackingConsent.PENDING,
+                    pendingFolderPath,
+                    grantedFolderPath,
+                    ExpectedMigrator.WipeMigrator(pendingFolderPath)
+                ),
                 Arguments.arguments(
                     TrackingConsent.PENDING,
                     TrackingConsent.PENDING,
@@ -88,6 +99,13 @@ internal class DefaultMigratorFactoryTest {
                 ),
                 // initial state migrator
                 Arguments.arguments(
+                    null,
+                    TrackingConsent.GRANTED,
+                    pendingFolderPath,
+                    grantedFolderPath,
+                    ExpectedMigrator.NoOpMigrator
+                ),
+                Arguments.arguments(
                     TrackingConsent.GRANTED,
                     TrackingConsent.GRANTED,
                     pendingFolderPath,
@@ -109,6 +127,13 @@ internal class DefaultMigratorFactoryTest {
                     ExpectedMigrator.NoOpMigrator
                 ),
                 // initial state migrator
+                Arguments.arguments(
+                    null,
+                    TrackingConsent.NOT_GRANTED,
+                    pendingFolderPath,
+                    grantedFolderPath,
+                    ExpectedMigrator.NoOpMigrator
+                ),
                 Arguments.arguments(
                     TrackingConsent.NOT_GRANTED,
                     TrackingConsent.NOT_GRANTED,

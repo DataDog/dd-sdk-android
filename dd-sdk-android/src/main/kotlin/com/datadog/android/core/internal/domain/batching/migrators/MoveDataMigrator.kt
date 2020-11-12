@@ -6,11 +6,35 @@
 
 package com.datadog.android.core.internal.domain.batching.migrators
 
+import com.datadog.android.core.internal.data.file.FileHandler
+import com.datadog.android.core.internal.utils.retryWithDelay
+import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+
 internal class MoveDataMigrator(
-    val pendingFolderPath: String,
-    val approvedFolderPath: String
+    internal val pendingFolderPath: String,
+    internal val approvedFolderPath: String,
+    private val executorService: ExecutorService,
+    private val fileHandler: FileHandler = FileHandler()
 ) : BatchedDataMigrator {
     override fun migrateData() {
-        // TODO RUMM-838
+        executorService.submit {
+            retryWithDelay(
+                {
+                    fileHandler.moveFiles(
+                        File(pendingFolderPath),
+                        File(approvedFolderPath)
+                    )
+                },
+                MAX_RETRIES,
+                RETRY_DELAY_IN_NANOS
+            )
+        }
+    }
+
+    companion object {
+        private const val MAX_RETRIES = 3
+        private val RETRY_DELAY_IN_NANOS = TimeUnit.SECONDS.toNanos(1)
     }
 }
