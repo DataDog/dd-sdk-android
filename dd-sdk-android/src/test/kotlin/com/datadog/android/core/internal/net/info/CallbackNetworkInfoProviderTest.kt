@@ -287,6 +287,33 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M get current network state W register()`(
+        @IntForgery(min = 1) upSpeed: Int,
+        @IntForgery(min = 1) downSpeed: Int
+    ) {
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.activeNetwork) doReturn mockNetwork
+        whenever(manager.getNetworkCapabilities(mockNetwork)) doReturn mockCapabilities
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
+        whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
+        whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
+
+        testedProvider.register(context)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        verify(manager).registerDefaultNetworkCallback(testedProvider)
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+            .hasUpSpeed(upSpeed)
+            .hasDownSpeed(downSpeed)
+            .hasStrength(Int.MIN_VALUE)
+    }
+
+    @Test
     fun `M register callback safely W register() with SecurityException`(
         @StringForgery message: String
     ) {

@@ -20,8 +20,7 @@ internal class CallbackNetworkInfoProvider :
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
-    private var networkInfo: NetworkInfo =
-        NetworkInfo()
+    private var networkInfo: NetworkInfo = NetworkInfo()
 
     // region NetworkCallback
 
@@ -54,6 +53,11 @@ internal class CallbackNetworkInfoProvider :
         val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         try {
             connMgr.registerDefaultNetworkCallback(this)
+            val activeNetwork = connMgr.activeNetwork
+            val activeCaps = connMgr.getNetworkCapabilities(activeNetwork)
+            if (activeNetwork != null && activeCaps != null) {
+                onCapabilitiesChanged(activeNetwork, activeCaps)
+            }
         } catch (e: SecurityException) {
             // RUMM-852 On some devices we get a SecurityException with message
             // "package does not belong to 10411"
