@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -32,12 +33,13 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class EndToEndTraceTest {
+internal class ConsentGrantedTracesTest {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(
         ActivityLifecycleTrace::class.java,
-        keepRequests = true
+        keepRequests = true,
+        trackingConsent = TrackingConsent.GRANTED
     )
 
     @Test

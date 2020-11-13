@@ -16,6 +16,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.R
@@ -30,12 +31,13 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class EndToEndRumGesturesTrackingTests {
+internal class ConsentGrantedGesturesTrackingTests {
 
     @get:Rule
     val mockServerRule = RumGesturesTrackingActivityTestRule(
         RumGesturesTrackingPlaygroundActivity::class.java,
-        keepRequests = true
+        keepRequests = true,
+        trackingConsent = TrackingConsent.GRANTED
     )
 
     @Test

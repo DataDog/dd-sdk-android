@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 
 internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var viewPager: ViewPager
@@ -41,7 +42,7 @@ internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
             .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
             .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, intent.getTrackingConsent(), config)
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 

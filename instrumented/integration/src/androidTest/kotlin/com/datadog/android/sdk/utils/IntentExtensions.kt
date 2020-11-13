@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.utils
 
 import android.content.Intent
+import com.datadog.android.privacy.TrackingConsent
 
 fun Intent.addExtras(map: Map<String, Any?>) {
     map.forEach {
@@ -18,4 +19,13 @@ fun Intent.addExtras(map: Map<String, Any?>) {
             is Boolean -> putExtra(key, value)
         }
     }
+}
+
+internal fun Intent.addTrackingConsent(consent: TrackingConsent) {
+    val consentToInt = when (consent) {
+        TrackingConsent.PENDING -> PENDING
+        TrackingConsent.GRANTED -> GRANTED
+        else -> NOT_GRANTED
+    }
+    this.putExtra(TRACKING_CONSENT_KEY, consentToInt)
 }
