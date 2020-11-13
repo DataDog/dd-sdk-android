@@ -1,3 +1,7 @@
+# 1.6.1 / 2020-11-13
+
+* [BUGFIX] Global: Ensure the network status is properly retrieved on startup
+
 # 1.6.0 / 2020-10-31
 
 * [BUGFIX] RUM: Extend continuous RUM action scope if Resources are still active
