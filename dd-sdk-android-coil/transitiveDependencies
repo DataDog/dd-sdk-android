@@ -4,14 +4,14 @@ androidx.annotation:annotation:1.1.0                            :   27 Kb
 androidx.lifecycle:lifecycle-common-java8:2.2.0                 : 1015 b 
 androidx.lifecycle:lifecycle-common:2.2.0                       :   21 Kb
 com.squareup.okhttp3:okhttp:3.12.12                             :  417 Kb
-com.squareup.okio:okio:2.7.0                                    :  238 Kb
-io.coil-kt:coil-base:0.12.0                                     :  399 Kb
-io.coil-kt:coil:0.12.0                                          :   25 Kb
-org.jetbrains.kotlin:kotlin-android-extensions-runtime:1.3.72   :    8 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.4.0                 :  186 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.4.0                        : 1452 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.8          :   19 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.8             : 1622 Kb
+com.squareup.okio:okio:2.9.0                                    :  247 Kb
+io.coil-kt:coil-base:1.0.0                                      :  395 Kb
+io.coil-kt:coil:1.0.0                                           :   15 Kb
+org.jetbrains.kotlin:kotlin-android-extensions-runtime:1.4.10   :    8 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.4.10                :  186 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.4.10                       : 1452 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9          :   19 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.3.9         : 1629 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
 Total transitive dependencies size                              :    4 Mb
