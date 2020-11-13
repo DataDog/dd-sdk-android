@@ -15,6 +15,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 
 internal class RumActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
@@ -31,7 +32,7 @@ internal class RumActivityTrackingPlaygroundActivity : AppCompatActivity() {
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
 
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, intent.getTrackingConsent(), config)
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_tracking_layout)
