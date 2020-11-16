@@ -9,6 +9,7 @@ package com.datadog.android.sdk.integration.log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import org.junit.Rule
@@ -17,17 +18,20 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class ConsentGrantedLogsTest : LogsTest() {
+internal class ConsentPendingGrantedLogsTest : LogsTest() {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(
         ActivityLifecycleLogs::class.java,
-        trackingConsent = TrackingConsent.GRANTED,
+        trackingConsent = TrackingConsent.PENDING,
         keepRequests = true
     )
 
     @Test
     fun verifyActivityLogs() {
+
+        // update the tracking consent
+        Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
