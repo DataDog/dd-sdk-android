@@ -22,17 +22,21 @@ fun Project.kotlinConfig() {
 
     val moduleName = this@kotlinConfig.name
     val javaAgentJar = File(File(rootDir, "libs"), "dd-java-agent-0.67.0.jar")
-    afterEvaluate {
-        taskConfig<AndroidUnitTest> {
-            if (environment["DD_INTEGRATION_JUNIT_5_ENABLED"] == "true") {
-                val variant = variantName.substringBeforeLast("UnitTest")
+    taskConfig<AndroidUnitTest> {
+        if (environment["DD_INTEGRATION_JUNIT_5_ENABLED"] == "true") {
+            val variant = variantName.substringBeforeLast("UnitTest")
 
-                environment["DD_ENV_TESTS"]?.let { environment("DD_ENV", it) }
-                environment("DD_INTEGRATIONS_ENABLED", "false")
-                environment("DD_JMX_FETCH_ENABLED", "false")
-                environment("DD_TAGS", "test.module:$moduleName,test.variant:$variant")
-                jvmArgs("-javaagent:${javaAgentJar.absolutePath}")
-            }
+            // set the `env` tag for the test spans
+            environment("DD_ENV", "ci")
+            // add custom tags based on the module and variant (debug/release, flavors, …)
+            environment("DD_TAGS", "test.module:$moduleName,test.variant:$variant")
+
+            // disable other Datadog integrations that could interact with the Java Agent
+            environment("DD_INTEGRATIONS_ENABLED", "false")
+            // disable JMX integration
+            environment("DD_JMX_FETCH_ENABLED", "false")
+
+            jvmArgs("-javaagent:${javaAgentJar.absolutePath}")
         }
     }
 }
