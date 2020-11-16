@@ -13,20 +13,14 @@ import java.io.File
 import java.io.FileFilter
 
 internal class FileOrchestrator(
-    private val rootDirectory: File,
-    private val filePersistenceConfig: FilePersistenceConfig
+    internal val rootDirectory: File,
+    internal val filePersistenceConfig: FilePersistenceConfig
 ) : Orchestrator {
-
-    private val isRootValid: Boolean = if (!rootDirectory.exists()) {
-        rootDirectory.mkdirs()
-    } else {
-        rootDirectory.isDirectory
-    }
 
     private val fileFilter: FileFilter = FileFilter()
 
-    private var previousFile: File? = null
-    private var previousFileLogCount: Int = 0
+    internal var previousFile: File? = null
+    internal var previousFileLogCount: Int = 0
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as 5% of the threshold
@@ -35,17 +29,20 @@ internal class FileOrchestrator(
     private val recentReadDelayMs =
         filePersistenceConfig.recentDelayMs + (filePersistenceConfig.recentDelayMs / 20)
 
-    // region FileOrchestrator
+    override fun reset() {
+        previousFile = null
+        previousFileLogCount = 0
+    }
 
     @Throws(SecurityException::class)
     override fun getWritableFile(itemSize: Int): File? {
-        if (!isRootValid) {
+        if (!isRootValid()) {
             return null
         }
 
         val files = rootDirectory.listFiles(fileFilter).orEmpty().sorted()
 
-        deleteBigFiles(files, itemSize)
+        deleteBigFiles(files)
 
         val lastFile = files.lastOrNull()
         val lastKnownFile = previousFile
@@ -75,7 +72,7 @@ internal class FileOrchestrator(
 
     @Throws(SecurityException::class)
     override fun getReadableFile(excludeFileNames: Set<String>): File? {
-        if (!isRootValid) {
+        if (!isRootValid()) {
             return null
         }
 
@@ -106,6 +103,12 @@ internal class FileOrchestrator(
 
     // region Internal
 
+    private fun isRootValid(): Boolean = if (!rootDirectory.exists()) {
+        rootDirectory.mkdirs()
+    } else {
+        rootDirectory.isDirectory
+    }
+
     private fun newFile(): File {
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDirectory, newFileName)
@@ -128,7 +131,7 @@ internal class FileOrchestrator(
             .forEach { it.delete() }
     }
 
-    private fun deleteBigFiles(files: List<File>, itemSize: Int) {
+    private fun deleteBigFiles(files: List<File>) {
         val sizeOnDisk = files.fold(0L) { total, file ->
             total + file.length()
         }

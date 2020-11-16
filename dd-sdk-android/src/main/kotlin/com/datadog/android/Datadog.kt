@@ -140,7 +140,8 @@ object Datadog {
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
                 dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
+                trackingConsentProvider = CoreFeature.trackingConsentProvider
             )
         }
 
@@ -154,7 +155,8 @@ object Datadog {
                 userInfoProvider = CoreFeature.userInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
                 dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
+                trackingConsentProvider = CoreFeature.trackingConsentProvider
             )
         }
 
@@ -167,7 +169,8 @@ object Datadog {
                 systemInfoProvider = CoreFeature.systemInfoProvider,
                 dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
                 dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
-                userInfoProvider = CoreFeature.userInfoProvider
+                userInfoProvider = CoreFeature.userInfoProvider,
+                trackingConsentProvider = CoreFeature.trackingConsentProvider
             )
         }
 
@@ -179,7 +182,9 @@ object Datadog {
                 networkInfoProvider = CoreFeature.networkInfoProvider,
                 userInfoProvider = CoreFeature.userInfoProvider,
                 systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor
+                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
+                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
+                trackingConsentProvider = CoreFeature.trackingConsentProvider
             )
         }
 

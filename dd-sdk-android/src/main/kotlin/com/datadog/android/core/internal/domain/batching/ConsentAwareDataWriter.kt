@@ -6,9 +6,8 @@
 
 package com.datadog.android.core.internal.domain.batching
 
-internal interface ConsentAwareDataHandler<T> {
+import com.datadog.android.core.internal.data.Writer
 
-    fun consume(event: T)
-
-    fun consume(events: List<T>)
+internal interface ConsentAwareDataWriter<T : Any> : Writer<T> {
+    fun getInternalWriter(): Writer<T>
 }

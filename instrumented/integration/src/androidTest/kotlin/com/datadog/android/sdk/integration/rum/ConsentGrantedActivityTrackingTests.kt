@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
@@ -22,7 +23,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class EndToEndRumActivityTrackingTests {
+internal class ConsentGrantedActivityTrackingTests {
 
     private val expectedEvents: MutableList<ExpectedEvent> = mutableListOf()
     private val expectedViewArguments = mapOf<String, Any?>(
@@ -35,7 +36,8 @@ internal class EndToEndRumActivityTrackingTests {
     val mockServerRule = RumMockServerActivityTestRule(
         RumActivityTrackingPlaygroundActivity::class.java,
         keepRequests = true,
-        intentExtras = expectedViewArguments
+        intentExtras = expectedViewArguments,
+        trackingConsent = TrackingConsent.GRANTED
     )
 
     @Test
@@ -140,8 +142,6 @@ internal class EndToEndRumActivityTrackingTests {
         instrumentation.runOnMainSync {
             instrumentation.callActivityOnPause(activity)
         }
-        instrumentation.waitForIdleSync()
-
         instrumentation.waitForIdleSync()
         Thread.sleep(INITIAL_WAIT_MS)
         checkSentRequests()

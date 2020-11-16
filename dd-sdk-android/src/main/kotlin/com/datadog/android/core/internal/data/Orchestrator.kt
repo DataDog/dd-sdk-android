@@ -17,4 +17,6 @@ internal interface Orchestrator {
     fun getReadableFile(excludeFileNames: Set<String>): File?
 
     fun getAllFiles(): Array<out File>
+
+    fun reset()
 }

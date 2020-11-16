@@ -10,6 +10,7 @@ import android.app.Activity
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -17,8 +18,9 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 
 internal class RumGesturesTrackingActivityTestRule<T : Activity>(
     activityClass: Class<T>,
-    keepRequests: Boolean = false
-) : RumMockServerActivityTestRule<T>(activityClass, keepRequests) {
+    keepRequests: Boolean = false,
+    trackingConsent: TrackingConsent
+) : RumMockServerActivityTestRule<T>(activityClass, keepRequests, trackingConsent) {
 
     override fun beforeActivityLaunched() {
         super.beforeActivityLaunched()
@@ -36,6 +38,7 @@ internal class RumGesturesTrackingActivityTestRule<T : Activity>(
 
         Datadog.initialize(
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
+            trackingConsent,
             config
         )
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())

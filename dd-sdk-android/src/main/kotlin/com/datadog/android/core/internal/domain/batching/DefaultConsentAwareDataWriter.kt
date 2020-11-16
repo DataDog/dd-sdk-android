@@ -6,17 +6,18 @@
 
 package com.datadog.android.core.internal.domain.batching
 
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.ConsentProviderCallback
 import com.datadog.android.privacy.TrackingConsent
 
-internal class DefaultConsentAwareDataHandler<T : Any>(
+internal class DefaultConsentAwareDataWriter<T : Any>(
 
     consentProvider: ConsentProvider,
     private val processorsFactory: DataProcessorFactory<T>,
     private val migratorsFactory: MigratorFactory
-) : ConsentAwareDataHandler<T>, ConsentProviderCallback {
+) : ConsentAwareDataWriter<T>, ConsentProviderCallback {
 
     private var processor: DataProcessor<T>
 
@@ -28,18 +29,22 @@ internal class DefaultConsentAwareDataHandler<T : Any>(
     // region ConsentAwareDataHandler
 
     @Synchronized
-    override fun consume(event: T) {
-        processor.consume(event)
+    override fun write(model: T) {
+        processor.consume(model)
     }
 
     @Synchronized
-    override fun consume(events: List<T>) {
-        processor.consume(events)
+    override fun write(models: List<T>) {
+        processor.consume(models)
     }
 
     @Synchronized
     override fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent) {
         processor = resolveProcessor(previousConsent, newConsent)
+    }
+
+    override fun getInternalWriter(): Writer<T> {
+        return processor.getWriter()
     }
 
     // endregion
