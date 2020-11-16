@@ -16,13 +16,11 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.tools.unit.invokeMethod
-import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.zip.GZIPInputStream
-import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -33,14 +31,6 @@ internal open class MockServerActivityTestRule<T : Activity>(
     val keepRequests: Boolean = false,
     val trackingConsent: TrackingConsent = TrackingConsent.PENDING
 ) : ActivityTestRule<T>(activityClass) {
-
-    data class HandledRequest(
-        val url: String? = null,
-        val headers: Headers? = null,
-        val method: String? = null,
-        val jsonBody: JsonElement? = null,
-        val textBody: String? = null
-    )
 
     private val mockWebServer: MockWebServer = MockWebServer()
 

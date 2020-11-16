@@ -16,7 +16,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 
-internal class RumGesturesTrackingActivityTestRule<T : Activity>(
+internal class GesturesTrackingActivityTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false,
     trackingConsent: TrackingConsent
