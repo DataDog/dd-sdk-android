@@ -19,8 +19,10 @@ import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
+import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -33,8 +35,6 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpanContext
-import datadog.trace.api.interceptor.MutableSpan
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

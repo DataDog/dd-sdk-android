@@ -16,12 +16,12 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
+import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpanContext
-import datadog.trace.api.interceptor.MutableSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery

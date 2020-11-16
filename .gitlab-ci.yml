@@ -8,6 +8,11 @@ variables:
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
+  DD_AGENT_HOST: "$BUILDENV_HOST_IP"
+  DD_SERVICE: "dd-sdk-android"
+  DD_ENV_TESTS: "ci"
+  DD_INTEGRATION_JUNIT_5_ENABLED: "true"
+
 stages:
   - ci-image
   - analysis

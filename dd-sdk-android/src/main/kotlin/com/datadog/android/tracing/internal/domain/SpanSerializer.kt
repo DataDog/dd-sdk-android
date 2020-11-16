@@ -15,9 +15,9 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.opentracing.DDSpan
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import datadog.opentracing.DDSpan
 
 internal class SpanSerializer(
     private val timeProvider: TimeProvider,

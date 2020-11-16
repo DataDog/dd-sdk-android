@@ -12,7 +12,7 @@ import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
-import datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpan
 import java.io.File
 import java.util.concurrent.ExecutorService
 

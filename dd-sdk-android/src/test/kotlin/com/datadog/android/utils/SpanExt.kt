@@ -7,7 +7,7 @@
 package com.datadog.android.utils
 
 import com.datadog.android.utils.forge.SpanForgeryFactory
-import datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpan
 
 fun DDSpan.copy(): DDSpan {
     val ddSpan = SpanForgeryFactory

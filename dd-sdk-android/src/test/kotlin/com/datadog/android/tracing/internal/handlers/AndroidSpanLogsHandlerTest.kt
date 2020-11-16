@@ -11,12 +11,12 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpanContext
+import com.datadog.trace.api.DDTags
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpan
-import datadog.opentracing.DDSpanContext
-import datadog.trace.api.DDTags
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery

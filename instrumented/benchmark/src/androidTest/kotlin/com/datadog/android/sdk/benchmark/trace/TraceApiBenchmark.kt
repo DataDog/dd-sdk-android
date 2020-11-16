@@ -15,8 +15,8 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.invokeMethod
-import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse

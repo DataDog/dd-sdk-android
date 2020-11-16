@@ -14,7 +14,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.tracing.AndroidTracer
-import datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
 import java.util.LinkedList

@@ -6,7 +6,7 @@
 
 package com.datadog.android.tracing.internal.utils
 
-import datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpan
 import io.opentracing.Span
 import io.opentracing.Tracer
 

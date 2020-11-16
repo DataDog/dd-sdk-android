@@ -23,12 +23,12 @@ import com.datadog.android.utils.extension.hexToBigInteger
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.SpanForgeryFactory
+import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

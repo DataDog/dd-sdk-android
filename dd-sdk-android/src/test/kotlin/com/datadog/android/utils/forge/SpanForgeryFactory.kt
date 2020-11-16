@@ -7,8 +7,8 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.tracing.AndroidTracer
-import datadog.opentracing.DDSpan
-import datadog.opentracing.DDTracer
+import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

@@ -8,16 +8,12 @@ package com.datadog.opentracing
 
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.assertj.DDSpanContextAssert.Companion.assertThat
+import com.datadog.opentracing.decorators.AbstractDecorator
+import com.datadog.trace.api.DDTags
+import com.datadog.trace.api.sampling.PrioritySampling
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import datadog.opentracing.DDSpan
-import datadog.opentracing.DDSpanContext
-import datadog.opentracing.DDTracer
-import datadog.opentracing.PendingTrace
-import datadog.opentracing.decorators.AbstractDecorator
-import datadog.trace.api.DDTags
-import datadog.trace.api.sampling.PrioritySampling
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery

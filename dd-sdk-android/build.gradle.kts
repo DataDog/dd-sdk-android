@@ -72,7 +72,9 @@ android {
     }
 
     testOptions {
-        unitTests.isReturnDefaultValues = true
+        unitTests.apply {
+            isReturnDefaultValues = true
+        }
     }
 
     buildTypes {
