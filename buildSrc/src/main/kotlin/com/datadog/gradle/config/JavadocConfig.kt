@@ -7,7 +7,6 @@
 package com.datadog.gradle.config
 
 import com.android.build.gradle.internal.tasks.factory.dependsOn
-import java.io.File
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.dokka.gradle.DokkaTask

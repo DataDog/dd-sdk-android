@@ -9,9 +9,9 @@ package com.datadog.android.tracing.internal.data
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import datadog.opentracing.DDSpan
-import datadog.trace.api.DDTags
-import datadog.trace.common.writer.Writer
+import com.datadog.opentracing.DDSpan
+import com.datadog.trace.api.DDTags
+import com.datadog.trace.common.writer.Writer
 import java.util.Locale
 
 internal class TraceWriter(

@@ -16,11 +16,11 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
+import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import datadog.opentracing.DDSpan
 import java.lang.Long
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit

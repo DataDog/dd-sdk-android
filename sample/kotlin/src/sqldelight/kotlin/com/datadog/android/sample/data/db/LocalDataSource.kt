@@ -7,15 +7,14 @@
 package com.datadog.android.sample.data.db
 
 import android.content.Context
-import com.datadog.android.log.Logger
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
 import com.datadog.android.sqldelight.transactionTraced
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
-import timber.log.Timber
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
+import timber.log.Timber
 
 class LocalDataSource(val context: Context) {
 

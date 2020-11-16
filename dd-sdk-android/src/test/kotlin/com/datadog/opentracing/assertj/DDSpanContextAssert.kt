@@ -6,7 +6,7 @@
 
 package com.datadog.opentracing.assertj
 
-import datadog.opentracing.DDSpanContext
+import com.datadog.opentracing.DDSpanContext
 import java.math.BigInteger
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat

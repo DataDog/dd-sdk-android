@@ -10,9 +10,9 @@ import android.util.Log
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import datadog.opentracing.DDSpan
-import datadog.opentracing.LogHandler
-import datadog.trace.api.DDTags
+import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.LogHandler
+import com.datadog.trace.api.DDTags
 import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 

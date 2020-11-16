@@ -320,7 +320,7 @@ class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
   companion object 
-class com.datadog.android.tracing.AndroidTracer : datadog.opentracing.DDTracer
+class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
     fun build(): AndroidTracer

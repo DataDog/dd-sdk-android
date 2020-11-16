@@ -12,8 +12,8 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
-import datadog.trace.api.DDTags
-import datadog.trace.api.interceptor.MutableSpan
+import com.datadog.trace.api.DDTags
+import com.datadog.trace.api.interceptor.MutableSpan
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
