@@ -36,8 +36,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assume.assumeTrue
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
