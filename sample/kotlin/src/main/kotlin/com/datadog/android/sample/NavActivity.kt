@@ -86,6 +86,9 @@ class NavActivity : AppCompatActivity() {
                 val serviceIntent = Intent(this, LogsForegroundService::class.java)
                 startService(serviceIntent)
             }
+            R.id.gdpr -> {
+                navController.navigate(R.id.fragment_gdpr)
+            }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result

@@ -58,6 +58,9 @@
     <fragment android:id="@+id/fragment_about"
               android:name="com.datadog.android.sample.about.AboutFragment"
               android:label="@string/title_about"/>
+    <dialog android:id="@+id/fragment_gdpr"
+              android:name="com.datadog.android.sample.gdpr.GdprDialogFragment"
+              android:label="@string/title_gdpr"/>
 
     <activity android:id="@+id/activity_view_pager"
               android:name="com.datadog.android.sample.ViewPagerActivity"
