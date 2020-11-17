@@ -30,4 +30,10 @@
         android:title="@string/title_about"
         app:showAsAction="ifRoom"
         />
+    <item
+        android:id="@+id/gdpr"
+        android:icon="@drawable/ic_baseline_lock_open_24"
+        android:title="@string/title_gdpr"
+        app:showAsAction="ifRoom"
+        />
 </menu>

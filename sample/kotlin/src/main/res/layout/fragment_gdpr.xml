@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:orientation="vertical"
+              android:gravity="center_horizontal"
+              android:padding="@dimen/dialog_window_padding"
+              android:layout_height="match_parent">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+              android:text="@string/set_tracking_consent"
+              android:textStyle="bold"
+              android:layout_marginBottom="@dimen/activity_vertical_margin"/>
+    <RadioGroup android:id="@+id/tracking_consent_selector" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:orientation="vertical">
+        <RadioButton android:id="@+id/pending" android:layout_width="wrap_content"
+                     android:text="@string/pending"
+                     android:padding="@dimen/default_padding"
+                     android:layout_height="wrap_content"/>
+        <RadioButton android:id="@+id/granted" android:layout_width="wrap_content"
+                     android:text="@string/granted"
+                     android:padding="@dimen/default_padding"
+                     android:layout_height="wrap_content"/>
+        <RadioButton android:id="@+id/not_granted" android:layout_width="wrap_content"
+                     android:text="@string/not_granted"
+                     android:padding="@dimen/default_padding"
+                     android:layout_height="wrap_content"/>
+    </RadioGroup>
+
+</LinearLayout>

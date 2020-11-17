@@ -8,7 +8,6 @@ package com.datadog.android.sample
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import android.preference.PreferenceManager
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
@@ -25,7 +24,6 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.PictureViewModel
-import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -73,14 +71,18 @@ class SampleApplication : Application() {
     }
 
     private fun initializeDatadog() {
-        Datadog.initialize(this, createDatadogConfig())
+        val preferences = Preferences.defaultPreferences(this)
+        Datadog.initialize(
+            this,
+            preferences.getTrackingConsent(),
+            createDatadogConfig()
+        )
         Datadog.setVerbosity(Log.VERBOSE)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         setUserInfo(
-            prefs.getString(UserFragment.PREF_ID, null),
-            prefs.getString(UserFragment.PREF_NAME, null),
-            prefs.getString(UserFragment.PREF_EMAIL, null)
+            preferences.getUserId(),
+            preferences.getUserName(),
+            preferences.getUserEmail()
         )
 
         GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())

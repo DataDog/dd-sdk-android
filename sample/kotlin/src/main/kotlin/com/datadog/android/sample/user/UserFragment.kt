@@ -7,7 +7,6 @@
 package com.datadog.android.sample.user
 
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +14,7 @@ import android.widget.EditText
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.ktx.tracing.withinSpan
+import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 import com.google.android.material.snackbar.Snackbar
 
@@ -41,10 +41,10 @@ class UserFragment : Fragment(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        idField.setText(prefs.getString(PREF_ID, null))
-        nameField.setText(prefs.getString(PREF_NAME, null))
-        emailField.setText(prefs.getString(PREF_EMAIL, null))
+        val preferences = Preferences.defaultPreferences(requireContext())
+        idField.setText(preferences.getUserId())
+        nameField.setText(preferences.getUserName())
+        emailField.setText(preferences.getUserEmail())
     }
 
     // endregion
@@ -53,15 +53,10 @@ class UserFragment : Fragment(), View.OnClickListener {
 
     override fun onClick(v: View) {
         withinSpan("updateUserInfo") {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val id: String = idField.text.toString()
             val name: String = nameField.text.toString()
             val email: String = emailField.text.toString()
-            prefs.edit()
-                .putString(PREF_ID, id)
-                .putString(PREF_NAME, name)
-                .putString(PREF_EMAIL, email)
-                .apply()
+            Preferences.defaultPreferences(requireContext()).setUserCredentials(id, name, email)
             setUserInfo(id, name, email)
             log("Updated user info")
         }
