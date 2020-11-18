@@ -29,19 +29,19 @@ internal class FileHandler {
 
     fun moveFiles(sourceDirectory: File, destinationDirectory: File): Boolean {
         if (!sourceDirectory.exists()) {
-            sdkLogger.e(
-                "Unable to move the files. " +
+            sdkLogger.w(
+                "There were no files to move. " +
                     "There is no directory at this path: [$sourceDirectory]"
             )
-            return false
+            return true
         }
 
         if (!sourceDirectory.isDirectory) {
-            sdkLogger.e(
-                "Unable to move the files." +
+            sdkLogger.w(
+                "There were no files to move." +
                     "[$sourceDirectory] is not a directory."
             )
-            return false
+            return true
         }
         destinationDirectory.mkdirs()
 
