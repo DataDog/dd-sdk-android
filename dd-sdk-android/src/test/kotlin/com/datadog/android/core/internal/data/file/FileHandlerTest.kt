@@ -62,7 +62,7 @@ internal class FileHandlerTest {
     // region MoveFiles
 
     @Test
-    fun `M return false W moveFiles { source directory does not exist}`(
+    fun `M return true W moveFiles { source directory does not exist}`(
         forge: Forge
     ) {
         // WHEN
@@ -73,11 +73,11 @@ internal class FileHandlerTest {
             )
 
         // THEN
-        assertThat(success).isFalse()
+        assertThat(success).isTrue()
     }
 
     @Test
-    fun `M send an error log W moveFiles { source directory does not exist}`(
+    fun `M send a warning log W moveFiles { source directory does not exist}`(
         forge: Forge
     ) {
         // GIVEN
@@ -92,15 +92,15 @@ internal class FileHandlerTest {
 
         // THEN
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
-            "Unable to move the files. " +
+            Log.WARN,
+            "There were no files to move. " +
                 "There is no directory at this path: [${fakeSourceDirectory.absolutePath}]"
         )
         restoreSdkLogHandler(originalLogHandler)
     }
 
     @Test
-    fun `M return false W moveFiles { source directory is not a directory}`(
+    fun `M return true W moveFiles { source directory is not a directory}`(
         forge: Forge
     ) {
         // GIVEN
@@ -114,11 +114,11 @@ internal class FileHandlerTest {
             )
 
         // THEN
-        assertThat(success).isFalse()
+        assertThat(success).isTrue()
     }
 
     @Test
-    fun `M send an error log W moveFiles { source directory is not a directory}`(
+    fun `M send a warning log W moveFiles { source directory is not a directory}`(
         forge: Forge
     ) {
         // GIVEN
@@ -134,8 +134,8 @@ internal class FileHandlerTest {
 
         // THEN
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
-            "Unable to move the files." +
+            Log.WARN,
+            "There were no files to move." +
                 "[${fakeSourceDirectory.absolutePath}] is not a directory."
         )
         restoreSdkLogHandler(originalLogHandler)
