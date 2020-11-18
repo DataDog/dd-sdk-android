@@ -17,7 +17,7 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 
-internal class RumActivityTrackingPlaygroundActivity : AppCompatActivity() {
+internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // use the activity view tracking strategy

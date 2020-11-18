@@ -21,7 +21,7 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 
-internal class RumFragmentTrackingPlaygroundActivity : AppCompatActivity() {
+internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var viewPager: ViewPager
 
     override fun onCreate(savedInstanceState: Bundle?) {
