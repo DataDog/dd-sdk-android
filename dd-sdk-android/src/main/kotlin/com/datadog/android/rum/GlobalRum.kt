@@ -152,10 +152,10 @@ object GlobalRum {
                 newContext.viewId
             )
         )
-        updateContextInPlugins(pluginContext, RumFeature.plugins)
-        updateContextInPlugins(pluginContext, CrashReportsFeature.plugins)
-        updateContextInPlugins(pluginContext, LogsFeature.plugins)
-        updateContextInPlugins(pluginContext, TracesFeature.plugins)
+        updateContextInPlugins(pluginContext, RumFeature.getPlugins())
+        updateContextInPlugins(pluginContext, CrashReportsFeature.getPlugins())
+        updateContextInPlugins(pluginContext, LogsFeature.getPlugins())
+        updateContextInPlugins(pluginContext, TracesFeature.getPlugins())
     }
 
     private fun updateContextInPlugins(

@@ -9,15 +9,15 @@ package com.datadog.android.core.internal.domain.batching
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.privacy.ConsentProviderCallback
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 
 internal class DefaultConsentAwareDataWriter<T : Any>(
 
     consentProvider: ConsentProvider,
     private val processorsFactory: DataProcessorFactory<T>,
     private val migratorsFactory: MigratorFactory
-) : ConsentAwareDataWriter<T>, ConsentProviderCallback {
+) : ConsentAwareDataWriter<T>, TrackingConsentProviderCallback {
 
     private var processor: DataProcessor<T>
 

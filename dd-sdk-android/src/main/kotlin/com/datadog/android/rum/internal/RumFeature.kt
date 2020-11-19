@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -23,7 +24,6 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
@@ -45,7 +45,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
-internal object RumFeature {
+internal object RumFeature : SdkFeature() {
 
     internal val initialized = AtomicBoolean(false)
 
@@ -66,7 +66,6 @@ internal object RumFeature {
     private var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     private var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
-    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -109,7 +108,16 @@ internal object RumFeature {
         registerTrackingStrategies(appContext)
         this.userInfoProvider = userInfoProvider
         this.networkInfoProvider = networkInfoProvider
-        registerPlugins(appContext, config)
+        registerPlugins(
+            config.plugins,
+            DatadogPluginConfig.RumPluginConfig(
+                appContext,
+                config.envName,
+                CoreFeature.serviceName,
+                trackingConsentProvider.getConsent()
+            ),
+            trackingConsentProvider
+        )
         initialized.set(true)
     }
 
@@ -177,25 +185,6 @@ internal object RumFeature {
         actionTrackingStrategy.unregister(appContext)
         viewTrackingStrategy.unregister(appContext)
         viewTreeTrackingStrategy.unregister(appContext)
-    }
-
-    private fun registerPlugins(appContext: Context, config: DatadogConfig.RumConfig) {
-        plugins = config.plugins
-        plugins.forEach {
-            it.register(
-                DatadogPluginConfig.RumPluginConfig(
-                    appContext,
-                    config.envName,
-                    CoreFeature.serviceName
-                )
-            )
-        }
-    }
-
-    private fun unregisterPlugins() {
-        plugins.forEach {
-            it.unregister()
-        }
     }
 
     // endregion

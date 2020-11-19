@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -420,6 +421,10 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -434,7 +439,7 @@ internal class RumFeatureTest {
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
             mockUserInfoProvider,
-            trackingConsentProvider
+            mockedTrackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -454,6 +459,40 @@ internal class RumFeatureTest {
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
             assertThat(it.featurePersistenceDirName).isEqualTo(RumFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
+            assertThat(it.trackingConsent).isEqualTo(fakeConsent)
+        }
+    }
+
+    @Test
+    fun `M register the plugins as TrackingConsentProvideCallback W initialized`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
+
+        // When
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider,
+            mockedTrackingConsentProvider
+        )
+
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        mockPlugins.forEach {
+            verify(mockedTrackingConsentProvider).registerCallback(it)
         }
     }
 

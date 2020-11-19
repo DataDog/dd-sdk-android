@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.data.privacy
 
-import com.datadog.android.core.internal.privacy.ConsentProviderCallback
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argForWhich
 import com.nhaarman.mockitokotlin2.eq
@@ -42,7 +42,7 @@ internal class TrackingConsentProviderTest {
     lateinit var testedConsentProvider: TrackingConsentProvider
 
     @Mock
-    lateinit var mockedCallback: ConsentProviderCallback
+    lateinit var mockedCallback: TrackingConsentProviderCallback
 
     @BeforeEach
     fun `set up`() {
@@ -102,7 +102,7 @@ internal class TrackingConsentProviderTest {
         // GIVEN
         val fakeConsent =
             forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
-        val anotherMockedCallback: ConsentProviderCallback = mock()
+        val anotherMockedCallback: TrackingConsentProviderCallback = mock()
         testedConsentProvider.registerCallback(anotherMockedCallback)
         testedConsentProvider.registerCallback(mockedCallback)
 

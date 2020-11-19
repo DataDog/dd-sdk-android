@@ -7,12 +7,13 @@
 package com.datadog.android.core.internal.privacy
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.LinkedList
 
 internal class TrackingConsentProvider(consent: TrackingConsent = TrackingConsent.PENDING) :
     ConsentProvider {
 
-    private val callbacks: LinkedList<ConsentProviderCallback> = LinkedList()
+    private val callbacks: LinkedList<TrackingConsentProviderCallback> = LinkedList()
 
     @Volatile
     private var consent: TrackingConsent
@@ -40,7 +41,7 @@ internal class TrackingConsentProvider(consent: TrackingConsent = TrackingConsen
     }
 
     @Synchronized
-    override fun registerCallback(callback: ConsentProviderCallback) {
+    override fun registerCallback(callback: TrackingConsentProviderCallback) {
         callbacks.add(callback)
     }
 

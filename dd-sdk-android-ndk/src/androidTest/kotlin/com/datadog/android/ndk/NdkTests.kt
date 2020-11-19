@@ -13,6 +13,7 @@ import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.util.UUID
+import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -49,7 +50,7 @@ internal class NdkTests {
     }
 
     @Test
-    fun signalHandlerIntegrationTest() {
+    fun mustWriteAnErrorLog_whenHandlingSignal_whenConsentUpdatedToGranted() {
         val signal = forge.anInt(min = 1, max = 32)
         val appId = randomUUIDOrNull()
         val sessionId = randomUUIDOrNull()
@@ -60,13 +61,16 @@ internal class NdkTests {
         // the error.signal attribute
         val signalName = forge.anAlphabeticalString(size = 20)
         val signalErrorMessage = forge.anAlphabeticalString()
-        runNdkSignalHandlerIntegrationTest(
+        initNdkErrorHandler(
             temporaryFolder.root.absolutePath,
             serviceName,
             env,
             appId,
             sessionId,
-            viewId,
+            viewId
+        )
+        updateTrackingConsent(1)
+        simulateSignalInterception(
             signal,
             signalName,
             signalErrorMessage
@@ -95,6 +99,76 @@ internal class NdkTests {
         }
     }
 
+    @Test
+    fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToPending() {
+        val signal = forge.anInt(min = 1, max = 32)
+        val appId = randomUUIDOrNull()
+        val sessionId = randomUUIDOrNull()
+        val viewId = randomUUIDOrNull()
+        val serviceName = forge.anAlphabeticalString(size = 50)
+        val env = forge.anAlphabeticalString(size = 50)
+        // we need to keep this this size because we are using a buffer of [30] size in c++ for
+        // the error.signal attribute
+        val signalName = forge.anAlphabeticalString(size = 20)
+        val signalErrorMessage = forge.anAlphabeticalString()
+        initNdkErrorHandler(
+            temporaryFolder.root.absolutePath,
+            serviceName,
+            env,
+            appId,
+            sessionId,
+            viewId
+        )
+        updateTrackingConsent(0)
+        simulateSignalInterception(
+            signal,
+            signalName,
+            signalErrorMessage
+        )
+
+        // we need to give time to native part to write the file
+        // otherwise we will get into race condition issues
+        Thread.sleep(5000)
+
+        // assert the log file
+        Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+    }
+
+    @Test
+    fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToNotGranted() {
+        val signal = forge.anInt(min = 1, max = 32)
+        val appId = randomUUIDOrNull()
+        val sessionId = randomUUIDOrNull()
+        val viewId = randomUUIDOrNull()
+        val serviceName = forge.anAlphabeticalString(size = 50)
+        val env = forge.anAlphabeticalString(size = 50)
+        // we need to keep this this size because we are using a buffer of [30] size in c++ for
+        // the error.signal attribute
+        val signalName = forge.anAlphabeticalString(size = 20)
+        val signalErrorMessage = forge.anAlphabeticalString()
+        initNdkErrorHandler(
+            temporaryFolder.root.absolutePath,
+            serviceName,
+            env,
+            appId,
+            sessionId,
+            viewId
+        )
+        updateTrackingConsent(2)
+        simulateSignalInterception(
+            signal,
+            signalName,
+            signalErrorMessage
+        )
+
+        // we need to give time to native part to write the file
+        // otherwise we will get into race condition issues
+        Thread.sleep(5000)
+
+        // assert the log file
+        Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+    }
+
     // region NDK
 
     /**
@@ -110,27 +184,41 @@ internal class NdkTests {
     private external fun runNdkStandaloneTests(): Int
 
     /**
-     * Will the integration test scenario for handling a crash signal on the NDK side.
+     * Will initialize the NDK crash reporter.
      * @param storageDir the storage directory for the reported crash logs
      * @param serviceName the service name for the main context
      * @param environment the environment name for the main context
-     * @param signal the signal id (between 1 and 32)
-     * @param signalName the signal name (e.g. SIGHUP, SIGINT, SIGILL, etc.)
-     * @param signalMessage the signal error message
      * @param appId the application id for the rum context
      * @param sessionId the session id to be passed into the rum context
      * @param viewId the view id to be passed into the rum context
      */
-    private external fun runNdkSignalHandlerIntegrationTest(
+    private external fun initNdkErrorHandler(
         storageDir: String,
         serviceName: String,
         environment: String,
         appId: String?,
         sessionId: String?,
-        viewId: String?,
+        viewId: String?
+    )
+
+    /**
+     * Simulate a signal interception into the NDK crash reporter.
+     * @param signal the signal id (between 1 and 32)
+     * @param signalName the signal name (e.g. SIGHUP, SIGINT, SIGILL, etc.)
+     * @param signalMessage the signal error message
+     */
+    private external fun simulateSignalInterception(
         signal: Int,
         signalName: String,
         signalMessage: String
+    )
+
+    /**
+     * Updates the tracking consent into the NDK crash reporter.
+     * @param consent as the tracking consent value (0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED)
+     */
+    private external fun updateTrackingConsent(
+        consent: Int
     )
 
     // endregion

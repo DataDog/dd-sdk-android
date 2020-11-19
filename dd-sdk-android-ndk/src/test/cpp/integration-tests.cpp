@@ -74,19 +74,25 @@ Java_com_datadog_android_ndk_NdkTests_runNdkStandaloneTests(JNIEnv *env, jobject
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_datadog_android_ndk_NdkTests_runNdkSignalHandlerIntegrationTest(JNIEnv *env, jobject thiz,
-                                                                         jstring storage_dir,
-                                                                         jstring service_name,
-                                                                         jstring env_name,
-                                                                         jstring app_id,
-                                                                         jstring session_id,
-                                                                         jstring view_id,
-                                                                         jint signal,
-                                                                         jstring signal_name,
-                                                                         jstring signal_message) {
+Java_com_datadog_android_ndk_NdkTests_initNdkErrorHandler(JNIEnv *env, jobject thiz,
+                                                          jstring storage_dir,
+                                                          jstring service_name,
+                                                          jstring env_name,
+                                                          jstring app_id,
+                                                          jstring session_id,
+                                                          jstring view_id) {
 
-    updateMainContext(env, storage_dir, service_name, env_name);
-    updateRumContext(env, app_id, session_id, view_id);
+    update_main_context(env, storage_dir, service_name, env_name);
+    update_rum_context(env, app_id, session_id, view_id);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_datadog_android_ndk_NdkTests_simulateSignalInterception(JNIEnv *env, jobject thiz,
+                                                                 jint signal,
+                                                                 jstring signal_name,
+                                                                 jstring signal_message) {
+
     const int c_signal = (int) signal;
     const char *name = env->GetStringUTFChars(signal_name, 0);
     const char *message = env->GetStringUTFChars(signal_message, 0);
@@ -94,5 +100,15 @@ Java_com_datadog_android_ndk_NdkTests_runNdkSignalHandlerIntegrationTest(JNIEnv 
     env->ReleaseStringUTFChars(signal_name, name);
     env->ReleaseStringUTFChars(signal_message, message);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_datadog_android_ndk_NdkTests_updateTrackingConsent(
+        JNIEnv *env,
+        jobject /* this */,
+        jint consent) {
+    update_tracking_consent(consent);
+}
+
 
 
