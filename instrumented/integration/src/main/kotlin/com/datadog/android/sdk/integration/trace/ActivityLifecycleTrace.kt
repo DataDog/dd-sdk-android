@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.tracing.AndroidTracer
 import datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
@@ -41,7 +42,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .build()
 
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, intent.getTrackingConsent(), config)
 
         tracer = RuntimeConfig.tracer()
         setContentView(R.layout.main_activity_layout)
