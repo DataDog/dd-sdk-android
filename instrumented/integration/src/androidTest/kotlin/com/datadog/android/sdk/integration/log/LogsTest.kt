@@ -18,7 +18,7 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.TimeUnit
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 
 internal abstract class LogsTest {
 
@@ -58,7 +58,7 @@ internal abstract class LogsTest {
                 .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
-            Assertions.assertThat(tags).containsOnlyElementsOf(globalTags)
+            assertThat(tags).containsOnlyElementsOf(globalTags)
 
             globalAttributes.forEach { (k, v) -> log.assertHasAttribute(k, v) }
             localAttributes.forEach { (k, v) -> log.assertHasAttribute(k, v) }
