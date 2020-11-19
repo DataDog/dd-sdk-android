@@ -53,6 +53,9 @@ static struct Context {
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static pthread_mutex_t handler_mutex = PTHREAD_MUTEX_INITIALIZER;
+static const uint8_t tracking_consent_pending = 0;
+static const uint8_t tracking_consent_granted = 1;
+static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
 
 
 std::string get_serialized_log(int signal,
@@ -101,6 +104,10 @@ std::string get_serialized_log(int signal,
 void crash_signal_intercepted(int signal, const char *signal_name, const char *error_message) {
     // sync everything
     pthread_mutex_lock(&handler_mutex);
+    if (tracking_consent != tracking_consent_granted) {
+        pthread_mutex_unlock(&handler_mutex);
+        return;
+    }
     if (main_context.storage_dir.empty()) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
                             "The crash reports storage directory file path was null");
@@ -131,7 +138,7 @@ void crash_signal_intercepted(int signal, const char *signal_name, const char *e
 
     // dump the log into a new file
     char filename[200];
-     // The ARM_32 processors will use an unsigned long long to represent the uint_64. We will pick the
+    // The ARM_32 processors will use an unsigned long long to represent the uint_64. We will pick the
     // String format that fits both ARM_32 and ARM_64 (llu).
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wformat"
@@ -148,10 +155,10 @@ void crash_signal_intercepted(int signal, const char *signal_name, const char *e
     pthread_mutex_unlock(&handler_mutex);
 }
 
-void updateMainContext(JNIEnv *env,
-                       jstring storage_path,
-                       jstring service_name,
-                       jstring environment) {
+void update_main_context(JNIEnv *env,
+                         jstring storage_path,
+                         jstring service_name,
+                         jstring environment) {
     using namespace stringutils;
     pthread_mutex_lock(&handler_mutex);
     main_context.storage_dir = copy_to_string(env, storage_path);
@@ -160,16 +167,20 @@ void updateMainContext(JNIEnv *env,
     pthread_mutex_unlock(&handler_mutex);
 }
 
-void updateRumContext(JNIEnv *env,
-                      jstring application_id,
-                      jstring session_id,
-                      jstring view_id) {
+void update_rum_context(JNIEnv *env,
+                        jstring application_id,
+                        jstring session_id,
+                        jstring view_id) {
     using namespace stringutils;
     pthread_mutex_lock(&handler_mutex);
     rum_context.application_id = copy_to_string(env, application_id);
     rum_context.session_id = copy_to_string(env, session_id);
     rum_context.view_id = copy_to_string(env, view_id);
     pthread_mutex_unlock(&handler_mutex);
+}
+
+void update_tracking_consent(jint consent) {
+    tracking_consent = (uint8_t) consent;
 }
 
 
@@ -180,9 +191,11 @@ Java_com_datadog_android_ndk_NdkCrashReportsPlugin_registerSignalHandler(
         jobject handler,
         jstring storage_path,
         jstring service_name,
-        jstring environment) {
+        jstring environment,
+        jint consent) {
 
-    updateMainContext(env, storage_path, service_name, environment);
+    update_main_context(env, storage_path, service_name, environment);
+    update_tracking_consent(consent);
     install_signal_handlers();
 }
 
@@ -195,11 +208,19 @@ Java_com_datadog_android_ndk_NdkCrashReportsPlugin_unregisterSignalHandler(
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_datadog_android_ndk_NdkCrashReportsPlugin_updateTrackingConsent(
+        JNIEnv *env,
+        jobject /* this */,
+        jint consent) {
+    update_tracking_consent(consent);
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_datadog_android_ndk_NdkCrashReportsPlugin_updateRumContext(
         JNIEnv *env,
         jobject /* this */,
         jstring application_id,
         jstring session_id,
         jstring view_id) {
-    updateRumContext(env, application_id, session_id, view_id);
+    update_rum_context(env, application_id, session_id, view_id);
 }

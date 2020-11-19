@@ -6,6 +6,8 @@
 
 package com.datadog.android.plugin
 
+import com.datadog.android.privacy.TrackingConsentProviderCallback
+
 /**
  * DatadogPlugin interface. You can attach as many as you want for any existing feature in the
  * SDK.
@@ -14,7 +16,7 @@ package com.datadog.android.plugin
  * @see [Feature.TRACE]
  * @see [Feature.RUM]
  */
-interface DatadogPlugin {
+interface DatadogPlugin : TrackingConsentProviderCallback {
 
     /**
      * Registers this plugin. This will be called when the feature for which this plugin

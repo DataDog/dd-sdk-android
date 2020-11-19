@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.privacy
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -16,7 +17,7 @@ internal interface ConsentProvider {
 
     fun setConsent(consent: TrackingConsent)
 
-    fun registerCallback(callback: ConsentProviderCallback)
+    fun registerCallback(callback: TrackingConsentProviderCallback)
 
     fun unregisterAllCallbacks()
 }

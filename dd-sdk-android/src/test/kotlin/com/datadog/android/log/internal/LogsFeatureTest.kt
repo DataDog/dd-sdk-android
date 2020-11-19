@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -26,6 +27,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -214,10 +216,45 @@ internal class LogsFeatureTest {
     }
 
     @Test
+    fun `M register the plugins as TrackingConsentProvideCallback W initialized`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
+
+        // When
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockedTrackingConsentProvider
+        )
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        mockPlugins.forEach {
+            verify(mockedTrackingConsentProvider).registerCallback(it)
+        }
+    }
+
+    @Test
     fun `it will register the provided plugin when feature was initialized`(
         forge: Forge
     ) {
         // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -231,7 +268,7 @@ internal class LogsFeatureTest {
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
             mockPersistenceExecutorService,
-            trackingConsentProvider
+            mockedTrackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -250,6 +287,7 @@ internal class LogsFeatureTest {
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
             assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
+            assertThat(it.trackingConsent).isEqualTo(fakeConsent)
         }
     }
 

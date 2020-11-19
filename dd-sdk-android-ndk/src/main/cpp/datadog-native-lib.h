@@ -14,15 +14,17 @@
 extern "C" {
 #endif
 
-void updateMainContext(JNIEnv *env,
-                       jstring storage_path,
-                       jstring service_name,
-                       jstring environment);
+void update_main_context(JNIEnv *env,
+                         jstring storage_path,
+                         jstring service_name,
+                         jstring environment);
 
-void updateRumContext(JNIEnv *env,
-                      jstring application_id,
-                      jstring session_id,
-                      jstring view_id);
+void update_rum_context(JNIEnv *env,
+                        jstring application_id,
+                        jstring session_id,
+                        jstring view_id);
+
+void update_tracking_consent(jint consent);
 
 void crash_signal_intercepted(int signal, const char *signal_name, const char *error_message);
 

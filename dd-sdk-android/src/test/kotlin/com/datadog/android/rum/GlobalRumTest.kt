@@ -15,6 +15,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -212,27 +213,27 @@ internal class GlobalRumTest {
         val applicationId = forge.aNumericalString()
         val sessionId = forge.aNumericalString()
         val viewId = forge.aNumericalString()
-        val crashFeaturePlugins: List<DatadogPlugin> =
+        val crashFeaturePlugins: MutableList<DatadogPlugin> =
             forge.aList(forge.anInt(min = 1, max = 4)) {
                 mock<DatadogPlugin>()
-            }
-        val tracesFeaturePlugins: List<DatadogPlugin> =
+            }.toMutableList()
+        val tracesFeaturePlugins: MutableList<DatadogPlugin> =
             forge.aList(forge.anInt(min = 1, max = 4)) {
                 mock<DatadogPlugin>()
-            }
-        val logsFeaturePlugins: List<DatadogPlugin> =
+            }.toMutableList()
+        val logsFeaturePlugins: MutableList<DatadogPlugin> =
             forge.aList(forge.anInt(min = 1, max = 4)) {
                 mock<DatadogPlugin>()
-            }
-        val rumFeaturePlugins: List<DatadogPlugin> =
+            }.toMutableList()
+        val rumFeaturePlugins: MutableList<DatadogPlugin> =
             forge.aList(forge.anInt(min = 1, max = 4)) {
                 mock<DatadogPlugin>()
-            }
+            }.toMutableList()
 
-        CrashReportsFeature.plugins = crashFeaturePlugins
-        LogsFeature.plugins = logsFeaturePlugins
-        TracesFeature.plugins = tracesFeaturePlugins
-        RumFeature.plugins = rumFeaturePlugins
+        CrashReportsFeature.setFieldValue("featurePlugins", crashFeaturePlugins)
+        LogsFeature.setFieldValue("featurePlugins", logsFeaturePlugins)
+        TracesFeature.setFieldValue("featurePlugins", tracesFeaturePlugins)
+        RumFeature.setFieldValue("featurePlugins", rumFeaturePlugins)
 
         // When
         GlobalRum.updateRumContext(

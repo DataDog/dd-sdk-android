@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.lang.NullPointerException
 
@@ -52,7 +53,8 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
             config.serviceName,
-            config.envName
+            config.envName,
+            consentToInt(config.trackingConsent)
         )
     }
 
@@ -72,12 +74,29 @@ class NdkCrashReportsPlugin : DatadogPlugin {
 
     // endregion
 
+    // region TrackingConsentProviderCallback
+
+    override fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent) {
+        updateTrackingConsent(consentToInt(newConsent))
+    }
+
+    internal fun consentToInt(newConsent: TrackingConsent): Int {
+        return when (newConsent) {
+            TrackingConsent.PENDING -> TRACKING_CONSENT_PENDING
+            TrackingConsent.GRANTED -> TRACKING_CONSENT_GRANTED
+            else -> TRACKING_CONSENT_NOT_GRANTED
+        }
+    }
+
+    // endregion
+
     // region NDK
 
     private external fun registerSignalHandler(
         storagePath: String,
         serviceName: String,
-        environment: String
+        environment: String,
+        consent: Int
     )
 
     private external fun unregisterSignalHandler()
@@ -88,11 +107,16 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         viewId: String?
     )
 
+    private external fun updateTrackingConsent(consent: Int)
+
     // endregion
 
-    private companion object {
+    companion object {
         private const val TAG: String = "NdkCrashReportsPlugin"
         private const val ERROR_LOADING_NATIVE_MESSAGE: String =
             "We could not load the native library"
+        internal const val TRACKING_CONSENT_PENDING = 0
+        internal const val TRACKING_CONSENT_GRANTED = 1
+        internal const val TRACKING_CONSENT_NOT_GRANTED = 2
     }
 }
