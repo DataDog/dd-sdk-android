@@ -32,7 +32,9 @@ internal class DefaultMigratorFactory(
                 MoveDataMigrator(pendingFolderPath, approvedFolderPath, executorService)
             }
             // We need this to make sure we clear the current folder when initializing the SDK
-            null to TrackingConsent.PENDING -> {
+            null to TrackingConsent.PENDING,
+            TrackingConsent.GRANTED to TrackingConsent.PENDING,
+            TrackingConsent.NOT_GRANTED to TrackingConsent.PENDING -> {
                 WipeDataMigrator(pendingFolderPath, executorService)
             }
             else -> NoOpBatchedDataMigrator()
