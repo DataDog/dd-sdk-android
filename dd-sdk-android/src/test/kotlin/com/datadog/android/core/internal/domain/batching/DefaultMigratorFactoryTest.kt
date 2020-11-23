@@ -117,7 +117,7 @@ internal class DefaultMigratorFactoryTest {
                     TrackingConsent.PENDING,
                     pendingFolderPath,
                     grantedFolderPath,
-                    ExpectedMigrator.NoOpMigrator
+                    ExpectedMigrator.WipeMigrator(pendingFolderPath)
                 ),
                 Arguments.arguments(
                     TrackingConsent.GRANTED,
@@ -146,7 +146,7 @@ internal class DefaultMigratorFactoryTest {
                     TrackingConsent.PENDING,
                     pendingFolderPath,
                     grantedFolderPath,
-                    ExpectedMigrator.NoOpMigrator
+                    ExpectedMigrator.WipeMigrator(pendingFolderPath)
                 ),
                 Arguments.arguments(
                     TrackingConsent.NOT_GRANTED,
