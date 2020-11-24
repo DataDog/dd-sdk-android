@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -144,6 +145,11 @@ internal class SpanSerializer(
         }
         if (!userInfo.email.isNullOrEmpty()) {
             jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
+        }
+        // add extra attributes
+        userInfo.extraInfo.forEach {
+            val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
+            jsonLog.add(key, it.value.toJsonElement())
         }
     }
 

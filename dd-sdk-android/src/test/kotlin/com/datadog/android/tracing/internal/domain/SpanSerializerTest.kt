@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
@@ -100,6 +101,33 @@ internal class SpanSerializerTest {
         assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
         val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
         assertJsonContainsUserInfo(metaObj, fakeUserInfo)
+        assertJsonContainsNetworkInfo(metaObj, fakeNetworkInfo)
+        assertJsonContainsGlobalInfo(metaObj)
+
+        // close the span
+        span.finish()
+    }
+
+    @Test
+    fun `M serialise a Span W minimum user information provided`(
+        @Forgery span: DDSpan,
+        @LongForgery serverOffsetNanos: Long
+    ) {
+        // Given
+        val fakeMinimalUserInfo = UserInfo()
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeMinimalUserInfo
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
+        val serialized = testedSerializer.serialize(span)
+
+        // When
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
+
+        // Then
+        assertJsonMatchesInputSpan(spanObject, span, serverOffsetNanos)
+        assertThat(jsonObject.getString("env")).isEqualTo(fakeEnvName)
+        val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
+        assertJsonContainsUserInfo(metaObj, fakeMinimalUserInfo)
         assertJsonContainsNetworkInfo(metaObj, fakeNetworkInfo)
         assertJsonContainsGlobalInfo(metaObj)
 
@@ -251,6 +279,7 @@ internal class SpanSerializerTest {
             } else {
                 hasField(LogAttributes.USR_EMAIL, userInfo.email)
             }
+            containsExtraAttributes(userInfo.extraInfo, LogAttributes.USR_ATTRIBUTES_GROUP + ".")
         }
     }
 
