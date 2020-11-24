@@ -172,7 +172,8 @@ internal class RumResourceScope(
         )
         val rumEvent = RumEvent(
             event = resourceEvent,
-            attributes = attributes
+            globalAttributes = attributes,
+            userExtraAttributes = user.extraInfo
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
@@ -221,7 +222,8 @@ internal class RumResourceScope(
         )
         val rumEvent = RumEvent(
             event = errorEvent,
-            attributes = attributes
+            globalAttributes = attributes,
+            userExtraAttributes = user.extraInfo
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)

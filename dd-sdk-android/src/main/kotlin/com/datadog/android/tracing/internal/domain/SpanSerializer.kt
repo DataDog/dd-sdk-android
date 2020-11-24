@@ -12,13 +12,15 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.toJsonElement
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.opentracing.DDSpan
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
+import java.util.Date
 
 internal class SpanSerializer(
     private val timeProvider: TimeProvider,
@@ -149,7 +151,19 @@ internal class SpanSerializer(
         // add extra attributes
         userInfo.extraInfo.forEach {
             val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
-            jsonLog.add(key, it.value.toJsonElement())
+            toMetaString(it.value)?.apply {
+                jsonLog.addProperty(key, this)
+            }
+        }
+    }
+
+    private fun toMetaString(element: Any?): String? {
+        return when (element) {
+            NULL_MAP_VALUE -> null
+            null -> null
+            is Date -> element.time.toString()
+            is JsonPrimitive -> element.asString
+            else -> element.toString()
         }
     }
 

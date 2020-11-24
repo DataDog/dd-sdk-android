@@ -11,14 +11,15 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
+import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -32,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.math.BigInteger
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -279,8 +281,29 @@ internal class SpanSerializerTest {
             } else {
                 hasField(LogAttributes.USR_EMAIL, userInfo.email)
             }
-            containsExtraAttributes(userInfo.extraInfo, LogAttributes.USR_ATTRIBUTES_GROUP + ".")
+            containsExtraAttributesMappedToStrings(
+                userInfo.extraInfo,
+                LogAttributes.USR_ATTRIBUTES_GROUP + "."
+            )
         }
+    }
+
+    private fun JsonObjectAssert.containsExtraAttributesMappedToStrings(
+        attributes: Map<String, Any?>,
+        keyNamePrefix: String = ""
+    ) {
+        attributes.filter { it.key.isNotBlank() }
+            .forEach {
+                val value = it.value
+                val key = keyNamePrefix + it.key
+                when (value) {
+                    NULL_MAP_VALUE -> doesNotHaveField(key)
+                    null -> doesNotHaveField(key)
+                    is Date -> hasField(key, value.time.toString())
+                    is Iterable<*> -> hasField(key, value.toString())
+                    else -> hasField(key, value.toString())
+                }
+            }
     }
 
     // endregion

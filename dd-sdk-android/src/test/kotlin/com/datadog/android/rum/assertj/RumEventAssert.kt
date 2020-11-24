@@ -21,7 +21,13 @@ internal class RumEventAssert(actual: RumEvent) :
     ) {
 
     fun hasAttributes(attributes: Map<String, Any?>): RumEventAssert {
-        assertThat(actual.attributes)
+        assertThat(actual.globalAttributes)
+            .containsAllEntriesOf(attributes)
+        return this
+    }
+
+    fun hasUserExtraAttributes(attributes: Map<String, Any?>): RumEventAssert {
+        assertThat(actual.userExtraAttributes)
             .containsAllEntriesOf(attributes)
         return this
     }

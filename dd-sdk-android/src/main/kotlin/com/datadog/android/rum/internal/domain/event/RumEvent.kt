@@ -8,5 +8,6 @@ package com.datadog.android.rum.internal.domain.event
 
 internal data class RumEvent(
     val event: Any,
-    val attributes: Map<String, Any?>
+    val globalAttributes: Map<String, Any?>,
+    val userExtraAttributes: Map<String, Any?>
 )

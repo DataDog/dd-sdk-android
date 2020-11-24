@@ -281,7 +281,7 @@ internal class RumEventSerializerTest {
     ) {
         val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
         val value = forge.anAlphabeticalString()
-        val event = fakeEvent.copy(attributes = mapOf(key to value))
+        val event = fakeEvent.copy(globalAttributes = mapOf(key to value))
 
         val serialized = testedSerializer.serialize(event)
 
@@ -304,11 +304,31 @@ internal class RumEventSerializerTest {
         jsonObject: JsonObject,
         event: RumEvent
     ) {
-        event.attributes
+        event.globalAttributes
             .filter { it.key.isNotBlank() }
             .forEach {
                 val value = it.value
-                val keyName = "context.${it.key}"
+                val keyName = "${RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX}.${it.key}"
+                when (value) {
+                    null -> assertThat(jsonObject).hasNullField(keyName)
+                    is Boolean -> assertThat(jsonObject).hasField(keyName, value)
+                    is Int -> assertThat(jsonObject).hasField(keyName, value)
+                    is Long -> assertThat(jsonObject).hasField(keyName, value)
+                    is Float -> assertThat(jsonObject).hasField(keyName, value)
+                    is Double -> assertThat(jsonObject).hasField(keyName, value)
+                    is String -> assertThat(jsonObject).hasField(keyName, value)
+                    is Date -> assertThat(jsonObject).hasField(keyName, value.time)
+                    is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
+                    is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
+                    is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
+                    else -> assertThat(jsonObject).hasField(keyName, value.toString())
+                }
+            }
+        event.userExtraAttributes
+            .filter { it.key.isNotBlank() }
+            .forEach {
+                val value = it.value
+                val keyName = "${RumEventSerializer.USER_ATTRIBUTE_PREFIX}.${it.key}"
                 when (value) {
                     null -> assertThat(jsonObject).hasNullField(keyName)
                     is Boolean -> assertThat(jsonObject).hasField(keyName, value)

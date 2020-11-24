@@ -23,7 +23,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     override fun serialize(model: RumEvent): String {
         val json = model.event.toJson().asJsonObject
 
-        addCustomAttributes(model, json)
+        addCustomAttributes(model.globalAttributes, json, GLOBAL_ATTRIBUTE_PREFIX, knownAttributes)
+        addCustomAttributes(model.userExtraAttributes, json, USER_ATTRIBUTE_PREFIX)
 
         return json.toString()
     }
@@ -33,12 +34,15 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // region Internal
 
     private fun addCustomAttributes(
-        event: RumEvent,
-        jsonEvent: JsonObject
+        attributes: Map<String, Any?>,
+        jsonEvent: JsonObject,
+        keyPrefix: String,
+        knownAttributesKeys: Set<String> = emptySet()
     ) {
-        event.attributes.forEach {
+        attributes.forEach {
             val rawKey = it.key
-            val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
+            val key =
+                if (rawKey in knownAttributesKeys) rawKey else "$keyPrefix.$rawKey"
             val value = it.value
             jsonEvent.add(key, value.toJsonElement())
         }
@@ -59,6 +63,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL
         )
+
+        internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
+        internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
     }
 }
 
