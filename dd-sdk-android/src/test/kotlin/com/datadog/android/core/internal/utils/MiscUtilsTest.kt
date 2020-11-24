@@ -7,6 +7,11 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -15,6 +20,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +39,9 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 internal class MiscUtilsTest {
+
+    // region UnitTests
+
     @Test
     fun `M repeat max N times W retryWithDelay { success = false }`(forge: Forge) {
         // GIVEN
@@ -94,4 +103,43 @@ internal class MiscUtilsTest {
         assertThat(wasSuccessful).isTrue()
         verify(mockedBlock, times(2)).invoke()
     }
+
+    @Test
+    fun `M provide the relevant JsonElement W toJsonElement { on Kotlin object }`(forge: Forge) {
+        // GIVEN
+        val attributes = forge.exhaustiveAttributes().toMutableMap()
+        attributes[forge.aString()] = NULL_MAP_VALUE
+
+        // WHEN
+        attributes.forEach {
+            val jsonElement = it.toJsonElement()
+            assertJsonElement(it, jsonElement)
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun assertJsonElement(kotlinObject: Any?, jsonElement: JsonElement) {
+        when (kotlinObject) {
+            NULL_MAP_VALUE -> assertThat(jsonElement).isEqualTo(JsonNull.INSTANCE)
+            null -> assertThat(jsonElement).isEqualTo(JsonNull.INSTANCE)
+            is Boolean -> assertThat(jsonElement.asBoolean).isEqualTo(kotlinObject)
+            is Int -> assertThat(jsonElement.asInt).isEqualTo(kotlinObject)
+            is Long -> assertThat(jsonElement.asLong).isEqualTo(kotlinObject)
+            is Float -> assertThat(jsonElement.asFloat).isEqualTo(kotlinObject)
+            is Double -> assertThat(jsonElement.asDouble).isEqualTo(kotlinObject)
+            is String -> assertThat(jsonElement.asString).isEqualTo(kotlinObject)
+            is Date -> assertThat(jsonElement.asLong).isEqualTo(kotlinObject.time)
+            is JsonObject -> assertThat(jsonElement.asJsonObject).isEqualTo(kotlinObject)
+            is JsonArray -> assertThat(jsonElement.asJsonArray).isEqualTo(kotlinObject)
+            is Iterable<*> -> assertThat(jsonElement.asJsonArray).containsExactlyElementsOf(
+                kotlinObject.map { it.toJsonElement() }
+            )
+            else -> assertThat(jsonElement.asString).isEqualTo(kotlinObject.toString())
+        }
+    }
+
+    // endregion
 }

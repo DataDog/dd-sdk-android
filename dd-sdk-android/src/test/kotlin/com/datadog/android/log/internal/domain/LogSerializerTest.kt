@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.toJsonArray
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
@@ -204,6 +205,7 @@ internal class LogSerializerTest {
                 val value = it.value
                 when (value) {
                     NULL_MAP_VALUE -> assertThat(jsonObject).hasNullField(it.key)
+                    null -> assertThat(jsonObject).hasNullField(it.key)
                     is Boolean -> assertThat(jsonObject).hasField(it.key, value)
                     is Int -> assertThat(jsonObject).hasField(it.key, value)
                     is Long -> assertThat(jsonObject).hasField(it.key, value)
@@ -213,6 +215,7 @@ internal class LogSerializerTest {
                     is Date -> assertThat(jsonObject).hasField(it.key, value.time)
                     is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
                     is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
+                    is Iterable<*> -> assertThat(jsonObject).hasField(it.key, value.toJsonArray())
                     else -> assertThat(jsonObject).hasField(it.key, value.toString())
                 }
             }

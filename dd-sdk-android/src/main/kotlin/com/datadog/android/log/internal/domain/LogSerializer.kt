@@ -9,15 +9,12 @@ package com.datadog.android.log.internal.domain
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.domain.Serializer
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.constraints.DatadogLogConstraints
 import com.datadog.android.log.internal.constraints.LogConstraints
-import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -137,20 +134,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         logConstraints.validateAttributes(log.attributes)
             .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
             .forEach {
-                val value = it.value
-                val jsonValue = when (value) {
-                    NULL_MAP_VALUE -> JsonNull.INSTANCE
-                    is Boolean -> JsonPrimitive(value)
-                    is Int -> JsonPrimitive(value)
-                    is Long -> JsonPrimitive(value)
-                    is Float -> JsonPrimitive(value)
-                    is Double -> JsonPrimitive(value)
-                    is String -> JsonPrimitive(value)
-                    is Date -> JsonPrimitive(value.time)
-                    is JsonObject -> value
-                    is JsonArray -> value
-                    else -> JsonPrimitive(value.toString())
-                }
+                val jsonValue = it.value.toJsonElement()
                 jsonLog.add(it.key, jsonValue)
             }
     }

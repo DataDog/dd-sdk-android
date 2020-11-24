@@ -7,17 +7,14 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
-import java.util.Date
 
 internal class RumEventSerializer : Serializer<RumEvent> {
 
@@ -73,30 +70,4 @@ private fun Any.toJson(): JsonElement {
         is ErrorEvent -> toJson()
         else -> JsonObject()
     }
-}
-
-internal fun Any?.toJsonElement(): JsonElement {
-    return when (this) {
-        null -> JsonNull.INSTANCE
-        is Boolean -> JsonPrimitive(this)
-        is Int -> JsonPrimitive(this)
-        is Long -> JsonPrimitive(this)
-        is Float -> JsonPrimitive(this)
-        is Double -> JsonPrimitive(this)
-        is String -> JsonPrimitive(this)
-        is Date -> JsonPrimitive(this.time)
-        is Iterable<*> -> this.toJsonArray()
-        is JsonObject -> this
-        is JsonArray -> this
-        is JsonPrimitive -> this
-        else -> JsonPrimitive(toString())
-    }
-}
-
-internal fun Iterable<*>.toJsonArray(): JsonElement {
-    val array = JsonArray()
-    forEach {
-        array.add(it.toJsonElement())
-    }
-    return array
 }
