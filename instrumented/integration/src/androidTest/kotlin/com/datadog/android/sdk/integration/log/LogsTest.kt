@@ -8,48 +8,30 @@ package com.datadog.android.sdk.integration.log
 
 import android.os.Build
 import android.util.Log
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.assertj.HeadersAssert
-import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.BuildConfig
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.utils.isLogsUrl
-import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-@LargeTest
-internal class EndToEndLogTest {
+internal abstract class LogsTest {
 
-    @get:Rule
-    val mockServerRule = MockServerActivityTestRule(
-        ActivityLifecycleLogs::class.java,
-        keepRequests = true
-    )
-
-    @Test
-    fun verifyExpectedActivityLogs() {
-
-        // Wait to make sure all batches are consumed
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
-
+    protected fun verifyExpectedLogs(
+        activity: ActivityLifecycleLogs,
+        handledRequests: List<HandledRequest>
+    ) {
         // Check sent requests
-        val requests = mockServerRule.getRequests()
         val logObjects = mutableListOf<JsonObject>()
-        requests
+        handledRequests
             .filter { it.url?.isLogsUrl() ?: false }
             .forEach { request ->
-                assertThat(request.headers)
+                HeadersAssert.assertThat(request.headers)
                     .isNotNull
                     .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_JSON)
                     .hasHeader(HeadersAssert.HEADER_UA, expectedUserAgent())
@@ -61,17 +43,17 @@ internal class EndToEndLogTest {
             }
 
         // Check log contents
-        val messagesSent = mockServerRule.activity.getSentMessages()
+        val messagesSent = activity.getSentMessages()
         val globalTags = RuntimeConfig.allTags
         val globalAttributes = RuntimeConfig.allAttributes
-        val localAttributes = mockServerRule.activity.localAttributes()
+        val localAttributes = activity.localAttributes()
 
         messagesSent.forEachIndexed { i, m ->
             val log = logObjects[i]
-            assertThat(log)
+            JsonObjectAssert.assertThat(log)
                 .hasField(TAG_STATUS, levels[m.first])
                 .hasField(TAG_MESSAGE, m.second)
-                .hasField(TAG_SERVICE, mockServerRule.activity.packageName)
+                .hasField(TAG_SERVICE, activity.packageName)
                 .hasField(TAG_LOGGER_NAME, expectedLoggerName())
                 .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
 
@@ -83,19 +65,17 @@ internal class EndToEndLogTest {
         }
     }
 
-    // region Internal
-
     private fun JsonObject.assertHasAttribute(key: String, value: Any?) {
         when (value) {
-            null -> assertThat(this).hasNullField(key)
-            is Boolean -> assertThat(this).hasField(key, value)
-            is Int -> assertThat(this).hasField(key, value)
-            is Long -> assertThat(this).hasField(key, value)
-            is Float -> assertThat(this).hasField(key, value)
-            is Double -> assertThat(this).hasField(key, value)
-            is String -> assertThat(this).hasField(key, value)
-            is Date -> assertThat(this).hasField(key, value.time)
-            else -> assertThat(this).hasField(key, value.toString())
+            null -> JsonObjectAssert.assertThat(this).hasNullField(key)
+            is Boolean -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is Int -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is Long -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is Float -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is Double -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is String -> JsonObjectAssert.assertThat(this).hasField(key, value)
+            is Date -> JsonObjectAssert.assertThat(this).hasField(key, value.time)
+            else -> JsonObjectAssert.assertThat(this).hasField(key, value.toString())
         }
     }
 
@@ -117,20 +97,18 @@ internal class EndToEndLogTest {
         }
     }
 
-    // endregion
-
     companion object {
-        internal const val TAG_STATUS = "status"
+        private const val TAG_STATUS = "status"
         private const val TAG_SERVICE = "service"
         private const val TAG_MESSAGE = "message"
         private const val TAG_DDTAGS = "ddtags"
 
-        internal const val TAG_LOGGER_NAME = "logger.name"
-        internal const val TAG_VERSION_NAME = "logger.version"
+        private const val TAG_LOGGER_NAME = "logger.name"
+        private const val TAG_VERSION_NAME = "logger.version"
 
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
-        internal val levels = arrayOf(
+        private val levels = arrayOf(
             "debug",
             "debug",
             "trace",

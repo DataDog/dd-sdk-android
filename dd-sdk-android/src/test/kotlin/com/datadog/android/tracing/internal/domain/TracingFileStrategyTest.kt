@@ -6,189 +6,90 @@
 
 package com.datadog.android.tracing.internal.domain
 
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.data.file.DeferredWriter
-import com.datadog.android.core.internal.domain.FilePersistenceStrategyTest
-import com.datadog.android.core.internal.domain.PayloadDecoration
-import com.datadog.android.core.internal.domain.PersistenceStrategy
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import android.content.Context
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
+import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.utils.copy
-import com.datadog.android.utils.extension.getString
-import com.datadog.android.utils.extension.hexToBigInteger
-import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.SpanForgeryFactory
-import com.datadog.opentracing.DDSpan
-import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.datadog.tools.unit.invokeMethod
-import com.google.gson.JsonObject
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
+import com.datadog.android.utils.mockContext
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import org.assertj.core.api.Assertions.assertThat
+import java.util.concurrent.ExecutorService
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class TracingFileStrategyTest :
-    FilePersistenceStrategyTest<DDSpan>(
-        TracingFileStrategy.TRACES_FOLDER,
-        payloadDecoration = PayloadDecoration.NEW_LINE_DECORATION,
-        modelClass = DDSpan::class.java
-    ) {
+internal class TracingFileStrategyTest {
+    lateinit var testedStrategy: TracingFileStrategy
+
+    lateinit var mockedContext: Context
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
+    lateinit var mockExecutorService: ExecutorService
+
+    lateinit var trackingConsentProvider: TrackingConsentProvider
 
     @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    lateinit var mockedTimeProvider: TimeProvider
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
+    lateinit var mockedNetworkInfoProvider: NetworkInfoProvider
 
-    @Forgery
-    lateinit var fakeUserInfo: UserInfo
+    @Mock
+    lateinit var mockedUserInfoProvider: UserInfoProvider
 
-    @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
-
-    // region LogStrategyTest
+    @StringForgery(type = StringForgeryType.ALPHABETICAL)
+    lateinit var fakeEnvName: String
 
     @BeforeEach
-    override fun `set up`(forge: Forge) {
-        // add fake data into the old data directory
-        val oldDir = File(tempDir, TracingFileStrategy.DATA_FOLDER_ROOT)
-        oldDir.mkdirs()
-        val file1 = File(oldDir, "file1")
-        val file2 = File(oldDir, "file2")
-        file1.createNewFile()
-        file2.createNewFile()
-        assertThat(oldDir).exists()
-        super.`set up`(forge)
-    }
-
-    override fun getStrategy(): PersistenceStrategy<DDSpan> {
-        return TracingFileStrategy(
-            context = mockContext,
-            timeProvider = mockTimeProvider,
-            networkInfoProvider = mockNetworkInfoProvider,
-            userInfoProvider = mockUserInfoProvider,
-            recentDelayMs = RECENT_DELAY_MS,
-            maxBatchSize = MAX_BATCH_SIZE,
-            maxLogPerBatch = MAX_MESSAGES_PER_BATCH,
-            maxDiskSpace = MAX_DISK_SPACE,
-            dataPersistenceExecutorService = mockExecutorService
+    fun `set up`() {
+        mockedContext = mockContext()
+        trackingConsentProvider = TrackingConsentProvider()
+        testedStrategy = TracingFileStrategy(
+            mockedContext,
+            timeProvider = mockedTimeProvider,
+            networkInfoProvider = mockedNetworkInfoProvider,
+            userInfoProvider = mockedUserInfoProvider,
+            envName = fakeEnvName,
+            dataPersistenceExecutorService = mockExecutorService,
+            trackingConsentProvider = trackingConsentProvider
         )
     }
 
-    override fun setUp(writer: Writer<DDSpan>, reader: Reader) {
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        (testedWriter as DeferredWriter<DDSpan>).invokeMethod(
-            "tryToConsumeQueue"
-        ) // consume all the queued messages
-    }
-
-    // endregion
-
-    // region utils
-
-    override fun waitForNextBatch() {
-        Thread.sleep(RECENT_DELAY_MS * 2)
-    }
-
-    override fun forgeMinimalCopy(of: DDSpan): DDSpan {
-        return of.copy()
-    }
-
-    override fun forgeLightModel(forge: Forge): DDSpan {
-        return forge.getForgery()
-    }
-
-    override fun forgeHeavyModel(forge: Forge): DDSpan {
-
-        val maxBytesInSize = 256 * 1024
-        val maxBytesInSizeForKeyValye = maxBytesInSize / 3
-        val operationName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
-        val resourceName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
-        val serviceName = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
-        val spanType = forge.anAlphabeticalString(size = maxBytesInSizeForKeyValye)
-        val isWithErrorFlag = forge.aBool()
-        val meta = forge.aMap(size = 256) {
-            forge.anAlphabeticalString(size = 64) to forge.anAlphabeticalString(
-                size = 128
-            )
-        }
-        val spanBuilder = SpanForgeryFactory.TEST_TRACER
-            .buildSpan(operationName)
-            .withSpanType(spanType)
-            .withResourceName(resourceName)
-            .withServiceName(serviceName)
-
-        if (isWithErrorFlag) {
-            spanBuilder.withErrorFlag()
-        }
-        val span = spanBuilder.start()
-        meta.forEach {
-            span.setBaggageItem(it.key, it.value)
-        }
-
-        return span as DDSpan
-    }
-
-    override fun assertJsonContainsModels(jsonObject: JsonObject, models: List<DDSpan>) {
-        val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
-        val serviceName = spanObject.getString(SpanSerializer.TAG_SERVICE_NAME)
-        val resourceName = spanObject.getString(SpanSerializer.TAG_RESOURCE)
-        val traceId = spanObject.getString(SpanSerializer.TAG_TRACE_ID).hexToBigInteger()
-        val spanId = spanObject.getString(SpanSerializer.TAG_SPAN_ID).hexToBigInteger()
-        val parentId = spanObject.getString(SpanSerializer.TAG_PARENT_ID).hexToBigInteger()
-
-        val roughMatches = models.filter {
-            serviceName == it.serviceName &&
-                traceId == it.traceId &&
-                parentId == it.parentId &&
-                spanId == it.spanId &&
-                resourceName == it.resourceName
-        }
-
-        assertThat(roughMatches).isNotEmpty()
-    }
-
-    override fun assertJsonMatchesModel(jsonObject: JsonObject, model: DDSpan) {
-        val spansArray = jsonObject.getAsJsonArray("spans")
-        assertThat(spansArray).hasSize(1)
-        val spanObject = spansArray.first() as JsonObject
-        assertThat(spanObject)
-            .hasField(SpanSerializer.TAG_START_TIMESTAMP, model.startTime)
-            .hasField(SpanSerializer.TAG_DURATION, model.durationNano)
-            .hasField(SpanSerializer.TAG_SERVICE_NAME, model.serviceName)
-            .hasField(SpanSerializer.TAG_TRACE_ID, model.traceId.toHexString())
-            .hasField(SpanSerializer.TAG_SPAN_ID, model.spanId.toHexString())
-            .hasField(SpanSerializer.TAG_PARENT_ID, model.parentId.toHexString())
-            .hasField(SpanSerializer.TAG_RESOURCE, model.resourceName)
-            .hasField(SpanSerializer.TAG_OPERATION_NAME, model.operationName)
-            .hasField(SpanSerializer.TAG_META, model.meta)
-            .hasField(SpanSerializer.TAG_METRICS, model.metrics)
-    }
-
-    // endregion
-
-    companion object {
-        private const val RECENT_DELAY_MS = 150L
-        private const val MAX_DISK_SPACE = 16 * 32 * 1024L
-
-        private const val HEX_RAD = 16
+    @Test
+    fun `M correctly initialise the strategy W instantiated`() {
+        val absolutePath = mockedContext.filesDir.absolutePath
+        val expectedIntermediateFolderPath =
+            absolutePath +
+                File.separator +
+                TracingFileStrategy.INTERMEDIATE_DATA_FOLDER
+        val expectedAuthorizedFolderPath =
+            absolutePath +
+                File.separator +
+                TracingFileStrategy.AUTHORIZED_FOLDER
+        PersistenceStrategyAssert
+            .assertThat(testedStrategy)
+            .hasIntermediateStorageFolder(expectedIntermediateFolderPath)
+            .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
+            .uploadsFrom(expectedAuthorizedFolderPath)
+            .usesConsentAwareAsyncWriter()
+            .hasConfig(FilePersistenceConfig(TracingFileStrategy.MAX_DELAY_BETWEEN_SPANS_MS))
     }
 }

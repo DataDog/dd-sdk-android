@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -18,10 +19,10 @@ import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
@@ -31,7 +32,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.OkHttpClient
 
-internal object TracesFeature {
+internal object TracesFeature : SdkFeature() {
 
     internal val initialized = AtomicBoolean(false)
 
@@ -41,7 +42,6 @@ internal object TracesFeature {
     internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
-    internal var plugins: List<DatadogPlugin> = emptyList()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -53,7 +53,8 @@ internal object TracesFeature {
         systemInfoProvider: SystemInfoProvider,
         timeProvider: TimeProvider,
         dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService
+        dataPersistenceExecutor: ExecutorService,
+        trackingConsentProvider: ConsentProvider
     ) {
         if (initialized.get()) {
             return
@@ -64,11 +65,12 @@ internal object TracesFeature {
 
         persistenceStrategy = TracingFileStrategy(
             appContext,
-            timeProvider,
-            networkInfoProvider,
-            userInfoProvider,
+            timeProvider = timeProvider,
+            networkInfoProvider = networkInfoProvider,
+            userInfoProvider = userInfoProvider,
             envName = config.envName,
-            dataPersistenceExecutorService = dataPersistenceExecutor
+            dataPersistenceExecutorService = dataPersistenceExecutor,
+            trackingConsentProvider = trackingConsentProvider
         )
         setupUploader(
             endpointUrl,
@@ -78,7 +80,16 @@ internal object TracesFeature {
             dataUploadThreadPoolExecutor
         )
 
-        registerPlugins(appContext, config)
+        registerPlugins(
+            config.plugins,
+            DatadogPluginConfig.TracingPluginConfig(
+                appContext,
+                config.envName,
+                CoreFeature.serviceName,
+                trackingConsentProvider.getConsent()
+            ),
+            trackingConsentProvider
+        )
         initialized.set(true)
     }
 
@@ -122,25 +133,6 @@ internal object TracesFeature {
             NoOpUploadScheduler()
         }
         dataUploadScheduler.startScheduling()
-    }
-
-    private fun registerPlugins(appContext: Context, config: DatadogConfig.FeatureConfig) {
-        plugins = config.plugins
-        plugins.forEach {
-            it.register(
-                DatadogPluginConfig.TracingPluginConfig(
-                    appContext,
-                    config.envName,
-                    CoreFeature.serviceName
-                )
-            )
-        }
-    }
-
-    private fun unregisterPlugins() {
-        plugins.forEach {
-            it.unregister()
-        }
     }
 
     // endregion

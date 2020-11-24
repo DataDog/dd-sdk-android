@@ -7,39 +7,20 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.os.Build
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.sdk.assertj.HeadersAssert
-import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
-import com.datadog.android.sdk.utils.isRumUrl
-import com.google.gson.JsonObject
-import java.util.concurrent.TimeUnit
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-@LargeTest
-internal class EndToEndRumActivityTrackingTests {
+internal abstract class ActivityTrackingTest :
+    RumTest<ActivityTrackingPlaygroundActivity,
+        RumMockServerActivityTestRule<ActivityTrackingPlaygroundActivity>>() {
 
-    private val expectedEvents: MutableList<ExpectedEvent> = mutableListOf()
-    private val expectedViewArguments = mapOf<String, Any?>(
-        "key1" to "keyValue1",
-        "key2" to 1,
-        "key3" to 2.0f
-    )
+    // region RumTest
 
-    @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
-        RumActivityTrackingPlaygroundActivity::class.java,
-        keepRequests = true,
-        intentExtras = expectedViewArguments
-    )
+    override fun runInstrumentationScenario(
+        mockServerRule: RumMockServerActivityTestRule<ActivityTrackingPlaygroundActivity>
+    ): MutableList<ExpectedEvent> {
 
-    @Test
-    fun verifyViewEvents() {
+        val expectedEvents = mutableListOf<ExpectedEvent>()
         expectedEvents.add(ExpectedApplicationStart())
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val activity = mockServerRule.activity
@@ -140,34 +121,19 @@ internal class EndToEndRumActivityTrackingTests {
         instrumentation.runOnMainSync {
             instrumentation.callActivityOnPause(activity)
         }
-        instrumentation.waitForIdleSync()
 
-        instrumentation.waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
-        checkSentRequests()
-    }
-
-    // region Internal
-
-    private fun checkSentRequests() {
-        val requests = mockServerRule.getRequests()
-        val sentGestureEvents = mutableListOf<JsonObject>()
-        requests
-            .filter { it.url?.isRumUrl() ?: false }
-            .forEach { request ->
-                HeadersAssert.assertThat(request.headers)
-                    .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
-                if (request.textBody != null) {
-                    sentGestureEvents += rumPayloadToJsonList(request.textBody)
-                }
-            }
-        sentGestureEvents.verifyEventMatches(expectedEvents)
+        return expectedEvents
     }
 
     // endregion
 
-    companion object {
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
-    }
+    // region Internal
+
+    protected val expectedViewArguments = mapOf<String, Any?>(
+        "key1" to "keyValue1",
+        "key2" to 1,
+        "key3" to 2.0f
+    )
+
+    // endregion
 }

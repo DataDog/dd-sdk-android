@@ -181,6 +181,7 @@ dependencies {
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
+    implementation("androidx.preference:preference-ktx:1.1.1")
 
     // Ktor (local web server)
     implementation("io.ktor:ktor:1.2.5")

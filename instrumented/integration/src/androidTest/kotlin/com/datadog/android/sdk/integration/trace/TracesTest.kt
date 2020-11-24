@@ -7,42 +7,30 @@
 package com.datadog.android.sdk.integration.trace
 
 import android.util.Log
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
-import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import datadog.opentracing.DDSpan
 import java.lang.Long
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-@LargeTest
-internal class EndToEndTraceTest {
+internal abstract class TracesTest {
 
-    @get:Rule
-    val mockServerRule = MockServerActivityTestRule(
-        ActivityLifecycleTrace::class.java,
-        keepRequests = true
-    )
-
-    @Test
-    fun verifyExpectedActivitySpans() {
-
+    protected fun runInstrumentationScenario(
+        mockServerRule: MockServerActivityTestRule<ActivityLifecycleTrace>
+    ) {
         // Wait to make sure all batches are consumed
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
@@ -56,17 +44,14 @@ internal class EndToEndTraceTest {
         }
 
         instrumentation.waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
-
-        // Check sent requests
-        checkSentRequestsForSpans()
-        checkSentRequestsForLogs()
     }
 
-    private fun checkSentRequestsForSpans() {
-        val requests = mockServerRule.getRequests()
-        val spansObjects = mutableListOf<JsonObject>()
-        requests
+    protected fun verifyExpectedSpans(
+        handledRequests: List<HandledRequest>,
+        expectedSpans: List<DDSpan>
+    ) {
+        val sentSpansObjects = mutableListOf<JsonObject>()
+        handledRequests
             .filter { it.url?.isTracesUrl() ?: false }
             .forEach { request ->
                 assertThat(request.headers)
@@ -75,13 +60,12 @@ internal class EndToEndTraceTest {
                 val sentSpans = tracesPayloadToJsonArray(request.textBody.orEmpty())
                 sentSpans.forEach {
                     Log.i("EndToEndTraceTest", "adding span $it")
-                    spansObjects.add(it.asJsonObject)
+                    sentSpansObjects.add(it.asJsonObject)
                 }
             }
-        val sentSpans = mockServerRule.activity.getSentSpans()
-        assertThat(sentSpans.size).isEqualTo(spansObjects.size)
-        sentSpans.forEach { span ->
-            val json = spansObjects.first {
+        assertThat(expectedSpans.size).isEqualTo(sentSpansObjects.size)
+        expectedSpans.forEach { span ->
+            val json = sentSpansObjects.first {
                 it.get(TRACE_ID_KEY).asString == Long.toHexString((span.traceId.toLong())) &&
                     it.get(SPAN_ID_KEY).asString == Long.toHexString((span.spanId.toLong()))
             }
@@ -89,10 +73,12 @@ internal class EndToEndTraceTest {
         }
     }
 
-    private fun checkSentRequestsForLogs() {
-        val requests = mockServerRule.getRequests()
+    protected fun verifyExpectedLogs(
+        handledRequests: List<HandledRequest>,
+        expectedLogs: LinkedList<Pair<Int, String>>
+    ) {
         val logObjects = LinkedList<JsonObject>()
-        requests
+        handledRequests
             .filter { it.url?.isLogsUrl() ?: false }
             .forEach { request ->
                 assertThat(request.headers)
@@ -103,8 +89,7 @@ internal class EndToEndTraceTest {
                     logObjects.add(it.asJsonObject)
                 }
             }
-        val sentLogs = mockServerRule.activity.getSentLogs()
-        sentLogs.forEach {
+        expectedLogs.forEach {
             val toMatch = logObjects.removeFirst()
             assertThat(toMatch)
                 .hasField(TAG_STATUS, levels[it.first])
@@ -113,8 +98,6 @@ internal class EndToEndTraceTest {
                 .hasField(TAG_LOGGER_NAME, "trace")
         }
     }
-
-    // region Internal
 
     private fun assertMatches(jsonObject: JsonObject, span: DDSpan) {
         assertThat(jsonObject)
@@ -146,8 +129,6 @@ internal class EndToEndTraceTest {
         }
     }
 
-    // endregion
-
     companion object {
         const val START_TIMESTAMP_KEY = "start"
         const val DURATION_KEY = "duration"
@@ -159,7 +140,7 @@ internal class EndToEndTraceTest {
         const val OPERATION_NAME_KEY = "name"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"

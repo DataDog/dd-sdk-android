@@ -79,6 +79,9 @@ internal class TraceWriterTest {
 
         // THEN
         verify(mockFilesWriter).write(spansList)
+        spansList.forEach {
+            it.finish()
+        }
     }
 
     @Test
@@ -113,6 +116,9 @@ internal class TraceWriterTest {
         }
         stackTracesCaptor.allValues.forEachIndexed { index, stacktrace ->
             assertThat(stacktrace).isEqualTo(spansList[index].tags[DDTags.ERROR_STACK].toString())
+        }
+        spansList.forEach {
+            it.finish()
         }
     }
 
@@ -157,6 +163,9 @@ internal class TraceWriterTest {
         stackTracesCaptor.allValues.forEachIndexed { index, stacktrace ->
             assertThat(stacktrace).isEqualTo(spansList[index].tags[DDTags.ERROR_STACK].toString())
         }
+        spansList.forEach {
+            it.finish()
+        }
     }
 
     @Test
@@ -199,6 +208,9 @@ internal class TraceWriterTest {
 
         stackTracesCaptor.allValues.forEachIndexed { index, stacktrace ->
             assertThat(stacktrace).isEqualTo(spansList[index].tags[DDTags.ERROR_STACK].toString())
+        }
+        spansList.forEach {
+            it.finish()
         }
     }
 

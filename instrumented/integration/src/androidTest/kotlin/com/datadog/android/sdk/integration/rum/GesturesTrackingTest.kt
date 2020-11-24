@@ -11,35 +11,24 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.swipeDown
-import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition
+import androidx.test.espresso.contrib.RecyclerViewActions
 import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.R
-import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.sdk.rules.RumGesturesTrackingActivityTestRule
-import com.datadog.android.sdk.utils.isRumUrl
-import com.google.gson.JsonObject
-import java.util.concurrent.TimeUnit
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import com.datadog.android.sdk.rules.GesturesTrackingActivityTestRule
 
-@RunWith(AndroidJUnit4::class)
-@LargeTest
-internal class EndToEndRumGesturesTrackingTests {
+internal abstract class GesturesTrackingTest :
+    RumTest<GesturesTrackingPlaygroundActivity,
+        GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>>() {
 
-    @get:Rule
-    val mockServerRule = RumGesturesTrackingActivityTestRule(
-        RumGesturesTrackingPlaygroundActivity::class.java,
-        keepRequests = true
-    )
+    // region RumTest
 
-    @Test
-    fun verifyTrackedGestures() {
+    override fun runInstrumentationScenario(
+        mockServerRule: GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>
+    ): List<ExpectedEvent> {
+
+        val activity = mockServerRule.activity
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
 
@@ -49,10 +38,11 @@ internal class EndToEndRumGesturesTrackingTests {
         // perform a tap event on a RecyclerView item
         onView(withId(R.id.recyclerView))
             .perform(
-                actionOnItemAtPosition<RumGesturesTrackingPlaygroundActivity.Adapter.ViewHolder>(
-                    2,
-                    click()
-                )
+                RecyclerViewActions
+                    .actionOnItemAtPosition<GesturesTrackingPlaygroundActivity.Adapter.ViewHolder>(
+                        2,
+                        click()
+                    )
             )
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
@@ -60,37 +50,25 @@ internal class EndToEndRumGesturesTrackingTests {
         onView(withId(R.id.recyclerView)).perform(swipeDown())
         instrumentation.waitForIdleSync()
         Thread.sleep(500)
-        onView(withId(R.id.button)).perform(click()) // last one won't be sent (yet)
+        onView(withId(R.id.button))
+            .perform(click()) // last one won't be sent (yet)
         instrumentation.waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
 
-        checkSentRequests()
-    }
-
-    // region Internal
-
-    private fun checkSentRequests() {
-        val requests = mockServerRule.getRequests()
-        val sentGestureEvents = mutableListOf<JsonObject>()
-        requests
-            .filter { it.url?.isRumUrl() ?: false }
-            .forEach { request ->
-                HeadersAssert.assertThat(request.headers)
-                    .isNotNull
-                    .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
-                if (request.textBody != null) {
-                    sentGestureEvents += rumPayloadToJsonList(request.textBody)
-                }
-            }
-        val expectedGestures = expectedEvents()
-        sentGestureEvents.verifyEventMatches(expectedGestures)
-    }
-
-    private fun expectedEvents(): List<ExpectedEvent> {
-        val viewUrl = mockServerRule.activity.javaClass.canonicalName!!.replace(
+        val viewUrl = activity.javaClass.canonicalName!!.replace(
             '.',
             '/'
         )
+        return expectedEvents(viewUrl, activity)
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun expectedEvents(
+        viewUrl: String,
+        activity: GesturesTrackingPlaygroundActivity
+    ): List<ExpectedEvent> {
         return listOf(
             ExpectedApplicationStart(),
             ExpectedViewEvent(
@@ -99,7 +77,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
-                "${mockServerRule.activity.button.javaClass.canonicalName}",
+                activity.button.javaClass.canonicalName,
                 "button"
             ),
             ExpectedViewEvent(
@@ -108,12 +86,12 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
-                "${CardView::class.java.canonicalName}",
+                CardView::class.java.canonicalName,
                 "recyclerViewRow",
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
                     RumAttributes.ACTION_TARGET_PARENT_CLASSNAME to
-                        mockServerRule.activity.recyclerView.javaClass.canonicalName,
+                        activity.recyclerView.javaClass.canonicalName,
                     RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID to
                         "recyclerView"
                 )
@@ -124,7 +102,7 @@ internal class EndToEndRumGesturesTrackingTests {
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
-                "${RecyclerView::class.java.canonicalName}",
+                RecyclerView::class.java.canonicalName,
                 "recyclerView",
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"
@@ -138,8 +116,4 @@ internal class EndToEndRumGesturesTrackingTests {
     }
 
     // endregion
-
-    companion object {
-        private val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
-    }
 }

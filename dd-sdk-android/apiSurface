@@ -1,12 +1,13 @@
 object com.datadog.android.Datadog
   DEPRECATED const val DATADOG_US: String
   DEPRECATED const val DATADOG_EU: String
-  fun initialize(android.content.Context, DatadogConfig)
-  DEPRECATED fun initialize(android.content.Context, String, String, String? = null)
+  DEPRECATED fun initialize(android.content.Context, DatadogConfig)
+  fun initialize(android.content.Context, com.datadog.android.privacy.TrackingConsent, DatadogConfig)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
   fun clearAllData()
   fun setVerbosity(Int)
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(String? = null, String? = null, String? = null)
 class com.datadog.android.DatadogConfig
   class Builder
@@ -150,12 +151,12 @@ class com.datadog.android.log.Logger
   fun removeTagsWithKey(String)
 class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
-interface com.datadog.android.plugin.DatadogPlugin
+interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
   fun register(DatadogPluginConfig)
   fun unregister()
   fun onContextChanged(DatadogContext)
 sealed class com.datadog.android.plugin.DatadogPluginConfig
-  constructor(android.content.Context, String, String, String)
+  constructor(android.content.Context, String, String, String, com.datadog.android.privacy.TrackingConsent)
 class com.datadog.android.plugin.DatadogRumContext
   constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature
@@ -163,6 +164,12 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
+enum com.datadog.android.privacy.TrackingConsent
+  - GRANTED
+  - NOT_GRANTED
+  - PENDING
+interface com.datadog.android.privacy.TrackingConsentProviderCallback
+  fun onConsentUpdated(TrackingConsent, TrackingConsent)
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean

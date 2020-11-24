@@ -2,3 +2,5 @@ class com.datadog.android.ndk.NdkCrashReportsPlugin : com.datadog.android.plugin
   override fun register(com.datadog.android.plugin.DatadogPluginConfig)
   override fun unregister()
   override fun onContextChanged(com.datadog.android.plugin.DatadogContext)
+  override fun onConsentUpdated(com.datadog.android.privacy.TrackingConsent, com.datadog.android.privacy.TrackingConsent)
+  companion object 

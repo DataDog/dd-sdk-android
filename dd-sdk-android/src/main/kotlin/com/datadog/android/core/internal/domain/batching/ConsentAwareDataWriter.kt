@@ -4,12 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.domain
+package com.datadog.android.core.internal.domain.batching
 
-/**
- * Represent a batch of logs read from a persisted location.
- */
-internal data class Batch(
-    val id: String,
-    val data: ByteArray
-)
+import com.datadog.android.core.internal.data.Writer
+
+internal interface ConsentAwareDataWriter<T : Any> : Writer<T> {
+    fun getInternalWriter(): Writer<T>
+}

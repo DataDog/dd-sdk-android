@@ -4,36 +4,43 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sdk.integration.rum
+package com.datadog.android.sdk.rules
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 
-internal class RumActivityTrackingPlaygroundActivity : AppCompatActivity() {
+internal class GesturesTrackingActivityTestRule<T : Activity>(
+    activityClass: Class<T>,
+    keepRequests: Boolean = false,
+    trackingConsent: TrackingConsent
+) : RumMockServerActivityTestRule<T>(activityClass, keepRequests, trackingConsent) {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // use the activity view tracking strategy
+    override fun beforeActivityLaunched() {
+        super.beforeActivityLaunched()
+        // attach the gestures tracker
         val config = DatadogConfig.Builder(
             RuntimeConfig.DD_TOKEN,
             RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
             RuntimeConfig.APP_ID
-        )
-            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .trackInteractions()
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
             .build()
 
-        Datadog.initialize(this, config)
+        Datadog.initialize(
+            InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
+            trackingConsent,
+            config
+        )
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.fragment_tracking_layout)
     }
 }

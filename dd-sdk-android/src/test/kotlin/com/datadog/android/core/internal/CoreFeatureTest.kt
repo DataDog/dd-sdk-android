@@ -16,9 +16,12 @@ import android.os.Process
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -68,12 +71,14 @@ internal class CoreFeatureTest {
     lateinit var mockConnectivityMgr: ConnectivityManager
     lateinit var fakePackageName: String
     lateinit var fakePackageVersion: String
+    lateinit var fakeConsent: TrackingConsent
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
@@ -91,7 +96,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `registers broadcast receivers on initialize (Lollipop)`() {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
         verify(mockAppContext, atLeastOnce())
@@ -105,7 +110,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
     fun `registers receivers and callbacks on initialize (Nougat)`() {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
         verify(mockAppContext, atLeastOnce())
@@ -118,7 +123,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes time provider`() {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.timeProvider)
             .isNotInstanceOf(NoOpTimeProvider::class.java)
@@ -126,7 +131,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes user info provider`() {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.userInfoProvider)
             .isNotInstanceOf(NoOpMutableUserInfoProvider::class.java)
@@ -134,7 +139,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `initializes app info`() {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
@@ -144,7 +149,7 @@ internal class CoreFeatureTest {
     fun `initializes first party hosts detector`(
         @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
     ) {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(hosts = hosts))
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig(hosts = hosts))
 
         val lowercaseHosts = hosts.map { it.toLowerCase(Locale.US) }
         assertThat(CoreFeature.firstPartyHostDetector.knownHosts).containsAll(lowercaseHosts)
@@ -159,7 +164,7 @@ internal class CoreFeatureTest {
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(versionCode.toString())
@@ -168,7 +173,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `add strict network policy for https endpoints on 21+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -182,7 +187,7 @@ internal class CoreFeatureTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.KITKAT)
     fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -195,7 +200,11 @@ internal class CoreFeatureTest {
 
     @Test
     fun `no network policy for custom endpoints`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(needsClearTextHttp = true)
+        )
 
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
@@ -209,7 +218,11 @@ internal class CoreFeatureTest {
     @Test
     fun `stop will shutdown the executors`() {
         // Given
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(needsClearTextHttp = true))
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(needsClearTextHttp = true)
+        )
         val mockThreadPoolExecutor: ThreadPoolExecutor = mock()
         CoreFeature.dataPersistenceExecutorService = mockThreadPoolExecutor
         val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
@@ -226,7 +239,11 @@ internal class CoreFeatureTest {
     @Test
     fun `if custom service name not provided will use the package name`() {
         // Given
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(serviceName = null))
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(serviceName = null)
+        )
 
         // Then
         assertThat(CoreFeature.serviceName).isEqualTo(mockAppContext.packageName)
@@ -238,6 +255,7 @@ internal class CoreFeatureTest {
         val serviceName = forge.anAlphabeticalString()
         CoreFeature.initialize(
             mockAppContext,
+            fakeConsent,
             DatadogConfig.CoreConfig(serviceName = serviceName)
         )
 
@@ -270,7 +288,7 @@ internal class CoreFeatureTest {
             )
 
         // When
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
@@ -301,7 +319,7 @@ internal class CoreFeatureTest {
             )
 
         // When
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         // Then
         assertThat(CoreFeature.isMainProcess).isFalse()
@@ -326,7 +344,7 @@ internal class CoreFeatureTest {
             )
 
         // When
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
 
         // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
@@ -335,10 +353,54 @@ internal class CoreFeatureTest {
     @Test
     fun `M initialise the env name W provided from Config`() {
         // WHEN
-        CoreFeature.initialize(mockAppContext, DatadogConfig.CoreConfig(envName = fakeEnvName))
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(envName = fakeEnvName)
+        )
 
         // THEN
         assertThat(CoreFeature.envName).isEqualTo(fakeEnvName)
+    }
+
+    @Test
+    fun `M initialise the ConsentProvider`() {
+        // WHEN
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(envName = fakeEnvName)
+        )
+
+        // THEN
+        assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `M use a NoOpConsentProvider by default`() {
+        assertThat(CoreFeature.trackingConsentProvider)
+            .isInstanceOf(NoOpConsentProvider::class.java)
+    }
+
+    @Test
+    fun `M unregister an use a NoOpConsentProvider W stopped`() {
+        // GIVEN
+        val mockedConsentProvider: ConsentProvider = mock()
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeConsent,
+            DatadogConfig.CoreConfig(envName = fakeEnvName)
+        )
+        CoreFeature.trackingConsentProvider = mockedConsentProvider
+
+        // WHEN
+        CoreFeature.stop()
+
+        // THEN
+        verify(mockedConsentProvider).unregisterAllCallbacks()
+        assertThat(CoreFeature.trackingConsentProvider).isInstanceOf(
+            NoOpConsentProvider::class.java
+        )
     }
 
     // region internal

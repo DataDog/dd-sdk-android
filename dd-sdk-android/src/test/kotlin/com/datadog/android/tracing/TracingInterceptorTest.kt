@@ -11,6 +11,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
@@ -177,7 +178,7 @@ internal open class TracingInterceptorTest {
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig,
-            mock(), mock(), mock(), mock(), mock(), mock(), mock()
+            mock(), mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
         )
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))

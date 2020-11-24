@@ -12,12 +12,14 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.domain.AsyncWriterFilePersistenceStrategy
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -25,6 +27,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -74,6 +77,8 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
+    lateinit var trackingConsentProvider: ConsentProvider
+
     lateinit var fakeConfig: DatadogConfig.FeatureConfig
 
     lateinit var fakePackageName: String
@@ -84,6 +89,7 @@ internal class LogsFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        trackingConsentProvider = TrackingConsentProvider()
         CoreFeature.isMainProcess = true
         fakeConfig = DatadogConfig.FeatureConfig(
             clientToken = forge.anHexadecimalString(),
@@ -115,13 +121,14 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val persistenceStrategy = LogsFeature.persistenceStrategy
 
         assertThat(persistenceStrategy)
-            .isInstanceOf(AsyncWriterFilePersistenceStrategy::class.java)
+            .isInstanceOf(LogFileStrategy::class.java)
     }
 
     @Test
@@ -133,7 +140,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -151,7 +159,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         val clientToken = LogsFeature.clientToken
@@ -171,7 +180,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy = LogsFeature.persistenceStrategy
         val dataUploadScheduler = LogsFeature.dataUploadScheduler
@@ -191,7 +201,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         val persistenceStrategy2 = LogsFeature.persistenceStrategy
         val dataUploadScheduler2 = LogsFeature.dataUploadScheduler
@@ -205,10 +216,45 @@ internal class LogsFeatureTest {
     }
 
     @Test
+    fun `M register the plugins as TrackingConsentProvideCallback W initialized`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
+            mock<DatadogPlugin>()
+        }
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
+
+        // When
+        LogsFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(plugins = plugins),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockedTrackingConsentProvider
+        )
+        // Then
+        val mockPlugins = plugins.toTypedArray()
+        mockPlugins.forEach {
+            verify(mockedTrackingConsentProvider).registerCallback(it)
+        }
+    }
+
+    @Test
     fun `it will register the provided plugin when feature was initialized`(
         forge: Forge
     ) {
         // Given
+        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
+        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
+            whenever(it.getConsent()).thenReturn(fakeConsent)
+        }
         val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
             mock<DatadogPlugin>()
         }
@@ -221,7 +267,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            mockedTrackingConsentProvider
         )
 
         val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
@@ -238,8 +285,9 @@ internal class LogsFeatureTest {
             assertThat(it.context).isEqualTo(mockAppContext)
             assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
             assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.LOGS_FOLDER)
+            assertThat(it.featurePersistenceDirName).isEqualTo(LogFileStrategy.AUTHORIZED_FOLDER)
             assertThat(it.context).isEqualTo(mockAppContext)
+            assertThat(it.trackingConsent).isEqualTo(fakeConsent)
         }
     }
 
@@ -258,7 +306,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // When
@@ -286,7 +335,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
 
         // Then
@@ -298,7 +348,7 @@ internal class LogsFeatureTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
         @StringForgery content: String
     ) {
-        val fakeDir = File(tempRootDir, LogFileStrategy.LOGS_FOLDER)
+        val fakeDir = File(tempRootDir, LogFileStrategy.AUTHORIZED_FOLDER)
         fakeDir.mkdirs()
         val fakeFile = File(fakeDir, fileName)
         fakeFile.writeText(content)
@@ -311,7 +361,8 @@ internal class LogsFeatureTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService
+            mockPersistenceExecutorService,
+            trackingConsentProvider
         )
         LogsFeature.clearAllData()
 

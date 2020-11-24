@@ -17,13 +17,12 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -73,7 +72,6 @@ internal class SpanSerializerTest {
 
     @BeforeEach
     fun `set up`() {
-        SpanForgeryFactory.TEST_TRACER.activeSpan()?.finish()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         testedSerializer = SpanSerializer(
@@ -112,18 +110,18 @@ internal class SpanSerializerTest {
     @Test
     fun `it will only add the metrics key top level for the top span`(forge: Forge) {
         // Given
-        val parentSpan =
-            spy(
-                SpanForgeryFactory.TEST_TRACER
-                    .buildSpan(forge.anAlphabeticalString())
-                    .start() as DDSpan
-            )
-        doReturn(BigInteger.valueOf(0)).whenever(parentSpan).parentId
-        val childSpan =
-            SpanForgeryFactory.TEST_TRACER
-                .buildSpan(forge.anAlphabeticalString())
-                .asChildOf(parentSpan)
-                .start() as DDSpan
+        val fakeParentSpanId = BigInteger.valueOf(forge.aLong(min = 1))
+        val fakeTraceId = BigInteger.valueOf(forge.aLong(min = 1))
+        val parentSpan: DDSpan = mock {
+            whenever(it.parentId).thenReturn(BigInteger.ZERO)
+            whenever(it.spanId).thenReturn(fakeParentSpanId)
+            whenever(it.traceId).thenReturn(fakeTraceId)
+        }
+        val childSpan: DDSpan = mock {
+            whenever(it.parentId).thenReturn(fakeParentSpanId)
+            whenever(it.traceId).thenReturn(fakeTraceId)
+            whenever(it.spanId).thenReturn(BigInteger.valueOf(forge.aLong(min = 1)))
+        }
 
         // When
         val serializedParent = JsonParser.parseString(testedSerializer.serialize(parentSpan))
@@ -140,10 +138,6 @@ internal class SpanSerializerTest {
         assertThat(serializedChildSpan).hasField(SpanSerializer.TAG_METRICS) {
             doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
         }
-
-        // close the spans
-        parentSpan.finish()
-        childSpan.finish()
     }
 
     // region Internal

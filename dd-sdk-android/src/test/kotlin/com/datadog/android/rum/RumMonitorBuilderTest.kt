@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -85,7 +86,8 @@ internal class RumMonitorBuilderTest {
             mock(),
             mock(),
             mock(),
-            mock()
+            mock(),
+            TrackingConsentProvider()
         )
 
         testedBuilder = RumMonitor.Builder()

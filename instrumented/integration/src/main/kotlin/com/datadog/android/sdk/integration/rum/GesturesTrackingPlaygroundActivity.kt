@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.sdk.integration.R
 
-internal class RumGesturesTrackingPlaygroundActivity : Activity() {
+internal class GesturesTrackingPlaygroundActivity : Activity() {
 
     lateinit var showHide: View
     lateinit var button: Button

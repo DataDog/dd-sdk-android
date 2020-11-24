@@ -10,46 +10,62 @@ import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
-import com.datadog.android.core.internal.data.file.ImmediateFileWriter
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.internal.domain.batching.DataProcessorFactory
+import com.datadog.android.core.internal.domain.batching.DefaultConsentAwareDataWriter
+import com.datadog.android.core.internal.domain.batching.DefaultMigratorFactory
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import java.io.File
+import java.util.concurrent.ExecutorService
 
 internal open class FilePersistenceStrategy<T : Any>(
-    dataDirectory: File,
+    intermediateStorageFolder: File,
+    authorizedStorageFolder: File,
     serializer: Serializer<T>,
-    recentDelayMs: Long = MAX_DELAY_BETWEEN_MESSAGES_MS,
-    maxBatchSize: Long = MAX_BATCH_SIZE,
-    maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
-    oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    maxDiskSpace: Long = MAX_DISK_SPACE,
-    payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION
+    executorService: ExecutorService,
+    filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig(),
+    payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
+    trackingConsentProvider: ConsentProvider
 ) : PersistenceStrategy<T> {
 
-    private val fileOrchestrator = FileOrchestrator(
-        rootDirectory = dataDirectory,
-        recentDelayMs = recentDelayMs,
-        maxBatchSize = maxBatchSize,
-        maxLogPerBatch = maxItemsPerBatch,
-        oldFileThreshold = oldFileThreshold,
-        maxDiskSpace = maxDiskSpace
+    internal val intermediateFileOrchestrator = FileOrchestrator(
+        intermediateStorageFolder,
+        filePersistenceConfig
     )
 
-    private val fileReader = FileReader(
-        fileOrchestrator,
-        dataDirectory,
+    internal val authorizedFileOrchestrator = FileOrchestrator(
+        authorizedStorageFolder,
+        filePersistenceConfig
+    )
+
+    internal val fileReader = FileReader(
+        authorizedFileOrchestrator,
+        authorizedStorageFolder,
         payloadDecoration.prefix,
         payloadDecoration.suffix
     )
 
-    protected val fileWriter = ImmediateFileWriter(
-        fileOrchestrator,
-        serializer,
-        payloadDecoration.separator
-    )
+    internal val consentAwareDataWriter: ConsentAwareDataWriter<T> =
+        DefaultConsentAwareDataWriter(
+            consentProvider = trackingConsentProvider,
+            processorsFactory = DataProcessorFactory(
+                intermediateFileOrchestrator,
+                authorizedFileOrchestrator,
+                serializer,
+                payloadDecoration.separator,
+                executorService
+            ),
+            migratorsFactory = DefaultMigratorFactory(
+                intermediateStorageFolder.absolutePath,
+                authorizedStorageFolder.absolutePath,
+                executorService
+            )
+        )
 
     // region PersistenceStrategy
 
     override fun getWriter(): Writer<T> {
-        return fileWriter
+        return consentAwareDataWriter
     }
 
     override fun getReader(): Reader {
@@ -61,12 +77,4 @@ internal open class FilePersistenceStrategy<T : Any>(
     }
 
     // endregion
-
-    companion object {
-        internal const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
-        internal const val MAX_ITEMS_PER_BATCH: Int = 500
-        internal const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
-        internal const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
-        internal const val MAX_DELAY_BETWEEN_MESSAGES_MS = 5000L
-    }
 }

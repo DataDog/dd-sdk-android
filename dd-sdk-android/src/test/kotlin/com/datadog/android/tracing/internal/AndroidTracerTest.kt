@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.GlobalRum
@@ -78,7 +79,7 @@ internal class AndroidTracerTest {
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
-        Datadog.initialize(mockAppContext, fakeToken, fakeEnvName)
+        Datadog.initialize(mockAppContext, DatadogConfig.Builder(fakeToken, fakeEnvName).build())
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
     }

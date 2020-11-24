@@ -8,12 +8,14 @@ package com.datadog.android.log.internal.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
-import com.datadog.android.log.internal.domain.LogFileStrategy
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -40,20 +42,25 @@ internal class FileOrchestratorTest {
     lateinit var tempLogsDir: File
     lateinit var testedOrchestrator: Orchestrator
 
+    @StringForgery(type = StringForgeryType.ALPHABETICAL)
+    lateinit var fakeStorageFolderName: String
+
     @BeforeEach
     fun `set up`() {
-        tempLogsDir = File(tempDir, LogFileStrategy.LOGS_FOLDER)
+        tempLogsDir = File(tempDir, fakeStorageFolderName)
         tempLogsDir.mkdirs()
         assumeTrue(tempLogsDir.exists() && tempLogsDir.isDirectory && tempLogsDir.canWrite())
 
         testedOrchestrator =
             FileOrchestrator(
                 tempLogsDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
     }
 
@@ -68,13 +75,14 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 invalidRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
-
         // Then
         assertThat(testedOrchestrator.getWritableFile(logSize)).isNull()
     }
@@ -88,11 +96,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 invalidRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then
@@ -110,11 +120,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 corruptedRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then
@@ -130,11 +142,13 @@ internal class FileOrchestratorTest {
         testedOrchestrator =
             FileOrchestrator(
                 corruptedRootDir,
-                RECENT_DELAY_MS,
-                MAX_BATCH_SIZE,
-                MAX_LOGS_PER_BATCH,
-                OLD_FILE_THRESHOLD,
-                MAX_DISK_SPACE
+                FilePersistenceConfig(
+                    recentDelayMs = RECENT_DELAY_MS,
+                    maxBatchSize = MAX_BATCH_SIZE,
+                    maxItemsPerBatch = MAX_LOGS_PER_BATCH,
+                    oldFileThreshold = OLD_FILE_THRESHOLD,
+                    maxDiskSpace = MAX_DISK_SPACE
+                )
             )
 
         // Then
@@ -162,6 +176,22 @@ internal class FileOrchestratorTest {
     fun `create writeable file if none exists`(
         @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
     ) {
+        val writeableFile = testedOrchestrator.getWritableFile(logSize)
+
+        assertThat(writeableFile)
+            .doesNotExist()
+            .hasParent(tempLogsDir)
+    }
+
+    @Test
+    fun `M recreate the rootDirectory W getWritableFile { rootDir deleted }`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize: Int
+    ) {
+        // GIVEN
+        testedOrchestrator.getWritableFile(logSize)
+        tempLogsDir.deleteRecursively()
+
+        // WHEN
         val writeableFile = testedOrchestrator.getWritableFile(logSize)
 
         assertThat(writeableFile)
@@ -304,6 +334,15 @@ internal class FileOrchestratorTest {
     }
 
     @Test
+    fun `M return null W getReadableFile { rootDir deleted }`() {
+        // GIVEN
+        tempLogsDir.deleteRecursively()
+
+        // THEN
+        assertThat(testedOrchestrator.getReadableFile(emptySet())).isNull()
+    }
+
+    @Test
     fun `getReadableFile ignores recent`(forge: Forge) {
         val earlier = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
         val writtenFile = File(tempLogsDir, earlier.toString())
@@ -329,6 +368,27 @@ internal class FileOrchestratorTest {
             .isNull()
         assertThat(writtenFile)
             .doesNotExist()
+    }
+
+    @Test
+    fun `M reset the internal attributes W reset`(
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize1: Int,
+        @IntForgery(min = 1, max = MAX_LOG_SIZE) logSize2: Int,
+        forge: Forge
+    ) {
+        // GIVEN
+        val previousFile = testedOrchestrator.getWritableFile(logSize1)
+        previousFile?.createNewFile()
+        previousFile?.writeText(forge.anAsciiString(logSize1))
+        testedOrchestrator.getWritableFile(logSize2)
+
+        // WHEN
+        testedOrchestrator.reset()
+
+        // THEN
+        val testedFileOrchestrator = testedOrchestrator as FileOrchestrator
+        assertThat(testedFileOrchestrator.previousFileLogCount).isEqualTo(0)
+        assertThat(testedFileOrchestrator.previousFile).isNull()
     }
 
     companion object {

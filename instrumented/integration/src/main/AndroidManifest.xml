@@ -27,15 +27,15 @@
             android:label="@string/activity_logs_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
-            android:name=".rum.RumGesturesTrackingPlaygroundActivity"
+            android:name=".rum.GesturesTrackingPlaygroundActivity"
             android:label="@string/rum_gestures_tracking_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
-            android:name=".rum.RumActivityTrackingPlaygroundActivity"
+            android:name=".rum.ActivityTrackingPlaygroundActivity"
             android:label="@string/rum_activity_view_tracking_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
-            android:name=".rum.RumFragmentTrackingPlaygroundActivity"
+            android:name=".rum.FragmentTrackingPlaygroundActivity"
             android:label="@string/rum_activity_view_tracking_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity

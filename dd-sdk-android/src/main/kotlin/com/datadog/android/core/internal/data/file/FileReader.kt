@@ -8,14 +8,13 @@ package com.datadog.android.core.internal.data.file
 
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.domain.Batch
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 
 internal class FileReader(
-    private val fileOrchestrator: Orchestrator,
+    internal val fileOrchestrator: Orchestrator,
     private val dataDirectory: File,
     private val prefix: CharSequence = "",
     private val suffix: CharSequence = ""

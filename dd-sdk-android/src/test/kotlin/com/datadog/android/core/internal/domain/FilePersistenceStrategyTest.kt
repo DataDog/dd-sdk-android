@@ -9,8 +9,10 @@ package com.datadog.android.core.internal.domain
 import android.content.Context
 import android.os.Build
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.lines
@@ -78,7 +80,10 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
             (it.arguments[0] as Runnable).run()
             null
         }
-        Datadog.initialize(mockContext, forge.anAlphabeticalString(), forge.anHexadecimalString())
+        Datadog.initialize(
+            mockContext,
+            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anHexadecimalString()).build()
+        )
         val persistingStrategy = getStrategy()
 
         testedWriter = persistingStrategy.getWriter()

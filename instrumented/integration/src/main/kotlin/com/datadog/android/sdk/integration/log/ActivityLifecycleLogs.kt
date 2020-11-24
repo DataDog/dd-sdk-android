@@ -14,6 +14,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 import fr.xgouchet.elmyr.Forge
 
 internal class ActivityLifecycleLogs : AppCompatActivity() {
@@ -36,7 +37,8 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .build()
 
-        Datadog.initialize(this, config)
+        val trackingConsent = intent.getTrackingConsent()
+        Datadog.initialize(this, trackingConsent, config)
 
         logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)

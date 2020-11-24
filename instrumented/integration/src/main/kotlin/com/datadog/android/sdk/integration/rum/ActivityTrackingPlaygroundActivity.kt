@@ -4,40 +4,37 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sdk.rules
+package com.datadog.android.sdk.integration.rum
 
-import android.app.Activity
-import androidx.test.platform.app.InstrumentationRegistry
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 
-internal class RumGesturesTrackingActivityTestRule<T : Activity>(
-    activityClass: Class<T>,
-    keepRequests: Boolean = false
-) : RumMockServerActivityTestRule<T>(activityClass, keepRequests) {
+internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
-    override fun beforeActivityLaunched() {
-        super.beforeActivityLaunched()
-        // attach the gestures tracker
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // use the activity view tracking strategy
         val config = DatadogConfig.Builder(
             RuntimeConfig.DD_TOKEN,
             RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
             RuntimeConfig.APP_ID
-        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+        )
+            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .trackInteractions()
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
 
-        Datadog.initialize(
-            InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
-            config
-        )
+        Datadog.initialize(this, intent.getTrackingConsent(), config)
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.fragment_tracking_layout)
     }
 }

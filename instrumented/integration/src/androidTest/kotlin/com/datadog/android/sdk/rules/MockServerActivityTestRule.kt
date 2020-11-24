@@ -7,42 +7,45 @@
 package com.datadog.android.sdk.rules
 
 import android.app.Activity
+import android.content.Intent
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.tools.unit.invokeMethod
-import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.zip.GZIPInputStream
-import okhttp3.Headers
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
 internal open class MockServerActivityTestRule<T : Activity>(
-    activityClass: Class<T>,
-    val keepRequests: Boolean = false
+    val activityClass: Class<T>,
+    val keepRequests: Boolean = false,
+    val trackingConsent: TrackingConsent = TrackingConsent.PENDING
 ) : ActivityTestRule<T>(activityClass) {
-
-    data class HandledRequest(
-        val url: String? = null,
-        val headers: Headers? = null,
-        val method: String? = null,
-        val jsonBody: JsonElement? = null,
-        val textBody: String? = null
-    )
 
     private val mockWebServer: MockWebServer = MockWebServer()
 
     private val requests = mutableListOf<HandledRequest>()
 
     // region ActivityTestRule
+
+    override fun getActivityIntent(): Intent {
+        return Intent(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            activityClass
+        ).apply {
+            addTrackingConsent(trackingConsent)
+        }
+    }
 
     override fun beforeActivityLaunched() {
         InstrumentationRegistry
