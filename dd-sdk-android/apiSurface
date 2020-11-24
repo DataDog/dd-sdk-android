@@ -8,7 +8,7 @@ object com.datadog.android.Datadog
   fun clearAllData()
   fun setVerbosity(Int)
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(String? = null, String? = null, String? = null)
+  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
 class com.datadog.android.DatadogConfig
   class Builder
     constructor(String, String, java.util.UUID)

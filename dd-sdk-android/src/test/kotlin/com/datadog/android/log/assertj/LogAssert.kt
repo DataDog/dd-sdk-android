@@ -117,10 +117,6 @@ internal class LogAssert(actual: Log) :
 
     fun hasUserInfo(expected: UserInfo?): LogAssert {
         assertThat(actual.userInfo)
-            .overridingErrorMessage(
-                "Expected log to have userInfo $expected " +
-                    "but was ${actual.userInfo}"
-            )
             .isEqualTo(expected)
         return this
     }

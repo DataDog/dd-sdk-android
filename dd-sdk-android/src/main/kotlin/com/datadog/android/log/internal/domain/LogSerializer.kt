@@ -105,6 +105,11 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         if (!userInfo.email.isNullOrEmpty()) {
             jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
+        // add extra attributes
+        userInfo.extraInfo.forEach {
+            val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
+            jsonLog.add(key, it.value.toJsonElement())
+        }
     }
 
     private fun addLogThrowable(

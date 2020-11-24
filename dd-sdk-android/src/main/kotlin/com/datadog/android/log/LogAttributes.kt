@@ -275,24 +275,26 @@ object LogAttributes {
      */
     const val STATUS: String = "status"
 
+    internal const val USR_ATTRIBUTES_GROUP: String = "usr"
+
     /**
      * The user email. (String)
      * This value is filled automatically by the [Logger].
      * @see [Datadog.setUserInfo]
      */
-    const val USR_EMAIL: String = "usr.email"
+    const val USR_EMAIL: String = "$USR_ATTRIBUTES_GROUP.email"
 
     /**
      * The user identifier. (String)
      * This value is filled automatically by the [Logger].
      * @see [Datadog.setUserInfo]
      */
-    const val USR_ID: String = "usr.id"
+    const val USR_ID: String = "$USR_ATTRIBUTES_GROUP.id"
 
     /**
      * The user friendly name. (String)
      * This value is filled automatically by the [Logger].
      * @see [Datadog.setUserInfo]
      */
-    const val USR_NAME: String = "usr.name"
+    const val USR_NAME: String = "$USR_ATTRIBUTES_GROUP.name"
 }
