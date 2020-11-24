@@ -76,6 +76,12 @@ object RumAttributes {
     // region Error
 
     /**
+     * Provides additional context information on the error, usually as a stack trace.  (String)
+     * @see [RumMonitor.addError]
+     */
+    const val ERROR_STACK: String = "error.stack"
+
+    /**
      * Indicates the action performed by the Resource which triggered the error. (String)
      * This value is filled automatically by the [RumMonitor] and the [RumInterceptor].
      * @see [RumMonitor.startResource]
