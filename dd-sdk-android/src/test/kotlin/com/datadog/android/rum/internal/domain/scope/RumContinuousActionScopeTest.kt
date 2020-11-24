@@ -277,6 +277,53 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
+    fun `𝕄 send Action with original data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!= 0)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        testedScope.viewTreeChangeCount = 1
+
+        // When
+        Thread.sleep(500)
+        fakeEvent = RumRawEvent.StopAction(null, null, attributes)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(500)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasActionData {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTargetName(fakeName)
+                    hasType(fakeType)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,

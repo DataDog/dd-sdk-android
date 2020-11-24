@@ -39,8 +39,8 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class StopAction(
-        val type: RumActionType,
-        val name: String,
+        val type: RumActionType?,
+        val name: String?,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
