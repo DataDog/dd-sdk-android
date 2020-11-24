@@ -98,8 +98,8 @@ internal class RumActionScope(
         event: RumRawEvent.StopAction,
         now: Long
     ) {
-        type = event.type
-        name = event.name
+        event.type?.let { type = it }
+        event.name?.let { name = it }
         attributes.putAll(event.attributes)
         stopped = true
         lastInteractionNanos = now

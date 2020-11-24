@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
+import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
@@ -153,7 +154,7 @@ private constructor(
          * (e.g. "staging" vs. "production").
          */
         constructor(clientToken: String, envName: String) :
-            this(clientToken, envName, UUID(0, 0))
+            this(clientToken, envName, NULL_UUID)
 
         /**
          * A Builder class for a [DatadogConfig].

@@ -102,8 +102,8 @@ interface RumMonitor {
      * @see [startUserAction]
      */
     fun stopUserAction(
-        type: RumActionType,
-        name: String,
+        type: RumActionType?,
+        name: String?,
         attributes: Map<String, Any?> = emptyMap()
     )
 

@@ -74,7 +74,11 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
+    override fun stopUserAction(
+        type: RumActionType?,
+        name: String?,
+        attributes: Map<String, Any?>
+    ) {
         handleEvent(
             RumRawEvent.StopAction(type, name, attributes)
         )
