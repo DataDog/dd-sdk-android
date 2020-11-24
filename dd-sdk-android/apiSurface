@@ -68,6 +68,32 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
+interface com.datadog.android.bridge.Datadog
+  fun initialize(DatadogConfiguration): Unit
+class com.datadog.android.bridge.DatadogConfiguration
+  constructor(String, String, String? = null)
+object com.datadog.android.bridge.DdBridge
+  fun getDatadog(android.content.Context): Datadog
+  fun getDdLogs(android.content.Context): DdLogs
+  fun getDdRum(android.content.Context): DdRum
+  fun getDdTrace(android.content.Context): DdTrace
+interface com.datadog.android.bridge.DdLogs
+  fun debug(String, Map<String, Any?>): Unit
+  fun info(String, Map<String, Any?>): Unit
+  fun warn(String, Map<String, Any?>): Unit
+  fun error(String, Map<String, Any?>): Unit
+interface com.datadog.android.bridge.DdRum
+  fun startView(String, String, Long, Map<String, Any?>): Unit
+  fun stopView(String, Long, Map<String, Any?>): Unit
+  fun startAction(String, String, Long, Map<String, Any?>): Unit
+  fun stopAction(Long, Map<String, Any?>): Unit
+  fun addAction(String, String, Long, Map<String, Any?>): Unit
+  fun startResource(String, String, String, Long, Map<String, Any?>): Unit
+  fun stopResource(String, Long, String, Long, Map<String, Any?>): Unit
+  fun addError(String, String, String, Long, Map<String, Any?>): Unit
+interface com.datadog.android.bridge.DdTrace
+  fun startSpan(String, Long, Map<String, Any?>): String
+  fun finishSpan(String, Long, Map<String, Any?>): Unit
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -184,6 +210,7 @@ object com.datadog.android.rum.RumAttributes
   const val SDK_VERSION: String
   const val TRACE_ID: String
   const val SPAN_ID: String
+  const val ERROR_STACK: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
@@ -216,7 +243,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addUserAction(RumActionType, String, Map<String, Any?>)
   fun startUserAction(RumActionType, String, Map<String, Any?>)
-  fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+  fun stopUserAction(RumActionType?, String?, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
