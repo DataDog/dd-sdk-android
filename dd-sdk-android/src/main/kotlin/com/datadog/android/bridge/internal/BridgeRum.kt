@@ -9,9 +9,9 @@ package com.datadog.android.bridge.internal
 import com.datadog.android.bridge.DdRum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.util.Locale
 
 internal class BridgeRum : DdRum {
@@ -111,11 +111,11 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         // TODO RUMM-899 override timestamp and stacktrace
-        GlobalRum.get().addError(
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
             message = message,
             source = RumErrorSource.valueOf(source),
-            throwable = null,
-            attributes = context.toMutableMap().apply { put(RumAttributes.ERROR_STACK, stacktrace) }
+            stacktrace = stacktrace,
+            attributes = context
         )
     }
 

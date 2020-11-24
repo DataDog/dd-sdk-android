@@ -10,10 +10,9 @@ import com.datadog.android.bridge.DdRum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.verify
@@ -43,12 +42,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class BridgeRumTest {
+internal class BridgeRumTest {
 
     lateinit var testedDdRum: DdRum
 
     @Mock
-    lateinit var mockRumMonitor: RumMonitor
+    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @MapForgery(
         key = AdvancedForgery(string = [StringForgery()]),
@@ -218,15 +217,10 @@ class BridgeRumTest {
         @Forgery source: RumErrorSource,
         @StringForgery stackTrace: String
     ) {
-        // Given
-        val updatedContext = fakeContext.toMutableMap().apply {
-            put(RumAttributes.ERROR_STACK, stackTrace)
-        }
-
         // When
         testedDdRum.addError(message, source.name, stackTrace, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).addError(message, source, null, updatedContext)
+        verify(mockRumMonitor).addErrorWithStacktrace(message, source, stackTrace, fakeContext)
     }
 }
