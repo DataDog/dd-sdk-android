@@ -423,6 +423,23 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W addCustomTiming()`(
+        @StringForgery name: String
+    ) {
+        testedMonitor.addTiming(name)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue
+            check(event is RumRawEvent.AddCustomTiming)
+            assertThat(event.name).isEqualTo(name)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M delegate event to rootScope W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,

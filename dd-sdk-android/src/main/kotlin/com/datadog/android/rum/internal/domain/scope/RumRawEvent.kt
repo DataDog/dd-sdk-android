@@ -127,4 +127,9 @@ internal sealed class RumRawEvent {
         override val eventTime: Time,
         val applicationStartupNanos: Long
     ) : RumRawEvent()
+
+    internal data class AddCustomTiming(
+        val name: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
 }

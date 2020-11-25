@@ -182,6 +182,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addTiming(name: String) {
+        handleEvent(
+            RumRawEvent.AddCustomTiming(name)
+        )
+    }
+
     // endregion
 
     // region Internal

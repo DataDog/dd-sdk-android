@@ -11,8 +11,10 @@ import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class RumEventAssert(actual: RumEvent) :
     AbstractObjectAssert<RumEventAssert, RumEvent>(
@@ -29,6 +31,19 @@ internal class RumEventAssert(actual: RumEvent) :
     fun hasUserExtraAttributes(attributes: Map<String, Any?>): RumEventAssert {
         assertThat(actual.userExtraAttributes)
             .containsAllEntriesOf(attributes)
+        return this
+    }
+
+    fun hasCustomTimings(customTimings: Map<String, Long>): RumEventAssert {
+        customTimings.entries.forEach { entry ->
+            assertThat(actual.customTimings).hasEntrySatisfying(entry.key) {
+                assertThat(it).isCloseTo(
+                    entry.value,
+                    Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
+                )
+            }
+        }
+
         return this
     }
 

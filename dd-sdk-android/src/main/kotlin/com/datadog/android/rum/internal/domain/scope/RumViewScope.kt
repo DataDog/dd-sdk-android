@@ -53,6 +53,7 @@ internal class RumViewScope(
     private var version: Long = 1
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
+    private val customTimings: MutableMap<String, Long> = mutableMapOf()
 
     internal var stopped: Boolean = false
 
@@ -89,6 +90,7 @@ internal class RumViewScope(
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
+            is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             else -> delegateEventToChildren(event, writer)
         }
 
@@ -219,6 +221,11 @@ internal class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    private fun onAddCustomTiming(event: RumRawEvent.AddCustomTiming, writer: Writer<RumEvent>) {
+        customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
+        sendViewUpdate(event, writer)
+    }
+
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
         writer: Writer<RumEvent>
@@ -297,7 +304,8 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.extraInfo,
+            customTimings = customTimings
         )
         writer.write(rumEvent)
     }

@@ -291,6 +291,41 @@ internal class RumEventSerializerTest {
             .hasField(key, value)
     }
 
+    @Test
+    fun `M serialize W serialize() with custom timing`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeCustomTimings = forge.aMap { forge.anAlphabeticalString() to forge.aLong() }
+        val fakeEvent: RumEvent =
+            forge.getForgery(RumEvent::class.java).copy(customTimings = fakeCustomTimings)
+
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeEvent)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        // THEN
+        fakeCustomTimings
+            .filter { it.key.isNotBlank() }
+            .forEach {
+                val keyName = "${RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX}.${it.key}"
+                assertThat(jsonObject).hasField(keyName, it.value)
+            }
+    }
+
+    @Test
+    fun `M not add custom timings group at all W serialize() with custom timings null`(
+        @Forgery fakeEvent: RumEvent
+    ) {
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeEvent)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .doesNotHaveField(RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX)
+    }
+
     // region Internal
 
     private fun assertSerializedJsonMatchesInputEvent(

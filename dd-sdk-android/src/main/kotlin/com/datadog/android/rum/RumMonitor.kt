@@ -25,6 +25,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
  */
 @NoOpImplementation
+@SuppressWarnings("ComplexInterface")
 interface RumMonitor {
 
     /**
@@ -168,6 +169,15 @@ interface RumMonitor {
         source: RumErrorSource,
         throwable: Throwable?,
         attributes: Map<String, Any?>
+    )
+
+    /**
+     * Adds a specific timing in the active View. The timing duration will be computed as the
+     * difference between the time the View was started and the time this function was called.
+     * @param name the name of the new custom timing attribute
+     */
+    fun addTiming(
+        name: String
     )
 
     // region Builder
