@@ -26,6 +26,7 @@ import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
+import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -86,11 +87,14 @@ class SampleApplication : Application() {
             createDatadogConfig()
         )
         Datadog.setVerbosity(Log.VERBOSE)
-
         setUserInfo(
             preferences.getUserId(),
             preferences.getUserName(),
-            preferences.getUserEmail()
+            preferences.getUserEmail(),
+            mapOf(
+                UserFragment.GENDER_KEY to preferences.getUserGender(),
+                UserFragment.AGE_KEY to preferences.getUserAge()
+            )
         )
 
         GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())

@@ -194,7 +194,9 @@ internal class GesturesListener(
             }
         }
 
-        devLogger.i(MSG_NO_TARGET_TAP)
+        if (target == null) {
+            devLogger.i(MSG_NO_TARGET_TAP)
+        }
         return target
     }
 

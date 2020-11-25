@@ -63,6 +63,8 @@
     <string name="hint_user_id">User ID</string>
     <string name="hint_user_name">User real name</string>
     <string name="hint_user_email">User email</string>
+    <string name="hint_user_gender">Gender</string>
+    <string name="hint_user_age">Age</string>
 
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>
