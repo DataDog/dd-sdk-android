@@ -85,6 +85,9 @@ internal class DatadogRumMonitorTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
+    @LongForgery(1000000000000, 2000000000000)
+    var fakeTimestamp: Long = 0L
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
@@ -508,6 +511,218 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue
             check(event is RumRawEvent.ResetSession)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W startView()`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String,
+        @StringForgery name: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.startView(key, name, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StartView
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.name).isEqualTo(name)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W stopView()`(
+        @StringForgery(type = StringForgeryType.ASCII) key: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.stopView(key, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopView
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W addUserAction()`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.addUserAction(type, name, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StartAction
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.waitForStop).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W startUserAction()`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.startUserAction(type, name, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StartAction
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.waitForStop).isTrue()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W stopUserAction()`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.stopUserAction(type, name, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopAction
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W startResource()`(
+        @StringForgery key: String,
+        @StringForgery method: String,
+        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.startResource(key, method, url, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StartResource
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.method).isEqualTo(method)
+            assertThat(event.url).isEqualTo(url)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W stopResource()`(
+        @StringForgery key: String,
+        @IntForgery(200, 600) statusCode: Int,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery kind: RumResourceKind
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.stopResource(key, statusCode, size, kind, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResource
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.kind).isEqualTo(kind)
+            assertThat(event.size).isEqualTo(size)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W addError`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.addError(message, source, throwable, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.stacktrace).isNull()
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope with timestamp W onAddErrorWithStacktrace`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String
+    ) {
+        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
+        testedMonitor.addErrorWithStacktrace(message, source, stacktrace, attributes)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isNull()
+            assertThat(event.stacktrace).isEqualTo(stacktrace)
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
