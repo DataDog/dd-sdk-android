@@ -8,38 +8,27 @@ package com.datadog.android.sample.picture
 
 import android.content.Context
 import android.widget.ImageView
-import androidx.lifecycle.ViewModel
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 import com.squareup.picasso.LruCache
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
-import java.security.SecureRandom
 import okhttp3.OkHttpClient
 
-class PictureViewModel : ViewModel() {
+class PicassoImageLoader : ImageLoader {
 
-    val random = SecureRandom()
+    override val type: ImageLoaderType = ImageLoaderType.PICASSO
 
-    fun loadPictureInto(picture: ImageView) {
-        val url = if (random.nextBoolean()) {
-            RANDOM_URL
-        } else {
-            FAILING_URL
-        }
+    override fun load(url: String, imageView: ImageView) {
         Picasso.get()
             .load(url)
             .placeholder(R.drawable.ph_default)
             .error(R.drawable.ph_error)
-            .into(picture)
+            .into(imageView)
     }
 
     companion object {
-        const val RANDOM_URL = "https://source.unsplash.com/random/800x450"
-        const val FAILING_URL = "https://s0urce.unsplash.com/random/800x450"
-
-        fun setup(context: Context, okHttpClient: OkHttpClient) {
-
+        fun initialize(context: Context, okHttpClient: OkHttpClient) {
             val picasso = Picasso.Builder(context)
                 .downloader(OkHttp3Downloader(okHttpClient))
                 .indicatorsEnabled(BuildConfig.DEBUG)

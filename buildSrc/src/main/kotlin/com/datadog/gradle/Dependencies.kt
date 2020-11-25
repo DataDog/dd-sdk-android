@@ -63,6 +63,7 @@ object Dependencies {
         const val Coil = "1.0.0"
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
+        const val Picasso = "2.8"
         const val Realm = "6.0.2"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
@@ -160,17 +161,16 @@ object Dependencies {
         // Integrations
 
         const val Coil = "io.coil-kt:coil:${Versions.Coil}"
-
         val Fresco = arrayOf(
             "com.facebook.fresco:fresco:${Versions.Fresco}",
             "com.facebook.fresco:imagepipeline-okhttp3:${Versions.Fresco}"
         )
-
         val Glide = arrayOf(
             "com.github.bumptech.glide:annotations:${Versions.Glide}",
             "com.github.bumptech.glide:glide:${Versions.Glide}",
             "com.github.bumptech.glide:okhttp3-integration:${Versions.Glide}"
         )
+        const val Picasso = "com.squareup.picasso:picasso:${Versions.Picasso}"
 
         const val Room = "androidx.room:room-runtime:${Versions.Room}"
         const val RxJava = "io.reactivex.rxjava3:rxjava:${Versions.RxJava}"

@@ -77,18 +77,6 @@ android {
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
 
-        register("glide") {
-            dimension = "ill"
-        }
-        register("picasso") {
-            dimension = "ill"
-        }
-        register("fresco") {
-            dimension = "ill"
-        }
-        register("coil") {
-            dimension = "ill"
-        }
         register("room") {
             dimension = "ls"
         }
@@ -105,19 +93,6 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("glide") {
-        java.srcDir("src/glide/kotlin")
-    }
-    sourceSets.named("picasso") {
-        java.srcDir("src/picasso/kotlin")
-    }
-    sourceSets.named("fresco") {
-        java.srcDir("src/fresco/kotlin")
-        resources.srcDirs("src/fresco/res")
-    }
-    sourceSets.named("coil") {
-        java.srcDir("src/coil/kotlin")
     }
     sourceSets.named("sqldelight") {
         java.srcDir("src/sqldelight/kotlin")
@@ -167,10 +142,12 @@ dependencies {
     api(project(":dd-sdk-android-ndk"))
     api(project(":dd-sdk-android-rx"))
     api(project(":dd-sdk-android-timber"))
-    "coilApi"(project(":dd-sdk-android-coil"))
-    "glideApi"(project(":dd-sdk-android-glide"))
-    "frescoApi"(project(":dd-sdk-android-fresco"))
-    "sqldelightApi"(project(":dd-sdk-android-sqldelight"))
+    api(project(":dd-sdk-android-coil"))
+    api(project(":dd-sdk-android-glide"))
+    api(project(":dd-sdk-android-fresco"))
+    api(project(":dd-sdk-android-sqldelight"))
+
+    implementation(Dependencies.Libraries.Kotlin)
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -190,27 +167,13 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-    // Coil
-    "coilImplementation"("io.coil-kt:coil:${Dependencies.Versions.Coil}")
-
-    // Fresco
-    "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
-    "frescoImplementation"(
-        "com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}"
-    )
-
-    // Glide
-    "glideImplementation"("com.github.bumptech.glide:glide:${Dependencies.Versions.Glide}")
-    "glideImplementation"(
-        "com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}"
-    ) {
-        exclude(group = "glide-parent")
-    }
-    "kaptGlide"("com.github.bumptech.glide:compiler:${Dependencies.Versions.Glide}")
-
-    // Picasso
-    "picassoImplementation"("com.squareup.picasso:picasso:2.8")
-
+    // Image Loading Library
+    implementation(Dependencies.Libraries.Coil)
+    implementation(Dependencies.Libraries.Fresco)
+    implementation(Dependencies.Libraries.Glide) { exclude(group = "glide-parent") }
+    implementation(Dependencies.Libraries.Picasso)
+    kapt(Dependencies.AnnotationProcessors.Glide)
+    
     // Room
     "roomImplementation"(Dependencies.Libraries.Room)
     "kaptRoom"(Dependencies.AnnotationProcessors.Room)
@@ -222,8 +185,6 @@ dependencies {
     implementation(Dependencies.Libraries.RxJava)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
     implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
-
-    implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.Coroutines)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
