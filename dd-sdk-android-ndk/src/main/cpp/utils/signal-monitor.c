@@ -70,6 +70,7 @@ static const struct signal handled_signals[] = {
         {SIGILL,  "SIGILL",  "Illegal instruction"},
         {SIGBUS,  "SIGBUS",  "Bus error (bad memory access)"},
         {SIGFPE,  "SIGFPE",  "Floating-point exception"},
+        {SIGABRT,  "SIGABRT",  "The process was terminated"},
         {SIGSEGV, "SIGSEGV", "Segmentation violation (invalid memory reference)"},
         {SIGQUIT, "SIGQUIT", "Application Not Responding"}
 };
