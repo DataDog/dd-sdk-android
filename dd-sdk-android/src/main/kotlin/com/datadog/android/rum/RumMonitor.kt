@@ -24,6 +24,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *
  *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
  */
+@Suppress("ComplexInterface")
 @NoOpImplementation
 @SuppressWarnings("ComplexInterface")
 interface RumMonitor {
@@ -94,6 +95,18 @@ interface RumMonitor {
      * Notifies that a User Action stopped.
      * This is used to stop tracking long running user actions (e.g.: scroll), started
      * with [startUserAction].
+     * @param attributes additional custom attributes to attach to the action
+     * @see [addUserAction]
+     * @see [startUserAction]
+     */
+    fun stopUserAction(
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
+     * Notifies that a User Action stopped, and update the action's type and name.
+     * This is used to stop tracking long running user actions (e.g.: scroll), started
+     * with [startUserAction].
      * @param type the action type (overriding the last started action)
      * @param name the action identifier (overriding the last started action)
      * @param attributes additional custom attributes to attach to the action. Attributes can be
@@ -102,8 +115,8 @@ interface RumMonitor {
      * @see [startUserAction]
      */
     fun stopUserAction(
-        type: RumActionType?,
-        name: String?,
+        type: RumActionType,
+        name: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
