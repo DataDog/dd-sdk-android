@@ -50,8 +50,6 @@ internal class BridgeRum : DdRum {
     override fun stopAction(timestamp: Long, context: Map<String, Any?>) {
         // TODO RUMM-899 override timestamp
         GlobalRum.get().stopUserAction(
-            type = null,
-            name = null,
             attributes = context
         )
     }

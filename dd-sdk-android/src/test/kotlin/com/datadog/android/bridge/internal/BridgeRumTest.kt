@@ -151,7 +151,7 @@ internal class BridgeRumTest {
         testedDdRum.stopAction(fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).stopUserAction(null, null, fakeContext)
+        verify(mockRumMonitor).stopUserAction(fakeContext)
     }
 
     @Test

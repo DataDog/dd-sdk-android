@@ -277,7 +277,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action with original data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
+    fun `𝕄 send Action with original data 𝕎 handleEvent(StopAction) {viewTreeChangeCount!=0}`(
         forge: Forge
     ) {
         // Given
