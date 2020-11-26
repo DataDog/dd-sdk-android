@@ -72,10 +72,4 @@ class LogsFragment :
     }
 
     //endregion
-
-    private data class NdkCrashType(val signal: Int, val label: String) {
-        override fun toString(): String {
-            return label
-        }
-    }
 }

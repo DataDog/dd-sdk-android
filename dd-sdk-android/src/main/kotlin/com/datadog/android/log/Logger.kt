@@ -324,6 +324,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the boolean value of this attribute
      */
@@ -333,6 +337,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the integer value of this attribute
      */
@@ -342,6 +350,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the long value of this attribute
      */
@@ -351,6 +363,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the float value of this attribute
      */
@@ -360,6 +376,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the double value of this attribute
      */
@@ -369,6 +389,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the (nullable) String value of this attribute
      */
@@ -387,6 +411,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the (nullable) [JsonObject] value of this attribute
      */
@@ -396,6 +424,10 @@ internal constructor(private val handler: LogHandler) {
 
     /**
      * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
      * @param key the key for this attribute
      * @param value the (nullable) [JsonArray] value of this attribute
      */

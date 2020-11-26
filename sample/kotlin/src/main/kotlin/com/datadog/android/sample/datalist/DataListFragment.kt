@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import com.datadog.android.sample.data.model.Log
@@ -25,34 +26,13 @@ class DataListFragment : Fragment() {
     lateinit var fab: FloatingActionButton
 
     internal val adapter = Adapter()
+    private var firstDataWasLoaded = false
 
     // region Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel =
-            SampleApplication.getViewModelFactory(requireContext()).create(
-                DataListViewModel::class.java
-            )
-
-        viewModel.observeLiveData().observe(
-            viewLifecycleOwner,
-            Observer {
-                when (it) {
-                    is DataListViewModel.UIResponse.Success -> {
-                        adapter.updateData(it.data)
-                    }
-                    is DataListViewModel.UIResponse.Error -> {
-                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        )
     }
 
     override fun onCreateView(
@@ -65,7 +45,29 @@ class DataListFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = adapter
         fab = rootView.findViewById(R.id.fab)
-        fab.setOnClickListener { viewModel.performRequest(DataListViewModel.UIRequest.FetchData) }
+        viewModel =
+            SampleApplication.getViewModelFactory(requireContext()).create(
+                DataListViewModel::class.java
+            )
+        viewModel.observeLiveData().observe(
+            viewLifecycleOwner,
+            Observer {
+                when (it) {
+                    is DataListViewModel.UIResponse.Success -> {
+                        if (!firstDataWasLoaded) {
+                            GlobalRum.get().addTiming("logs_data_loaded")
+                            firstDataWasLoaded = true
+                        }
+                        adapter.updateData(it.data)
+                    }
+                    is DataListViewModel.UIResponse.Error -> {
+                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+        fab.setOnClickListener { loadData() }
+        loadData()
         return rootView
     }
 
@@ -100,6 +102,10 @@ class DataListFragment : Fragment() {
             ).show()
             true
         }
+    }
+
+    private fun loadData() {
+        viewModel.performRequest(DataListViewModel.UIRequest.FetchData)
     }
 
     // endregion
