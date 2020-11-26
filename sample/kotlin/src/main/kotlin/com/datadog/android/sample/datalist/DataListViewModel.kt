@@ -53,6 +53,14 @@ class DataListViewModel(val repository: DataRepository) : ViewModel() {
         return liveData
     }
 
+    fun getDataSource(): DataSourceType {
+        return repository.getDataSource()
+    }
+
+    fun selectDataSource(type: DataSourceType) {
+        repository.setDataSource(type)
+    }
+
     sealed class UIResponse {
         class Success(val data: List<Log>) : UIResponse()
         class Error(val message: String) : UIResponse()

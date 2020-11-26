@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.room
 
 import androidx.room.Dao
 import androidx.room.Insert

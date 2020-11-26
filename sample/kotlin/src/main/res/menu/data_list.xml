@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:title="@string/group_data_source"
+    >
+        <menu>
+            <item
+                android:title="@string/choice_realm"
+                android:id="@+id/data_source_realm"
+            />
+
+            <item
+                android:title="@string/choice_room"
+                android:id="@+id/data_source_room"
+            />
+
+            <item
+                android:title="@string/choice_sqlite"
+                android:id="@+id/data_source_sqlite"
+            />
+
+            <item
+                android:title="@string/choice_sqldelight"
+                android:id="@+id/data_source_sqldelight"
+            />
+        </menu>
+    </item>
+
+</menu>

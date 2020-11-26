@@ -4,12 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.room
 
 import android.provider.BaseColumns
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.datadog.android.sample.data.db.DatadogDbContract
 import java.util.UUID
 
 @Entity(tableName = DatadogDbContract.Logs.TABLE_NAME)

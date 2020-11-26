@@ -40,6 +40,11 @@
             android:name=".service.LogsForegroundService"
             android:process=":logsService"/>
         <service android:name=".widget.WidgetIntentService"/>
+
+        <provider
+            android:authorities="com.datadog.android.provider"
+            android:name=".data.db.sqlite.DatadogContentProvider"
+            android:exported="false"/>
     </application>
 
 </manifest>

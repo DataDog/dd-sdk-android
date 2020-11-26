@@ -62,7 +62,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions("version", "ill", "ls")
+    flavorDimensions("version")
     productFlavors {
         register("staging") {
             dimension = "version"
@@ -77,35 +77,35 @@ android {
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
 
-        register("room") {
-            dimension = "ls"
-        }
-        register("realm") {
-            dimension = "ls"
-        }
-        register("sqldelight") {
-            dimension = "ls"
-        }
-        register("sqlite") {
-            dimension = "ls"
-        }
+        // register("room") {
+        //     dimension = "ls"
+        // }
+        // register("realm") {
+        //     dimension = "ls"
+        // }
+        // register("sqldelight") {
+        //     dimension = "ls"
+        // }
+        // register("sqlite") {
+        //     dimension = "ls"
+        // }
     }
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }
-    sourceSets.named("sqldelight") {
-        java.srcDir("src/sqldelight/kotlin")
-    }
-    sourceSets.named("sqlite") {
-        java.srcDir("src/sqlite/kotlin")
-    }
-    sourceSets.named("realm") {
-        java.srcDir("src/realm/kotlin")
-    }
-    sourceSets.named("room") {
-        java.srcDir("src/room/kotlin")
-    }
+    // sourceSets.named("sqldelight") {
+    //     java.srcDir("src/sqldelight/kotlin")
+    // }
+    // sourceSets.named("sqlite") {
+    //     java.srcDir("src/sqlite/kotlin")
+    // }
+    // sourceSets.named("realm") {
+    //     java.srcDir("src/realm/kotlin")
+    // }
+    // sourceSets.named("room") {
+    //     java.srcDir("src/room/kotlin")
+    // }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
@@ -164,33 +164,33 @@ dependencies {
     implementation("io.ktor:ktor:1.2.5")
     implementation("io.ktor:ktor-server-netty:1.2.5")
     implementation("io.ktor:ktor-gson:1.2.5")
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     // Image Loading Library
     implementation(Dependencies.Libraries.Coil)
     implementation(Dependencies.Libraries.Fresco)
-    implementation(Dependencies.Libraries.Glide) { exclude(group = "glide-parent") }
+    implementation(Dependencies.Libraries.Glide)
     implementation(Dependencies.Libraries.Picasso)
     kapt(Dependencies.AnnotationProcessors.Glide)
-    
-    // Room
-    "roomImplementation"(Dependencies.Libraries.Room)
-    "kaptRoom"(Dependencies.AnnotationProcessors.Room)
 
-    // SQLDelight
-    "sqldelightImplementation"(Dependencies.Libraries.SQLDelight)
+    // Local Storage
+    implementation(Dependencies.Libraries.SQLDelight)
+    implementation(Dependencies.Libraries.Room)
+    kapt(Dependencies.AnnotationProcessors.Room)
 
-    // RxJava
+    // Multithreading
     implementation(Dependencies.Libraries.RxJava)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
     implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
     implementation(Dependencies.Libraries.Coroutines)
+
+    // Network
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
-    implementation(Dependencies.Libraries.Timber)
 
-    // Stetho
+    // Misc
+    implementation(Dependencies.Libraries.Timber)
     api("com.facebook.stetho:stetho:1.5.1")
 }
 

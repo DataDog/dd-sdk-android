@@ -4,19 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.realm
 
 import android.content.Context
 import com.datadog.android.ktx.rum.useMonitored
+import com.datadog.android.sample.data.db.DataSource
+import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
+import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.realm.Realm
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class LocalDataSource(val context: Context) {
+class RealmDataSource(val context: Context) : DataSource {
 
     init {
         RealmFeature.initialise(context)
@@ -24,11 +27,13 @@ class LocalDataSource(val context: Context) {
 
     // region LocalDataSource
 
-    fun persistLogs(logs: List<Log>) {
+    override val type: DataSourceType = DataSourceType.REALM
+
+    override fun persistLogs(logs: List<Log>) {
         insertLogs(logs)
     }
 
-    fun fetchLogs(): Single<List<Log>> {
+    override fun fetchLogs(): Single<List<Log>> {
         return Single.fromCallable(fetchLogsCallable).subscribeOn(Schedulers.io())
     }
 

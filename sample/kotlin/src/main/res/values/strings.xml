@@ -43,10 +43,17 @@
     <string name="button_save">Save</string>
 
     <string name="group_image_loader">Image Loader</string>
+    <string name="group_data_source">Data Source</string>
+
     <string name="choice_coil">Coil</string>
     <string name="choice_fresco">Fresco</string>
     <string name="choice_glide">Glide</string>
     <string name="choice_picasso">Picasso</string>
+    <string name="choice_realm">Realm</string>
+    <string name="choice_room">Room</string>
+    <string name="choice_sqlite">SQLite</string>
+    <string name="choice_sqldelight">SQLDelight</string>
+
 
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>
     <string name="foreground_service_desc">Used to send logs from a different process</string>

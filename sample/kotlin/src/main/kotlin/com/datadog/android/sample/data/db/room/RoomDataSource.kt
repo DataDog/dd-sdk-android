@@ -4,27 +4,31 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.room
 
 import android.content.Context
+import com.datadog.android.sample.data.db.DataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
+import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class LocalDataSource(val context: Context) {
+class RoomDataSource(val context: Context) : DataSource {
 
     private val logDao = LogsDatabase.getInstance(context).logDao()
 
     // region LocalDataSource
 
-    fun persistLogs(logs: List<Log>) {
+    override val type: DataSourceType = DataSourceType.ROOM
+
+    override fun persistLogs(logs: List<Log>) {
         insertLogs(logs)
     }
 
-    fun fetchLogs(): Single<List<Log>> {
+    override fun fetchLogs(): Single<List<Log>> {
         return Single.fromCallable(fetchLogsCallable).subscribeOn(Schedulers.io())
     }
 

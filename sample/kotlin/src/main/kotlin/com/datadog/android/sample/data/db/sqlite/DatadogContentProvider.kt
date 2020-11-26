@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.contentprovider
+package com.datadog.android.sample.data.db.sqlite
 
 import android.content.ContentProvider
 import android.content.ContentValues

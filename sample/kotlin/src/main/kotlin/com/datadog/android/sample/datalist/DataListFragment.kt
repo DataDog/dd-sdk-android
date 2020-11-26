@@ -2,6 +2,9 @@ package com.datadog.android.sample.datalist
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -24,6 +27,11 @@ class DataListFragment : Fragment() {
     internal val adapter = Adapter()
 
     // region Fragment
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -59,6 +67,39 @@ class DataListFragment : Fragment() {
         fab = rootView.findViewById(R.id.fab)
         fab.setOnClickListener { viewModel.performRequest(DataListViewModel.UIRequest.FetchData) }
         return rootView
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        val currentType = viewModel.getDataSource()
+        inflater.inflate(R.menu.data_list, menu)
+        val disabled = when (currentType) {
+            DataSourceType.REALM -> R.id.data_source_realm
+            DataSourceType.ROOM -> R.id.data_source_room
+            DataSourceType.SQLITE -> R.id.data_source_sqlite
+            DataSourceType.SQLDELIGHT -> R.id.data_source_sqldelight
+        }
+        menu.findItem(disabled).isEnabled = false
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val type = when (item.itemId) {
+            R.id.data_source_realm -> DataSourceType.REALM
+            R.id.data_source_room -> DataSourceType.ROOM
+            R.id.data_source_sqlite -> DataSourceType.SQLITE
+            R.id.data_source_sqldelight -> DataSourceType.SQLDELIGHT
+            else -> null
+        }
+        return if (type == null) {
+            super.onOptionsItemSelected(item)
+        } else {
+            viewModel.selectDataSource(type)
+            Toast.makeText(
+                context,
+                "Change will be effective after the application restarts.",
+                Toast.LENGTH_LONG
+            ).show()
+            true
+        }
     }
 
     // endregion

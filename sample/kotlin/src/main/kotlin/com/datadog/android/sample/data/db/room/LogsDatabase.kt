@@ -4,12 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.room
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.datadog.android.sample.data.db.DatadogDbContract
 
 @Database(entities = [LogRoom::class], version = DatadogDbContract.DB_VERSION)
 abstract class LogsDatabase : RoomDatabase() {
