@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 
 class PictureFragment :
@@ -35,7 +36,7 @@ class PictureFragment :
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         rootView = inflater.inflate(R.layout.fragment_picture, container, false)
         picture = rootView.findViewById(R.id.picture)
         rootView.findViewById<View>(R.id.load_picture).setOnClickListener(this)
@@ -45,6 +46,11 @@ class PictureFragment :
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(PictureViewModel::class.java)
+        context?.let {
+            viewModel.selectImageLoader(
+                Preferences.defaultPreferences(it).getImageLoader()
+            )
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -72,6 +78,9 @@ class PictureFragment :
         } else {
             viewModel.selectImageLoader(type)
             activity?.invalidateOptionsMenu()
+            context?.let {
+                Preferences.defaultPreferences(it).setImageLoader(type)
+            }
             true
         }
     }

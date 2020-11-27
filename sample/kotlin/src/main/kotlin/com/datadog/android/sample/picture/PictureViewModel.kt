@@ -13,7 +13,7 @@ import java.security.SecureRandom
 class PictureViewModel : ViewModel() {
 
     val random = SecureRandom()
-    var loader: ImageLoader = CoilImageLoader()
+    var loader: ImageLoader = GlideImageLoader()
 
     fun loadPictureInto(picture: ImageView) {
         val url = if (random.nextBoolean()) {
@@ -25,16 +25,18 @@ class PictureViewModel : ViewModel() {
     }
 
     fun selectImageLoader(type: ImageLoaderType) {
-        loader = when (type) {
-            ImageLoaderType.COIL -> CoilImageLoader()
-            ImageLoaderType.FRESCO -> FrescoImageLoader()
-            ImageLoaderType.GLIDE -> GlideImageLoader()
-            ImageLoaderType.PICASSO -> PicassoImageLoader()
-        }
+        loader = buildImageLoader(type)
     }
 
     fun getImageLoader(): ImageLoaderType {
         return loader.type
+    }
+
+    private fun buildImageLoader(type: ImageLoaderType) = when (type) {
+        ImageLoaderType.COIL -> CoilImageLoader()
+        ImageLoaderType.FRESCO -> FrescoImageLoader()
+        ImageLoaderType.GLIDE -> GlideImageLoader()
+        ImageLoaderType.PICASSO -> PicassoImageLoader()
     }
 
     companion object {

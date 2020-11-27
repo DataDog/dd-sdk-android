@@ -7,7 +7,7 @@
 package com.datadog.android.sample.data.db
 
 import android.content.Context
-import android.preference.PreferenceManager
+import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.data.db.realm.RealmDataSource
 import com.datadog.android.sample.data.db.room.RoomDataSource
 import com.datadog.android.sample.data.db.sqldelight.SqlDelightDataSource
@@ -15,21 +15,14 @@ import com.datadog.android.sample.data.db.sqlite.SQLiteDataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.SingleSource
-import java.lang.IllegalArgumentException
 
 class LocalDataSource(
     val context: Context
 ) {
 
     private val dataSource: DataSource by lazy {
-        val choice = PreferenceManager.getDefaultSharedPreferences(context)
-            .getString(PREF_DATA_SOURCE, null)
-
-        val type = try {
-            DataSourceType.valueOf(choice.orEmpty())
-        } catch (e: IllegalArgumentException) {
-            DataSourceType.ROOM
-        }
+        val type = Preferences.defaultPreferences(context)
+            .getLocalDataSource()
 
         when (type) {
             DataSourceType.REALM -> RealmDataSource(context)
@@ -52,13 +45,6 @@ class LocalDataSource(
     }
 
     fun setType(type: DataSourceType) {
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .edit()
-            .putString(PREF_DATA_SOURCE, type.name)
-            .apply()
-    }
-
-    companion object {
-        private const val PREF_DATA_SOURCE = "_data_source"
+        Preferences.defaultPreferences(context).setLocalDataSource(type)
     }
 }

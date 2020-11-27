@@ -9,7 +9,10 @@ package com.datadog.android.sample
 import android.content.Context
 import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sample.datalist.DataSourceType
+import com.datadog.android.sample.picture.ImageLoaderType
 import com.datadog.android.sample.user.UserFragment
+import java.lang.IllegalArgumentException
 
 object Preferences {
 
@@ -38,10 +41,32 @@ object Preferences {
         }
 
         fun getTrackingConsent(): TrackingConsent {
-            val consentId =
-                PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            val consentId = PreferenceManager
+                    .getDefaultSharedPreferences(applicationContext)
                     .getInt(PREF_TRACKING_CONSENT, CONSENT_PENDING)
             return resolveConsentFromId(consentId)
+        }
+
+        fun getLocalDataSource(): DataSourceType {
+            val source = PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(PREF_LOCAL_DATA_SOURCE, null)
+            return try {
+                DataSourceType.valueOf(source.orEmpty())
+            } catch (e: IllegalArgumentException) {
+                DataSourceType.ROOM
+            }
+        }
+
+        fun getImageLoader(): ImageLoaderType {
+            val source = PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(PREF_IMAGE_LOADER, null)
+            return try {
+                ImageLoaderType.valueOf(source.orEmpty())
+            } catch (e: IllegalArgumentException) {
+                ImageLoaderType.GLIDE
+            }
         }
 
         fun setUserCredentials(id: String, name: String, email: String) {
@@ -57,6 +82,20 @@ object Preferences {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .edit()
                 .putInt(PREF_TRACKING_CONSENT, resolveIdFromConsent(consent))
+                .apply()
+        }
+
+        fun setLocalDataSource(type: DataSourceType) {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .edit()
+                .putString(PREF_LOCAL_DATA_SOURCE, type.name)
+                .apply()
+        }
+
+        fun setImageLoader(type: ImageLoaderType) {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .edit()
+                .putString(PREF_IMAGE_LOADER, type.name)
                 .apply()
         }
 
@@ -81,6 +120,8 @@ object Preferences {
             private const val PREF_NAME = "user-name"
             private const val PREF_EMAIL = "user-email"
             private const val PREF_TRACKING_CONSENT = "tracking-consent"
+            private const val PREF_LOCAL_DATA_SOURCE = "local-data-source"
+            private const val PREF_IMAGE_LOADER = "image-loader"
 
             private const val CONSENT_PENDING = 0
             private const val CONSENT_GRANTED = 1
