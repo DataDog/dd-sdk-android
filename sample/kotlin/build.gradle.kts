@@ -62,7 +62,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions("version", "ill", "ls")
+    flavorDimensions("version")
     productFlavors {
         register("staging") {
             dimension = "version"
@@ -76,60 +76,10 @@ android {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
-
-        register("glide") {
-            dimension = "ill"
-        }
-        register("picasso") {
-            dimension = "ill"
-        }
-        register("fresco") {
-            dimension = "ill"
-        }
-        register("coil") {
-            dimension = "ill"
-        }
-        register("room") {
-            dimension = "ls"
-        }
-        register("realm") {
-            dimension = "ls"
-        }
-        register("sqldelight") {
-            dimension = "ls"
-        }
-        register("sqlite") {
-            dimension = "ls"
-        }
     }
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("glide") {
-        java.srcDir("src/glide/kotlin")
-    }
-    sourceSets.named("picasso") {
-        java.srcDir("src/picasso/kotlin")
-    }
-    sourceSets.named("fresco") {
-        java.srcDir("src/fresco/kotlin")
-        resources.srcDirs("src/fresco/res")
-    }
-    sourceSets.named("coil") {
-        java.srcDir("src/coil/kotlin")
-    }
-    sourceSets.named("sqldelight") {
-        java.srcDir("src/sqldelight/kotlin")
-    }
-    sourceSets.named("sqlite") {
-        java.srcDir("src/sqlite/kotlin")
-    }
-    sourceSets.named("realm") {
-        java.srcDir("src/realm/kotlin")
-    }
-    sourceSets.named("room") {
-        java.srcDir("src/room/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -167,10 +117,12 @@ dependencies {
     api(project(":dd-sdk-android-ndk"))
     api(project(":dd-sdk-android-rx"))
     api(project(":dd-sdk-android-timber"))
-    "coilApi"(project(":dd-sdk-android-coil"))
-    "glideApi"(project(":dd-sdk-android-glide"))
-    "frescoApi"(project(":dd-sdk-android-fresco"))
-    "sqldelightApi"(project(":dd-sdk-android-sqldelight"))
+    api(project(":dd-sdk-android-coil"))
+    api(project(":dd-sdk-android-glide"))
+    api(project(":dd-sdk-android-fresco"))
+    api(project(":dd-sdk-android-sqldelight"))
+
+    implementation(Dependencies.Libraries.Kotlin)
 
     // Android dependencies
     implementation(Dependencies.Libraries.AndroidXMultidex)
@@ -187,49 +139,33 @@ dependencies {
     implementation("io.ktor:ktor:1.2.5")
     implementation("io.ktor:ktor-server-netty:1.2.5")
     implementation("io.ktor:ktor-gson:1.2.5")
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-    // Coil
-    "coilImplementation"("io.coil-kt:coil:${Dependencies.Versions.Coil}")
+    // Image Loading Library
+    implementation(Dependencies.Libraries.Coil)
+    implementation(Dependencies.Libraries.Fresco)
+    implementation(Dependencies.Libraries.Glide)
+    implementation(Dependencies.Libraries.Picasso)
+    kapt(Dependencies.AnnotationProcessors.Glide)
 
-    // Fresco
-    "frescoImplementation"("com.facebook.fresco:fresco:${Dependencies.Versions.Fresco}")
-    "frescoImplementation"(
-        "com.facebook.fresco:imagepipeline-okhttp3:${Dependencies.Versions.Fresco}"
-    )
+    // Local Storage
+    implementation(Dependencies.Libraries.SQLDelight)
+    implementation(Dependencies.Libraries.Room)
+    kapt(Dependencies.AnnotationProcessors.Room)
 
-    // Glide
-    "glideImplementation"("com.github.bumptech.glide:glide:${Dependencies.Versions.Glide}")
-    "glideImplementation"(
-        "com.github.bumptech.glide:okhttp3-integration:${Dependencies.Versions.Glide}"
-    ) {
-        exclude(group = "glide-parent")
-    }
-    "kaptGlide"("com.github.bumptech.glide:compiler:${Dependencies.Versions.Glide}")
-
-    // Picasso
-    "picassoImplementation"("com.squareup.picasso:picasso:2.8")
-
-    // Room
-    "roomImplementation"(Dependencies.Libraries.Room)
-    "kaptRoom"(Dependencies.AnnotationProcessors.Room)
-
-    // SQLDelight
-    "sqldelightImplementation"(Dependencies.Libraries.SQLDelight)
-
-    // RxJava
+    // Multithreading
     implementation(Dependencies.Libraries.RxJava)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
     implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
-
-    implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.Coroutines)
+
+    // Network
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.Libraries.Gson)
-    implementation(Dependencies.Libraries.Timber)
 
-    // Stetho
+    // Misc
+    implementation(Dependencies.Libraries.Timber)
     api("com.facebook.stetho:stetho:1.5.1")
 }
 

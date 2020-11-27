@@ -23,7 +23,9 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
-import com.datadog.android.sample.picture.PictureViewModel
+import com.datadog.android.sample.picture.CoilImageLoader
+import com.datadog.android.sample.picture.FrescoImageLoader
+import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -67,7 +69,13 @@ class SampleApplication : Application() {
 
         initializeTimber()
 
-        PictureViewModel.setup(this, okHttpClient)
+        initializeImageLoaders()
+    }
+
+    private fun initializeImageLoaders() {
+        CoilImageLoader.initialize(this, okHttpClient)
+        PicassoImageLoader.initialize(this, okHttpClient)
+        FrescoImageLoader.initialize(this, okHttpClient)
     }
 
     private fun initializeDatadog() {
@@ -92,7 +100,7 @@ class SampleApplication : Application() {
     private fun createDatadogConfig(): DatadogConfig {
         val configBuilder = DatadogConfig.Builder(
             BuildConfig.DD_CLIENT_TOKEN,
-            BuildConfig.FLAVOR_version,
+            BuildConfig.FLAVOR,
             BuildConfig.DD_RUM_APPLICATION_ID
         )
 

@@ -9,6 +9,7 @@ package com.datadog.android.sample.data
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.remote.RemoteDataSource
+import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -28,5 +29,13 @@ class DataRepository(
                     localDataSource.persistLogs(it)
                 }
         )
+    }
+
+    fun getDataSource(): DataSourceType {
+        return localDataSource.getType()
+    }
+
+    fun setDataSource(type: DataSourceType) {
+        localDataSource.setType(type)
     }
 }

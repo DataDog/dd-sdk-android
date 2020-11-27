@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:title="@string/group_image_loader"
+    >
+        <menu>
+            <item
+                android:title="@string/choice_coil"
+                android:id="@+id/image_loader_coil"
+            />
+
+            <item
+                android:title="@string/choice_fresco"
+                android:id="@+id/image_loader_fresco"
+            />
+
+            <item
+                android:title="@string/choice_glide"
+                android:id="@+id/image_loader_glide"
+            />
+
+            <item
+                android:title="@string/choice_picasso"
+                android:id="@+id/image_loader_picasso"
+            />
+        </menu>
+    </item>
+
+</menu>

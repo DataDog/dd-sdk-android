@@ -6,8 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application>
-        <provider android:authorities="com.datadog.android.provider"
-                  android:name=".data.contentprovider.DatadogContentProvider" android:exported="false"/>
+
     </application>
 
 </manifest>
