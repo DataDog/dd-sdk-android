@@ -76,36 +76,11 @@ android {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
-
-        // register("room") {
-        //     dimension = "ls"
-        // }
-        // register("realm") {
-        //     dimension = "ls"
-        // }
-        // register("sqldelight") {
-        //     dimension = "ls"
-        // }
-        // register("sqlite") {
-        //     dimension = "ls"
-        // }
     }
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }
-    // sourceSets.named("sqldelight") {
-    //     java.srcDir("src/sqldelight/kotlin")
-    // }
-    // sourceSets.named("sqlite") {
-    //     java.srcDir("src/sqlite/kotlin")
-    // }
-    // sourceSets.named("realm") {
-    //     java.srcDir("src/realm/kotlin")
-    // }
-    // sourceSets.named("room") {
-    //     java.srcDir("src/room/kotlin")
-    // }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
