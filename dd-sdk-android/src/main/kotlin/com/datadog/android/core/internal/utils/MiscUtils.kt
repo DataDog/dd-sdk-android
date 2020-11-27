@@ -6,6 +6,13 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
+import java.util.Date
+
 internal inline fun retryWithDelay(
     block: () -> Boolean,
     times: Int,
@@ -22,4 +29,31 @@ internal inline fun retryWithDelay(
         }
     }
     return wasSuccessful
+}
+
+internal fun Any?.toJsonElement(): JsonElement {
+    return when (this) {
+        NULL_MAP_VALUE -> JsonNull.INSTANCE
+        null -> JsonNull.INSTANCE
+        is Boolean -> JsonPrimitive(this)
+        is Int -> JsonPrimitive(this)
+        is Long -> JsonPrimitive(this)
+        is Float -> JsonPrimitive(this)
+        is Double -> JsonPrimitive(this)
+        is String -> JsonPrimitive(this)
+        is Date -> JsonPrimitive(this.time)
+        is Iterable<*> -> this.toJsonArray()
+        is JsonObject -> this
+        is JsonArray -> this
+        is JsonPrimitive -> this
+        else -> JsonPrimitive(toString())
+    }
+}
+
+internal fun Iterable<*>.toJsonArray(): JsonElement {
+    val array = JsonArray()
+    forEach {
+        array.add(it.toJsonElement())
+    }
+    return array
 }

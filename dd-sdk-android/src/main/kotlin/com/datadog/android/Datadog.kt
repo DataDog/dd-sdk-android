@@ -277,15 +277,17 @@ object Datadog {
      * @param id (nullable) a unique user identifier (relevant to your business domain)
      * @param name (nullable) the user name or alias
      * @param email (nullable) the user email
+     * @param extraInfo additional information
      */
     @JvmStatic
     @JvmOverloads
     fun setUserInfo(
         id: String? = null,
         name: String? = null,
-        email: String? = null
+        email: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        CoreFeature.userInfoProvider.setUserInfo(UserInfo(id, name, email))
+        CoreFeature.userInfoProvider.setUserInfo(UserInfo(id, name, email, extraInfo))
     }
 
     // region Internal Initialization

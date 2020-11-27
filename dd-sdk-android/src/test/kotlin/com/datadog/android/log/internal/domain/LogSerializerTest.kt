@@ -7,13 +7,12 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -21,7 +20,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Date
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -139,15 +137,15 @@ internal class LogSerializerTest {
             .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
-        assertThat(jsonObject).hasStringFieldMatching(
-            LogAttributes.DATE,
-            "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
-        )
+        assertThat(jsonObject)
+            .hasStringFieldMatching(
+                LogAttributes.DATE,
+                "\\d+\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z"
+            )
+            .containsExtraAttributes(log.attributes)
 
         assertJsonContainsNetworkInfo(jsonObject, log)
         assertJsonContainsUserInfo(jsonObject, log)
-
-        assertJsonContainsCustomAttributes(jsonObject, log)
         assertJsonContainsCustomTags(jsonObject, log)
         assertJsonContainsThrowableInfo(jsonObject, log)
     }
@@ -192,30 +190,6 @@ internal class LogSerializerTest {
                 .doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 .doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
         }
-    }
-
-    private fun assertJsonContainsCustomAttributes(
-        jsonObject: JsonObject,
-        log: Log
-    ) {
-        log.attributes
-            .filter { it.key.isNotBlank() }
-            .forEach {
-                val value = it.value
-                when (value) {
-                    NULL_MAP_VALUE -> assertThat(jsonObject).hasNullField(it.key)
-                    is Boolean -> assertThat(jsonObject).hasField(it.key, value)
-                    is Int -> assertThat(jsonObject).hasField(it.key, value)
-                    is Long -> assertThat(jsonObject).hasField(it.key, value)
-                    is Float -> assertThat(jsonObject).hasField(it.key, value)
-                    is Double -> assertThat(jsonObject).hasField(it.key, value)
-                    is String -> assertThat(jsonObject).hasField(it.key, value)
-                    is Date -> assertThat(jsonObject).hasField(it.key, value.time)
-                    is JsonObject -> assertThat(jsonObject).hasField(it.key, value)
-                    is JsonArray -> assertThat(jsonObject).hasField(it.key, value)
-                    else -> assertThat(jsonObject).hasField(it.key, value.toString())
-                }
-            }
     }
 
     private fun assertJsonContainsCustomTags(
@@ -276,6 +250,7 @@ internal class LogSerializerTest {
             } else {
                 hasField(LogAttributes.USR_EMAIL, info.email)
             }
+            containsExtraAttributes(info.extraInfo, LogAttributes.USR_ATTRIBUTES_GROUP + ".")
         }
     }
 

@@ -191,7 +191,8 @@ internal class RumActionScope(
             )
             val rumEvent = RumEvent(
                 event = actionEvent,
-                attributes = attributes
+                globalAttributes = attributes,
+                userExtraAttributes = user.extraInfo
             )
             writer.write(rumEvent)
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)

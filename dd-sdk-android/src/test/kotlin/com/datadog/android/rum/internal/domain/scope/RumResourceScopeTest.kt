@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
@@ -75,9 +74,6 @@ internal class RumResourceScopeTest {
 
     @Mock
     lateinit var mockEvent: RumRawEvent
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
@@ -165,6 +161,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -215,6 +212,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -268,6 +266,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -319,6 +318,49 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasResourceData {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
+                    hasFirstParty(null)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentResource>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send event with user extra attributes 𝕎 handleEvent(StopResource)`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long
+    ) {
+        // When
+        Thread.sleep(500)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -369,6 +411,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -421,6 +464,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -475,6 +519,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -524,6 +569,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -569,6 +615,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -622,6 +669,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -735,6 +783,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
@@ -784,6 +833,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
@@ -834,6 +884,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)

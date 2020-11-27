@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -65,9 +64,6 @@ internal class RumActionScopeTest {
 
     @Mock
     lateinit var mockParentScope: RumScope
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
@@ -145,6 +141,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -221,6 +218,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -296,6 +294,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -343,6 +342,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -388,6 +388,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -427,6 +428,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -464,6 +466,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -502,6 +505,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -540,6 +544,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -581,6 +586,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -620,6 +626,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -665,6 +672,47 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasActionData {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send event with user extra attributes 𝕎 handleEvent(any)`(
+        @IntForgery(1) count: Int,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.viewTreeChangeCount = count
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+
+        // When
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -704,6 +752,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -743,6 +792,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -784,6 +834,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -823,6 +874,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -931,6 +983,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -967,6 +1020,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -1008,6 +1062,7 @@ internal class RumActionScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasActionData {
                     hasId(testedScope.actionId)
                     hasTimestamp(fakeEventTime.timestamp)

@@ -23,6 +23,8 @@ class UserFragment : Fragment(), View.OnClickListener {
     lateinit var idField: EditText
     lateinit var nameField: EditText
     lateinit var emailField: EditText
+    lateinit var userGenderField: EditText
+    lateinit var userAgeField: EditText
 
     // region Fragment
 
@@ -35,6 +37,8 @@ class UserFragment : Fragment(), View.OnClickListener {
         idField = rootView.findViewById(R.id.user_id)
         nameField = rootView.findViewById(R.id.user_name)
         emailField = rootView.findViewById(R.id.user_email)
+        userGenderField = rootView.findViewById(R.id.user_gender)
+        userAgeField = rootView.findViewById(R.id.user_age)
         rootView.findViewById<View>(R.id.save_user).setOnClickListener(this)
         return rootView
     }
@@ -45,6 +49,7 @@ class UserFragment : Fragment(), View.OnClickListener {
         idField.setText(preferences.getUserId())
         nameField.setText(preferences.getUserName())
         emailField.setText(preferences.getUserEmail())
+        userGenderField.setText(preferences.getUserGender())
     }
 
     // endregion
@@ -56,8 +61,19 @@ class UserFragment : Fragment(), View.OnClickListener {
             val id: String = idField.text.toString()
             val name: String = nameField.text.toString()
             val email: String = emailField.text.toString()
-            Preferences.defaultPreferences(requireContext()).setUserCredentials(id, name, email)
-            setUserInfo(id, name, email)
+            val gender: String = userGenderField.text.toString()
+            val age: Int = Integer.valueOf(userAgeField.text.toString())
+            Preferences.defaultPreferences(requireContext())
+                .setUserCredentials(id, name, email, gender, age)
+            setUserInfo(
+                id,
+                name,
+                email,
+                mapOf(
+                    GENDER_KEY to gender,
+                    AGE_KEY to age
+                )
+            )
             log("Updated user info")
         }
         Snackbar.make(view ?: v.rootView, "User info updated", Snackbar.LENGTH_SHORT).show()
@@ -66,8 +82,7 @@ class UserFragment : Fragment(), View.OnClickListener {
     // endregion
 
     companion object {
-        const val PREF_ID = "user-id"
-        const val PREF_NAME = "user-name"
-        const val PREF_EMAIL = "user-email"
+        internal const val GENDER_KEY = "gender"
+        internal const val AGE_KEY = "age"
     }
 }

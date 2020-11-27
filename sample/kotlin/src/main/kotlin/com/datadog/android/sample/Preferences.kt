@@ -11,7 +11,6 @@ import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
 import com.datadog.android.sample.picture.ImageLoaderType
-import com.datadog.android.sample.user.UserFragment
 import java.lang.IllegalArgumentException
 
 object Preferences {
@@ -40,10 +39,28 @@ object Preferences {
                 .getString(PREF_EMAIL, null)
         }
 
+        fun getUserGender(): String? {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(
+                    PREF_GENDER,
+                    null
+                )
+        }
+
+        fun getUserAge(): Int {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getInt(
+                    PREF_AGE,
+                    0
+                )
+        }
+
         fun getTrackingConsent(): TrackingConsent {
             val consentId = PreferenceManager
-                    .getDefaultSharedPreferences(applicationContext)
-                    .getInt(PREF_TRACKING_CONSENT, CONSENT_PENDING)
+                .getDefaultSharedPreferences(applicationContext)
+                .getInt(PREF_TRACKING_CONSENT, CONSENT_PENDING)
             return resolveConsentFromId(consentId)
         }
 
@@ -69,12 +86,20 @@ object Preferences {
             }
         }
 
-        fun setUserCredentials(id: String, name: String, email: String) {
+        fun setUserCredentials(
+            id: String,
+            name: String,
+            email: String,
+            gender: String,
+            age: Int
+        ) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .edit()
-                .putString(UserFragment.PREF_ID, id)
-                .putString(UserFragment.PREF_NAME, name)
-                .putString(UserFragment.PREF_EMAIL, email)
+                .putString(PREF_ID, id)
+                .putString(PREF_NAME, name)
+                .putString(PREF_EMAIL, email)
+                .putString(PREF_GENDER, gender)
+                .putInt(PREF_AGE, age)
                 .apply()
         }
 
@@ -119,6 +144,8 @@ object Preferences {
             private const val PREF_ID = "user-id"
             private const val PREF_NAME = "user-name"
             private const val PREF_EMAIL = "user-email"
+            private const val PREF_GENDER = "user-gender"
+            private const val PREF_AGE = "user-age"
             private const val PREF_TRACKING_CONSENT = "tracking-consent"
             private const val PREF_LOCAL_DATA_SOURCE = "local-data-source"
             private const val PREF_IMAGE_LOADER = "image-loader"

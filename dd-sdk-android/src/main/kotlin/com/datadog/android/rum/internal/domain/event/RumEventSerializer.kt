@@ -7,17 +7,14 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
-import java.util.Date
 
 internal class RumEventSerializer : Serializer<RumEvent> {
 
@@ -26,7 +23,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     override fun serialize(model: RumEvent): String {
         val json = model.event.toJson().asJsonObject
 
-        addCustomAttributes(model, json)
+        addCustomAttributes(model.globalAttributes, json, GLOBAL_ATTRIBUTE_PREFIX, knownAttributes)
+        addCustomAttributes(model.userExtraAttributes, json, USER_ATTRIBUTE_PREFIX)
 
         return json.toString()
     }
@@ -36,12 +34,15 @@ internal class RumEventSerializer : Serializer<RumEvent> {
     // region Internal
 
     private fun addCustomAttributes(
-        event: RumEvent,
-        jsonEvent: JsonObject
+        attributes: Map<String, Any?>,
+        jsonEvent: JsonObject,
+        keyPrefix: String,
+        knownAttributesKeys: Set<String> = emptySet()
     ) {
-        event.attributes.forEach {
+        attributes.forEach {
             val rawKey = it.key
-            val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
+            val key =
+                if (rawKey in knownAttributesKeys) rawKey else "$keyPrefix.$rawKey"
             val value = it.value
             jsonEvent.add(key, value.toJsonElement())
         }
@@ -62,6 +63,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL
         )
+
+        internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
+        internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
     }
 }
 
@@ -73,30 +77,4 @@ private fun Any.toJson(): JsonElement {
         is ErrorEvent -> toJson()
         else -> JsonObject()
     }
-}
-
-internal fun Any?.toJsonElement(): JsonElement {
-    return when (this) {
-        null -> JsonNull.INSTANCE
-        is Boolean -> JsonPrimitive(this)
-        is Int -> JsonPrimitive(this)
-        is Long -> JsonPrimitive(this)
-        is Float -> JsonPrimitive(this)
-        is Double -> JsonPrimitive(this)
-        is String -> JsonPrimitive(this)
-        is Date -> JsonPrimitive(this.time)
-        is Iterable<*> -> this.toJsonArray()
-        is JsonObject -> this
-        is JsonArray -> this
-        is JsonPrimitive -> this
-        else -> JsonPrimitive(toString())
-    }
-}
-
-internal fun Iterable<*>.toJsonArray(): JsonElement {
-    val array = JsonArray()
-    forEach {
-        array.add(it.toJsonElement())
-    }
-    return array
 }
