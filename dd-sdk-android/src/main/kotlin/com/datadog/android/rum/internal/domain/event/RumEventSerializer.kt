@@ -20,8 +20,7 @@ import com.google.gson.JsonObject
 
 internal class RumEventSerializer(
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) :
-    Serializer<RumEvent> {
+) : Serializer<RumEvent> {
 
     // region Serializer
 
@@ -73,8 +72,7 @@ internal class RumEventSerializer(
     ) {
         attributes.forEach {
             val rawKey = it.key
-            val key =
-                if (rawKey in knownAttributesKeys) rawKey else "$keyPrefix.$rawKey"
+            val key = if (rawKey in knownAttributesKeys) rawKey else "$keyPrefix.$rawKey"
             val value = it.value
             jsonEvent.add(key, value.toJsonElement())
         }
