@@ -291,6 +291,25 @@ internal class RumEventSerializerTest {
             .hasField(key, value)
     }
 
+    @Test
+    fun `𝕄 not serialied attributes in ignored list 𝕎 serialize()`(
+        @Forgery fakeEvent: RumEvent,
+        forge: Forge
+    ) {
+        val key = forge.anElementFrom(RumEventSerializer.ignoredAttributes)
+        val contextKey = "context.$key"
+        val value = forge.anAlphabeticalString()
+        val event = fakeEvent.copy(attributes = mapOf(key to value))
+
+        val serialized = testedSerializer.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        assertThat(jsonObject)
+            .doesNotHaveField(contextKey)
+            .doesNotHaveField(key)
+    }
+
     // region Internal
 
     private fun assertSerializedJsonMatchesInputEvent(
