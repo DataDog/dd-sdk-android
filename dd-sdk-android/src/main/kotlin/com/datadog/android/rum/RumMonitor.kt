@@ -25,6 +25,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
  */
 @NoOpImplementation
+@SuppressWarnings("ComplexInterface")
 interface RumMonitor {
 
     /**
@@ -32,7 +33,8 @@ interface RumMonitor {
      * @param key the instance that represents the active view (usually your
      * [Activity] or [Fragment] instance).
      * @param name the name of the view (usually your [Activity] or [Fragment] full class name)
-     * @param attributes additional custom attributes to attach to the view
+     * @param attributes additional custom attributes to attach to the view. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [stopView]
      */
     fun startView(
@@ -45,7 +47,8 @@ interface RumMonitor {
      * Stops a previously started View, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
      * [Activity] or [Fragment] instance).
-     * @param attributes additional custom attributes to attach to the view
+     * @param attributes additional custom attributes to attach to the view. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [startView]
      */
     fun stopView(
@@ -58,7 +61,8 @@ interface RumMonitor {
      * This is used to track discrete user actions (e.g.: tap).
      * @param type the action type
      * @param name the action identifier
-     * @param attributes additional custom attributes to attach to the action
+     * @param attributes additional custom attributes to attach to the action. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [startUserAction]
      * @see [stopUserAction]
      */
@@ -75,7 +79,8 @@ interface RumMonitor {
      * 10 seconds.
      * @param type the action type
      * @param name the action identifier
-     * @param attributes additional custom attributes to attach to the action
+     * @param attributes additional custom attributes to attach to the action. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [stopUserAction]
      * @see [addUserAction]
      */
@@ -91,7 +96,8 @@ interface RumMonitor {
      * with [startUserAction].
      * @param type the action type (overriding the last started action)
      * @param name the action identifier (overriding the last started action)
-     * @param attributes additional custom attributes to attach to the action
+     * @param attributes additional custom attributes to attach to the action. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [addUserAction]
      * @see [startUserAction]
      */
@@ -107,7 +113,8 @@ interface RumMonitor {
      * request or network call instance).
      * @param method the method used to load the resource (E.g., for network: "GET" or "POST")
      * @param url the url or local path of the resource being loaded
-     * @param attributes additional custom attributes to attach to the resource
+     * @param attributes additional custom attributes to attach to the resource. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [stopResource]
      * @see [stopResourceWithError]
      */
@@ -125,7 +132,8 @@ interface RumMonitor {
      * @param statusCode the status code of the resource (if any)
      * @param size the size of the resource, in bytes
      * @param kind the type of resource loaded
-     * @param attributes additional custom attributes to attach to the resource
+     * @param attributes additional custom attributes to attach to the resource. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [startResource]
      * @see [stopResourceWithError]
      */
@@ -161,13 +169,24 @@ interface RumMonitor {
      * @param message a message explaining the error
      * @param source the source of the error
      * @param throwable the throwable
-     * @param attributes additional custom attributes to attach to the error
+     * @param attributes additional custom attributes to attach to the error. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      */
     fun addError(
         message: String,
         source: RumErrorSource,
         throwable: Throwable?,
         attributes: Map<String, Any?>
+    )
+
+    /**
+     * Adds a specific timing in the active View. The timing duration will be computed as the
+     * difference between the time the View was started and the time this function was called.
+     * @param name the name of the new custom timing attribute. Timings can be
+     * nested up to 8 levels deep. Names using more than 8 levels will be sanitized by SDK.
+     */
+    fun addTiming(
+        name: String
     )
 
     // region Builder

@@ -1880,6 +1880,77 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
+    @Test
+    fun `𝕄 send event with custom timing 𝕎 handleEvent(AddCustomTiming) on active view`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimingKey = forge.anAlphabeticalString()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddCustomTiming(fakeTimingKey),
+            mockWriter
+        )
+        val customTimingEstimatedDuration = System.nanoTime() - fakeEventTime.nanoTime
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multipe times`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimingKey1 = forge.anAlphabeticalString()
+        val fakeTimingKey2 = forge.anAlphabeticalString()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddCustomTiming(fakeTimingKey1),
+            mockWriter
+        )
+        val customTiming1EstimatedDuration = System.nanoTime() - fakeEventTime.nanoTime
+        testedScope.handleEvent(
+            RumRawEvent.AddCustomTiming(fakeTimingKey2),
+            mockWriter
+        )
+        val customTiming2EstimatedDuration = System.nanoTime() - fakeEventTime.nanoTime
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+            assertThat(firstValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                }
+            assertThat(lastValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasCustomTimings(
+                    mapOf(
+                        fakeTimingKey1 to customTiming1EstimatedDuration,
+                        fakeTimingKey2 to customTiming2EstimatedDuration
+                    )
+                )
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
     // endregion
 
     // region Internal

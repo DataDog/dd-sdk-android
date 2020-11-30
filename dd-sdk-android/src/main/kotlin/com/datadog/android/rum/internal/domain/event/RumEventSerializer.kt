@@ -25,6 +25,9 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         addCustomAttributes(model.globalAttributes, json, GLOBAL_ATTRIBUTE_PREFIX, knownAttributes)
         addCustomAttributes(model.userExtraAttributes, json, USER_ATTRIBUTE_PREFIX)
+        model.customTimings?.let {
+            addCustomAttributes(it, json, VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX)
+        }
 
         return json.toString()
     }
@@ -66,6 +69,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
 
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
         internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
+        internal const val VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX: String = "view.custom_timings"
     }
 }
 
