@@ -4,16 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.constraints
+package com.datadog.android.core.internal.constraints
 
 import com.datadog.android.core.internal.utils.devLogger
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
 
-internal class DatadogLogConstraints : LogConstraints {
+internal class DatadogDataConstraints : DataConstraints {
 
-    // region LogConstraints
+    // region DataConstraints
 
     override fun validateTags(tags: List<String>): List<String> {
         val convertedTags = tags.mapNotNull {

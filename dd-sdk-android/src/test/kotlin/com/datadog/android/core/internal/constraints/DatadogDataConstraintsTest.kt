@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.constraints
+package com.datadog.android.core.internal.constraints
 
 import android.os.Build
 import android.util.Log
@@ -35,9 +35,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
-internal class DatadogLogConstraintsTest {
+internal class DatadogDataConstraintsTest {
 
-    lateinit var testedConstraints: LogConstraints
+    lateinit var testedConstraints: DataConstraints
 
     lateinit var mockDevLogHandler: LogHandler
 
@@ -49,7 +49,7 @@ internal class DatadogLogConstraintsTest {
 
         mockDevLogHandler = mockDevLogHandler()
 
-        testedConstraints = DatadogLogConstraints()
+        testedConstraints = DatadogDataConstraints()
     }
 
     // region Tags
