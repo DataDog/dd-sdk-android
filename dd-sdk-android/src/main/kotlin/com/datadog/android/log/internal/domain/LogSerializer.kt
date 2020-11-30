@@ -107,8 +107,12 @@ internal class LogSerializer(
         if (!userInfo.email.isNullOrEmpty()) {
             jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
-        // add extra attributes
-        userInfo.extraInfo.forEach {
+        // add extra info
+        dataConstraints.validateAttributes(
+            userInfo.extraInfo,
+            keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
+            attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
+        ).forEach {
             val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
             jsonLog.add(key, it.value.toJsonElement())
         }
@@ -150,6 +154,7 @@ internal class LogSerializer(
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
         internal const val TAG_DATADOG_TAGS = "ddtags"
+        internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
 
         internal val reservedAttributes = arrayOf(
             LogAttributes.HOST,

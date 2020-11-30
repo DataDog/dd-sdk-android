@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.core.internal.constraints.DataConstraints
+import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
@@ -16,17 +18,44 @@ import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
-internal class RumEventSerializer : Serializer<RumEvent> {
+internal class RumEventSerializer(
+    private val dataConstraints: DataConstraints = DatadogDataConstraints()
+) :
+    Serializer<RumEvent> {
 
     // region Serializer
 
     override fun serialize(model: RumEvent): String {
         val json = model.event.toJson().asJsonObject
 
-        addCustomAttributes(model.globalAttributes, json, GLOBAL_ATTRIBUTE_PREFIX, knownAttributes)
-        addCustomAttributes(model.userExtraAttributes, json, USER_ATTRIBUTE_PREFIX)
+        addCustomAttributes(
+            dataConstraints.validateAttributes(
+                model.globalAttributes,
+                keyPrefix = GLOBAL_ATTRIBUTE_PREFIX
+            ),
+            json,
+            GLOBAL_ATTRIBUTE_PREFIX,
+            knownAttributes
+        )
+        addCustomAttributes(
+            dataConstraints.validateAttributes(
+                model.userExtraAttributes,
+                keyPrefix = USER_ATTRIBUTE_PREFIX,
+                attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
+            ),
+            json,
+            USER_ATTRIBUTE_PREFIX
+        )
         model.customTimings?.let {
-            addCustomAttributes(it, json, VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX)
+            addCustomAttributes(
+                dataConstraints.validateAttributes(
+                    it,
+                    keyPrefix = VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX,
+                    attributesGroupName = CUSTOM_TIMINGS_GROUP_VERBOSE_NAME
+                ),
+                json,
+                VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX
+            )
         }
 
         return json.toString()
@@ -70,6 +99,8 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
         internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
         internal const val VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX: String = "view.custom_timings"
+        internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
+        internal const val CUSTOM_TIMINGS_GROUP_VERBOSE_NAME = "view custom timings"
     }
 }
 

@@ -8,6 +8,8 @@ package com.datadog.android.tracing.internal.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.constraints.DataConstraints
+import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -26,7 +28,8 @@ internal class SpanSerializer(
     private val timeProvider: TimeProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val userInfoProvider: UserInfoProvider,
-    private val envName: String
+    private val envName: String,
+    private val dataConstraints: DataConstraints = DatadogDataConstraints()
 ) : Serializer<DDSpan> {
 
     // region Serializer
@@ -149,7 +152,11 @@ internal class SpanSerializer(
             jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
         // add extra attributes
-        userInfo.extraInfo.forEach {
+        dataConstraints.validateAttributes(
+            userInfo.extraInfo,
+            keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
+            attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
+        ).forEach {
             val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
             toMetaString(it.value)?.apply {
                 jsonLog.addProperty(key, this)
@@ -197,5 +204,7 @@ internal class SpanSerializer(
         internal const val TAG_DD_SOURCE = "_dd.source"
         internal const val TAG_SPAN_KIND = "span.kind"
         internal const val TAG_TRACER_VERSION = "tracer.version"
+
+        internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
     }
 }
