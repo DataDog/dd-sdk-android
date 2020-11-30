@@ -7,9 +7,9 @@
 package com.datadog.android.bridge
 
 import android.content.Context
-import com.datadog.android.bridge.internal.BridgeDatadog
 import com.datadog.android.bridge.internal.BridgeLogs
 import com.datadog.android.bridge.internal.BridgeRum
+import com.datadog.android.bridge.internal.BridgeSdk
 import com.datadog.android.bridge.internal.BridgeTrace
 
 /**
@@ -19,11 +19,11 @@ object DdBridge {
 
     /**
      * @param context the current application [Context]
-     * @return an implementation of [Datadog]
+     * @return an implementation of [DdSdk]
      */
     @JvmStatic
-    fun getDatadog(context: Context): Datadog {
-        return BridgeDatadog(context)
+    fun getDdSdk(context: Context): DdSdk {
+        return BridgeSdk(context)
     }
 
     /**

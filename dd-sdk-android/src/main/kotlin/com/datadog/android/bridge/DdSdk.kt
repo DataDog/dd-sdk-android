@@ -9,10 +9,10 @@ package com.datadog.android.bridge
 /**
  * The entry point to initialize Datadog's features.
  */
-interface Datadog {
+interface DdSdk {
 
     /**
      * Initializes Datadog's features.
      */
-    fun initialize(configuration: DatadogConfiguration): Unit
+    fun initialize(configuration: DdSdkConfiguration): Unit
 }
