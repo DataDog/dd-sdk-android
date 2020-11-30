@@ -12,6 +12,7 @@ import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -39,12 +40,14 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         event: RumEvent,
         jsonEvent: JsonObject
     ) {
-        event.attributes.forEach {
-            val rawKey = it.key
-            val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
-            val value = it.value
-            jsonEvent.add(key, value.toJsonElement())
-        }
+        event.attributes
+            .filter { it.key !in ignoredAttributes }
+            .forEach {
+                val rawKey = it.key
+                val key = if (rawKey in knownAttributes) rawKey else "context.$rawKey"
+                val value = it.value
+                jsonEvent.add(key, value.toJsonElement())
+            }
     }
 
     // endregion
@@ -61,6 +64,10 @@ internal class RumEventSerializer : Serializer<RumEvent> {
             RumAttributes.ERROR_RESOURCE_METHOD,
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL
+        )
+
+        internal val ignoredAttributes = setOf(
+            DatadogRumMonitor.TIMESTAMP
         )
     }
 }

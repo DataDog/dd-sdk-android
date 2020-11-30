@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.domain.asTime
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -52,26 +53,30 @@ internal class DatadogRumMonitor(
     // region RumMonitor
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartView(key, name, attributes)
+            RumRawEvent.StartView(key, name, attributes, eventTime)
         )
     }
 
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopView(key, attributes)
+            RumRawEvent.StopView(key, attributes, eventTime)
         )
     }
 
     override fun addUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, false, attributes)
+            RumRawEvent.StartAction(type, name, false, attributes, eventTime)
         )
     }
 
     override fun startUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, true, attributes)
+            RumRawEvent.StartAction(type, name, true, attributes, eventTime)
         )
     }
 
@@ -86,8 +91,9 @@ internal class DatadogRumMonitor(
         name: String,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopAction(type, name, attributes)
+            RumRawEvent.StopAction(type, name, attributes, eventTime)
         )
     }
 
@@ -97,8 +103,9 @@ internal class DatadogRumMonitor(
         url: String,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartResource(key, url, method, attributes)
+            RumRawEvent.StartResource(key, url, method, attributes, eventTime)
         )
     }
 
@@ -109,8 +116,9 @@ internal class DatadogRumMonitor(
         kind: RumResourceKind,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopResource(key, statusCode?.toLong(), size, kind, attributes)
+            RumRawEvent.StopResource(key, statusCode?.toLong(), size, kind, attributes, eventTime)
         )
     }
 
@@ -132,8 +140,9 @@ internal class DatadogRumMonitor(
         throwable: Throwable?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, null, false, attributes)
+            RumRawEvent.AddError(message, source, throwable, null, false, attributes, eventTime)
         )
     }
 
@@ -143,8 +152,9 @@ internal class DatadogRumMonitor(
         stacktrace: String?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.AddError(message, source, null, stacktrace, false, attributes)
+            RumRawEvent.AddError(message, source, null, stacktrace, false, attributes, eventTime)
         )
     }
 
@@ -210,9 +220,14 @@ internal class DatadogRumMonitor(
         handler.removeCallbacks(keepAliveRunnable)
     }
 
+    private fun getEventTime(attributes: Map<String, Any?>): Time {
+        return (attributes[TIMESTAMP] as? Long)?.asTime() ?: Time()
+    }
+
     // endregion
 
     companion object {
         internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
+        internal const val TIMESTAMP = "_dd.timestamp"
     }
 }

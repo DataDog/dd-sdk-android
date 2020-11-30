@@ -13,18 +13,19 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.annotation.AdvancedForgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Date
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,18 +50,27 @@ internal class BridgeRumTest {
     @Mock
     lateinit var mockRumMonitor: AdvancedRumMonitor
 
-    @MapForgery(
-        key = AdvancedForgery(string = [StringForgery()]),
-        value = AdvancedForgery(string = [StringForgery(StringForgeryType.HEXADECIMAL)])
-    )
-    lateinit var fakeContext: Map<String, String>
+    lateinit var fakeContext: Map<String, Any?>
 
     @LongForgery(1000000000000, 2000000000000)
     var fakeTimestamp: Long = 0L
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        fakeContext = forge.aMap {
+            anAlphabeticalString() to aNullable {
+                anElementFrom(
+                    anHexadecimalString(),
+                    anInt(),
+                    aLong(),
+                    getForgery<Date>(),
+                    getForgery<Throwable>()
+                )
+            }
+        }
+
         testedDdRum = BridgeRum()
     }
 
@@ -75,11 +85,14 @@ internal class BridgeRumTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.startView(key, name, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).startView(key, name, fakeContext)
+        verify(mockRumMonitor).startView(key, name, updatedContext)
     }
 
     @Test
@@ -87,11 +100,14 @@ internal class BridgeRumTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.stopView(key, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).stopView(key, fakeContext)
+        verify(mockRumMonitor).stopView(key, updatedContext)
     }
 
     @Test
@@ -99,11 +115,14 @@ internal class BridgeRumTest {
         @StringForgery name: String,
         @Forgery type: RumActionType
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.addAction(type.name, name, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).addUserAction(type, name, fakeContext)
+        verify(mockRumMonitor).addUserAction(type, name, updatedContext)
     }
 
     @Test
@@ -111,11 +130,14 @@ internal class BridgeRumTest {
         @StringForgery name: String,
         @StringForgery(StringForgeryType.HEXADECIMAL) type: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.addAction(type, name, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).addUserAction(RumActionType.CUSTOM, name, fakeContext)
+        verify(mockRumMonitor).addUserAction(RumActionType.CUSTOM, name, updatedContext)
     }
 
     @Test
@@ -123,11 +145,14 @@ internal class BridgeRumTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.startAction(type.name, name, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).startUserAction(type, name, fakeContext)
+        verify(mockRumMonitor).startUserAction(type, name, updatedContext)
     }
 
     @Test
@@ -135,11 +160,14 @@ internal class BridgeRumTest {
         @StringForgery name: String,
         @StringForgery(StringForgeryType.HEXADECIMAL) type: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.startAction(type, name, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).startUserAction(RumActionType.CUSTOM, name, fakeContext)
+        verify(mockRumMonitor).startUserAction(RumActionType.CUSTOM, name, updatedContext)
     }
 
     @Test
@@ -147,11 +175,14 @@ internal class BridgeRumTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.stopAction(fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).stopUserAction(fakeContext)
+        verify(mockRumMonitor).stopUserAction(updatedContext)
     }
 
     @Test
@@ -160,11 +191,14 @@ internal class BridgeRumTest {
         @StringForgery(regex = "GET|POST|DELETE") method: String,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+") url: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.startResource(key, method, url, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).startResource(key, method, url, fakeContext)
+        verify(mockRumMonitor).startResource(key, method, url, updatedContext)
     }
 
     @Test
@@ -173,6 +207,9 @@ internal class BridgeRumTest {
         @IntForgery(200, 600) statusCode: Int,
         @Forgery kind: RumResourceKind
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.stopResource(
             key,
@@ -183,7 +220,7 @@ internal class BridgeRumTest {
         )
 
         // Then
-        verify(mockRumMonitor).stopResource(key, statusCode, null, kind, fakeContext)
+        verify(mockRumMonitor).stopResource(key, statusCode, null, kind, updatedContext)
     }
 
     @Test
@@ -192,6 +229,9 @@ internal class BridgeRumTest {
         @IntForgery(200, 600) statusCode: Int,
         @StringForgery(StringForgeryType.HEXADECIMAL) kind: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.stopResource(
             key,
@@ -207,7 +247,7 @@ internal class BridgeRumTest {
             statusCode,
             null,
             RumResourceKind.UNKNOWN,
-            fakeContext
+            updatedContext
         )
     }
 
@@ -217,10 +257,13 @@ internal class BridgeRumTest {
         @Forgery source: RumErrorSource,
         @StringForgery stackTrace: String
     ) {
+        // Given
+        val updatedContext = fakeContext + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+
         // When
         testedDdRum.addError(message, source.name, stackTrace, fakeTimestamp, fakeContext)
 
         // Then
-        verify(mockRumMonitor).addErrorWithStacktrace(message, source, stackTrace, fakeContext)
+        verify(mockRumMonitor).addErrorWithStacktrace(message, source, stackTrace, updatedContext)
     }
 }

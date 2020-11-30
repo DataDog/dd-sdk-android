@@ -12,24 +12,29 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import java.util.Locale
 
 internal class BridgeRum : DdRum {
 
     override fun startView(key: String, name: String, timestamp: Long, context: Map<String, Any?>) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().startView(
             key = key,
             name = name,
-            attributes = context
+            attributes = attributes
         )
     }
 
     override fun stopView(key: String, timestamp: Long, context: Map<String, Any?>) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().stopView(
             key = key,
-            attributes = context
+            attributes = attributes
         )
     }
 
@@ -39,18 +44,22 @@ internal class BridgeRum : DdRum {
         timestamp: Long,
         context: Map<String, Any?>
     ) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().startUserAction(
             type = type.asRumActionType(),
             name = name,
-            attributes = context
+            attributes = attributes
         )
     }
 
     override fun stopAction(timestamp: Long, context: Map<String, Any?>) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().stopUserAction(
-            attributes = context
+            attributes = attributes
         )
     }
 
@@ -60,11 +69,13 @@ internal class BridgeRum : DdRum {
         timestamp: Long,
         context: Map<String, Any?>
     ) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().addUserAction(
             type = type.asRumActionType(),
             name = name,
-            attributes = context
+            attributes = attributes
         )
     }
 
@@ -75,12 +86,14 @@ internal class BridgeRum : DdRum {
         timestamp: Long,
         context: Map<String, Any?>
     ) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().startResource(
             key = key,
             method = method,
             url = url,
-            attributes = context
+            attributes = attributes
         )
     }
 
@@ -91,13 +104,15 @@ internal class BridgeRum : DdRum {
         timestamp: Long,
         context: Map<String, Any?>
     ) {
-        // TODO RUMM-899 override timestamp
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         GlobalRum.get().stopResource(
             key = key,
             statusCode = statusCode.toInt(),
             kind = kind.asRumResourceKind(),
             size = null,
-            attributes = context
+            attributes = attributes
         )
     }
 
@@ -108,12 +123,14 @@ internal class BridgeRum : DdRum {
         timestamp: Long,
         context: Map<String, Any?>
     ) {
-        // TODO RUMM-899 override timestamp and stacktrace
+        val attributes = context.toMutableMap().apply {
+            put(DatadogRumMonitor.TIMESTAMP, timestamp)
+        }
         (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
             message = message,
             source = RumErrorSource.valueOf(source),
             stacktrace = stacktrace,
-            attributes = context
+            attributes = attributes
         )
     }
 
