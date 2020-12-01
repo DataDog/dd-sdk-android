@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.containsExtraAttributes
@@ -16,6 +17,10 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -119,6 +124,55 @@ internal class LogSerializerTest {
 
         // Then
         assertSerializedLogMatchesInputLog(serialized, logWithoutThrowable)
+    }
+
+    @Test
+    fun `M sanitise the user extra info keys W level deeper than 8`(
+        @Forgery fakeLog: Log,
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeBadKey =
+            forge.aList(size = 10) { forge.anAlphabeticalString() }.joinToString(".")
+        val lastDotIndex = fakeBadKey.lastIndexOf('.')
+        val expectedSanitisedKey =
+            fakeBadKey.replaceRange(lastDotIndex..lastDotIndex, "_")
+        val attributeValue = forge.anAlphabeticalString()
+        val fakeUserInfo = fakeLog.userInfo.copy(extraInfo = mapOf(fakeBadKey to attributeValue))
+
+        // WHEN
+        val serializedEvent = testedSerializer.serialize(fakeLog.copy(userInfo = fakeUserInfo))
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .hasField(
+                "${LogAttributes.USR_ATTRIBUTES_GROUP}.$expectedSanitisedKey",
+                attributeValue
+            )
+        assertThat(jsonObject)
+            .doesNotHaveField("${LogAttributes.USR_ATTRIBUTES_GROUP}.$fakeBadKey")
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { user extra info }`(
+        @Forgery fakeLog: Log,
+        forge: Forge
+    ) {
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = LogSerializer(mockedDataConstrains)
+
+        // WHEN
+        val serializedEvent = testedSerializer.serialize(fakeLog)
+        JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        verify(mockedDataConstrains).validateAttributes(
+            any(),
+            eq(LogAttributes.USR_ATTRIBUTES_GROUP),
+            eq(LogSerializer.USER_EXTRA_GROUP_VERBOSE_NAME)
+        )
     }
 
     // region Internal

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.constraints
+package com.datadog.android.core.internal.constraints
 
 import android.os.Build
 import android.util.Log
@@ -35,9 +35,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
-internal class DatadogLogConstraintsTest {
+internal class DatadogDataConstraintsTest {
 
-    lateinit var testedConstraints: LogConstraints
+    lateinit var testedConstraints: DataConstraints
 
     lateinit var mockDevLogHandler: LogHandler
 
@@ -49,7 +49,7 @@ internal class DatadogLogConstraintsTest {
 
         mockDevLogHandler = mockDevLogHandler()
 
-        testedConstraints = DatadogLogConstraints()
+        testedConstraints = DatadogDataConstraints()
     }
 
     // region Tags
@@ -212,7 +212,7 @@ internal class DatadogLogConstraintsTest {
     }
 
     @Test
-    fun `convert nested attribute keys over 10 levels`(forge: Forge) {
+    fun `M convert nested attribute keys W over 10 levels`(forge: Forge) {
         val topLevels = forge.aList(10) { anAlphabeticalString() }
         val lowerLevels = forge.aList { anAlphabeticalString() }
         val key = (topLevels + lowerLevels).joinToString(".")
@@ -225,24 +225,68 @@ internal class DatadogLogConstraintsTest {
             .containsEntry(expectedKey, value)
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "attribute \"$key\" was modified to \"$expectedKey\" to match our constraints."
+            "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
         )
     }
 
     @Test
-    fun `ignore attribute if adding more than 256`(forge: Forge) {
-        val attributes = forge.aList(300) { anAlphabeticalString() to anInt() }.toMap()
-        val firstAttributes = attributes.toList().take(256).toMap()
+    fun `M convert nested attribute keys W over 10 levels and using prefix`(forge: Forge) {
+        val keyPrefix = forge
+            .aList(5) { forge.anAlphabeticalString() }
+            .joinToString(".")
+        val topLevels = forge.aList(5) { anAlphabeticalString() }
+        val lowerLevels = forge.aList { anAlphabeticalString() }
+        val key = (topLevels + lowerLevels).joinToString(".")
+        val value = forge.aNumericalString()
+        val result =
+            testedConstraints.validateAttributes(mapOf(key to value), keyPrefix = keyPrefix)
+
+        val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
+        assertThat(result)
+            .containsEntry(expectedKey, value)
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
+        )
+    }
+
+    @Test
+    fun `ignore attribute if adding more than 128`(forge: Forge) {
+        val attributes = forge.aList(202) { anAlphabeticalString() to anInt() }.toMap()
+        val firstAttributes = attributes.toList().take(128).toMap()
 
         val result = testedConstraints.validateAttributes(attributes)
 
-        val discardedCount = attributes.size - 256
+        val discardedCount = attributes.size - 128
         assertThat(result)
-            .hasSize(256)
+            .hasSize(128)
             .containsAllEntriesOf(firstAttributes)
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "too many attributes were added, $discardedCount had to be discarded."
+            "Too many attributes were added, $discardedCount had to be discarded."
+        )
+    }
+
+    @Test
+    fun `M use a custom error format W validateAttributes`(forge: Forge) {
+        val attributes = forge.aList(202) { anAlphabeticalString() to anInt() }.toMap()
+        val firstAttributes = attributes.toList().take(128).toMap()
+        val fakeAttributesGroup = forge
+            .aList(size = 10) { forge.anAlphabeticalString() }
+            .joinToString(".")
+        val result = testedConstraints.validateAttributes(
+            attributes,
+            attributesGroupName = fakeAttributesGroup
+        )
+
+        val discardedCount = attributes.size - 128
+        assertThat(result)
+            .hasSize(128)
+            .containsAllEntriesOf(firstAttributes)
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            "Too many attributes were added for [$fakeAttributesGroup]," +
+                " $discardedCount had to be discarded."
         )
     }
 

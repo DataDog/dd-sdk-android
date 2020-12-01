@@ -8,12 +8,12 @@ package com.datadog.android.log.internal.domain
 
 import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.constraints.DataConstraints
+import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.constraints.DatadogLogConstraints
-import com.datadog.android.log.internal.constraints.LogConstraints
 import com.google.gson.JsonObject
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -23,7 +23,9 @@ import java.util.TimeZone
 /**
  * The Logging feature implementation of the [Serializer] interface.
  */
-internal class LogSerializer(private val logConstraints: LogConstraints = DatadogLogConstraints()) :
+internal class LogSerializer(
+    private val dataConstraints: DataConstraints = DatadogDataConstraints()
+) :
     Serializer<Log> {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
@@ -105,8 +107,12 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         if (!userInfo.email.isNullOrEmpty()) {
             jsonLog.addProperty(LogAttributes.USR_EMAIL, userInfo.email)
         }
-        // add extra attributes
-        userInfo.extraInfo.forEach {
+        // add extra info
+        dataConstraints.validateAttributes(
+            userInfo.extraInfo,
+            keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
+            attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
+        ).forEach {
             val key = "${LogAttributes.USR_ATTRIBUTES_GROUP}.${it.key}"
             jsonLog.add(key, it.value.toJsonElement())
         }
@@ -127,7 +133,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         log: Log,
         jsonLog: JsonObject
     ) {
-        val tags = logConstraints.validateTags(log.tags)
+        val tags = dataConstraints.validateTags(log.tags)
             .joinToString(",")
         jsonLog.addProperty(TAG_DATADOG_TAGS, tags)
     }
@@ -136,7 +142,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         log: Log,
         jsonLog: JsonObject
     ) {
-        logConstraints.validateAttributes(log.attributes)
+        dataConstraints.validateAttributes(log.attributes)
             .filter { it.key.isNotBlank() && it.key !in reservedAttributes }
             .forEach {
                 val jsonValue = it.value.toJsonElement()
@@ -148,6 +154,7 @@ internal class LogSerializer(private val logConstraints: LogConstraints = Datado
         private const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
         internal const val TAG_DATADOG_TAGS = "ddtags"
+        internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
 
         internal val reservedAttributes = arrayOf(
             LogAttributes.HOST,

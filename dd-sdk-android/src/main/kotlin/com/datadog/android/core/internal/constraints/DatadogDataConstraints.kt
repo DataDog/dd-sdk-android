@@ -4,16 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.constraints
+package com.datadog.android.core.internal.constraints
 
 import com.datadog.android.core.internal.utils.devLogger
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
 
-internal class DatadogLogConstraints : LogConstraints {
+internal class DatadogDataConstraints : DataConstraints {
 
-    // region LogConstraints
+    // region DataConstraints
 
     override fun validateTags(tags: List<String>): List<String> {
         val convertedTags = tags.mapNotNull {
@@ -32,30 +32,52 @@ internal class DatadogLogConstraints : LogConstraints {
         return convertedTags.take(MAX_TAG_COUNT)
     }
 
-    override fun validateAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
+    override fun validateAttributes(
+        attributes: Map<String, Any?>,
+        keyPrefix: String?,
+        attributesGroupName: String?
+    ): Map<String, Any?> {
+
+        // prefix = "a.b" => dotCount = 1+1 ("a.b." + key)
+        val prefixDotCount = keyPrefix?.let { it.count { character -> character == '.' } + 1 } ?: 0
         val convertedAttributes = attributes.mapNotNull {
-            val key = convertAttributeKey(it.key)
-            if (key == null) {
+            // We need this in case the attributes are added from JAVA code and a null key may be
+            // passed.
+            if (it.key == null) {
                 devLogger.e("\"$it\" is an invalid attribute, and was ignored.")
                 null
-            } else {
-                if (key != it.key) {
-                    devLogger.w(
-                        "attribute \"${it.key}\" " +
-                            "was modified to \"$key\" to match our constraints."
-                    )
-                }
-                key to it.value
             }
+            val key = convertAttributeKey(it.key, prefixDotCount)
+            if (key != it.key) {
+                devLogger.w(
+                    "Key \"${it.key}\" " +
+                        "was modified to \"$key\" to match our constraints."
+                )
+            }
+            key to it.value
         }
         val discardedCount = convertedAttributes.size - MAX_ATTR_COUNT
         if (discardedCount > 0) {
-            devLogger.w(
-                "too many attributes were added, " +
-                    "$discardedCount had to be discarded."
+            val warningMessage = resolveDiscardedAttrsWarning(
+                attributesGroupName,
+                discardedCount
             )
+            devLogger.w(warningMessage)
         }
         return convertedAttributes.take(MAX_ATTR_COUNT).toMap()
+    }
+
+    private fun resolveDiscardedAttrsWarning(
+        attributesGroupName: String?,
+        discardedCount: Int
+    ): String {
+        return if (attributesGroupName != null) {
+            "Too many attributes were added for [$attributesGroupName], " +
+                "$discardedCount had to be discarded."
+        } else {
+            "Too many attributes were added, " +
+                "$discardedCount had to be discarded."
+        }
     }
 
     // endregion
@@ -97,24 +119,15 @@ internal class DatadogLogConstraints : LogConstraints {
 
     // region Internal/Attribute
 
-    private val attributeKeyTransforms = listOf<StringTransform>(
-        // A key can only have 10 levels
-        { key ->
-            var dotCount = 0
-            val mapped = key.map {
-                if (it == '.') {
-                    dotCount++
-                    if (dotCount > 9) '_' else it
-                } else it
-            }
-            String(mapped.toCharArray())
+    private fun convertAttributeKey(rawKey: String, prefixDotCount: Int): String {
+        var dotCount = prefixDotCount
+        val mapped = rawKey.map {
+            if (it == '.') {
+                dotCount++
+                if (dotCount > MAX_DEPTH_LEVEL) '_' else it
+            } else it
         }
-    )
-
-    private fun convertAttributeKey(rawKey: String?): String? {
-        return attributeKeyTransforms.fold(rawKey) { key, transform ->
-            if (key == null) null else transform.invoke(key)
-        }
+        return String(mapped.toCharArray())
     }
 
     // endregion
@@ -124,7 +137,8 @@ internal class DatadogLogConstraints : LogConstraints {
         private const val MAX_TAG_LENGTH = 200
         private const val MAX_TAG_COUNT = 100
 
-        private const val MAX_ATTR_COUNT = 256
+        private const val MAX_ATTR_COUNT = 128
+        private const val MAX_DEPTH_LEVEL = 9
 
         private val reservedTagKeys = setOf(
             "host",

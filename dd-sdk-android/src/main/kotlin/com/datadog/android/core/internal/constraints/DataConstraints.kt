@@ -4,14 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.constraints
+package com.datadog.android.core.internal.constraints
 
 /**
  * This interface allows sanitizing logs locally before uploading them to the servers.
  */
-internal interface LogConstraints {
+internal interface DataConstraints {
 
-    fun validateAttributes(attributes: Map<String, Any?>): Map<String, Any?>
+    fun validateAttributes(
+        attributes: Map<String, Any?>,
+        keyPrefix: String? = null,
+        attributesGroupName: String? = null
+    ): Map<String, Any?>
 
     fun validateTags(tags: List<String>): List<String>
 }

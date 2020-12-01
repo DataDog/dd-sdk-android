@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -25,6 +26,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -168,6 +170,73 @@ internal class SpanSerializerTest {
         assertThat(serializedChildSpan).hasField(SpanSerializer.TAG_METRICS) {
             doesNotHaveField(SpanSerializer.TAG_METRICS_TOP_LEVEL)
         }
+    }
+
+    @Test
+    fun `M sanitise the user extra info keys W level deeper than 8`(
+        @Forgery span: DDSpan,
+        @LongForgery serverOffsetNanos: Long,
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeBadKey =
+            forge.aList(size = 10) { forge.anAlphabeticalString() }.joinToString(".")
+        val lastIndexOf = fakeBadKey.lastIndexOf('.')
+        val expectedSanitisedKey =
+            fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
+        val fakeAttributeValue = forge.anAlphabeticalString()
+        val fakeUserInfoCopy = fakeUserInfo.copy(
+            extraInfo = mapOf(
+                fakeBadKey to fakeAttributeValue
+            )
+        )
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfoCopy
+        val serialized = testedSerializer.serialize(span)
+
+        // WHEN
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray("spans").first() as JsonObject
+
+        // THEN
+        val metaObj = spanObject.getAsJsonObject(SpanSerializer.TAG_META)
+        assertThat(metaObj)
+            .hasField(
+                "${LogAttributes.USR_ATTRIBUTES_GROUP}.$expectedSanitisedKey",
+                fakeAttributeValue
+            )
+            .doesNotHaveField("${LogAttributes.USR_ATTRIBUTES_GROUP}.$fakeBadKey")
+
+        // close the span
+        span.finish()
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { user extra info }`(
+        @Forgery span: DDSpan,
+        @LongForgery serverOffsetNanos: Long
+    ) {
+
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = SpanSerializer(
+            mockTimeProvider,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            fakeEnvName,
+            mockedDataConstrains
+        )
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
+
+        // WHEN
+        testedSerializer.serialize(span)
+
+        // THEN
+        verify(mockedDataConstrains).validateAttributes(
+            fakeUserInfo.extraInfo,
+            LogAttributes.USR_ATTRIBUTES_GROUP,
+            SpanSerializer.USER_EXTRA_GROUP_VERBOSE_NAME
+        )
     }
 
     // region Internal
