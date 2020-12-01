@@ -433,6 +433,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
         private SpanContext parent;
         private String serviceName;
         private String resourceName;
+        private String origin;
         private boolean errorFlag;
         private String spanType;
         private boolean ignoreScope = false;
@@ -559,6 +560,11 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
             return this;
         }
 
+        public DDSpanBuilder withOrigin(final String origin) {
+            this.origin = origin;
+            return this;
+        }
+
         // Private methods
         private DDSpanBuilder withTag(final String tag, final Object value) {
             if (value == null || (value instanceof String && ((String) value).isEmpty())) {
@@ -643,7 +649,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
                     tags.putAll(((TagContext) parentContext).getTags());
                     origin = ((TagContext) parentContext).getOrigin();
                 } else {
-                    origin = null;
+                    origin = this.origin;
                 }
 
                 tags.putAll(localRootSpanTags);

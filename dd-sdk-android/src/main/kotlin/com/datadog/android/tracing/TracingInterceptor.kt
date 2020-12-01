@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
 import io.opentracing.Span
@@ -65,6 +66,7 @@ open class TracingInterceptor
     internal val tracedHosts: List<String>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val traceOrigin: String?,
     internal val localTracerFactory: () -> Tracer
 ) : Interceptor {
 
@@ -101,6 +103,7 @@ open class TracingInterceptor
         tracedHosts,
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
+        null,
         { AndroidTracer.Builder().build() }
     )
 
@@ -116,6 +119,7 @@ open class TracingInterceptor
         emptyList(),
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
+        null,
         { AndroidTracer.Builder().build() }
     )
 
@@ -236,7 +240,9 @@ open class TracingInterceptor
         val parentContext = extractParentContext(tracer, request)
         val url = request.url().toString()
 
-        val span = tracer.buildSpan(SPAN_NAME)
+        val spanBuilder = tracer.buildSpan(SPAN_NAME)
+        (spanBuilder as? DDTracer.DDSpanBuilder)?.withOrigin(traceOrigin)
+        val span = spanBuilder
             .asChildOf(parentContext)
             .start()
 

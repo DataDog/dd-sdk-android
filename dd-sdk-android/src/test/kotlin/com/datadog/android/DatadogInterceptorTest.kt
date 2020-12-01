@@ -62,14 +62,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             fakeRumConfig,
             mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
         )
-
-        RumFeature.initialize(
-            mockAppContext,
-            fakeRumConfig,
-            mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
-        )
         GlobalRum.registerIfAbsent(mockRumMonitor)
         return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
+    }
+
+    override fun getExpectedOrigin(): String {
+        return DatadogInterceptor.ORIGIN_RUM
     }
 
     @AfterEach

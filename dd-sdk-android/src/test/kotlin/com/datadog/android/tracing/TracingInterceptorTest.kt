@@ -19,6 +19,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
+import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -91,7 +92,7 @@ internal open class TracingInterceptorTest {
     lateinit var mockLocalTracer: Tracer
 
     @Mock
-    lateinit var mockSpanBuilder: Tracer.SpanBuilder
+    lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder
 
     @Mock
     lateinit var mockSpanContext: DDSpanContext
@@ -149,6 +150,9 @@ internal open class TracingInterceptorTest {
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
 
+    @StringForgery
+    lateinit var fakeOrigin: String
+
     // endregion
 
     @BeforeEach
@@ -158,6 +162,7 @@ internal open class TracingInterceptorTest {
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withOrigin(fakeOrigin)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
         whenever(mockSpan.context()) doReturn mockSpanContext
@@ -191,7 +196,17 @@ internal open class TracingInterceptorTest {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        return TracingInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
+        return TracingInterceptor(
+            tracedHosts,
+            mockRequestListener,
+            mockDetector,
+            fakeOrigin,
+            factory
+        )
+    }
+
+    open fun getExpectedOrigin(): String {
+        return fakeOrigin
     }
 
     @Test
@@ -265,6 +280,7 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(key)).isEqualTo(value)
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
     }
 
     @Test
@@ -295,6 +311,7 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(key)).isEqualTo(value)
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
     }
 
     @Test
@@ -305,6 +322,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -320,6 +338,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
@@ -337,6 +356,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
@@ -352,6 +372,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
@@ -372,6 +393,7 @@ internal open class TracingInterceptorTest {
             testedInterceptor.intercept(mockChain)
         }
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
@@ -403,11 +425,12 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with automatic tracer 𝕎 intercept() if no tracer registered`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: Tracer.SpanBuilder = mock()
+        val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
+        whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
@@ -416,6 +439,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
@@ -432,11 +456,12 @@ internal open class TracingInterceptorTest {
     fun `𝕄 drop automatic tracer 𝕎 intercept() and global tracer registered`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: Tracer.SpanBuilder = mock()
+        val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
+        whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
@@ -450,10 +475,12 @@ internal open class TracingInterceptorTest {
         val response2 = testedInterceptor.intercept(mockChain)
         val expectedResponse2 = fakeResponse
 
+        verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).finish()
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -484,6 +511,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -509,6 +537,7 @@ internal open class TracingInterceptorTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -537,6 +566,7 @@ internal open class TracingInterceptorTest {
             testedInterceptor.intercept(mockChain)
         }
 
+        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)

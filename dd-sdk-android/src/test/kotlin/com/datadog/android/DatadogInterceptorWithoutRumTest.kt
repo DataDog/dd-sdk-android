@@ -7,11 +7,8 @@
 package com.datadog.android
 
 import android.util.Log
-import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.forge.Configurator
@@ -65,6 +62,10 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
     }
 
+    override fun getExpectedOrigin(): String {
+        return DatadogInterceptor.ORIGIN_RUM
+    }
+
     @Test
     fun `𝕄 warn that RUM is not enabled 𝕎 intercept()`(
         @IntForgery(min = 200, max = 300) statusCode: Int
@@ -87,18 +88,6 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     ) {
         // Given
         stubChain(mockChain, statusCode)
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
-            RumAttributes.SPAN_ID to fakeSpanId
-        )
-        val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
-        val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.UNKNOWN
-        }
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -113,18 +102,6 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     ) {
         // Given
         stubChain(mockChain, statusCode)
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceId,
-            RumAttributes.SPAN_ID to fakeSpanId
-        )
-        val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
-        val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.UNKNOWN
-        }
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -138,8 +115,6 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         @Forgery throwable: Throwable
     ) {
         // Given
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 

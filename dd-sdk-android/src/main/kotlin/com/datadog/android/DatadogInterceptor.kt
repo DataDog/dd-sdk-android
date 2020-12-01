@@ -77,6 +77,7 @@ internal constructor(
     tracedHosts,
     tracedRequestListener,
     firstPartyHostDetector,
+    ORIGIN_RUM,
     localTracerFactory
 ) {
 
@@ -215,6 +216,8 @@ internal constructor(
                 "and that RUM features are enabled."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
+
+        internal const val ORIGIN_RUM = "rum"
 
         internal val xhrMethods = arrayOf("POST", "PUT", "DELETE")
 
