@@ -157,6 +157,13 @@ open class TracingInterceptor
         }
     }
 
+    /**
+     * @return whether the span can be sent to Datadog.
+     */
+    internal open fun canSendSpan(): Boolean {
+        return true
+    }
+
     // endregion
 
     // region Internal
@@ -287,7 +294,9 @@ open class TracingInterceptor
             (span as? MutableSpan)?.setResourceName(RESOURCE_NAME_404)
         }
         onRequestIntercepted(request, span, response, null)
-        span?.finish()
+        if (canSendSpan()) {
+            span?.finish()
+        }
     }
 
     private fun handleThrowable(
@@ -300,7 +309,9 @@ open class TracingInterceptor
         span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
         span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
         onRequestIntercepted(request, span, null, throwable)
-        span.finish()
+        if (canSendSpan()) {
+            span.finish()
+        }
     }
 
     // endregion

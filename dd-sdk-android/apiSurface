@@ -68,6 +68,7 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
+  override fun canSendSpan(): Boolean
   companion object 
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA

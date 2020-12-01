@@ -14,6 +14,7 @@ internal class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
         forge.addFactory(FeatureConfigForgeryFactory())
+        forge.addFactory(RumFeatureConfigForgeryFactory())
         forge.addFactory(LogForgeryFactory())
         forge.addFactory(BatchForgeryFactory())
         forge.addFactory(ThrowableForgeryFactory())
