@@ -77,6 +77,6 @@
         android:layout_margin="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/user_gender"
+        app:layout_constraintTop_toBottomOf="@id/user_age"
     />
 </androidx.constraintlayout.widget.ConstraintLayout>

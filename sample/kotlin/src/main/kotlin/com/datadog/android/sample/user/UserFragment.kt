@@ -50,6 +50,7 @@ class UserFragment : Fragment(), View.OnClickListener {
         nameField.setText(preferences.getUserName())
         emailField.setText(preferences.getUserEmail())
         userGenderField.setText(preferences.getUserGender())
+        userAgeField.setText(preferences.getUserAge().toString())
     }
 
     // endregion
