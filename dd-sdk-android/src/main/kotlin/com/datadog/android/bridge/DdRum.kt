@@ -14,12 +14,7 @@ interface DdRum {
     /**
      * Start tracking a RUM View.
      */
-    fun startView(
-        key: String,
-        name: String,
-        timestamp: Long,
-        context: Map<String, Any?>
-    ): Unit
+    fun startView(key: String, name: String, timestamp: Long, context: Map<String, Any?>): Unit
 
     /**
      * Stop tracking a RUM View.

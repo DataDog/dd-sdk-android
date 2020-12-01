@@ -12,7 +12,7 @@ package com.datadog.android.bridge
  * @param env The application’s environment, for example: prod, pre-prod, staging, etc.
  * @param applicationId The RUM application ID.
  */
-data class DatadogConfiguration(
+data class DdSdkConfiguration(
     val clientToken: String,
     val env: String,
     val applicationId: String? = null

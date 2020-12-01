@@ -10,17 +10,17 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog as DatadogSDK
 import com.datadog.android.DatadogConfig
-import com.datadog.android.bridge.Datadog
-import com.datadog.android.bridge.DatadogConfiguration
+import com.datadog.android.bridge.DdSdk
+import com.datadog.android.bridge.DdSdkConfiguration
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
 
-internal class BridgeDatadog(context: Context) : Datadog {
+internal class BridgeSdk(context: Context) : DdSdk {
 
     internal val appContext: Context = context.applicationContext
 
-    override fun initialize(configuration: DatadogConfiguration) {
+    override fun initialize(configuration: DdSdkConfiguration) {
         val configBuilder = DatadogConfig.Builder(
             clientToken = configuration.clientToken,
             envName = configuration.env,

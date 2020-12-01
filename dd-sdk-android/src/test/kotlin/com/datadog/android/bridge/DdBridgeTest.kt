@@ -7,9 +7,9 @@
 package com.datadog.android.bridge
 
 import android.content.Context
-import com.datadog.android.bridge.internal.BridgeDatadog
 import com.datadog.android.bridge.internal.BridgeLogs
 import com.datadog.android.bridge.internal.BridgeRum
+import com.datadog.android.bridge.internal.BridgeSdk
 import com.datadog.android.bridge.internal.BridgeTrace
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -46,10 +46,10 @@ class DdBridgeTest {
         whenever(mockContext.applicationContext) doReturn mockAppContext
 
         // When
-        val result = DdBridge.getDatadog(mockContext)
+        val result = DdBridge.getDdSdk(mockContext)
 
         // Then
-        check(result is BridgeDatadog)
+        check(result is BridgeSdk)
         assertThat(result.appContext).isSameAs(mockAppContext)
     }
 
