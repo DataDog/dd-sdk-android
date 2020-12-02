@@ -6,17 +6,16 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.ForgeConfigurator
-import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 internal class Configurator :
-    ForgeConfigurator {
+    BaseConfigurator() {
     override fun configure(forge: Forge) {
+        super.configure(forge)
         forge.addFactory(FeatureConfigForgeryFactory())
         forge.addFactory(LogForgeryFactory())
         forge.addFactory(BatchForgeryFactory())
-        forge.addFactory(ThrowableForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
@@ -33,6 +32,5 @@ internal class Configurator :
         forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(BigIntegerFactory())
-        forge.useJvmFactories()
     }
 }

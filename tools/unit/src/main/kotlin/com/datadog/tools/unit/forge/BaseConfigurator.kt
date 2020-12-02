@@ -4,14 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.coil.utils
+package com.datadog.tools.unit.forge
 
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeConfigurator
 import fr.xgouchet.elmyr.jvm.useJvmFactories
 
-internal class Configurator :
+/**
+ * Base implementation of a [ForgeConfigurator], adding the JVM Forgery Factories (Date, …) and
+ * a [ThrowableForgeryFactory].
+ */
+open class BaseConfigurator :
     ForgeConfigurator {
+    /** @inheritDoc */
     override fun configure(forge: Forge) {
         forge.addFactory(ThrowableForgeryFactory())
         forge.useJvmFactories()

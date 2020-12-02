@@ -6,7 +6,7 @@
 
 package com.datadog.android.sqldelight
 
-import com.datadog.android.sqldelight.utils.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(value = Configurator::class)
+@ForgeConfiguration(value = BaseConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SqlDelightExtTest {
     @Mock
