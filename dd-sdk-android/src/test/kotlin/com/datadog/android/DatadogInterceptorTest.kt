@@ -7,16 +7,21 @@
 package com.datadog.android
 
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorTest
+import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -24,10 +29,12 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,13 +45,35 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogInterceptorTest : TracingInterceptorTest() {
+internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
+
+    @Mock
+    lateinit var mockRumMonitor: RumMonitor
+
+    @Forgery
+    lateinit var fakeRumConfig: DatadogConfig.RumConfig
 
     override fun instantiateTestedInterceptor(
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
+        RumFeature.initialize(
+            mockAppContext,
+            fakeRumConfig,
+            mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
+        )
+        GlobalRum.registerIfAbsent(mockRumMonitor)
         return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
+    }
+
+    override fun getExpectedOrigin(): String {
+        return DatadogInterceptor.ORIGIN_RUM
+    }
+
+    @AfterEach
+    fun `tear down RUM`() {
+        GlobalRum.isRegistered.set(false)
+        RumFeature.stop()
     }
 
     @Test

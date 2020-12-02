@@ -9,12 +9,14 @@ package com.datadog.android
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.NoOpTracedRequestListener
@@ -75,6 +77,7 @@ internal constructor(
     tracedHosts,
     tracedRequestListener,
     firstPartyHostDetector,
+    ORIGIN_RUM,
     localTracerFactory
 ) {
 
@@ -106,13 +109,16 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val url = request.url().toString()
-        val method = request.method()
-        val requestId = identifyRequest(request)
+        if (RumFeature.isInitialized()) {
+            val request = chain.request()
+            val url = request.url().toString()
+            val method = request.method()
+            val requestId = identifyRequest(request)
 
-        GlobalRum.get().startResource(requestId, method, url)
-
+            GlobalRum.get().startResource(requestId, method, url)
+        } else {
+            devLogger.w(WARN_RUM_DISABLED)
+        }
         return super.intercept(chain)
     }
 
@@ -129,11 +135,18 @@ internal constructor(
     ) {
         super.onRequestIntercepted(request, span, response, throwable)
 
-        if (throwable != null) {
-            handleThrowable(request, throwable)
-        } else {
-            handleResponse(request, response, span)
+        if (RumFeature.isInitialized()) {
+            if (throwable != null) {
+                handleThrowable(request, throwable)
+            } else {
+                handleResponse(request, response, span)
+            }
         }
+    }
+
+    /** @inheritdoc */
+    override fun canSendSpan(): Boolean {
+        return !RumFeature.isInitialized()
     }
 
     // endregion
@@ -197,7 +210,15 @@ internal constructor(
 
     companion object {
 
+        internal const val WARN_RUM_DISABLED =
+            "You set up a DatadogInterceptor, but RUM features are disabled." +
+                "Make sure you initialized the Datadog SDK with a valid Application Id, " +
+                "and that RUM features are enabled."
+
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
+
+        internal const val ORIGIN_RUM = "rum"
+
         internal val xhrMethods = arrayOf("POST", "PUT", "DELETE")
 
         // We need to limit this value as the body will be loaded in memory
