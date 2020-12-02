@@ -8,10 +8,10 @@ package com.datadog.android.ktx.tracing
 
 import com.datadog.android.ktx.rum.CLOSABLE_ERROR_NESSAGE
 import com.datadog.android.ktx.rum.useMonitored
-import com.datadog.android.ktx.utils.Configurator
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness
         ForgeExtension::class
     )
 )
-@ForgeConfiguration(value = Configurator::class)
+@ForgeConfiguration(value = BaseConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CloseableExtTest {
 

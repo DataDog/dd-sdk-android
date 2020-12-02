@@ -8,7 +8,7 @@ package com.datadog.android.ktx.sqlite
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import com.datadog.android.ktx.utils.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
@@ -38,7 +38,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(value = Configurator::class)
+@ForgeConfiguration(value = BaseConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SqliteDatabaseExtTest {
 

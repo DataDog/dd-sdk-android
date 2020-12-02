@@ -4,14 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.tools.unit.forge
 
-import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
+/**
+ *  A [ForgeryFactory] generating a random [Throwable] instance with a forged message.
+ */
 class ThrowableForgeryFactory :
     ForgeryFactory<Throwable> {
+    /** @inheritDoc */
     override fun getForgery(forge: Forge): Throwable {
         return forge.aThrowable()
     }

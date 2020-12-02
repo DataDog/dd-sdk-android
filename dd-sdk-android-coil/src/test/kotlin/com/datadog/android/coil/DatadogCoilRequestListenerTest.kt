@@ -10,10 +10,10 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import coil.request.ImageRequest
-import com.datadog.android.coil.utils.Configurator
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
@@ -44,7 +44,7 @@ import org.mockito.quality.Strictness
         ForgeExtension::class
     )
 )
-@ForgeConfiguration(value = Configurator::class)
+@ForgeConfiguration(value = BaseConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogCoilRequestListenerTest {
 
