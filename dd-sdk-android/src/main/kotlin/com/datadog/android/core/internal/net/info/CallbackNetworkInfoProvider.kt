@@ -50,7 +50,14 @@ internal class CallbackNetworkInfoProvider :
     //region NetworkInfoProvider
 
     override fun register(context: Context) {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
+        val connMgr = systemService as? ConnectivityManager
+
+        if (connMgr == null) {
+            devLogger.e(ERROR_REGISTER)
+            return
+        }
+
         try {
             connMgr.registerDefaultNetworkCallback(this)
             val activeNetwork = connMgr.activeNetwork
@@ -67,7 +74,14 @@ internal class CallbackNetworkInfoProvider :
     }
 
     override fun unregister(context: Context) {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
+        val connMgr = systemService as? ConnectivityManager
+
+        if (connMgr == null) {
+            devLogger.e(ERROR_UNREGISTER)
+            return
+        }
+
         try {
             connMgr.unregisterNetworkCallback(this)
         } catch (e: SecurityException) {

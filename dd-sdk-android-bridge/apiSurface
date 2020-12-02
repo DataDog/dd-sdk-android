@@ -1,0 +1,26 @@
+object com.datadog.android.bridge.DdBridge
+  fun getDdSdk(android.content.Context): DdSdk
+  fun getDdLogs(android.content.Context): DdLogs
+  fun getDdRum(android.content.Context): DdRum
+  fun getDdTrace(android.content.Context): DdTrace
+interface com.datadog.android.bridge.DdLogs
+  fun debug(String, Map<String, Any?>): Unit
+  fun info(String, Map<String, Any?>): Unit
+  fun warn(String, Map<String, Any?>): Unit
+  fun error(String, Map<String, Any?>): Unit
+interface com.datadog.android.bridge.DdRum
+  fun startView(String, String, Long, Map<String, Any?>): Unit
+  fun stopView(String, Long, Map<String, Any?>): Unit
+  fun startAction(String, String, Long, Map<String, Any?>): Unit
+  fun stopAction(Long, Map<String, Any?>): Unit
+  fun addAction(String, String, Long, Map<String, Any?>): Unit
+  fun startResource(String, String, String, Long, Map<String, Any?>): Unit
+  fun stopResource(String, Long, String, Long, Map<String, Any?>): Unit
+  fun addError(String, String, String, Long, Map<String, Any?>): Unit
+interface com.datadog.android.bridge.DdSdk
+  fun initialize(DdSdkConfiguration): Unit
+class com.datadog.android.bridge.DdSdkConfiguration
+  constructor(String, String, String? = null)
+interface com.datadog.android.bridge.DdTrace
+  fun startSpan(String, Long, Map<String, Any?>): String
+  fun finishSpan(String, Long, Map<String, Any?>): Unit

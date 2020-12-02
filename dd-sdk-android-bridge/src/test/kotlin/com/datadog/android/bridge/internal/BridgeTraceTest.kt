@@ -7,7 +7,6 @@
 package com.datadog.android.bridge.internal
 
 import com.datadog.android.bridge.DdTrace
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
@@ -22,7 +21,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Span
 import io.opentracing.SpanContext
@@ -47,7 +45,6 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 internal class BridgeTraceTest {
 
     lateinit var testedTrace: DdTrace

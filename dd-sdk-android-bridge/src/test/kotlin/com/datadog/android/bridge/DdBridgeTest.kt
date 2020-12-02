@@ -11,11 +11,9 @@ import com.datadog.android.bridge.internal.BridgeLogs
 import com.datadog.android.bridge.internal.BridgeRum
 import com.datadog.android.bridge.internal.BridgeSdk
 import com.datadog.android.bridge.internal.BridgeTrace
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -32,7 +30,6 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 class DdBridgeTest {
 
     @Mock

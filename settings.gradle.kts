@@ -5,6 +5,7 @@
  */
 
 include(":dd-sdk-android")
+include(":dd-sdk-android-bridge")
 include(":dd-sdk-android-coil")
 include(":dd-sdk-android-fresco")
 include(":dd-sdk-android-glide")

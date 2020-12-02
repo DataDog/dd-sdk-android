@@ -8,47 +8,42 @@ package com.datadog.android.bridge.internal
 
 import com.datadog.android.bridge.DdLogs
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 
 internal class BridgeLogs(
-    private val logHandler: LogHandler? = null
+    logger: Logger? = null
 ) : DdLogs {
 
-    private val logger: Logger by lazy {
-        if (logHandler == null) {
-            Logger.Builder()
-                .setDatadogLogsEnabled(true)
-                .setLogcatLogsEnabled(true)
-                .setLoggerName("DdLogs")
-                .build()
-        } else {
-            Logger(logHandler)
-        }
+    private val bridgeLogger: Logger by lazy {
+        logger ?: Logger.Builder()
+            .setDatadogLogsEnabled(true)
+            .setLogcatLogsEnabled(true)
+            .setLoggerName("DdLogs")
+            .build()
     }
 
     override fun debug(message: String, context: Map<String, Any?>) {
-        logger.d(
+        bridgeLogger.d(
             message = message,
             attributes = context
         )
     }
 
     override fun info(message: String, context: Map<String, Any?>) {
-        logger.i(
+        bridgeLogger.i(
             message = message,
             attributes = context
         )
     }
 
     override fun warn(message: String, context: Map<String, Any?>) {
-        logger.w(
+        bridgeLogger.w(
             message = message,
             attributes = context
         )
     }
 
     override fun error(message: String, context: Map<String, Any?>) {
-        logger.e(
+        bridgeLogger.e(
             message = message,
             attributes = context
         )

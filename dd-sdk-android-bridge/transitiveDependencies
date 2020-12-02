@@ -1,0 +1,9 @@
+Dependencies List
+
+org.jetbrains.kotlin:kotlin-android-extensions-runtime:1.3.61   :    8 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.4.10                :  186 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.4.10                       : 1452 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              : 1664 Kb
+

@@ -53,6 +53,7 @@ tasks.register("checkAll") {
 tasks.register("assembleAll") {
     dependsOn(
         ":dd-sdk-android:assemble",
+        ":dd-sdk-android-bridge:assemble",
         ":dd-sdk-android-coil:assemble",
         ":dd-sdk-android-fresco:assemble",
         ":dd-sdk-android-glide:assemble",
@@ -67,6 +68,7 @@ tasks.register("assembleAll") {
 tasks.register("unitTestRelease") {
     dependsOn(
         ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-bridge:testReleaseUnitTest",
         ":dd-sdk-android-coil:testReleaseUnitTest",
         ":dd-sdk-android-fresco:testReleaseUnitTest",
         ":dd-sdk-android-glide:testReleaseUnitTest",
@@ -82,6 +84,8 @@ tasks.register("unitTestDebug") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-bridge:testDebugUnitTest",
+        ":dd-sdk-android-bridge:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:testDebugUnitTest",
         ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-fresco:testDebugUnitTest",
@@ -121,6 +125,7 @@ tasks.register("unitTestAll") {
 tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
+        ":dd-sdk-android-bridge:ktlintCheck",
         ":dd-sdk-android-coil:ktlintCheck",
         ":dd-sdk-android-fresco:ktlintCheck",
         ":dd-sdk-android-glide:ktlintCheck",
@@ -153,6 +158,7 @@ tasks.register("lintCheckAll") {
 tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
+        ":dd-sdk-android-bridge:detekt",
         ":dd-sdk-android-coil:detekt",
         ":dd-sdk-android-fresco:detekt",
         ":dd-sdk-android-glide:detekt",
@@ -171,6 +177,8 @@ tasks.register("jacocoReportAll") {
     dependsOn(
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-bridge:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-bridge:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",

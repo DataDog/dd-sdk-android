@@ -6,17 +6,14 @@
 
 package com.datadog.android.bridge.internal
 
-import android.util.Log
 import com.datadog.android.bridge.DdLogs
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.log.Logger
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,13 +30,12 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 internal class BridgeLogsTest {
 
     lateinit var testedLogs: DdLogs
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockLogger: Logger
 
     @StringForgery
     lateinit var fakeMessage: String
@@ -52,7 +48,7 @@ internal class BridgeLogsTest {
 
     @BeforeEach
     fun `set up`() {
-        testedLogs = BridgeLogs(mockLogHandler)
+        testedLogs = BridgeLogs(mockLogger)
     }
 
     @Test
@@ -61,7 +57,7 @@ internal class BridgeLogsTest {
         testedLogs.debug(fakeMessage, fakeContext)
 
         // Then
-        verify(mockLogHandler).handleLog(Log.DEBUG, fakeMessage, attributes = fakeContext)
+        verify(mockLogger).d(fakeMessage, attributes = fakeContext)
     }
 
     @Test
@@ -70,7 +66,7 @@ internal class BridgeLogsTest {
         testedLogs.info(fakeMessage, fakeContext)
 
         // Then
-        verify(mockLogHandler).handleLog(Log.INFO, fakeMessage, attributes = fakeContext)
+        verify(mockLogger).i(fakeMessage, attributes = fakeContext)
     }
 
     @Test
@@ -79,7 +75,7 @@ internal class BridgeLogsTest {
         testedLogs.warn(fakeMessage, fakeContext)
 
         // Then
-        verify(mockLogHandler).handleLog(Log.WARN, fakeMessage, attributes = fakeContext)
+        verify(mockLogger).w(fakeMessage, attributes = fakeContext)
     }
 
     @Test
@@ -88,6 +84,6 @@ internal class BridgeLogsTest {
         testedLogs.error(fakeMessage, fakeContext)
 
         // Then
-        verify(mockLogHandler).handleLog(Log.ERROR, fakeMessage, attributes = fakeContext)
+        verify(mockLogger).e(fakeMessage, attributes = fakeContext)
     }
 }

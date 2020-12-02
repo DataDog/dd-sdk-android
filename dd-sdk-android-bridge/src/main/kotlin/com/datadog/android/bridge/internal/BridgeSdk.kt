@@ -14,7 +14,6 @@ import com.datadog.android.bridge.DdSdk
 import com.datadog.android.bridge.DdSdkConfiguration
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
 
 internal class BridgeSdk(context: Context) : DdSdk {
 
@@ -30,5 +29,9 @@ internal class BridgeSdk(context: Context) : DdSdk {
         DatadogSDK.setVerbosity(Log.VERBOSE)
         DatadogSDK.initialize(appContext, configBuilder.build())
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    }
+
+    companion object {
+        internal const val NULL_UUID = "00000000-0000-0000-0000-000000000000"
     }
 }
