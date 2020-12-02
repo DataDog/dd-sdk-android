@@ -330,6 +330,22 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M warn developers W register() with null service`(
+        @StringForgery message: String
+    ) {
+        val context = mock<Context>()
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn null
+
+        testedProvider.register(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_REGISTER
+            )
+    }
+
+    @Test
     fun `M warn developers W register() with SecurityException`(
         @StringForgery message: String
     ) {
@@ -418,6 +434,22 @@ internal class CallbackNetworkInfoProviderTest {
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER,
                 exception
+            )
+    }
+
+    @Test
+    fun `M warn developers W unregister() with null service`(
+        @StringForgery message: String
+    ) {
+        val context = mock<Context>()
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn null
+
+        testedProvider.unregister(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_UNREGISTER
             )
     }
 }

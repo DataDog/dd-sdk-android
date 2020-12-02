@@ -261,6 +261,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
+  fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   class Builder
     fun sampleRumSessions(Float): Builder
