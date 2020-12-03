@@ -338,7 +338,7 @@ val Style = TypeDefinition.Class(
             TypeDefinition.Enum(
                 "Color",
                 JsonType.STRING,
-                listOf("red", "amber", "green", "dark_blue")
+                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow")
             ),
             false
         )

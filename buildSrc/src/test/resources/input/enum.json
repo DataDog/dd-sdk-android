@@ -5,7 +5,7 @@
   "properties": {
     "color": {
       "type": "string",
-      "enum": ["red", "amber", "green", "dark_blue"]
+      "enum": ["red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow"]
     }
   },
   "required": [ "color"]

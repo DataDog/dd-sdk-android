@@ -127,7 +127,7 @@ class PokoGenerator(
 
         definition.values.forEach { value ->
             enumBuilder.addEnumConstant(
-                value.toUpperCase(Locale.US),
+                value.enumConstantName(),
                 TypeSpec.anonymousClassBuilder()
                     .build()
             )
@@ -288,7 +288,7 @@ class PokoGenerator(
         definition.values.forEach { value ->
             funBuilder.addStatement(
                 "%L -> %T(%S)",
-                value.toUpperCase(Locale.US),
+                value.enumConstantName(),
                 JSON_PRIMITIVE,
                 value
             )
@@ -465,6 +465,10 @@ class PokoGenerator(
         }
         knownTypes.add(uniqueName)
         return uniqueName
+    }
+
+    private fun String.enumConstantName(): String {
+        return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
     }
 
     private fun TypeDefinition.Enum.withUniqueTypeName(): TypeDefinition.Enum {
