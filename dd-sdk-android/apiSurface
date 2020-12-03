@@ -221,6 +221,7 @@ object com.datadog.android.rum.RumAttributes
   const val SOURCE: String
   const val VARIANT: String
   const val SDK_VERSION: String
+  const val INTERNAL_TIMESTAMP: String
   const val TRACE_ID: String
   const val SPAN_ID: String
   const val ERROR_RESOURCE_METHOD: String
