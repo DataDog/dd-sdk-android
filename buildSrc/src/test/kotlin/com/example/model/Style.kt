@@ -20,13 +20,19 @@ internal data class Style(
 
         GREEN,
 
-        DARK_BLUE;
+        DARK_BLUE,
+
+        LIME_GREEN,
+
+        SUNBURST_YELLOW;
 
         fun toJson(): JsonElement = when (this) {
             RED -> JsonPrimitive("red")
             AMBER -> JsonPrimitive("amber")
             GREEN -> JsonPrimitive("green")
             DARK_BLUE -> JsonPrimitive("dark_blue")
+            LIME_GREEN -> JsonPrimitive("lime green")
+            SUNBURST_YELLOW -> JsonPrimitive("sunburst-yellow")
         }
     }
 }

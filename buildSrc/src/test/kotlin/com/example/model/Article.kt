@@ -14,9 +14,9 @@ internal data class Article(
     fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
-        if (tags != null) {
-            val tagsArray = JsonArray(tags.size)
-            tags.forEach { tagsArray.add(it) }
+        tags?.let { temp ->
+            val tagsArray = JsonArray(temp.size)
+            temp.forEach { tagsArray.add(it) }
             json.add("tags", tagsArray)
         }
         val authorsArray = JsonArray(authors.size)

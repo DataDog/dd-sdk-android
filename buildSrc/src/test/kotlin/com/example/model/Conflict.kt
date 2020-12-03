@@ -11,8 +11,8 @@ internal data class Conflict(
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        if (type != null) json.add("type", type.toJson())
-        if (user != null) json.add("user", user.toJson())
+        type?.let { json.add("type", it.toJson()) }
+        user?.let { json.add("user", it.toJson()) }
         return json
     }
 
@@ -21,7 +21,7 @@ internal data class Conflict(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (id != null) json.addProperty("id", id)
+            id?.let { json.addProperty("id", it) }
             return json
         }
     }
@@ -32,8 +32,8 @@ internal data class Conflict(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (name != null) json.addProperty("name", name)
-            if (type != null) json.add("type", type.toJson())
+            name?.let { json.addProperty("name", it) }
+            type?.let { json.add("type", it.toJson()) }
             return json
         }
     }

@@ -11,8 +11,8 @@ internal data class DateTime(
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        if (date != null) json.add("date", date.toJson())
-        if (time != null) json.add("time", time.toJson())
+        date?.let { json.add("date", it.toJson()) }
+        time?.let { json.add("time", it.toJson()) }
         return json
     }
 
@@ -23,9 +23,9 @@ internal data class DateTime(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (year != null) json.addProperty("year", year)
-            if (month != null) json.add("month", month.toJson())
-            if (day != null) json.addProperty("day", day)
+            year?.let { json.addProperty("year", it) }
+            month?.let { json.add("month", it.toJson()) }
+            day?.let { json.addProperty("day", it) }
             return json
         }
     }
@@ -37,9 +37,9 @@ internal data class DateTime(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (hour != null) json.addProperty("hour", hour)
-            if (minute != null) json.addProperty("minute", minute)
-            if (seconds != null) json.addProperty("seconds", seconds)
+            hour?.let { json.addProperty("hour", it) }
+            minute?.let { json.addProperty("minute", it) }
+            seconds?.let { json.addProperty("seconds", it) }
             return json
         }
     }

@@ -23,14 +23,14 @@ internal data class Opus(
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        if (title != null) json.addProperty("title", title)
-        if (composer != null) json.addProperty("composer", composer)
-        if (artists != null) {
-            val artistsArray = JsonArray(artists.size)
-            artists.forEach { artistsArray.add(it.toJson()) }
+        title?.let { json.addProperty("title", it) }
+        composer?.let { json.addProperty("composer", it) }
+        artists?.let { temp ->
+            val artistsArray = JsonArray(temp.size)
+            temp.forEach { artistsArray.add(it.toJson()) }
             json.add("artists", artistsArray)
         }
-        if (duration != null) json.addProperty("duration", duration)
+        duration?.let { json.addProperty("duration", it) }
         return json
     }
 
@@ -45,8 +45,8 @@ internal data class Opus(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (name != null) json.addProperty("name", name)
-            if (role != null) json.add("role", role.toJson())
+            name?.let { json.addProperty("name", it) }
+            role?.let { json.add("role", it.toJson()) }
             return json
         }
     }

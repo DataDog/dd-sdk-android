@@ -22,9 +22,9 @@ internal data class Delivery(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (name != null) json.addProperty("name", name)
-            if (billingAddress != null) json.add("billing_address", billingAddress.toJson())
-            if (shippingAddress != null) json.add("shipping_address", shippingAddress.toJson())
+            name?.let { json.addProperty("name", it) }
+            billingAddress?.let { json.add("billing_address", it.toJson()) }
+            shippingAddress?.let { json.add("shipping_address", it.toJson()) }
             return json
         }
     }

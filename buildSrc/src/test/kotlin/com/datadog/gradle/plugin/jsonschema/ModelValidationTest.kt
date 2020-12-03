@@ -85,7 +85,8 @@ class ModelValidationTest(
                 arrayOf("all_of", "User"),
                 arrayOf("external_description", "Delivery"),
                 arrayOf("external_nested_description", "Shipping"),
-                arrayOf("definition_name_conflict", "Conflict")
+                arrayOf("definition_name_conflict", "Conflict"),
+                arrayOf("read_only", "Message")
             )
         }
     }

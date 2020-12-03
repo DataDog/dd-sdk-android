@@ -127,7 +127,7 @@ class PokoGenerator(
 
         definition.values.forEach { value ->
             enumBuilder.addEnumConstant(
-                value.toUpperCase(Locale.US),
+                value.enumConstantName(),
                 TypeSpec.anonymousClassBuilder()
                     .build()
             )
@@ -166,6 +166,7 @@ class PokoGenerator(
 
         typeBuilder.addProperty(
             PropertySpec.builder(varName, type)
+                .mutable(!property.readOnly)
                 .initializer(varName)
                 .build()
         )
@@ -287,7 +288,7 @@ class PokoGenerator(
         definition.values.forEach { value ->
             funBuilder.addStatement(
                 "%L -> %T(%S)",
-                value.toUpperCase(Locale.US),
+                value.enumConstantName(),
                 JSON_PRIMITIVE,
                 value
             )
@@ -341,10 +342,9 @@ class PokoGenerator(
     ) {
         if (property.optional) {
             funBuilder.addStatement(
-                "if (%L != null) json.add(%S, %L.%L())",
+                "%L?.let { json.add(%S, it.%L()) }",
                 varName,
                 property.name,
-                varName,
                 TO_JSON
             )
         } else {
@@ -362,21 +362,24 @@ class PokoGenerator(
         varName: String,
         funBuilder: FunSpec.Builder
     ) {
-        if (property.optional) {
-            funBuilder.beginControlFlow("if (%L != null)", varName)
+        val arrayVar = if (property.optional) {
+            funBuilder.beginControlFlow("%L?.let { temp ->", varName)
+            "temp"
+        } else {
+            varName
         }
 
-        funBuilder.addStatement("val %LArray = %T(%L.size)", varName, JSON_ARRAY, varName)
+        funBuilder.addStatement("val %LArray = %T(%L.size)", varName, JSON_ARRAY, arrayVar)
         when (type.items) {
             is TypeDefinition.Primitive -> funBuilder.addStatement(
                 "%L.forEach { %LArray.add(it) }",
-                varName,
+                arrayVar,
                 varName
             )
             is TypeDefinition.Class,
             is TypeDefinition.Enum -> funBuilder.addStatement(
                 "%L.forEach { %LArray.add(it.%L()) }",
-                varName,
+                arrayVar,
                 varName,
                 TO_JSON
             )
@@ -409,10 +412,9 @@ class PokoGenerator(
             JsonType.INTEGER ->
                 if (property.optional) {
                     funBuilder.addStatement(
-                        "if (%L != null) json.addProperty(%S, %L)",
+                        "%L?.let { json.addProperty(%S, it) }",
                         varName,
-                        property.name,
-                        varName
+                        property.name
                     )
                 } else {
                     funBuilder.addStatement(
@@ -463,6 +465,10 @@ class PokoGenerator(
         }
         knownTypes.add(uniqueName)
         return uniqueName
+    }
+
+    private fun String.enumConstantName(): String {
+        return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
     }
 
     private fun TypeDefinition.Enum.withUniqueTypeName(): TypeDefinition.Enum {

@@ -64,7 +64,8 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("external_description", Delivery),
                 arrayOf("external_nested_description", Shipping),
-                arrayOf("definition_name_conflict", Conflict)
+                arrayOf("definition_name_conflict", Conflict),
+                arrayOf("read_only", Message)
             )
         }
     }

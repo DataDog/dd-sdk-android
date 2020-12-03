@@ -203,6 +203,54 @@ val Location = TypeDefinition.Class(
     )
 )
 
+val Message = TypeDefinition.Class(
+    name = "Message",
+    properties = listOf(
+        TypeProperty(
+            "destination",
+            TypeDefinition.Array(TypeDefinition.Primitive(JsonType.STRING)),
+            optional = false,
+            readOnly = true
+        ),
+        TypeProperty(
+            "origin",
+            TypeDefinition.Primitive(JsonType.STRING),
+            optional = false,
+            readOnly = true
+        ),
+        TypeProperty(
+            "subject",
+            TypeDefinition.Primitive(JsonType.STRING),
+            optional = true,
+            readOnly = true
+        ),
+        TypeProperty(
+            "message",
+            TypeDefinition.Primitive(JsonType.STRING),
+            optional = true,
+            readOnly = true
+        ),
+        TypeProperty(
+            "labels",
+            TypeDefinition.Array(TypeDefinition.Primitive(JsonType.STRING)),
+            optional = true,
+            readOnly = false
+        ),
+        TypeProperty(
+            "read",
+            TypeDefinition.Primitive(JsonType.BOOLEAN),
+            optional = true,
+            readOnly = false
+        ),
+        TypeProperty(
+            "important",
+            TypeDefinition.Primitive(JsonType.BOOLEAN),
+            optional = true,
+            readOnly = false
+        )
+    )
+)
+
 val Opus = TypeDefinition.Class(
     name = "Opus",
     description = "A musical opus.",
@@ -290,7 +338,7 @@ val Style = TypeDefinition.Class(
             TypeDefinition.Enum(
                 "Color",
                 JsonType.STRING,
-                listOf("red", "amber", "green", "dark_blue")
+                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow")
             ),
             false
         )

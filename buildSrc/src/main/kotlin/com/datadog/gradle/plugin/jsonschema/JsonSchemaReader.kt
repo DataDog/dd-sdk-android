@@ -247,11 +247,12 @@ class JsonSchemaReader(
         val properties = mutableListOf<TypeProperty>()
         definition.properties?.forEach { (name, property) ->
             val required = (definition.required != null) && (name in definition.required)
+            val readOnly = (property.readOnly == null) || (property.readOnly)
             val propertyType = transform(
                 property,
                 name.toCamelCase()
             )
-            properties.add(TypeProperty(name, propertyType, !required))
+            properties.add(TypeProperty(name, propertyType, !required, readOnly))
         }
 
         return TypeDefinition.Class(
