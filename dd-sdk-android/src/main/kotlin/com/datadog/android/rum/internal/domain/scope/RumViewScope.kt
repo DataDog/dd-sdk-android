@@ -125,9 +125,9 @@ internal class RumViewScope(
         writer: Writer<RumEvent>
     ) {
         if (!stopped) {
+            stopped = true
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
-            stopped = true
         }
     }
 
@@ -140,8 +140,8 @@ internal class RumViewScope(
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
             attributes.putAll(event.attributes)
-            sendViewUpdate(event, writer)
             stopped = true
+            sendViewUpdate(event, writer)
         }
     }
 
@@ -289,7 +289,8 @@ internal class RumViewScope(
                 action = ViewEvent.Action(actionCount),
                 resource = ViewEvent.Resource(resourceCount),
                 error = ViewEvent.Error(errorCount),
-                crash = ViewEvent.Crash(crashCount)
+                crash = ViewEvent.Crash(crashCount),
+                isActive = !stopped
             ),
             usr = ViewEvent.Usr(
                 id = user.id,

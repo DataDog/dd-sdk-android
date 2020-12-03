@@ -173,6 +173,18 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun isActive(
+        expected: Boolean?
+    ): ViewEventAssert {
+        assertThat(actual.view.isActive)
+            .overridingErrorMessage(
+                "Expected event to have isActive $expected" +
+                    " but was ${actual.view.isActive}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasUserInfo(expected: UserInfo?): ViewEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
