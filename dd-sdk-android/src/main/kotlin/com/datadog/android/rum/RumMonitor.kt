@@ -24,7 +24,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *
  *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
  */
-@Suppress("ComplexInterface")
+@Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
 interface RumMonitor {
 
@@ -180,6 +180,20 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         throwable: Throwable?,
+        attributes: Map<String, Any?>
+    )
+
+    /**
+     * Notifies that an error occurred in the active View.
+     * @param message a message explaining the error
+     * @param source the source of the error
+     * @param stacktrace the error stacktrace information
+     * @param attributes additional custom attributes to attach to the error
+     */
+    fun addErrorWithStacktrace(
+        message: String,
+        source: RumErrorSource,
+        stacktrace: String?,
         attributes: Map<String, Any?>
     )
 

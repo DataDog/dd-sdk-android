@@ -10,6 +10,7 @@ import com.datadog.android.bridge.DdRum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import java.util.Locale
 
@@ -124,12 +125,12 @@ internal class BridgeRum : DdRum {
         val attributes = context.toMutableMap().apply {
             put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
-        // (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
-        //     message = message,
-        //     source = RumErrorSource.valueOf(source),
-        //     stacktrace = stacktrace,
-        //     attributes = attributes
-        // )
+        GlobalRum.get().addErrorWithStacktrace(
+            message = message,
+            source = source.asErrorSource(),
+            stacktrace = stacktrace,
+            attributes = attributes
+        )
     }
 
     // region Internal
@@ -157,6 +158,18 @@ internal class BridgeRum : DdRum {
             "media" -> RumResourceKind.MEDIA
             "other" -> RumResourceKind.OTHER
             else -> RumResourceKind.UNKNOWN
+        }
+    }
+
+    private fun String.asErrorSource(): RumErrorSource {
+        return when (toLowerCase(Locale.US)) {
+            "agent" -> RumErrorSource.AGENT
+            "console" -> RumErrorSource.CONSOLE
+            "logger" -> RumErrorSource.LOGGER
+            "network" -> RumErrorSource.NETWORK
+            "source" -> RumErrorSource.SOURCE
+            "webview" -> RumErrorSource.WEBVIEW
+            else -> RumErrorSource.SOURCE
         }
     }
 

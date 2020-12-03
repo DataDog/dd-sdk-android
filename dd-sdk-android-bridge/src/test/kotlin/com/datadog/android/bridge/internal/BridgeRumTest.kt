@@ -267,6 +267,27 @@ internal class BridgeRumTest {
         testedDdRum.addError(message, source.name, stackTrace, fakeTimestamp, fakeContext)
 
         // Then
-        // verify(mockRumMonitor).addErrorWithStacktrace(message, source, stackTrace, updatedContext)
+        verify(mockRumMonitor).addErrorWithStacktrace(message, source, stackTrace, updatedContext)
+    }
+
+    @Test
+    fun `M call addError W addError() with invalid source`(
+        @StringForgery message: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) source: String,
+        @StringForgery stackTrace: String
+    ) {
+        // Given
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedDdRum.addError(message, source, stackTrace, fakeTimestamp, fakeContext)
+
+        // Then
+        verify(mockRumMonitor).addErrorWithStacktrace(
+            message,
+            RumErrorSource.SOURCE,
+            stackTrace,
+            updatedContext
+        )
     }
 }
