@@ -71,6 +71,11 @@
               "description": "Duration in ns to the end of the load event handler execution",
               "minimum": 0
             },
+            "is_active": {
+              "type": "boolean",
+              "description": "Whether the View represented by this event is active",
+              "minimum": 0
+            },
             "action": {
               "type": "object",
               "description": "Properties of the actions of the view",
