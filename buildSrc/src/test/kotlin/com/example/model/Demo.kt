@@ -27,10 +27,10 @@ internal data class Demo(
         json.addProperty("n", n)
         json.addProperty("b", b)
         json.add("l", null)
-        if (ns != null) json.addProperty("ns", ns)
-        if (ni != null) json.addProperty("ni", ni)
-        if (nn != null) json.addProperty("nn", nn)
-        if (nb != null) json.addProperty("nb", nb)
+        ns?.let { json.addProperty("ns", it) }
+        ni?.let { json.addProperty("ni", it) }
+        nn?.let { json.addProperty("nn", it) }
+        nb?.let { json.addProperty("nb", it) }
         return json
     }
 }

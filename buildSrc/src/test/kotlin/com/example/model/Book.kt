@@ -41,8 +41,8 @@ internal data class Book(
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
-            if (phone != null) json.addProperty("phone", phone)
-            if (email != null) json.addProperty("email", email)
+            phone?.let { json.addProperty("phone", it) }
+            email?.let { json.addProperty("email", it) }
             return json
         }
     }

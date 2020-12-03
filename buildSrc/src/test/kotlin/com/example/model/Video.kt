@@ -14,14 +14,14 @@ internal data class Video(
     fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
-        if (tags != null) {
-            val tagsArray = JsonArray(tags.size)
-            tags.forEach { tagsArray.add(it) }
+        tags?.let { temp ->
+            val tagsArray = JsonArray(temp.size)
+            temp.forEach { tagsArray.add(it) }
             json.add("tags", tagsArray)
         }
-        if (links != null) {
-            val linksArray = JsonArray(links.size)
-            links.forEach { linksArray.add(it) }
+        links?.let { temp ->
+            val linksArray = JsonArray(temp.size)
+            temp.forEach { linksArray.add(it) }
             json.add("links", linksArray)
         }
         return json

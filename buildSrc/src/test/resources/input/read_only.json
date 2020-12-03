@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Message",
+  "type": "object",
+  "properties": {
+    "destination": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "readOnly": true
+    },
+    "origin": {
+      "type": "string",
+      "readOnly": true
+    },
+    "subject": {
+      "type": "string",
+      "readOnly": true
+    },
+    "message": {
+      "type": "string",
+      "readOnly": true
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "readOnly": false
+    },
+    "read": {
+      "type": "boolean",
+      "readOnly": false
+    },
+    "important": {
+      "type": "boolean",
+      "readOnly": false
+    }
+  },
+  "required": [
+    "destination",
+    "origin"
+  ]
+}

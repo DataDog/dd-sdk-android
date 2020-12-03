@@ -71,6 +71,7 @@ class PokoGeneratorTest(
                 arrayOf(Foo, "Foo"),
                 arrayOf(Person, "Person"),
                 arrayOf(Location, "Location"),
+                arrayOf(Message, "Message"),
                 arrayOf(Opus, "Opus"),
                 arrayOf(Product, "Product"),
                 arrayOf(Shipping, "Shipping"),

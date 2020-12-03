@@ -20,6 +20,7 @@ internal class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(DemoForgeryFactory())
         forge.addFactory(FooForgeryFactory())
         forge.addFactory(LocationForgeryFactory())
+        forge.addFactory(MessageForgeryFactory())
         forge.addFactory(OpusForgeryFactory())
         forge.addFactory(PersonForgeryFactory())
         forge.addFactory(ProductForgeryFactory())

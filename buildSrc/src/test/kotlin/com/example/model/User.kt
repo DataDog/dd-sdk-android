@@ -16,7 +16,7 @@ internal data class User(
         val json = JsonObject()
         json.addProperty("username", username)
         json.addProperty("host", host)
-        if (firstname != null) json.addProperty("firstname", firstname)
+        firstname?.let { json.addProperty("firstname", it) }
         json.addProperty("lastname", lastname)
         json.add("contact_type", contactType.toJson())
         return json

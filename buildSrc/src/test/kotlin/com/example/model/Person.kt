@@ -12,9 +12,9 @@ internal data class Person(
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        if (firstName != null) json.addProperty("firstName", firstName)
-        if (lastName != null) json.addProperty("lastName", lastName)
-        if (age != null) json.addProperty("age", age)
+        firstName?.let { json.addProperty("firstName", it) }
+        lastName?.let { json.addProperty("lastName", it) }
+        age?.let { json.addProperty("age", it) }
         return json
     }
 }

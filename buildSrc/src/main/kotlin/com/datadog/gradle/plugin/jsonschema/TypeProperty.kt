@@ -9,7 +9,8 @@ package com.datadog.gradle.plugin.jsonschema
 data class TypeProperty(
     val name: String,
     val type: TypeDefinition,
-    val optional: Boolean
+    val optional: Boolean,
+    val readOnly: Boolean = true
 ) {
     fun mergedWith(other: TypeProperty): TypeProperty {
         return if (this == other) {

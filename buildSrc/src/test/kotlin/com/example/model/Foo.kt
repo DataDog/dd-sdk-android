@@ -11,8 +11,8 @@ internal data class Foo(
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        if (bar != null) json.addProperty("bar", bar)
-        if (baz != null) json.addProperty("baz", baz)
+        bar?.let { json.addProperty("bar", it) }
+        baz?.let { json.addProperty("baz", it) }
         return json
     }
 }
