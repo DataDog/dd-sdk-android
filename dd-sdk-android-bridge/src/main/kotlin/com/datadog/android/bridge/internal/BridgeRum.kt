@@ -9,6 +9,7 @@ package com.datadog.android.bridge.internal
 import com.datadog.android.bridge.DdRum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumResourceKind
 import java.util.Locale
 
@@ -16,7 +17,7 @@ internal class BridgeRum : DdRum {
 
     override fun startView(key: String, name: String, timestamp: Long, context: Map<String, Any?>) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().startView(
             key = key,
@@ -27,7 +28,7 @@ internal class BridgeRum : DdRum {
 
     override fun stopView(key: String, timestamp: Long, context: Map<String, Any?>) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().stopView(
             key = key,
@@ -42,7 +43,7 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().startUserAction(
             type = type.asRumActionType(),
@@ -53,7 +54,7 @@ internal class BridgeRum : DdRum {
 
     override fun stopAction(timestamp: Long, context: Map<String, Any?>) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().stopUserAction(
             attributes = attributes
@@ -67,7 +68,7 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().addUserAction(
             type = type.asRumActionType(),
@@ -84,7 +85,7 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().startResource(
             key = key,
@@ -102,7 +103,7 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         GlobalRum.get().stopResource(
             key = key,
@@ -121,7 +122,7 @@ internal class BridgeRum : DdRum {
         context: Map<String, Any?>
     ) {
         val attributes = context.toMutableMap().apply {
-            put(TIMESTAMP, timestamp)
+            put(RumAttributes.INTERNAL_TIMESTAMP, timestamp)
         }
         // (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
         //     message = message,
@@ -160,8 +161,4 @@ internal class BridgeRum : DdRum {
     }
 
     // endregion
-
-    companion object {
-        internal const val TIMESTAMP = "_dd.timestamp"
-    }
 }

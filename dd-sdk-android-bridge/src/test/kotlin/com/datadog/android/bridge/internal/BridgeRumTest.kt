@@ -9,6 +9,7 @@ package com.datadog.android.bridge.internal
 import com.datadog.android.bridge.DdRum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -88,7 +89,7 @@ internal class BridgeRumTest {
         @StringForgery name: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.startView(key, name, fakeTimestamp, fakeContext)
@@ -103,7 +104,7 @@ internal class BridgeRumTest {
         @StringForgery name: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.stopView(key, fakeTimestamp, fakeContext)
@@ -118,7 +119,7 @@ internal class BridgeRumTest {
         @Forgery type: RumActionType
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.addAction(type.name, name, fakeTimestamp, fakeContext)
@@ -133,7 +134,7 @@ internal class BridgeRumTest {
         @StringForgery(StringForgeryType.HEXADECIMAL) type: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.addAction(type, name, fakeTimestamp, fakeContext)
@@ -148,7 +149,7 @@ internal class BridgeRumTest {
         @StringForgery name: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.startAction(type.name, name, fakeTimestamp, fakeContext)
@@ -163,7 +164,7 @@ internal class BridgeRumTest {
         @StringForgery(StringForgeryType.HEXADECIMAL) type: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.startAction(type, name, fakeTimestamp, fakeContext)
@@ -178,7 +179,7 @@ internal class BridgeRumTest {
         @StringForgery name: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.stopAction(fakeTimestamp, fakeContext)
@@ -194,7 +195,7 @@ internal class BridgeRumTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+") url: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.startResource(key, method, url, fakeTimestamp, fakeContext)
@@ -210,7 +211,7 @@ internal class BridgeRumTest {
         @Forgery kind: RumResourceKind
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.stopResource(
@@ -232,7 +233,7 @@ internal class BridgeRumTest {
         @StringForgery(StringForgeryType.HEXADECIMAL) kind: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.stopResource(
@@ -260,7 +261,7 @@ internal class BridgeRumTest {
         @StringForgery stackTrace: String
     ) {
         // Given
-        val updatedContext = fakeContext + (BridgeRum.TIMESTAMP to fakeTimestamp)
+        val updatedContext = fakeContext + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
         testedDdRum.addError(message, source.name, stackTrace, fakeTimestamp, fakeContext)

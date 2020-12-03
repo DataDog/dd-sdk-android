@@ -51,6 +51,15 @@ object RumAttributes {
 
     // endregion
 
+    // region Internal
+
+    /**
+     * Overrides the automatic RUM event timestamp with a custom one.
+     */
+    const val INTERNAL_TIMESTAMP: String = "_dd.timestamp"
+
+    // endregion
+
     // region Resource
 
     /**

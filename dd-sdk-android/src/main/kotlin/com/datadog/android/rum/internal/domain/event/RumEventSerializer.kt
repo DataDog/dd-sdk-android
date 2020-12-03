@@ -12,7 +12,6 @@ import com.datadog.android.rum.internal.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.model.ViewEvent
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -67,7 +66,7 @@ internal class RumEventSerializer : Serializer<RumEvent> {
         )
 
         internal val ignoredAttributes = setOf(
-            DatadogRumMonitor.TIMESTAMP
+            RumAttributes.INTERNAL_TIMESTAMP
         )
     }
 }

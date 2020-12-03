@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -504,7 +505,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startView(key, name, attributes)
         Thread.sleep(200)
@@ -525,7 +526,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope with timestamp W stopView()`(
         @StringForgery(type = StringForgeryType.ASCII) key: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopView(key, attributes)
         Thread.sleep(200)
@@ -546,7 +547,7 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addUserAction(type, name, attributes)
         Thread.sleep(200)
@@ -569,7 +570,7 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startUserAction(type, name, attributes)
         Thread.sleep(200)
@@ -592,7 +593,7 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopUserAction(type, name, attributes)
         Thread.sleep(200)
@@ -615,7 +616,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery method: String,
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startResource(key, method, url, attributes)
         Thread.sleep(200)
@@ -640,7 +641,7 @@ internal class DatadogRumMonitorTest {
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopResource(key, statusCode, size, kind, attributes)
         Thread.sleep(200)
@@ -665,7 +666,7 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addError(message, source, throwable, attributes)
         Thread.sleep(200)
@@ -691,7 +692,7 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
     ) {
-        val attributes = fakeAttributes + (DatadogRumMonitor.TIMESTAMP to fakeTimestamp)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addErrorWithStacktrace(message, source, stacktrace, attributes)
         Thread.sleep(200)

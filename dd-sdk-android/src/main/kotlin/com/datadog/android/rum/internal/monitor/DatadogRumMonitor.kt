@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.domain.asTime
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
@@ -221,13 +222,12 @@ internal class DatadogRumMonitor(
     }
 
     private fun getEventTime(attributes: Map<String, Any?>): Time {
-        return (attributes[TIMESTAMP] as? Long)?.asTime() ?: Time()
+        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: Time()
     }
 
     // endregion
 
     companion object {
         internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
-        internal const val TIMESTAMP = "_dd.timestamp"
     }
 }
