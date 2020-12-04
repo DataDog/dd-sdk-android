@@ -94,9 +94,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     @RegexForgery(TracingInterceptorTest.HOSTNAME_PATTERN)
     lateinit var fakeHostName: String
 
-    @RegexForgery(TracingInterceptorTest.IPV4_PATTERN)
-    lateinit var fakeHostIp: String
-
     lateinit var fakeMethod: String
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
@@ -268,16 +265,10 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     private fun forgeRequest(
         forge: Forge,
-        validHost: Boolean = true,
         configure: (Request.Builder) -> Unit = {}
     ): Request {
         val protocol = forge.anElementFrom("http", "https")
-        val host = if (validHost) {
-            forge.anElementFrom(fakeHostIp, fakeHostName)
-        } else {
-            forge.aString(3) { anAlphabeticalChar() } + fakeHostName
-        }
-
+        val host = forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN)
         val path = forge.anAlphaNumericalString()
         fakeUrl = "$protocol://$host/$path"
         val builder = Request.Builder().url(fakeUrl)

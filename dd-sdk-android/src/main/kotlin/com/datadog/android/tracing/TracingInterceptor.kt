@@ -70,18 +70,11 @@ open class TracingInterceptor
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
 
-    private val hostRegex: Regex = Regex(
-        if (tracedHosts.isEmpty()) {
-            ""
-        } else {
-            tracedHosts.joinToString("|") { "^(.*\\.)*${it.replace(".", "\\.")}" }
-        }
-    )
-
     init {
         if (tracedHosts.isEmpty() && firstPartyHostDetector.isEmpty()) {
             devLogger.w(WARNING_TRACING_NO_HOSTS)
         }
+        firstPartyHostDetector.addKnownHosts(tracedHosts)
     }
 
     /**
@@ -163,8 +156,7 @@ open class TracingInterceptor
 
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
-        return firstPartyHostDetector.isFirstPartyUrl(url) ||
-            url.host().matches(hostRegex)
+        return firstPartyHostDetector.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
