@@ -77,6 +77,25 @@ internal class FirstPartyHostDetectorTest {
     }
 
     @Test
+    fun `𝕄 return true 𝕎 isFirstParty(HttpUrl) {known hosts list was updated}`(
+        @StringForgery(regex = "http(s?)") scheme: String,
+        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
+        testedDetector.addKnownHosts(fakeNewAllowedHosts)
+        val host = forge.anElementFrom(fakeNewAllowedHosts)
+        val url = HttpUrl.get("$scheme://$host$path")
+
+        // When
+        val result = testedDetector.isFirstPartyUrl(url)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
     fun `𝕄 return true 𝕎 isFirstParty(HttpUrl) {valid host subdomain}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") subdomain: String,
@@ -159,6 +178,25 @@ internal class FirstPartyHostDetectorTest {
         // Given
         val host = forge.anElementFrom(fakeHosts)
         val url = "$scheme://$subdomain.$host$path"
+
+        // When
+        val result = testedDetector.isFirstPartyUrl(url)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `𝕄 return true 𝕎 isFirstParty(String) {known hosts list was updated}`(
+        @StringForgery(regex = "http(s?)") scheme: String,
+        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
+        testedDetector.addKnownHosts(fakeNewAllowedHosts)
+        val host = forge.anElementFrom(fakeNewAllowedHosts)
+        val url = "$scheme://$host$path"
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)

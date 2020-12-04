@@ -12,8 +12,9 @@ import okhttp3.HttpUrl
 internal class FirstPartyHostDetector(
     hosts: List<String>
 ) {
-    // As per
-    internal val knownHosts = hosts.map { it.toLowerCase(Locale.US) }
+
+    internal var knownHosts = hosts.map { it.toLowerCase(Locale.US) }
+        private set
 
     fun isFirstPartyUrl(url: HttpUrl): Boolean {
         val host = url.host()
@@ -29,5 +30,9 @@ internal class FirstPartyHostDetector(
 
     fun isEmpty(): Boolean {
         return knownHosts.isEmpty()
+    }
+
+    fun addKnownHosts(hosts: List<String>) {
+        knownHosts = knownHosts + hosts
     }
 }
