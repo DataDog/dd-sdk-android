@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
@@ -96,6 +97,12 @@ object Datadog {
         context: Context,
         config: DatadogConfig
     ) {
+        warnDeprecated(
+            "Method Datadog.initialize(Context, DatadogConfig)",
+            "1.7.0",
+            "1.9.0",
+            "Datadog.initialize(Context, TrackingConsent, DatadogConfig)"
+        )
         initialize(context, TrackingConsent.GRANTED, config)
     }
 

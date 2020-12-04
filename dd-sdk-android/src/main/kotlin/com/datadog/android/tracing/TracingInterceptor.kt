@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
@@ -95,7 +96,12 @@ open class TracingInterceptor
      * @param tracedRequestListener a listener for automatically created [Span]s
      */
     @JvmOverloads
-    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
+    @Deprecated(
+        "Hosts should be defined in the DatadogConfig.setFirstPartyHosts().",
+        ReplaceWith(
+            expression = "TracingInterceptor(tracedRequestListener)"
+        )
+    )
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
@@ -105,7 +111,14 @@ open class TracingInterceptor
         CoreFeature.firstPartyHostDetector,
         null,
         { AndroidTracer.Builder().build() }
-    )
+    ) {
+        warnDeprecated(
+            "Constructor TracingInterceptor(List<String>, TracedRequestListener)",
+            "1.6.0",
+            "1.8.0",
+            "TracingInterceptor(TracedRequestListener)"
+        )
+    }
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
