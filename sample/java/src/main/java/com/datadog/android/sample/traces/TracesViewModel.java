@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import androidx.lifecycle.ViewModel;
 import com.datadog.android.DatadogEventListener;
+import com.datadog.android.DatadogInterceptor;
 import com.datadog.android.rum.RumInterceptor;
 import com.datadog.android.tracing.TracingInterceptor;
 import com.facebook.stetho.okhttp3.StethoInterceptor;
@@ -80,9 +81,8 @@ public class TracesViewModel extends ViewModel {
             this.callback = callback;
         }
 
-        private OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(new TracingInterceptor(Collections.singletonList("shopist.io")))
-                .addInterceptor(new RumInterceptor())
+        private final OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new DatadogInterceptor())
                 .eventListenerFactory(new DatadogEventListener.Factory())
                 .addNetworkInterceptor(new StethoInterceptor())
                 .build();

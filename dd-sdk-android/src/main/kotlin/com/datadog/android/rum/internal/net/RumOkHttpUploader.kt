@@ -16,7 +16,7 @@ import okhttp3.OkHttpClient
 
 internal open class RumOkHttpUploader(
     endpoint: String,
-    private val token: String,
+    token: String,
     client: OkHttpClient
 ) : DataOkHttpUploader(buildUrl(endpoint, token), client, CONTENT_TYPE_TEXT_UTF8) {
 
@@ -30,10 +30,6 @@ internal open class RumOkHttpUploader(
     }
 
     // region DataOkHttpUploader
-
-    override fun setEndpoint(endpoint: String) {
-        super.setEndpoint(buildUrl(endpoint, token))
-    }
 
     override fun buildQueryParams(): MutableMap<String, Any> {
         return mutableMapOf(

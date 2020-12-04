@@ -96,10 +96,12 @@ internal constructor(
      * the possibility to modify the created [io.opentracing.Span].
      */
     @JvmOverloads
-    @Deprecated("Hosts should be defined in the DatadogConfig.setFirstPartyHosts()",
+    @Deprecated(
+        "Hosts should be defined in the DatadogConfig.setFirstPartyHosts()",
         ReplaceWith(
             expression = "DatadogInterceptor(tracedRequestListener)"
-        ))
+        )
+    )
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
