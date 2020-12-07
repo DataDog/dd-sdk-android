@@ -19,7 +19,7 @@ internal class FirstPartyHostDetector(
     fun isFirstPartyUrl(url: HttpUrl): Boolean {
         val host = url.host()
         return knownHosts.any {
-            host == it || host.endsWith(".$it")
+            it == "*" || host == it || host.endsWith(".$it")
         }
     }
 
