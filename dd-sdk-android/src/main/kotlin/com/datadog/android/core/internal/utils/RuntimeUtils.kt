@@ -12,6 +12,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import java.util.Locale
 
 internal const val SDK_LOG_PREFIX = "DD_LOG"
 internal const val DEV_LOG_PREFIX = "Datadog"
@@ -48,3 +49,37 @@ internal fun buildDevLogHandler(): ConditionalLogHandler {
         i >= Datadog.libraryVerbosity
     }
 }
+
+internal fun warnDeprecated(
+    target: String,
+    deprecatedSince: String,
+    removedInVersion: String,
+    alternative: String? = null
+) {
+    if (alternative == null) {
+        devLogger.w(
+            WARN_DEPRECATED.format(
+                Locale.US,
+                target,
+                deprecatedSince,
+                removedInVersion
+            )
+        )
+    } else {
+        devLogger.w(
+            WARN_DEPRECATED_WITH_ALT.format(
+                Locale.US,
+                target,
+                deprecatedSince,
+                removedInVersion,
+                alternative
+            )
+        )
+    }
+}
+
+internal const val WARN_DEPRECATED = "%s has been deprecated since version %s, " +
+    "and will be removed in version %s."
+
+internal const val WARN_DEPRECATED_WITH_ALT = "%s has been deprecated since version %s, " +
+    "and will be removed in version %s. Please use %s instead"

@@ -27,9 +27,17 @@ import okhttp3.OkHttpClient
  * This sets up an OkHttp based downloader that will send Traces and RUM Resource events.
  * Also any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
  */
+@Deprecated(
+    "Hosts should be defined in the DatadogConfig.setFirstPartyHosts()",
+    ReplaceWith(
+        expression = "DatadogInterceptor(tracedRequestListener)"
+    )
+)
 open class DatadogGlideModule(
     private val tracedHosts: List<String>
 ) : AppGlideModule() {
+
+    constructor() : this (emptyList())
 
     // region AppGlideModule
 
