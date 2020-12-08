@@ -8,10 +8,15 @@ package com.datadog.android
 
 import android.os.Build
 import android.util.Log
+import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.RumConfigAssert.Companion.assertThat
+import com.datadog.android.rum.domain.model.ActionEvent
+import com.datadog.android.rum.domain.model.ErrorEvent
+import com.datadog.android.rum.domain.model.ResourceEvent
+import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
@@ -162,15 +167,11 @@ internal class DatadogConfigBuilderTest {
                     fakeEnvName
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -213,15 +214,11 @@ internal class DatadogConfigBuilderTest {
                     fakeEnvName
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -296,15 +293,11 @@ internal class DatadogConfigBuilderTest {
                 )
             )
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    envName = envName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(envName)
     }
 
     @Test
@@ -378,15 +371,11 @@ internal class DatadogConfigBuilderTest {
                 )
             )
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -435,15 +424,11 @@ internal class DatadogConfigBuilderTest {
                     fakeEnvName
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_EU,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_EU)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -492,15 +477,11 @@ internal class DatadogConfigBuilderTest {
                     fakeEnvName
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_GOV,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_GOV)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -558,15 +539,11 @@ internal class DatadogConfigBuilderTest {
                 )
             )
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -623,15 +600,11 @@ internal class DatadogConfigBuilderTest {
                     fakeEnvName
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    rumUrl,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(rumUrl)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -684,15 +657,11 @@ internal class DatadogConfigBuilderTest {
                 )
             )
 
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
     }
 
     @Test
@@ -786,16 +755,12 @@ internal class DatadogConfigBuilderTest {
             .build()
 
         // Then
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName,
-                    samplingRate = sampling
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
+            .hasSamplingRate(sampling)
     }
 
     @Test
@@ -850,17 +815,13 @@ internal class DatadogConfigBuilderTest {
 
                 )
             )
-        assertThat(config.rumConfig)
-            .isEqualTo(
-                DatadogConfig.RumConfig(
-                    fakeClientToken,
-                    fakeApplicationId,
-                    DatadogEndpoint.RUM_US,
-                    fakeEnvName,
-                    plugins = listOf(rumPlugin)
 
-                )
-            )
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
+            .hasPlugins(listOf(rumPlugin))
     }
 
     @Test
@@ -888,6 +849,103 @@ internal class DatadogConfigBuilderTest {
         // THEN
         assertThat(config.rumConfig).isNull()
         verifyZeroInteractions(mockDevLogHandler)
+    }
+
+    @Test
+    fun `M provide the update mapper into RUM config W all event mappers are set`() {
+        // GIVEN
+        val mockActionEventMapper: EventMapper<ActionEvent> = mock()
+        val mockViewEventMapper: EventMapper<ViewEvent> = mock()
+        val mockResourceEventMapper: EventMapper<ResourceEvent> = mock()
+        val mockErrorEventMapper: EventMapper<ErrorEvent> = mock()
+
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+                .setRumViewEventMapper(mockViewEventMapper)
+                .setRumActionEventMapper(mockActionEventMapper)
+                .setRumResourceEventMapper(mockResourceEventMapper)
+                .setRumErrorEventMapper(mockErrorEventMapper)
+                .build()
+
+        // THEN
+        assertThat(config.rumConfig).isNotNull()
+        assertThat(config.rumConfig?.rumEventMapper?.viewEventMapper)
+            .isEqualTo(mockViewEventMapper)
+        assertThat(config.rumConfig?.rumEventMapper?.actionEventMapper)
+            .isEqualTo(
+                mockActionEventMapper
+            )
+        assertThat(config.rumConfig?.rumEventMapper?.errorEventMapper)
+            .isEqualTo(
+                mockErrorEventMapper
+            )
+        assertThat(config.rumConfig?.rumEventMapper?.resourceEventMapper)
+            .isEqualTo(
+                mockResourceEventMapper
+            )
+    }
+
+    @Test
+    fun `M add the event mapper into the RUM config W { setRumViewEventMapper }`() {
+        // GIVEN
+        val mockMapper: EventMapper<ViewEvent> = mock()
+
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+                .setRumViewEventMapper(mockMapper)
+                .build()
+
+        // THEN
+        assertThat(config.rumConfig).isNotNull()
+        assertThat(config.rumConfig?.rumEventMapper?.viewEventMapper).isEqualTo(mockMapper)
+    }
+
+    @Test
+    fun `M add the event mapper into the RUM config W { setRumResourceEventMapper }`() {
+        // GIVEN
+        val mockMapper: EventMapper<ResourceEvent> = mock()
+
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+                .setRumResourceEventMapper(mockMapper)
+                .build()
+
+        // THEN
+        assertThat(config.rumConfig?.rumEventMapper?.resourceEventMapper).isEqualTo(mockMapper)
+    }
+
+    @Test
+    fun `M add the event mapper into the RUM config W { setRumErrorEventMapper }`() {
+        // GIVEN
+        val mockMapper: EventMapper<ErrorEvent> = mock()
+
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+                .setRumErrorEventMapper(mockMapper)
+                .build()
+
+        // THEN
+        assertThat(config.rumConfig?.rumEventMapper?.errorEventMapper).isEqualTo(mockMapper)
+    }
+
+    @Test
+    fun `M add the event mapper into the RUM config W { setRumActionEventMapper }`() {
+        // GIVEN
+        val mockMapper: EventMapper<ActionEvent> = mock()
+
+        // WHEN
+        val config =
+            DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
+                .setRumActionEventMapper(mockMapper)
+                .build()
+
+        // THEN
+        assertThat(config.rumConfig).isNotNull()
+        assertThat(config.rumConfig?.rumEventMapper?.actionEventMapper).isEqualTo(mockMapper)
     }
 
     // endregion

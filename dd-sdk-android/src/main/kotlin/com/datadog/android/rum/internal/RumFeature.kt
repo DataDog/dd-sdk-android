@@ -16,12 +16,14 @@ import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.plugin.DatadogPluginConfig
@@ -66,6 +68,7 @@ internal object RumFeature : SdkFeature() {
     private var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     private var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
+    internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
 
     @Suppress("LongParameterList")
     fun initialize(
@@ -88,6 +91,7 @@ internal object RumFeature : SdkFeature() {
         endpointUrl = config.endpointUrl
         envName = config.envName
         samplingRate = config.samplingRate
+        rumEventMapper = config.rumEventMapper
 
         config.gesturesTracker?.let { gesturesTracker = it }
         config.viewTrackingStrategy?.let { viewTrackingStrategy = it }
@@ -96,7 +100,8 @@ internal object RumFeature : SdkFeature() {
         persistenceStrategy = RumFileStrategy(
             appContext,
             trackingConsentProvider = trackingConsentProvider,
-            dataPersistenceExecutorService = dataPersistenceExecutor
+            dataPersistenceExecutorService = dataPersistenceExecutor,
+            eventMapper = rumEventMapper
         )
         setupUploader(
             endpointUrl,
@@ -141,6 +146,7 @@ internal object RumFeature : SdkFeature() {
             clientToken = ""
             endpointUrl = DatadogEndpoint.RUM_US
             envName = ""
+            rumEventMapper = NoOpEventMapper()
 
             (GlobalRum.get() as? DatadogRumMonitor)?.stopKeepAliveCallback()
             // reset rum monitor to NoOp and reset the flag

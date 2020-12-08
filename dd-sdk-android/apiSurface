@@ -33,6 +33,10 @@ class com.datadog.android.DatadogConfig
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun sampleRumSessions(Float): Builder
+    fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.domain.model.ViewEvent>): Builder
+    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.domain.model.ResourceEvent>): Builder
+    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.domain.model.ActionEvent>): Builder
+    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.domain.model.ErrorEvent>): Builder
     companion object 
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
@@ -69,7 +73,7 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
-interface com.datadog.android.event.EventMapper<T>
+interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
