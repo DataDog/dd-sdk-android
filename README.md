@@ -68,13 +68,7 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 
 ## Looking up your logs
 
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
-
-![Datadog Mobile Logs](docs/images/screenshot.png)
-
-## Looking up your logs
-
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
+When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:mobile`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
 
 ![Datadog Mobile Logs](docs/images/screenshot.png)
 
