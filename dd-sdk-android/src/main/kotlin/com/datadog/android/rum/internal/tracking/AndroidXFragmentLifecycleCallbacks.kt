@@ -15,8 +15,8 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 

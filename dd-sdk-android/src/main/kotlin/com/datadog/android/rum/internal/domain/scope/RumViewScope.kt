@@ -11,12 +11,12 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.domain.model.ActionEvent
+import com.datadog.android.rum.domain.model.ErrorEvent
+import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.UUID

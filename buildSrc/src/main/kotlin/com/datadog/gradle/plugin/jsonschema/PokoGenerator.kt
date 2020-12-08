@@ -65,7 +65,6 @@ class PokoGenerator(
         rootTypeName = definition.name
         val fileBuilder = FileSpec.builder(packageName, definition.name)
         val typeBuilder = generateClass(definition)
-            .addModifiers(KModifier.INTERNAL)
 
         while (nestedClasses.isNotEmpty()) {
             val definitions = nestedClasses.toList()
@@ -263,6 +262,7 @@ class PokoGenerator(
      */
     private fun generateClassSerializer(definition: TypeDefinition.Class): FunSpec {
         val funBuilder = FunSpec.builder(TO_JSON)
+            .addModifiers(KModifier.INTERNAL)
             .returns(JSON_ELEMENT)
 
         funBuilder.addStatement("val json = %T()", JSON_OBJECT)
@@ -282,6 +282,7 @@ class PokoGenerator(
      */
     private fun generateEnumSerializer(definition: TypeDefinition.Enum): FunSpec {
         val funBuilder = FunSpec.builder(TO_JSON)
+            .addModifiers(KModifier.INTERNAL)
             .returns(JSON_ELEMENT)
 
         funBuilder.beginControlFlow("return when (this)")
@@ -522,7 +523,6 @@ class PokoGenerator(
     companion object {
 
         private val NOTHING_NULLABLE = NOTHING.copy(nullable = true)
-        private val ANY_NULLABLE = ANY.copy(nullable = true)
 
         private val TO_JSON = "toJson"
 

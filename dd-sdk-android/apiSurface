@@ -69,6 +69,8 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
+interface com.datadog.android.event.EventMapper<T>
+  fun map(T): T?
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
   - DISCARD_OLD_DATA
   - SEND_OLD_DATA_TO_NEW_ENDPOINT
@@ -247,6 +249,235 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object 
+class com.datadog.android.rum.domain.model.ActionEvent
+  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd, Action)
+  val type: kotlin.String
+  class Application
+    constructor(kotlin.String)
+  class Session
+    constructor(kotlin.String, Type)
+  class View
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+  class Connectivity
+    constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
+  class Dd
+    val formatVersion: kotlin.Long
+  class Action
+    constructor(Type1, kotlin.String? = null, kotlin.Long? = null, Target? = null, Error? = null, Crash? = null, LongTask? = null, Resource? = null)
+  class Cellular
+    constructor(kotlin.String? = null, kotlin.String? = null)
+  class Target
+    constructor(kotlin.String)
+  class Error
+    constructor(kotlin.Long)
+  class Crash
+    constructor(kotlin.Long)
+  class LongTask
+    constructor(kotlin.Long)
+  class Resource
+    constructor(kotlin.Long)
+  enum Type
+    - USER
+    - SYNTHETICS
+  enum Status
+    - CONNECTED
+    - NOT_CONNECTED
+    - MAYBE
+  enum Interface
+    - BLUETOOTH
+    - CELLULAR
+    - ETHERNET
+    - WIFI
+    - WIMAX
+    - MIXED
+    - OTHER
+    - UNKNOWN
+    - NONE
+  enum Type1
+    - CUSTOM
+    - CLICK
+    - TAP
+    - SCROLL
+    - SWIPE
+    - APPLICATION_START
+    - BACK
+class com.datadog.android.rum.domain.model.ErrorEvent
+  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd, Error, Action? = null)
+  val type: kotlin.String
+  class Application
+    constructor(kotlin.String)
+  class Session
+    constructor(kotlin.String, Type)
+  class View
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+  class Connectivity
+    constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
+  class Dd
+    val formatVersion: kotlin.Long
+  class Error
+    constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, Resource? = null)
+  class Action
+    constructor(kotlin.String)
+  class Cellular
+    constructor(kotlin.String? = null, kotlin.String? = null)
+  class Resource
+    constructor(Method, kotlin.Long, kotlin.String)
+  enum Type
+    - USER
+    - SYNTHETICS
+  enum Status
+    - CONNECTED
+    - NOT_CONNECTED
+    - MAYBE
+  enum Interface
+    - BLUETOOTH
+    - CELLULAR
+    - ETHERNET
+    - WIFI
+    - WIMAX
+    - MIXED
+    - OTHER
+    - UNKNOWN
+    - NONE
+  enum Source
+    - NETWORK
+    - SOURCE
+    - CONSOLE
+    - LOGGER
+    - AGENT
+    - WEBVIEW
+  enum Method
+    - POST
+    - GET
+    - HEAD
+    - PUT
+    - DELETE
+    - PATCH
+class com.datadog.android.rum.domain.model.ResourceEvent
+  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd? = null, Resource, Action? = null)
+  val type: kotlin.String
+  class Application
+    constructor(kotlin.String)
+  class Session
+    constructor(kotlin.String, Type)
+  class View
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+  class Connectivity
+    constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
+  class Dd
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    val formatVersion: kotlin.Long
+  class Resource
+    constructor(kotlin.String? = null, Type1, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.Boolean? = null)
+  class Action
+    constructor(kotlin.String)
+  class Cellular
+    constructor(kotlin.String? = null, kotlin.String? = null)
+  class Redirect
+    constructor(kotlin.Long, kotlin.Long)
+  class Dns
+    constructor(kotlin.Long, kotlin.Long)
+  class Connect
+    constructor(kotlin.Long, kotlin.Long)
+  class Ssl
+    constructor(kotlin.Long, kotlin.Long)
+  class FirstByte
+    constructor(kotlin.Long, kotlin.Long)
+  class Download
+    constructor(kotlin.Long, kotlin.Long)
+  enum Type
+    - USER
+    - SYNTHETICS
+  enum Status
+    - CONNECTED
+    - NOT_CONNECTED
+    - MAYBE
+  enum Interface
+    - BLUETOOTH
+    - CELLULAR
+    - ETHERNET
+    - WIFI
+    - WIMAX
+    - MIXED
+    - OTHER
+    - UNKNOWN
+    - NONE
+  enum Type1
+    - DOCUMENT
+    - XHR
+    - BEACON
+    - FETCH
+    - CSS
+    - JS
+    - IMAGE
+    - FONT
+    - MEDIA
+    - OTHER
+  enum Method
+    - POST
+    - GET
+    - HEAD
+    - PUT
+    - DELETE
+    - PATCH
+class com.datadog.android.rum.domain.model.ViewEvent
+  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd)
+  val type: kotlin.String
+  class Application
+    constructor(kotlin.String)
+  class Session
+    constructor(kotlin.String, Type)
+  class View
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+  class Connectivity
+    constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
+  class Dd
+    constructor(kotlin.Long)
+    val formatVersion: kotlin.Long
+  class Action
+    constructor(kotlin.Long)
+  class Error
+    constructor(kotlin.Long)
+  class Crash
+    constructor(kotlin.Long)
+  class LongTask
+    constructor(kotlin.Long)
+  class Resource
+    constructor(kotlin.Long)
+  class Cellular
+    constructor(kotlin.String? = null, kotlin.String? = null)
+  enum Type
+    - USER
+    - SYNTHETICS
+  enum LoadingType
+    - INITIAL_LOAD
+    - ROUTE_CHANGE
+    - ACTIVITY_DISPLAY
+    - ACTIVITY_REDISPLAY
+    - FRAGMENT_DISPLAY
+    - FRAGMENT_REDISPLAY
+  enum Status
+    - CONNECTED
+    - NOT_CONNECTED
+    - MAYBE
+  enum Interface
+    - BLUETOOTH
+    - CELLULAR
+    - ETHERNET
+    - WIFI
+    - WIMAX
+    - MIXED
+    - OTHER
+    - UNKNOWN
+    - NONE
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String)
   override fun read(): Int

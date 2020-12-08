@@ -4,11 +4,11 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlin.String
 
-internal data class Shipping(
+data class Shipping(
     val item: String,
     val destination: Address
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("item", item)
         json.add("destination", destination.toJson())
@@ -20,7 +20,7 @@ internal data class Shipping(
         val city: String,
         val state: String
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
             json.addProperty("city", city)

@@ -10,8 +10,8 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 
 internal sealed class RumRawEvent {
 

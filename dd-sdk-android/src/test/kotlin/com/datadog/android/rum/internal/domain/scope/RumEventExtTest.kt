@@ -10,8 +10,8 @@ import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import com.datadog.android.rum.domain.model.ErrorEvent
+import com.datadog.android.rum.domain.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

@@ -11,10 +11,10 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.domain.model.ActionEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit

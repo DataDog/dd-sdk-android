@@ -5,11 +5,11 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.Long
 
-internal data class DateTime(
+data class DateTime(
     val date: Date? = null,
     val time: Time? = null
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         date?.let { json.add("date", it.toJson()) }
         time?.let { json.add("time", it.toJson()) }
@@ -21,7 +21,7 @@ internal data class DateTime(
         val month: Month? = null,
         val day: Long? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             year?.let { json.addProperty("year", it) }
             month?.let { json.add("month", it.toJson()) }
@@ -35,7 +35,7 @@ internal data class DateTime(
         val minute: Long? = null,
         val seconds: Long? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             hour?.let { json.addProperty("hour", it) }
             minute?.let { json.addProperty("minute", it) }
@@ -69,7 +69,7 @@ internal data class DateTime(
 
         DEC;
 
-        fun toJson(): JsonElement = when (this) {
+        internal fun toJson(): JsonElement = when (this) {
             JAN -> JsonPrimitive("jan")
             FEB -> JsonPrimitive("feb")
             MAR -> JsonPrimitive("mar")

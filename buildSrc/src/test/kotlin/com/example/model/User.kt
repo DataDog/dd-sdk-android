@@ -5,14 +5,14 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.String
 
-internal data class User(
+data class User(
     val username: String,
     val host: String,
     val firstname: String? = null,
     val lastname: String,
     val contactType: ContactType
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("username", username)
         json.addProperty("host", host)
@@ -27,7 +27,7 @@ internal data class User(
 
         PROFESSIONAL;
 
-        fun toJson(): JsonElement = when (this) {
+        internal fun toJson(): JsonElement = when (this) {
             PERSONAL -> JsonPrimitive("personal")
             PROFESSIONAL -> JsonPrimitive("professional")
         }

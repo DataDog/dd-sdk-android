@@ -5,11 +5,11 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.String
 
-internal data class Conflict(
+data class Conflict(
     val type: Type? = null,
     val user: User? = null
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         type?.let { json.add("type", it.toJson()) }
         user?.let { json.add("user", it.toJson()) }
@@ -19,7 +19,7 @@ internal data class Conflict(
     data class Type(
         val id: String? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             id?.let { json.addProperty("id", it) }
             return json
@@ -30,7 +30,7 @@ internal data class Conflict(
         val name: String? = null,
         val type: Type1? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { json.addProperty("name", it) }
             type?.let { json.add("type", it.toJson()) }
@@ -45,7 +45,7 @@ internal data class Conflict(
 
         PARTNER;
 
-        fun toJson(): JsonElement = when (this) {
+        internal fun toJson(): JsonElement = when (this) {
             UNKNOWN -> JsonPrimitive("unknown")
             CUSTOMER -> JsonPrimitive("customer")
             PARTNER -> JsonPrimitive("partner")

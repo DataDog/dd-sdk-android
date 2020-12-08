@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.rum.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.domain.scope.connect
 import com.datadog.android.rum.internal.domain.scope.dns
 import com.datadog.android.rum.internal.domain.scope.download

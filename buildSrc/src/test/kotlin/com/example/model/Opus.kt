@@ -15,13 +15,13 @@ import kotlin.collections.List
  * @param artists The opus's artists.
  * @param duration The opus's duration in seconds
  */
-internal data class Opus(
+data class Opus(
     val title: String? = null,
     val composer: String? = null,
     val artists: List<Artist>? = null,
     val duration: Long? = null
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         title?.let { json.addProperty("title", it) }
         composer?.let { json.addProperty("composer", it) }
@@ -43,7 +43,7 @@ internal data class Opus(
         val name: String? = null,
         val role: Role? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { json.addProperty("name", it) }
             role?.let { json.add("role", it.toJson()) }
@@ -73,7 +73,7 @@ internal data class Opus(
 
         OTHER;
 
-        fun toJson(): JsonElement = when (this) {
+        internal fun toJson(): JsonElement = when (this) {
             SINGER -> JsonPrimitive("singer")
             GUITARIST -> JsonPrimitive("guitarist")
             PIANIST -> JsonPrimitive("pianist")

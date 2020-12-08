@@ -4,14 +4,14 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlin.String
 
-internal data class UserMerged(
+data class UserMerged(
     val email: String? = null,
     val phone: String? = null,
     val info: Info? = null,
     val firstname: String? = null,
     val lastname: String
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         email?.let { json.addProperty("email", it) }
         phone?.let { json.addProperty("phone", it) }
@@ -25,7 +25,7 @@ internal data class UserMerged(
         val notes: String? = null,
         val source: String? = null
     ) {
-        fun toJson(): JsonElement {
+        internal fun toJson(): JsonElement {
             val json = JsonObject()
             notes?.let { json.addProperty("notes", it) }
             source?.let { json.addProperty("source", it) }

@@ -8,7 +8,7 @@ import kotlin.Long
 import kotlin.Nothing
 import kotlin.String
 
-internal data class Demo(
+data class Demo(
     val s: String,
     val i: Long,
     val n: Double,
@@ -20,7 +20,7 @@ internal data class Demo(
     val nb: Boolean? = null,
     val nl: Nothing? = null
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("s", s)
         json.addProperty("i", i)

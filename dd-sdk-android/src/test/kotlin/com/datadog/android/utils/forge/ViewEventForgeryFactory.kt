@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.domain.model.ViewEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp

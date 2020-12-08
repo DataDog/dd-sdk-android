@@ -7,7 +7,7 @@ import kotlin.Boolean
 import kotlin.String
 import kotlin.collections.List
 
-internal data class Message(
+data class Message(
     val destination: List<String>,
     val origin: String,
     val subject: String? = null,
@@ -16,7 +16,7 @@ internal data class Message(
     var read: Boolean? = null,
     var important: Boolean? = null
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         val destinationArray = JsonArray(destination.size)
         destination.forEach { destinationArray.add(it) }

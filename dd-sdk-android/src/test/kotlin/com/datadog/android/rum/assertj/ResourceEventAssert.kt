@@ -9,10 +9,10 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.domain.model.ResourceEvent
+import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.scope.toMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import org.assertj.core.api.AbstractObjectAssert

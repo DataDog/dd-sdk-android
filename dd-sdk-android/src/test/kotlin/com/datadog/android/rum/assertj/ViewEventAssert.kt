@@ -7,7 +7,7 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.domain.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset

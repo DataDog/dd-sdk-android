@@ -4,10 +4,10 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 
-internal data class Style(
+data class Style(
     val color: Color
 ) {
-    fun toJson(): JsonElement {
+    internal fun toJson(): JsonElement {
         val json = JsonObject()
         json.add("color", color.toJson())
         return json
@@ -26,7 +26,7 @@ internal data class Style(
 
         SUNBURST_YELLOW;
 
-        fun toJson(): JsonElement = when (this) {
+        internal fun toJson(): JsonElement = when (this) {
             RED -> JsonPrimitive("red")
             AMBER -> JsonPrimitive("amber")
             GREEN -> JsonPrimitive("green")
