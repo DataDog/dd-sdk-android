@@ -125,7 +125,11 @@ object GlobalRum {
      */
     @JvmStatic
     fun addAttribute(key: String, value: Any?) {
-        globalAttributes[key] = value
+        if (value == null) {
+            globalAttributes.remove(key)
+        } else {
+            globalAttributes[key] = value
+        }
     }
 
     /**
