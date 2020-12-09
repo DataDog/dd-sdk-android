@@ -156,7 +156,7 @@ apply(from = "clone_rum_schema.gradle.kts")
 
 jsonSchema2Poko {
     inputDirPath = "src/main/json"
-    targetPackageName = "com.datadog.android.rum.domain.model"
+    targetPackageName = "com.datadog.android.rum.model"
     ignoredFiles = arrayOf("_common-schema.json", "long_task-schema.json")
     nameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
@@ -167,7 +167,7 @@ jsonSchema2Poko {
 }
 
 kotlinConfig()
-detektConfig(excludes = listOf("**/com/datadog/android/rum/domain/model/**"))
+detektConfig(excludes = listOf("**/com/datadog/android/rum/model/**"))
 ktLintConfig()
 junitConfig()
 jacocoConfig()

@@ -7,26 +7,36 @@
 package com.datadog.android.core.internal.domain.batching.processors
 
 import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.event.EventMapper
 import java.util.concurrent.ExecutorService
 
 internal class DefaultDataProcessor<T : Any>(
     val executorService: ExecutorService,
-    val dataWriter: Writer<T>
+    val dataWriter: Writer<T>,
+    val eventMapper: EventMapper<T>
 ) : DataProcessor<T> {
 
     override fun consume(event: T) {
         executorService.submit {
-            dataWriter.write(event)
+            mapAndWriteEvent(event)
         }
     }
 
     override fun consume(events: List<T>) {
         executorService.submit {
-            dataWriter.write(events)
+            events.forEach {
+                mapAndWriteEvent(it)
+            }
         }
     }
 
     override fun getWriter(): Writer<T> {
         return dataWriter
+    }
+
+    private fun mapAndWriteEvent(event: T) {
+        eventMapper.map(event)?.let {
+            dataWriter.write(it)
+        }
     }
 }

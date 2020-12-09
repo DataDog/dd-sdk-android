@@ -11,7 +11,7 @@ data class Product(
     val productName: String,
     val price: Double
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("productId", productId)
         json.addProperty("productName", productName)

@@ -10,7 +10,7 @@ data class Person(
     val lastName: String? = null,
     val age: Long? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         firstName?.let { json.addProperty("firstName", it) }
         lastName?.let { json.addProperty("lastName", it) }

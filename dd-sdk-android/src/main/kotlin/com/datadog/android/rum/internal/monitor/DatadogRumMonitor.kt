@@ -14,12 +14,12 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.model.ViewEvent
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors

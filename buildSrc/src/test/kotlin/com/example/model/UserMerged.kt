@@ -11,7 +11,7 @@ data class UserMerged(
     val firstname: String? = null,
     val lastname: String
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         email?.let { json.addProperty("email", it) }
         phone?.let { json.addProperty("phone", it) }
@@ -25,7 +25,7 @@ data class UserMerged(
         val notes: String? = null,
         val source: String? = null
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             notes?.let { json.addProperty("notes", it) }
             source?.let { json.addProperty("source", it) }

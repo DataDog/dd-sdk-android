@@ -13,10 +13,10 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.RumConfigAssert.Companion.assertThat
-import com.datadog.android.rum.domain.model.ActionEvent
-import com.datadog.android.rum.domain.model.ErrorEvent
-import com.datadog.android.rum.domain.model.ResourceEvent
-import com.datadog.android.rum.domain.model.ViewEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator

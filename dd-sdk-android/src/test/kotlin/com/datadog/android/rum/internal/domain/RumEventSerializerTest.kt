@@ -9,12 +9,12 @@ package com.datadog.android.rum.internal.domain
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.utils.toJsonArray
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.rum.domain.model.ActionEvent
-import com.datadog.android.rum.domain.model.ErrorEvent
-import com.datadog.android.rum.domain.model.ResourceEvent
-import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension

@@ -8,8 +8,8 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
-import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.utils.forge.Configurator

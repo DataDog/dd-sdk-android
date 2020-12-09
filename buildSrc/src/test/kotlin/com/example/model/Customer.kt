@@ -9,7 +9,7 @@ data class Customer(
     val billingAddress: Address? = null,
     val shippingAddress: Address? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         name?.let { json.addProperty("name", it) }
         billingAddress?.let { json.add("billing_address", it.toJson()) }
@@ -22,7 +22,7 @@ data class Customer(
         val city: String,
         val state: String
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
             json.addProperty("city", city)

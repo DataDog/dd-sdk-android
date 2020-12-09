@@ -8,9 +8,9 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.domain.model.ActionEvent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
+import com.datadog.android.rum.model.ActionEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset

@@ -7,7 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.domain.model.ErrorEvent
+import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

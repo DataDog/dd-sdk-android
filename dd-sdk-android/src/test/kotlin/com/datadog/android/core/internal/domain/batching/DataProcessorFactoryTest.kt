@@ -11,8 +11,10 @@ import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.NoOpDataProcessor
+import com.datadog.android.event.EventMapper
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
@@ -62,7 +64,6 @@ internal class DataProcessorFactoryTest {
             mockedSerializer,
             fakeEventsSeparator,
             mockedExecutorService
-
         )
     }
 
@@ -99,6 +100,34 @@ internal class DataProcessorFactoryTest {
             val immediateFileWriter = it.getWriter() as ImmediateFileWriter
             assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedTargetFileOrchestrator)
+        }
+    }
+
+    @Test
+    fun `M use the eventMapper W provided`(forge: Forge) {
+        // GIVEN
+        val mockedEventMapper: EventMapper<String> = mock()
+        testedFactory = DataProcessorFactory(
+            mockedIntermediateFileOrchestrator,
+            mockedTargetFileOrchestrator,
+            mockedSerializer,
+            fakeEventsSeparator,
+            mockedExecutorService,
+            mockedEventMapper
+        )
+
+        // WHEN
+        val processor =
+            testedFactory.resolveProcessor(
+                forge.aValueFrom(
+                    TrackingConsent::class.java,
+                    exclude = listOf(TrackingConsent.NOT_GRANTED)
+                )
+            )
+
+        // THEN
+        assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
+            assertThat(it.eventMapper).isEqualTo(mockedEventMapper)
         }
     }
 

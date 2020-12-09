@@ -7,7 +7,7 @@ import kotlin.String
 class Location {
     val planet: String = "earth"
 
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("planet", planet)
         return json

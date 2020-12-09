@@ -11,10 +11,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
-import com.datadog.android.rum.domain.model.ActionEvent
-import com.datadog.android.rum.domain.model.ErrorEvent
-import com.datadog.android.rum.domain.model.ResourceEvent
-import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
@@ -22,6 +18,10 @@ import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGestures
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID

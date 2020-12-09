@@ -11,7 +11,7 @@ data class Video(
     val tags: Set<String>? = null,
     val links: Set<String>? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
         tags?.let { temp ->

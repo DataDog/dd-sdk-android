@@ -11,6 +11,7 @@ import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.plugin.jsonschema.JsonSchemaPlugin
 
 class ApiSurfacePlugin : Plugin<Project> {
 
@@ -22,6 +23,11 @@ class ApiSurfacePlugin : Plugin<Project> {
             .create(TASK_GEN_API_SURFACE, GenerateApiSurfaceTask::class.java)
         generateTask.srcDir = File(srcDir, "main")
         generateTask.surfaceFile = surfaceFile
+        target.afterEvaluate {
+            target.tasks.findByName(JsonSchemaPlugin.TASK_REVIEW_NAME)?.let {
+                generateTask.dependsOn(it)
+            }
+        }
 
         val checkTask = target.tasks
             .create(TASK_CHECK_API_SURFACE, CheckApiSurfaceTask::class.java)

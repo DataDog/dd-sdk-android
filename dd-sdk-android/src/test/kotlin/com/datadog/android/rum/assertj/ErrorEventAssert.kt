@@ -9,8 +9,8 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.domain.model.ErrorEvent
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
+import com.datadog.android.rum.model.ErrorEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset

@@ -21,7 +21,7 @@ data class Opus(
     val artists: List<Artist>? = null,
     val duration: Long? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         title?.let { json.addProperty("title", it) }
         composer?.let { json.addProperty("composer", it) }
@@ -43,7 +43,7 @@ data class Opus(
         val name: String? = null,
         val role: Role? = null
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { json.addProperty("name", it) }
             role?.let { json.add("role", it.toJson()) }
@@ -73,7 +73,7 @@ data class Opus(
 
         OTHER;
 
-        internal fun toJson(): JsonElement = when (this) {
+        fun toJson(): JsonElement = when (this) {
             SINGER -> JsonPrimitive("singer")
             GUITARIST -> JsonPrimitive("guitarist")
             PIANIST -> JsonPrimitive("pianist")

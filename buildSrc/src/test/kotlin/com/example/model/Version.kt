@@ -10,7 +10,7 @@ class Version {
 
     val delta: Double = 3.1415
 
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("version", version)
         json.addProperty("delta", delta)

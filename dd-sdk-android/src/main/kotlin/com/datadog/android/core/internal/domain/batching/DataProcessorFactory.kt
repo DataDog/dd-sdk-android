@@ -12,6 +12,8 @@ import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.NoOpDataProcessor
+import com.datadog.android.core.internal.event.NoOpEventMapper
+import com.datadog.android.event.EventMapper
 import com.datadog.android.privacy.TrackingConsent
 import java.util.concurrent.ExecutorService
 
@@ -20,7 +22,8 @@ internal class DataProcessorFactory<T : Any>(
     private val targetFileOrchestrator: Orchestrator,
     private val serializer: Serializer<T>,
     private val separator: CharSequence,
-    private val executorService: ExecutorService
+    private val executorService: ExecutorService,
+    private val eventMapper: EventMapper<T> = NoOpEventMapper()
 ) {
 
     fun resolveProcessor(consent: TrackingConsent): DataProcessor<T> {
@@ -29,13 +32,15 @@ internal class DataProcessorFactory<T : Any>(
                 intermediateFileOrchestrator.reset()
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(intermediateFileOrchestrator, serializer, separator)
+                    ImmediateFileWriter(intermediateFileOrchestrator, serializer, separator),
+                    eventMapper
                 )
             }
             TrackingConsent.GRANTED -> {
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(targetFileOrchestrator, serializer, separator)
+                    ImmediateFileWriter(targetFileOrchestrator, serializer, separator),
+                    eventMapper
                 )
             }
             else -> {

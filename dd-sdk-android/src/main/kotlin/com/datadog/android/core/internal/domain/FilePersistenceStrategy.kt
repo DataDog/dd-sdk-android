@@ -14,7 +14,9 @@ import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.domain.batching.DataProcessorFactory
 import com.datadog.android.core.internal.domain.batching.DefaultConsentAwareDataWriter
 import com.datadog.android.core.internal.domain.batching.DefaultMigratorFactory
+import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.event.EventMapper
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -25,7 +27,8 @@ internal open class FilePersistenceStrategy<T : Any>(
     executorService: ExecutorService,
     filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig(),
     payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
-    trackingConsentProvider: ConsentProvider
+    trackingConsentProvider: ConsentProvider,
+    eventMapper: EventMapper<T> = NoOpEventMapper()
 ) : PersistenceStrategy<T> {
 
     internal val intermediateFileOrchestrator = FileOrchestrator(
@@ -53,7 +56,8 @@ internal open class FilePersistenceStrategy<T : Any>(
                 authorizedFileOrchestrator,
                 serializer,
                 payloadDecoration.separator,
-                executorService
+                executorService,
+                eventMapper
             ),
             migratorsFactory = DefaultMigratorFactory(
                 intermediateStorageFolder.absolutePath,

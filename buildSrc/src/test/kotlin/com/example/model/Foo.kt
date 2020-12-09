@@ -9,7 +9,7 @@ data class Foo(
     val bar: String? = null,
     val baz: Long? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         bar?.let { json.addProperty("bar", it) }
         baz?.let { json.addProperty("baz", it) }

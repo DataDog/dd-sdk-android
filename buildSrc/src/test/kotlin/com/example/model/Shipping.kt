@@ -8,7 +8,7 @@ data class Shipping(
     val item: String,
     val destination: Address
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("item", item)
         json.add("destination", destination.toJson())
@@ -20,7 +20,7 @@ data class Shipping(
         val city: String,
         val state: String
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
             json.addProperty("city", city)

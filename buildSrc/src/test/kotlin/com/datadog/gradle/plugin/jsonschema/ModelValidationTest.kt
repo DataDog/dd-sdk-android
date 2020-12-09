@@ -34,7 +34,7 @@ class ModelValidationTest(
     @Test
     fun `validates model`() {
         val type = Class.forName("com.example.model.$className")
-        val toJson = type.getMethod("toJson" + "$" + MODULE_NAME)
+        val toJson = type.getMethod("toJson")
         val schema = loadSchema(schemaResourcePath)
         val file = javaClass.getResource("/input/").file
         println(">> SCOPE PATH : file://$file")
@@ -64,7 +64,6 @@ class ModelValidationTest(
     }
 
     companion object {
-        private const val MODULE_NAME = "buildSrc"
 
         @JvmStatic
         @Parameterized.Parameters(name = "{index}: {1}")

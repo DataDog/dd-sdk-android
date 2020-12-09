@@ -16,7 +16,7 @@ data class Message(
     var read: Boolean? = null,
     var important: Boolean? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         val destinationArray = JsonArray(destination.size)
         destination.forEach { destinationArray.add(it) }

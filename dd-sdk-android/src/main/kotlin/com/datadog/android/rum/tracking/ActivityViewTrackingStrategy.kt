@@ -10,9 +10,9 @@ import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.domain.model.ViewEvent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
+import com.datadog.android.rum.model.ViewEvent
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.

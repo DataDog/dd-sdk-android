@@ -12,7 +12,7 @@ data class Book(
     val price: Double,
     val author: Author
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("bookId", bookId)
         json.addProperty("title", title)
@@ -26,7 +26,7 @@ data class Book(
         val lastName: String,
         val contact: Contact
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("firstName", firstName)
             json.addProperty("lastName", lastName)
@@ -39,7 +39,7 @@ data class Book(
         val phone: String? = null,
         val email: String? = null
     ) {
-        internal fun toJson(): JsonElement {
+        fun toJson(): JsonElement {
             val json = JsonObject()
             phone?.let { json.addProperty("phone", it) }
             email?.let { json.addProperty("email", it) }

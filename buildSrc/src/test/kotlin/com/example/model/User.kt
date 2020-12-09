@@ -12,7 +12,7 @@ data class User(
     val lastname: String,
     val contactType: ContactType
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("username", username)
         json.addProperty("host", host)
@@ -27,7 +27,7 @@ data class User(
 
         PROFESSIONAL;
 
-        internal fun toJson(): JsonElement = when (this) {
+        fun toJson(): JsonElement = when (this) {
             PERSONAL -> JsonPrimitive("personal")
             PROFESSIONAL -> JsonPrimitive("professional")
         }

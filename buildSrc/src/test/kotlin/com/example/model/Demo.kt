@@ -20,7 +20,7 @@ data class Demo(
     val nb: Boolean? = null,
     val nl: Nothing? = null
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("s", s)
         json.addProperty("i", i)

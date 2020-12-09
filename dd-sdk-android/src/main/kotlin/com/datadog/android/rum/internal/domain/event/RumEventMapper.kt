@@ -7,19 +7,45 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.event.NoOpEventMapper
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.domain.model.ActionEvent
-import com.datadog.android.rum.domain.model.ErrorEvent
-import com.datadog.android.rum.domain.model.ResourceEvent
-import com.datadog.android.rum.domain.model.ViewEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 
 internal data class RumEventMapper(
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
-    val actionEventMapper: EventMapper<ActionEvent>? = NoOpEventMapper()
+    val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper()
 ) : EventMapper<RumEvent> {
+
     override fun map(event: RumEvent): RumEvent? {
-        return event
+        val bundledMappedEvent = when (val bundledEvent = event.event) {
+            is ViewEvent -> viewEventMapper.map(bundledEvent)
+            is ActionEvent -> actionEventMapper.map(bundledEvent)
+            is ErrorEvent -> errorEventMapper.map(bundledEvent)
+            is ResourceEvent -> resourceEventMapper.map(bundledEvent)
+            else -> {
+                sdkLogger.w(
+                    "RumEventMapper: there was no EventMapper assigned for" +
+                        " RUM event type: [${bundledEvent.javaClass.simpleName}]"
+                )
+                bundledEvent
+            }
+        }
+
+        // we need to check if the returned bundled mapped object is not null and same instance as the
+        // original one. Otherwise we will drop the event.
+        return if (bundledMappedEvent != null && bundledMappedEvent === event.event) {
+            event
+        } else {
+            sdkLogger.w(
+                "RumEventMapper: either the returned mapped object was null or was not the " +
+                    "same instance as the original object. This event will be dropped: [$event]"
+            )
+            null
+        }
     }
 }

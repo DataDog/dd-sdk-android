@@ -11,7 +11,7 @@ data class Article(
     val tags: List<String>? = null,
     val authors: List<String>
 ) {
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
         tags?.let { temp ->

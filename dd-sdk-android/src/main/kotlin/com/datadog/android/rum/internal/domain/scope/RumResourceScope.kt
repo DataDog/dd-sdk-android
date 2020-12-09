@@ -14,12 +14,12 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.domain.model.ErrorEvent
-import com.datadog.android.rum.domain.model.ResourceEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
 import java.util.UUID
 
 internal class RumResourceScope(

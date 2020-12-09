@@ -262,7 +262,6 @@ class PokoGenerator(
      */
     private fun generateClassSerializer(definition: TypeDefinition.Class): FunSpec {
         val funBuilder = FunSpec.builder(TO_JSON)
-            .addModifiers(KModifier.INTERNAL)
             .returns(JSON_ELEMENT)
 
         funBuilder.addStatement("val json = %T()", JSON_OBJECT)
@@ -282,7 +281,6 @@ class PokoGenerator(
      */
     private fun generateEnumSerializer(definition: TypeDefinition.Enum): FunSpec {
         val funBuilder = FunSpec.builder(TO_JSON)
-            .addModifiers(KModifier.INTERNAL)
             .returns(JSON_ELEMENT)
 
         funBuilder.beginControlFlow("return when (this)")
