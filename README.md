@@ -68,15 +68,21 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 
 ## Looking up your logs
 
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
+When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from Android applications.
 
-![Datadog Mobile Logs](docs/images/screenshot.png)
+![Datadog Mobile Logs](docs/images/screenshot_logs.png)
 
-## Looking up your logs
+## Looking up your spans
 
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from mobile applications (Android and iOS).
+When you open your console in Datadog, navigate to the APM section. In the list of services, you'll see all your android applications (by default the service name will match your application's package name, e.g.: `com.example.android`). You'll then be able to see all the traces started from your application.
 
-![Datadog Mobile Logs](docs/images/screenshot.png)
+![Datadog Mobile Logs](docs/images/screenshot_apm.png)
+
+## Looking up your RUM events
+
+When you open your console in Datadog, navigate to the RUM Explorer section. In the side bar, you can then select your application and explore Sessions, Views, Actions, Errors and Resources.
+
+![Datadog Mobile Logs](docs/images/screenshot_rum.png)
 
 ## Troubleshooting
 
