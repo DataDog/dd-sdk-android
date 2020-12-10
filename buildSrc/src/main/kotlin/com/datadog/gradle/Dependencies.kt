@@ -32,7 +32,7 @@ object Dependencies {
         const val JUnitJupiter = "5.6.2"
         const val JUnitPlatform = "1.6.2"
         const val JUnitVintage = "5.6.2"
-        const val JunitMockitoExt = "3.5.13"
+        const val JunitMockitoExt = "3.4.6"
 
         // Tests Tools
         const val AssertJ = "0.2.1"
