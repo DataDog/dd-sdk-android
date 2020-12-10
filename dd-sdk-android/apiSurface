@@ -254,7 +254,7 @@ enum com.datadog.android.rum.RumResourceKind
   - OTHER
   companion object 
 class com.datadog.android.rum.model.ActionEvent
-  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd, Action)
+  constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd, Action)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   class Application
@@ -326,7 +326,7 @@ class com.datadog.android.rum.model.ActionEvent
     - BACK
     fun toJson(): com.google.gson.JsonElement
 class com.datadog.android.rum.model.ErrorEvent
-  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd, Error, Action? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd, Error, Action? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   class Application
@@ -357,7 +357,10 @@ class com.datadog.android.rum.model.ErrorEvent
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
   class Resource
-    constructor(Method, kotlin.Long, kotlin.String)
+    constructor(Method, kotlin.Long, kotlin.String, Provider? = null)
+    fun toJson(): com.google.gson.JsonElement
+  class Provider
+    constructor(kotlin.String? = null, kotlin.String? = null, Type1? = null)
     fun toJson(): com.google.gson.JsonElement
   enum Type
     - USER
@@ -386,6 +389,7 @@ class com.datadog.android.rum.model.ErrorEvent
     - LOGGER
     - AGENT
     - WEBVIEW
+    - CUSTOM
     fun toJson(): com.google.gson.JsonElement
   enum Method
     - POST
@@ -395,8 +399,24 @@ class com.datadog.android.rum.model.ErrorEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
+  enum Type1
+    - AD
+    - ADVERTISING
+    - ANALYTICS
+    - CDN
+    - CONTENT
+    - CUSTOMER_SUCCESS
+    - FIRST_PARTY
+    - HOSTING
+    - MARKETING
+    - OTHER
+    - SOCIAL
+    - TAG_MANAGER
+    - UTILITY
+    - VIDEO
+    fun toJson(): com.google.gson.JsonElement
 class com.datadog.android.rum.model.ResourceEvent
-  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd? = null, Resource, Action? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd? = null, Resource, Action? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   class Application
@@ -419,7 +439,7 @@ class com.datadog.android.rum.model.ResourceEvent
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   class Resource
-    constructor(kotlin.String? = null, Type1, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.Boolean? = null)
+    constructor(kotlin.String? = null, Type1, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
   class Action
     constructor(kotlin.String)
@@ -444,6 +464,9 @@ class com.datadog.android.rum.model.ResourceEvent
     fun toJson(): com.google.gson.JsonElement
   class Download
     constructor(kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+  class Provider
+    constructor(kotlin.String? = null, kotlin.String? = null, Type2? = null)
     fun toJson(): com.google.gson.JsonElement
   enum Type
     - USER
@@ -485,8 +508,24 @@ class com.datadog.android.rum.model.ResourceEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
+  enum Type2
+    - AD
+    - ADVERTISING
+    - ANALYTICS
+    - CDN
+    - CONTENT
+    - CUSTOMER_SUCCESS
+    - FIRST_PARTY
+    - HOSTING
+    - MARKETING
+    - OTHER
+    - SOCIAL
+    - TAG_MANAGER
+    - UTILITY
+    - VIDEO
+    fun toJson(): com.google.gson.JsonElement
 class com.datadog.android.rum.model.ViewEvent
-  constructor(kotlin.Long, Application, Session, View, Usr? = null, Connectivity? = null, Dd)
+  constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   class Application
@@ -496,7 +535,7 @@ class com.datadog.android.rum.model.ViewEvent
     constructor(kotlin.String, Type)
     fun toJson(): com.google.gson.JsonElement
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Double? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
     fun toJson(): com.google.gson.JsonElement
   class Usr
     constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
@@ -537,6 +576,8 @@ class com.datadog.android.rum.model.ViewEvent
     - ACTIVITY_REDISPLAY
     - FRAGMENT_DISPLAY
     - FRAGMENT_REDISPLAY
+    - VIEW_CONTROLLER_DISPLAY
+    - VIEW_CONTROLLER_REDISPLAY
     fun toJson(): com.google.gson.JsonElement
   enum Status
     - CONNECTED

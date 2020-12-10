@@ -366,13 +366,31 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasFirstParty(expected: Boolean?): ResourceEventAssert {
-        assertThat(actual.resource.firstParty)
+    fun hasProviderType(expected: ResourceEvent.Type2): ResourceEventAssert {
+        assertThat(actual.resource.provider?.type)
             .overridingErrorMessage(
-                "Expected event data to have resource.first_party $expected " +
-                    "but was ${actual.resource.firstParty}"
+                "Expected event data to have resource provider type $expected " +
+                    "but was ${actual.resource.provider?.type}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProviderDomain(expected: String): ResourceEventAssert {
+        assertThat(actual.resource.provider?.domain)
+            .overridingErrorMessage(
+                "Expected event data to have resource provider domain $expected " +
+                    "but was ${actual.resource.provider?.domain}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun doesNotHaveAResourceProvider(): ResourceEventAssert {
+        assertThat(actual.resource.provider)
+            .overridingErrorMessage(
+                "Expected event data to not have a resource provider"
+            ).isNull()
         return this
     }
 

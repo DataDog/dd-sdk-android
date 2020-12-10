@@ -14,7 +14,8 @@
     "date": {
       "type": "integer",
       "description": "Start of the event in ms from epoch",
-      "minimum": 0
+      "minimum": 0,
+      "readOnly": true
     },
     "application": {
       "type": "object",
@@ -26,9 +27,16 @@
         "id": {
           "type": "string",
           "description": "UUID of the application",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
         }
-      }
+      },
+      "readOnly": true
+    },
+    "service": {
+      "type": "string",
+      "description": "The service name for this application",
+      "readOnly": true
     },
     "session": {
       "type": "object",
@@ -41,14 +49,17 @@
         "id": {
           "type": "string",
           "description": "UUID of the session",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
         },
         "type": {
           "type": "string",
           "description": "Type of the session",
-          "enum": ["user", "synthetics"]
+          "enum": ["user", "synthetics"],
+          "readOnly": true
         }
-      }
+      },
+      "readOnly": true
     },
     "view": {
       "type": "object",
@@ -61,17 +72,21 @@
         "id": {
           "type": "string",
           "description": "UUID of the view",
-          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
         },
         "referrer": {
           "type": "string",
-          "description": "URL that linked to the initial view of the page"
+          "description": "URL that linked to the initial view of the page",
+          "readOnly": false
         },
         "url": {
           "type": "string",
-          "description": "URL of the view"
+          "description": "URL of the view",
+          "readOnly": false
         }
-      }
+      },
+      "readOnly": true
     },
     "usr": {
       "type": "object",
@@ -79,17 +94,21 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Identifier of the user"
+          "description": "Identifier of the user",
+          "readOnly": true
         },
         "name": {
           "type": "string",
-          "description": "Name of the user"
+          "description": "Name of the user",
+          "readOnly": true
         },
         "email": {
           "type": "string",
-          "description": "Email of the user"
+          "description": "Email of the user",
+          "readOnly": true
         }
-      }
+      },
+      "readOnly": true
     },
     "connectivity": {
       "type": "object",
@@ -102,7 +121,8 @@
         "status": {
           "type": "string",
           "description": "Status of the device connectivity",
-          "enum": ["connected", "not_connected", "maybe"]
+          "enum": ["connected", "not_connected", "maybe"],
+          "readOnly": true
         },
         "interfaces": {
           "type": "array",
@@ -110,7 +130,8 @@
           "items": {
             "type": "string",
             "enum": ["bluetooth", "cellular", "ethernet", "wifi", "wimax", "mixed", "other", "unknown", "none"]
-          }
+          },
+          "readOnly": true
         },
         "cellular": {
           "type": "object",
@@ -118,13 +139,16 @@
           "properties": {
             "technology": {
               "type": "string",
-              "description": "The type of a radio technology used for cellular connection"
+              "description": "The type of a radio technology used for cellular connection",
+              "readOnly": true
             },
             "carrier_name": {
               "type": "string",
-              "description": "The name of the SIM carrier"
+              "description": "The name of the SIM carrier",
+              "readOnly": true
             }
-          }
+          },
+          "readOnly": true
         }
       }
     },
@@ -138,9 +162,11 @@
         "format_version": {
           "type": "integer",
           "const": 2,
-          "description": "Version of the RUM event format"
+          "description": "Version of the RUM event format",
+          "readOnly": true
         }
-      }
+      },
+      "readOnly": true
     }
   }
 }
