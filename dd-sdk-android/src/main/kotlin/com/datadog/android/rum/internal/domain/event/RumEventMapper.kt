@@ -38,14 +38,20 @@ internal data class RumEventMapper(
 
         // we need to check if the returned bundled mapped object is not null and same instance as the
         // original one. Otherwise we will drop the event.
-        return if (bundledMappedEvent != null && bundledMappedEvent === event.event) {
-            event
-        } else {
+        return if (bundledMappedEvent == null) {
+            sdkLogger.i(
+                "RumEventMapper: the returned mapped object was null." +
+                    "This event will be dropped: [$event]"
+            )
+            null
+        } else if (bundledMappedEvent !== event.event) {
             sdkLogger.w(
-                "RumEventMapper: either the returned mapped object was null or was not the " +
+                "RumEventMapper: the returned mapped object was not the " +
                     "same instance as the original object. This event will be dropped: [$event]"
             )
             null
+        } else {
+            event
         }
     }
 }
