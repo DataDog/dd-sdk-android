@@ -13,27 +13,45 @@ import fr.xgouchet.elmyr.jvm.useJvmFactories
 internal class Configurator :
     ForgeConfigurator {
     override fun configure(forge: Forge) {
-        forge.addFactory(FeatureConfigForgeryFactory())
-        forge.addFactory(LogForgeryFactory())
-        forge.addFactory(BatchForgeryFactory())
-        forge.addFactory(ThrowableForgeryFactory())
+
+        // Datadog Core
+        forge.addFactory(ConfigurationCoreForgeryFactory())
+        forge.addFactory(ConfigurationFeatureForgeryFactory())
+        forge.addFactory(ConfigurationLogForgeryFactory())
+        forge.addFactory(ConfigurationCrashReportForgeryFactory())
+        forge.addFactory(ConfigurationTracingForgeryFactory())
+        forge.addFactory(ConfigurationRumForgeryFactory())
+        forge.addFactory(CredentialsForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
+
+        // IO
+        forge.addFactory(BatchForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
-        forge.addFactory(JsonObjectForgeryFactory())
-        forge.addFactory(JsonPrimitiveForgeryFactory())
-        forge.addFactory(JsonArrayForgeryFactory())
+
+        // LOG
+        forge.addFactory(LogForgeryFactory())
+
+        // APM
         forge.addFactory(SpanForgeryFactory())
+
+        // RUM
+        forge.addFactory(ActionEventForgeryFactory())
         forge.addFactory(RumEventForgeryFactory())
         forge.addFactory(RumContextForgeryFactory())
-        forge.addFactory(ResourceTimingForgeryFactory())
-        forge.addFactory(ViewEventForgeryFactory())
-        forge.addFactory(ActionEventForgeryFactory())
         forge.addFactory(ResourceEventForgeryFactory())
+        forge.addFactory(ResourceTimingForgeryFactory())
         forge.addFactory(ErrorEventForgeryFactory())
+        forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
-        forge.addFactory(BigIntegerFactory())
         forge.addFactory(RumEventMapperFactory())
+
+        // MISC
+        forge.addFactory(BigIntegerFactory())
+        forge.addFactory(JsonArrayForgeryFactory())
+        forge.addFactory(JsonObjectForgeryFactory())
+        forge.addFactory(JsonPrimitiveForgeryFactory())
+        forge.addFactory(ThrowableForgeryFactory())
         forge.useJvmFactories()
     }
 }
