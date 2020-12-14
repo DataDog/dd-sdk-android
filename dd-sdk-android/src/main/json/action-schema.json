@@ -16,7 +16,8 @@
         "type": {
           "type": "string",
           "description": "RUM event type",
-          "const": "action"
+          "const": "action",
+          "readOnly": true
         },
         "action": {
           "type": "object",
@@ -28,17 +29,20 @@
             "type": {
               "type": "string",
               "description": "Type of the action",
-              "enum": ["custom", "click", "tap", "scroll", "swipe", "application_start", "back"]
+              "enum": ["custom", "click", "tap", "scroll", "swipe", "application_start", "back"],
+              "readOnly": true
             },
             "id": {
               "type": "string",
               "description": "UUID of the action",
-              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
             },
             "loading_time": {
               "type": "integer",
               "description": "Duration in ns to the action is considered loaded",
-              "minimum": 0
+              "minimum": 0,
+              "readOnly": true
             },
             "target": {
               "type": "object",
@@ -49,9 +53,11 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Target name"
+                  "description": "Target name",
+                  "readOnly": false
                 }
-              }
+              },
+              "readOnly": true
             },
             "error": {
               "type": "object",
@@ -63,9 +69,11 @@
                 "count": {
                   "type": "integer",
                   "description": "Number of errors that occurred on the action",
-                  "minimum": 0
+                  "minimum": 0,
+                  "readOnly": true
                 }
-              }
+              },
+              "readOnly": true
             },
             "crash": {
               "type": "object",
@@ -77,9 +85,11 @@
                 "count": {
                   "type": "integer",
                   "description": "Number of crashes that occurred on the action",
-                  "minimum": 0
+                  "minimum": 0,
+                  "readOnly": true
                 }
-              }
+              },
+              "readOnly": true
             },
             "long_task": {
               "type": "object",
@@ -91,9 +101,11 @@
                 "count": {
                   "type": "integer",
                   "description": "Number of long tasks that occurred on the action",
-                  "minimum": 0
+                  "minimum": 0,
+                  "readOnly": true
                 }
-              }
+              },
+              "readOnly": true
             },
             "resource": {
               "type": "object",
@@ -105,11 +117,14 @@
                 "count": {
                   "type": "integer",
                   "description": "Number of resources that occurred on the action",
-                  "minimum": 0
+                  "minimum": 0,
+                  "readOnly": true
                 }
-              }
+              },
+              "readOnly": true
             }
-          }
+          },
+          "readOnly": true
         }
       }
     }

@@ -16,7 +16,8 @@
         "type": {
           "type": "string",
           "description": "RUM event type",
-          "const": "long_task"
+          "const": "long_task",
+          "readOnly": true
         },
         "long_task": {
           "type": "object",
@@ -28,9 +29,11 @@
             "duration": {
               "type": "integer",
               "description": "Duration in ns of the long task",
-              "minimum": 0
+              "minimum": 0,
+              "readOnly": true
             }
-          }
+          },
+          "readOnly": true
         },
         "action": {
           "type": "object",
@@ -42,9 +45,11 @@
             "id": {
               "type": "string",
               "description": "UUID of the action",
-              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
             }
-          }
+          },
+          "readOnly": true
         }
       }
     }

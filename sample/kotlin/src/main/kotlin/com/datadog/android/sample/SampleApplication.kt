@@ -14,11 +14,11 @@ import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEventListener
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -45,12 +45,13 @@ class SampleApplication : Application() {
 
     private val tracedHosts = listOf(
         "datadoghq.com",
+        "source.unsplash.com",
         "127.0.0.1"
     )
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor(tracedHosts))
-        .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+        .addInterceptor(RumInterceptor())
+        .addNetworkInterceptor(TracingInterceptor())
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 
@@ -109,6 +110,7 @@ class SampleApplication : Application() {
         )
 
         configBuilder
+            .setFirstPartyHosts(tracedHosts)
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
             .trackInteractions()

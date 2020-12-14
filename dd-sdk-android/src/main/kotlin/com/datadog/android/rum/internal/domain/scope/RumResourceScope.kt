@@ -20,6 +20,8 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.UUID
 
 internal class RumResourceScope(
@@ -130,8 +132,6 @@ internal class RumResourceScope(
 
         val finalTiming = timing
         val duration = eventTime.nanoTime - startedNanos
-        val isFirstParty = firstPartyHostDetector.isFirstPartyUrl(url)
-
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
@@ -147,7 +147,7 @@ internal class RumResourceScope(
                 ssl = finalTiming?.ssl(),
                 firstByte = finalTiming?.firstByte(),
                 download = finalTiming?.download(),
-                firstParty = if (isFirstParty) true else null
+                provider = resolveResourceProvider()
             ),
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
@@ -180,6 +180,14 @@ internal class RumResourceScope(
         sent = true
     }
 
+    private fun resolveResourceProvider(): ResourceEvent.Provider? {
+        return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
+            ResourceEvent.Provider(resolveDomain(url), type = ResourceEvent.Type2.FIRST_PARTY)
+        } else {
+            null
+        }
+    }
+
     private fun sendError(
         message: String,
         source: RumErrorSource,
@@ -191,7 +199,6 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = RumFeature.userInfoProvider.getUserInfo()
-
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(
@@ -202,7 +209,8 @@ internal class RumResourceScope(
                 resource = ErrorEvent.Resource(
                     url = url,
                     method = method.toErrorMethod(),
-                    statusCode = statusCode ?: 0
+                    statusCode = statusCode ?: 0,
+                    provider = resolveErrorProvider()
                 )
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
@@ -228,6 +236,22 @@ internal class RumResourceScope(
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)
         sent = true
+    }
+
+    private fun resolveErrorProvider(): ErrorEvent.Provider? {
+        return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
+            ErrorEvent.Provider(domain = resolveDomain(url), type = ErrorEvent.Type1.FIRST_PARTY)
+        } else {
+            null
+        }
+    }
+
+    private fun resolveDomain(url: String): String {
+        return try {
+            URL(url).host
+        } catch (e: MalformedURLException) {
+            url
+        }
     }
 
     // endregion

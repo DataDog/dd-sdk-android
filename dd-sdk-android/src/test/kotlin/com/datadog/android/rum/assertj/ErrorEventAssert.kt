@@ -214,6 +214,34 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasProviderType(expected: ErrorEvent.Type1): ErrorEventAssert {
+        assertThat(actual.error.resource?.provider?.type)
+            .overridingErrorMessage(
+                "Expected event data to have resource provider type $expected " +
+                    "but was ${actual.error.resource?.provider?.type}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProviderDomain(expected: String): ErrorEventAssert {
+        assertThat(actual.error.resource?.provider?.domain)
+            .overridingErrorMessage(
+                "Expected event data to have resource provider domain $expected " +
+                    "but was ${actual.error.resource?.provider?.domain}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun doesNotHaveAResourceProvider(): ErrorEventAssert {
+        assertThat(actual.error.resource?.provider)
+            .overridingErrorMessage(
+                "Expected event data to not have a resource provider"
+            ).isNull()
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =
