@@ -20,13 +20,12 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.model.ViewEvent
-import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal class DatadogRumMonitor(
-    applicationId: UUID,
+    applicationId: String,
     internal val samplingRate: Float,
     private val writer: Writer<RumEvent>,
     internal val handler: Handler,

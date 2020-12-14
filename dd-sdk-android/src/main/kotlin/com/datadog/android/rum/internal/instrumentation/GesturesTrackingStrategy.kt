@@ -16,6 +16,11 @@ internal class GesturesTrackingStrategy(
 ) :
     ActivityLifecycleTrackingStrategy(),
     UserActionTrackingStrategy {
+
+    override fun getGesturesTracker(): GesturesTracker {
+        return gesturesTracker
+    }
+
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         gesturesTracker.startTracking(activity.window, activity)

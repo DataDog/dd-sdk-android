@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -181,9 +181,9 @@ internal class RumViewScope(
         if (stopped) return
 
         val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
-        val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
@@ -276,7 +276,7 @@ internal class RumViewScope(
         version++
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
 
         val viewEvent = ViewEvent(
             date = eventTimestamp,
@@ -336,7 +336,7 @@ internal class RumViewScope(
         writer: Writer<RumEvent>
     ) {
         val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,

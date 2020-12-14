@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
@@ -14,7 +15,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -41,7 +41,7 @@ internal class RumResourceScope(
 
     private val eventTimestamp = eventTime.timestamp
     private val startedNanos: Long = eventTime.nanoTime
-    private val networkInfo = RumFeature.networkInfoProvider.getLatestNetworkInfo()
+    private val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
     private var waitForTiming = false
@@ -128,7 +128,7 @@ internal class RumResourceScope(
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
 
         val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
 
         val finalTiming = timing
         val duration = eventTime.nanoTime - startedNanos
@@ -198,7 +198,7 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRum.globalAttributes)
 
         val context = getRumContext()
-        val user = RumFeature.userInfoProvider.getUserInfo()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(

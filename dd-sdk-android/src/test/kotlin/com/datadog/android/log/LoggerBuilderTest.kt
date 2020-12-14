@@ -8,24 +8,27 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import com.datadog.android.Configuration
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.getFieldValue
-import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
@@ -37,12 +40,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class LoggerBuilderTest {
 
     lateinit var mockContext: Context
@@ -52,32 +57,28 @@ internal class LoggerBuilderTest {
     @TempDir
     lateinit var tempRootDir: File
 
+    @Forgery
+    lateinit var fakeConfig: Configuration.Feature.Logs
+
     @BeforeEach
-    fun `set up Datadog`(forge: Forge) {
+    fun `set up`(forge: Forge) {
         fakePackageName = forge.anAlphabeticalString()
         mockContext = mockContext(fakePackageName, "")
         whenever(mockContext.filesDir) doReturn tempRootDir
 
-        Datadog.initialize(
-            mockContext,
-            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anHexadecimalString()).build()
-        )
-        Datadog.setVerbosity(AndroidLog.VERBOSE)
+        mockCoreFeature(packageName = fakePackageName)
+        LogsFeature.initialize(mockContext, fakeConfig)
     }
 
     @AfterEach
-    fun `tear down Datadog`() {
-        try {
-            Datadog.invokeMethod("stop")
-        } catch (e: IllegalStateException) {
-            // ignore
-        }
+    fun `tear down`() {
+        LogsFeature.stop()
     }
 
     @Test
     fun `builder returns no op if SDK is not initialized`() {
         val mockDevLogHandler = mockDevLogHandler()
-        Datadog.invokeMethod("stop") // simulate non initialized SDK
+        LogsFeature.stop()
         val logger = Logger.Builder()
             .build()
 

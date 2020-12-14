@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.tracking
 
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -12,5 +13,6 @@ import com.datadog.tools.annotation.NoOpImplementation
  * A TrackingStrategy dedicated to user actions tracking.
  */
 @NoOpImplementation
-internal interface UserActionTrackingStrategy :
-    TrackingStrategy
+internal interface UserActionTrackingStrategy : TrackingStrategy {
+    fun getGesturesTracker(): GesturesTracker
+}

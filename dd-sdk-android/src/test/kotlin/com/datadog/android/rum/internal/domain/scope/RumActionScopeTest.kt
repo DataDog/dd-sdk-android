@@ -6,22 +6,20 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.setStaticValue
+import com.datadog.android.utils.mockCoreFeature
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.isA
@@ -66,9 +64,6 @@ internal class RumActionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
     @Forgery
@@ -94,12 +89,11 @@ internal class RumActionScopeTest {
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
 
-        RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
-
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        mockCoreFeature()
+        whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
 
         testedScope = RumActionScope(
@@ -114,7 +108,7 @@ internal class RumActionScopeTest {
 
     @AfterEach
     fun `tear down`() {
-        RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
+        CoreFeature.stop()
         GlobalRum.globalAttributes.clear()
     }
 

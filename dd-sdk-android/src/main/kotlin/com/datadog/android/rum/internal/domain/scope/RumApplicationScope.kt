@@ -10,10 +10,9 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import java.util.UUID
 
 internal class RumApplicationScope(
-    applicationId: UUID,
+    applicationId: String,
     internal val samplingRate: Float,
     private val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {

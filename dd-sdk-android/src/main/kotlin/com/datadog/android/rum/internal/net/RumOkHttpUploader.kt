@@ -10,7 +10,6 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.RumFeature
 import java.util.Locale
 import okhttp3.OkHttpClient
 
@@ -25,7 +24,7 @@ internal open class RumOkHttpUploader(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
             "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
             "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}",
-            "${RumAttributes.ENV}:${RumFeature.envName}"
+            "${RumAttributes.ENV}:${CoreFeature.envName}"
         ).joinToString(",")
     }
 

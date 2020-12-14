@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -160,7 +160,7 @@ internal class RumActionScope(
             attributes.putAll(GlobalRum.globalAttributes)
 
             val context = getRumContext()
-            val user = RumFeature.userInfoProvider.getUserInfo()
+            val user = CoreFeature.userInfoProvider.getUserInfo()
 
             val actionEvent = ActionEvent(
                 date = eventTimestamp,

@@ -8,20 +8,19 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -42,6 +41,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -87,16 +87,12 @@ internal class RumSessionScopeTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
-    @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
     @BeforeEach
     fun `set up`() {
-        RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
-
         mockDevLogHandler = mockDevLogHandler()
 
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        mockCoreFeature()
+        whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         testedScope = RumSessionScope(
@@ -108,6 +104,11 @@ internal class RumSessionScopeTest {
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        CoreFeature.stop()
     }
 
     @Test

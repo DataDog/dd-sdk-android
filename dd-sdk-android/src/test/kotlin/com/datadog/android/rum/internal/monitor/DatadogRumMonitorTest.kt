@@ -43,7 +43,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -78,8 +77,8 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
-    @Forgery
-    lateinit var fakeApplicationId: UUID
+    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    lateinit var fakeApplicationId: String
 
     lateinit var fakeAttributes: Map<String, Any?>
 
