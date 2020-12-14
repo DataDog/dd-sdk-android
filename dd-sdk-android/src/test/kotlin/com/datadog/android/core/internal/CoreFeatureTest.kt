@@ -262,6 +262,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
@@ -282,6 +283,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
         assertThat(CoreFeature.serviceName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
@@ -302,6 +304,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
@@ -330,6 +333,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo(versionCode.toString())
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
@@ -437,6 +441,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
@@ -537,6 +542,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.packageVersion).isEqualTo("")
         assertThat(CoreFeature.serviceName).isEqualTo("")
         assertThat(CoreFeature.envName).isEqualTo("")
+        assertThat(CoreFeature.variant).isEqualTo("")
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isNull()
     }

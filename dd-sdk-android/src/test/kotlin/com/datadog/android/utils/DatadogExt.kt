@@ -108,6 +108,7 @@ internal fun mockCoreFeature(
     packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
     packageVersion: String = BuildConfig.VERSION_NAME,
     envName: String = BuildConfig.BUILD_TYPE,
+    variant : String = BuildConfig.VERSION_NAME + BuildConfig.BUILD_TYPE,
     trackingConsent: TrackingConsent = TrackingConsent.PENDING,
     rumApplicationId: String = UUID.randomUUID().toString()
 ) {
@@ -116,6 +117,7 @@ internal fun mockCoreFeature(
     CoreFeature.serviceName = packageName
     CoreFeature.packageName = packageName
     CoreFeature.packageVersion = packageVersion
+    CoreFeature.variant = variant
     CoreFeature.rumApplicationId = rumApplicationId
     CoreFeature.persistenceExecutorService = mock()
     CoreFeature.uploadExecutorService = mock()

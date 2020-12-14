@@ -46,13 +46,17 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
 
     @StringForgery
     lateinit var fakeEnvName: String
+
+    @StringForgery
+    lateinit var fakeVariant: String
+
     lateinit var mockAppContext: Application
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        mockCoreFeature(fakePackageName, fakePackageVersion, fakeEnvName)
+        mockCoreFeature(fakePackageName, fakePackageVersion, fakeEnvName, fakeVariant)
     }
 
     @AfterEach
@@ -85,7 +89,8 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
             "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}," +
-            "${RumAttributes.ENV}:$fakeEnvName" +
+            "${RumAttributes.ENV}:$fakeEnvName," +
+            "${RumAttributes.VARIANT}:$fakeVariant" +
             "$"
     }
 }

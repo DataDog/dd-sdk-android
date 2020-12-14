@@ -76,6 +76,7 @@ internal object CoreFeature {
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
+    internal var variant: String = ""
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -144,6 +145,7 @@ internal object CoreFeature {
         serviceName = credentials.serviceName ?: appContext.packageName
         rumApplicationId = credentials.rumApplicationId
         envName = credentials.envName
+        variant = credentials.variant
         contextRef = WeakReference(appContext)
     }
 
@@ -223,6 +225,7 @@ internal object CoreFeature {
         rumApplicationId = null
         isMainProcess = true
         envName = ""
+        variant = ""
     }
 
     private fun cleanupProviders() {

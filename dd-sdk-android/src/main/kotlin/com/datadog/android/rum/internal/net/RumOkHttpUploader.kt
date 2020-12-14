@@ -24,7 +24,8 @@ internal open class RumOkHttpUploader(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
             "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
             "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}",
-            "${RumAttributes.ENV}:${CoreFeature.envName}"
+            "${RumAttributes.ENV}:${CoreFeature.envName}",
+            "${RumAttributes.VARIANT}:${CoreFeature.variant}"
         ).joinToString(",")
     }
 

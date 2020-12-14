@@ -45,6 +45,12 @@ object RumAttributes {
     const val SOURCE: String = "source"
 
     /**
+     * The application variant. (String)
+     * This value is filled automatically by the [RumMonitor].
+     */
+    const val VARIANT: String = "variant"
+
+    /**
      * Version of the current Datadog SDK.
      */
     const val SDK_VERSION: String = "sdk_version"
