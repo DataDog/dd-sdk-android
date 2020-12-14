@@ -20,7 +20,7 @@ class com.datadog.android.Configuration
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
   companion object 
 class com.datadog.android.Credentials
-  constructor(String, String, String, String?, String?)
+  constructor(String, String, String, String?, String? = null)
 object com.datadog.android.Datadog
   DEPRECATED const val DATADOG_US: String
   DEPRECATED const val DATADOG_EU: String

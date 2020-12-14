@@ -22,5 +22,5 @@ data class Credentials(
     val envName: String,
     val variant: String,
     val rumApplicationId: String?,
-    val serviceName: String?
+    val serviceName: String? = null
 )
