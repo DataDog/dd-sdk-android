@@ -31,6 +31,10 @@ import java.util.UUID
  *
  * This is necessary to initialize the SDK with the [Datadog.initialize] method.
  */
+@Deprecated(
+    "This class is deprecated. You should initialize the Datadog SDK with a " +
+        "Configuration instance instead"
+)
 class DatadogConfig
 private constructor(
     internal val logsConfig: FeatureConfig?,
@@ -68,6 +72,62 @@ private constructor(
         val rumEventMapper: RumEventMapper = RumEventMapper()
     )
 
+    internal fun asConfiguration(): Configuration {
+        return Configuration(
+            coreConfig = Configuration.Core(
+                needsClearTextHttp = coreConfig.needsClearTextHttp,
+                hosts = coreConfig.hosts
+            ),
+            logsConfig = logsConfig?.let {
+                Configuration.Feature.Logs(
+                    endpointUrl = it.endpointUrl,
+                    plugins = it.plugins
+                )
+            },
+            crashReportConfig = crashReportConfig?.let {
+                Configuration.Feature.CrashReport(
+                    endpointUrl = it.endpointUrl,
+                    plugins = it.plugins
+                )
+            },
+            tracesConfig = tracesConfig?.let {
+                Configuration.Feature.Tracing(
+                    endpointUrl = it.endpointUrl,
+                    plugins = it.plugins
+                )
+            },
+            rumConfig = rumConfig?.let {
+                Configuration.Feature.RUM(
+                    endpointUrl = it.endpointUrl,
+                    plugins = it.plugins,
+                    samplingRate = it.samplingRate,
+                    gesturesTracker = it.gesturesTracker,
+                    userActionTrackingStrategy = it.userActionTrackingStrategy,
+                    viewTrackingStrategy = it.viewTrackingStrategy,
+                    rumEventMapper = it.rumEventMapper
+                )
+            }
+        )
+    }
+
+    internal fun asCredentials(): Credentials {
+        val clientToken = when {
+            logsConfig != null -> logsConfig.clientToken
+            tracesConfig != null -> tracesConfig.clientToken
+            crashReportConfig != null -> crashReportConfig.clientToken
+            rumConfig != null -> rumConfig.clientToken
+            else -> ""
+        }
+
+        return Credentials(
+            clientToken = clientToken,
+            envName = coreConfig.envName,
+            serviceName = coreConfig.serviceName,
+            rumApplicationId = rumConfig?.applicationId?.toString(),
+            variant = ""
+        )
+    }
+
     // region Builder
 
     /**
@@ -80,6 +140,7 @@ private constructor(
 
      */
     @Suppress("TooManyFunctions")
+    @Deprecated("This class is deprecated. You should use the Configuration.Builder class instead")
     class Builder(clientToken: String, envName: String, applicationId: UUID) {
 
         /**
@@ -450,21 +511,21 @@ private constructor(
 
         private fun provideUserTrackingStrategy(
             gesturesTracker: GesturesTracker
-        ):
-            UserActionTrackingStrategy {
-                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    GesturesTrackingStrategyApi29(gesturesTracker)
-                } else {
-                    GesturesTrackingStrategy(gesturesTracker)
-                }
+        ): UserActionTrackingStrategy {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                GesturesTrackingStrategyApi29(gesturesTracker)
+            } else {
+                GesturesTrackingStrategy(gesturesTracker)
             }
+        }
 
-        private fun gestureTracker(customProviders: Array<ViewAttributesProvider>):
-            DatadogGesturesTracker {
-                val defaultProviders = arrayOf(JetpackViewAttributesProvider())
-                val providers = customProviders + defaultProviders
-                return DatadogGesturesTracker(providers)
-            }
+        private fun gestureTracker(
+            customProviders: Array<ViewAttributesProvider>
+        ): DatadogGesturesTracker {
+            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
+            val providers = customProviders + defaultProviders
+            return DatadogGesturesTracker(providers)
+        }
 
         companion object {
             internal const val RUM_NOT_INITIALISED_WARNING_MESSAGE =

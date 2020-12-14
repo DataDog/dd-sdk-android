@@ -109,12 +109,45 @@ object Datadog {
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
      */
+    @Deprecated(
+        "This method is deprecated, as it doesn't take the application's flavor into account.",
+        ReplaceWith(
+            "initialize(context, credentials, configuration, trackingConsent)",
+            "com.datadog.android.Datadog.initialize"
+        )
+    )
     @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
         trackingConsent: TrackingConsent,
         config: DatadogConfig
+    ) {
+        initialize(
+            context,
+            config.asCredentials(),
+            config.asConfiguration(),
+            trackingConsent
+        )
+    }
+
+    /**
+     * Initializes the Datadog SDK.
+     * @param context your application context
+     * @param trackingConsent as the initial state of the tracking consent flag.
+     * @param config the configuration for the SDK library
+     * @see [DatadogConfig]
+     * @see [TrackingConsent]
+     * @throws IllegalArgumentException if the env name is using illegal characters and your
+     * application is in debug mode otherwise returns false and stops initializing the SDK
+     */
+    @Suppress("LongMethod")
+    @JvmStatic
+    fun initialize(
+        context: Context,
+        credentials: Credentials,
+        configuration: Configuration,
+        trackingConsent: TrackingConsent
     ) {
         if (initialized.get()) {
             devLogger.w(MESSAGE_ALREADY_INITIALIZED)
@@ -125,68 +158,17 @@ object Datadog {
         // the logic in this function depends on this value so always resolve isDebug first
         isDebug = resolveIsDebug(context)
 
-        if (!validateCoreConfig(config.coreConfig)) {
+        if (!validateEnvironmentName(credentials.envName)) {
             return
         }
 
         // always initialize Core Features first
-        CoreFeature.initialize(appContext, trackingConsent, config.coreConfig)
+        CoreFeature.initialize(appContext, credentials, configuration.coreConfig, trackingConsent)
 
-        config.logsConfig?.let { featureConfig ->
-            LogsFeature.initialize(
-                appContext = appContext,
-                config = featureConfig,
-                okHttpClient = CoreFeature.okHttpClient,
-                networkInfoProvider = CoreFeature.networkInfoProvider,
-                systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
-                trackingConsentProvider = CoreFeature.trackingConsentProvider
-            )
-        }
-
-        config.tracesConfig?.let { featureConfig ->
-            TracesFeature.initialize(
-                appContext = appContext,
-                config = featureConfig,
-                okHttpClient = CoreFeature.okHttpClient,
-                networkInfoProvider = CoreFeature.networkInfoProvider,
-                timeProvider = CoreFeature.timeProvider,
-                userInfoProvider = CoreFeature.userInfoProvider,
-                systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
-                trackingConsentProvider = CoreFeature.trackingConsentProvider
-            )
-        }
-
-        config.rumConfig?.let { featureConfig ->
-            RumFeature.initialize(
-                appContext = appContext,
-                config = featureConfig,
-                okHttpClient = CoreFeature.okHttpClient,
-                networkInfoProvider = CoreFeature.networkInfoProvider,
-                systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
-                userInfoProvider = CoreFeature.userInfoProvider,
-                trackingConsentProvider = CoreFeature.trackingConsentProvider
-            )
-        }
-
-        config.crashReportConfig?.let { featureConfig ->
-            CrashReportsFeature.initialize(
-                appContext = appContext,
-                config = featureConfig,
-                okHttpClient = CoreFeature.okHttpClient,
-                networkInfoProvider = CoreFeature.networkInfoProvider,
-                userInfoProvider = CoreFeature.userInfoProvider,
-                systemInfoProvider = CoreFeature.systemInfoProvider,
-                dataUploadThreadPoolExecutor = CoreFeature.dataUploadScheduledExecutor,
-                dataPersistenceExecutor = CoreFeature.dataPersistenceExecutorService,
-                trackingConsentProvider = CoreFeature.trackingConsentProvider
-            )
-        }
+        initializeLogsFeature(configuration.logsConfig, appContext)
+        initializeTracingFeature(configuration.tracesConfig, appContext)
+        initializeRumFeature(configuration.rumConfig, appContext)
+        initializeCrashReportFeature(configuration.crashReportConfig, appContext)
 
         setupLifecycleMonitorCallback(appContext)
 
@@ -198,6 +180,42 @@ object Datadog {
             .addShutdownHook(
                 Thread(Runnable { stop() }, SHUTDOWN_THREAD)
             )
+    }
+
+    private fun initializeLogsFeature(
+        configuration: Configuration.Feature.Logs?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            LogsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeCrashReportFeature(
+        configuration: Configuration.Feature.CrashReport?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            CrashReportsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeTracingFeature(
+        configuration: Configuration.Feature.Tracing?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            TracesFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeRumFeature(
+        configuration: Configuration.Feature.RUM?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            RumFeature.initialize(appContext, configuration)
+        }
     }
 
     /**
@@ -294,8 +312,8 @@ object Datadog {
     // region Internal Initialization
 
     @Suppress("ThrowingInternalException")
-    private fun validateCoreConfig(config: DatadogConfig.CoreConfig): Boolean {
-        if (!config.envName.matches(Regex(ENV_NAME_VALIDATION_REG_EX))) {
+    private fun validateEnvironmentName(envName: String): Boolean {
+        if (!envName.matches(Regex(ENV_NAME_VALIDATION_REG_EX))) {
             if (isDebug) {
                 throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
             } else {
@@ -316,6 +334,10 @@ object Datadog {
     private fun resolveIsDebug(context: Context): Boolean {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
+
+    // endregion
+
+    // region Constants
 
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
