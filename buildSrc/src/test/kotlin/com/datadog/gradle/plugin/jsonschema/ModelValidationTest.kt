@@ -34,7 +34,7 @@ class ModelValidationTest(
     @Test
     fun `validates model`() {
         val type = Class.forName("com.example.model.$className")
-        val toJson = type.getDeclaredMethod("toJson")
+        val toJson = type.getMethod("toJson")
         val schema = loadSchema(schemaResourcePath)
         val file = javaClass.getResource("/input/").file
         println(">> SCOPE PATH : file://$file")
@@ -64,6 +64,7 @@ class ModelValidationTest(
     }
 
     companion object {
+
         @JvmStatic
         @Parameterized.Parameters(name = "{index}: {1}")
         fun data(): Collection<Array<Any>> {

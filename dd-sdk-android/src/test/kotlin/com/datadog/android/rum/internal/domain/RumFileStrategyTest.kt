@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -41,6 +42,9 @@ internal class RumFileStrategyTest {
 
     lateinit var trackingConsentProvider: TrackingConsentProvider
 
+    @Mock
+    lateinit var mockRumEventMapper: RumEventMapper
+
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
@@ -48,7 +52,8 @@ internal class RumFileStrategyTest {
         testedStrategy = RumFileStrategy(
             mockedContext,
             dataPersistenceExecutorService = mockExecutorService,
-            trackingConsentProvider = trackingConsentProvider
+            trackingConsentProvider = trackingConsentProvider,
+            eventMapper = mockRumEventMapper
         )
     }
 

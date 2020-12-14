@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import kotlin.Long
 import kotlin.String
 
-internal data class Person(
+data class Person(
     val firstName: String? = null,
     val lastName: String? = null,
     val age: Long? = null

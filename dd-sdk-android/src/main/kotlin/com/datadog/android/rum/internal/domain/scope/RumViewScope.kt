@@ -14,9 +14,9 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.UUID

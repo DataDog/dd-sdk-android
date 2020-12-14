@@ -12,6 +12,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
+import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -22,6 +23,7 @@ import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
@@ -106,7 +108,8 @@ internal class RumFeatureTest {
             clientToken = forge.anHexadecimalString(),
             applicationId = forge.getForgery(),
             endpointUrl = forge.getForgery<URL>().toString(),
-            envName = forge.anAlphabeticalString()
+            envName = forge.anAlphabeticalString(),
+            rumEventMapper = forge.getForgery()
         )
 
         fakePackageName = forge.anAlphabeticalString()
@@ -554,5 +557,51 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(fakeFile).doesNotExist()
+    }
+
+    @Test
+    fun `M use the Config eventMappers W initialise`(forge: Forge) {
+        // GIVEN
+        val fakeEventMapper = forge.getForgery(RumEventMapper::class.java)
+
+        // WHEN
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(rumEventMapper = fakeEventMapper),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider,
+            trackingConsentProvider
+        )
+
+        // THEN
+        assertThat(RumFeature.rumEventMapper).isEqualTo(fakeEventMapper)
+    }
+
+    @Test
+    fun `M drop the eventMappers W stop`(forge: Forge) {
+        // GIVEN
+        val fakeEventMappers = forge.getForgery(RumEventMapper::class.java)
+        RumFeature.initialize(
+            mockAppContext,
+            fakeConfig.copy(rumEventMapper = fakeEventMappers),
+            mockOkHttpClient,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            mockScheduledThreadPoolExecutor,
+            mockPersistenceExecutorService,
+            mockUserInfoProvider,
+            trackingConsentProvider
+        )
+
+        // WHEN
+        RumFeature.stop()
+
+        // THEN
+        assertThat(RumFeature.rumEventMapper).isNotEqualTo(fakeEventMappers)
+        assertThat(RumFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
 }

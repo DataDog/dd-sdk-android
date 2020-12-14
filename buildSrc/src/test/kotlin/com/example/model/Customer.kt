@@ -4,7 +4,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlin.String
 
-internal data class Customer(
+data class Customer(
     val name: String? = null,
     val billingAddress: Address? = null,
     val shippingAddress: Address? = null

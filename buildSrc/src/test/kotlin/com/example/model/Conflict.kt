@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.String
 
-internal data class Conflict(
+data class Conflict(
     val type: Type? = null,
     val user: User? = null
 ) {

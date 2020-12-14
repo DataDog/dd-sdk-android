@@ -7,6 +7,7 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.DatadogConfig
+import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
@@ -62,6 +63,26 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
                     " but was ${actual.envName}"
             )
             .isEqualTo(envName)
+        return this
+    }
+
+    fun hasSamplingRate(samplingRate: Float): RumConfigAssert {
+        assertThat(actual.samplingRate)
+            .overridingErrorMessage(
+                "Expected event to have a sample rate $samplingRate" +
+                    " but was ${actual.samplingRate}"
+            )
+            .isEqualTo(samplingRate)
+        return this
+    }
+
+    fun hasPlugins(plugins: List<DatadogPlugin>): RumConfigAssert {
+        assertThat(actual.plugins)
+            .overridingErrorMessage(
+                "Expected event to have plugins $plugins" +
+                    " but was ${actual.plugins}"
+            )
+            .isEqualTo(plugins)
         return this
     }
 

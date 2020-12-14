@@ -4,7 +4,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlin.String
 
-internal data class Delivery(
+data class Delivery(
     val item: String,
     val customer: Customer
 ) {

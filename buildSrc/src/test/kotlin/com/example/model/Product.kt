@@ -6,7 +6,7 @@ import kotlin.Double
 import kotlin.Long
 import kotlin.String
 
-internal data class Product(
+data class Product(
     val productId: Long,
     val productName: String,
     val price: Double

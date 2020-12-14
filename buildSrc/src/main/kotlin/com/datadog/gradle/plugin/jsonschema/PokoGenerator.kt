@@ -65,7 +65,6 @@ class PokoGenerator(
         rootTypeName = definition.name
         val fileBuilder = FileSpec.builder(packageName, definition.name)
         val typeBuilder = generateClass(definition)
-            .addModifiers(KModifier.INTERNAL)
 
         while (nestedClasses.isNotEmpty()) {
             val definitions = nestedClasses.toList()
@@ -522,7 +521,6 @@ class PokoGenerator(
     companion object {
 
         private val NOTHING_NULLABLE = NOTHING.copy(nullable = true)
-        private val ANY_NULLABLE = ANY.copy(nullable = true)
 
         private val TO_JSON = "toJson"
 

@@ -16,9 +16,9 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.AcceptAllSupportFragments
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.nhaarman.mockitokotlin2.doReturn

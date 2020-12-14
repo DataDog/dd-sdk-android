@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.String
 
-internal data class User(
+data class User(
     val username: String,
     val host: String,
     val firstname: String? = null,

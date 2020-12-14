@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import kotlin.Long
 import kotlin.String
 
-internal data class Foo(
+data class Foo(
     val bar: String? = null,
     val baz: Long? = null
 ) {

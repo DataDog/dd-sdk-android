@@ -8,14 +8,20 @@ package com.datadog.android
 
 import android.os.Build
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.event.EventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.UUID
@@ -58,7 +64,8 @@ private constructor(
         val gesturesTracker: GesturesTracker? = null,
         val userActionTrackingStrategy: UserActionTrackingStrategy? = null,
         val viewTrackingStrategy: ViewTrackingStrategy? = null,
-        val plugins: List<DatadogPlugin> = emptyList()
+        val plugins: List<DatadogPlugin> = emptyList(),
+        val rumEventMapper: RumEventMapper = RumEventMapper()
     )
 
     // region Builder
@@ -380,6 +387,58 @@ private constructor(
          */
         fun sampleRumSessions(samplingRate: Float): Builder {
             rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [ViewEvent]. You can use this interface implementation
+         * to modify the [ViewEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setRumViewEventMapper(eventMapper: EventMapper<ViewEvent>): Builder {
+            rumConfig = rumConfig.copy(
+                rumEventMapper = rumConfig.rumEventMapper.copy(viewEventMapper = eventMapper)
+            )
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [ResourceEvent]. You can use this interface implementation
+         * to modify the [ResourceEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setRumResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
+            rumConfig = rumConfig.copy(
+                rumEventMapper = rumConfig.rumEventMapper.copy(resourceEventMapper = eventMapper)
+            )
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [ActionEvent]. You can use this interface implementation
+         * to modify the [ActionEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setRumActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
+            rumConfig = rumConfig.copy(
+                rumEventMapper = rumConfig.rumEventMapper.copy(actionEventMapper = eventMapper)
+            )
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [ErrorEvent]. You can use this interface implementation
+         * to modify the [ErrorEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setRumErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
+            rumConfig = rumConfig.copy(
+                rumEventMapper = rumConfig.rumEventMapper.copy(errorEventMapper = eventMapper)
+            )
             return this
         }
 

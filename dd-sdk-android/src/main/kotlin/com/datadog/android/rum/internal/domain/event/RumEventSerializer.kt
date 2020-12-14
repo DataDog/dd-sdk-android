@@ -11,10 +11,10 @@ import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.domain.model.ActionEvent
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 

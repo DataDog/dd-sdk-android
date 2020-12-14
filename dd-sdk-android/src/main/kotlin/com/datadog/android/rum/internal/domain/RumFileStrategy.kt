@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
@@ -21,7 +22,8 @@ internal class RumFileStrategy(
     filePersistenceConfig: FilePersistenceConfig =
         FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_RUM_EVENTS_MS),
     dataPersistenceExecutorService: ExecutorService,
-    trackingConsentProvider: ConsentProvider
+    trackingConsentProvider: ConsentProvider,
+    eventMapper: EventMapper<RumEvent>
 ) : FilePersistenceStrategy<RumEvent>(
     File(context.filesDir, INTERMEDIATE_DATA_FOLDER),
     File(context.filesDir, AUTHORIZED_FOLDER),
@@ -29,7 +31,8 @@ internal class RumFileStrategy(
     dataPersistenceExecutorService,
     filePersistenceConfig,
     PayloadDecoration.NEW_LINE_DECORATION,
-    trackingConsentProvider
+    trackingConsentProvider,
+    eventMapper
 ) {
     companion object {
         internal const val VERSION = 1

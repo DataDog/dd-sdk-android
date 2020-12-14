@@ -15,10 +15,10 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.ApiLevelExtension

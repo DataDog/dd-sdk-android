@@ -8,7 +8,7 @@ import kotlin.Long
 import kotlin.Nothing
 import kotlin.String
 
-internal data class Demo(
+data class Demo(
     val s: String,
     val i: Long,
     val n: Double,

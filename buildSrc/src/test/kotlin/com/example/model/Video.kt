@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 import kotlin.String
 import kotlin.collections.Set
 
-internal data class Video(
+data class Video(
     val title: String,
     val tags: Set<String>? = null,
     val links: Set<String>? = null

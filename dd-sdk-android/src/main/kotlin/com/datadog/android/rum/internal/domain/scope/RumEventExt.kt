@@ -13,9 +13,9 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.model.ActionEvent
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
 import java.util.Locale
 
 internal fun String.toMethod(): ResourceEvent.Method {

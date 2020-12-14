@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import kotlin.Long
 
-internal data class DateTime(
+data class DateTime(
     val date: Date? = null,
     val time: Time? = null
 ) {

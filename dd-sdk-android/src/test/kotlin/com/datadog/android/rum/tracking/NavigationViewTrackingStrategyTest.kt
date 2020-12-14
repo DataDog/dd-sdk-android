@@ -23,9 +23,9 @@ import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.domain.model.ViewEvent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any

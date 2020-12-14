@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 import kotlin.String
 import kotlin.collections.List
 
-internal data class Article(
+data class Article(
     val title: String,
     val tags: List<String>? = null,
     val authors: List<String>

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import kotlin.Double
 import kotlin.Long
 
-internal class Version {
+class Version {
     val version: Long = 42L
 
     val delta: Double = 3.1415

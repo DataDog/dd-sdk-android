@@ -15,7 +15,7 @@ import kotlin.collections.List
  * @param artists The opus's artists.
  * @param duration The opus's duration in seconds
  */
-internal data class Opus(
+data class Opus(
     val title: String? = null,
     val composer: String? = null,
     val artists: List<Artist>? = null,

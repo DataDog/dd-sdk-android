@@ -4,7 +4,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlin.String
 
-internal data class UserMerged(
+data class UserMerged(
     val email: String? = null,
     val phone: String? = null,
     val info: Info? = null,

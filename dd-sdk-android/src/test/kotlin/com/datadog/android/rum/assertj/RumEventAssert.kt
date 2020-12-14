@@ -7,10 +7,10 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
-import com.datadog.android.rum.internal.domain.model.ErrorEvent
-import com.datadog.android.rum.internal.domain.model.ResourceEvent
-import com.datadog.android.rum.internal.domain.model.ViewEvent
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat

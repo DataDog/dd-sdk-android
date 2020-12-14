@@ -33,6 +33,7 @@ internal class Configurator :
         forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(BigIntegerFactory())
+        forge.addFactory(RumEventMapperFactory())
         forge.useJvmFactories()
     }
 }

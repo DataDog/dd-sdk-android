@@ -18,4 +18,4 @@ out/
 build/
 
 # Generated Poko
-src/main/kotlin/com/datadog/android/rum/internal/domain/model/
+src/main/kotlin/com/datadog/android/rum/model/

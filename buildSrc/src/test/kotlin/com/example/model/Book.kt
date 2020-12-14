@@ -6,7 +6,7 @@ import kotlin.Double
 import kotlin.Long
 import kotlin.String
 
-internal data class Book(
+data class Book(
     val bookId: Long,
     val title: String,
     val price: Double,

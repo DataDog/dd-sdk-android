@@ -14,7 +14,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.model.ActionEvent
+import com.datadog.android.rum.model.ActionEvent
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
