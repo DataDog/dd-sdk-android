@@ -14,8 +14,8 @@ import okhttp3.Request
 import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploader(
-    private var url: String,
-    private val client: OkHttpClient,
+    internal var url: String,
+    internal val client: OkHttpClient,
     internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 

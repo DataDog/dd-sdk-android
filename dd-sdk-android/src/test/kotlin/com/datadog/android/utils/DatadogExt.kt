@@ -13,10 +13,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
@@ -24,6 +26,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
+import java.util.UUID
 import kotlin.math.min
 
 /**
@@ -99,4 +102,26 @@ internal fun mockDevLogHandler(): LogHandler {
     devLogger.setFieldValue("handler", mockHandler)
 
     return mockHandler
+}
+
+internal fun mockCoreFeature(
+    packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
+    packageVersion: String = BuildConfig.VERSION_NAME,
+    envName: String = BuildConfig.BUILD_TYPE,
+    trackingConsent: TrackingConsent = TrackingConsent.PENDING,
+    rumApplicationId: String = UUID.randomUUID().toString()
+) {
+    CoreFeature.isMainProcess = true
+    CoreFeature.envName = envName
+    CoreFeature.serviceName = packageName
+    CoreFeature.packageName = packageName
+    CoreFeature.packageVersion = packageVersion
+    CoreFeature.rumApplicationId = rumApplicationId
+    CoreFeature.persistenceExecutorService = mock()
+    CoreFeature.uploadExecutorService = mock()
+    CoreFeature.timeProvider = mock()
+    CoreFeature.networkInfoProvider = mock()
+    CoreFeature.trackingConsentProvider = mock()
+    CoreFeature.userInfoProvider = mock()
+    whenever(CoreFeature.trackingConsentProvider.getConsent()) doReturn trackingConsent
 }

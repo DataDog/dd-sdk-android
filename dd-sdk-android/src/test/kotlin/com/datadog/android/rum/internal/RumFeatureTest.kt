@@ -6,58 +6,31 @@
 
 package com.datadog.android.rum.internal
 
-import android.app.Application
-import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
+import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
-import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.DatadogPluginConfig
-import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumFileStrategy
-import com.datadog.android.rum.internal.domain.event.RumEventMapper
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
+import com.datadog.android.rum.internal.net.RumOkHttpUploader
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
-import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
+import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.getFieldValue
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
-import java.net.URL
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import okhttp3.OkHttpClient
+import java.lang.ref.WeakReference
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -69,539 +42,209 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumFeatureTest {
+internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.RUM, RumFeature>() {
 
-    lateinit var mockAppContext: Application
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
-    lateinit var mockSystemInfoProvider: SystemInfoProvider
-
-    @Mock
-    lateinit var mockOkHttpClient: OkHttpClient
-
-    @Mock
-    lateinit var mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
-
-    @Mock
-    lateinit var mockPersistenceExecutorService: ExecutorService
-
-    @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    lateinit var trackingConsentProvider: ConsentProvider
-
-    lateinit var fakeConfig: DatadogConfig.RumConfig
-
-    lateinit var fakePackageName: String
-    lateinit var fakePackageVersion: String
-
-    @TempDir
-    lateinit var tempRootDir: File
-
-    @BeforeEach
-    fun `set up`(forge: Forge) {
-        trackingConsentProvider = TrackingConsentProvider()
-        fakeConfig = DatadogConfig.RumConfig(
-            clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
-            endpointUrl = forge.getForgery<URL>().toString(),
-            envName = forge.anAlphabeticalString(),
-            rumEventMapper = forge.getForgery()
-        )
-
-        fakePackageName = forge.anAlphabeticalString()
-        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
-
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
-        CoreFeature.isMainProcess = true
+    override fun createTestedFeature(): RumFeature {
+        return RumFeature
     }
 
-    @AfterEach
-    fun `tear down`() {
-        RumFeature.stop()
-        CoreFeature.stop()
+    override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
+        return forge.getForgery()
     }
 
     @Test
-    fun `initializes GlobalRum context`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
 
-        assertThat(RumFeature.applicationId).isEqualTo(fakeConfig.applicationId)
-        assertThat(RumFeature.endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-        assertThat(RumFeature.envName).isEqualTo(fakeConfig.envName)
-        assertThat(RumFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-    }
-
-    @Test
-    fun `initializes persistence strategy`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        val persistenceStrategy = RumFeature.persistenceStrategy
-        assertThat(persistenceStrategy)
+        // Then
+        assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(RumFileStrategy::class.java)
-        val reader = RumFeature.persistenceStrategy.getReader()
-        val suffix: String = reader.getFieldValue("suffix")
-        assertThat(suffix).isEqualTo("")
-        val prefix: String = reader.getFieldValue("prefix")
-        assertThat(prefix).isEqualTo("")
     }
 
     @Test
-    fun `initializes uploader thread`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        val dataUploadScheduler = RumFeature.dataUploadScheduler
-
-        assertThat(dataUploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
-    }
-
-    @Test
-    fun `initializes the userInfoProvider`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        assertThat(RumFeature.userInfoProvider).isEqualTo(mockUserInfoProvider)
-        assertThat(RumFeature.networkInfoProvider).isEqualTo(mockNetworkInfoProvider)
-    }
-
-    @Test
-    fun `initializes from configuration`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        val clientToken = RumFeature.clientToken
-        val endpointUrl = RumFeature.endpointUrl
-
-        assertThat(clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(endpointUrl).isEqualTo(fakeConfig.endpointUrl)
-    }
-
-    @Test
-    fun `ignores if initialize called more than once`(forge: Forge) {
-        Datadog.setVerbosity(android.util.Log.VERBOSE)
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-        val persistenceStrategy = RumFeature.persistenceStrategy
-        val dataUploadScheduler = RumFeature.dataUploadScheduler
-        val clientToken = RumFeature.clientToken
-        val endpointUrl = RumFeature.endpointUrl
-        val userInfoProvider = RumFeature.userInfoProvider
-        val networkInfoProvider = RumFeature.networkInfoProvider
-
-        fakeConfig = DatadogConfig.RumConfig(
-            clientToken = forge.anHexadecimalString(),
-            applicationId = forge.getForgery(),
-            endpointUrl = forge.getForgery<URL>().toString(),
-            envName = forge.anAlphabeticalString(),
-            userActionTrackingStrategy = mock(),
-            viewTrackingStrategy = mock()
-        )
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-        val persistenceStrategy2 = RumFeature.persistenceStrategy
-        val dataUploadScheduler2 = RumFeature.dataUploadScheduler
-        val clientToken2 = RumFeature.clientToken
-        val endpointUrl2 = RumFeature.endpointUrl
-
-        assertThat(persistenceStrategy).isSameAs(persistenceStrategy2)
-        assertThat(dataUploadScheduler).isSameAs(dataUploadScheduler2)
-        assertThat(clientToken).isSameAs(clientToken2)
-        assertThat(endpointUrl).isSameAs(endpointUrl2)
-        assertThat(userInfoProvider).isSameAs(RumFeature.userInfoProvider)
-        assertThat(networkInfoProvider).isSameAs(RumFeature.networkInfoProvider)
-    }
-
-    @Test
-    fun `will not register any callback if no instrumentation feature enabled`() {
-        // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        // Then
-        verify(mockAppContext, never()).registerActivityLifecycleCallbacks(
-            argThat {
-                this is ViewTrackingStrategy || this is UserActionTrackingStrategy
-            }
-        )
-    }
-
-    @Test
-    fun `will register the strategy when tracking gestures enabled`() {
+    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
         // Given
-        val trackGesturesStrategy: UserActionTrackingStrategy = mock()
-        fakeConfig = fakeConfig.copy(userActionTrackingStrategy = trackGesturesStrategy)
+        testedFeature.endpointUrl = fakeConfig.endpointUrl
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+        val uploader = testedFeature.createUploader()
 
         // Then
-        verify(trackGesturesStrategy).register(mockAppContext)
+        assertThat(uploader).isInstanceOf(RumOkHttpUploader::class.java)
+        val logsUploader = uploader as RumOkHttpUploader
+        assertThat(logsUploader.url).startsWith(fakeConfig.endpointUrl)
+        assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test
-    fun `will register the strategy when track screen strategy provided`() {
+    fun `𝕄 store sampling rate 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        assertThat(testedFeature.samplingRate).isEqualTo(fakeConfig.samplingRate)
+    }
+
+    @Test
+    fun `𝕄 store gesturesTracker 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        assertThat(testedFeature.gesturesTracker).isEqualTo(fakeConfig.gesturesTracker)
+    }
+
+    @Test
+    fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        assertThat(testedFeature.viewTrackingStrategy)
+            .isEqualTo(fakeConfig.viewTrackingStrategy)
+        verify(fakeConfig.viewTrackingStrategy!!).register(mockAppContext)
+    }
+
+    @Test
+    fun `𝕄 store userActionTrackingStrategy 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        assertThat(testedFeature.actionTrackingStrategy)
+            .isEqualTo(fakeConfig.userActionTrackingStrategy)
+        verify(fakeConfig.userActionTrackingStrategy!!).register(mockAppContext)
+    }
+
+    @Test
+    fun `𝕄 use noop gesturesTracker 𝕎 initialize()`() {
         // Given
-        val viewTrackingStrategy: ViewTrackingStrategy = mock()
-        fakeConfig = fakeConfig.copy(viewTrackingStrategy = viewTrackingStrategy)
+        val config = fakeConfig.copy(gesturesTracker = null)
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+        testedFeature.initialize(mockAppContext, config)
 
         // Then
-        verify(viewTrackingStrategy).register(mockAppContext)
+        assertThat(testedFeature.gesturesTracker)
+            .isInstanceOf(NoOpGesturesTracker::class.java)
     }
 
     @Test
-    fun `will always register the viewTree strategy`() {
-        // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-
-        // Then
-        verify(mockAppContext).registerActivityLifecycleCallbacks(
-            argThat {
-                this is ViewTreeChangeTrackingStrategy
-            }
-        )
-    }
-
-    @Test
-    fun `will use a NoOpUploadScheduler if this is not the application main process`() {
+    fun `𝕄 use noop viewTrackingStrategy 𝕎 initialize()`() {
         // Given
-        CoreFeature.isMainProcess = false
+        val config = fakeConfig.copy(viewTrackingStrategy = null)
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+        testedFeature.initialize(mockAppContext, config)
 
         // Then
-        assertThat(RumFeature.dataUploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
+        assertThat(testedFeature.viewTrackingStrategy)
+            .isInstanceOf(NoOpViewTrackingStrategy::class.java)
     }
 
     @Test
-    fun `stops the keep alive callback on stop`() {
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-        val monitor: DatadogRumMonitor = mock()
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.registerIfAbsent(monitor)
-
-        RumFeature.stop()
-
-        verify(monitor).stopKeepAliveCallback()
-    }
-
-    @Test
-    fun `it will register the provided plugin when the feature is initialized`(
-        forge: Forge
-    ) {
+    fun `𝕄 use noop userActionTrackingStrategy 𝕎 initialize()`() {
         // Given
-        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
-        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
-            whenever(it.getConsent()).thenReturn(fakeConsent)
-        }
-        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
-            mock<DatadogPlugin>()
-        }
+        val config = fakeConfig.copy(userActionTrackingStrategy = null)
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig.copy(plugins = plugins),
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            mockedTrackingConsentProvider
-        )
-
-        val argumentCaptor = argumentCaptor<DatadogPluginConfig>()
+        testedFeature.initialize(mockAppContext, config)
 
         // Then
-        val mockPlugins = plugins.toTypedArray()
-        inOrder(*mockPlugins) {
-            mockPlugins.forEach {
-                verify(it).register(argumentCaptor.capture())
-            }
-        }
-
-        argumentCaptor.allValues.forEach {
-            assertThat(it).isInstanceOf(DatadogPluginConfig.RumPluginConfig::class.java)
-            assertThat(it.context).isEqualTo(mockAppContext)
-            assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
-            assertThat(it.envName).isEqualTo(fakeConfig.envName)
-            assertThat(it.featurePersistenceDirName).isEqualTo(RumFileStrategy.AUTHORIZED_FOLDER)
-            assertThat(it.context).isEqualTo(mockAppContext)
-            assertThat(it.trackingConsent).isEqualTo(fakeConsent)
-        }
+        assertThat(testedFeature.actionTrackingStrategy)
+            .isInstanceOf(NoOpUserActionTrackingStrategy::class.java)
     }
 
     @Test
-    fun `M register the plugins as TrackingConsentProvideCallback W initialized`(
-        forge: Forge
-    ) {
+    fun `𝕄 register viewTreeStrategy 𝕎 initialize()`() {
+        // When
+        val mockViewTreeStrategy: TrackingStrategy = mock()
+        testedFeature.viewTreeTrackingStrategy = mockViewTreeStrategy
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        verify(mockViewTreeStrategy).register(mockAppContext)
+    }
+
+    @Test
+    fun `𝕄 store eventMapper 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfig)
+
+        // Then
+        assertThat(testedFeature.rumEventMapper).isSameAs(fakeConfig.rumEventMapper)
+    }
+
+    @Test
+    fun `𝕄 use noop gesturesTracker 𝕎 stop()`() {
         // Given
-        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
-        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
-            mock<DatadogPlugin>()
-        }
-        val mockedTrackingConsentProvider: TrackingConsentProvider = mock() {
-            whenever(it.getConsent()).thenReturn(fakeConsent)
-        }
+        testedFeature.initialize(mockAppContext, fakeConfig)
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig.copy(plugins = plugins),
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            mockedTrackingConsentProvider
-        )
+        testedFeature.stop()
 
         // Then
-        val mockPlugins = plugins.toTypedArray()
-        mockPlugins.forEach {
-            verify(mockedTrackingConsentProvider).registerCallback(it)
-        }
+        assertThat(testedFeature.gesturesTracker)
+            .isInstanceOf(NoOpGesturesTracker::class.java)
     }
 
     @Test
-    fun `it will unregister the provided plugin when stop called`(
-        forge: Forge
-    ) {
+    fun `𝕄 use noop viewTrackingStrategy 𝕎 stop()`() {
         // Given
-        val plugins: List<DatadogPlugin> = forge.aList(forge.anInt(min = 1, max = 10)) {
-            mock<DatadogPlugin>()
-        }
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig.copy(plugins = plugins),
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+        testedFeature.initialize(mockAppContext, fakeConfig)
 
         // When
-        RumFeature.stop()
+        testedFeature.stop()
 
         // Then
-        val mockPlugins = plugins.toTypedArray()
-        inOrder(*mockPlugins) {
-            mockPlugins.forEach {
-                verify(it).unregister()
-            }
-        }
+        assertThat(testedFeature.viewTrackingStrategy)
+            .isInstanceOf(NoOpViewTrackingStrategy::class.java)
     }
 
     @Test
-    fun `clears all files on local storage on request`(
-        @StringForgery(type = StringForgeryType.NUMERICAL) fileName: String,
-        @StringForgery content: String
-    ) {
-        val fakeDir = File(tempRootDir, RumFileStrategy.AUTHORIZED_FOLDER)
-        fakeDir.mkdirs()
-        val fakeFile = File(fakeDir, fileName)
-        fakeFile.writeText(content)
+    fun `𝕄 use noop userActionTrackingStrategy 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(mockAppContext, fakeConfig)
 
         // When
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig,
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
-        RumFeature.clearAllData()
+        testedFeature.stop()
 
         // Then
-        assertThat(fakeFile).doesNotExist()
+        assertThat(testedFeature.actionTrackingStrategy)
+            .isInstanceOf(NoOpUserActionTrackingStrategy::class.java)
     }
 
     @Test
-    fun `M use the Config eventMappers W initialise`(forge: Forge) {
-        // GIVEN
-        val fakeEventMapper = forge.getForgery(RumEventMapper::class.java)
+    fun `𝕄 unregister strategies 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(mockAppContext, fakeConfig)
+        CoreFeature.contextRef = WeakReference(mockAppContext)
+        val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
+        val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
+        val mockViewTreeTrackingStrategy: TrackingStrategy = mock()
+        testedFeature.actionTrackingStrategy = mockActionTrackingStrategy
+        testedFeature.viewTrackingStrategy = mockViewTrackingStrategy
+        testedFeature.viewTreeTrackingStrategy = mockViewTreeTrackingStrategy
 
-        // WHEN
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig.copy(rumEventMapper = fakeEventMapper),
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+        // When
+        testedFeature.stop()
 
-        // THEN
-        assertThat(RumFeature.rumEventMapper).isEqualTo(fakeEventMapper)
+        // Then
+        verify(mockActionTrackingStrategy).unregister(mockAppContext)
+        verify(mockViewTrackingStrategy).unregister(mockAppContext)
+        verify(mockViewTreeTrackingStrategy).unregister(mockAppContext)
     }
 
     @Test
-    fun `M drop the eventMappers W stop`(forge: Forge) {
-        // GIVEN
-        val fakeEventMappers = forge.getForgery(RumEventMapper::class.java)
-        RumFeature.initialize(
-            mockAppContext,
-            fakeConfig.copy(rumEventMapper = fakeEventMappers),
-            mockOkHttpClient,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockScheduledThreadPoolExecutor,
-            mockPersistenceExecutorService,
-            mockUserInfoProvider,
-            trackingConsentProvider
-        )
+    fun `𝕄 reset eventMapper 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(mockAppContext, fakeConfig)
 
-        // WHEN
-        RumFeature.stop()
+        // When
+        testedFeature.stop()
 
-        // THEN
-        assertThat(RumFeature.rumEventMapper).isNotEqualTo(fakeEventMappers)
-        assertThat(RumFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
+        // Then
+        assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
 }

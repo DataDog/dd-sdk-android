@@ -7,132 +7,42 @@
 package com.datadog.android.tracing.internal
 
 import android.content.Context
-import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
+import com.datadog.android.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.opentracing.DDSpan
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.OkHttpClient
 
-internal object TracesFeature : SdkFeature() {
+internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>(
+    authorizedFolderName = TracingFileStrategy.AUTHORIZED_FOLDER
+) {
 
-    internal val initialized = AtomicBoolean(false)
+    // region SdkFeature
 
-    internal var clientToken: String = ""
-    internal var endpointUrl: String = DatadogEndpoint.TRACES_US
-
-    internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
-
-    @Suppress("LongParameterList")
-    fun initialize(
-        appContext: Context,
-        config: DatadogConfig.FeatureConfig,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        userInfoProvider: UserInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        timeProvider: TimeProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService,
-        trackingConsentProvider: ConsentProvider
-    ) {
-        if (initialized.get()) {
-            return
-        }
-
-        clientToken = config.clientToken
-        endpointUrl = config.endpointUrl
-
-        persistenceStrategy = TracingFileStrategy(
-            appContext,
-            timeProvider = timeProvider,
-            networkInfoProvider = networkInfoProvider,
-            userInfoProvider = userInfoProvider,
-            envName = config.envName,
-            dataPersistenceExecutorService = dataPersistenceExecutor,
-            trackingConsentProvider = trackingConsentProvider
+    override fun createPersistenceStrategy(
+        context: Context,
+        configuration: Configuration.Feature.Tracing
+    ): PersistenceStrategy<DDSpan> {
+        return TracingFileStrategy(
+            context,
+            timeProvider = CoreFeature.timeProvider,
+            networkInfoProvider = CoreFeature.networkInfoProvider,
+            userInfoProvider = CoreFeature.userInfoProvider,
+            envName = CoreFeature.envName,
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
+            trackingConsentProvider = CoreFeature.trackingConsentProvider
         )
-        setupUploader(
+    }
+
+    override fun createUploader(): DataUploader {
+        return TracesOkHttpUploader(
             endpointUrl,
-            okHttpClient,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
+            CoreFeature.clientToken,
+            CoreFeature.okHttpClient
         )
-
-        registerPlugins(
-            config.plugins,
-            DatadogPluginConfig.TracingPluginConfig(
-                appContext,
-                config.envName,
-                CoreFeature.serviceName,
-                trackingConsentProvider.getConsent()
-            ),
-            trackingConsentProvider
-        )
-        initialized.set(true)
-    }
-
-    fun clearAllData() {
-        persistenceStrategy.clearAllData()
-    }
-
-    fun stop() {
-        if (initialized.get()) {
-            unregisterPlugins()
-            dataUploadScheduler.stopScheduling()
-            persistenceStrategy = NoOpPersistenceStrategy()
-            dataUploadScheduler = NoOpUploadScheduler()
-            clientToken = ""
-            endpointUrl = DatadogEndpoint.TRACES_US
-            initialized.set(false)
-        }
-    }
-
-    // region Internal
-
-    private fun setupUploader(
-        endpointUrl: String,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
-    ) {
-        uploader = TracesOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-
-        dataUploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = TracesOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-            DataUploadScheduler(
-                persistenceStrategy.getReader(),
-                uploader,
-                networkInfoProvider,
-                systemInfoProvider,
-                dataUploadThreadPoolExecutor
-            )
-        } else {
-            NoOpUploadScheduler()
-        }
-        dataUploadScheduler.startScheduling()
     }
 
     // endregion

@@ -7,76 +7,15 @@
 package com.datadog.android.plugin
 
 import android.content.Context
-import com.datadog.android.error.internal.CrashLogFileStrategy
-import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.domain.RumFileStrategy
-import com.datadog.android.tracing.internal.domain.TracingFileStrategy
 
 /**
  * Used to deliver the context from the SDK internals to a [DatadogPlugin] implementation.
  */
-sealed class DatadogPluginConfig(
+class DatadogPluginConfig(
     val context: Context,
     val envName: String,
     val serviceName: String,
     val featurePersistenceDirName: String,
     val trackingConsent: TrackingConsent
-) {
-
-    internal class CrashReportsPluginConfig(
-        context: Context,
-        envName: String,
-        serviceName: String,
-        trackingConsent: TrackingConsent
-    ) :
-        DatadogPluginConfig(
-            context,
-            envName,
-            serviceName,
-            CrashLogFileStrategy.AUTHORIZED_FOLDER,
-            trackingConsent
-        )
-
-    internal class LogsPluginConfig(
-        context: Context,
-        envName: String,
-        serviceName: String,
-        trackingConsent: TrackingConsent
-    ) :
-        DatadogPluginConfig(
-            context,
-            envName,
-            serviceName,
-            LogFileStrategy.AUTHORIZED_FOLDER,
-            trackingConsent
-        )
-
-    internal class TracingPluginConfig(
-        context: Context,
-        envName: String,
-        serviceName: String,
-        trackingConsent: TrackingConsent
-    ) :
-        DatadogPluginConfig(
-            context,
-            envName,
-            serviceName,
-            TracingFileStrategy.AUTHORIZED_FOLDER,
-            trackingConsent
-        )
-
-    internal class RumPluginConfig(
-        context: Context,
-        envName: String,
-        serviceName: String,
-        trackingConsent: TrackingConsent
-    ) :
-        DatadogPluginConfig(
-            context,
-            envName,
-            serviceName,
-            RumFileStrategy.AUTHORIZED_FOLDER,
-            trackingConsent
-        )
-}
+)

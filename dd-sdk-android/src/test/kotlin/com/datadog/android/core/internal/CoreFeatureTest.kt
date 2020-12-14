@@ -13,13 +13,19 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
-import com.datadog.android.DatadogConfig
+import com.datadog.android.Configuration
+import com.datadog.android.Credentials
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
+import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
+import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
+import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
+import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
@@ -36,13 +42,14 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
@@ -69,8 +76,18 @@ internal class CoreFeatureTest {
 
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
+
+    @Forgery
+    lateinit var fakeCredentials: Credentials
+
+    @Forgery
+    lateinit var fakeConfig: Configuration.Core
+
+    @StringForgery
     lateinit var fakePackageName: String
+    @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
+    @Forgery
     lateinit var fakeConsent: TrackingConsent
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
@@ -78,7 +95,6 @@ internal class CoreFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakePackageName = forge.anAlphabeticalString()
         fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
 
@@ -94,87 +110,242 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `𝕄 initialize time sync 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.kronosClock).isNotNull()
+    }
+
+    @Test
+    fun `𝕄 initialize time provider 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.timeProvider)
+            .isInstanceOf(KronosTimeProvider::class.java)
+    }
+
+    @Test
+    fun `𝕄 initialize system info provider 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.systemInfoProvider)
+            .isInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+    }
+
+    @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `registers broadcast receivers on initialize (Lollipop)`() {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialize network info provider 𝕎 initialize {LOLLIPOP}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
-        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, atLeastOnce())
-            .registerReceiver(broadcastReceiverCaptor.capture(), any())
+        // Then
+        argumentCaptor<BroadcastReceiver> {
+            verify(mockAppContext, atLeastOnce())
+                .registerReceiver(capture(), any())
 
-        assertThat(broadcastReceiverCaptor.allValues)
-            .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
-            .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+            assertThat(allValues)
+                .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+                .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
+        }
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
-    fun `registers receivers and callbacks on initialize (Nougat)`() {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialize network info provider 𝕎 initialize {N}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
-        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
-        verify(mockAppContext, atLeastOnce())
-            .registerReceiver(broadcastReceiverCaptor.capture(), any())
-        assertThat(broadcastReceiverCaptor.allValues)
-            .allMatch { it is BroadcastReceiverSystemInfoProvider }
-        verify(mockConnectivityMgr)
-            .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
+        // Then
+        argumentCaptor<BroadcastReceiver> {
+            verify(mockAppContext, atLeastOnce())
+                .registerReceiver(capture(), any())
+
+            assertThat(allValues)
+                .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+            assertThat(allValues.none { it is BroadcastReceiverNetworkInfoProvider })
+            verify(mockConnectivityMgr)
+                .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
+        }
     }
 
     @Test
-    fun `initializes time provider`() {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialize user info provider 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
-        assertThat(CoreFeature.timeProvider)
-            .isNotInstanceOf(NoOpTimeProvider::class.java)
-    }
-
-    @Test
-    fun `initializes user info provider`() {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
-
+        // Then
         assertThat(CoreFeature.userInfoProvider)
-            .isNotInstanceOf(NoOpMutableUserInfoProvider::class.java)
+            .isInstanceOf(DatadogUserInfoProvider::class.java)
     }
 
     @Test
-    fun `initializes app info`() {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialise the consent provider 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
+        // Then
+        assertThat(CoreFeature.trackingConsentProvider)
+            .isInstanceOf(TrackingConsentProvider::class.java)
+        assertThat(CoreFeature.trackingConsentProvider.getConsent())
+            .isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.firstPartyHostDetector.knownHosts)
+            .containsAll(fakeConfig.hosts.map { it.toLowerCase(Locale.US) })
+    }
+
+    @Test
+    fun `𝕄 initializes app info 𝕎 initialize()`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
 
     @Test
-    fun `initializes first party hosts detector`(
-        @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
-    ) {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig(hosts = hosts))
+    fun `𝕄 initializes app info 𝕎 initialize() {null serviceName}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials.copy(serviceName = null),
+            fakeConfig,
+            fakeConsent
+        )
 
-        val lowercaseHosts = hosts.map { it.toLowerCase(Locale.US) }
-        assertThat(CoreFeature.firstPartyHostDetector.knownHosts).containsAll(lowercaseHosts)
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.serviceName).isEqualTo(fakePackageName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
 
     @Test
-    fun `initializes all dependencies at initialize with null version name`(
+    fun `𝕄 initializes app info 𝕎 initialize() {null rumApplicationId}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials.copy(rumApplicationId = null),
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.rumApplicationId).isNull()
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+    }
+
+    @Test
+    fun `𝕄 initializes app info 𝕎 initialize() {null versionName}`(
         @IntForgery(min = 0) versionCode: Int
     ) {
+        // Given
         mockAppContext = mockContext(fakePackageName, null, versionCode)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials.copy(rumApplicationId = null),
+            fakeConfig,
+            fakeConsent
+        )
 
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(versionCode.toString())
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.rumApplicationId).isNull()
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `add strict network policy for https endpoints on 21+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize() {LOLLIPOP}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig.copy(needsClearTextHttp = false),
+            fakeConsent
+        )
 
+        // Then
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
@@ -186,9 +357,16 @@ internal class CoreFeatureTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.KITKAT)
-    fun `add compatibility network policy for https endpoints on 19+`(forge: Forge) {
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+    fun `𝕄 initialize okhttp with compat network policy 𝕎 initialize() {KITKAT}`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig.copy(needsClearTextHttp = false),
+            fakeConsent
+        )
 
+        // Then
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
@@ -199,13 +377,16 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `no network policy for custom endpoints`(forge: Forge) {
+    fun `𝕄 initialize okhttp with no network policy 𝕎 initialize() {needsClearText}`() {
+        // When
         CoreFeature.initialize(
             mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(needsClearTextHttp = true)
+            fakeCredentials,
+            fakeConfig.copy(needsClearTextHttp = true),
+            fakeConsent
         )
 
+        // Then
         val okHttpClient = CoreFeature.okHttpClient
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
@@ -216,194 +397,219 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `stop will shutdown the executors`() {
+    fun `𝕄 initialize executors 𝕎 initialize()`() {
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.uploadExecutorService).isNotNull()
+        assertThat(CoreFeature.persistenceExecutorService).isNotNull()
+    }
+
+    @Test
+    fun `𝕄 initialize only once 𝕎 initialize() twice`(
+        @Forgery otherCredentials: Credentials
+    ) {
         // Given
         CoreFeature.initialize(
             mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(needsClearTextHttp = true)
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
         )
-        val mockThreadPoolExecutor: ThreadPoolExecutor = mock()
-        CoreFeature.dataPersistenceExecutorService = mockThreadPoolExecutor
-        val mockScheduledThreadPoolExecutor: ScheduledThreadPoolExecutor = mock()
-        CoreFeature.dataUploadScheduledExecutor = mockScheduledThreadPoolExecutor
 
         // When
-        CoreFeature.stop()
-
-        // Then
-        verify(mockThreadPoolExecutor).shutdownNow()
-        verify(mockScheduledThreadPoolExecutor).shutdownNow()
-    }
-
-    @Test
-    fun `if custom service name not provided will use the package name`() {
-        // Given
         CoreFeature.initialize(
             mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(serviceName = null)
+            otherCredentials,
+            fakeConfig,
+            fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.serviceName).isEqualTo(mockAppContext.packageName)
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
     }
 
     @Test
-    fun `if custom service name provided will use this instead of the package name`(forge: Forge) {
-        // Given
-        val serviceName = forge.anAlphabeticalString()
-        CoreFeature.initialize(
-            mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(serviceName = serviceName)
-        )
-
-        // Then
-        assertThat(CoreFeature.serviceName).isEqualTo(serviceName)
-    }
-
-    @Test
-    fun `if this process name matches the package name it will be marked as main process`(
-        forge: Forge
+    fun `𝕄 detect current process 𝕎 initialize() {main process}`(
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(
-            Process.myPid(),
-            fakePackageName
-        )
-        val otherProcess = forgeAppProcessInfo(
-            Process.myPid() + 1,
-            forge.anAlphabeticalString()
-        )
-        otherProcess.processName = forge.anAlphabeticalString()
-        otherProcess.pid = Process.myPid() + 1
+        val myProcess = forgeAppProcessInfo(Process.myPid(), fakePackageName)
+        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
         whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(
-                listOf(myProcess, otherProcess)
-            )
+            .thenReturn(listOf(myProcess, otherProcess))
 
         // When
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
         // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
     @Test
-    fun `if this process does not match the package name it will be marked as secondary process`(
-        forge: Forge
+    fun `𝕄 detect current process 𝕎 initialize() {secondary process}`(
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(
-            Process.myPid(),
-            fakePackageName + forge.anAlphabeticalString(size = 1)
-        )
-        val otherProcess = forgeAppProcessInfo(
-            Process.myPid() + 1,
-            forge.anAlphabeticalString()
-        )
-        otherProcess.processName = forge.anAlphabeticalString()
-        otherProcess.pid = Process.myPid() + 1
+        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
+        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, fakePackageName)
         whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(
-                listOf(myProcess, otherProcess)
-            )
+            .thenReturn(listOf(myProcess, otherProcess))
 
         // When
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
         // Then
         assertThat(CoreFeature.isMainProcess).isFalse()
     }
 
     @Test
-    fun `will mark it as main process by default if could not be found in the list`(forge: Forge) {
+    fun `𝕄 detect current process 𝕎 initialize() {unknown process}`(
+        @StringForgery otherProcessName: String
+    ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val otherProcess = forgeAppProcessInfo(
-            Process.myPid() + 1,
-            forge.anAlphabeticalString()
-        )
-        otherProcess.processName = forge.anAlphabeticalString()
-        otherProcess.pid = Process.myPid() + 1
+        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
         whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(
-                listOf(otherProcess)
-            )
+            .thenReturn(listOf(otherProcess))
 
         // When
-        CoreFeature.initialize(mockAppContext, fakeConsent, DatadogConfig.CoreConfig())
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
 
         // Then
         assertThat(CoreFeature.isMainProcess).isTrue()
     }
 
     @Test
-    fun `M initialise the env name W provided from Config`() {
-        // WHEN
+    fun `𝕄 cleanup app info 𝕎 stop()`() {
+        // Given
         CoreFeature.initialize(
             mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(envName = fakeEnvName)
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
         )
 
-        // THEN
-        assertThat(CoreFeature.envName).isEqualTo(fakeEnvName)
-    }
-
-    @Test
-    fun `M initialise the ConsentProvider`() {
-        // WHEN
-        CoreFeature.initialize(
-            mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(envName = fakeEnvName)
-        )
-
-        // THEN
-        assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
-    }
-
-    @Test
-    fun `M use a NoOpConsentProvider by default`() {
-        assertThat(CoreFeature.trackingConsentProvider)
-            .isInstanceOf(NoOpConsentProvider::class.java)
-    }
-
-    @Test
-    fun `M unregister an use a NoOpConsentProvider W stopped`() {
-        // GIVEN
-        val mockedConsentProvider: ConsentProvider = mock()
-        CoreFeature.initialize(
-            mockAppContext,
-            fakeConsent,
-            DatadogConfig.CoreConfig(envName = fakeEnvName)
-        )
-        CoreFeature.trackingConsentProvider = mockedConsentProvider
-
-        // WHEN
+        // When
         CoreFeature.stop()
 
-        // THEN
-        verify(mockedConsentProvider).unregisterAllCallbacks()
-        assertThat(CoreFeature.trackingConsentProvider).isInstanceOf(
-            NoOpConsentProvider::class.java
-        )
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo("")
+        assertThat(CoreFeature.packageName).isEqualTo("")
+        assertThat(CoreFeature.packageVersion).isEqualTo("")
+        assertThat(CoreFeature.serviceName).isEqualTo("")
+        assertThat(CoreFeature.envName).isEqualTo("")
+        assertThat(CoreFeature.rumApplicationId).isNull()
+        assertThat(CoreFeature.contextRef.get()).isNull()
     }
 
-    // region internal
+    @Test
+    fun `𝕄 cleanup providers 𝕎 stop()`() {
+        // Given
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        CoreFeature.stop()
+
+        // Then
+        assertThat(CoreFeature.firstPartyHostDetector.knownHosts)
+            .isEmpty()
+        assertThat(CoreFeature.networkInfoProvider)
+            .isInstanceOf(NoOpNetworkInfoProvider::class.java)
+        assertThat(CoreFeature.systemInfoProvider)
+            .isInstanceOf(NoOpSystemInfoProvider::class.java)
+        assertThat(CoreFeature.timeProvider)
+            .isInstanceOf(NoOpTimeProvider::class.java)
+        assertThat(CoreFeature.trackingConsentProvider)
+            .isInstanceOf(NoOpConsentProvider::class.java)
+        assertThat(CoreFeature.userInfoProvider)
+            .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
+    }
+
+    @Test
+    fun `𝕄 shut down executors 𝕎 stop()`() {
+        // Given
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
+        CoreFeature.uploadExecutorService = mockUploadExecutorService
+        val mockPersistenceExecutorService: ExecutorService = mock()
+        CoreFeature.persistenceExecutorService = mockPersistenceExecutorService
+
+        // When
+        CoreFeature.stop()
+
+        // Then
+        verify(mockUploadExecutorService).shutdownNow()
+        verify(mockPersistenceExecutorService).shutdownNow()
+    }
+    @Test
+    fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
+        // Given
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockConsentProvider: ConsentProvider = mock()
+        CoreFeature.trackingConsentProvider = mockConsentProvider
+
+        // When
+        CoreFeature.stop()
+
+        // Then
+        verify(mockConsentProvider).unregisterAllCallbacks()
+    }
+
+    // region Internal
 
     private fun forgeAppProcessInfo(
         processId: Int,

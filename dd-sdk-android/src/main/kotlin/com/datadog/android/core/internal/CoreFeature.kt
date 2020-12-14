@@ -10,7 +10,8 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import com.datadog.android.DatadogConfig
+import com.datadog.android.Configuration
+import com.datadog.android.Credentials
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
@@ -57,70 +58,46 @@ internal object CoreFeature {
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
+
+    internal var firstPartyHostDetector = FirstPartyHostDetector(emptyList())
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
-    internal var firstPartyHostDetector = FirstPartyHostDetector(emptyList())
-
+    internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
 
     internal var okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
     internal lateinit var kronosClock: KronosClock
 
+    internal var clientToken: String = ""
     internal var packageName: String = ""
     internal var packageVersion: String = ""
     internal var serviceName: String = ""
+    internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
 
-    internal lateinit var dataUploadScheduledExecutor: ScheduledThreadPoolExecutor
-    internal lateinit var dataPersistenceExecutorService: ExecutorService
-    internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
+    internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
+    internal lateinit var persistenceExecutorService: ExecutorService
 
     fun initialize(
         appContext: Context,
-        consent: TrackingConsent,
-        config: DatadogConfig.CoreConfig
+        credentials: Credentials,
+        configuration: Configuration.Core,
+        consent: TrackingConsent
     ) {
         if (initialized.get()) {
             return
         }
 
-        kronosClock = AndroidClockFactory.createKronosClock(
-            appContext,
-            ntpHosts = listOf(
-                DatadogEndpoint.NTP_0,
-                DatadogEndpoint.NTP_1,
-                DatadogEndpoint.NTP_2,
-                DatadogEndpoint.NTP_3
-            ),
-            cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
-            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
-            syncListener = LoggingSyncListener()
-        ).apply { syncInBackground() }
+        readApplicationInformation(appContext, credentials)
+        resolveIsMainProcess(appContext)
+        initializeClockSync(appContext)
+        setupInfoProviders(appContext, consent)
+        setupOkHttpClient(configuration.needsClearTextHttp)
+        firstPartyHostDetector = FirstPartyHostDetector(configuration.hosts)
+        setupExecutors()
 
-        trackingConsentProvider = TrackingConsentProvider(consent)
-        serviceName = config.serviceName ?: appContext.packageName
-        contextRef = WeakReference(appContext)
-        isMainProcess = resolveIsMainProcess(appContext)
-        envName = config.envName
-
-        readApplicationInformation(appContext)
-
-        setupInfoProviders(appContext)
-
-        setupOkHttpClient(config.needsClearTextHttp)
-        dataUploadScheduledExecutor = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
-        dataPersistenceExecutorService =
-            ThreadPoolExecutor(
-                CORE_DEFAULT_POOL_SIZE,
-                Runtime.getRuntime().availableProcessors(),
-                THREAD_POOL_MAX_KEEP_ALIVE_MS,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingDeque()
-            )
-
-        firstPartyHostDetector = FirstPartyHostDetector(config.hosts)
         initialized.set(true)
     }
 
@@ -133,15 +110,9 @@ internal object CoreFeature {
             contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
-            trackingConsentProvider = NoOpConsentProvider()
-            timeProvider = NoOpTimeProvider()
-            systemInfoProvider = NoOpSystemInfoProvider()
-            networkInfoProvider = NoOpNetworkInfoProvider()
-            userInfoProvider = NoOpMutableUserInfoProvider()
-            firstPartyHostDetector = FirstPartyHostDetector(emptyList())
-            serviceName = ""
-            packageName = ""
-            packageVersion = ""
+
+            cleanupApplicationInfo()
+            cleanupProviders()
             shutDownExecutors()
             initialized.set(false)
         }
@@ -149,22 +120,34 @@ internal object CoreFeature {
 
     // region Internal
 
-    private fun shutDownExecutors() {
-        dataUploadScheduledExecutor.shutdownNow()
-        dataPersistenceExecutorService.shutdownNow()
+    private fun initializeClockSync(appContext: Context) {
+        kronosClock = AndroidClockFactory.createKronosClock(
+            appContext,
+            ntpHosts = listOf(
+                DatadogEndpoint.NTP_0,
+                DatadogEndpoint.NTP_1,
+                DatadogEndpoint.NTP_2,
+                DatadogEndpoint.NTP_3
+            ),
+            cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
+            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
+            syncListener = LoggingSyncListener()
+        ).apply { syncInBackground() }
     }
 
-    @Suppress("DEPRECATION")
-    private fun readApplicationInformation(
-        appContext: Context
-    ) {
+    private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
         packageName = appContext.packageName
         packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
             it.versionName ?: it.versionCode.toString()
         }
+        clientToken = credentials.clientToken
+        serviceName = credentials.serviceName ?: appContext.packageName
+        rumApplicationId = credentials.rumApplicationId
+        envName = credentials.envName
+        contextRef = WeakReference(appContext)
     }
 
-    private fun setupInfoProviders(appContext: Context) {
+    private fun setupInfoProviders(appContext: Context, consent: TrackingConsent) {
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
 
@@ -182,6 +165,9 @@ internal object CoreFeature {
 
         // User Info Provider
         userInfoProvider = DatadogUserInfoProvider()
+
+        // Tracking Consent Provider
+        trackingConsentProvider = TrackingConsentProvider(consent)
     }
 
     private fun setupOkHttpClient(needsClearTextHttp: Boolean) {
@@ -200,17 +186,52 @@ internal object CoreFeature {
             .build()
     }
 
-    private fun resolveIsMainProcess(appContext: Context): Boolean {
+    private fun setupExecutors() {
+        uploadExecutorService = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
+        persistenceExecutorService = ThreadPoolExecutor(
+            CORE_DEFAULT_POOL_SIZE,
+            Runtime.getRuntime().availableProcessors(),
+            THREAD_POOL_MAX_KEEP_ALIVE_MS,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingDeque()
+        )
+    }
+
+    private fun resolveIsMainProcess(appContext: Context) {
         val currentProcessId = Process.myPid()
         val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val currentProcess = manager?.runningAppProcesses?.firstOrNull {
             it.pid == currentProcessId
         }
-        return if (currentProcess == null) {
+        isMainProcess = if (currentProcess == null) {
             true
         } else {
             appContext.packageName == currentProcess.processName
         }
+    }
+
+    private fun shutDownExecutors() {
+        uploadExecutorService.shutdownNow()
+        persistenceExecutorService.shutdownNow()
+    }
+
+    private fun cleanupApplicationInfo() {
+        clientToken = ""
+        packageName = ""
+        packageVersion = ""
+        serviceName = ""
+        rumApplicationId = null
+        isMainProcess = true
+        envName = ""
+    }
+
+    private fun cleanupProviders() {
+        firstPartyHostDetector = FirstPartyHostDetector(emptyList())
+        networkInfoProvider = NoOpNetworkInfoProvider()
+        systemInfoProvider = NoOpSystemInfoProvider()
+        timeProvider = NoOpTimeProvider()
+        trackingConsentProvider = NoOpConsentProvider()
+        userInfoProvider = NoOpMutableUserInfoProvider()
     }
 
     // endregion

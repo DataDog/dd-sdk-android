@@ -7,33 +7,17 @@
 package com.datadog.android.rum.internal
 
 import android.content.Context
-import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
+import com.datadog.android.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPluginConfig
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -41,145 +25,60 @@ import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import java.util.UUID
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.OkHttpClient
 
-internal object RumFeature : SdkFeature() {
+internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
+    authorizedFolderName = RumFileStrategy.AUTHORIZED_FOLDER
+) {
 
-    internal val initialized = AtomicBoolean(false)
-
-    internal var clientToken: String = ""
-    internal var endpointUrl: String = DatadogEndpoint.RUM_US
-    internal var envName: String = ""
-    internal var applicationId: UUID = UUID(0, 0)
     internal var samplingRate: Float = 0f
 
-    internal var persistenceStrategy: PersistenceStrategy<RumEvent> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
-    internal var userInfoProvider: UserInfoProvider = NoOpMutableUserInfoProvider()
-    internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
-
     internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
-    private var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
-    private var actionTrackingStrategy: UserActionTrackingStrategy =
+    internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
+    internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
-    private var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
+    internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
     internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
 
-    @Suppress("LongParameterList")
-    fun initialize(
-        appContext: Context,
-        config: DatadogConfig.RumConfig,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService,
-        userInfoProvider: UserInfoProvider,
-        trackingConsentProvider: ConsentProvider
-    ) {
-        if (initialized.get()) {
-            return
-        }
+    // region SdkFeature
 
-        applicationId = config.applicationId
-        clientToken = config.clientToken
-        endpointUrl = config.endpointUrl
-        envName = config.envName
-        samplingRate = config.samplingRate
-        rumEventMapper = config.rumEventMapper
+    override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
+        samplingRate = configuration.samplingRate
+        rumEventMapper = configuration.rumEventMapper
 
-        config.gesturesTracker?.let { gesturesTracker = it }
-        config.viewTrackingStrategy?.let { viewTrackingStrategy = it }
-        config.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
+        configuration.gesturesTracker?.let { gesturesTracker = it }
+        configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
+        configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
 
-        persistenceStrategy = RumFileStrategy(
-            appContext,
-            trackingConsentProvider = trackingConsentProvider,
-            dataPersistenceExecutorService = dataPersistenceExecutor,
-            eventMapper = rumEventMapper
+        registerTrackingStrategies(context)
+    }
+
+    override fun onStop() {
+        unregisterTrackingStrategies(CoreFeature.contextRef.get())
+        gesturesTracker = NoOpGesturesTracker()
+        viewTrackingStrategy = NoOpViewTrackingStrategy()
+        actionTrackingStrategy = NoOpUserActionTrackingStrategy()
+        rumEventMapper = NoOpEventMapper()
+    }
+
+    override fun createPersistenceStrategy(
+        context: Context,
+        configuration: Configuration.Feature.RUM
+    ): PersistenceStrategy<RumEvent> {
+        return RumFileStrategy(
+            context,
+            trackingConsentProvider = CoreFeature.trackingConsentProvider,
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
+            eventMapper = configuration.rumEventMapper
         )
-        setupUploader(
-            endpointUrl,
-            okHttpClient,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor = dataUploadThreadPoolExecutor
-        )
-        registerTrackingStrategies(appContext)
-        this.userInfoProvider = userInfoProvider
-        this.networkInfoProvider = networkInfoProvider
-        registerPlugins(
-            config.plugins,
-            DatadogPluginConfig.RumPluginConfig(
-                appContext,
-                config.envName,
-                CoreFeature.serviceName,
-                trackingConsentProvider.getConsent()
-            ),
-            trackingConsentProvider
-        )
-        initialized.set(true)
     }
 
-    fun isInitialized(): Boolean {
-        return initialized.get()
+    override fun createUploader(): DataUploader {
+        return RumOkHttpUploader(endpointUrl, CoreFeature.clientToken, CoreFeature.okHttpClient)
     }
 
-    fun clearAllData() {
-        persistenceStrategy.clearAllData()
-    }
-
-    fun stop() {
-        if (initialized.get()) {
-            unregisterPlugins()
-            dataUploadScheduler.stopScheduling()
-
-            unregisterTrackingStrategies(CoreFeature.contextRef.get())
-
-            persistenceStrategy = NoOpPersistenceStrategy()
-            dataUploadScheduler = NoOpUploadScheduler()
-            clientToken = ""
-            endpointUrl = DatadogEndpoint.RUM_US
-            envName = ""
-            rumEventMapper = NoOpEventMapper()
-
-            (GlobalRum.get() as? DatadogRumMonitor)?.stopKeepAliveCallback()
-            // reset rum monitor to NoOp and reset the flag
-            GlobalRum.isRegistered.set(false)
-            GlobalRum.registerIfAbsent(NoOpRumMonitor())
-            GlobalRum.isRegistered.set(false)
-            initialized.set(false)
-        }
-    }
+    // endregion
 
     // region Internal
-
-    private fun setupUploader(
-        endpointUrl: String,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
-    ) {
-        dataUploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = RumOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-            DataUploadScheduler(
-                persistenceStrategy.getReader(),
-                uploader,
-                networkInfoProvider,
-                systemInfoProvider,
-                dataUploadThreadPoolExecutor
-            )
-        } else {
-            NoOpUploadScheduler()
-        }
-        dataUploadScheduler.startScheduling()
-    }
 
     private fun registerTrackingStrategies(appContext: Context) {
         actionTrackingStrategy.register(appContext)
