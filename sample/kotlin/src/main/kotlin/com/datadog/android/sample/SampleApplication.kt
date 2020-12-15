@@ -45,7 +45,6 @@ class SampleApplication : Application() {
 
     private val tracedHosts = listOf(
         "datadoghq.com",
-        "source.unsplash.com",
         "127.0.0.1"
     )
 
