@@ -23,6 +23,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -34,6 +37,8 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -662,6 +667,96 @@ internal class DatadogConfigBuilderTest {
             .hasApplicationId(fakeApplicationId)
             .hasEndpointUrl(DatadogEndpoint.RUM_US)
             .hasEnvName(fakeEnvName)
+    }
+
+    @Test
+    fun `M get host name W setFirstPartyHosts { using url instead of host name as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = hosts.map { URL(it).host }
+                )
+            )
+    }
+
+    @Test
+    fun `M warn W setFirstPartyHosts { using url instead of host name as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.WARN,
+                "You are using an url: $it for declaring the first party hosts. " +
+                    "You should use instead a valid host name: ${URL(it).host}."
+            )
+        }
+    }
+
+    @Test
+    fun `M warn using sdkLogger W setFirstPartyHosts { using malformed url as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                eq(Log.ERROR),
+                eq("The url: $it is malformed. It will be dropped"),
+                any<MalformedURLException>(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        }
+    }
+
+    @Test
+    fun `M drop all malformed urls W setFirstPartyHosts { using malformed url as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = emptyList()
+                )
+            )
     }
 
     @Test
