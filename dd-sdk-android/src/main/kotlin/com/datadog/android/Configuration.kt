@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.os.Build
 import com.datadog.android.core.internal.event.NoOpEventMapper
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
@@ -25,6 +26,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.util.Locale
 
 /**
  * An object describing the configuration of the Datadog SDK.
@@ -42,7 +44,7 @@ internal constructor(
 
     internal data class Core(
         var needsClearTextHttp: Boolean,
-        val hosts: List<String>
+        val firstPartyHosts: List<String>
     )
 
     internal sealed class Feature {
@@ -120,7 +122,7 @@ internal constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(hosts = hosts)
+            coreConfig = coreConfig.copy(firstPartyHosts = hosts)
             return this
         }
 
@@ -170,8 +172,10 @@ internal constructor(
          * Let the SDK target a custom server for the logs feature.
          */
         fun useCustomLogsEndpoint(endpoint: String): Builder {
-            logsConfig = logsConfig.copy(endpointUrl = endpoint)
-            checkCustomEndpoint(endpoint)
+            applyIfFeatureEnabled(PluginFeature.LOG, "useCustomLogsEndpoint") {
+                logsConfig = logsConfig.copy(endpointUrl = endpoint)
+                checkCustomEndpoint(endpoint)
+            }
             return this
         }
 
@@ -179,8 +183,10 @@ internal constructor(
          * Let the SDK target a custom server for the tracing feature.
          */
         fun useCustomTracesEndpoint(endpoint: String): Builder {
-            tracesConfig = tracesConfig.copy(endpointUrl = endpoint)
-            checkCustomEndpoint(endpoint)
+            applyIfFeatureEnabled(PluginFeature.TRACE, "useCustomTracesEndpoint") {
+                tracesConfig = tracesConfig.copy(endpointUrl = endpoint)
+                checkCustomEndpoint(endpoint)
+            }
             return this
         }
 
@@ -188,8 +194,10 @@ internal constructor(
          * Let the SDK target a custom server for the crash reports feature.
          */
         fun useCustomCrashReportsEndpoint(endpoint: String): Builder {
-            crashReportConfig = crashReportConfig.copy(endpointUrl = endpoint)
-            checkCustomEndpoint(endpoint)
+            applyIfFeatureEnabled(PluginFeature.CRASH, "useCustomCrashReportsEndpoint") {
+                crashReportConfig = crashReportConfig.copy(endpointUrl = endpoint)
+                checkCustomEndpoint(endpoint)
+            }
             return this
         }
 
@@ -197,8 +205,10 @@ internal constructor(
          * Let the SDK target a custom server for the RUM feature.
          */
         fun useCustomRumEndpoint(endpoint: String): Builder {
-            rumConfig = rumConfig.copy(endpointUrl = endpoint)
-            checkCustomEndpoint(endpoint)
+            applyIfFeatureEnabled(PluginFeature.RUM, "useCustomRumEndpoint") {
+                rumConfig = rumConfig.copy(endpointUrl = endpoint)
+                checkCustomEndpoint(endpoint)
+            }
             return this
         }
 
@@ -213,13 +223,15 @@ internal constructor(
         fun trackInteractions(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
-            val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
-            rumConfig = rumConfig.copy(
-                gesturesTracker = gesturesTracker,
-                userActionTrackingStrategy = provideUserTrackingStrategy(
-                    gesturesTracker
+            applyIfFeatureEnabled(PluginFeature.RUM, "trackInteractions") {
+                val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
+                rumConfig = rumConfig.copy(
+                    gesturesTracker = gesturesTracker,
+                    userActionTrackingStrategy = provideUserTrackingStrategy(
+                        gesturesTracker
+                    )
                 )
-            )
+            }
             return this
         }
 
@@ -238,7 +250,9 @@ internal constructor(
 
          */
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
-            rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
+            applyIfFeatureEnabled(PluginFeature.RUM, "useViewTrackingStrategy") {
+                rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
+            }
             return this
         }
 
@@ -253,21 +267,22 @@ internal constructor(
          * @see [Feature.RUM]
          */
         fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
-            when (feature) {
-                PluginFeature.RUM -> rumConfig = rumConfig.copy(
-                    plugins = rumConfig.plugins + plugin
-                )
-                PluginFeature.TRACE -> tracesConfig = tracesConfig.copy(
-                    plugins = tracesConfig.plugins + plugin
-                )
-                PluginFeature.LOG -> logsConfig = logsConfig.copy(
-                    plugins = logsConfig.plugins + plugin
-                )
-                PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
-                    plugins = crashReportConfig.plugins + plugin
-                )
+            applyIfFeatureEnabled(feature, "addPlugin") {
+                when (feature) {
+                    PluginFeature.RUM -> rumConfig = rumConfig.copy(
+                        plugins = rumConfig.plugins + plugin
+                    )
+                    PluginFeature.TRACE -> tracesConfig = tracesConfig.copy(
+                        plugins = tracesConfig.plugins + plugin
+                    )
+                    PluginFeature.LOG -> logsConfig = logsConfig.copy(
+                        plugins = logsConfig.plugins + plugin
+                    )
+                    PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
+                        plugins = crashReportConfig.plugins + plugin
+                    )
+                }
             }
-
             return this
         }
 
@@ -279,7 +294,9 @@ internal constructor(
          *
          */
         fun sampleRumSessions(samplingRate: Float): Builder {
-            rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            applyIfFeatureEnabled(PluginFeature.RUM, "sampleRumSessions") {
+                rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            }
             return this
         }
 
@@ -290,9 +307,11 @@ internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumViewEventMapper(eventMapper: EventMapper<ViewEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(viewEventMapper = eventMapper)
-            )
+            applyIfFeatureEnabled(PluginFeature.RUM, "setRumViewEventMapper") {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper().copy(viewEventMapper = eventMapper)
+                )
+            }
             return this
         }
 
@@ -303,9 +322,11 @@ internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(resourceEventMapper = eventMapper)
-            )
+            applyIfFeatureEnabled(PluginFeature.RUM, "setRumResourceEventMapper") {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper().copy(resourceEventMapper = eventMapper)
+                )
+            }
             return this
         }
 
@@ -316,9 +337,11 @@ internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(actionEventMapper = eventMapper)
-            )
+            applyIfFeatureEnabled(PluginFeature.RUM, "setRumActionEventMapper") {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper().copy(actionEventMapper = eventMapper)
+                )
+            }
             return this
         }
 
@@ -329,9 +352,11 @@ internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(errorEventMapper = eventMapper)
-            )
+            applyIfFeatureEnabled(PluginFeature.RUM, "setRumErrorEventMapper") {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper().copy(errorEventMapper = eventMapper)
+                )
+            }
             return this
         }
 
@@ -367,6 +392,24 @@ internal constructor(
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers)
         }
+
+        private fun applyIfFeatureEnabled(
+            feature: PluginFeature,
+            method: String,
+            block: () -> Unit
+        ) {
+            val featureEnabled = when (feature) {
+                PluginFeature.LOG -> logsEnabled
+                PluginFeature.TRACE -> tracesEnabled
+                PluginFeature.CRASH -> crashReportsEnabled
+                PluginFeature.RUM -> rumEnabled
+            }
+            if (featureEnabled) {
+                block()
+            } else {
+                devLogger.e(ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method))
+            }
+        }
     }
 
     // endregion
@@ -376,7 +419,7 @@ internal constructor(
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
-            hosts = emptyList()
+            firstPartyHosts = emptyList()
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US,
@@ -399,5 +442,14 @@ internal constructor(
             viewTrackingStrategy = null,
             rumEventMapper = NoOpEventMapper()
         )
+
+        internal const val FEATURE_LOGS = "Logging"
+        internal const val FEATURE_TRACING = "Tracing"
+        internal const val FEATURE_CRASH_REPORT = "Crash Reporting"
+        internal const val FEATURE_RUM = "RUM"
+
+        internal val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
+            "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
+            "%s() method."
     }
 }

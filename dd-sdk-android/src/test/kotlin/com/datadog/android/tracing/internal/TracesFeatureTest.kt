@@ -46,7 +46,7 @@ internal class TracesFeatureTest :
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
@@ -56,7 +56,7 @@ internal class TracesFeatureTest :
     @Test
     fun `𝕄 create a tracing uploader 𝕎 createUploader()`() {
         // Given
-        testedFeature.endpointUrl = fakeConfig.endpointUrl
+        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
 
         // When
         val uploader = testedFeature.createUploader()
@@ -64,7 +64,7 @@ internal class TracesFeatureTest :
         // Then
         assertThat(uploader).isInstanceOf(TracesOkHttpUploader::class.java)
         val tracesUploader = uploader as TracesOkHttpUploader
-        assertThat(tracesUploader.url).startsWith(fakeConfig.endpointUrl)
+        assertThat(tracesUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(tracesUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 }

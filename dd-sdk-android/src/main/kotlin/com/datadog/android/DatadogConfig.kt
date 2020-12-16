@@ -76,7 +76,7 @@ private constructor(
         return Configuration(
             coreConfig = Configuration.Core(
                 needsClearTextHttp = coreConfig.needsClearTextHttp,
-                hosts = coreConfig.hosts
+                firstPartyHosts = coreConfig.hosts
             ),
             logsConfig = logsConfig?.let {
                 Configuration.Feature.Logs(

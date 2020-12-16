@@ -60,7 +60,7 @@ internal class CrashReportsFeatureTest :
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
@@ -70,7 +70,7 @@ internal class CrashReportsFeatureTest :
     @Test
     fun `𝕄 create a crash reports uploader 𝕎 createUploader()`() {
         // Given
-        testedFeature.endpointUrl = fakeConfig.endpointUrl
+        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
 
         // When
         val uploader = testedFeature.createUploader()
@@ -78,14 +78,14 @@ internal class CrashReportsFeatureTest :
         // Then
         assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
         val logsUploader = uploader as LogsOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfig.endpointUrl)
+        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test
     fun `𝕄 register crash handler 𝕎 initialize`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -100,7 +100,7 @@ internal class CrashReportsFeatureTest :
         Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
         testedFeature.stop()
 
         // Then

@@ -243,7 +243,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.firstPartyHostDetector.knownHosts)
-            .containsAll(fakeConfig.hosts.map { it.toLowerCase(Locale.US) })
+            .containsAll(fakeConfig.firstPartyHosts.map { it.toLowerCase(Locale.US) })
     }
 
     @Test

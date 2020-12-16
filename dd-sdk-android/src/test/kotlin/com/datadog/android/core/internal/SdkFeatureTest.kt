@@ -71,7 +71,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Mock
     lateinit var mockUploader: DataUploader
 
-    lateinit var fakeConfig: C
+    lateinit var fakeConfigurationFeature: C
 
     @StringForgery
     lateinit var fakePackageName: String
@@ -102,7 +102,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockPersistenceStrategy.getReader()) doReturn mockReader
 
-        fakeConfig = forgeConfiguration(forge)
+        fakeConfigurationFeature = forgeConfiguration(forge)
         testedFeature = createTestedFeature()
     }
 
@@ -119,7 +119,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -128,16 +128,16 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 store upload url 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfig.endpointUrl)
+        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfigurationFeature.endpointUrl)
     }
 
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -154,14 +154,14 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 register plugins 𝕎 initialize()`() {
         // Given
-        assumeTrue(fakeConfig.plugins.isNotEmpty())
+        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         argumentCaptor<DatadogPluginConfig> {
-            fakeConfig.plugins.forEach {
+            fakeConfigurationFeature.plugins.forEach {
                 verify(it).register(capture())
             }
             allValues.forEach {
@@ -179,13 +179,13 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 register plugins as TrackingConsentCallback 𝕎 initialize()`() {
         // Given
-        assumeTrue(fakeConfig.plugins.isNotEmpty())
+        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
-        fakeConfig.plugins.forEach {
+        fakeConfigurationFeature.plugins.forEach {
             verify(CoreFeature.trackingConsentProvider).registerCallback(it)
         }
     }
@@ -193,9 +193,9 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 unregister plugins 𝕎 stop()`() {
         // Given
-        assumeTrue(fakeConfig.plugins.isNotEmpty())
-        testedFeature.initialize(mockAppContext, fakeConfig)
-        fakeConfig.plugins.forEach {
+        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        fakeConfigurationFeature.plugins.forEach {
             verify(it).register(any())
         }
 
@@ -203,7 +203,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature.stop()
 
         // Then
-        fakeConfig.plugins.forEach {
+        fakeConfigurationFeature.plugins.forEach {
             verify(it).unregister()
             verifyNoMoreInteractions(it)
         }
@@ -214,7 +214,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         @IntForgery(1, 10) pluginsCount: Int
     ) {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -230,7 +230,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         @IntForgery(1, 10) pluginsCount: Int
     ) {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -246,7 +246,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -261,7 +261,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     ) {
         // Given
         val otherConfig = forgeConfiguration(forge)
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
         val persistenceStrategy = testedFeature.persistenceStrategy
         val uploadScheduler = testedFeature.uploadScheduler
 
@@ -269,7 +269,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature.initialize(mockAppContext, otherConfig)
 
         // Then
-        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfig.endpointUrl)
+        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfigurationFeature.endpointUrl)
         assertThat(testedFeature.persistenceStrategy).isSameAs(persistenceStrategy)
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
     }
@@ -280,7 +280,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         CoreFeature.isMainProcess = false
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)

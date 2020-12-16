@@ -190,6 +190,7 @@ class com.datadog.android.plugin.DatadogPluginConfig
 class com.datadog.android.plugin.DatadogRumContext
   constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature
+  constructor(String)
   - LOG
   - CRASH
   - TRACE

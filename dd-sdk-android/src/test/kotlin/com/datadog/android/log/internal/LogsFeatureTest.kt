@@ -45,7 +45,7 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfig)
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
@@ -55,7 +55,7 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
     @Test
     fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
         // Given
-        testedFeature.endpointUrl = fakeConfig.endpointUrl
+        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
 
         // When
         val uploader = testedFeature.createUploader()
@@ -63,7 +63,7 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
         // Then
         assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
         val logsUploader = uploader as LogsOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfig.endpointUrl)
+        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 }

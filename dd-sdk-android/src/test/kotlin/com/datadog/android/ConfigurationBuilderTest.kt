@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import android.os.Build
+import android.util.Log
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
@@ -14,6 +15,9 @@ import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -22,6 +26,7 @@ import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -29,6 +34,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -83,7 +89,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
-                hosts = emptyList()
+                firstPartyHosts = emptyList()
             )
         )
         assertThat(config.logsConfig).isNull()
@@ -101,7 +107,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
-                hosts = emptyList()
+                firstPartyHosts = emptyList()
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -279,7 +285,7 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(hosts = hosts)
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -440,6 +446,385 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig!!).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 plugins = listOf(rumPlugin)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 trackInteractions() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        testedBuilder.trackInteractions()
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "trackInteractions"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 useViewTrackingStrategy() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val viewStrategy: ViewTrackingStrategy = mock()
+
+        // When
+        testedBuilder.useViewTrackingStrategy(viewStrategy)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "useViewTrackingStrategy"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 sampleRumSessions() {RUM disabled}`(
+        @FloatForgery(0f, 100f) samplingRate: Float
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        testedBuilder.sampleRumSessions(samplingRate)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "sampleRumSessions"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 setRumViewEventMapper() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val eventMapper: EventMapper<ViewEvent> = mock()
+
+        // When
+        testedBuilder.setRumViewEventMapper(eventMapper)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "setRumViewEventMapper"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 setRumResourceEventMapper() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val eventMapper: EventMapper<ResourceEvent> = mock()
+
+        // When
+        testedBuilder.setRumResourceEventMapper(eventMapper)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "setRumResourceEventMapper"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 setRumActionEventMapper() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val eventMapper: EventMapper<ActionEvent> = mock()
+
+        // When
+        testedBuilder.setRumActionEventMapper(eventMapper)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "setRumActionEventMapper"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 setRumErrorEventMapper() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val eventMapper: EventMapper<ErrorEvent> = mock()
+
+        // When
+        testedBuilder.setRumErrorEventMapper(eventMapper)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "setRumErrorEventMapper"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 addPlugin() {log feature disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = false,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+        val logsPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(logsPlugin, Feature.LOG)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.LOG.featureName,
+                "addPlugin"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 addPlugin() {trace feature disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = false,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+        val tracesPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(tracesPlugin, Feature.TRACE)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.TRACE.featureName,
+                "addPlugin"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 addPlugin() {crash feature disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = false,
+            rumEnabled = true
+        )
+        val crashPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(crashPlugin, Feature.CRASH)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.CRASH.featureName,
+                "addPlugin"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 addPlugin() {RUM feature disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val rumPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(rumPlugin, Feature.RUM)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "addPlugin"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 useCustomLogsEndpoint() {Logs feature disabled}`(
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = false,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+
+        // When
+        testedBuilder.useCustomLogsEndpoint(url)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.LOG.featureName,
+                "useCustomLogsEndpoint"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 useCustomTracesEndpoint() {Trace feature disabled}`(
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = false,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+
+        // When
+        testedBuilder.useCustomTracesEndpoint(url)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.TRACE.featureName,
+                "useCustomTracesEndpoint"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 useCustomCrashReportsEndpoint() {Crash feature disabled}`(
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = false,
+            rumEnabled = true
+        )
+
+        // When
+        testedBuilder.useCustomCrashReportsEndpoint(url)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.CRASH.featureName,
+                "useCustomCrashReportsEndpoint"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 useCustomRumEndpoint() {RUM feature disabled}`(
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        testedBuilder.useCustomRumEndpoint(url)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "useCustomRumEndpoint"
             )
         )
     }
