@@ -26,6 +26,8 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.Locale
 
 /**
@@ -122,7 +124,7 @@ internal constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(firstPartyHosts = hosts)
+            coreConfig = coreConfig.copy(firstPartyHosts = sanitizeHosts(hosts))
             return this
         }
 
@@ -443,13 +445,31 @@ internal constructor(
             rumEventMapper = NoOpEventMapper()
         )
 
-        internal const val FEATURE_LOGS = "Logging"
-        internal const val FEATURE_TRACING = "Tracing"
-        internal const val FEATURE_CRASH_REPORT = "Crash Reporting"
-        internal const val FEATURE_RUM = "RUM"
-
         internal val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
+
+        private val URL_REGEX = Regex("^(http|https)://(.*)")
+
+        internal fun sanitizeHosts(hosts: List<String>): List<String> {
+            return hosts.mapNotNull {
+                if (it.matches(URL_REGEX)) {
+                    try {
+                        val parsedUrl = URL(it)
+                        devLogger.w(
+                            "You are using an url: $it for declaring the first " +
+                                "party hosts. You should use instead a valid" +
+                                " host name: ${parsedUrl.host}."
+                        )
+                        parsedUrl.host
+                    } catch (e: MalformedURLException) {
+                        devLogger.e("The url: $it is malformed. It will be dropped", e)
+                        null
+                    }
+                } else {
+                    it
+                }
+            }
+        }
     }
 }

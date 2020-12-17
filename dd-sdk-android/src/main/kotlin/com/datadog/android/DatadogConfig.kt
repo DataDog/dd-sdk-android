@@ -24,8 +24,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import java.net.MalformedURLException
-import java.net.URL
 import java.util.UUID
 
 /**
@@ -294,7 +292,7 @@ private constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(hosts = sanitizeHosts(hosts))
+            coreConfig = coreConfig.copy(hosts = Configuration.sanitizeHosts(hosts))
             return this
         }
 
@@ -503,27 +501,6 @@ private constructor(
                 rumEventMapper = rumConfig.rumEventMapper.copy(errorEventMapper = eventMapper)
             )
             return this
-        }
-
-        private fun sanitizeHosts(hosts: List<String>): List<String> {
-            return hosts.mapNotNull {
-                if (it.matches(URL_REGEX)) {
-                    try {
-                        val parsedUrl = URL(it)
-                        devLogger.w(
-                            "You are using an url: $it for declaring the first " +
-                                "party hosts. You should use instead a valid" +
-                                " host name: ${parsedUrl.host}."
-                        )
-                        parsedUrl.host
-                    } catch (e: MalformedURLException) {
-                        devLogger.e("The url: $it is malformed. It will be dropped", e)
-                        null
-                    }
-                } else {
-                    it
-                }
-            }
         }
 
         private fun checkCustomEndpoint(endpoint: String) {
