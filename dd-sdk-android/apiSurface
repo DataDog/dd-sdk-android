@@ -221,6 +221,7 @@ object com.datadog.android.rum.RumAttributes
   const val SOURCE: String
   const val VARIANT: String
   const val SDK_VERSION: String
+  const val INTERNAL_TIMESTAMP: String
   const val TRACE_ID: String
   const val SPAN_ID: String
   const val ERROR_RESOURCE_METHOD: String
@@ -255,11 +256,13 @@ interface com.datadog.android.rum.RumMonitor
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addUserAction(RumActionType, String, Map<String, Any?>)
   fun startUserAction(RumActionType, String, Map<String, Any?>)
+  fun stopUserAction(Map<String, Any?> = emptyMap())
   fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
+  fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   class Builder
     fun sampleRumSessions(Float): Builder

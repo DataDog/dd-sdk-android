@@ -6,13 +6,14 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.ForgeConfigurator
 import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 internal class Configurator :
-    ForgeConfigurator {
+    BaseConfigurator() {
     override fun configure(forge: Forge) {
+        super.configure(forge)
 
         // Datadog Core
         forge.addFactory(ConfigurationCoreForgeryFactory())
@@ -51,7 +52,7 @@ internal class Configurator :
         forge.addFactory(JsonArrayForgeryFactory())
         forge.addFactory(JsonObjectForgeryFactory())
         forge.addFactory(JsonPrimitiveForgeryFactory())
-        forge.addFactory(ThrowableForgeryFactory())
+
         forge.useJvmFactories()
     }
 }

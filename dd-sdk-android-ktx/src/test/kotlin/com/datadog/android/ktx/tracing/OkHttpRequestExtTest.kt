@@ -6,7 +6,7 @@
 
 package com.datadog.android.ktx.tracing
 
-import com.datadog.android.ktx.utils.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -26,7 +26,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 class OkHttpRequestExtTest {
 
     @Test

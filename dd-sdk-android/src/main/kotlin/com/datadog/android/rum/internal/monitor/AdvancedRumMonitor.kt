@@ -31,11 +31,4 @@ internal interface AdvancedRumMonitor : RumMonitor {
         source: RumErrorSource,
         throwable: Throwable
     )
-
-    fun addErrorWithStacktrace(
-        message: String,
-        source: RumErrorSource,
-        stacktrace: String?,
-        attributes: Map<String, Any?>
-    )
 }
