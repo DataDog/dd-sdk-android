@@ -13,4 +13,12 @@ internal class NoOpEventMapper<T : Any> : EventMapper<T> {
     override fun map(event: T): T {
         return event
     }
+
+    override fun equals(other: Any?): Boolean {
+        return other is NoOpEventMapper<*>
+    }
+
+    override fun hashCode(): Int {
+        return 0
+    }
 }

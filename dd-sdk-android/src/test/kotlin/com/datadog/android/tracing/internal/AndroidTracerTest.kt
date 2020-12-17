@@ -8,7 +8,6 @@ package com.datadog.android.tracing.internal
 
 import android.app.Application
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.GlobalRum
@@ -17,6 +16,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ContextualScopeManager
@@ -58,7 +58,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class AndroidTracerTest {
 
@@ -79,7 +79,7 @@ internal class AndroidTracerTest {
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
-        Datadog.initialize(mockAppContext, DatadogConfig.Builder(fakeToken, fakeEnvName).build())
+        mockCoreFeature()
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
     }

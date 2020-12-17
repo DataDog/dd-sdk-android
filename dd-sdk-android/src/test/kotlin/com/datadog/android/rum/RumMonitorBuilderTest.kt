@@ -9,9 +9,9 @@ package com.datadog.android.rum
 import android.content.Context
 import android.os.Looper
 import android.util.Log
-import com.datadog.android.DatadogConfig
+import com.datadog.android.Configuration
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -19,16 +19,14 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.URL
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -56,39 +54,20 @@ internal class RumMonitorBuilderTest {
     @Mock
     lateinit var mockContext: Context
 
-    lateinit var fakeConfig: DatadogConfig.RumConfig
-
     @Forgery
-    lateinit var fakeApplicationId: UUID
+    lateinit var fakeConfig: Configuration.Feature.RUM
 
-    @FloatForgery
-    var fakeSamplingRate: Float = 0f
+    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    lateinit var fakeApplicationId: String
 
     lateinit var mockDevLogHandler: LogHandler
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
-        fakeConfig = DatadogConfig.RumConfig(
-            clientToken = forge.anHexadecimalString(),
-            applicationId = fakeApplicationId,
-            endpointUrl = forge.getForgery<URL>().toString(),
-            envName = forge.anAlphabeticalString(),
-            samplingRate = fakeSamplingRate
-        )
         mockContext = mockContext()
-
-        RumFeature.initialize(
-            mockContext,
-            fakeConfig,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            TrackingConsentProvider()
-        )
+        mockCoreFeature(rumApplicationId = fakeApplicationId)
+        RumFeature.initialize(mockContext, fakeConfig)
 
         testedBuilder = RumMonitor.Builder()
     }
@@ -96,6 +75,7 @@ internal class RumMonitorBuilderTest {
     @AfterEach
     fun `tear down`() {
         RumFeature.stop()
+        CoreFeature.stop()
     }
 
     @Test
@@ -111,10 +91,10 @@ internal class RumMonitorBuilderTest {
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == fakeApplicationId.toString()
+                    .applicationId == fakeApplicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
-        assertThat(monitor.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
     }
 
     @Test
@@ -134,7 +114,7 @@ internal class RumMonitorBuilderTest {
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == fakeApplicationId.toString()
+                    .applicationId == fakeApplicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(samplingRate)

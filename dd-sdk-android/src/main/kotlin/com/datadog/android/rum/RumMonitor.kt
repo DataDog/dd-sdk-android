@@ -213,12 +213,16 @@ interface RumMonitor {
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
         fun build(): RumMonitor {
+            val rumApplicationId = CoreFeature.rumApplicationId
             return if (!RumFeature.isInitialized()) {
+                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
+                NoOpRumMonitor()
+            } else if (rumApplicationId.isNullOrBlank()) {
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
-                    applicationId = RumFeature.applicationId,
+                    applicationId = rumApplicationId,
                     samplingRate = samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),

@@ -75,11 +75,17 @@ internal class DatadogTest {
     @StringForgery
     lateinit var fakePackageName: String
 
+    @StringForgery
+    lateinit var fakeVariant: String
+
     @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
+
+    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    lateinit var fakeApplicationId: String
 
     @TempDir
     lateinit var tempRootDir: File
@@ -339,6 +345,28 @@ internal class DatadogTest {
 
         // When
         Datadog.initialize(mockAppContext, config)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isTrue()
+    }
+
+    @Test
+    fun `𝕄 initialize features 𝕎 initialize(context, config) deprecated method`() {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()

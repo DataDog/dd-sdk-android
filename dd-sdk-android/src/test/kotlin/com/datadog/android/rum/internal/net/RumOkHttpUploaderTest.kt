@@ -8,15 +8,13 @@ package com.datadog.android.rum.internal.net
 
 import android.app.Application
 import com.datadog.android.BuildConfig
-import com.datadog.android.DatadogConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
-import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -48,20 +46,17 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
 
     @StringForgery
     lateinit var fakeEnvName: String
+
+    @StringForgery
+    lateinit var fakeVariant: String
+
     lateinit var mockAppContext: Application
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        RumFeature.envName = fakeEnvName
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        CoreFeature.initialize(
-            mockAppContext,
-            forge.aValueFrom(TrackingConsent::class.java),
-            DatadogConfig.CoreConfig(
-                needsClearTextHttp = forge.aBool()
-            )
-        )
+        mockCoreFeature(fakePackageName, fakePackageVersion, fakeEnvName, fakeVariant)
     }
 
     @AfterEach
@@ -94,7 +89,8 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
             "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}," +
-            "${RumAttributes.ENV}:$fakeEnvName" +
+            "${RumAttributes.ENV}:$fakeEnvName," +
+            "${RumAttributes.VARIANT}:$fakeVariant" +
             "$"
     }
 }

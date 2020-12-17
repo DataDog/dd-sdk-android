@@ -8,10 +8,10 @@ package com.datadog.android.tracing
 
 import android.content.Context
 import android.util.Log
+import com.datadog.android.Configuration
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.invokeMethod
@@ -129,7 +130,7 @@ internal open class TracingInterceptorTest {
     lateinit var fakeUrl: String
 
     @Forgery
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: Configuration.Feature.Tracing
 
     @StringForgery
     lateinit var fakePackageName: String
@@ -153,6 +154,7 @@ internal open class TracingInterceptorTest {
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
+        mockCoreFeature()
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -169,8 +171,7 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge, true)
         TracesFeature.initialize(
             mockAppContext,
-            fakeConfig,
-            mock(), mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
+            fakeConfig
         )
         testedInterceptor = instantiateTestedInterceptor {
             mockLocalTracer
@@ -189,6 +190,8 @@ internal open class TracingInterceptorTest {
 
     @AfterEach
     fun `tear down`() {
+        TracesFeature.stop()
+        CoreFeature.stop()
         GlobalRum.isRegistered.set(false)
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }

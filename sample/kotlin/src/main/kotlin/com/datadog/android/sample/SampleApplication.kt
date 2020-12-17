@@ -10,9 +10,10 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
+import com.datadog.android.Configuration
+import com.datadog.android.Credentials
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
-import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogEventListener
 import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
@@ -82,10 +83,12 @@ class SampleApplication : Application() {
 
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
+
         Datadog.initialize(
             this,
-            preferences.getTrackingConsent(),
-            createDatadogConfig()
+            createDatadogCredentials(),
+            createDatadogConfiguration(),
+            preferences.getTrackingConsent()
         )
         Datadog.setVerbosity(Log.VERBOSE)
         setUserInfo(
@@ -102,14 +105,22 @@ class SampleApplication : Application() {
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 
-    private fun createDatadogConfig(): DatadogConfig {
-        val configBuilder = DatadogConfig.Builder(
-            BuildConfig.DD_CLIENT_TOKEN,
-            BuildConfig.FLAVOR,
-            BuildConfig.DD_RUM_APPLICATION_ID
+    private fun createDatadogCredentials(): Credentials {
+        return Credentials(
+            clientToken = BuildConfig.DD_CLIENT_TOKEN,
+            envName = BuildConfig.BUILD_TYPE,
+            variant = BuildConfig.FLAVOR,
+            rumApplicationId = BuildConfig.DD_RUM_APPLICATION_ID
         )
+    }
 
-        configBuilder
+    private fun createDatadogConfiguration(): Configuration {
+        val configBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
             .setFirstPartyHosts(tracedHosts)
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))

@@ -8,9 +8,9 @@ package com.datadog.android
 
 import android.content.Context
 import android.util.Log
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
@@ -22,12 +22,12 @@ import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -104,7 +104,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var fakeUrl: String
 
     @Forgery
-    lateinit var fakeConfig: DatadogConfig.FeatureConfig
+    lateinit var fakeConfig: Configuration.Feature.Tracing
 
     @StringForgery
     lateinit var fakePackageName: String
@@ -122,6 +122,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
+        mockCoreFeature()
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
@@ -134,8 +135,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         ) { mockLocalTracer }
         TracesFeature.initialize(
             mockAppContext,
-            fakeConfig,
-            mock(), mock(), mock(), mock(), mock(), mock(), mock(), TrackingConsentProvider()
+            fakeConfig
         )
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
@@ -143,6 +143,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @AfterEach
     fun `tear down`() {
+        CoreFeature.stop()
         GlobalRum.isRegistered.set(false)
         TracesFeature.stop()
     }

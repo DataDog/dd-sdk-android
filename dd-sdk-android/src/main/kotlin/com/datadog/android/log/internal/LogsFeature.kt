@@ -7,125 +7,38 @@
 package com.datadog.android.log.internal
 
 import android.content.Context
-import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
+import com.datadog.android.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
-import com.datadog.android.plugin.DatadogPluginConfig
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.OkHttpClient
 
-internal object LogsFeature : SdkFeature() {
+internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>(
+    authorizedFolderName = LogFileStrategy.AUTHORIZED_FOLDER
+) {
 
-    internal val initialized = AtomicBoolean(false)
+    // region SdkFeature
 
-    internal var clientToken: String = ""
-    internal var endpointUrl: String = DatadogEndpoint.LOGS_US
-    internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
-
-    @Suppress("LongParameterList")
-    fun initialize(
-        appContext: Context,
-        config: DatadogConfig.FeatureConfig,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService,
-        trackingConsentProvider: ConsentProvider
-    ) {
-        if (initialized.get()) {
-            return
-        }
-
-        clientToken = config.clientToken
-        endpointUrl = config.endpointUrl
-        persistenceStrategy = LogFileStrategy(
-            appContext,
-            trackingConsentProvider = trackingConsentProvider,
-            dataPersistenceExecutorService = dataPersistenceExecutor
+    override fun createPersistenceStrategy(
+        context: Context,
+        configuration: Configuration.Feature.Logs
+    ): PersistenceStrategy<Log> {
+        return LogFileStrategy(
+            context,
+            trackingConsentProvider = CoreFeature.trackingConsentProvider,
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService
         )
-        setupUploader(
+    }
+
+    override fun createUploader(): DataUploader {
+        return LogsOkHttpUploader(
             endpointUrl,
-            okHttpClient,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
+            CoreFeature.clientToken,
+            CoreFeature.okHttpClient
         )
-
-        registerPlugins(
-            config.plugins,
-            DatadogPluginConfig.LogsPluginConfig(
-                appContext,
-                config.envName,
-                CoreFeature.serviceName,
-                trackingConsentProvider.getConsent()
-            ),
-            trackingConsentProvider
-        )
-        initialized.set(true)
-    }
-
-    fun isInitialized(): Boolean {
-        return initialized.get()
-    }
-
-    fun clearAllData() {
-        persistenceStrategy.clearAllData()
-    }
-
-    fun stop() {
-        if (initialized.get()) {
-            unregisterPlugins()
-            dataUploadScheduler.stopScheduling()
-            persistenceStrategy = NoOpPersistenceStrategy()
-            dataUploadScheduler = NoOpUploadScheduler()
-            clientToken = ""
-            endpointUrl = DatadogEndpoint.LOGS_US
-
-            initialized.set(false)
-        }
-    }
-
-    // region Internal
-
-    private fun setupUploader(
-        endpointUrl: String,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor
-    ) {
-        dataUploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-            DataUploadScheduler(
-                persistenceStrategy.getReader(),
-                uploader,
-                networkInfoProvider,
-                systemInfoProvider,
-                dataUploadThreadPoolExecutor
-            )
-        } else {
-            NoOpUploadScheduler()
-        }
-        dataUploadScheduler.startScheduling()
     }
 
     // endregion

@@ -40,8 +40,7 @@ internal class TracingFileStrategy(
     companion object {
         internal const val VERSION = 1
         internal const val ROOT = "dd-tracing"
-        internal const val INTERMEDIATE_DATA_FOLDER =
-            "$ROOT-pending-v$VERSION"
+        internal const val INTERMEDIATE_DATA_FOLDER = "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
         internal const val MAX_DELAY_BETWEEN_SPANS_MS = 5000L
     }

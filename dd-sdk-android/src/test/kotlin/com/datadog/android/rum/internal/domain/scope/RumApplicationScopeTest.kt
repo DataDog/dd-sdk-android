@@ -14,10 +14,9 @@ import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.FloatForgery
-import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -51,8 +50,8 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
-    @Forgery
-    lateinit var fakeApplicationId: UUID
+    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    lateinit var fakeApplicationId: String
 
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f

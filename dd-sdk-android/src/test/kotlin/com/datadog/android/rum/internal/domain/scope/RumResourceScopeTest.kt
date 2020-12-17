@@ -6,21 +6,18 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -28,7 +25,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.setStaticValue
+import com.datadog.android.utils.mockCoreFeature
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atMost
@@ -78,12 +75,6 @@ internal class RumResourceScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
     @Mock
@@ -109,17 +100,15 @@ internal class RumResourceScopeTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
-
-        RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
-        RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
-
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString()
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
 
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        mockCoreFeature()
+
+        whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(CoreFeature.networkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
 
@@ -136,7 +125,7 @@ internal class RumResourceScopeTest {
 
     @AfterEach
     fun `tear down`() {
-        RumFeature::class.java.setStaticValue("userInfoProvider", NoOpMutableUserInfoProvider())
+        CoreFeature.stop()
         GlobalRum.globalAttributes.clear()
     }
 

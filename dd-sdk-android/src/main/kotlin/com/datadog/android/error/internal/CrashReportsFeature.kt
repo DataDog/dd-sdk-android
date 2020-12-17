@@ -7,150 +7,74 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.DatadogConfig
-import com.datadog.android.DatadogEndpoint
+import com.datadog.android.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
-import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
-import com.datadog.android.log.internal.user.UserInfoProvider
-import com.datadog.android.plugin.DatadogPluginConfig
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.OkHttpClient
 
-internal object CrashReportsFeature : SdkFeature() {
+internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.CrashReport>(
+    authorizedFolderName = CrashLogFileStrategy.AUTHORIZED_FOLDER
+) {
 
-    internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-    internal val initialized = AtomicBoolean(false)
+    private var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
-    internal var clientToken: String = ""
-    internal var endpointUrl: String = DatadogEndpoint.LOGS_US
-    internal var persistenceStrategy: PersistenceStrategy<Log> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
-    internal var dataUploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    // region SdkFeature
 
-    @Suppress("LongParameterList")
-    fun initialize(
-        appContext: Context,
-        config: DatadogConfig.FeatureConfig,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        userInfoProvider: UserInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        dataUploadThreadPoolExecutor: ScheduledThreadPoolExecutor,
-        dataPersistenceExecutor: ExecutorService,
-        trackingConsentProvider: ConsentProvider
-    ) {
+    override fun onInitialize(context: Context, configuration: Configuration.Feature.CrashReport) {
+        setupExceptionHandler(context)
+    }
 
-        if (initialized.get()) {
-            return
-        }
+    override fun onStop() {
+        resetOriginalExceptionHandler()
+    }
 
-        clientToken = config.clientToken
-        endpointUrl = config.endpointUrl
-
-        persistenceStrategy = CrashLogFileStrategy(
-            appContext,
-            dataPersistenceExecutorService = dataPersistenceExecutor,
-            trackingConsentProvider = trackingConsentProvider
+    override fun createPersistenceStrategy(
+        context: Context,
+        configuration: Configuration.Feature.CrashReport
+    ): PersistenceStrategy<Log> {
+        return CrashLogFileStrategy(
+            context,
+            trackingConsentProvider = CoreFeature.trackingConsentProvider,
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService
         )
-        setupUploader(
+    }
+
+    override fun createUploader(): DataUploader {
+        return LogsOkHttpUploader(
             endpointUrl,
-            okHttpClient,
-            networkInfoProvider,
-            systemInfoProvider,
-            dataUploadThreadPoolExecutor
+            CoreFeature.clientToken,
+            CoreFeature.okHttpClient
         )
-        registerPlugins(
-            config.plugins,
-            DatadogPluginConfig.CrashReportsPluginConfig(
-                appContext,
-                config.envName,
-                CoreFeature.serviceName,
-                trackingConsentProvider.getConsent()
-            ),
-            trackingConsentProvider
-        )
-        setupExceptionHandler(appContext, networkInfoProvider, userInfoProvider)
-
-        initialized.set(true)
     }
 
-    fun clearAllData() {
-        persistenceStrategy.clearAllData()
-    }
-
-    fun stop() {
-        if (initialized.get()) {
-            unregisterPlugins()
-            Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
-            dataUploadScheduler.stopScheduling()
-
-            persistenceStrategy = NoOpPersistenceStrategy()
-            uploader = NoOpDataUploader()
-            dataUploadScheduler = NoOpUploadScheduler()
-            clientToken = ""
-            endpointUrl = DatadogEndpoint.LOGS_US
-
-            initialized.set(false)
-        }
-    }
+    // endregion
 
     // region Internal
 
-    private fun setupUploader(
-        endpointUrl: String,
-        okHttpClient: OkHttpClient,
-        networkInfoProvider: NetworkInfoProvider,
-        systemInfoProvider: SystemInfoProvider,
-        scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
-    ) {
-        dataUploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = LogsOkHttpUploader(endpointUrl, clientToken, okHttpClient)
-            DataUploadScheduler(
-                persistenceStrategy.getReader(),
-                uploader,
-                networkInfoProvider,
-                systemInfoProvider,
-                scheduledThreadPoolExecutor
-            )
-        } else {
-            NoOpUploadScheduler()
-        }
-        dataUploadScheduler.startScheduling()
-    }
-
     private fun setupExceptionHandler(
-        appContext: Context,
-        networkInfoProvider: NetworkInfoProvider,
-        userInfoProvider: UserInfoProvider
+        appContext: Context
     ) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         DatadogExceptionHandler(
             LogGenerator(
                 CoreFeature.serviceName,
                 DatadogExceptionHandler.LOGGER_NAME,
-                networkInfoProvider,
-                userInfoProvider,
+                CoreFeature.networkInfoProvider,
+                CoreFeature.userInfoProvider,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             ),
             writer = persistenceStrategy.getWriter(),
             appContext = appContext
         ).register()
+    }
+
+    private fun resetOriginalExceptionHandler() {
+        Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
     }
 
     // endregion
