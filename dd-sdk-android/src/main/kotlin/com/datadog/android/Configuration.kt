@@ -449,25 +449,44 @@ internal constructor(
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
 
-        private val URL_REGEX = Regex("^(http|https)://(.*)")
+        private val URL_REGEX = "^(http|https)://(.*)"
+
+        private const val VALID_HOSTNAME_REGEX =
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.)" +
+                "{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|" +
+                "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)" +
+                "*([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+
+        internal const val WARNING_USING_URL_FOR_HOST =
+            "You are using an url: %s for declaring the first " +
+                "party hosts. You should use instead a valid" +
+                " host name: %s."
+
+        internal const val ERROR_MALFORMED_URL =
+            "The url: %s is malformed. It will be dropped"
+
+        internal const val ERROR_MALFORMED_HOST_IP_ADDRESS =
+            "The host name or ip address used for first party " +
+                "hosts: %s was malformed. It will be dropped."
 
         internal fun sanitizeHosts(hosts: List<String>): List<String> {
+            val validHostNameRegEx = Regex(VALID_HOSTNAME_REGEX)
+            val validUrlRegex = Regex(URL_REGEX)
             return hosts.mapNotNull {
-                if (it.matches(URL_REGEX)) {
+                if (it.matches(validUrlRegex)) {
                     try {
                         val parsedUrl = URL(it)
-                        devLogger.w(
-                            "You are using an url: $it for declaring the first " +
-                                "party hosts. You should use instead a valid" +
-                                " host name: ${parsedUrl.host}."
-                        )
+                        devLogger.w(WARNING_USING_URL_FOR_HOST.format(it, parsedUrl.host))
                         parsedUrl.host
                     } catch (e: MalformedURLException) {
-                        devLogger.e("The url: $it is malformed. It will be dropped", e)
+                        devLogger.e(ERROR_MALFORMED_URL.format(it), e)
                         null
                     }
-                } else {
+                } else if (it.matches(validHostNameRegEx)) {
                     it
+                } else {
+                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(it))
+                    null
                 }
             }
         }

@@ -613,8 +613,11 @@ internal class DatadogConfigBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() and build()`(
-        @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using ip addresses }`(
+        @StringForgery(
+            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+        ) hosts: List<String>
     ) {
         // When
         val config = testedBuilder
@@ -670,6 +673,160 @@ internal class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = hosts
+                )
+            )
+        assertThat(config.logsConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.tracesConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.TRACES_US,
+                    fakeEnvName
+                )
+            )
+        assertThat(config.crashReportConfig)
+            .isEqualTo(
+                DatadogConfig.FeatureConfig(
+                    fakeClientToken,
+                    fakeApplicationId,
+                    DatadogEndpoint.LOGS_US,
+                    fakeEnvName
+                )
+            )
+
+        assertThat(config.rumConfig!!)
+            .hasClientToken(fakeClientToken)
+            .hasApplicationId(fakeApplicationId)
+            .hasEndpointUrl(DatadogEndpoint.RUM_US)
+            .hasEnvName(fakeEnvName)
+    }
+
+    @Test
+    fun `M log error W setFirstPartyHosts { using malformed hostname }`(
+        @StringForgery(
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*)" +
+                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.ERROR,
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+            )
+        }
+    }
+
+    @Test
+    fun `M log error W setFirstPartyHosts { using malformed ip address }`(
+        @StringForgery(
+            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
+                "|(([0-9]{4,9}\\.)[0.9]{4})" +
+                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.ERROR,
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+            )
+        }
+    }
+
+    @Test
+    fun `M drop all malformed hosts W setFirstPartyHosts { using malformed hostname }`(
+        @StringForgery(
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*) " +
+                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = emptyList()
+                )
+            )
+    }
+
+    @Test
+    fun `M drop all malformed ip addresses W setFirstPartyHosts { using malformed ip address }`(
+        @StringForgery(
+            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
+                "|(([0-9]{4,9}\\.)[0.9]{4})" +
+                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = emptyList()
+                )
+            )
+    }
+
+    @Test
     fun `M get host name W setFirstPartyHosts { using url instead of host name as argument }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
@@ -706,14 +863,13 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.WARN,
-                "You are using an url: $it for declaring the first party hosts. " +
-                    "You should use instead a valid host name: ${URL(it).host}."
+                Configuration.WARNING_USING_URL_FOR_HOST.format(it, URL(it).host)
             )
         }
     }
 
     @Test
-    fun `M warn using sdkLogger W setFirstPartyHosts { using malformed url as argument }`(
+    fun `M warn W setFirstPartyHosts { using malformed url as argument }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
         ) hosts: List<String>
@@ -728,7 +884,7 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 eq(Log.ERROR),
-                eq("The url: $it is malformed. It will be dropped"),
+                eq(Configuration.ERROR_MALFORMED_URL.format(it)),
                 any<MalformedURLException>(),
                 anyOrNull(),
                 anyOrNull(),
