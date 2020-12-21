@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
   "$id": "error-schema.json",
+  "title": "RumErrorEvent",
   "type": "object",
   "description": "Schema of all properties of an Error event",
   "allOf": [
