@@ -148,6 +148,32 @@ Depending on your application's architecture, you can choose one of several impl
       // Removes an attribute to all future RUM events
       GlobalRum.removeAttribute(key)
    ```
+8. If you need to modify some attributes in your RUM events or to drop some of the events entirely before batching you can do so by providing an implementation of `EventMapper<T>` when initialzing the SDK:
+   ```kotlin
+      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+                        ...
+                        .setRumErrorEventMapper(rumErrorEventMapper)
+                        .setRumActionEventMapper(rumActionEventMapper)
+                        .setRumResourceEventMapper(rumResourceEventMapper)
+                        .setRumViewEventMapper(rumViewEventMapper)
+                        .build()
+   ```
+   As you will notice when implementing the `EventMapper<T>` interface, only some of the attributes are modifiable for each event type as follows:
+     
+   | Event Type    | Attribute key      | Description                                     |
+   |---------------|--------------------|-------------------------------------------------|
+   | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page |
+   |               | `view.url`           | URL of the view                                 |
+   | ActionEvent   |                    |                                                 |
+   |               | `action.target.name` | Target name                                     |
+   | ErrorEvent    |                    |                                                 |
+   |               | `error.message`      | Error message                                   |
+   |               | `error.stack`        | Stacktrace of the error                         |
+   |               | `error.resource.url` | URL of the resource                             |
+   | ResourceEvent |                    |                                                 |
+   |               | `resource.url`       | URL of the resource                             |
+   
+   **Note**: If you return null from the `EventMapper<T>` implementation the event will be dropped.
 
 ## Advanced logging
 
@@ -186,6 +212,7 @@ If you need to manually track events, you can do so by getting the active `RumMo
 | `stopResource(<key>, <status>, <size>, <kind> <attributes>)`   | Notifies the RumMonitor that a resource finished being loaded, with a given status (usually an HTTP status code), size (in bytes) and kind. |
 | `stopResourceWithError(<key>, <status>, <message>, <source>, <throwable>)` | Notifies the RumMonitor that a resource couldn't finished being loaded, because of an exception. |
 | `addError(<message>, <source>, <throwable>, <attributes>)` | Notifies the RumMonitor that an error occurred. |
+
 
 
 ### Tracking widgets
