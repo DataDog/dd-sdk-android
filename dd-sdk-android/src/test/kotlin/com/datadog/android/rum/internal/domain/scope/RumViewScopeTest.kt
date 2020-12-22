@@ -45,6 +45,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -110,11 +111,13 @@ internal class RumViewScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeEventTime = Time()
-
         RumFeature::class.java.setStaticValue("userInfoProvider", mockUserInfoProvider)
         RumFeature::class.java.setStaticValue("networkInfoProvider", mockNetworkInfoProvider)
 
+        val fakeOffset = - forge.aLong(1000, 50000)
+        val fakeTimestamp = System.currentTimeMillis() + fakeOffset
+        val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
+        fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
         fakeEvent = mockEvent()
@@ -1336,7 +1339,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(stacktrace)
@@ -1395,7 +1398,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(stacktrace)
@@ -1456,7 +1459,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1511,7 +1514,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(null)
@@ -1577,7 +1580,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1639,7 +1642,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1705,7 +1708,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasErrorData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
