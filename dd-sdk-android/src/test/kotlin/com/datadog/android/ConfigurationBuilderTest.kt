@@ -25,17 +25,19 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.FloatForgery
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.Locale
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -55,14 +57,8 @@ internal class ConfigurationBuilderTest {
 
     lateinit var testedBuilder: Configuration.Builder
 
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeClientToken: String
-
     @StringForgery
     lateinit var fakeEnvName: String
-
-    @Forgery
-    lateinit var fakeApplicationId: UUID
 
     lateinit var mockDevLogHandler: LogHandler
 
@@ -272,25 +268,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
         )
-    }
-
-    @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() and build()`(
-        @StringForgery(regex = "([a-zA-Z0-9]{3,9}\\.){1,4}[a-z]{3}") hosts: List<String>
-    ) {
-        // When
-        val config = testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
-        )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
@@ -827,5 +804,228 @@ internal class ConfigurationBuilderTest {
                 "useCustomRumEndpoint"
             )
         )
+    }
+
+    @Test
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using ip addresses }`(
+        @StringForgery(
+            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `M log error W setFirstPartyHosts { using malformed hostname }`(
+        @StringForgery(
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*)" +
+                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.ERROR,
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+            )
+        }
+    }
+
+    @Test
+    fun `M log error W setFirstPartyHosts { using malformed ip address }`(
+        @StringForgery(
+            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
+                "|(([0-9]{4,9}\\.)[0.9]{4})" +
+                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.ERROR,
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+            )
+        }
+    }
+
+    @Test
+    fun `M drop all malformed hosts W setFirstPartyHosts { using malformed hostname }`(
+        @StringForgery(
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*) " +
+                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                Configuration.Core(
+                    needsClearTextHttp = false,
+                    firstPartyHosts = emptyList()
+                )
+            )
+    }
+
+    @Test
+    fun `M drop all malformed ip addresses W setFirstPartyHosts { using malformed ip address }`(
+        @StringForgery(
+            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
+                "|(([0-9]{4,9}\\.)[0.9]{4})" +
+                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                Configuration.Core(
+                    needsClearTextHttp = false,
+                    firstPartyHosts = emptyList()
+                )
+            )
+    }
+
+    @Test
+    fun `M get host name W setFirstPartyHosts { using url instead of host name as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                Configuration.Core(
+                    needsClearTextHttp = false,
+                    firstPartyHosts = hosts.map { URL(it).host }
+                )
+            )
+    }
+
+    @Test
+    fun `M warn W setFirstPartyHosts { using url instead of host name as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                Log.WARN,
+                Configuration.WARNING_USING_URL_FOR_HOST.format(it, URL(it).host)
+            )
+        }
+    }
+
+    @Test
+    fun `M warn W setFirstPartyHosts { using malformed url as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
+        ) hosts: List<String>
+    ) {
+
+        // WHEN
+        testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        hosts.forEach {
+            verify(mockDevLogHandler).handleLog(
+                eq(Log.ERROR),
+                eq(Configuration.ERROR_MALFORMED_URL.format(it)),
+                any<MalformedURLException>(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        }
+    }
+
+    @Test
+    fun `M drop all malformed urls W setFirstPartyHosts { using malformed url as argument }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                Configuration.Core(
+                    needsClearTextHttp = false,
+                    firstPartyHosts = emptyList()
+                )
+            )
     }
 }

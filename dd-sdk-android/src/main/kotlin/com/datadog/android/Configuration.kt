@@ -26,6 +26,8 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.Locale
 
 /**
@@ -122,7 +124,7 @@ internal constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(firstPartyHosts = hosts)
+            coreConfig = coreConfig.copy(firstPartyHosts = sanitizeHosts(hosts))
             return this
         }
 
@@ -443,13 +445,50 @@ internal constructor(
             rumEventMapper = NoOpEventMapper()
         )
 
-        internal const val FEATURE_LOGS = "Logging"
-        internal const val FEATURE_TRACING = "Tracing"
-        internal const val FEATURE_CRASH_REPORT = "Crash Reporting"
-        internal const val FEATURE_RUM = "RUM"
-
         internal val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
+
+        private val URL_REGEX = "^(http|https)://(.*)"
+
+        private const val VALID_HOSTNAME_REGEX =
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.)" +
+                "{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|" +
+                "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)" +
+                "*([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+
+        internal const val WARNING_USING_URL_FOR_HOST =
+            "You are using an url: %s for declaring the first " +
+                "party hosts. You should use instead a valid" +
+                " host name: %s."
+
+        internal const val ERROR_MALFORMED_URL =
+            "The url: %s is malformed. It will be dropped"
+
+        internal const val ERROR_MALFORMED_HOST_IP_ADDRESS =
+            "The host name or ip address used for first party " +
+                "hosts: %s was malformed. It will be dropped."
+
+        internal fun sanitizeHosts(hosts: List<String>): List<String> {
+            val validHostNameRegEx = Regex(VALID_HOSTNAME_REGEX)
+            val validUrlRegex = Regex(URL_REGEX)
+            return hosts.mapNotNull {
+                if (it.matches(validUrlRegex)) {
+                    try {
+                        val parsedUrl = URL(it)
+                        devLogger.w(WARNING_USING_URL_FOR_HOST.format(it, parsedUrl.host))
+                        parsedUrl.host
+                    } catch (e: MalformedURLException) {
+                        devLogger.e(ERROR_MALFORMED_URL.format(it), e)
+                        null
+                    }
+                } else if (it.matches(validHostNameRegEx)) {
+                    it
+                } else {
+                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(it))
+                    null
+                }
+            }
+        }
     }
 }
