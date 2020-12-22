@@ -20,7 +20,7 @@ Send [Real User Monitoring data][1] to Datadog from your Android applications wi
     }
     ```
 
-2. Initialize the library with your application context and your [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]. You also need to provide an Application ID (see our [RUM Getting Started page][3]).
+2. Initialize the library with your application context, [tracking consent][9], and [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]. You also need to provide an Application ID (see our [RUM Getting Started page][3]).
 
     {{< tabs >}}
     {{% tab "US" %}}
@@ -34,7 +34,7 @@ class SampleApplication : Application() {
                         .trackInteractions()
                         .useViewTrackingStrategy(strategy)
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -52,7 +52,7 @@ class SampleApplication : Application() {
                         .useViewTrackingStrategy(strategy)
                         .useEUEndpoints()
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -286,3 +286,4 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 [6]: https://square.github.io/okhttp/interceptors/
 [7]: https://square.github.io/okhttp/events/
 [8]: https://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper
+[9]: gdpr.md

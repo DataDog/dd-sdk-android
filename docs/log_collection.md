@@ -24,7 +24,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see our [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
+2. Initialize the library with your application context, [tracking consent][7], and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
@@ -36,7 +36,7 @@ class SampleApplication : Application() {
 
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -52,7 +52,7 @@ class SampleApplication : Application() {
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .useEUEndpoints()
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -244,3 +244,4 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [4]: https://docs.datadoghq.com/logs/processing/attributes_naming_convention/
 [5]: https://docs.datadoghq.com/tagging/
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
+[7]: gdpr.md
