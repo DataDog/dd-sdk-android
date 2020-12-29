@@ -13,8 +13,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
-import com.datadog.android.Configuration
-import com.datadog.android.Credentials
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider

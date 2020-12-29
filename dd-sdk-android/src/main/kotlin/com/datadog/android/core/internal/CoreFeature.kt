@@ -10,9 +10,9 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import com.datadog.android.Configuration
-import com.datadog.android.Credentials
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider

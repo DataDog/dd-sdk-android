@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.core.configuration
 
 /**
  * Provides the credentials and identifying information for all the data tracked with the SDK.

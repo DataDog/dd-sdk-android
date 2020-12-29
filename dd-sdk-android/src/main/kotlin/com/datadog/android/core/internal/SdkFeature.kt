@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal
 
 import android.content.Context
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler

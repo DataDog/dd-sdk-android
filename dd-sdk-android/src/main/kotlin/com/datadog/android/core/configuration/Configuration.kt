@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.core.configuration
 
 import android.os.Build
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
@@ -46,7 +47,8 @@ internal constructor(
 
     internal data class Core(
         var needsClearTextHttp: Boolean,
-        val firstPartyHosts: List<String>
+        val firstPartyHosts: List<String>,
+        val batchSize: BatchSize
     )
 
     internal sealed class Feature {
@@ -347,6 +349,11 @@ internal constructor(
             return this
         }
 
+        fun setBatchSize(batchSize: BatchSize): Builder {
+            coreConfig = coreConfig.copy(batchSize = batchSize)
+            return this
+        }
+
         /**
          * Sets the [EventMapper] for the RUM [ErrorEvent]. You can use this interface implementation
          * to modify the [ErrorEvent] attributes before serialisation.
@@ -421,7 +428,8 @@ internal constructor(
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
-            firstPartyHosts = emptyList()
+            firstPartyHosts = emptyList(),
+            batchSize = BatchSize.MEDIUM
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US,

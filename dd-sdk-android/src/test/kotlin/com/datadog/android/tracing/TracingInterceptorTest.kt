@@ -8,8 +8,8 @@ package com.datadog.android.tracing
 
 import android.content.Context
 import android.util.Log
-import com.datadog.android.Configuration
 import com.datadog.android.Datadog
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
