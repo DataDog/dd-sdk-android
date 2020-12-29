@@ -14,6 +14,7 @@ import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
@@ -80,6 +81,7 @@ internal object CoreFeature {
     internal var envName: String = ""
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
+    internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -161,6 +163,7 @@ internal object CoreFeature {
 
     private fun readConfigurationSettings(configuration: Configuration.Core) {
         batchSize = configuration.batchSize
+        uploadFrequency = configuration.uploadFrequency
     }
 
     private fun setupInfoProviders(appContext: Context, consent: TrackingConsent) {

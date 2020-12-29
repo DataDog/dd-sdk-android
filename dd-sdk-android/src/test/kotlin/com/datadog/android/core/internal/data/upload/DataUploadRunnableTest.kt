@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
@@ -67,6 +68,9 @@ internal class DataUploadRunnableTest {
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
 
+    @Forgery
+    lateinit var fakeUploadFrequency: UploadFrequency
+
     lateinit var testedRunnable: DataUploadRunnable
 
     @BeforeEach
@@ -85,14 +89,14 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
-        testedRunnable =
-            DataUploadRunnable(
-                mockThreadPoolExecutor,
-                mockReader,
-                mockDataUploader,
-                mockNetworkInfoProvider,
-                mockSystemInfoProvider
-            )
+        testedRunnable = DataUploadRunnable(
+            mockThreadPoolExecutor,
+            mockReader,
+            mockDataUploader,
+            mockNetworkInfoProvider,
+            mockSystemInfoProvider,
+            fakeUploadFrequency
+        )
     }
 
     @Test
@@ -402,7 +406,7 @@ internal class DataUploadRunnableTest {
             allValues.reduce { previous, next ->
                 assertThat(next)
                     .isLessThanOrEqualTo(previous)
-                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                    .isBetween(testedRunnable.minDelayMs, testedRunnable.maxDelayMs)
                 next
             }
         }
@@ -441,7 +445,7 @@ internal class DataUploadRunnableTest {
             allValues.reduce { previous, next ->
                 assertThat(next)
                     .isLessThanOrEqualTo(previous)
-                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                    .isBetween(testedRunnable.minDelayMs, testedRunnable.maxDelayMs)
                 next
             }
         }
@@ -472,7 +476,7 @@ internal class DataUploadRunnableTest {
             allValues.reduce { previous, next ->
                 assertThat(next)
                     .isGreaterThanOrEqualTo(previous)
-                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                    .isBetween(testedRunnable.minDelayMs, testedRunnable.maxDelayMs)
                 next
             }
         }
@@ -514,7 +518,7 @@ internal class DataUploadRunnableTest {
             allValues.reduce { previous, next ->
                 assertThat(next)
                     .isGreaterThanOrEqualTo(previous)
-                    .isBetween(DataUploadRunnable.MIN_DELAY_MS, DataUploadRunnable.MAX_DELAY_MS)
+                    .isBetween(testedRunnable.minDelayMs, testedRunnable.maxDelayMs)
                 next
             }
         }

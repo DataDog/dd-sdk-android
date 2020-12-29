@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -18,6 +19,7 @@ internal class DataUploadScheduler(
     dataUploader: DataUploader,
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,
+    uploadFrequency: UploadFrequency,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 ) : UploadScheduler {
 
@@ -27,13 +29,14 @@ internal class DataUploadScheduler(
             reader,
             dataUploader,
             networkInfoProvider,
-            systemInfoProvider
+            systemInfoProvider,
+            uploadFrequency
         )
 
     override fun startScheduling() {
         scheduledThreadPoolExecutor.schedule(
             runnable,
-            DataUploadRunnable.DEFAULT_DELAY_MS,
+            runnable.currentDelayIntervalMs,
             TimeUnit.MILLISECONDS
         )
     }

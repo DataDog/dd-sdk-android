@@ -17,7 +17,8 @@ internal class ConfigurationCoreForgeryFactory :
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
             firstPartyHosts = forge.aList { getForgery<URL>().host },
-            batchSize = forge.getForgery()
+            batchSize = forge.getForgery(),
+            uploadFrequency = forge.getForgery()
         )
     }
 }

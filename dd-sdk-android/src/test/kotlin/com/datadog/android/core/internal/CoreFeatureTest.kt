@@ -267,6 +267,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -289,6 +290,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -311,6 +313,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -341,6 +344,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -449,6 +453,8 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test

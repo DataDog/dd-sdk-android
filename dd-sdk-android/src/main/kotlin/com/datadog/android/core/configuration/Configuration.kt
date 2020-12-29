@@ -48,7 +48,8 @@ internal constructor(
     internal data class Core(
         var needsClearTextHttp: Boolean,
         val firstPartyHosts: List<String>,
-        val batchSize: BatchSize
+        val batchSize: BatchSize,
+        val uploadFrequency: UploadFrequency
     )
 
     internal sealed class Feature {
@@ -300,6 +301,15 @@ internal constructor(
         }
 
         /**
+         * Defines the preferred upload frequency.
+         * @param uploadFrequency the desired upload frequency policy
+         */
+        fun setUploadFrequency(uploadFrequency: UploadFrequency): Builder {
+            coreConfig = coreConfig.copy(uploadFrequency = uploadFrequency)
+            return this
+        }
+
+        /**
          * Sets the sampling rate for RUM Sessions.
          *
          * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
@@ -433,7 +443,8 @@ internal constructor(
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
             firstPartyHosts = emptyList(),
-            batchSize = BatchSize.MEDIUM
+            batchSize = BatchSize.MEDIUM,
+            uploadFrequency = UploadFrequency.AVERAGE
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US,
