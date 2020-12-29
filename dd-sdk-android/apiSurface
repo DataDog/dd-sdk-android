@@ -74,6 +74,11 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
+enum com.datadog.android.core.configuration.BatchSize
+  constructor(Long)
+  - SMALL
+  - MEDIUM
+  - LARGE
 class com.datadog.android.core.configuration.Configuration
   class Builder
     constructor(Boolean = false, Boolean = false, Boolean = false, Boolean = false)
@@ -89,11 +94,11 @@ class com.datadog.android.core.configuration.Configuration
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+    fun setBatchSize(BatchSize): Builder
     fun sampleRumSessions(Float): Builder
     fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
-    fun setBatchSize(BatchSize): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
   companion object 
 class com.datadog.android.core.configuration.Credentials

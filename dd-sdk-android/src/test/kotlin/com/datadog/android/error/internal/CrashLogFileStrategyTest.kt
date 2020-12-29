@@ -8,10 +8,14 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
-import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert.Companion.assertThat
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -29,7 +33,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(Configurator::class, seed = 0xde529f81edcaL)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class CrashLogFileStrategyTest {
     lateinit var testedStrategy: CrashLogFileStrategy
@@ -39,16 +43,24 @@ internal class CrashLogFileStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
-    lateinit var trackingConsentProvider: TrackingConsentProvider
+    @Mock
+    lateinit var mockConsentProvider: ConsentProvider
+
+    @Forgery
+    lateinit var fakePersistenceConfig: FilePersistenceConfig
+
+    @Forgery
+    lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
-        trackingConsentProvider = TrackingConsentProvider()
+        whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
         testedStrategy = CrashLogFileStrategy(
             mockedContext,
             dataPersistenceExecutorService = mockExecutorService,
-            trackingConsentProvider = trackingConsentProvider
+            trackingConsentProvider = mockConsentProvider,
+            filePersistenceConfig = fakePersistenceConfig
         )
     }
 
@@ -63,12 +75,14 @@ internal class CrashLogFileStrategyTest {
             absolutePath +
                 File.separator +
                 CrashLogFileStrategy.AUTHORIZED_FOLDER
-        PersistenceStrategyAssert
-            .assertThat(testedStrategy)
+
+        assertThat(testedStrategy)
             .hasIntermediateStorageFolder(expectedIntermediateFolderPath)
             .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
             .uploadsFrom(expectedAuthorizedFolderPath)
-            .usesImmediateWriter()
-            .hasConfig(FilePersistenceConfig(CrashLogFileStrategy.MAX_DELAY_BETWEEN_LOGS_MS))
+            .hasConfig(fakePersistenceConfig)
+        if (fakeConsent != TrackingConsent.NOT_GRANTED) {
+            assertThat(testedStrategy).usesImmediateWriter()
+        }
     }
 }

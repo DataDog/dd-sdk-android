@@ -19,8 +19,7 @@ import java.util.concurrent.ExecutorService
 
 internal class RumFileStrategy(
     context: Context,
-    filePersistenceConfig: FilePersistenceConfig =
-        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_RUM_EVENTS_MS),
+    filePersistenceConfig: FilePersistenceConfig,
     dataPersistenceExecutorService: ExecutorService,
     trackingConsentProvider: ConsentProvider,
     eventMapper: EventMapper<RumEvent>
@@ -40,6 +39,5 @@ internal class RumFileStrategy(
         internal const val INTERMEDIATE_DATA_FOLDER =
             "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
-        internal const val MAX_DELAY_BETWEEN_RUM_EVENTS_MS = 5000L
     }
 }

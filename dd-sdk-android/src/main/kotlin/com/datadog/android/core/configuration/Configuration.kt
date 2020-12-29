@@ -291,6 +291,15 @@ internal constructor(
         }
 
         /**
+         * Defines the batch size (impacts the size and number of requests performed by Datadog).
+         * @param batchSize the desired batch size
+         */
+        fun setBatchSize(batchSize: BatchSize): Builder {
+            coreConfig = coreConfig.copy(batchSize = batchSize)
+            return this
+        }
+
+        /**
          * Sets the sampling rate for RUM Sessions.
          *
          * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
@@ -346,11 +355,6 @@ internal constructor(
                     rumEventMapper = getRumEventMapper().copy(actionEventMapper = eventMapper)
                 )
             }
-            return this
-        }
-
-        fun setBatchSize(batchSize: BatchSize): Builder {
-            coreConfig = coreConfig.copy(batchSize = batchSize)
             return this
         }
 

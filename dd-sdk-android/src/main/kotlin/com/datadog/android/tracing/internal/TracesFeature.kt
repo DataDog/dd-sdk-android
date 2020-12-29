@@ -33,7 +33,8 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
             userInfoProvider = CoreFeature.userInfoProvider,
             envName = CoreFeature.envName,
             dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider
+            trackingConsentProvider = CoreFeature.trackingConsentProvider,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 

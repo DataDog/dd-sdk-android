@@ -68,7 +68,8 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
             context,
             trackingConsentProvider = CoreFeature.trackingConsentProvider,
             dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            eventMapper = configuration.rumEventMapper
+            eventMapper = configuration.rumEventMapper,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 

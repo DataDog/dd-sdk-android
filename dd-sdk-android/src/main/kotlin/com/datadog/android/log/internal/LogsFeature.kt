@@ -29,7 +29,8 @@ internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>(
         return LogFileStrategy(
             context,
             trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 

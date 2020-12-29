@@ -25,6 +25,7 @@ internal class Configurator :
         forge.addFactory(CredentialsForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(FilePersistenceConfigForgeryFactory())
 
         // IO
         forge.addFactory(BatchForgeryFactory())

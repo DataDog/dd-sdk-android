@@ -16,7 +16,8 @@ internal class ConfigurationCoreForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Core {
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
-            firstPartyHosts = forge.aList { getForgery<URL>().host }
+            firstPartyHosts = forge.aList { getForgery<URL>().host },
+            batchSize = forge.getForgery()
         )
     }
 }

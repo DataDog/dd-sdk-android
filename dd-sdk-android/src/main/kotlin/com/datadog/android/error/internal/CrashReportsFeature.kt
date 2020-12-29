@@ -39,7 +39,8 @@ internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.Cras
         return CrashLogFileStrategy(
             context,
             trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 
