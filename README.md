@@ -16,7 +16,7 @@ See the dedicated [Datadog Android RUM Collection documentation](https://docs.da
 
 ### Timber
 
-If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](timber_integration.md).
+If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](dd-sdk-android-timber/README.md).
 
 ## RUM Integrations
 
