@@ -8,8 +8,8 @@ package com.datadog.android.log
 
 import android.content.Context
 import android.util.Log as AndroidLog
-import com.datadog.android.Configuration
 import com.datadog.android.Datadog
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature

@@ -9,9 +9,13 @@ package com.datadog.android.log.internal.domain
 import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -39,16 +43,24 @@ internal class LogFileStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
-    lateinit var trackingConsentProvider: TrackingConsentProvider
+    @Mock
+    lateinit var mockConsentProvider: ConsentProvider
+
+    @Forgery
+    lateinit var fakePersistenceConfig: FilePersistenceConfig
+
+    @Forgery
+    lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
-        trackingConsentProvider = TrackingConsentProvider()
+        whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
         testedStrategy = LogFileStrategy(
             mockedContext,
             dataPersistenceExecutorService = mockExecutorService,
-            trackingConsentProvider = trackingConsentProvider
+            trackingConsentProvider = mockConsentProvider,
+            filePersistenceConfig = fakePersistenceConfig
         )
     }
 
@@ -69,6 +81,6 @@ internal class LogFileStrategyTest {
             .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
-            .hasConfig(FilePersistenceConfig(LogFileStrategy.MAX_DELAY_BETWEEN_LOGS_MS))
+            .hasConfig(fakePersistenceConfig)
     }
 }

@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.net.URL
@@ -16,7 +16,8 @@ internal class ConfigurationCoreForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Core {
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
-            firstPartyHosts = forge.aList { getForgery<URL>().host }
+            firstPartyHosts = forge.aList { getForgery<URL>().host },
+            batchSize = forge.getForgery()
         )
     }
 }

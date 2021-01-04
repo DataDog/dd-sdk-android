@@ -9,7 +9,7 @@ package com.datadog.android.rum
 import android.content.Context
 import android.os.Looper
 import android.util.Log
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.logger.LogHandler

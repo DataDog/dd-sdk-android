@@ -13,8 +13,9 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
-import com.datadog.android.Configuration
-import com.datadog.android.Credentials
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
@@ -265,6 +266,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
     }
 
     @Test
@@ -286,6 +288,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
     }
 
     @Test
@@ -307,6 +310,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
     }
 
     @Test
@@ -336,6 +340,7 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
         assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
     }
 
     @Test
@@ -596,6 +601,7 @@ internal class CoreFeatureTest {
         verify(mockUploadExecutorService).shutdownNow()
         verify(mockPersistenceExecutorService).shutdownNow()
     }
+
     @Test
     fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
         // Given
@@ -613,6 +619,32 @@ internal class CoreFeatureTest {
 
         // Then
         verify(mockConsentProvider).unregisterAllCallbacks()
+    }
+
+    @Test
+    fun `𝕄 build config 𝕎 buildFilePersistenceConfig()`() {
+        // Given
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val config = CoreFeature.buildFilePersistenceConfig()
+
+        // Then
+        assertThat(config.maxBatchSize)
+            .isEqualTo(FilePersistenceConfig.MAX_BATCH_SIZE)
+        assertThat(config.maxDiskSpace)
+            .isEqualTo(FilePersistenceConfig.MAX_DISK_SPACE)
+        assertThat(config.oldFileThreshold)
+            .isEqualTo(FilePersistenceConfig.OLD_FILE_THRESHOLD)
+        assertThat(config.maxItemsPerBatch)
+            .isEqualTo(FilePersistenceConfig.MAX_ITEMS_PER_BATCH)
+        assertThat(config.recentDelayMs)
+            .isEqualTo(fakeConfig.batchSize.windowDurationMs)
     }
 
     // region Internal

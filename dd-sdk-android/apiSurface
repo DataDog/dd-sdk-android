@@ -1,32 +1,9 @@
-class com.datadog.android.Configuration
-  class Builder
-    constructor(Boolean = false, Boolean = false, Boolean = false, Boolean = false)
-    fun build(): Configuration
-    fun setFirstPartyHosts(List<String>): Builder
-    fun useEUEndpoints(): Builder
-    fun useUSEndpoints(): Builder
-    fun useGovEndpoints(): Builder
-    fun useCustomLogsEndpoint(String): Builder
-    fun useCustomTracesEndpoint(String): Builder
-    fun useCustomCrashReportsEndpoint(String): Builder
-    fun useCustomRumEndpoint(String): Builder
-    fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
-    fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
-    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
-    fun sampleRumSessions(Float): Builder
-    fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
-    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
-    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
-    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
-  companion object 
-class com.datadog.android.Credentials
-  constructor(String, String, String, String?, String? = null)
 object com.datadog.android.Datadog
   DEPRECATED const val DATADOG_US: String
   DEPRECATED const val DATADOG_EU: String
   DEPRECATED fun initialize(android.content.Context, DatadogConfig)
   DEPRECATED fun initialize(android.content.Context, com.datadog.android.privacy.TrackingConsent, DatadogConfig)
-  fun initialize(android.content.Context, Credentials, Configuration, com.datadog.android.privacy.TrackingConsent)
+  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
   DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
   fun clearAllData()
@@ -97,6 +74,35 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
+enum com.datadog.android.core.configuration.BatchSize
+  constructor(Long)
+  - SMALL
+  - MEDIUM
+  - LARGE
+class com.datadog.android.core.configuration.Configuration
+  class Builder
+    constructor(Boolean = false, Boolean = false, Boolean = false, Boolean = false)
+    fun build(): Configuration
+    fun setFirstPartyHosts(List<String>): Builder
+    fun useEUEndpoints(): Builder
+    fun useUSEndpoints(): Builder
+    fun useGovEndpoints(): Builder
+    fun useCustomLogsEndpoint(String): Builder
+    fun useCustomTracesEndpoint(String): Builder
+    fun useCustomCrashReportsEndpoint(String): Builder
+    fun useCustomRumEndpoint(String): Builder
+    fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
+    fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
+    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+    fun setBatchSize(BatchSize): Builder
+    fun sampleRumSessions(Float): Builder
+    fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
+    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+  companion object 
+class com.datadog.android.core.configuration.Credentials
+  constructor(String, String, String, String?, String? = null)
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy

@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.plugin.DatadogPlugin
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge

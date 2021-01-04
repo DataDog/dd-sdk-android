@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.os.Build
 import android.util.Log
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin

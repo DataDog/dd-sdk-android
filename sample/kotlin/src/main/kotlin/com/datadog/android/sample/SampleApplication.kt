@@ -10,11 +10,11 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
-import com.datadog.android.Configuration
-import com.datadog.android.Credentials
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogEventListener
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature

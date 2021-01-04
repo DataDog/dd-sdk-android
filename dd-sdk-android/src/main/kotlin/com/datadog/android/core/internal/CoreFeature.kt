@@ -10,9 +10,11 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import com.datadog.android.Configuration
-import com.datadog.android.Credentials
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -77,6 +79,7 @@ internal object CoreFeature {
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
     internal var variant: String = ""
+    internal var batchSize: BatchSize = BatchSize.MEDIUM
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -91,6 +94,7 @@ internal object CoreFeature {
             return
         }
 
+        readConfigurationSettings(configuration)
         readApplicationInformation(appContext, credentials)
         resolveIsMainProcess(appContext)
         initializeClockSync(appContext)
@@ -117,6 +121,12 @@ internal object CoreFeature {
             shutDownExecutors()
             initialized.set(false)
         }
+    }
+
+    fun buildFilePersistenceConfig(): FilePersistenceConfig {
+        return FilePersistenceConfig(
+            recentDelayMs = batchSize.windowDurationMs
+        )
     }
 
     // region Internal
@@ -147,6 +157,10 @@ internal object CoreFeature {
         envName = credentials.envName
         variant = credentials.variant
         contextRef = WeakReference(appContext)
+    }
+
+    private fun readConfigurationSettings(configuration: Configuration.Core) {
+        batchSize = configuration.batchSize
     }
 
     private fun setupInfoProviders(appContext: Context, consent: TrackingConsent) {

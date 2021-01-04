@@ -11,6 +11,8 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.error.internal.CrashReportsFeature

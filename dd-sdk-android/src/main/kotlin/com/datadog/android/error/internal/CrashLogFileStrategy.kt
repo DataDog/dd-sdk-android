@@ -19,8 +19,7 @@ import java.util.concurrent.ExecutorService
 
 internal class CrashLogFileStrategy(
     context: Context,
-    filePersistenceConfig: FilePersistenceConfig =
-        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_LOGS_MS),
+    filePersistenceConfig: FilePersistenceConfig,
     dataPersistenceExecutorService: ExecutorService,
     trackingConsentProvider: ConsentProvider
 ) : FilePersistenceStrategy<Log>(
@@ -32,16 +31,15 @@ internal class CrashLogFileStrategy(
     PayloadDecoration.JSON_ARRAY_DECORATION,
     trackingConsentProvider
 ) {
+    override fun getWriter(): Writer<Log> {
+        return super.consentAwareDataWriter.getInternalWriter()
+    }
+
     companion object {
         internal const val VERSION = 1
         internal const val ROOT = "dd-crash"
         internal const val INTERMEDIATE_DATA_FOLDER =
             "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
-        internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
-    }
-
-    override fun getWriter(): Writer<Log> {
-        return super.consentAwareDataWriter.getInternalWriter()
     }
 }

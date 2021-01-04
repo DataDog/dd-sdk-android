@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.Credentials
+import com.datadog.android.core.configuration.Credentials
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID

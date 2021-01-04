@@ -9,6 +9,8 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
