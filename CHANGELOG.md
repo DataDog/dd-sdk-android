@@ -1,3 +1,14 @@
+# 1.7.0 / 2021-01-04
+
+* [BUGFIX] RUM: fix RUM Error timestamps
+* [BUGFIX] RUM: calling `GlobalRum.addAttribute()` with a `null` value would make the application crash
+* [BUGFIX] RUM: Actions created with type Custom where sometimes dropped
+* [FEATURE] Global: Add support for GDPR compliance feature (see `Datadog.setTrackingConsent()`)
+* [FEATURE] Global: Allow setting custom user specific attributes (see `Datadog.setUserInfo()`)
+* [IMPROVEMENT] Crash Report: Handle SIGABRT signal in the NDKCrashReporter
+* [OTHER] Global: Remove deprecated APIs and warn about future deprecations
+* [OTHER] Global: Remove all flavors from sample (allowing to get faster build times)
+
 # 1.6.1 / 2020-11-13
 
 * [BUGFIX] Global: Ensure the network status is properly retrieved on startup
@@ -10,7 +21,6 @@
 * [BUGFIX] RUM: prevent `trackInterations()` from messing with the Application's theme
 * [BUGFIX] Global: Remove unnecessary transitive dependencies from library [#396](https://github.com/DataDog/dd-sdk-android/issues/396) (Thanks @rashadsookram)
 * [BUGFIX] Global: Prevent a crash in CallbackNetworkProvider
-
 * [FEATURE] Global: Provide an RxJava integration (`dd-sdk-android-rx`)
 * [FEATURE] Global: Provide a Coil integration (`dd-sdk-android-coil`)
 * [FEATURE] Global: Provide a Fresco integration (`dd-sdk-android-coil`)
