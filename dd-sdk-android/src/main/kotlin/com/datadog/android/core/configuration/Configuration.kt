@@ -463,11 +463,13 @@ internal constructor(
 
         private val URL_REGEX = "^(http|https)://(.*)"
 
-        private const val VALID_HOSTNAME_REGEX =
-            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.)" +
-                "{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|" +
-                "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)" +
-                "*([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+        private const val VALID_IP_REGEX =
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+        private const val VALID_DOMAIN_REGEX =
+            "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+        private const val VALID_HOSTNAME_REGEX = "$VALID_IP_REGEX|$VALID_DOMAIN_REGEX"
 
         internal const val WARNING_USING_URL_FOR_HOST =
             "You are using an url: %s for declaring the first " +
@@ -495,6 +497,9 @@ internal constructor(
                         null
                     }
                 } else if (it.matches(validHostNameRegEx)) {
+                    it
+                } else if (it.toLowerCase(Locale.ENGLISH) == "localhost") {
+                    // special rule exception to accept `localhost` as a valid domain name
                     it
                 } else {
                     devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(it))
