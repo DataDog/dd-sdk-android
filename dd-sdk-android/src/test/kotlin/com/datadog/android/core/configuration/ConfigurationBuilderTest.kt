@@ -31,6 +31,7 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -835,7 +836,7 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { host names }`(
         @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*" +
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
@@ -855,10 +856,50 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 drop everything 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
+        @StringForgery(
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 only accept the localhost 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
+        @StringForgery(
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>,
+        forge: Forge
+    ) {
+        // When
+        val fakeLocalHost = forge.aStringMatching("localhost|LOCALHOST")
+        val hostsWithLocalHost =
+            hosts.toMutableList().apply { add(fakeLocalHost) }
+        val config = testedBuilder
+            .setFirstPartyHosts(hostsWithLocalHost)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = listOf(fakeLocalHost))
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
     fun `M log error W setFirstPartyHosts() { malformed hostname }`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*)" +
-                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*)" +
+                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 
@@ -902,8 +943,8 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `M drop all malformed hosts W setFirstPartyHosts() { malformed hostname }`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*) " +
-                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*) " +
+                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 
