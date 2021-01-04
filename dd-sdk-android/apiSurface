@@ -290,7 +290,7 @@ class com.datadog.android.rum.model.ActionEvent
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
   class Session
-    constructor(kotlin.String, Type)
+    constructor(kotlin.String, SessionType)
     fun toJson(): com.google.gson.JsonElement
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
@@ -305,7 +305,7 @@ class com.datadog.android.rum.model.ActionEvent
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   class Action
-    constructor(Type1, kotlin.String? = null, kotlin.Long? = null, Target? = null, Error? = null, Crash? = null, LongTask? = null, Resource? = null)
+    constructor(ActionType, kotlin.String? = null, kotlin.Long? = null, Target? = null, Error? = null, Crash? = null, LongTask? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
   class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
@@ -325,7 +325,7 @@ class com.datadog.android.rum.model.ActionEvent
   class Resource
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
-  enum Type
+  enum SessionType
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
@@ -345,7 +345,7 @@ class com.datadog.android.rum.model.ActionEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
-  enum Type1
+  enum ActionType
     - CUSTOM
     - CLICK
     - TAP
@@ -362,7 +362,7 @@ class com.datadog.android.rum.model.ErrorEvent
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
   class Session
-    constructor(kotlin.String, Type)
+    constructor(kotlin.String, SessionType)
     fun toJson(): com.google.gson.JsonElement
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
@@ -389,9 +389,9 @@ class com.datadog.android.rum.model.ErrorEvent
     constructor(Method, kotlin.Long, kotlin.String, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
   class Provider
-    constructor(kotlin.String? = null, kotlin.String? = null, Type1? = null)
+    constructor(kotlin.String? = null, kotlin.String? = null, ProviderType? = null)
     fun toJson(): com.google.gson.JsonElement
-  enum Type
+  enum SessionType
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
@@ -428,7 +428,7 @@ class com.datadog.android.rum.model.ErrorEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
-  enum Type1
+  enum ProviderType
     - AD
     - ADVERTISING
     - ANALYTICS
@@ -452,7 +452,7 @@ class com.datadog.android.rum.model.ResourceEvent
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
   class Session
-    constructor(kotlin.String, Type)
+    constructor(kotlin.String, SessionType)
     fun toJson(): com.google.gson.JsonElement
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
@@ -468,7 +468,7 @@ class com.datadog.android.rum.model.ResourceEvent
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   class Resource
-    constructor(kotlin.String? = null, Type1, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null)
+    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
   class Action
     constructor(kotlin.String)
@@ -495,9 +495,9 @@ class com.datadog.android.rum.model.ResourceEvent
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
   class Provider
-    constructor(kotlin.String? = null, kotlin.String? = null, Type2? = null)
+    constructor(kotlin.String? = null, kotlin.String? = null, ProviderType? = null)
     fun toJson(): com.google.gson.JsonElement
-  enum Type
+  enum SessionType
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
@@ -517,7 +517,7 @@ class com.datadog.android.rum.model.ResourceEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
-  enum Type1
+  enum ResourceType
     - DOCUMENT
     - XHR
     - BEACON
@@ -537,7 +537,7 @@ class com.datadog.android.rum.model.ResourceEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
-  enum Type2
+  enum ProviderType
     - AD
     - ADVERTISING
     - ANALYTICS

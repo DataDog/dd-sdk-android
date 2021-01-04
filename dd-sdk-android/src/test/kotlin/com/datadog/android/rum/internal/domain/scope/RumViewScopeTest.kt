@@ -820,7 +820,7 @@ internal class RumViewScopeTest {
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.Type1.APPLICATION_START)
+                    hasType(ActionEvent.ActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)
@@ -980,7 +980,7 @@ internal class RumViewScopeTest {
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.Type1.APPLICATION_START)
+                    hasType(ActionEvent.ActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)

@@ -98,7 +98,7 @@ internal class RumEventExtTest {
 
         // Then
         if (kind == RumResourceKind.UNKNOWN) {
-            assertThat(result).isEqualTo(ResourceEvent.Type1.OTHER)
+            assertThat(result).isEqualTo(ResourceEvent.ResourceType.OTHER)
         } else {
             assertThat(kind.name).isEqualTo(result.name)
         }

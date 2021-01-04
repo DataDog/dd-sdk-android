@@ -64,7 +64,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasType(expected: ActionEvent.Type1): ActionEventAssert {
+    fun hasType(expected: ActionEvent.ActionType): ActionEventAssert {
         assertThat(actual.action.type)
             .overridingErrorMessage(
                 "Expected event data to have action.type $expected but was ${actual.action.type}"

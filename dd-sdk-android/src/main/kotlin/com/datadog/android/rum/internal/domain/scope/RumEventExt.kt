@@ -36,19 +36,19 @@ internal fun String.toErrorMethod(): ErrorEvent.Method {
     }
 }
 
-internal fun RumResourceKind.toSchemaType(): ResourceEvent.Type1 {
+internal fun RumResourceKind.toSchemaType(): ResourceEvent.ResourceType {
     return when (this) {
-        RumResourceKind.BEACON -> ResourceEvent.Type1.BEACON
-        RumResourceKind.FETCH -> ResourceEvent.Type1.FETCH
-        RumResourceKind.XHR -> ResourceEvent.Type1.XHR
-        RumResourceKind.DOCUMENT -> ResourceEvent.Type1.DOCUMENT
-        RumResourceKind.IMAGE -> ResourceEvent.Type1.IMAGE
-        RumResourceKind.JS -> ResourceEvent.Type1.JS
-        RumResourceKind.FONT -> ResourceEvent.Type1.FONT
-        RumResourceKind.CSS -> ResourceEvent.Type1.CSS
-        RumResourceKind.MEDIA -> ResourceEvent.Type1.MEDIA
+        RumResourceKind.BEACON -> ResourceEvent.ResourceType.BEACON
+        RumResourceKind.FETCH -> ResourceEvent.ResourceType.FETCH
+        RumResourceKind.XHR -> ResourceEvent.ResourceType.XHR
+        RumResourceKind.DOCUMENT -> ResourceEvent.ResourceType.DOCUMENT
+        RumResourceKind.IMAGE -> ResourceEvent.ResourceType.IMAGE
+        RumResourceKind.JS -> ResourceEvent.ResourceType.JS
+        RumResourceKind.FONT -> ResourceEvent.ResourceType.FONT
+        RumResourceKind.CSS -> ResourceEvent.ResourceType.CSS
+        RumResourceKind.MEDIA -> ResourceEvent.ResourceType.MEDIA
         RumResourceKind.UNKNOWN,
-        RumResourceKind.OTHER -> ResourceEvent.Type1.OTHER
+        RumResourceKind.OTHER -> ResourceEvent.ResourceType.OTHER
     }
 }
 
@@ -93,13 +93,13 @@ internal fun ResourceTiming.download(): ResourceEvent.Download? {
     } else null
 }
 
-internal fun RumActionType.toSchemaType(): ActionEvent.Type1 {
+internal fun RumActionType.toSchemaType(): ActionEvent.ActionType {
     return when (this) {
-        RumActionType.TAP -> ActionEvent.Type1.TAP
-        RumActionType.SCROLL -> ActionEvent.Type1.SCROLL
-        RumActionType.SWIPE -> ActionEvent.Type1.SWIPE
-        RumActionType.CLICK -> ActionEvent.Type1.CLICK
-        RumActionType.CUSTOM -> ActionEvent.Type1.CUSTOM
+        RumActionType.TAP -> ActionEvent.ActionType.TAP
+        RumActionType.SCROLL -> ActionEvent.ActionType.SCROLL
+        RumActionType.SWIPE -> ActionEvent.ActionType.SWIPE
+        RumActionType.CLICK -> ActionEvent.ActionType.CLICK
+        RumActionType.CUSTOM -> ActionEvent.ActionType.CUSTOM
     }
 }
 

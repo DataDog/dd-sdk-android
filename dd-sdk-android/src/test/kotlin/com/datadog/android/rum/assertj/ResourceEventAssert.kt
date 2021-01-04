@@ -366,7 +366,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasProviderType(expected: ResourceEvent.Type2): ResourceEventAssert {
+    fun hasProviderType(expected: ResourceEvent.ProviderType): ResourceEventAssert {
         assertThat(actual.resource.provider?.type)
             .overridingErrorMessage(
                 "Expected event data to have resource provider type $expected " +

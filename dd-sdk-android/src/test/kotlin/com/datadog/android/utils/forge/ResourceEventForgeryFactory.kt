@@ -52,7 +52,7 @@ internal class ResourceEventForgeryFactory :
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
             session = ResourceEvent.Session(
                 id = forge.getForgery<UUID>().toString(),
-                type = ResourceEvent.Type.USER
+                type = ResourceEvent.SessionType.USER
             ),
             dd = ResourceEvent.Dd()
         )

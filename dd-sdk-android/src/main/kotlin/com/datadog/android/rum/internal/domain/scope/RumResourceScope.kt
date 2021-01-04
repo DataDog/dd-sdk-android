@@ -163,7 +163,7 @@ internal class RumResourceScope(
             application = ResourceEvent.Application(context.applicationId),
             session = ResourceEvent.Session(
                 id = context.sessionId,
-                type = ResourceEvent.Type.USER
+                type = ResourceEvent.SessionType.USER
             ),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
@@ -182,7 +182,10 @@ internal class RumResourceScope(
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
         return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
-            ResourceEvent.Provider(resolveDomain(url), type = ResourceEvent.Type2.FIRST_PARTY)
+            ResourceEvent.Provider(
+                resolveDomain(url),
+                type = ResourceEvent.ProviderType.FIRST_PARTY
+            )
         } else {
             null
         }
@@ -225,7 +228,10 @@ internal class RumResourceScope(
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
+            session = ErrorEvent.Session(
+                id = context.sessionId,
+                type = ErrorEvent.SessionType.USER
+            ),
             dd = ErrorEvent.Dd()
         )
         val rumEvent = RumEvent(
@@ -240,7 +246,10 @@ internal class RumResourceScope(
 
     private fun resolveErrorProvider(): ErrorEvent.Provider? {
         return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
-            ErrorEvent.Provider(domain = resolveDomain(url), type = ErrorEvent.Type1.FIRST_PARTY)
+            ErrorEvent.Provider(
+                domain = resolveDomain(url),
+                type = ErrorEvent.ProviderType.FIRST_PARTY
+            )
         } else {
             null
         }
