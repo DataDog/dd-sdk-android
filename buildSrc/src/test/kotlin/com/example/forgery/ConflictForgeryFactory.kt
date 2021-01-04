@@ -14,7 +14,7 @@ internal class ConflictForgeryFactory : ForgeryFactory<Conflict> {
     override fun getForgery(forge: Forge): Conflict {
         return Conflict(
             type = forge.aNullable {
-                Conflict.Type(
+                Conflict.ConflictType(
                     aNullable { anAlphabeticalString() }
                 )
             },
