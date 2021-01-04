@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
@@ -25,10 +26,13 @@ internal class DataUploadRunnable(
     private val reader: Reader,
     private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
-    private val systemInfoProvider: SystemInfoProvider
+    private val systemInfoProvider: SystemInfoProvider,
+    uploadFrequency: UploadFrequency
 ) : UploadRunnable {
 
-    private var currentDelayInterval = DEFAULT_DELAY_MS
+    internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs
+    internal var minDelayMs = MIN_DELAY_FACTOR * uploadFrequency.baseStepMs
+    internal var maxDelayMs = MAX_DELAY_FACTOR * uploadFrequency.baseStepMs
 
     //  region Runnable
 
@@ -65,7 +69,7 @@ internal class DataUploadRunnable(
 
     private fun scheduleNextUpload() {
         threadPoolExecutor.remove(this)
-        threadPoolExecutor.schedule(this, currentDelayInterval, TimeUnit.MILLISECONDS)
+        threadPoolExecutor.schedule(this, currentDelayIntervalMs, TimeUnit.MILLISECONDS)
     }
 
     private fun consumeBatch(batch: Batch) {
@@ -83,11 +87,11 @@ internal class DataUploadRunnable(
     }
 
     private fun decreaseInterval() {
-        currentDelayInterval = max(MIN_DELAY_MS, currentDelayInterval * DECREASE_PERCENT / 100)
+        currentDelayIntervalMs = max(minDelayMs, currentDelayIntervalMs * DECREASE_PERCENT / 100)
     }
 
     private fun increaseInterval() {
-        currentDelayInterval = min(MAX_DELAY_MS, currentDelayInterval * INCREASE_PERCENT / 100)
+        currentDelayIntervalMs = min(maxDelayMs, currentDelayIntervalMs * INCREASE_PERCENT / 100)
     }
 
     // endregion
@@ -108,9 +112,10 @@ internal class DataUploadRunnable(
 
         private const val LOW_BATTERY_THRESHOLD = 10
 
-        const val DEFAULT_DELAY_MS = 5000L // 5 seconds
-        const val MIN_DELAY_MS = 1000L // 1 second
-        const val MAX_DELAY_MS = DEFAULT_DELAY_MS * 4 // 20 seconds
+        internal const val MIN_DELAY_FACTOR = 1
+        internal const val DEFAULT_DELAY_FACTOR = 5
+        internal const val MAX_DELAY_FACTOR = 10
+
         const val DECREASE_PERCENT = 90
         const val INCREASE_PERCENT = 110
     }

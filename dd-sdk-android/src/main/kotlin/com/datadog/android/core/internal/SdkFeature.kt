@@ -134,6 +134,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
                 uploader,
                 CoreFeature.networkInfoProvider,
                 CoreFeature.systemInfoProvider,
+                CoreFeature.uploadFrequency,
                 CoreFeature.uploadExecutorService
             )
         } else {

@@ -89,7 +89,8 @@ internal class ConfigurationBuilderTest {
             Configuration.Core(
                 needsClearTextHttp = false,
                 firstPartyHosts = emptyList(),
-                batchSize = BatchSize.MEDIUM
+                batchSize = BatchSize.MEDIUM,
+                uploadFrequency = UploadFrequency.AVERAGE
             )
         )
         assertThat(config.logsConfig).isNull()
@@ -108,7 +109,8 @@ internal class ConfigurationBuilderTest {
             Configuration.Core(
                 needsClearTextHttp = false,
                 firstPartyHosts = emptyList(),
-                batchSize = BatchSize.MEDIUM
+                batchSize = BatchSize.MEDIUM,
+                uploadFrequency = UploadFrequency.AVERAGE
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -1086,6 +1088,25 @@ internal class ConfigurationBuilderTest {
         // Then
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(batchSize = batchSize)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 use upload frequency 𝕎 setUploadFrequency()`(
+        @Forgery uploadFrequency: UploadFrequency
+    ) {
+        // When
+        val config = testedBuilder
+            .setUploadFrequency(uploadFrequency)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)

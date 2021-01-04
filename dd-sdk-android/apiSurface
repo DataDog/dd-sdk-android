@@ -95,6 +95,7 @@ class com.datadog.android.core.configuration.Configuration
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
+    fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
     fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
@@ -103,6 +104,11 @@ class com.datadog.android.core.configuration.Configuration
   companion object 
 class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
+enum com.datadog.android.core.configuration.UploadFrequency
+  constructor(Long)
+  - FREQUENT
+  - AVERAGE
+  - RARE
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
