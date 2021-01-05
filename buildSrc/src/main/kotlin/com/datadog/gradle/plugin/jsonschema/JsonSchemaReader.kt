@@ -32,7 +32,8 @@ class JsonSchemaReader(
         val fileName = schemaFile.nameWithoutExtension
         val typeName = (customName ?: schema.title ?: fileName).toCamelCase()
 
-        return transform(schema, typeName)
+        val rawType = transform(schema, typeName)
+        return sanitize(rawType)
     }
 
     // endregion
@@ -262,6 +263,24 @@ class JsonSchemaReader(
         )
     }
 
+    private fun sanitize(type: TypeDefinition): TypeDefinition {
+        if (type is TypeDefinition.Class) {
+            val names = type.getChildrenTypeNames().distinct().sortedBy { it.first }
+            val duplicates = mutableSetOf<String>()
+
+            names.forEachIndexed { i, n ->
+                if (i > 0) {
+                    if (n.first == names[i - 1].first) {
+                        duplicates.add(n.first)
+                    }
+                }
+            }
+
+            return type.renameRecursive(duplicates, "")
+        } else {
+            return type
+        }
+    }
     // endregion
 
     companion object {

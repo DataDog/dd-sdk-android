@@ -205,7 +205,10 @@ internal class RumViewScope(
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.Session(id = context.sessionId, type = ErrorEvent.Type.USER),
+            session = ErrorEvent.Session(
+                id = context.sessionId,
+                type = ErrorEvent.SessionType.USER
+            ),
             dd = ErrorEvent.Dd()
         )
         val rumEvent = RumEvent(
@@ -341,7 +344,7 @@ internal class RumViewScope(
         val actionEvent = ActionEvent(
             date = eventTimestamp,
             action = ActionEvent.Action(
-                type = ActionEvent.Type1.APPLICATION_START,
+                type = ActionEvent.ActionType.APPLICATION_START,
                 id = UUID.randomUUID().toString(),
                 loadingTime = getStartupTime(event)
             ),
@@ -357,7 +360,7 @@ internal class RumViewScope(
             application = ActionEvent.Application(context.applicationId),
             session = ActionEvent.Session(
                 id = context.sessionId,
-                type = ActionEvent.Type.USER
+                type = ActionEvent.SessionType.USER
             ),
             dd = ActionEvent.Dd()
         )

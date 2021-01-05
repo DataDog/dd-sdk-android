@@ -214,7 +214,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasProviderType(expected: ErrorEvent.Type1): ErrorEventAssert {
+    fun hasProviderType(expected: ErrorEvent.ProviderType): ErrorEventAssert {
         assertThat(actual.error.resource?.provider?.type)
             .overridingErrorMessage(
                 "Expected event data to have resource provider type $expected " +

@@ -219,7 +219,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
-                    hasProviderType(ResourceEvent.Type2.FIRST_PARTY)
+                    hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                 }
         }
@@ -281,7 +281,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
-                    hasProviderType(ResourceEvent.Type2.FIRST_PARTY)
+                    hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                 }
         }
@@ -692,7 +692,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(brokenUrl)
-                    hasProviderType(ErrorEvent.Type1.FIRST_PARTY)
+                    hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -739,7 +739,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(URL(fakeUrl).host)
-                    hasProviderType(ErrorEvent.Type1.FIRST_PARTY)
+                    hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                 }
         }
         verify(mockParentScope).handleEvent(

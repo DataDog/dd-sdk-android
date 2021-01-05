@@ -85,7 +85,7 @@ val Conflict = TypeDefinition.Class(
         TypeProperty(
             "type",
             TypeDefinition.Class(
-                name = "Type",
+                name = "ConflictType",
                 properties = listOf(
                     TypeProperty("id", TypeDefinition.Primitive(JsonType.STRING), true)
                 )
@@ -101,7 +101,7 @@ val Conflict = TypeDefinition.Class(
                     TypeProperty(
                         "type",
                         TypeDefinition.Enum(
-                            name = "Type",
+                            name = "UserType",
                             type = JsonType.STRING,
                             values = listOf("unknown", "customer", "partner")
                         ),

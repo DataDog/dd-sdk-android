@@ -7,11 +7,11 @@
 package com.datadog.gradle.plugin.apisurface
 
 import com.datadog.gradle.config.taskConfig
+import com.datadog.gradle.plugin.jsonschema.JsonSchemaPlugin
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import com.datadog.gradle.plugin.jsonschema.JsonSchemaPlugin
 
 class ApiSurfacePlugin : Plugin<Project> {
 

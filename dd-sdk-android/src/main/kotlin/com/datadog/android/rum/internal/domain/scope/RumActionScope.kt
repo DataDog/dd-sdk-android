@@ -182,7 +182,7 @@ internal class RumActionScope(
                 application = ActionEvent.Application(context.applicationId),
                 session = ActionEvent.Session(
                     id = context.sessionId,
-                    type = ActionEvent.Type.USER
+                    type = ActionEvent.SessionType.USER
                 ),
                 usr = ActionEvent.Usr(
                     id = user.id,
