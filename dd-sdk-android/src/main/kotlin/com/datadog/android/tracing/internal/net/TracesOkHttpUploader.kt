@@ -12,15 +12,11 @@ import okhttp3.OkHttpClient
 
 internal open class TracesOkHttpUploader(
     endpoint: String,
-    private val token: String,
+    token: String,
     client: OkHttpClient
 ) : DataOkHttpUploader(buildUrl(endpoint, token), client, CONTENT_TYPE_TEXT_UTF8) {
 
     // region DataOkHttpUploader
-
-    override fun setEndpoint(endpoint: String) {
-        super.setEndpoint(buildUrl(endpoint, token))
-    }
 
     override fun buildQueryParams(): Map<String, Any> {
         return emptyMap()

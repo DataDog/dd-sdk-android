@@ -46,10 +46,6 @@ internal abstract class DataOkHttpUploader(
 
     // region DataOkHttpUploader
 
-    open fun setEndpoint(endpoint: String) {
-        this.url = endpoint
-    }
-
     abstract fun buildQueryParams(): Map<String, Any>
 
     // endregion

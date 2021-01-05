@@ -1,8 +1,5 @@
-/*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
+/* * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0. * This product includes software developed at 
+ Datadog (https://www.datadoghq.com/). * Copyright 2016-Present Datadog, Inc. */
 
 package com.datadog.android.rum.internal.domain.scope
 
@@ -66,7 +63,6 @@ internal class RumActionScopeTest {
     @Mock
     lateinit var mockWriter: Writer<RumEvent>
 
-    @Forgery
     lateinit var fakeType: RumActionType
 
     @StringForgery
@@ -88,6 +84,11 @@ internal class RumActionScopeTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
+
+        fakeType = forge.aValueFrom(
+            RumActionType::class.java,
+            exclude = listOf(RumActionType.CUSTOM)
+        )
 
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
@@ -1021,6 +1022,42 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope).handleEvent(
+            isA<RumRawEvent.SentAction>(),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M send custom Action after timeout W handleEvent(any) and no side effect`() {
+        // When
+        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        testedScope.type = RumActionType.CUSTOM
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasActionData {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(RumActionType.CUSTOM)
+                    hasTargetName(fakeName)
+                    hasDuration(1)
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)

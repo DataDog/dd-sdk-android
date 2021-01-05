@@ -1,10 +1,7 @@
 object com.datadog.android.Datadog
-  DEPRECATED const val DATADOG_US: String
-  DEPRECATED const val DATADOG_EU: String
   DEPRECATED fun initialize(android.content.Context, DatadogConfig)
   DEPRECATED fun initialize(android.content.Context, com.datadog.android.privacy.TrackingConsent, DatadogConfig)
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
-  DEPRECATED fun setEndpointUrl(String, com.datadog.android.log.EndpointUpdateStrategy)
   fun isInitialized(): Boolean
   fun clearAllData()
   fun setVerbosity(Int)
@@ -70,9 +67,11 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  DEPRECATED constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
+  override fun canSendSpan(): Boolean
   companion object 
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
@@ -111,9 +110,6 @@ enum com.datadog.android.core.configuration.UploadFrequency
   - RARE
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
-DEPRECATED enum com.datadog.android.log.EndpointUpdateStrategy
-  - DISCARD_OLD_DATA
-  - SEND_OLD_DATA_TO_NEW_ENDPOINT
 object com.datadog.android.log.LogAttributes
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String

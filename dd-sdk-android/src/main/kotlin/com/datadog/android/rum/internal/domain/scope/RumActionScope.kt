@@ -31,7 +31,7 @@ internal class RumActionScope(
 
     private val eventTimestamp = eventTime.timestamp
     internal val actionId: String = UUID.randomUUID().toString()
-    private var type: RumActionType = initialType
+    internal var type: RumActionType = initialType
     internal var name: String = initialName
     private val startedNanos: Long = eventTime.nanoTime
     private var lastInteractionNanos: Long = startedNanos
@@ -156,7 +156,9 @@ internal class RumActionScope(
     ) {
         if (sent) return
 
-        if (resourceCount > 0 || errorCount > 0 || viewTreeChangeCount > 0) {
+        val actualType = type
+        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount
+        if (sideEffectsCount > 0 || actualType == RumActionType.CUSTOM) {
             attributes.putAll(GlobalRum.globalAttributes)
 
             val context = getRumContext()
@@ -165,7 +167,7 @@ internal class RumActionScope(
             val actionEvent = ActionEvent(
                 date = eventTimestamp,
                 action = ActionEvent.Action(
-                    type = type.toSchemaType(),
+                    type = actualType.toSchemaType(),
                     id = actionId,
                     target = ActionEvent.Target(name),
                     error = ActionEvent.Error(errorCount),
@@ -198,7 +200,7 @@ internal class RumActionScope(
             parentScope.handleEvent(RumRawEvent.SentAction(), writer)
         } else {
             devLogger.i(
-                "RUM Action $actionId ($type on $name) was dropped " +
+                "RUM Action $actionId ($actualType on $name) was dropped " +
                     "(no side effect was registered during its scope)"
             )
         }
