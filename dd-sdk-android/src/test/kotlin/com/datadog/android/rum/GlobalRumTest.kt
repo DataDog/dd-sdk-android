@@ -57,6 +57,7 @@ internal class GlobalRumTest {
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.updateRumContext(RumContext())
         GlobalRum.sessionStartNs.set(0L)
+        GlobalRum.globalAttributes.clear()
     }
 
     @Test
@@ -103,6 +104,18 @@ internal class GlobalRumTest {
 
         assertThat(GlobalRum.globalAttributes)
             .containsEntry(key, value2)
+    }
+
+    @Test
+    fun `M remove global attributes W addAttribute() twice {second time with null value}`(
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ASCII) value: String
+    ) {
+        GlobalRum.addAttribute(key, value)
+        GlobalRum.addAttribute(key, null)
+
+        assertThat(GlobalRum.globalAttributes)
+            .doesNotContainKey(key)
     }
 
     @Test

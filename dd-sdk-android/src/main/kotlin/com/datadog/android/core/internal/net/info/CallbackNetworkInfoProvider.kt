@@ -49,6 +49,7 @@ internal class CallbackNetworkInfoProvider :
 
     //region NetworkInfoProvider
 
+    @Suppress("TooGenericExceptionCaught")
     override fun register(context: Context) {
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
@@ -67,12 +68,19 @@ internal class CallbackNetworkInfoProvider :
             }
         } catch (e: SecurityException) {
             // RUMM-852 On some devices we get a SecurityException with message
-            // "package does not belong to 10411"
+            // "package does not belong to xxxx"
+            devLogger.e(ERROR_REGISTER, e)
+            networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+        } catch (e: RuntimeException) {
+            // RUMM-918 in some cases the device throws a IllegalArgumentException on register
+            // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
+            // called too many times without matching unregisterNetworkCallback
             devLogger.e(ERROR_REGISTER, e)
             networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun unregister(context: Context) {
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
@@ -86,7 +94,11 @@ internal class CallbackNetworkInfoProvider :
             connMgr.unregisterNetworkCallback(this)
         } catch (e: SecurityException) {
             // RUMM-852 On some devices we get a SecurityException with message
-            // "package does not belong to 10411"
+            // "package does not belong to xxxx"
+            devLogger.e(ERROR_UNREGISTER, e)
+        } catch (e: RuntimeException) {
+            // RUMM-918 in some cases the device throws a IllegalArgumentException on unregister
+            // e.g. when the callback was not registered
             devLogger.e(ERROR_UNREGISTER, e)
         }
     }

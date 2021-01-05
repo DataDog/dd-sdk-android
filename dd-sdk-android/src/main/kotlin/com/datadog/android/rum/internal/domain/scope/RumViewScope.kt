@@ -186,7 +186,7 @@ internal class RumViewScope(
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val errorEvent = ErrorEvent(
-            date = eventTimestamp,
+            date = event.eventTime.timestamp,
             error = ErrorEvent.Error(
                 message = event.message,
                 source = event.source.toSchemaSource(),

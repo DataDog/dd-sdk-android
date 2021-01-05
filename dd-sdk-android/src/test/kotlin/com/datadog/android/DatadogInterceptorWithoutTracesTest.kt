@@ -17,6 +17,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
@@ -107,6 +108,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.Tracing
 
+    @Forgery
+    lateinit var fakeRumConfig: Configuration.Feature.RUM
+
     @StringForgery
     lateinit var fakePackageName: String
 
@@ -138,6 +142,10 @@ internal class DatadogInterceptorWithoutTracesTest {
             mockAppContext,
             fakeConfig
         )
+        RumFeature.initialize(
+            mockAppContext,
+            fakeRumConfig
+        )
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
     }
@@ -147,6 +155,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         CoreFeature.stop()
         GlobalRum.isRegistered.set(false)
         TracesFeature.stop()
+        RumFeature.stop()
     }
 
     @Test

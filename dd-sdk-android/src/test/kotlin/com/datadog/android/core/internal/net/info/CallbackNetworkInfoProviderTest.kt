@@ -367,6 +367,29 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M warn developers W register() with RuntimeException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-918 in some cases the device throws a IllegalArgumentException on register
+        // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
+        // called too many times without matching unregisterNetworkCallback
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = RuntimeException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_REGISTER,
+                exception
+            )
+    }
+
+    @Test
     fun `M assume network is available W register() with SecurityException + getLatestNetworkInfo`(
         @StringForgery message: String
     ) {
@@ -374,6 +397,30 @@ internal class CallbackNetworkInfoProviderTest {
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
         val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+            .hasUpSpeed(-1)
+            .hasDownSpeed(-1)
+    }
+
+    @Test
+    fun `M assume network is available W register() with RuntimeException + getLatestNetworkInfo`(
+        @StringForgery message: String
+    ) {
+        // RUMM-918 in some cases the device throws a IllegalArgumentException on register
+        // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
+        // called too many times without matching unregisterNetworkCallback
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = RuntimeException(message)
         whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
         whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
 
@@ -450,6 +497,28 @@ internal class CallbackNetworkInfoProviderTest {
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER
+            )
+    }
+
+    @Test
+    fun `M warn developers W unregister() with RuntimeException`(
+        @StringForgery message: String
+    ) {
+        // RUMM-918 in some cases the device throws a IllegalArgumentException on unregister
+        // e.g. when the callback was not registered
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = RuntimeException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.unregisterNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.unregister(context)
+
+        verify(mockDevLogHandler)
+            .handleLog(
+                Log.ERROR,
+                CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+                exception
             )
     }
 }

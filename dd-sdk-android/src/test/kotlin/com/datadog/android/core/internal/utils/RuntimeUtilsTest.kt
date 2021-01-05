@@ -14,11 +14,15 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.extension.EnableLogcat
 import com.datadog.android.utils.extension.EnableLogcatExtension
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -43,6 +47,7 @@ class RuntimeUtilsTest {
     @AfterEach
     fun `tear down`() {
         Datadog.setFieldValue("isDebug", false)
+        devLogger.setFieldValue("handler", buildDevLogHandler())
     }
 
     @Test
@@ -88,5 +93,55 @@ class RuntimeUtilsTest {
                 assertThat(condition(i, null)).isFalse()
             }
         }
+    }
+
+    @Test
+    fun `M log a warning W warnDeprecated()`(
+        @StringForgery target: String,
+        @StringForgery since: String,
+        @StringForgery until: String
+    ) {
+        // Given
+        val handler = mockDevLogHandler()
+
+        // When
+        warnDeprecated(target, since, until)
+
+        // Then
+        verify(handler).handleLog(
+            Log.WARN,
+            WARN_DEPRECATED.format(
+                Locale.US,
+                target,
+                since,
+                until
+            )
+        )
+    }
+
+    @Test
+    fun `M log a warning W warnDeprecated() with alternative`(
+        @StringForgery target: String,
+        @StringForgery since: String,
+        @StringForgery until: String,
+        @StringForgery alternative: String
+    ) {
+        // Given
+        val handler = mockDevLogHandler()
+
+        // When
+        warnDeprecated(target, since, until, alternative)
+
+        // Then
+        verify(handler).handleLog(
+            Log.WARN,
+            WARN_DEPRECATED_WITH_ALT.format(
+                Locale.US,
+                target,
+                since,
+                until,
+                alternative
+            )
+        )
     }
 }
