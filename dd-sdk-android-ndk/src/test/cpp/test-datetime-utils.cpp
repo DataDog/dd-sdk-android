@@ -1,7 +1,6 @@
 #include <regex>
-
 #include "greatest/greatest.h"
-#include "utils/datetime.h"
+#include "utils/datetime-utils.h"
 
 TEST test_generate_event_date_format(void) {
     char buffer[100];

@@ -4,10 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#include "stringutils.h"
+#include "string-utils.h"
 
 #include <jni.h>
 #include <string>
+#include <stdexcept>
 
 namespace stringutils {
 
@@ -24,4 +25,5 @@ namespace stringutils {
 
         return result;
     }
+
 }

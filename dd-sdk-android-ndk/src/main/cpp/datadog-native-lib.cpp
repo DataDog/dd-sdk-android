@@ -14,10 +14,10 @@
 
 #include "android/log.h"
 #include "utils/backtrace-handler.h"
-#include "utils/datetime.h"
-#include "utils/fileutils.h"
+#include "utils/datetime-utils.h"
+#include "utils/file-utils.h"
 #include "utils/signal-monitor.h"
-#include "utils/stringutils.h"
+#include "utils/string-utils.h"
 
 typedef std::string string;
 

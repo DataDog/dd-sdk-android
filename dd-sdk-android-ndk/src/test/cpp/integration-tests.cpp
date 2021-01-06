@@ -4,16 +4,17 @@
 #include <android/log.h>
 #include <datadog-native-lib.h>
 #include "greatest/greatest.h"
-#include "utils/stringutils.h"
-
-// override the GREATES_PRINTF macro to use the android logcat
-#define GREATEST_FPRINTF(ignore, fmt, ...) __android_log_print(ANDROID_LOG_INFO, "DatadogNDKTests", fmt, ##__VA_ARGS__)
+#include "utils/string-utils.h"
 
 SUITE (datetime_utils);
 
 SUITE (backtrace_generation);
 
 SUITE (signal_monitor);
+
+SUITE (string_utils);
+
+SUITE(crash_log);
 
 
 GREATEST_MAIN_DEFS();
@@ -46,6 +47,8 @@ int run_test_suites() {
     GREATEST_MAIN_BEGIN();
     RUN_SUITE(datetime_utils);
     RUN_SUITE(signal_monitor);
+    RUN_SUITE(string_utils);
+    RUN_SUITE(crash_log);
     // This test fails on Bitrise on the first backtrace line assertion even and was not able to
     // detect why so far. My guess is related with Linux environment, I actually logged the line
     // and checked the regEx on top and was passing locally. We will disable this test for now as
