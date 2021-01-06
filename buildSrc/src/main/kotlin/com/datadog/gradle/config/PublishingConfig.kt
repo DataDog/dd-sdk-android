@@ -18,7 +18,10 @@ const val MAVEN_PUBLICATION = "aar"
 const val BINTRAY_USER = "bintrayUser"
 const val BINTRAY_API_KEY = "bintrayApiKey"
 
-fun Project.publishingConfig(localRepo: String) {
+fun Project.publishingConfig(
+    localRepo: String,
+    asAar: Boolean = true
+) {
 
     version = AndroidConfig.VERSION.name
     group = MavenConfig.GROUP_ID
@@ -62,10 +65,18 @@ fun Project.publishingConfig(localRepo: String) {
         from("${projectDir.canonicalPath}/src/main")
     }
 
-    tasks.withType(AbstractPublishToMaven::class.java) {
-        this.dependsOn("bundleReleaseAar")
-        this.dependsOn("sourcesJar")
-        this.dependsOn("generateJavadoc")
+    if (asAar) {
+        tasks.withType(AbstractPublishToMaven::class.java) {
+            this.dependsOn("bundleReleaseAar")
+            this.dependsOn("sourcesJar")
+            this.dependsOn("generateJavadoc")
+        }
+    } else {
+        tasks.withType(AbstractPublishToMaven::class.java) {
+            this.dependsOn("jar")
+            this.dependsOn("sourcesJar")
+            this.dependsOn("generateJavadoc")
+        }
     }
 
     task("publishLocalAndRemote").apply {

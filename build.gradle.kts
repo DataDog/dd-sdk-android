@@ -52,6 +52,7 @@ tasks.register("checkAll") {
 
 tasks.register("assembleAll") {
     dependsOn(
+        ":dd-android-gradle-plugin:assemble",
         ":dd-sdk-android:assemble",
         ":dd-sdk-android-coil:assemble",
         ":dd-sdk-android-fresco:assemble",
@@ -103,6 +104,7 @@ tasks.register("unitTestDebug") {
 
 tasks.register("unitTestTools") {
     dependsOn(
+        ":dd-android-gradle-plugin:test",
         ":sample:java:assembleRelease",
         ":sample:kotlin:assembleRelease",
         ":tools:detekt:test",
@@ -120,6 +122,7 @@ tasks.register("unitTestAll") {
 
 tasks.register("ktlintCheckAll") {
     dependsOn(
+        ":dd-android-gradle-plugin:ktlintCheck",
         ":dd-sdk-android:ktlintCheck",
         ":dd-sdk-android-coil:ktlintCheck",
         ":dd-sdk-android-fresco:ktlintCheck",
@@ -152,6 +155,7 @@ tasks.register("lintCheckAll") {
 
 tasks.register("detektAll") {
     dependsOn(
+        ":dd-android-gradle-plugin:detekt",
         ":dd-sdk-android:detekt",
         ":dd-sdk-android-coil:detekt",
         ":dd-sdk-android-fresco:detekt",
@@ -169,6 +173,7 @@ tasks.register("detektAll") {
 
 tasks.register("jacocoReportAll") {
     dependsOn(
+        ":dd-android-gradle-plugin:jacocoTestReport",
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
