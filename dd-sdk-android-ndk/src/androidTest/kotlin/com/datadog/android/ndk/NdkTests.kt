@@ -12,8 +12,9 @@ import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.lang.RuntimeException
 import java.nio.charset.Charset
-import java.util.UUID
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions
+import org.assertj.core.data.Offset
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -51,79 +52,59 @@ internal class NdkTests {
 
     @Test
     fun mustWriteAnErrorLog_whenHandlingSignal_whenConsentUpdatedToGranted() {
-        val signal = forge.anInt(min = 1, max = 32)
-        val appId = randomUUIDOrNull()
-        val sessionId = randomUUIDOrNull()
-        val viewId = randomUUIDOrNull()
-        val serviceName = forge.anAlphabeticalString(size = 50)
-        val env = forge.anAlphabeticalString(size = 50)
+        val fakeSignal = forge.anInt(min = 1, max = 32)
         // we need to keep this this size because we are using a buffer of [30] size in c++ for
         // the error.signal attribute
-        val signalName = forge.anAlphabeticalString(size = 20)
-        val signalErrorMessage = forge.anAlphabeticalString()
-        initNdkErrorHandler(
-            temporaryFolder.root.absolutePath,
-            serviceName,
-            env,
-            appId,
-            sessionId,
-            viewId
-        )
+        val fakeSignalName = forge.anAlphabeticalString(size = 20)
+        val fakeErrorMessage = forge.anAlphabeticalString()
+        val fakeErrorStack = forge.anAlphabeticalString()
+        initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(1)
         simulateSignalInterception(
-            signal,
-            signalName,
-            signalErrorMessage
+            fakeSignal,
+            fakeSignalName,
+            fakeErrorMessage,
+            fakeErrorStack
         )
 
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
+        val expectedTimestamp = System.currentTimeMillis()
         Thread.sleep(5000)
 
         // assert the log file
-        val inputStream = temporaryFolder.root.listFiles()?.first()?.inputStream()
+        val listFiles = temporaryFolder.root.listFiles()
+        val inputStream = listFiles?.first()?.inputStream()
         inputStream?.use {
             val jsonString = String(it.readBytes(), Charset.forName("utf-8"))
             val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            assertThat(jsonObject).hasField("service", serviceName)
-            assertThat(jsonObject).hasField("ddtags", "env:$env")
-            assertThat(jsonObject).hasField("status", "emergency")
-            assertThat(jsonObject).hasField("message", "Native crash detected")
-            assertThat(jsonObject).hasField("error.message", signalErrorMessage)
-            assertThat(jsonObject).hasField("error.signal", "$signalName: $signal")
-            assertThat(jsonObject).hasField("error.kind", "Native")
-            assertThat(jsonObject).hasField("logger.name", "crash")
-            assertThat(jsonObject).hasNullableField("application_id", appId)
-            assertThat(jsonObject).hasNullableField("session_id", sessionId)
-            assertThat(jsonObject).hasNullableField("view.id", viewId)
+            assertThat(jsonObject).hasField("signal", fakeSignal)
+            assertThat(jsonObject).hasField("signal_name", fakeSignalName)
+            assertThat(jsonObject).hasField("message", fakeErrorMessage)
+            assertThat(jsonObject).hasField("stacktrace", fakeErrorStack)
+            assertThat(jsonObject).hasField(
+                "timestamp",
+                expectedTimestamp,
+                Offset.offset(TimeUnit.SECONDS.toMillis(10))
+            )
         }
     }
 
     @Test
     fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToPending() {
         val signal = forge.anInt(min = 1, max = 32)
-        val appId = randomUUIDOrNull()
-        val sessionId = randomUUIDOrNull()
-        val viewId = randomUUIDOrNull()
-        val serviceName = forge.anAlphabeticalString(size = 50)
-        val env = forge.anAlphabeticalString(size = 50)
         // we need to keep this this size because we are using a buffer of [30] size in c++ for
         // the error.signal attribute
         val signalName = forge.anAlphabeticalString(size = 20)
-        val signalErrorMessage = forge.anAlphabeticalString()
-        initNdkErrorHandler(
-            temporaryFolder.root.absolutePath,
-            serviceName,
-            env,
-            appId,
-            sessionId,
-            viewId
-        )
+        val errorMessage = forge.anAlphabeticalString()
+        val errorStack = forge.anAlphabeticalString()
+        initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(0)
         simulateSignalInterception(
             signal,
             signalName,
-            signalErrorMessage
+            errorMessage,
+            errorStack
         )
 
         // we need to give time to native part to write the file
@@ -137,28 +118,18 @@ internal class NdkTests {
     @Test
     fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToNotGranted() {
         val signal = forge.anInt(min = 1, max = 32)
-        val appId = randomUUIDOrNull()
-        val sessionId = randomUUIDOrNull()
-        val viewId = randomUUIDOrNull()
-        val serviceName = forge.anAlphabeticalString(size = 50)
-        val env = forge.anAlphabeticalString(size = 50)
         // we need to keep this this size because we are using a buffer of [30] size in c++ for
         // the error.signal attribute
         val signalName = forge.anAlphabeticalString(size = 20)
-        val signalErrorMessage = forge.anAlphabeticalString()
-        initNdkErrorHandler(
-            temporaryFolder.root.absolutePath,
-            serviceName,
-            env,
-            appId,
-            sessionId,
-            viewId
-        )
+        val errorMessage = forge.anAlphabeticalString()
+        val errorStack = forge.anAlphabeticalString()
+        initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(2)
         simulateSignalInterception(
             signal,
             signalName,
-            signalErrorMessage
+            errorMessage,
+            errorStack
         )
 
         // we need to give time to native part to write the file
@@ -186,31 +157,23 @@ internal class NdkTests {
     /**
      * Will initialize the NDK crash reporter.
      * @param storageDir the storage directory for the reported crash logs
-     * @param serviceName the service name for the main context
-     * @param environment the environment name for the main context
-     * @param appId the application id for the rum context
-     * @param sessionId the session id to be passed into the rum context
-     * @param viewId the view id to be passed into the rum context
      */
     private external fun initNdkErrorHandler(
-        storageDir: String,
-        serviceName: String,
-        environment: String,
-        appId: String?,
-        sessionId: String?,
-        viewId: String?
+        storageDir: String
     )
 
     /**
      * Simulate a signal interception into the NDK crash reporter.
      * @param signal the signal id (between 1 and 32)
      * @param signalName the signal name (e.g. SIGHUP, SIGINT, SIGILL, etc.)
-     * @param signalMessage the signal error message
+     * @param errorMessage the error message
+     * @param errorStack the error stack
      */
     private external fun simulateSignalInterception(
         signal: Int,
         signalName: String,
-        signalMessage: String
+        errorMessage: String,
+        errorStack: String
     )
 
     /**
@@ -220,14 +183,6 @@ internal class NdkTests {
     private external fun updateTrackingConsent(
         consent: Int
     )
-
-    // endregion
-
-    // region Internal
-
-    private fun randomUUIDOrNull(): String? {
-        return forge.aNullable { UUID.randomUUID().toString() }
-    }
 
     // endregion
 }

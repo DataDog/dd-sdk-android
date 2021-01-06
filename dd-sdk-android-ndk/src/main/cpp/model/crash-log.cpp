@@ -5,22 +5,30 @@
  */
 
 
-#include "crash_log.h"
+#include "crash-log.h"
 #include <string>
-#include "../utils/format-utils.cpp"
+#include "format-utils.cpp"
 
-CrashLog::CrashLog(const int signal, const std::string error_message,
-                   const std::string error_stacktrace) {
+CrashLog::CrashLog(
+        int signal,
+        uint64_t timestamp,
+        const std::string signal_name,
+        const std::string error_message,
+        const std::string error_stacktrace) {
     this->signal = signal;
+    this->timestamp = timestamp;
+    this->signal_name = signal_name;
     this->error_message = error_message;
     this->error_stacktrace = error_stacktrace;
 }
 
 std::string CrashLog::serialise() {
     using namespace std;
-    static const string json_formatter = R"({"signal":%s,"message":"%s","stacktrace":"%s"})";
+    static const string json_formatter = R"({"signal":%s,"timestamp":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
     return strformat::format(json_formatter,
                              to_string(this->signal).c_str(),
+                             to_string(this->timestamp).c_str(),
+                             this->signal_name.c_str(),
                              this->error_message.c_str(),
                              this->error_stacktrace.c_str());
 }

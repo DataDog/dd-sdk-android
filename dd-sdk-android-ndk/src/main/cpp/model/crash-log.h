@@ -12,11 +12,18 @@
 
 class CrashLog {
     int signal;
+    uint64_t timestamp;
+    std::string signal_name;
     std::string error_message;
     std::string error_stacktrace;
-
 public:
-    CrashLog(const int signal, const std::string error_message, const std::string error_stacktrace);
+    CrashLog(
+            int signal,
+            uint64_t timestamp,
+            const std::string error_message,
+            const std::string error_stacktrace,
+            const std::string signal_name);
+
     std::string serialise();
 };
 
