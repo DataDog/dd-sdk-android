@@ -14,6 +14,8 @@ include(":dd-sdk-android-rx")
 include(":dd-sdk-android-sqldelight")
 include(":dd-sdk-android-timber")
 
+include(":dd-android-gradle-plugin")
+
 include(":instrumented:benchmark")
 include(":instrumented:integration")
 
