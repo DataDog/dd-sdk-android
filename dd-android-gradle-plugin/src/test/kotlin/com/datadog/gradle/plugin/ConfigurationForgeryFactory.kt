@@ -6,10 +6,11 @@
 
 package com.datadog.gradle.plugin
 
+import com.datadog.gradle.plugin.internal.DdConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class ConfigurationForgeryFactory : ForgeryFactory<DdConfiguration> {
+internal class ConfigurationForgeryFactory : ForgeryFactory<DdConfiguration> {
     override fun getForgery(forge: Forge): DdConfiguration {
         return DdConfiguration(
             apiKey = forge.anHexadecimalString(),

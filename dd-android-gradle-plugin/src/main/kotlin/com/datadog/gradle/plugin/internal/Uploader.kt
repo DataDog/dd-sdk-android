@@ -6,10 +6,9 @@
 
 package com.datadog.gradle.plugin.internal
 
-import com.datadog.gradle.plugin.DdAppIdentifier
 import java.io.File
 
-interface Uploader {
+internal interface Uploader {
 
     fun upload(
         url: String,

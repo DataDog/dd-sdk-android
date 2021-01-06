@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.internal
 
-data class DdAppIdentifier(
+internal data class DdAppIdentifier(
     val serviceName: String,
     val envName: String,
     val version: String,

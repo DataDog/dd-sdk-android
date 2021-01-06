@@ -6,6 +6,8 @@
 
 package com.datadog.gradle.plugin
 
+import com.datadog.gradle.plugin.internal.DdAppIdentifier
+import com.datadog.gradle.plugin.internal.DdConfiguration
 import com.datadog.gradle.plugin.internal.OkHttpUploader
 import com.datadog.gradle.plugin.internal.Uploader
 import java.io.File
@@ -14,29 +16,53 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 
+/**
+ * A Gradle task to upload a Proguard/R8 mapping file to Datadog servers.
+ */
 open class DdMappingFileUploadTask : DefaultTask() {
 
     @get:Internal
     internal var uploader: Uploader = OkHttpUploader()
 
-    @get:Input
-    var variantName: String = ""
-
+    /**
+     * The API Key used to upload the data.
+     */
     @get: Input
     var apiKey: String = ""
 
+    /**
+     * The variant name of the application.
+     */
+    @get:Input
+    var variantName: String = ""
+
+    /**
+     * The version name of the application.
+     */
     @get: Input
     var versionName: String = ""
 
+    /**
+     * The service name of the application (by default, it is your app's package name).
+     */
     @get: Input
     var serviceName: String = ""
 
+    /**
+     * The environment name.
+     */
     @get: Input
     var envName: String = ""
 
+    /**
+     * The Datadog site to upload to (one of "US", "EU", "GOV").
+     */
     @get: Input
     var site: String = ""
 
+    /**
+     * The path to the mapping file to upload.
+     */
     @get:Input
     var mappingFilePath: String = ""
 
@@ -47,6 +73,9 @@ open class DdMappingFileUploadTask : DefaultTask() {
 
     // region Task
 
+    /**
+     * Uploads the mapping file to Datadog.
+     */
     @TaskAction
     fun applyTask() {
         validateConfiguration()
@@ -78,29 +107,31 @@ open class DdMappingFileUploadTask : DefaultTask() {
         )
     }
 
+    // endregion
+
+    // region Internal
+
+    @Suppress("CheckInternal")
     private fun validateConfiguration() {
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("You need to provide a valid client token")
-        }
+        check(apiKey.isNotBlank()) { "You need to provide a valid client token" }
 
         val validSiteIds = DdConfiguration.Site.values().map { it.name }
-        if (site !in validSiteIds) {
-            throw IllegalStateException("You need to provide a valid site (one of ${validSiteIds.joinToString()})")
+        check(site in validSiteIds) {
+            "You need to provide a valid site (one of ${validSiteIds.joinToString()})"
         }
     }
 
+    @Suppress("CheckInternal")
     private fun validateMappingFile(mappingFile: File): Boolean {
         if (!mappingFile.exists()) {
             println("There's no mapping file $mappingFilePath, nothing to upload")
             return false
         }
-        if (!mappingFile.isFile) {
-            throw IllegalStateException("Expected $mappingFilePath to be a file")
-        }
 
-        if (!mappingFile.canRead()) {
-            throw IllegalStateException("Cannot read file $mappingFilePath")
-        }
+        check(mappingFile.isFile) { "Expected $mappingFilePath to be a file" }
+
+        check(mappingFile.canRead()) { "Cannot read file $mappingFilePath" }
+
         return true
     }
 

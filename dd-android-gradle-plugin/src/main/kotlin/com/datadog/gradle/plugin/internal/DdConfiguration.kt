@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin
+package com.datadog.gradle.plugin.internal
 
-data class DdConfiguration(
+internal data class DdConfiguration(
     val site: Site,
     val apiKey: String
 ) {
@@ -14,7 +14,7 @@ data class DdConfiguration(
         return "https://sourcemap-intake.${site.host}/v1/input/$apiKey"
     }
 
-    enum class Site(val host: String) {
+    internal enum class Site(val host: String) {
         US("datadoghq.com"),
         EU("datadoghq.eu"),
         GOV("ddog-gov.com")

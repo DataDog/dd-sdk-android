@@ -7,20 +7,19 @@
 package com.datadog.gradle.plugin.internal
 
 import com.datadog.gradle.plugin.Configurator
-import com.datadog.gradle.plugin.DdAppIdentifier
+import com.datadog.gradle.plugin.RecordedRequestAssert.Companion.assertThat
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import java.lang.RuntimeException
+import java.lang.IllegalStateException
 import java.net.HttpURLConnection
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import org.assertj.core.api.AbstractCharSequenceAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -99,11 +98,8 @@ internal class OkHttpUploaderTest {
 
         // Then
         assertThat(mockWebServer.requestCount).isEqualTo(1)
-        val request = dispatchedRequest
-        checkNotNull(request)
-        assertThat(request.method).isEqualTo("POST")
-        val body = request.body.readUtf8()
-        assertThat(body)
+        assertThat(dispatchedRequest)
+            .hasMethod("POST")
             .containsFormData("version", fakeIdentifier.version)
             .containsFormData("service", fakeIdentifier.serviceName)
             .containsFormData("variant", fakeIdentifier.variant)
@@ -119,7 +115,7 @@ internal class OkHttpUploaderTest {
             .setBody("{}")
 
         // When
-        assertThrows<RuntimeException> {
+        assertThrows<IllegalStateException> {
             testedUploader.upload(
                 mockWebServer.url("/").toString(),
                 fakeMappingFile,
@@ -129,11 +125,8 @@ internal class OkHttpUploaderTest {
 
         // Then
         assertThat(mockWebServer.requestCount).isEqualTo(1)
-        val request = dispatchedRequest
-        checkNotNull(request)
-        assertThat(request.method).isEqualTo("POST")
-        val body = request.body.readUtf8()
-        assertThat(body)
+        assertThat(dispatchedRequest)
+            .hasMethod("POST")
             .containsFormData("version", fakeIdentifier.version)
             .containsFormData("service", fakeIdentifier.serviceName)
             .containsFormData("variant", fakeIdentifier.variant)
@@ -155,7 +148,7 @@ internal class OkHttpUploaderTest {
             .setBody("{}")
 
         // When
-        assertThrows<RuntimeException> {
+        assertThrows<IllegalStateException> {
             testedUploader.upload(
                 mockWebServer.url("/").toString(),
                 fakeMappingFile,
@@ -165,11 +158,8 @@ internal class OkHttpUploaderTest {
 
         // Then
         assertThat(mockWebServer.requestCount).isEqualTo(1)
-        val request = dispatchedRequest
-        checkNotNull(request)
-        assertThat(request.method).isEqualTo("POST")
-        val body = request.body.readUtf8()
-        assertThat(body)
+        assertThat(dispatchedRequest)
+            .hasMethod("POST")
             .containsFormData("version", fakeIdentifier.version)
             .containsFormData("service", fakeIdentifier.serviceName)
             .containsFormData("variant", fakeIdentifier.variant)
@@ -183,28 +173,4 @@ internal class OkHttpUploaderTest {
             return mockResponse
         }
     }
-}
-
-private fun <SELF : AbstractCharSequenceAssert<SELF, ACTUAL>?,
-    ACTUAL : CharSequence> AbstractCharSequenceAssert<SELF, ACTUAL>.containsFormData(
-        name: ACTUAL,
-        value: ACTUAL
-    ): SELF {
-    return contains(
-        "Content-Disposition: form-data; name=\"$name\"\r\n" +
-            "Content-Length: ${value.length}\r\n\r\n$value\r\n"
-    )
-}
-
-private fun <SELF : AbstractCharSequenceAssert<SELF, ACTUAL>?,
-    ACTUAL : CharSequence> AbstractCharSequenceAssert<SELF, ACTUAL>.containsMultipartFile(
-        name: ACTUAL,
-        fileName: ACTUAL,
-        fileContent: ACTUAL
-    ): SELF {
-    return contains(
-        "Content-Disposition: form-data; name=\"$name\"; filename=\"$fileName\"\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: ${fileContent.length}\r\n\r\n$fileContent"
-    )
 }

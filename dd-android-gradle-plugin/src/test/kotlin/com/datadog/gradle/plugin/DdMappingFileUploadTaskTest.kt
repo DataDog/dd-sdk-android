@@ -6,6 +6,8 @@
 
 package com.datadog.gradle.plugin
 
+import com.datadog.gradle.plugin.internal.DdAppIdentifier
+import com.datadog.gradle.plugin.internal.DdConfiguration
 import com.datadog.gradle.plugin.internal.Uploader
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions

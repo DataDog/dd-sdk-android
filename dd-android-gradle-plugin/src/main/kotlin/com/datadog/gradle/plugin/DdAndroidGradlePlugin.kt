@@ -11,9 +11,16 @@ import com.android.build.gradle.api.ApplicationVariant
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.slf4j.LoggerFactory
 
+/**
+ * Plugin adding tasks for Android projects using Datadog's SDK for Android.
+ */
 class DdAndroidGradlePlugin : Plugin<Project> {
 
+    // region Plugin
+
+    /** @inheritdoc */
     override fun apply(target: Project) {
         val androidExtension = target.extensions.findByType(AppExtension::class.java)
         if (androidExtension == null) {
@@ -33,6 +40,10 @@ class DdAndroidGradlePlugin : Plugin<Project> {
         }
     }
 
+    // endregion
+
+    // region Internal
+
     @Suppress("DefaultLocale")
     private fun configureVariant(
         target: Project,
@@ -40,7 +51,6 @@ class DdAndroidGradlePlugin : Plugin<Project> {
         apiKey: String,
         extension: DdExtension
     ) {
-        System.err.println("Variant ${variant.name}/${variant.flavorName}")
         val flavorName = variant.name.removeSuffix("Release")
         val uploadTaskName = UPLOAD_TASK_NAME + flavorName.capitalize()
         val assembleTaskName = "assemble${variant.name.capitalize()}"
@@ -64,12 +74,17 @@ class DdAndroidGradlePlugin : Plugin<Project> {
         target.tasks.findByName(assembleTaskName)?.finalizedBy(uploadTaskName)
     }
 
+    // endregion
+
     companion object {
-        const val EXT_NAME = "datadog"
 
-        const val UPLOAD_TASK_NAME = "uploadMapping"
+        internal val LOGGER = LoggerFactory.getLogger("DdAndroidGradlePlugin")
 
-        internal const val ERROR_NOT_ANDROID = "The dd-android-gradle-plugin has been applied on " +
+        private const val EXT_NAME = "datadog"
+
+        private const val UPLOAD_TASK_NAME = "uploadMapping"
+
+        private const val ERROR_NOT_ANDROID = "The dd-android-gradle-plugin has been applied on " +
             "a non android application project"
     }
 }

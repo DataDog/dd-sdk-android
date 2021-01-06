@@ -6,9 +6,21 @@
 
 package com.datadog.gradle.plugin
 
+import com.datadog.gradle.plugin.internal.DdConfiguration
 import java.io.Serializable
 
+/**
+ * Extension used to configure the `dd-android-gradle-plugin`.
+ */
 open class DdExtension : Serializable {
+
+    /**
+     * The environment name for the application.
+     */
     var environmentName: String = ""
+
+    /**
+     * The Datadog site to upload your data to (one of "US", "EU", "GOV").
+     */
     var site: String = DdConfiguration.Site.US.name
 }

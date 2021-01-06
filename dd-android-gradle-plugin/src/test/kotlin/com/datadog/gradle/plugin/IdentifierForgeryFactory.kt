@@ -6,10 +6,11 @@
 
 package com.datadog.gradle.plugin
 
+import com.datadog.gradle.plugin.internal.DdAppIdentifier
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class IdentifierForgeryFactory : ForgeryFactory<DdAppIdentifier> {
+internal class IdentifierForgeryFactory : ForgeryFactory<DdAppIdentifier> {
     override fun getForgery(forge: Forge): DdAppIdentifier {
         return DdAppIdentifier(
             serviceName = forge.aStringMatching("[a-z]{3}(\\.[a-z]{5,10}){2,4}"),

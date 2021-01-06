@@ -19,7 +19,6 @@ import com.datadog.gradle.testImplementation
 plugins {
     id("java-gradle-plugin")
     kotlin("jvm")
-    // kotlin("kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
@@ -32,6 +31,7 @@ plugins {
 dependencies {
     implementation(gradleApi())
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.KotlinReflect)
     implementation(Dependencies.Libraries.OkHttp)
     implementation(Dependencies.ClassPaths.AndroidTools)
 
