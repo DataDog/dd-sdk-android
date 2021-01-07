@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.core.configuration
 
 import android.os.Build
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
@@ -46,7 +47,9 @@ internal constructor(
 
     internal data class Core(
         var needsClearTextHttp: Boolean,
-        val firstPartyHosts: List<String>
+        val firstPartyHosts: List<String>,
+        val batchSize: BatchSize,
+        val uploadFrequency: UploadFrequency
     )
 
     internal sealed class Feature {
@@ -289,6 +292,24 @@ internal constructor(
         }
 
         /**
+         * Defines the batch size (impacts the size and number of requests performed by Datadog).
+         * @param batchSize the desired batch size
+         */
+        fun setBatchSize(batchSize: BatchSize): Builder {
+            coreConfig = coreConfig.copy(batchSize = batchSize)
+            return this
+        }
+
+        /**
+         * Defines the preferred upload frequency.
+         * @param uploadFrequency the desired upload frequency policy
+         */
+        fun setUploadFrequency(uploadFrequency: UploadFrequency): Builder {
+            coreConfig = coreConfig.copy(uploadFrequency = uploadFrequency)
+            return this
+        }
+
+        /**
          * Sets the sampling rate for RUM Sessions.
          *
          * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
@@ -421,7 +442,9 @@ internal constructor(
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
-            firstPartyHosts = emptyList()
+            firstPartyHosts = emptyList(),
+            batchSize = BatchSize.MEDIUM,
+            uploadFrequency = UploadFrequency.AVERAGE
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US,
@@ -451,11 +474,13 @@ internal constructor(
 
         private val URL_REGEX = "^(http|https)://(.*)"
 
-        private const val VALID_HOSTNAME_REGEX =
-            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.)" +
-                "{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|" +
-                "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)" +
-                "*([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+        private const val VALID_IP_REGEX =
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+        private const val VALID_DOMAIN_REGEX =
+            "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
+        private const val VALID_HOSTNAME_REGEX = "$VALID_IP_REGEX|$VALID_DOMAIN_REGEX"
 
         internal const val WARNING_USING_URL_FOR_HOST =
             "You are using an url: %s for declaring the first " +
@@ -483,6 +508,9 @@ internal constructor(
                         null
                     }
                 } else if (it.matches(validHostNameRegEx)) {
+                    it
+                } else if (it.toLowerCase(Locale.ENGLISH) == "localhost") {
+                    // special rule exception to accept `localhost` as a valid domain name
                     it
                 } else {
                     devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(it))

@@ -39,7 +39,7 @@ internal class ActionEventForgeryFactory :
             application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
             session = ActionEvent.Session(
                 id = forge.getForgery<UUID>().toString(),
-                type = ActionEvent.Type.USER
+                type = ActionEvent.SessionType.USER
             ),
             dd = ActionEvent.Dd()
         )

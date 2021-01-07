@@ -9,12 +9,14 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.EndpointUpdateStrategy
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
@@ -22,7 +24,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import java.lang.IllegalArgumentException
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -30,38 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 @Suppress("TooManyFunctions")
 object Datadog {
-
-    /**
-     * The endpoint for our US based servers, used by default by the SDK.
-     * @see [initialize]
-     * @deprecated Use the [DatadogEndpoint.LOGS_US] instead
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    @Deprecated(
-        "Use the DatadogEndpoint.LOGS_US instead",
-        ReplaceWith(
-            expression = "DatadogEndpoint.LOGS_US",
-            imports = ["com.datadog.android.DatadogEndpoint"]
-        )
-    )
-    const val DATADOG_US: String = "https://mobile-http-intake.logs.datadoghq.com"
-
-    /**
-     * The endpoint for our Europe based servers.
-     * Use this in your call to [initialize] if you log on
-     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @deprecated Use the [DatadogEndpoint.LOGS_EU] instead
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    @Deprecated(
-        "Use the DatadogEndpoint.LOGS_EU instead",
-        ReplaceWith(
-            expression = "DatadogEndpoint.LOGS_EU",
-            imports = ["com.datadog.android.DatadogEndpoint"]
-        )
-    )
-    const val DATADOG_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
     internal val initialized = AtomicBoolean(false)
     internal val startupTimeNs = System.nanoTime()
@@ -96,6 +65,12 @@ object Datadog {
         context: Context,
         config: DatadogConfig
     ) {
+        warnDeprecated(
+            "Method Datadog.initialize(Context, DatadogConfig)",
+            "1.7.0",
+            "1.9.0",
+            "Datadog.initialize(Context, TrackingConsent, DatadogConfig)"
+        )
         initialize(context, TrackingConsent.GRANTED, config)
     }
 
@@ -216,21 +191,6 @@ object Datadog {
         if (configuration != null) {
             RumFeature.initialize(appContext, configuration)
         }
-    }
-
-    /**
-     * Changes the endpoint to which logging data is sent.
-     * @param endpointUrl the endpoint url to target, or null to use the default.
-     * Possible values are [DATADOG_US_LOGS], [DATADOG_EU_LOGS] or a custom endpoint.
-     * @param strategy the strategy defining how to handle logs created previously.
-     * Because logs are sent asynchronously, some logs intended for the previous endpoint
-     * might still be yet to sent.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @JvmStatic
-    @Deprecated("This was only meant as an internal feature and is not needed anymore.")
-    fun setEndpointUrl(endpointUrl: String, strategy: EndpointUpdateStrategy) {
-        devLogger.w(String.format(Locale.US, MESSAGE_DEPRECATED, "setEndpointUrl()"))
     }
 
     /**

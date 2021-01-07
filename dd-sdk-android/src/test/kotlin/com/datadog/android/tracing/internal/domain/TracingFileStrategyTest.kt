@@ -10,11 +10,15 @@ import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,7 +48,8 @@ internal class TracingFileStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
-    lateinit var trackingConsentProvider: TrackingConsentProvider
+    @Mock
+    lateinit var mockConsentProvider: ConsentProvider
 
     @Mock
     lateinit var mockedTimeProvider: TimeProvider
@@ -55,13 +60,19 @@ internal class TracingFileStrategyTest {
     @Mock
     lateinit var mockedUserInfoProvider: UserInfoProvider
 
+    @Forgery
+    lateinit var fakePersistenceConfig: FilePersistenceConfig
+
+    @Forgery
+    lateinit var fakeConsent: TrackingConsent
+
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
-        trackingConsentProvider = TrackingConsentProvider()
+        whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
         testedStrategy = TracingFileStrategy(
             mockedContext,
             timeProvider = mockedTimeProvider,
@@ -69,7 +80,8 @@ internal class TracingFileStrategyTest {
             userInfoProvider = mockedUserInfoProvider,
             envName = fakeEnvName,
             dataPersistenceExecutorService = mockExecutorService,
-            trackingConsentProvider = trackingConsentProvider
+            trackingConsentProvider = mockConsentProvider,
+            filePersistenceConfig = fakePersistenceConfig
         )
     }
 
@@ -90,6 +102,6 @@ internal class TracingFileStrategyTest {
             .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
-            .hasConfig(FilePersistenceConfig(TracingFileStrategy.MAX_DELAY_BETWEEN_SPANS_MS))
+            .hasConfig(fakePersistenceConfig)
     }
 }

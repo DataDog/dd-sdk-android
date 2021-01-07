@@ -6,7 +6,7 @@ import com.google.gson.JsonPrimitive
 import kotlin.String
 
 data class Conflict(
-    val type: Type? = null,
+    val type: ConflictType? = null,
     val user: User? = null
 ) {
     fun toJson(): JsonElement {
@@ -16,7 +16,7 @@ data class Conflict(
         return json
     }
 
-    data class Type(
+    data class ConflictType(
         val id: String? = null
     ) {
         fun toJson(): JsonElement {
@@ -28,7 +28,7 @@ data class Conflict(
 
     data class User(
         val name: String? = null,
-        val type: Type1? = null
+        val type: UserType? = null
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
@@ -38,7 +38,7 @@ data class Conflict(
         }
     }
 
-    enum class Type1 {
+    enum class UserType {
         UNKNOWN,
 
         CUSTOMER,

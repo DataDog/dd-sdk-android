@@ -23,8 +23,11 @@ internal class Configurator :
         forge.addFactory(ConfigurationTracingForgeryFactory())
         forge.addFactory(ConfigurationRumForgeryFactory())
         forge.addFactory(CredentialsForgeryFactory())
+        forge.addFactory(FeatureConfigForgeryFactory())
+        forge.addFactory(RumFeatureConfigForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(FilePersistenceConfigForgeryFactory())
 
         // IO
         forge.addFactory(BatchForgeryFactory())

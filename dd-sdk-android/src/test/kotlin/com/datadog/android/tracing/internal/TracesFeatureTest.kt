@@ -6,7 +6,7 @@
 
 package com.datadog.android.tracing.internal
 
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.tracing.internal.domain.TracingFileStrategy

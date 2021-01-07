@@ -4,10 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.core.configuration
 
 import android.os.Build
 import android.util.Log
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
@@ -30,7 +31,9 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -85,7 +88,9 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
-                firstPartyHosts = emptyList()
+                firstPartyHosts = emptyList(),
+                batchSize = BatchSize.MEDIUM,
+                uploadFrequency = UploadFrequency.AVERAGE
             )
         )
         assertThat(config.logsConfig).isNull()
@@ -103,7 +108,9 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
-                firstPartyHosts = emptyList()
+                firstPartyHosts = emptyList(),
+                batchSize = BatchSize.MEDIUM,
+                uploadFrequency = UploadFrequency.AVERAGE
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -807,7 +814,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using ip addresses }`(
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { ip addresses }`(
         @StringForgery(
             regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
@@ -829,9 +836,9 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using host names }`(
+    fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts() { host names }`(
         @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*" +
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
@@ -851,10 +858,50 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M log error W setFirstPartyHosts { using malformed hostname }`(
+    fun `𝕄 drop everything 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*)" +
-                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 only accept the localhost 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
+        @StringForgery(
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>,
+        forge: Forge
+    ) {
+        // When
+        val fakeLocalHost = forge.aStringMatching("localhost|LOCALHOST")
+        val hostsWithLocalHost =
+            hosts.toMutableList().apply { add(fakeLocalHost) }
+        val config = testedBuilder
+            .setFirstPartyHosts(hostsWithLocalHost)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = listOf(fakeLocalHost))
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `M log error W setFirstPartyHosts() { malformed hostname }`(
+        @StringForgery(
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*)" +
+                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 
@@ -873,7 +920,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M log error W setFirstPartyHosts { using malformed ip address }`(
+    fun `M log error W setFirstPartyHosts() { malformed ip address }`(
         @StringForgery(
             regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
                 "|(([0-9]{4,9}\\.)[0.9]{4})" +
@@ -896,10 +943,10 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M drop all malformed hosts W setFirstPartyHosts { using malformed hostname }`(
+    fun `M drop all malformed hosts W setFirstPartyHosts() { malformed hostname }`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*) " +
-                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*) " +
+                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 
@@ -909,17 +956,17 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // THEN
-        assertThat(config.coreConfig)
-            .isEqualTo(
-                Configuration.Core(
-                    needsClearTextHttp = false,
-                    firstPartyHosts = emptyList()
-                )
-            )
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
-    fun `M drop all malformed ip addresses W setFirstPartyHosts { using malformed ip address }`(
+    fun `M drop all malformed ip addresses W setFirstPartyHosts() { malformed ip address }`(
         @StringForgery(
             regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
                 "|(([0-9]{4,9}\\.)[0.9]{4})" +
@@ -933,17 +980,17 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // THEN
-        assertThat(config.coreConfig)
-            .isEqualTo(
-                Configuration.Core(
-                    needsClearTextHttp = false,
-                    firstPartyHosts = emptyList()
-                )
-            )
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
-    fun `M get host name W setFirstPartyHosts { using url instead of host name as argument }`(
+    fun `M use url host name W setFirstPartyHosts() { url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         ) hosts: List<String>
@@ -954,17 +1001,17 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // THEN
-        assertThat(config.coreConfig)
-            .isEqualTo(
-                Configuration.Core(
-                    needsClearTextHttp = false,
-                    firstPartyHosts = hosts.map { URL(it).host }
-                )
-            )
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts.map { URL(it).host })
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
-    fun `M warn W setFirstPartyHosts { using url instead of host name as argument }`(
+    fun `M warn W setFirstPartyHosts() { url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         ) hosts: List<String>
@@ -984,7 +1031,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M warn W setFirstPartyHosts { using malformed url as argument }`(
+    fun `M warn W setFirstPartyHosts() { malformed url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
         ) hosts: List<String>
@@ -1009,7 +1056,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M drop all malformed urls W setFirstPartyHosts { using malformed url as argument }`(
+    fun `M drop all malformed urls W setFirstPartyHosts() { malformed url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
         ) hosts: List<String>
@@ -1020,12 +1067,50 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // THEN
-        assertThat(config.coreConfig)
-            .isEqualTo(
-                Configuration.Core(
-                    needsClearTextHttp = false,
-                    firstPartyHosts = emptyList()
-                )
-            )
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 use batch size 𝕎 setBatchSize()`(
+        @Forgery batchSize: BatchSize
+    ) {
+        // When
+        val config = testedBuilder
+            .setBatchSize(batchSize)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(batchSize = batchSize)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 use upload frequency 𝕎 setUploadFrequency()`(
+        @Forgery uploadFrequency: UploadFrequency
+    ) {
+        // When
+        val config = testedBuilder
+            .setUploadFrequency(uploadFrequency)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 }

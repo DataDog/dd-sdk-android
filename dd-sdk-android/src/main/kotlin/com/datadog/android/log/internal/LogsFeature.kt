@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal
 
 import android.content.Context
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -29,7 +29,8 @@ internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>(
         return LogFileStrategy(
             context,
             trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService
+            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 

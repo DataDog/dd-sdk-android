@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal
 
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper

@@ -7,7 +7,7 @@
 package com.datadog.android.tracing.internal
 
 import android.content.Context
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -33,7 +33,8 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
             userInfoProvider = CoreFeature.userInfoProvider,
             envName = CoreFeature.envName,
             dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider
+            trackingConsentProvider = CoreFeature.trackingConsentProvider,
+            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
         )
     }
 

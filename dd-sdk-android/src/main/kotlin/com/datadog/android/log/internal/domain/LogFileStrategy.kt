@@ -16,8 +16,7 @@ import java.util.concurrent.ExecutorService
 
 internal class LogFileStrategy(
     context: Context,
-    filePersistenceConfig: FilePersistenceConfig =
-        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_LOGS_MS),
+    filePersistenceConfig: FilePersistenceConfig,
     dataPersistenceExecutorService: ExecutorService,
     trackingConsentProvider: ConsentProvider
 ) : FilePersistenceStrategy<Log>(
@@ -35,6 +34,5 @@ internal class LogFileStrategy(
         internal const val INTERMEDIATE_DATA_FOLDER =
             "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
-        internal const val MAX_DELAY_BETWEEN_LOGS_MS = 5000L
     }
 }

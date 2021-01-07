@@ -20,8 +20,7 @@ import java.util.concurrent.ExecutorService
 
 internal class TracingFileStrategy(
     context: Context,
-    filePersistenceConfig: FilePersistenceConfig =
-        FilePersistenceConfig(recentDelayMs = MAX_DELAY_BETWEEN_SPANS_MS),
+    filePersistenceConfig: FilePersistenceConfig,
     timeProvider: TimeProvider,
     networkInfoProvider: NetworkInfoProvider,
     userInfoProvider: UserInfoProvider,
@@ -42,6 +41,5 @@ internal class TracingFileStrategy(
         internal const val ROOT = "dd-tracing"
         internal const val INTERMEDIATE_DATA_FOLDER = "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
-        internal const val MAX_DELAY_BETWEEN_SPANS_MS = 5000L
     }
 }

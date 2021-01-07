@@ -8,6 +8,7 @@ package com.datadog.android
 
 import android.os.Build
 import android.util.Log
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
@@ -29,6 +30,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -675,7 +677,7 @@ internal class DatadogConfigBuilderTest {
     @Test
     fun `𝕄 build config with first party hosts 𝕎 setFirstPartyHosts { using host names }`(
         @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*" +
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
@@ -733,10 +735,66 @@ internal class DatadogConfigBuilderTest {
     }
 
     @Test
+    fun `𝕄 drop everything 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
+        @StringForgery(
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
+            .setFirstPartyHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = emptyList()
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 only accept the localhost 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
+        @StringForgery(
+            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>,
+        forge: Forge
+    ) {
+        // When
+        val fakeLocalHost = forge.aStringMatching("localhost|LOCALHOST")
+        val hostsWithLocalHost =
+            hosts.toMutableList().apply { add(fakeLocalHost) }
+        val config = testedBuilder
+            .setLogsEnabled(true)
+            .setTracesEnabled(true)
+            .setCrashReportsEnabled(true)
+            .setRumEnabled(true)
+            .setFirstPartyHosts(hostsWithLocalHost)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig)
+            .isEqualTo(
+                DatadogConfig.CoreConfig(
+                    needsClearTextHttp = false,
+                    envName = fakeEnvName,
+                    hosts = listOf(fakeLocalHost)
+                )
+            )
+    }
+
+    @Test
     fun `M log error W setFirstPartyHosts { using malformed hostname }`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*)" +
-                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*)" +
+                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 
@@ -780,8 +838,8 @@ internal class DatadogConfigBuilderTest {
     @Test
     fun `M drop all malformed hosts W setFirstPartyHosts { using malformed hostname }`(
         @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([-+=~><?][A-Za-z0-9]*) " +
-                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]*[-+=~><?])"
+            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*) " +
+                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
 

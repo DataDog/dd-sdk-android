@@ -9,10 +9,14 @@ package com.datadog.android.rum.internal.domain
 import android.content.Context
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
-import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -40,20 +44,28 @@ internal class RumFileStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
-    lateinit var trackingConsentProvider: TrackingConsentProvider
+    @Mock
+    lateinit var mockConsentProvider: ConsentProvider
 
     @Mock
     lateinit var mockRumEventMapper: RumEventMapper
 
+    @Forgery
+    lateinit var fakePersistenceConfig: FilePersistenceConfig
+
+    @Forgery
+    lateinit var fakeConsent: TrackingConsent
+
     @BeforeEach
     fun `set up`() {
         mockedContext = mockContext()
-        trackingConsentProvider = TrackingConsentProvider()
+        whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
         testedStrategy = RumFileStrategy(
             mockedContext,
             dataPersistenceExecutorService = mockExecutorService,
-            trackingConsentProvider = trackingConsentProvider,
-            eventMapper = mockRumEventMapper
+            trackingConsentProvider = mockConsentProvider,
+            eventMapper = mockRumEventMapper,
+            filePersistenceConfig = fakePersistenceConfig
         )
     }
 
@@ -74,6 +86,6 @@ internal class RumFileStrategyTest {
             .hasAuthorizedStorageFolder(expectedAuthorizedFolderPath)
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
-            .hasConfig(FilePersistenceConfig(RumFileStrategy.MAX_DELAY_BETWEEN_RUM_EVENTS_MS))
+            .hasConfig(fakePersistenceConfig)
     }
 }

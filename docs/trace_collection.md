@@ -20,7 +20,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     }
     ```
 
-2. Initialize the library with your application context and your [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
+2. Initialize the library with your application context, [tracking consent][7], and [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
 
     {{< tabs >}}
     {{% tab "US" %}}
@@ -32,7 +32,7 @@ class SampleApplication : Application() {
 
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -48,7 +48,7 @@ class SampleApplication : Application() {
         val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         .useEUEndpoints()
                         .build()
-        Datadog.initialize(this, config)
+        Datadog.initialize(this, trackingConsent, config)
     }
 }
 ```
@@ -269,3 +269,4 @@ The data on disk will automatically be discarded if it gets too old to ensure th
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [6]: https://square.github.io/okhttp/interceptors/
+[7]: gdpr.md

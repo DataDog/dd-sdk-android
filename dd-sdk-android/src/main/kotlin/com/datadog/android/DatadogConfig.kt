@@ -7,6 +7,10 @@
 package com.datadog.android
 
 import android.os.Build
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.plugin.DatadogPlugin
@@ -77,7 +81,9 @@ private constructor(
         return Configuration(
             coreConfig = Configuration.Core(
                 needsClearTextHttp = coreConfig.needsClearTextHttp,
-                firstPartyHosts = coreConfig.hosts
+                firstPartyHosts = coreConfig.hosts,
+                batchSize = BatchSize.MEDIUM,
+                uploadFrequency = UploadFrequency.AVERAGE
             ),
             logsConfig = logsConfig?.let {
                 Configuration.Feature.Logs(

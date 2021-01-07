@@ -317,20 +317,6 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
     }
 
-    @Test
-    fun `uploads with updated endpoint`(forge: Forge) {
-        val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-        mockWebServer.shutdown()
-        val mockWebServer2 = MockWebServer()
-        mockWebServer2.start(forge.anInt(2000, 8000))
-        mockWebServer2.enqueue(forgeMockResponse(200))
-        fakeEndpoint = mockWebServer2.url("/").toString().removeSuffix("/")
-
-        testedUploader.setEndpoint(fakeEndpoint)
-        val status = testedUploader.upload(data)
-        assertThat(status).isEqualTo(UploadStatus.SUCCESS)
-    }
-
     // region Internal
 
     private fun assertRequestIsValid(

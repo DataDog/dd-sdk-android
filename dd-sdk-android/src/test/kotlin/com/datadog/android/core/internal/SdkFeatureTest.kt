@@ -7,9 +7,8 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
-import com.datadog.android.Configuration
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -145,7 +144,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         argumentCaptor<Runnable> {
             verify(CoreFeature.uploadExecutorService).schedule(
                 any(),
-                eq(DataUploadRunnable.DEFAULT_DELAY_MS),
+                any(),
                 eq(TimeUnit.MILLISECONDS)
             )
         }
