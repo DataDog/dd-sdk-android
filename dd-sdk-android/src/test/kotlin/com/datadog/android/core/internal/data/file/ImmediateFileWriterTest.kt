@@ -44,9 +44,9 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DefaultFileWriterTest {
+internal class ImmediateFileWriterTest {
 
-    lateinit var testedWriter: DefaultFileWriter<String>
+    lateinit var testedWriter: ImmediateFileWriter<String>
 
     @Mock
     lateinit var mockSerializer: Serializer<String>
@@ -69,7 +69,7 @@ internal class DefaultFileWriterTest {
             val runnable = it.arguments[0] as Runnable
             runnable.run()
         }
-        testedWriter = DefaultFileWriter(
+        testedWriter = ImmediateFileWriter(
             mockOrchestrator,
             mockSerializer
         )
@@ -128,7 +128,7 @@ internal class DefaultFileWriterTest {
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 write several models with custom separator 𝕎 write()+`(forge: Forge) {
         val separator = forge.anAsciiString()
-        testedWriter = DefaultFileWriter(
+        testedWriter = ImmediateFileWriter(
             mockOrchestrator,
             mockSerializer,
             separator

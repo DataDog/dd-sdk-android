@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.data.file
 
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.core.internal.data.file.DefaultFileWriter
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -19,7 +19,7 @@ internal class RumFileWriter(
     fileOrchestrator: Orchestrator,
     serializer: Serializer<RumEvent>,
     separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
-) : DefaultFileWriter<RumEvent>(fileOrchestrator, serializer, separator) {
+) : ImmediateFileWriter<RumEvent>(fileOrchestrator, serializer, separator) {
 
     private val lastViewEventFile: File
 
@@ -28,15 +28,14 @@ internal class RumFileWriter(
         lastViewEventFile = File(ndkCrashDataDirectory, LAST_VIEW_EVENT_FILE_NAME)
     }
 
-    // region DefaultFileWriter
+    // region ImmediateFileWriter
 
-    override fun serialiseEvent(model: RumEvent): String? {
-        val serialisedEvent = super.serialiseEvent(model)
-        if (serialisedEvent != null && model.event is ViewEvent) {
+    override fun writeData(data: ByteArray, model: RumEvent) {
+        super.writeData(data, model)
+        if (model.event is ViewEvent) {
             // persist the serialised ViewEvent in the NDK crash data folder
-            writeDataToFile(lastViewEventFile, serialisedEvent.toByteArray(Charsets.UTF_8), false)
+            writeDataToFile(lastViewEventFile, data, false)
         }
-        return serialisedEvent
     }
 
     // endregion

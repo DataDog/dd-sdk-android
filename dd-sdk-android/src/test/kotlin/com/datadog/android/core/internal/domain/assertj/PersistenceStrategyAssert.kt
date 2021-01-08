@@ -6,10 +6,11 @@
 
 package com.datadog.android.core.internal.domain.assertj
 
-import com.datadog.android.core.internal.data.file.DefaultFileWriter
 import com.datadog.android.core.internal.data.file.FileOrchestrator
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.domain.batching.DefaultConsentAwareDataWriter
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -50,7 +51,14 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
 
     fun usesImmediateWriter(): PersistenceStrategyAssert<T> {
         assertThat(actual.getWriter())
-            .isInstanceOf(DefaultFileWriter::class.java)
+            .isInstanceOf(ImmediateFileWriter::class.java)
+        return this
+    }
+
+    fun <R> hasFileInternalWriterInstanceOf(type: Class<R>): PersistenceStrategyAssert<T> {
+        assertThat(actual.getWriter()).isInstanceOfSatisfying(ConsentAwareDataWriter::class.java) {
+            assertThat(it.getInternalWriter()).isInstanceOf(type)
+        }
         return this
     }
 

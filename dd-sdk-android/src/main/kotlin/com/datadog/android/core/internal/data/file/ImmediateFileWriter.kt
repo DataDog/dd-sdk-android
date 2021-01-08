@@ -18,7 +18,7 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 
-internal open class DefaultFileWriter<T : Any>(
+internal open class ImmediateFileWriter<T : Any>(
     internal val fileOrchestrator: Orchestrator,
     private val serializer: Serializer<T>,
     separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
@@ -40,46 +40,25 @@ internal open class DefaultFileWriter<T : Any>(
 
     // endregion
 
-    // region Internal
-
-    @SuppressWarnings("TooGenericExceptionCaught")
-    protected open fun serialiseEvent(model: T): String? {
-        return try {
-            serializer.serialize(model)
-        } catch (e: Throwable) {
-            sdkLogger.w("Unable to serialize ${model.javaClass.simpleName}", e)
-            null
-        }
-    }
-
     @SuppressWarnings("TooGenericExceptionCaught")
     private fun consume(model: T) {
         serialiseEvent(model)?.let {
-            persistData(it)
+            persistData(it, model)
         }
     }
 
-    private fun persistData(data: String) {
-        if (data.length >= MAX_ITEM_SIZE) {
-            devLogger.e("Unable to persist data, serialized size is too big\n$data")
-        } else {
-            synchronized(this) {
-                writeData(data)
-            }
-        }
-    }
+    // region Protected
 
-    private fun writeData(data: String) {
-        val dataAsByteArray = data.toByteArray(Charsets.UTF_8)
+    protected open fun writeData(data: ByteArray, model: T) {
         val file = try {
-            fileOrchestrator.getWritableFile(dataAsByteArray.size)
+            fileOrchestrator.getWritableFile(data.size)
         } catch (e: SecurityException) {
             sdkLogger.e("Unable to access batch file directory", e)
             null
         }
 
         if (file != null) {
-            writeDataToFile(file, dataAsByteArray)
+            writeDataToFile(file, data)
         } else {
             sdkLogger.e("Could not get a valid file")
         }
@@ -102,6 +81,30 @@ internal open class DefaultFileWriter<T : Any>(
             sdkLogger.e("Couldn't create an output stream to file ${file.path}", e)
         } catch (e: IOException) {
             sdkLogger.e("Exception when trying to write data to: [${file.canonicalPath}] ", e)
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    @SuppressWarnings("TooGenericExceptionCaught")
+    private fun serialiseEvent(model: T): String? {
+        return try {
+            serializer.serialize(model)
+        } catch (e: Throwable) {
+            sdkLogger.w("Unable to serialize ${model.javaClass.simpleName}", e)
+            null
+        }
+    }
+
+    private fun persistData(data: String, model: T) {
+        if (data.length >= MAX_ITEM_SIZE) {
+            devLogger.e("Unable to persist data, serialized size is too big\n$data")
+        } else {
+            synchronized(this) {
+                writeData(data.toByteArray(Charsets.UTF_8), model)
+            }
         }
     }
 

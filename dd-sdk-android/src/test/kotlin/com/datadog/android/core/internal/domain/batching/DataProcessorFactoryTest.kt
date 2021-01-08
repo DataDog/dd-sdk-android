@@ -7,16 +7,19 @@
 package com.datadog.android.core.internal.domain.batching
 
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.core.internal.data.file.DefaultFileWriter
+import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.NoOpDataProcessor
 import com.datadog.android.event.EventMapper
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -74,7 +77,7 @@ internal class DataProcessorFactoryTest {
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            val immediateFileWriter = it.getWriter() as DefaultFileWriter
+            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
             assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedIntermediateFileOrchestrator)
         }
@@ -97,7 +100,7 @@ internal class DataProcessorFactoryTest {
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            val immediateFileWriter = it.getWriter() as DefaultFileWriter
+            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
             assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedTargetFileOrchestrator)
         }
@@ -138,5 +141,35 @@ internal class DataProcessorFactoryTest {
 
         // THEN
         assertThat(processor).isInstanceOf(NoOpDataProcessor::class.java)
+    }
+
+    @Test
+    fun `M use the fileWriterFactory W provided`(forge: Forge) {
+        // GIVEN
+        val mockFileWriterFactory =
+            mock<(Orchestrator, Serializer<String>, CharSequence) -> Writer<String>>()
+        val mockFileWriter: Writer<String> = mock()
+        whenever(mockFileWriterFactory.invoke(any(), any(), any())).thenReturn(mockFileWriter)
+        testedFactory = DataProcessorFactory(
+            mockedIntermediateFileOrchestrator,
+            mockedTargetFileOrchestrator,
+            mockedSerializer,
+            fakeEventsSeparator,
+            mockedExecutorService,
+            fileWriterFactory = mockFileWriterFactory
+        )
+
+        // WHEN
+        val processor = testedFactory.resolveProcessor(
+            forge.aValueFrom(
+                TrackingConsent::class.java,
+                exclude = listOf(TrackingConsent.NOT_GRANTED)
+            )
+        )
+
+        // THEN
+        assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
+            assertThat(it.dataWriter).isEqualTo(mockFileWriter)
+        }
     }
 }

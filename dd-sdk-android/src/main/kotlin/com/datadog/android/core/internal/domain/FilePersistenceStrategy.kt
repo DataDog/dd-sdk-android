@@ -6,10 +6,12 @@
 
 package com.datadog.android.core.internal.domain
 
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.FileReader
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.domain.batching.DataProcessorFactory
 import com.datadog.android.core.internal.domain.batching.DefaultConsentAwareDataWriter
@@ -28,7 +30,11 @@ internal open class FilePersistenceStrategy<T : Any>(
     filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig(),
     payloadDecoration: PayloadDecoration = PayloadDecoration.JSON_ARRAY_DECORATION,
     trackingConsentProvider: ConsentProvider,
-    eventMapper: EventMapper<T> = NoOpEventMapper()
+    eventMapper: EventMapper<T> = NoOpEventMapper(),
+    fileWriterFactory: (Orchestrator, Serializer<T>, CharSequence) -> Writer<T> =
+        { fileOrchestrator, eventSerializer, eventSeparator ->
+            ImmediateFileWriter(fileOrchestrator, eventSerializer, eventSeparator)
+        }
 ) : PersistenceStrategy<T> {
 
     internal val intermediateFileOrchestrator = FileOrchestrator(
@@ -57,7 +63,8 @@ internal open class FilePersistenceStrategy<T : Any>(
                 serializer,
                 payloadDecoration.separator,
                 executorService,
-                eventMapper
+                eventMapper,
+                fileWriterFactory
             ),
             migratorsFactory = DefaultMigratorFactory(
                 intermediateStorageFolder.absolutePath,

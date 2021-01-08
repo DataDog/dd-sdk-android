@@ -7,6 +7,7 @@
 package com.datadog.android.tracing.internal.domain
 
 import android.content.Context
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -18,6 +19,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -103,5 +105,30 @@ internal class TracingFileStrategyTest {
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
             .hasConfig(fakePersistenceConfig)
+    }
+
+    @Test
+    fun `M use the DefaultFileWriter factory W instantiating the writer`(forge: Forge) {
+        // GIVEN
+        // just to avoid using the NoOpWriter factory
+        whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(
+            TrackingConsent::class.java,
+            exclude = listOf(TrackingConsent.NOT_GRANTED)
+        )
+        testedStrategy = TracingFileStrategy(
+            mockedContext,
+            timeProvider = mockedTimeProvider,
+            networkInfoProvider = mockedNetworkInfoProvider,
+            userInfoProvider = mockedUserInfoProvider,
+            envName = fakeEnvName,
+            dataPersistenceExecutorService = mockExecutorService,
+            trackingConsentProvider = mockConsentProvider,
+            filePersistenceConfig = fakePersistenceConfig
+        )
+
+        // THEN
+        PersistenceStrategyAssert
+            .assertThat(testedStrategy)
+            .hasFileInternalWriterInstanceOf(ImmediateFileWriter::class.java)
     }
 }
