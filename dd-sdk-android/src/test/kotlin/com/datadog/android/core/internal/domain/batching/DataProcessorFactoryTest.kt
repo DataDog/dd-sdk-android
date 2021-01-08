@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.domain.batching
 
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.core.internal.data.file.ImmediateFileWriter
+import com.datadog.android.core.internal.data.file.DefaultFileWriter
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.NoOpDataProcessor
@@ -74,7 +74,7 @@ internal class DataProcessorFactoryTest {
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
+            val immediateFileWriter = it.getWriter() as DefaultFileWriter
             assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedIntermediateFileOrchestrator)
         }
@@ -97,7 +97,7 @@ internal class DataProcessorFactoryTest {
 
         // THEN
         assertThat(processor).isInstanceOfSatisfying(DefaultDataProcessor::class.java) {
-            val immediateFileWriter = it.getWriter() as ImmediateFileWriter
+            val immediateFileWriter = it.getWriter() as DefaultFileWriter
             assertThat(immediateFileWriter.fileOrchestrator)
                 .isEqualTo(mockedTargetFileOrchestrator)
         }

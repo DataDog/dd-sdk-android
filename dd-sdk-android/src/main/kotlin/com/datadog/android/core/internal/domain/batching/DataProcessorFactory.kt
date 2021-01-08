@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.domain.batching
 
 import com.datadog.android.core.internal.data.Orchestrator
-import com.datadog.android.core.internal.data.file.ImmediateFileWriter
+import com.datadog.android.core.internal.data.file.DefaultFileWriter
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
 import com.datadog.android.core.internal.domain.batching.processors.DefaultDataProcessor
@@ -32,14 +32,14 @@ internal class DataProcessorFactory<T : Any>(
                 intermediateFileOrchestrator.reset()
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(intermediateFileOrchestrator, serializer, separator),
+                    DefaultFileWriter(intermediateFileOrchestrator, serializer, separator),
                     eventMapper
                 )
             }
             TrackingConsent.GRANTED -> {
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(targetFileOrchestrator, serializer, separator),
+                    DefaultFileWriter(targetFileOrchestrator, serializer, separator),
                     eventMapper
                 )
             }

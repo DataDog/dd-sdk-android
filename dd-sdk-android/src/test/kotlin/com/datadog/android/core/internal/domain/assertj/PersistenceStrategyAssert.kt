@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.domain.assertj
 
+import com.datadog.android.core.internal.data.file.DefaultFileWriter
 import com.datadog.android.core.internal.data.file.FileOrchestrator
-import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.batching.DefaultConsentAwareDataWriter
@@ -50,7 +50,7 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
 
     fun usesImmediateWriter(): PersistenceStrategyAssert<T> {
         assertThat(actual.getWriter())
-            .isInstanceOf(ImmediateFileWriter::class.java)
+            .isInstanceOf(DefaultFileWriter::class.java)
         return this
     }
 

@@ -18,7 +18,7 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 
-internal class ImmediateFileWriter<T : Any>(
+internal open class DefaultFileWriter<T : Any>(
     internal val fileOrchestrator: Orchestrator,
     private val serializer: Serializer<T>,
     separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
@@ -43,14 +43,23 @@ internal class ImmediateFileWriter<T : Any>(
     // region Internal
 
     @SuppressWarnings("TooGenericExceptionCaught")
-    private fun consume(model: T) {
-        val data = try {
+    protected open fun serialiseEvent(model: T): String? {
+        return try {
             serializer.serialize(model)
         } catch (e: Throwable) {
             sdkLogger.w("Unable to serialize ${model.javaClass.simpleName}", e)
-            return
+            null
         }
+    }
 
+    @SuppressWarnings("TooGenericExceptionCaught")
+    private fun consume(model: T) {
+        serialiseEvent(model)?.let {
+            persistData(it)
+        }
+    }
+
+    private fun persistData(data: String) {
         if (data.length >= MAX_ITEM_SIZE) {
             devLogger.e("Unable to persist data, serialized size is too big\n$data")
         } else {
@@ -76,11 +85,16 @@ internal class ImmediateFileWriter<T : Any>(
         }
     }
 
-    private fun writeDataToFile(file: File, dataAsByteArray: ByteArray) {
+    protected fun writeDataToFile(
+        file: File,
+        dataAsByteArray: ByteArray,
+        append: Boolean = true,
+        withSeparator: Boolean = true
+    ) {
         try {
-            val outputStream = FileOutputStream(file, true)
+            val outputStream = FileOutputStream(file, append)
             outputStream.use { stream ->
-                lockFileAndWriteData(stream, file, dataAsByteArray)
+                lockFileAndWriteData(stream, file, dataAsByteArray, withSeparator)
             }
         } catch (e: IllegalStateException) {
             sdkLogger.e("Exception when trying to lock the file: [${file.canonicalPath}] ", e)
@@ -94,10 +108,11 @@ internal class ImmediateFileWriter<T : Any>(
     private fun lockFileAndWriteData(
         stream: FileOutputStream,
         file: File,
-        dataAsByteArray: ByteArray
+        dataAsByteArray: ByteArray,
+        withSeparator: Boolean = true
     ) {
         stream.channel.lock().use {
-            if (file.length() > 0) {
+            if (file.length() > 0 && withSeparator) {
                 stream.write(separatorBytes + dataAsByteArray)
             } else {
                 stream.write(dataAsByteArray)
