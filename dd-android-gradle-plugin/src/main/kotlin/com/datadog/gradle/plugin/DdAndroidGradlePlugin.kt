@@ -53,7 +53,6 @@ class DdAndroidGradlePlugin : Plugin<Project> {
     ) {
         val flavorName = variant.name.removeSuffix("Release")
         val uploadTaskName = UPLOAD_TASK_NAME + flavorName.capitalize()
-        val assembleTaskName = "assemble${variant.name.capitalize()}"
 
         val uploadTask = target.tasks.create(
             uploadTaskName,
@@ -70,8 +69,6 @@ class DdAndroidGradlePlugin : Plugin<Project> {
         val mappingDir = File(outputsDir, "mapping")
         val flavorDir = File(mappingDir, variant.name)
         uploadTask.mappingFilePath = File(flavorDir, "mapping.txt").path
-
-        target.tasks.findByName(assembleTaskName)?.finalizedBy(uploadTaskName)
     }
 
     // endregion
