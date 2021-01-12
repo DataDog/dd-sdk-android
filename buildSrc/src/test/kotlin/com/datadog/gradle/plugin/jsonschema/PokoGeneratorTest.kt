@@ -7,14 +7,14 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.nio.file.Files
+import java.nio.file.Paths
+import org.assertj.core.api.Assertions.assertThat
 
 @RunWith(Parameterized::class)
 class PokoGeneratorTest(
@@ -76,6 +76,7 @@ class PokoGeneratorTest(
                 arrayOf(Product, "Product"),
                 arrayOf(Shipping, "Shipping"),
                 arrayOf(Style, "Style"),
+                arrayOf(Order, "Order"),
                 arrayOf(Version, "Version"),
                 arrayOf(Video, "Video"),
                 arrayOf(User, "User"),

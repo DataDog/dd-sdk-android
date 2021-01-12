@@ -345,6 +345,24 @@ val Style = TypeDefinition.Class(
     )
 )
 
+val Order = TypeDefinition.Class(
+    name = "Order",
+    properties = listOf(
+        TypeProperty(
+            "sizes",
+            TypeDefinition.Array(
+                TypeDefinition.Enum(
+                    "Size",
+                    JsonType.STRING,
+                    listOf("x small", "small", "medium", "large", "x large")
+                ),
+                uniqueItems = true
+            ),
+            false
+        )
+    )
+)
+
 val User = TypeDefinition.Class(
     name = "User",
     properties = listOf(

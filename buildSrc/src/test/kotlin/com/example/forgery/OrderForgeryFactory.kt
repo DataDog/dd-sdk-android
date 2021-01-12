@@ -5,16 +5,17 @@
  */
 
 package com.example.forgery
-import com.example.model.Article
+
+import com.example.model.Order
+
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ArticleForgeryFactory : ForgeryFactory<Article> {
-    override fun getForgery(forge: Forge): Article {
-        return Article(
-            title = forge.anAlphabeticalString(),
-            authors = forge.aList { anAlphabeticalString() },
-            tags = forge.aNullable { aList { anAlphabeticalString() } }
+internal class OrderForgeryFactory : ForgeryFactory<Order> {
+
+    override fun getForgery(forge: Forge): Order {
+        return Order(
+            sizes = forge.aList { forge.aValueFrom(Order.Size::class.java) }.toSet()
         )
     }
 }
