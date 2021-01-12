@@ -24,11 +24,10 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context, [tracking consent][7], and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
+2. Initialize the library with your application context, tracking consent, and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
-
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -40,10 +39,8 @@ class SampleApplication : Application() {
     }
 }
 ```
-
     {{% /tab %}}
     {{% tab "EU" %}}
-
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -56,22 +53,33 @@ class SampleApplication : Application() {
     }
 }
 ```
-
     {{% /tab %}}
     {{< /tabs >}}
+    
+    To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
+    The tracking consent can be one of the following values:
+    * `TrackingConsent.PENDING`: The SDK starts collecting and batching the data but does not send it to the data
+     collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
+    * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
+    * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You will not be able to manually send any logs, traces, or
+     RUM events.
 
-     There is also a utility method which gives you the current state of the SDK. You can use this to check if it was properly   initialized or not:
+    To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
+    The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
+    * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
+    * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
+
+   **Note**: Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
     ```kotlin
-        if(Datadog.isInitialized()){
-          // your code here
-        }
+    if (Datadog.isInitialized()) {
+        // your code here
+    }
     ```
-
-     When writing your application, you can enable development logs. All internal messages in the library with a priority equal  or higher than the provided level are then logged to Android's Logcat.
+    When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
 
     ```kotlin
-        Datadog.setVerbosity(Log.INFO)
+    Datadog.setVerbosity(Log.INFO)
     ```
 
 3. Configure the Android Logger:
@@ -244,4 +252,3 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [4]: https://docs.datadoghq.com/logs/processing/attributes_naming_convention/
 [5]: https://docs.datadoghq.com/tagging/
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
-[7]: gdpr.md
