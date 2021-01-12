@@ -20,11 +20,10 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     }
     ```
 
-2. Initialize the library with your application context, [tracking consent][7], and [Datadog client token][4]. For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
+2. Initialize the library with your application context, tracking consent, and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
     {{< tabs >}}
     {{% tab "US" %}}
-
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -36,10 +35,8 @@ class SampleApplication : Application() {
     }
 }
 ```
-
     {{% /tab %}}
     {{% tab "EU" %}}
-
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -52,9 +49,34 @@ class SampleApplication : Application() {
     }
 }
 ```
-
     {{% /tab %}}
     {{< /tabs >}}
+    
+    To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
+    The tracking consent can be one of the following values:
+    * `TrackingConsent.PENDING`: The SDK starts collecting and batching the data but does not send it to the data
+     collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
+    * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
+    * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You will not be able to manually send any logs, traces, or
+     RUM events.
+
+    To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
+    The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
+    * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
+    * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
+
+   **Note**: Use the utility method `isInitialized` to check if the SDK is properly initialized:
+
+    ```kotlin
+    if (Datadog.isInitialized()) {
+        // your code here
+    }
+    ```
+    When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
+
+    ```kotlin
+    Datadog.setVerbosity(Log.INFO)
+    ```
 
 3. Configure and register the Android Tracer. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -82,7 +104,7 @@ class SampleApplication : Application() {
     span.finish()
 
     ```
-7. Using Scopes:
+6. To use scopes in synchronous calls:
    ```kotlin
    val span = tracer.buildSpan("<SPAN_NAME1>").start()
    try {
@@ -113,7 +135,7 @@ class SampleApplication : Application() {
    }
 
    ```
-8. Using scopes in Asynchronous calls:
+7. To use scopes in asynchronous calls:
    ```kotlin
    val span = tracer.buildSpan("<SPAN_NAME1>").start()
    try{
@@ -137,7 +159,7 @@ class SampleApplication : Application() {
    }
 
    ```  
-9. (Optional) How to manually distribute traces between your environments, for example frontend - backend:
+8. (Optional) To manually distribute traces between your environments, for example frontend to backend:
 
    * Step 1: Inject tracer context in the client request.
 
@@ -177,14 +199,12 @@ class SampleApplication : Application() {
 
 **Note**: For code bases using the OkHttp client, Datadog provides the implementation below.
 
-10. (Optional) - Provide additional tags alongside your span.
+9. (Optional) To provide additional tags alongside your span:
 
     ```kotlin
     span.setTag("http.url", url)
     ```
-11. (Optional) Attach an error information to a span:
-
-    If you want to mark a span as having an error, you can do so by logging it using the official OpenTracing tags
+10. (Optional) To mark a span as having an error, log it using OpenTracing tags:
 
     ```kotlin
     span.log(mapOf(Fields.ERROR_OBJECT to throwable))
@@ -269,4 +289,4 @@ The data on disk will automatically be discarded if it gets too old to ensure th
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [6]: https://square.github.io/okhttp/interceptors/
-[7]: gdpr.md
+[7]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
