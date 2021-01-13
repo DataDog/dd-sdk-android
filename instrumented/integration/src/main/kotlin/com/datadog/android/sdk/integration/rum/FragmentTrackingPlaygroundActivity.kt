@@ -7,13 +7,13 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
@@ -26,6 +26,18 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val credentials = RuntimeConfig.credentials()
+        val config = RuntimeConfig.configBuilder()
+            .trackInteractions()
+            .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
+            .build()
+        val trackingConsent = intent.getTrackingConsent()
+
+        Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.setVerbosity(Log.VERBOSE)
+
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+
         setContentView(R.layout.fragment_tracking_layout)
         viewPager = findViewById(R.id.pager)
         viewPager.apply {
@@ -33,17 +45,6 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         }
 
         // attach the fragment view tracking strategy
-        val config = DatadogConfig.Builder(
-            RuntimeConfig.DD_TOKEN,
-            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
-            RuntimeConfig.APP_ID
-        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
-            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
-            .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
-            .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
-            .build()
-        Datadog.initialize(this, intent.getTrackingConsent(), config)
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 
     internal inner class ViewPagerAdapter(fragmentManager: FragmentManager) :
