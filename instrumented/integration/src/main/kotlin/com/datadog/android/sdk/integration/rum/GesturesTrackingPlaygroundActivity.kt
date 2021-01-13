@@ -6,19 +6,26 @@
 
 package com.datadog.android.sdk.integration.rum
 
-import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.datadog.android.Datadog
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
+import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getTrackingConsent
 
-internal class GesturesTrackingPlaygroundActivity : Activity() {
+internal class GesturesTrackingPlaygroundActivity : AppCompatActivity() {
 
     lateinit var showHide: View
     lateinit var button: Button
@@ -30,6 +37,19 @@ internal class GesturesTrackingPlaygroundActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val credentials = RuntimeConfig.credentials()
+        val config = RuntimeConfig.configBuilder()
+            .trackInteractions()
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .build()
+        val trackingConsent = intent.getTrackingConsent()
+
+        Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.setVerbosity(Log.VERBOSE)
+
+        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+
         setContentView(R.layout.gestures_tracking_layout)
 
         showHide = findViewById(R.id.show_hide)

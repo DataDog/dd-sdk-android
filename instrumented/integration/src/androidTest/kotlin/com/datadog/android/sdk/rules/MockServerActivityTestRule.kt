@@ -13,13 +13,16 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addTrackingConsent
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPInputStream
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -52,7 +55,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             .getInstrumentation()
             .targetContext
             .filesDir.deleteRecursively {
-                println("Before activity finished deleting file $it")
+                Log.i("MockServerActivityTestRule", "Before activity launched, deleting file $it")
             }
         requests.clear()
         mockWebServer.start()
@@ -84,8 +87,9 @@ internal open class MockServerActivityTestRule<T : Activity>(
             .getInstrumentation()
             .targetContext
             .filesDir.deleteRecursively {
-                println("After activity finished deleting file $it")
+                Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
             }
+        GlobalRum.getFieldValue<AtomicBoolean, GlobalRum>("isRegistered").set(false)
         super.afterActivityFinished()
     }
 

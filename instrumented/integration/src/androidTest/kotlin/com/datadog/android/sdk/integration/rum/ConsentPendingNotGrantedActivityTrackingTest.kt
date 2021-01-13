@@ -37,7 +37,7 @@ internal class ConsentPendingNotGrantedActivityTrackingTest : ActivityTrackingTe
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
+        Thread.sleep(FINAL_WAIT_MS)
 
         verifyNoRumPayloadSent(mockServerRule.getRequests())
     }

@@ -16,7 +16,12 @@ internal class ViewLoadingTimer {
     }
 
     fun onStartLoading(view: Any) {
-        viewsTimeAndState[view]?.let {
+        val viewLoadingInfo = if (viewsTimeAndState.containsKey(view)) {
+            viewsTimeAndState[view]
+        } else {
+            ViewLoadingInfo(System.nanoTime()).also { viewsTimeAndState[view] = it }
+        }
+        viewLoadingInfo?.let {
             if (it.loadingStart == null) {
                 it.loadingStart = System.nanoTime()
             }
