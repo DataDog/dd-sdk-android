@@ -49,6 +49,22 @@ internal class ViewLoadingTimerTest {
     }
 
     @Test
+    fun `it returns the right time and view state W onCreate is not called`() {
+        // Given
+        val view: Any = mock()
+        testedTimer.onStartLoading(view)
+        testedTimer.onFinishedLoading(view)
+
+        // When
+        val loadingTime = testedTimer.getLoadingTime(view)
+        val firstTimeLoading = testedTimer.isFirstTimeLoading(view)
+
+        // Then
+        assertThat(loadingTime).isGreaterThan(0)
+        assertThat(firstTimeLoading).isTrue()
+    }
+
+    @Test
     fun `it returns the right time and view state when the view is resumed from background`() {
         // Given
         val view: Any = mock()
