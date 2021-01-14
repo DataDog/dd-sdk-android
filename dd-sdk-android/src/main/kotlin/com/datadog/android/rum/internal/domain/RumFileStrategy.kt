@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.data.file.RumFileWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
@@ -31,7 +32,15 @@ internal class RumFileStrategy(
     filePersistenceConfig,
     PayloadDecoration.NEW_LINE_DECORATION,
     trackingConsentProvider,
-    eventMapper
+    eventMapper,
+    fileWriterFactory = { fileOrchestrator, eventSerializer, eventSeparator ->
+        RumFileWriter(
+            File(context.filesDir, NDK_CRASH_REPORTS_FOLDER_NAME),
+            fileOrchestrator,
+            eventSerializer,
+            eventSeparator
+        )
+    }
 ) {
     companion object {
         internal const val VERSION = 1
@@ -39,5 +48,6 @@ internal class RumFileStrategy(
         internal const val INTERMEDIATE_DATA_FOLDER =
             "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
+        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
     }
 }

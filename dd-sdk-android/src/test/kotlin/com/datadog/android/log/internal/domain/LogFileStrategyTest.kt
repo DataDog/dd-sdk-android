@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import android.content.Context
+import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -15,6 +16,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -82,5 +84,26 @@ internal class LogFileStrategyTest {
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
             .hasConfig(fakePersistenceConfig)
+    }
+
+    @Test
+    fun `M use the DefaultFileWriter factory W instantiating the writer`(forge: Forge) {
+        // GIVEN
+        // just to avoid using the NoOpWriter factory
+        whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(
+            TrackingConsent::class.java,
+            exclude = listOf(TrackingConsent.NOT_GRANTED)
+        )
+        testedStrategy = LogFileStrategy(
+            mockedContext,
+            dataPersistenceExecutorService = mockExecutorService,
+            trackingConsentProvider = mockConsentProvider,
+            filePersistenceConfig = fakePersistenceConfig
+        )
+
+        // THEN
+        PersistenceStrategyAssert
+            .assertThat(testedStrategy)
+            .hasFileInternalWriterInstanceOf(ImmediateFileWriter::class.java)
     }
 }

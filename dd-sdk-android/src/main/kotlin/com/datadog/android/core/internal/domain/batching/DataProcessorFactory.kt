@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.domain.batching
 
 import com.datadog.android.core.internal.data.Orchestrator
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.domain.batching.processors.DataProcessor
@@ -23,7 +24,11 @@ internal class DataProcessorFactory<T : Any>(
     private val serializer: Serializer<T>,
     private val separator: CharSequence,
     private val executorService: ExecutorService,
-    private val eventMapper: EventMapper<T> = NoOpEventMapper()
+    private val eventMapper: EventMapper<T> = NoOpEventMapper(),
+    private val fileWriterFactory: (Orchestrator, Serializer<T>, CharSequence) -> Writer<T> =
+        { fileOrchestrator, eventSerializer, eventSeparator ->
+            ImmediateFileWriter(fileOrchestrator, eventSerializer, eventSeparator)
+        }
 ) {
 
     fun resolveProcessor(consent: TrackingConsent): DataProcessor<T> {
@@ -32,14 +37,14 @@ internal class DataProcessorFactory<T : Any>(
                 intermediateFileOrchestrator.reset()
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(intermediateFileOrchestrator, serializer, separator),
+                    fileWriterFactory(intermediateFileOrchestrator, serializer, separator),
                     eventMapper
                 )
             }
             TrackingConsent.GRANTED -> {
                 DefaultDataProcessor(
                     executorService,
-                    ImmediateFileWriter(targetFileOrchestrator, serializer, separator),
+                    fileWriterFactory(targetFileOrchestrator, serializer, separator),
                     eventMapper
                 )
             }

@@ -11,11 +11,13 @@ import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.domain.assertj.PersistenceStrategyAssert
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.data.file.RumFileWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -87,5 +89,27 @@ internal class RumFileStrategyTest {
             .uploadsFrom(expectedAuthorizedFolderPath)
             .usesConsentAwareAsyncWriter()
             .hasConfig(fakePersistenceConfig)
+    }
+
+    @Test
+    fun `M use the RumFileWriter factory W instantiating the writer`(forge: Forge) {
+        // GIVEN
+        // just to avoid using the NoOpWriter factory
+        whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(
+            TrackingConsent::class.java,
+            exclude = listOf(TrackingConsent.NOT_GRANTED)
+        )
+        testedStrategy = RumFileStrategy(
+            mockedContext,
+            dataPersistenceExecutorService = mockExecutorService,
+            trackingConsentProvider = mockConsentProvider,
+            eventMapper = mockRumEventMapper,
+            filePersistenceConfig = fakePersistenceConfig
+        )
+
+        // THEN
+        PersistenceStrategyAssert
+            .assertThat(testedStrategy)
+            .hasFileInternalWriterInstanceOf(RumFileWriter::class.java)
     }
 }
