@@ -47,6 +47,6 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
     }
 
     companion object {
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
+        internal val FINAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }
 }

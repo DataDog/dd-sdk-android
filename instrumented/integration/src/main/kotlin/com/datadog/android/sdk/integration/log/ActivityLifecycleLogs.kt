@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -30,15 +29,13 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val config = DatadogConfig.Builder(
-            RuntimeConfig.DD_TOKEN,
-            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT
-        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
-            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
-            .build()
 
+        val credentials = RuntimeConfig.credentials()
+        val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
-        Datadog.initialize(this, trackingConsent, config)
+
+        Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.setVerbosity(Log.VERBOSE)
 
         logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)

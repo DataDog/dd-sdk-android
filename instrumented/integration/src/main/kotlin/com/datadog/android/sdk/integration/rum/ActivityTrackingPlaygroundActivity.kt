@@ -7,9 +7,9 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -20,21 +20,19 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // use the activity view tracking strategy
-        val config = DatadogConfig.Builder(
-            RuntimeConfig.DD_TOKEN,
-            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
-            RuntimeConfig.APP_ID
-        )
-            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
-            .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
-            .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
+        super.onCreate(savedInstanceState)
+
+        val credentials = RuntimeConfig.credentials()
+        val config = RuntimeConfig.configBuilder()
+            .trackInteractions()
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
+        val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, intent.getTrackingConsent(), config)
+        Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.setVerbosity(Log.VERBOSE)
+
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
-        super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

@@ -7,6 +7,9 @@
 package com.datadog.android.sdk.integration
 
 import android.os.Build
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.tracing.AndroidTracer
 import java.util.UUID
@@ -44,6 +47,28 @@ internal object RuntimeConfig {
 
     fun tracer(): AndroidTracer {
         return AndroidTracer.Builder().build()
+    }
+
+    fun credentials(): Credentials {
+        return Credentials(
+            DD_TOKEN,
+            INTEGRATION_TESTS_ENVIRONMENT,
+            "",
+            APP_ID
+        )
+    }
+
+    fun configBuilder(): Configuration.Builder {
+        return Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .useCustomLogsEndpoint(logsEndpointUrl)
+            .useCustomRumEndpoint(rumEndpointUrl)
+            .useCustomTracesEndpoint(tracesEndpointUrl)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 
     val keyValuePairsTags = mapOf(

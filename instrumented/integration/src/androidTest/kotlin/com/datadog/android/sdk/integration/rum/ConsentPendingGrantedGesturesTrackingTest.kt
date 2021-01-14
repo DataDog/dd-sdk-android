@@ -36,7 +36,7 @@ internal class ConsentPendingGrantedGesturesTrackingTest : GesturesTrackingTest(
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
+        Thread.sleep(FINAL_WAIT_MS)
 
         verifyExpectedEvents(mockServerRule.getRequests(), expectedEvents)
     }
