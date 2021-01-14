@@ -7,6 +7,7 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import com.example.forgery.ForgeryConfiguration
+import org.assertj.core.api.Assertions.assertThat
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
@@ -57,6 +58,25 @@ class ModelValidationTest(
         }
     }
 
+    @Test
+    fun `validate model serialization and deserialization`() {
+        val type = Class.forName("com.example.model.$className")
+        val toJson = type.getMethod("toJson")
+        val fromJson = type.getMethod("fromJson", String::class.java)
+        repeat(10) {
+            val entity = forge.getForgery(type)
+            val json = toJson.invoke(entity).toString()
+            val generatedModel = fromJson.invoke(null, json)
+            assertThat(generatedModel)
+                .overridingErrorMessage(
+                    "Deserialized model was not the same " +
+                        "with the serialized for type: [$type] and test iteration: [$it]"
+                )
+                .isEqualToComparingFieldByField(entity)
+
+        }
+    }
+
     private fun loadSchema(schemaResName: String): JSONObject {
         return javaClass.getResourceAsStream("/input/$schemaResName.json").use {
             JSONObject(JSONTokener(it))
@@ -77,6 +97,7 @@ class ModelValidationTest(
                 arrayOf("definition", "Customer"),
                 arrayOf("definition_with_id", "Customer"),
                 arrayOf("enum", "Style"),
+                arrayOf("enum_array", "Order"),
                 arrayOf("constant", "Location"),
                 arrayOf("constant_number", "Version"),
                 arrayOf("nested_enum", "DateTime"),
