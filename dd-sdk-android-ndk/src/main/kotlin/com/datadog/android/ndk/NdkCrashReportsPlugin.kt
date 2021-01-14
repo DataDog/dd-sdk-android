@@ -48,12 +48,10 @@ class NdkCrashReportsPlugin : DatadogPlugin {
             File(
                 config.context.filesDir.absolutePath +
                     File.separator +
-                    config.featurePersistenceDirName
+                    NDK_CRASH_REPORTS_FOLDER
             )
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
-            config.serviceName,
-            config.envName,
             consentToInt(config.trackingConsent)
         )
     }
@@ -65,12 +63,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         unregisterSignalHandler()
     }
 
-    override fun onContextChanged(context: DatadogContext) {
-        // TODO: RUMM-637 Only update the rum context if the `bundleWithRum` config attribute is true
-        context.rum?.let {
-            updateRumContext(it.applicationId, it.sessionId, it.viewId)
-        }
-    }
+    override fun onContextChanged(context: DatadogContext) {}
 
     // endregion
 
@@ -94,24 +87,17 @@ class NdkCrashReportsPlugin : DatadogPlugin {
 
     private external fun registerSignalHandler(
         storagePath: String,
-        serviceName: String,
-        environment: String,
         consent: Int
     )
 
     private external fun unregisterSignalHandler()
-
-    private external fun updateRumContext(
-        applicationId: String?,
-        sessionId: String?,
-        viewId: String?
-    )
 
     private external fun updateTrackingConsent(consent: Int)
 
     // endregion
 
     companion object {
+        private const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports"
         private const val TAG: String = "NdkCrashReportsPlugin"
         private const val ERROR_LOADING_NATIVE_MESSAGE: String =
             "We could not load the native library"

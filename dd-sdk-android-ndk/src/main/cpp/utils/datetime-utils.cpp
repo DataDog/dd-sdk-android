@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#include "datetime.h"
+#include "datetime-utils.h"
 
 #include <cerrno>
 #include <chrono>

@@ -4,16 +4,17 @@
 #include <android/log.h>
 #include <datadog-native-lib.h>
 #include "greatest/greatest.h"
-#include "utils/stringutils.h"
-
-// override the GREATES_PRINTF macro to use the android logcat
-#define GREATEST_FPRINTF(ignore, fmt, ...) __android_log_print(ANDROID_LOG_INFO, "DatadogNDKTests", fmt, ##__VA_ARGS__)
+#include "utils/string-utils.h"
 
 SUITE (datetime_utils);
 
 SUITE (backtrace_generation);
 
 SUITE (signal_monitor);
+
+SUITE (string_utils);
+
+SUITE (crash_log);
 
 
 GREATEST_MAIN_DEFS();
@@ -46,6 +47,8 @@ int run_test_suites() {
     GREATEST_MAIN_BEGIN();
     RUN_SUITE(datetime_utils);
     RUN_SUITE(signal_monitor);
+    RUN_SUITE(string_utils);
+    RUN_SUITE(crash_log);
     // This test fails on Bitrise on the first backtrace line assertion even and was not able to
     // detect why so far. My guess is related with Linux environment, I actually logged the line
     // and checked the regEx on top and was passing locally. We will disable this test for now as
@@ -57,8 +60,9 @@ int run_test_suites() {
 void test_generate_log(
         const int signal,
         const char *signal_name,
-        const char *signal_error_message) {
-    crash_signal_intercepted(signal, signal_name, signal_error_message);
+        const char *signal_error_message,
+        const char *error_stack) {
+    crash_signal_intercepted(signal, signal_name, signal_error_message, error_stack);
 }
 
 
@@ -74,31 +78,32 @@ Java_com_datadog_android_ndk_NdkTests_runNdkStandaloneTests(JNIEnv *env, jobject
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_datadog_android_ndk_NdkTests_initNdkErrorHandler(JNIEnv *env, jobject thiz,
-                                                          jstring storage_dir,
-                                                          jstring service_name,
-                                                          jstring env_name,
-                                                          jstring app_id,
-                                                          jstring session_id,
-                                                          jstring view_id) {
+Java_com_datadog_android_ndk_NdkTests_initNdkErrorHandler(
+        JNIEnv *env,
+        jobject thiz,
+        jstring storage_dir) {
 
-    update_main_context(env, storage_dir, service_name, env_name);
-    update_rum_context(env, app_id, session_id, view_id);
+    update_main_context(env, storage_dir);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_datadog_android_ndk_NdkTests_simulateSignalInterception(JNIEnv *env, jobject thiz,
-                                                                 jint signal,
-                                                                 jstring signal_name,
-                                                                 jstring signal_message) {
+Java_com_datadog_android_ndk_NdkTests_simulateSignalInterception(
+        JNIEnv *env,
+        jobject thiz,
+        jint signal,
+        jstring signal_name,
+        jstring error_message,
+        jstring error_stack) {
 
     const int c_signal = (int) signal;
     const char *name = env->GetStringUTFChars(signal_name, 0);
-    const char *message = env->GetStringUTFChars(signal_message, 0);
-    test_generate_log(c_signal, name, message);
+    const char *message = env->GetStringUTFChars(error_message, 0);
+    const char *stack = env->GetStringUTFChars(error_stack, 0);
+    test_generate_log(c_signal, name, message, stack);
     env->ReleaseStringUTFChars(signal_name, name);
-    env->ReleaseStringUTFChars(signal_message, message);
+    env->ReleaseStringUTFChars(error_message, message);
+    env->ReleaseStringUTFChars(error_stack, stack);
 }
 
 extern "C"

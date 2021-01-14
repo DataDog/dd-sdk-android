@@ -16,9 +16,6 @@
 #include <unistd.h>
 #include <string>
 
-
-static const size_t STACK_SIZE = 30;
-
 struct BacktraceState {
     uintptr_t *current;
     uintptr_t *end;
@@ -52,10 +49,10 @@ namespace {
         char address_as_hexa[20];
         // The ARM_32 processors will use an unsigned long long to represent a pointer so we will choose the
         // String format that fits both ARM_32 and ARM_64 (lx).
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wformat"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat"
         std::snprintf(address_as_hexa, sizeof(address_as_hexa), "0x%lx", address);
-        #pragma clang diagnostic pop
+#pragma clang diagnostic pop
         return std::string(address_as_hexa);
     }
 
@@ -94,25 +91,29 @@ namespace {
 
 }
 
-namespace backtrace {
-
-    std::string generate_backtrace() {
-        // define the buffer which will hold pointers to stack memory addresses
-        uintptr_t buffer[STACK_SIZE];
-        // we will now unwind the stack and capture all the memory addresses up to STACK_SIZE in
-        // the buffer
-        const size_t captured_stacksize = capture_backtrace(buffer, STACK_SIZE);
-        std::string backtrace;
-        for (size_t idx = 0; idx < captured_stacksize; ++idx) {
-            // we will iterate through all the stack addresses and translate each address in
-            // readable informationdsadsa
-            get_info_from_address(buffer[idx], &backtrace);
-
-        }
-        return backtrace;
-    }
-
-
+bool copyString(const std::string &str, char *ptr, size_t max_size) {
+    size_t str_size = str.size();
+    size_t copy_size = std::min(str_size, max_size - 1);
+    memcpy(ptr, str.data(), copy_size);
+    ptr[str.size()] = '\0';
+    return copy_size < str_size;
 }
+
+bool generate_backtrace(char *backtrace_ptr, size_t max_size) {
+    // define the buffer which will hold pointers to stack memory addresses
+    uintptr_t buffer[max_stack_frames];
+    // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
+    // the buffer
+    const size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames);
+    std::string backtrace;
+    for (size_t idx = 0; idx < number_of_captured_frames; ++idx) {
+        // we will iterate through all the stack addresses and translate each address in
+        // readable information
+        get_info_from_address(buffer[idx], &backtrace);
+    }
+    return copyString(backtrace, backtrace_ptr, max_size);
+}
+
+
 
 

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#include "fileutils.h"
+#include "file-utils.h"
 
 #include <cerrno>
 #include <dirent.h>

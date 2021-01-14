@@ -1,4 +1,11 @@
-#include "test_utils.h"
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+
+#include "test-utils.h"
 
 #include <iostream>
 #include <list>
