@@ -46,9 +46,8 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         }
         val ndkCrashesDirs =
             File(
-                config.context.filesDir.absolutePath +
-                    File.separator +
-                    NDK_CRASH_REPORTS_FOLDER
+                config.context.filesDir,
+                NDK_CRASH_REPORTS_FOLDER
             )
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
