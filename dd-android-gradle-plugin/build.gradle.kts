@@ -56,7 +56,7 @@ gradlePlugin {
     plugins {
         register("dd-android-gradle-plugin") {
             id = "dd-android-gradle-plugin" // the alias
-            implementationClass = "com.datadog.android.gradle.DdAndroidGradlePlugin"
+            implementationClass = "com.datadog.gradle.plugin.DdAndroidGradlePlugin"
         }
     }
 }
