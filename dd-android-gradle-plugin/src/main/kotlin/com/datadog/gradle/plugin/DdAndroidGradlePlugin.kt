@@ -33,9 +33,7 @@ class DdAndroidGradlePlugin : Plugin<Project> {
 
         target.afterEvaluate {
             androidExtension.applicationVariants.forEach {
-                if (it.name.endsWith("Release")) {
-                    configureVariant(target, it, apiKey, extension)
-                }
+                configureVariant(target, it, apiKey, extension)
             }
         }
     }
@@ -51,8 +49,8 @@ class DdAndroidGradlePlugin : Plugin<Project> {
         apiKey: String,
         extension: DdExtension
     ) {
-        val flavorName = variant.name.removeSuffix("Release")
-        val uploadTaskName = UPLOAD_TASK_NAME + flavorName.capitalize()
+        val flavorName = variant.flavorName
+        val uploadTaskName = UPLOAD_TASK_NAME + variant.name.capitalize()
 
         val uploadTask = target.tasks.create(
             uploadTaskName,

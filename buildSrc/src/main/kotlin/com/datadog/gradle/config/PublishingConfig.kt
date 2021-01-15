@@ -8,7 +8,6 @@ package com.datadog.gradle.config
 
 import com.jfrog.bintray.gradle.BintrayExtension
 import org.gradle.api.Project
-import org.gradle.api.internal.artifacts.dependencies.DefaultSelfResolvingDependency
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
