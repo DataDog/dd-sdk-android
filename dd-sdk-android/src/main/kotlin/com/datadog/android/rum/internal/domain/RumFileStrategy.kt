@@ -15,6 +15,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.data.file.RumFileWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -35,7 +36,7 @@ internal class RumFileStrategy(
     eventMapper,
     fileWriterFactory = { fileOrchestrator, eventSerializer, eventSeparator ->
         RumFileWriter(
-            File(context.filesDir, NDK_CRASH_REPORTS_FOLDER_NAME),
+            File(context.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME),
             fileOrchestrator,
             eventSerializer,
             eventSeparator
@@ -48,6 +49,5 @@ internal class RumFileStrategy(
         internal const val INTERMEDIATE_DATA_FOLDER =
             "$ROOT-pending-v$VERSION"
         internal const val AUTHORIZED_FOLDER = "$ROOT-v$VERSION"
-        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
     }
 }

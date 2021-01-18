@@ -33,6 +33,9 @@ internal class RumFileWriter(
     override fun writeData(data: ByteArray, model: RumEvent) {
         super.writeData(data, model)
         if (model.event is ViewEvent) {
+            if (!lastViewEventFile.exists()) {
+                lastViewEventFile.createNewFile()
+            }
             // persist the serialised ViewEvent in the NDK crash data folder
             writeDataToFile(lastViewEventFile, data, false)
         }

@@ -242,6 +242,61 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasConnectivityStatus(expected: ErrorEvent.Status?): ErrorEventAssert {
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity status: $expected" +
+                    " but was: ${actual.connectivity?.status} "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasConnectivityInterface(expected: List<ErrorEvent.Interface>?): ErrorEventAssert {
+        val interfaces = actual.connectivity?.interfaces
+        assertThat(interfaces)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity interfaces: $expected" +
+                    " but was: $interfaces "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasConnectivityCellular(expected: ErrorEvent.Cellular?): ErrorEventAssert {
+        assertThat(actual.connectivity?.cellular)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity cellular: $expected" +
+                    " but was: ${actual.connectivity?.cellular} "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun isEqualTo(expectedErrorEvent: ErrorEvent): ErrorEventAssert {
+        assertThat(actual.date).isEqualTo(expectedErrorEvent.date)
+        assertThat(actual.service).isEqualTo(expectedErrorEvent.service)
+        assertThat(actual.type).isEqualTo(expectedErrorEvent.type)
+        if (actual.action != expectedErrorEvent.action) {
+            assertThat(actual.action).isEqualToComparingFieldByField(expectedErrorEvent.action)
+        }
+        assertThat(actual.application)
+            .isEqualToComparingFieldByField(expectedErrorEvent.application)
+        assertThat(actual.dd).isEqualToComparingFieldByField(expectedErrorEvent.dd)
+        assertThat(actual.session).isEqualToComparingFieldByField(expectedErrorEvent.session)
+        assertThat(actual.view).isEqualToComparingFieldByField(expectedErrorEvent.view)
+        assertThat(actual.error).isEqualToComparingFieldByField(expectedErrorEvent.error)
+        // to avoid null comparisons which will fail
+        if (actual.connectivity != expectedErrorEvent.connectivity) {
+            assertThat(actual.connectivity)
+                .isEqualToComparingFieldByField(expectedErrorEvent.connectivity)
+        }
+        if (actual.usr != expectedErrorEvent.usr) {
+            assertThat(actual.usr).isEqualToComparingFieldByField(expectedErrorEvent.usr)
+        }
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

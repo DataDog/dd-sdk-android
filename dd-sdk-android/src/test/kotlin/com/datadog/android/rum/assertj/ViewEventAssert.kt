@@ -112,7 +112,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasCrashCount(expected: Long): ViewEventAssert {
+    fun hasCrashCount(expected: Long?): ViewEventAssert {
         assertThat(actual.view.crash?.count)
             .overridingErrorMessage(
                 "Expected event data to have view.crash.count $expected " +
@@ -204,6 +204,47 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
+        return this
+    }
+
+    fun hasUserInfo(expected: ViewEvent.Usr?): ViewEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        return this
+    }
+
+    fun isEqualTo(expectedViewEvent: ViewEvent): ViewEventAssert {
+        assertThat(actual.date).isEqualTo(expectedViewEvent.date)
+        assertThat(actual.service).isEqualTo(expectedViewEvent.service)
+        assertThat(actual.application).isEqualToComparingFieldByField(expectedViewEvent.application)
+        assertThat(actual.session).isEqualToComparingFieldByField(expectedViewEvent.session)
+        assertThat(actual.view).isEqualToComparingFieldByField(expectedViewEvent.view)
+        assertThat(actual.dd).isEqualToComparingFieldByField(expectedViewEvent.dd)
+        assertThat(actual.session).isEqualToComparingFieldByField(expectedViewEvent.session)
+        // to avoid null comparisons which will fail
+        if (actual.connectivity != expectedViewEvent.connectivity) {
+            assertThat(actual.connectivity)
+                .isEqualToComparingFieldByField(expectedViewEvent.connectivity)
+        }
+        if (actual.usr != expectedViewEvent.usr) {
+            assertThat(actual.usr).isEqualToComparingFieldByField(expectedViewEvent.usr)
+        }
         return this
     }
 
