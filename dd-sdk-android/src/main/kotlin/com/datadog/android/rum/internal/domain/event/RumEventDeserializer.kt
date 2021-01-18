@@ -13,8 +13,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
-import com.google.gson.JsonSyntaxException
 
 internal class RumEventDeserializer : Deserializer<RumEvent> {
 
@@ -27,18 +27,21 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
             val globalAttributes: MutableMap<String, Any?> = mutableMapOf()
             val customTimings: MutableMap<String, Long> = mutableMapOf()
             resolveAttributes(userAttributes, globalAttributes, customTimings, jsonObject)
+            val resolvedCustomTimings = resolveCustomTimings(customTimings)
+            val deserializedBundledEvent =
+                fromJson(jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString, model)
             RumEvent(
-                fromJson(jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME).asString, model),
+                deserializedBundledEvent,
                 globalAttributes,
                 userAttributes,
-                if (customTimings.isNotEmpty()) {
-                    customTimings
-                } else {
-                    null
-                }
+                resolvedCustomTimings
             )
-        } catch (e: JsonSyntaxException) {
-            sdkLogger.e("Error while trying to deserialize the serialized RumEvent: $model")
+        } catch (e: JsonParseException) {
+            sdkLogger.e(
+                "Error while trying to deserialize " +
+                    "the serialized RumEvent: $model",
+                e
+            )
             null
         }
     }
@@ -46,6 +49,14 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
     // endregion
 
     // region Internal
+
+    private fun resolveCustomTimings(timings: MutableMap<String, Long>): MutableMap<String, Long>? {
+        return if (timings.isNotEmpty()) {
+            timings
+        } else {
+            null
+        }
+    }
 
     private fun resolveAttributes(
         userAttributes: MutableMap<String, Any?>,
@@ -79,13 +90,18 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
         }
     }
 
-    private fun fromJson(eventType: String, jsonString: String): Any {
+    @SuppressWarnings("ThrowingInternalException")
+    @Throws(JsonParseException::class)
+    private fun fromJson(eventType: String?, jsonString: String): Any {
         return when (eventType) {
             EVENT_TYPE_VIEW -> ViewEvent.fromJson(jsonString)
             EVENT_TYPE_RESOURCE -> ResourceEvent.fromJson(jsonString)
             EVENT_TYPE_ACTION -> ActionEvent.fromJson(jsonString)
             EVENT_TYPE_ERROR -> ErrorEvent.fromJson(jsonString)
-            else -> JsonObject()
+            else -> throw JsonParseException(
+                "We could not deserialize the " +
+                    "event with type: $eventType"
+            )
         }
     }
 

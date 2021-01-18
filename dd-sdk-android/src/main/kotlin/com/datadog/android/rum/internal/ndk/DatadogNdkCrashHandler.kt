@@ -40,31 +40,37 @@ internal class DatadogNdkCrashHandler(
 
     private fun checkAndHandleNdkCrashReport() {
         if (ndkCrashDataDirectory.exists()) {
-            // check if there is an NDK report
-            val crashLogFiles =
-                ndkCrashDataDirectory.listFiles { _, name -> name == CRASH_LOG_FILE_NAME }
-            if (crashLogFiles != null && crashLogFiles.isNotEmpty()) {
-                readFromFile(
-                    crashLogFiles[0],
-                    NdkCrashLog::class.java,
-                    "Malformed ndk crash error log",
-                    "Error while trying to read the ndk crash log"
-                )?.let {
-                    handleNdkCrashLog(it, searchLastRumViewEvent())
-                }
-            }
+            val ndkCrashLog = findLastNdCrashLog()
+            val lastRumViewEvent = findLastRumViewEvent()
+            handleNdkCrashLog(ndkCrashLog, lastRumViewEvent)
             clearCrashLog()
         }
     }
 
-    private fun searchLastRumViewEvent(): RumEvent? {
-        val lastViewEventFiles =
+    private fun findLastNdCrashLog(): NdkCrashLog? {
+        val crashLogFile =
+            ndkCrashDataDirectory
+                .listFiles { _, name -> name == CRASH_LOG_FILE_NAME }
+                ?.firstOrNull()
+        if (crashLogFile != null) {
+            return readFromFile(
+                crashLogFile,
+                NdkCrashLog::class.java,
+                "Malformed ndk crash error log",
+                "Error while trying to read the ndk crash log"
+            )
+        }
+        return null
+    }
+
+    private fun findLastRumViewEvent(): RumEvent? {
+        val lastViewEventFile =
             ndkCrashDataDirectory.listFiles { _, name ->
                 name == RumFileWriter.LAST_VIEW_EVENT_FILE_NAME
-            }
-        if (lastViewEventFiles != null && lastViewEventFiles.isNotEmpty()) {
+            }?.firstOrNull()
+        if (lastViewEventFile != null) {
             return readFromFile(
-                lastViewEventFiles[0],
+                lastViewEventFile,
                 RumEvent::class.java,
                 "Malformed RUM ViewEvent log",
                 "Error while trying to read the last rum view event log"
@@ -85,7 +91,7 @@ internal class DatadogNdkCrashHandler(
             if (type == RumEvent::class.java) {
                 rumEventDeserializer.deserialize(serializedData) as? T
             } else {
-                fromJson(serializedData) as T
+                NdkCrashLog.fromJson(serializedData) as T
             }
         } catch (e: JsonSyntaxException) {
             sdkLogger.e(parsingErrorMessage, e)
@@ -96,7 +102,10 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    private fun handleNdkCrashLog(ndkCrashLog: NdkCrashLog, lastRumViewEvent: RumEvent?) {
+    private fun handleNdkCrashLog(ndkCrashLog: NdkCrashLog?, lastRumViewEvent: RumEvent?) {
+        if (ndkCrashLog == null) {
+            return
+        }
         val errorLogMessage = NDK_ERROR_LOG_MESSAGE.format(ndkCrashLog.signalName)
         val bundledViewEvent = lastRumViewEvent?.event as? ViewEvent
         val logAttributes: Map<String, String>
@@ -107,26 +116,48 @@ internal class DatadogNdkCrashHandler(
                 LogAttributes.RUM_VIEW_ID to bundledViewEvent.view.id,
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
-            // update the error count
-            val toSendErrorEvent = resolveFromLastRumViewEvent(
+            updateViewEventAndSendError(
                 errorLogMessage,
                 ndkCrashLog,
                 lastRumViewEvent,
                 bundledViewEvent
             )
-            val sessionsTimeDifference = System.currentTimeMillis() - ndkCrashLog.timestamp
-            if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
-            ) {
-                val toSendRumEvent = resolveFromLastRumViewEvent(lastRumViewEvent, bundledViewEvent)
-                asyncRumWriter.write(toSendRumEvent)
-            }
-            asyncRumWriter.write(toSendErrorEvent)
         } else {
             logAttributes = mapOf(
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
         }
 
+        sendCrashLogEvent(errorLogMessage, logAttributes, ndkCrashLog)
+    }
+
+    private fun updateViewEventAndSendError(
+        errorLogMessage: String,
+        ndkCrashLog: NdkCrashLog,
+        lastRumViewEvent: RumEvent,
+        bundledViewEvent: ViewEvent
+    ) {
+        // update the error count
+        val toSendErrorEvent = resolveFromLastRumViewEvent(
+            errorLogMessage,
+            ndkCrashLog,
+            lastRumViewEvent,
+            bundledViewEvent
+        )
+        val sessionsTimeDifference = System.currentTimeMillis() - ndkCrashLog.timestamp
+        if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
+        ) {
+            val toSendRumEvent = resolveFromLastRumViewEvent(lastRumViewEvent, bundledViewEvent)
+            asyncRumWriter.write(toSendRumEvent)
+        }
+        asyncRumWriter.write(toSendErrorEvent)
+    }
+
+    private fun sendCrashLogEvent(
+        errorLogMessage: String,
+        logAttributes: Map<String, String>,
+        ndkCrashLog: NdkCrashLog
+    ) {
         val log = logGenerator.generateLog(
             Log.CRASH,
             errorLogMessage,

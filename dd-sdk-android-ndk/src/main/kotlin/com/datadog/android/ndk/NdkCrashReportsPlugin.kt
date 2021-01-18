@@ -49,6 +49,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
                 config.context.filesDir,
                 NDK_CRASH_REPORTS_FOLDER
             )
+        ndkCrashesDirs.mkdirs()
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
             consentToInt(config.trackingConsent)
@@ -96,7 +97,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
     // endregion
 
     companion object {
-        private const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports"
+        internal const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports"
         private const val TAG: String = "NdkCrashReportsPlugin"
         private const val ERROR_LOADING_NATIVE_MESSAGE: String =
             "We could not load the native library"

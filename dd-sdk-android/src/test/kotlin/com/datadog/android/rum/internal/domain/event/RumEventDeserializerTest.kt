@@ -7,10 +7,6 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.utils.toJsonArray
-import com.datadog.android.rum.assertj.ActionEventAssert
-import com.datadog.android.rum.assertj.ErrorEventAssert
-import com.datadog.android.rum.assertj.ResourceEventAssert
-import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
@@ -87,7 +83,7 @@ internal class RumEventDeserializerTest {
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedViewEvent = deserializedEvent!!.event as ViewEvent
-        ViewEventAssert.assertThat(deserializedViewEvent)
+        assertThat(deserializedViewEvent)
             .isEqualTo(fakeViewEvent)
     }
 
@@ -110,7 +106,7 @@ internal class RumEventDeserializerTest {
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedResourceEvent = deserializedEvent!!.event as ResourceEvent
-        ResourceEventAssert.assertThat(deserializedResourceEvent).isEqualTo(fakeResourceEvent)
+        assertThat(deserializedResourceEvent).isEqualTo(fakeResourceEvent)
     }
 
     @Test
@@ -132,7 +128,10 @@ internal class RumEventDeserializerTest {
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedActionEvent = deserializedEvent!!.event as ActionEvent
-        ActionEventAssert.assertThat(deserializedActionEvent).isEqualTo(fakeActionEvent)
+        assertThat(deserializedActionEvent).isEqualToIgnoringGivenFields(
+            fakeActionEvent,
+            "dd"
+        )
     }
 
     @Test
@@ -154,36 +153,31 @@ internal class RumEventDeserializerTest {
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedErrorEvent = deserializedEvent!!.event as ErrorEvent
-        ErrorEventAssert.assertThat(deserializedErrorEvent).isEqualTo(fakeErrorEvent)
+        assertThat(deserializedErrorEvent).isEqualToIgnoringGivenFields(
+            fakeErrorEvent,
+            "dd"
+        )
     }
 
-    // @Test
-    // fun `𝕄 deserialize the user global attributes first  𝕎 deserialize()`(
-    //     forge: Forge
-    // ) {
-    //     // GIVEN
-    //     val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-    //     fakeEvent.
-    //     val serializedEvent = serializer.serialize(fakeEvent)
-    //
-    //     // WHEN
-    //     val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
-    //
-    //     // THEN
-    //     assertThat(deserializedEvent).isNotNull()
-    //     assertThat(deserializedEvent?.customTimings).isEqualTo(fakeEvent.customTimings)
-    //     assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
-    //     assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
-    //     val deserializedErrorEvent = deserializedEvent!!.event as ErrorEvent
-    //     ErrorEventAssert.assertThat(deserializedErrorEvent).isEqualTo(fakeErrorEvent)
-    // }
-
     @Test
-    fun `𝕄 return null W deserialize { wrong Json format }`(
-        @Forgery fakeEvent: RumEvent
-    ) {
+    fun `𝕄 return null W deserialize { wrong Json format }`() {
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize("{]}")
+
+        // THEN
+        assertThat(deserializedEvent).isNull()
+    }
+
+    @Test
+    fun `𝕄 return null W deserialize { wrong bundled RUM event type }`(
+        @Forgery fakeEvent: RumEvent
+    ) {
+        // GIVEN
+        val fakeBadFormatEvent = fakeEvent.copy(event = Any())
+        val serializedEvent = serializer.serialize(fakeBadFormatEvent)
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
 
         // THEN
         assertThat(deserializedEvent).isNull()

@@ -32,7 +32,7 @@ internal class NdkCrashLogTest {
         val serializedLog = fakeNdkCrashLog.toJson()
 
         // WHEN
-        val deserializedLog: NdkCrashLog = fromJson(serializedLog)
+        val deserializedLog: NdkCrashLog = NdkCrashLog.fromJson(serializedLog)
 
         // THEN
         assertThat(deserializedLog).isEqualTo(fakeNdkCrashLog)

@@ -125,10 +125,10 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
             char backtrace[max_stack_size];
             // in case the stacktrace is bigger than the required size it will be truncated
             generate_backtrace(backtrace, max_stack_size);
-            crash_signal_intercepted(signal,
-                                     handled_signals[i].signal_name,
-                                     handled_signals[i].signal_error_message,
-                                     backtrace);
+            write_crash_report(signal,
+                               handled_signals[i].signal_name,
+                               handled_signals[i].signal_error_message,
+                               backtrace);
 
             break;
         }

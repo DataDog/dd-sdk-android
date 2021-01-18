@@ -56,22 +56,22 @@ namespace {
         return std::string(address_as_hexa);
     }
 
-    void get_info_from_address(const uintptr_t address, std::string *backtrace) {
-        backtrace->append(std::to_string(address));
+    void get_info_from_address(size_t index, const uintptr_t address, std::string *backtrace) {
+        backtrace->append(std::to_string(index));
         Dl_info info;
         int fetch_info_success = dladdr(reinterpret_cast<void *>(address), &info);
         if (fetch_info_success) {
 
             if (info.dli_fname) {
-                backtrace->append("  ");
+                backtrace->append(" ");
                 backtrace->append(info.dli_fname);
             }
 
-            backtrace->append("  ");
+            backtrace->append(" ");
             backtrace->append(address_to_hexa(address));
 
             if (info.dli_sname) {
-                backtrace->append("  ");
+                backtrace->append(" ");
                 backtrace->append(info.dli_sname);
             }
 
@@ -79,8 +79,7 @@ namespace {
                 backtrace->append(" ");
                 backtrace->append("+");
                 backtrace->append(" ");
-                const uintptr_t address_offset =
-                        address - reinterpret_cast<uintptr_t>(info.dli_fbase);
+                auto address_offset = reinterpret_cast<uintptr_t>(info.dli_fbase);
                 backtrace->append(std::to_string(address_offset));
             }
 
@@ -109,7 +108,7 @@ bool generate_backtrace(char *backtrace_ptr, size_t max_size) {
     for (size_t idx = 0; idx < number_of_captured_frames; ++idx) {
         // we will iterate through all the stack addresses and translate each address in
         // readable information
-        get_info_from_address(buffer[idx], &backtrace);
+        get_info_from_address(idx, buffer[idx], &backtrace);
     }
     return copyString(backtrace, backtrace_ptr, max_size);
 }

@@ -393,31 +393,6 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun isEqualTo(expectedResourceEvent: ResourceEvent): ResourceEventAssert {
-        assertThat(actual.date).isEqualTo(expectedResourceEvent.date)
-        assertThat(actual.service).isEqualTo(expectedResourceEvent.service)
-        assertThat(actual.type).isEqualTo(expectedResourceEvent.type)
-        if (actual.action != expectedResourceEvent.action) {
-            assertThat(actual.action).isEqualToComparingFieldByField(expectedResourceEvent.action)
-        }
-        assertThat(actual.application).isEqualToComparingFieldByField(
-            expectedResourceEvent.application
-        )
-        assertThat(actual.dd).isEqualToComparingFieldByField(expectedResourceEvent.dd)
-        assertThat(actual.resource).isEqualToComparingFieldByField(expectedResourceEvent.resource)
-        assertThat(actual.session).isEqualToComparingFieldByField(expectedResourceEvent.session)
-        assertThat(actual.view).isEqualToComparingFieldByField(expectedResourceEvent.view)
-        // to avoid null comparisons which will fail
-        if (actual.connectivity != expectedResourceEvent.connectivity) {
-            assertThat(actual.connectivity)
-                .isEqualToComparingFieldByField(expectedResourceEvent.connectivity)
-        }
-        if (actual.usr != expectedResourceEvent.usr) {
-            assertThat(actual.usr).isEqualToComparingFieldByField(expectedResourceEvent.usr)
-        }
-        return this
-    }
-
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

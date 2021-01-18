@@ -35,10 +35,10 @@ static const uint8_t tracking_consent_granted = 1;
 static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
 
 
-void crash_signal_intercepted(int signum,
-                              const char *signal_name,
-                              const char *error_message,
-                              const char *error_stacktrace) {
+void write_crash_report(int signum,
+                        const char *signal_name,
+                        const char *error_message,
+                        const char *error_stacktrace) {
     using namespace std;
     static const std::string crash_log_filename = "crash_log";
 

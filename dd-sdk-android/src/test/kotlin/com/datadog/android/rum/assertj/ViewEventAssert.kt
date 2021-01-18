@@ -229,25 +229,6 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun isEqualTo(expectedViewEvent: ViewEvent): ViewEventAssert {
-        assertThat(actual.date).isEqualTo(expectedViewEvent.date)
-        assertThat(actual.service).isEqualTo(expectedViewEvent.service)
-        assertThat(actual.application).isEqualToComparingFieldByField(expectedViewEvent.application)
-        assertThat(actual.session).isEqualToComparingFieldByField(expectedViewEvent.session)
-        assertThat(actual.view).isEqualToComparingFieldByField(expectedViewEvent.view)
-        assertThat(actual.dd).isEqualToComparingFieldByField(expectedViewEvent.dd)
-        assertThat(actual.session).isEqualToComparingFieldByField(expectedViewEvent.session)
-        // to avoid null comparisons which will fail
-        if (actual.connectivity != expectedViewEvent.connectivity) {
-            assertThat(actual.connectivity)
-                .isEqualToComparingFieldByField(expectedViewEvent.connectivity)
-        }
-        if (actual.usr != expectedViewEvent.usr) {
-            assertThat(actual.usr).isEqualToComparingFieldByField(expectedViewEvent.usr)
-        }
-        return this
-    }
-
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

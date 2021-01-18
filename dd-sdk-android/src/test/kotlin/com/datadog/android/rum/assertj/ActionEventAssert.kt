@@ -207,30 +207,6 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun isEqualTo(expectedActionEvent: ActionEvent): ActionEventAssert {
-        assertThat(actual.date).isEqualTo(expectedActionEvent.date)
-        assertThat(actual.service).isEqualTo(expectedActionEvent.service)
-        assertThat(actual.type).isEqualTo(expectedActionEvent.type)
-        assertThat(actual.action)
-            .isEqualToComparingFieldByField(expectedActionEvent.action)
-        assertThat(actual.application)
-            .isEqualToComparingFieldByField(expectedActionEvent.application)
-
-        assertThat(actual.dd).isEqualToComparingFieldByField(expectedActionEvent.dd)
-        assertThat(actual.session).isEqualToComparingFieldByField(expectedActionEvent.session)
-        // to avoid null comparisons which will fail
-        if (actual.connectivity != expectedActionEvent.connectivity) {
-            assertThat(actual.connectivity)
-                .isEqualToComparingFieldByField(expectedActionEvent.connectivity)
-        }
-        if (actual.usr != expectedActionEvent.usr) {
-            assertThat(actual.usr).isEqualToComparingFieldByField(expectedActionEvent.usr)
-        }
-        assertThat(actual.view).isEqualToComparingFieldByField(expectedActionEvent.view)
-
-        return this
-    }
-
     companion object {
 
         internal fun assertThat(actual: ActionEvent): ActionEventAssert =
