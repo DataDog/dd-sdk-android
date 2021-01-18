@@ -20,7 +20,7 @@ fun Project.ktLintConfig() {
         additionalEditorconfigFile.set(file("${project.rootDir}/script/config/.editorconfig"))
         filter {
             exclude("**/generated/**")
-            exclude("**/com/datadog/android/rum/internal/domain/model/**")
+            exclude("**/com/datadog/android/rum/model/**")
             include("**/kotlin/**")
         }
     }
