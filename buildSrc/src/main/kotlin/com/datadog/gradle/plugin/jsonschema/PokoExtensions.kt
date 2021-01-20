@@ -34,12 +34,26 @@ internal fun String.enumConstantName(): String {
 
 internal fun JsonType?.asKotlinTypeName(): TypeName {
     return when (this) {
+        null,
         JsonType.NULL -> NOTHING_NULLABLE
         JsonType.BOOLEAN -> BOOLEAN
         JsonType.NUMBER -> DOUBLE
         JsonType.STRING -> STRING
         JsonType.INTEGER -> LONG
-        else -> TODO()
+        JsonType.OBJECT,
+        JsonType.ARRAY -> throw IllegalArgumentException(
+            "Cannot convert $this to a KotlinTypeName"
+        )
+    }
+}
+
+internal fun JsonPrimitiveType?.asKotlinTypeName(): TypeName {
+    return when (this) {
+        JsonPrimitiveType.BOOLEAN -> BOOLEAN
+        JsonPrimitiveType.DOUBLE -> DOUBLE
+        JsonPrimitiveType.STRING -> STRING
+        JsonPrimitiveType.INTEGER -> LONG
+        null -> NOTHING_NULLABLE
     }
 }
 

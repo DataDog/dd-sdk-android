@@ -34,23 +34,17 @@ data class User(
         fun fromJson(serializedObject: String): User {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val username = jsonObject.getAsJsonPrimitive("username").asString
-                val host = jsonObject.getAsJsonPrimitive("host").asString
-                val firstname = jsonObject.getAsJsonPrimitive("firstname")?.asString
-                val lastname = jsonObject.getAsJsonPrimitive("lastname").asString
+                val username = jsonObject.get("username").asString
+                val host = jsonObject.get("host").asString
+                val firstname = jsonObject.get("firstname")?.asString
+                val lastname = jsonObject.get("lastname").asString
                 val contactType = jsonObject.get("contact_type").asString.let {
                     ContactType.fromJson(it)
                 }
-                return User(
-                    username,
-                    host,
-                    firstname,
-                    lastname,
-                    contactType
-                )
-            } catch(e:IllegalStateException) {
+                return User(username, host, firstname, lastname, contactType)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -67,8 +61,8 @@ data class User(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): ContactType = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): ContactType = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

@@ -29,12 +29,10 @@ data class Style(
                 val color = jsonObject.get("color").asString.let {
                     Color.fromJson(it)
                 }
-                return Style(
-                    color
-                )
-            } catch(e:IllegalStateException) {
+                return Style(color)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -59,8 +57,8 @@ data class Style(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Color = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): Color = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

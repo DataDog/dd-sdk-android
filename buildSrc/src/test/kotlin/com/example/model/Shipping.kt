@@ -27,17 +27,14 @@ data class Shipping(
         fun fromJson(serializedObject: String): Shipping {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val item = jsonObject.getAsJsonPrimitive("item").asString
-                val destination = jsonObject.getAsJsonObject("destination").toString().let {
+                val item = jsonObject.get("item").asString
+                val destination = jsonObject.get("destination").toString().let {
                     Address.fromJson(it)
                 }
-                return Shipping(
-                    item,
-                    destination
-                )
-            } catch(e:IllegalStateException) {
+                return Shipping(item, destination)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -62,17 +59,13 @@ data class Shipping(
             fun fromJson(serializedObject: String): Address {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val streetAddress = jsonObject.getAsJsonPrimitive("street_address").asString
-                    val city = jsonObject.getAsJsonPrimitive("city").asString
-                    val state = jsonObject.getAsJsonPrimitive("state").asString
-                    return Address(
-                        streetAddress,
-                        city,
-                        state
-                    )
-                } catch(e:IllegalStateException) {
+                    val streetAddress = jsonObject.get("street_address").asString
+                    val city = jsonObject.get("city").asString
+                    val state = jsonObject.get("state").asString
+                    return Address(streetAddress, city, state)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }

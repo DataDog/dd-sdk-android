@@ -31,20 +31,17 @@ data class Order(
         fun fromJson(serializedObject: String): Order {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val sizes = jsonObject.get("sizes").asJsonArray.let {
-                    jsonArray -> 
+                val sizes = jsonObject.get("sizes").asJsonArray.let { jsonArray ->
                     val collection = HashSet<Size>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(Size.fromJson(it.asString))
                     }
                     collection
                 }
-                return Order(
-                    sizes
-                )
-            } catch(e:IllegalStateException) {
+                return Order(sizes)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -67,8 +64,8 @@ data class Order(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Size = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): Size = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

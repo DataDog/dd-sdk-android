@@ -28,19 +28,16 @@ data class Conflict(
         fun fromJson(serializedObject: String): Conflict {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val type = jsonObject.getAsJsonObject("type")?.toString()?.let {
+                val type = jsonObject.get("type")?.toString()?.let {
                     ConflictType.fromJson(it)
                 }
-                val user = jsonObject.getAsJsonObject("user")?.toString()?.let {
+                val user = jsonObject.get("user")?.toString()?.let {
                     User.fromJson(it)
                 }
-                return Conflict(
-                    type,
-                    user
-                )
-            } catch(e:IllegalStateException) {
+                return Conflict(type, user)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -61,13 +58,11 @@ data class Conflict(
             fun fromJson(serializedObject: String): ConflictType {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val id = jsonObject.getAsJsonPrimitive("id")?.asString
-                    return ConflictType(
-                        id
-                    )
-                } catch(e:IllegalStateException) {
+                    val id = jsonObject.get("id")?.asString
+                    return ConflictType(id)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -91,17 +86,14 @@ data class Conflict(
             fun fromJson(serializedObject: String): User {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val name = jsonObject.getAsJsonPrimitive("name")?.asString
+                    val name = jsonObject.get("name")?.asString
                     val type = jsonObject.get("type")?.asString?.let {
                         UserType.fromJson(it)
                     }
-                    return User(
-                        name,
-                        type
-                    )
-                } catch(e:IllegalStateException) {
+                    return User(name, type)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -121,8 +113,8 @@ data class Conflict(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): UserType = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): UserType = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

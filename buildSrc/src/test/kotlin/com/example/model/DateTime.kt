@@ -29,19 +29,16 @@ data class DateTime(
         fun fromJson(serializedObject: String): DateTime {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val date = jsonObject.getAsJsonObject("date")?.toString()?.let {
+                val date = jsonObject.get("date")?.toString()?.let {
                     Date.fromJson(it)
                 }
-                val time = jsonObject.getAsJsonObject("time")?.toString()?.let {
+                val time = jsonObject.get("time")?.toString()?.let {
                     Time.fromJson(it)
                 }
-                return DateTime(
-                    date,
-                    time
-                )
-            } catch(e:IllegalStateException) {
+                return DateTime(date, time)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -66,19 +63,15 @@ data class DateTime(
             fun fromJson(serializedObject: String): Date {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val year = jsonObject.getAsJsonPrimitive("year")?.asLong
+                    val year = jsonObject.get("year")?.asLong
                     val month = jsonObject.get("month")?.asString?.let {
                         Month.fromJson(it)
                     }
-                    val day = jsonObject.getAsJsonPrimitive("day")?.asLong
-                    return Date(
-                        year,
-                        month,
-                        day
-                    )
-                } catch(e:IllegalStateException) {
+                    val day = jsonObject.get("day")?.asLong
+                    return Date(year, month, day)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -104,17 +97,13 @@ data class DateTime(
             fun fromJson(serializedObject: String): Time {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val hour = jsonObject.getAsJsonPrimitive("hour")?.asLong
-                    val minute = jsonObject.getAsJsonPrimitive("minute")?.asLong
-                    val seconds = jsonObject.getAsJsonPrimitive("seconds")?.asLong
-                    return Time(
-                        hour,
-                        minute,
-                        seconds
-                    )
-                } catch(e:IllegalStateException) {
+                    val hour = jsonObject.get("hour")?.asLong
+                    val minute = jsonObject.get("minute")?.asLong
+                    val seconds = jsonObject.get("seconds")?.asLong
+                    return Time(hour, minute, seconds)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -152,8 +141,8 @@ data class DateTime(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Month = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): Month = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

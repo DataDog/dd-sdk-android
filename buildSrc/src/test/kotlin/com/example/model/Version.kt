@@ -30,11 +30,10 @@ class Version {
         fun fromJson(serializedObject: String): Version {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                return Version(
-                )
-            } catch(e:IllegalStateException) {
+                return Version()
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

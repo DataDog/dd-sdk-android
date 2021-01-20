@@ -31,7 +31,7 @@ sealed class TypeDefinition {
     }
 
     data class Primitive(
-        val type: JsonType,
+        val type: JsonPrimitiveType,
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
@@ -56,7 +56,8 @@ sealed class TypeDefinition {
     data class Class(
         val name: String,
         val properties: List<TypeProperty>,
-        override val description: String = ""
+        override val description: String = "",
+        val additionalProperties: TypeDefinition? = null
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             check(other is Class) { "Cannot merge Class with ${other.javaClass}" }

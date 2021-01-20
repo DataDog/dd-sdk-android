@@ -13,7 +13,9 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.MAP
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
@@ -96,9 +98,7 @@ class PokoGenerator(
             constructorBuilder,
             docBuilder
         )
-        val companion = TypeSpec.companionObjectBuilder()
-            .addFunction(deserializerGenerator.generateClassDeserializer(definition, rootTypeName))
-            .build()
+        val companion = deserializerGenerator.generateCompanionForClass(definition, rootTypeName)
 
         typeBuilder.primaryConstructor(constructorBuilder.build())
             .addKdoc(docBuilder.build())
@@ -141,10 +141,9 @@ class PokoGenerator(
             )
         }
 
-        val companion = TypeSpec.companionObjectBuilder()
-            .addFunction(deserializerGenerator.generateEnumDeserializer(definition, rootTypeName))
-            .build()
-        enumBuilder.addFunction(serializerGenerator.generateEnumSerializer(definition))
+        enumBuilder.addFunction(serializerGenerator.generateEnumSerializer())
+
+        val companion = deserializerGenerator.generateCompanionForEnum(definition, rootTypeName)
 
         return enumBuilder
             .addKdoc(docBuilder.build())
@@ -190,6 +189,48 @@ class PokoGenerator(
 
         if (property.type.description.isNotBlank()) {
             docBuilder.add("@param $varName ${property.type.description}\n")
+        }
+    }
+
+    /**
+     * Appends a property to a [TypeSpec.Builder].
+     * @param additionalPropertyType the additional properties type definition
+     * @param typeBuilder the `data class` [TypeSpec] builder.
+     * @param constructorBuilder the `data class` constructor builder.
+     * @param docBuilder the `data class` KDoc builder.
+     */
+    private fun appendAdditionalProperties(
+        additionalPropertyType: TypeDefinition,
+        typeBuilder: TypeSpec.Builder,
+        constructorBuilder: FunSpec.Builder,
+        docBuilder: CodeBlock.Builder
+    ) {
+        val type = additionalPropertyType.asKotlinTypeName(
+            nestedEnums,
+            nestedClasses,
+            knownTypes,
+            packageName,
+            rootTypeName
+        )
+
+        val constructorParamBuilder = ParameterSpec.builder(
+            ADDITIONAL_PROPERTIES_NAME,
+            MAP.parameterizedBy(STRING, type)
+        )
+        constructorParamBuilder.defaultValue("emptyMap()")
+        constructorBuilder.addParameter(constructorParamBuilder.build())
+
+        typeBuilder.addProperty(
+            PropertySpec.builder(ADDITIONAL_PROPERTIES_NAME, MAP.parameterizedBy(STRING, type))
+                .mutable(false)
+                .initializer(ADDITIONAL_PROPERTIES_NAME)
+                .build()
+        )
+
+        if (additionalPropertyType.description.isNotBlank()) {
+            docBuilder.add(
+                "@param $ADDITIONAL_PROPERTIES_NAME ${additionalPropertyType.description}\n"
+            )
         }
     }
 
@@ -262,6 +303,15 @@ class PokoGenerator(
                 )
             }
         }
+        if (definition.additionalProperties != null) {
+            nonConstants++
+            appendAdditionalProperties(
+                definition.additionalProperties,
+                typeBuilder,
+                constructorBuilder,
+                docBuilder
+            )
+        }
 
         if (nonConstants > 0) {
             typeBuilder.addModifiers(KModifier.DATA)
@@ -274,5 +324,6 @@ class PokoGenerator(
 
     companion object {
         const val ENUM_CONSTRUCTOR_JSON_VALUE_NAME = "jsonValue"
+        const val ADDITIONAL_PROPERTIES_NAME = "additionalProperties"
     }
 }

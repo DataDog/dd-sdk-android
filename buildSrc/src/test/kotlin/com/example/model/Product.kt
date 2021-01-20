@@ -31,17 +31,13 @@ data class Product(
         fun fromJson(serializedObject: String): Product {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val productId = jsonObject.getAsJsonPrimitive("productId").asLong
-                val productName = jsonObject.getAsJsonPrimitive("productName").asString
-                val price = jsonObject.getAsJsonPrimitive("price").asDouble
-                return Product(
-                    productId,
-                    productName,
-                    price
-                )
-            } catch(e:IllegalStateException) {
+                val productId = jsonObject.get("productId").asLong
+                val productName = jsonObject.get("productName").asString
+                val price = jsonObject.get("price").asDouble
+                return Product(productId, productName, price)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

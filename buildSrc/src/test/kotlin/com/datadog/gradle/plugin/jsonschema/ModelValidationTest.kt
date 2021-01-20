@@ -7,8 +7,8 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import com.example.forgery.ForgeryConfiguration
-import org.assertj.core.api.Assertions.assertThat
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import org.assertj.core.api.Assertions.assertThat
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -73,7 +73,6 @@ class ModelValidationTest(
                         "with the serialized for type: [$type] and test iteration: [$it]"
                 )
                 .isEqualToComparingFieldByField(entity)
-
         }
     }
 
@@ -89,26 +88,28 @@ class ModelValidationTest(
         @Parameterized.Parameters(name = "{index}: {1}")
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf("minimal", "Person"),
-                arrayOf("required", "Product"),
-                arrayOf("nested", "Book"),
                 arrayOf("arrays", "Article"),
-                arrayOf("sets", "Video"),
+                arrayOf("nested", "Book"),
+                arrayOf("additional_props", "Comment"),
+                arrayOf("definition_name_conflict", "Conflict"),
                 arrayOf("definition", "Customer"),
                 arrayOf("definition_with_id", "Customer"),
-                arrayOf("enum", "Style"),
-                arrayOf("enum_array", "Order"),
-                arrayOf("constant", "Location"),
-                arrayOf("constant_number", "Version"),
                 arrayOf("nested_enum", "DateTime"),
-                arrayOf("description", "Opus"),
-                arrayOf("top_level_definition", "Foo"),
-                arrayOf("types", "Demo"),
-                arrayOf("all_of", "User"),
                 arrayOf("external_description", "Delivery"),
+                arrayOf("types", "Demo"),
+                arrayOf("top_level_definition", "Foo"),
+                arrayOf("constant", "Location"),
+                arrayOf("read_only", "Message"),
+                arrayOf("enum_array", "Order"),
+                arrayOf("description", "Opus"),
+                arrayOf("minimal", "Person"),
+                arrayOf("required", "Product"),
                 arrayOf("external_nested_description", "Shipping"),
-                arrayOf("definition_name_conflict", "Conflict"),
-                arrayOf("read_only", "Message")
+                arrayOf("enum", "Style"),
+                arrayOf("all_of", "User"),
+                arrayOf("all_of_merged", "UserMerged"),
+                arrayOf("constant_number", "Version"),
+                arrayOf("sets", "Video")
             )
         }
     }

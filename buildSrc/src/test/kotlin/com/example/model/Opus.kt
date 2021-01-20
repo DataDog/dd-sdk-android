@@ -47,26 +47,20 @@ data class Opus(
         fun fromJson(serializedObject: String): Opus {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val title = jsonObject.getAsJsonPrimitive("title")?.asString
-                val composer = jsonObject.getAsJsonPrimitive("composer")?.asString
-                val artists = jsonObject.get("artists")?.asJsonArray?.let {
-                    jsonArray -> 
+                val title = jsonObject.get("title")?.asString
+                val composer = jsonObject.get("composer")?.asString
+                val artists = jsonObject.get("artists")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Artist>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(Artist.fromJson(it.toString()))
                     }
                     collection
                 }
-                val duration = jsonObject.getAsJsonPrimitive("duration")?.asLong
-                return Opus(
-                    title,
-                    composer,
-                    artists,
-                    duration
-                )
-            } catch(e:IllegalStateException) {
+                val duration = jsonObject.get("duration")?.asLong
+                return Opus(title, composer, artists, duration)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -94,17 +88,14 @@ data class Opus(
             fun fromJson(serializedObject: String): Artist {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val name = jsonObject.getAsJsonPrimitive("name")?.asString
+                    val name = jsonObject.get("name")?.asString
                     val role = jsonObject.get("role")?.asString?.let {
                         Role.fromJson(it)
                     }
-                    return Artist(
-                        name,
-                        role
-                    )
-                } catch(e:IllegalStateException) {
+                    return Artist(name, role)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -139,8 +130,8 @@ data class Opus(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Role = values().first{it.jsonValue ==
-                    serializedObject}
+            fun fromJson(serializedObject: String): Role = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }
