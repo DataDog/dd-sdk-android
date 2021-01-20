@@ -19,10 +19,10 @@ void update_main_context(JNIEnv *env,
 
 void update_tracking_consent(jint consent);
 
-void crash_signal_intercepted(int signum,
-                              const char *signal_name,
-                              const char *error_message,
-                              const char *error_stacktrace);
+void write_crash_report(int signum,
+                        const char *signal_name,
+                        const char *error_message,
+                        const char *error_stacktrace);
 
 #ifdef __cplusplus
 }

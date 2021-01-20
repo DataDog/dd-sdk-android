@@ -62,7 +62,7 @@ void test_generate_log(
         const char *signal_name,
         const char *signal_error_message,
         const char *error_stack) {
-    crash_signal_intercepted(signal, signal_name, signal_error_message, error_stack);
+    write_crash_report(signal, signal_name, signal_error_message, error_stack);
 }
 
 

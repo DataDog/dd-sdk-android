@@ -19,10 +19,13 @@ import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.tracing.internal.TracesFeature
+import java.io.File
 import java.lang.IllegalArgumentException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -148,6 +151,24 @@ object Datadog {
         setupLifecycleMonitorCallback(appContext)
 
         initialized.set(true)
+
+        // handle NDK crash reports here
+        if (CoreFeature.isMainProcess) {
+            DatadogNdkCrashHandler(
+                File(context.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME),
+                CoreFeature.persistenceExecutorService,
+                LogsFeature.persistenceStrategy.getWriter(),
+                RumFeature.persistenceStrategy.getWriter(),
+                LogGenerator(
+                    CoreFeature.serviceName,
+                    DatadogNdkCrashHandler.LOGGER_NAME,
+                    CoreFeature.networkInfoProvider,
+                    CoreFeature.userInfoProvider,
+                    CoreFeature.envName,
+                    CoreFeature.packageVersion
+                )
+            ).handleNdkCrash()
+        }
 
         // Issue #154 (“Thread starting during runtime shutdown”)
         // Make sure we stop Datadog when the Runtime shuts down

@@ -50,6 +50,9 @@ internal class Configurator :
         forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(RumEventMapperFactory())
 
+        // NDK Crash
+        forge.addFactory(NdkCrashLogForgeryFactory())
+
         // MISC
         forge.addFactory(BigIntegerFactory())
         forge.addFactory(JsonArrayForgeryFactory())
