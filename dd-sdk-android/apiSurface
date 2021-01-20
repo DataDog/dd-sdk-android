@@ -439,7 +439,7 @@ class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Dd
   class Error
-    constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, Resource? = null)
+    constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Error
