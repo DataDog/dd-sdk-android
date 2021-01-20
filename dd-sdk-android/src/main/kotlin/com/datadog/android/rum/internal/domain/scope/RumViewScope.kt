@@ -281,6 +281,11 @@ internal class RumViewScope(
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val timings = if (customTimings.isNotEmpty()) {
+            ViewEvent.CustomTimings(LinkedHashMap(customTimings))
+        } else {
+            null
+        }
 
         val viewEvent = ViewEvent(
             date = eventTimestamp,
@@ -294,6 +299,7 @@ internal class RumViewScope(
                 resource = ViewEvent.Resource(resourceCount),
                 error = ViewEvent.Error(errorCount),
                 crash = ViewEvent.Crash(crashCount),
+                customTimings = timings,
                 isActive = !stopped
             ),
             usr = ViewEvent.Usr(
@@ -309,8 +315,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo,
-            customTimings = customTimings
+            userExtraAttributes = user.extraInfo
         )
         writer.write(rumEvent)
     }

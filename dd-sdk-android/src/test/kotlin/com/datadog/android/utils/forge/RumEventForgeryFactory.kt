@@ -27,12 +27,7 @@ internal class RumEventForgeryFactory : ForgeryFactory<RumEvent> {
         return RumEvent(
             event = eventData,
             globalAttributes = forge.exhaustiveAttributes(),
-            userExtraAttributes = forge.exhaustiveAttributes(),
-            customTimings = forge.aNullable {
-                forge.aMap {
-                    forge.anAlphabeticalString() to forge.aLong()
-                }
-            }
+            userExtraAttributes = forge.exhaustiveAttributes()
         )
     }
 }

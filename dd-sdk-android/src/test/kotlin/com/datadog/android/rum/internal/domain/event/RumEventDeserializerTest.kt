@@ -79,7 +79,6 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent?.customTimings).isEqualTo(fakeEvent.customTimings)
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedViewEvent = deserializedEvent!!.event as ViewEvent
@@ -102,7 +101,6 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent?.customTimings).isEqualTo(fakeEvent.customTimings)
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedResourceEvent = deserializedEvent!!.event as ResourceEvent
@@ -124,7 +122,6 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent?.customTimings).isEqualTo(fakeEvent.customTimings)
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedActionEvent = deserializedEvent!!.event as ActionEvent
@@ -149,7 +146,6 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent?.customTimings).isEqualTo(fakeEvent.customTimings)
         assertAttributes(fakeEvent.globalAttributes, deserializedEvent?.globalAttributes)
         assertAttributes(fakeEvent.userExtraAttributes, deserializedEvent?.userExtraAttributes)
         val deserializedErrorEvent = deserializedEvent!!.event as ErrorEvent

@@ -32,7 +32,12 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 domInteractive = forge.aNullable { aPositiveLong() },
                 domContentLoaded = forge.aNullable { aPositiveLong() },
                 domComplete = forge.aNullable { aPositiveLong() },
-                loadEvent = forge.aNullable { aPositiveLong() }
+                loadEvent = forge.aNullable { aPositiveLong() },
+                customTimings = forge.aNullable {
+                    ViewEvent.CustomTimings(
+                        aMap { anAlphabeticalString() to aLong() }
+                    )
+                }
             ),
             usr = ViewEvent.Usr(
                 id = forge.anHexadecimalString(),
