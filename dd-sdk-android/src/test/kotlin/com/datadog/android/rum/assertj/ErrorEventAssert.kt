@@ -273,6 +273,15 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasErrorType(expected: String?): ErrorEventAssert {
+        assertThat(actual.error.type)
+            .overridingErrorMessage(
+                "Expected event data to have error type $expected" +
+                    " but was ${actual.error.type}"
+            ).isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

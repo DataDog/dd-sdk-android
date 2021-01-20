@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.event
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.utils.toJsonArray
 import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
@@ -458,6 +459,64 @@ internal class RumEventSerializerTest {
             RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX,
             RumEventSerializer.CUSTOM_TIMINGS_GROUP_VERBOSE_NAME
         )
+    }
+
+    @Test
+    fun `M drop the internal reserved attributes W serialize { custom global attributes }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeInternalTimestamp = forge.aLong()
+        val fakeErrorType = forge.aString()
+        val fakeEvent: RumEvent = forge.getForgery()
+        val fakeEventWithInternalGlobalAttributes = fakeEvent.copy(
+            globalAttributes = fakeEvent.globalAttributes + mapOf(
+                RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
+            )
+        )
+        // WHEN
+        val serializedEvent = testedSerializer.serialize(fakeEventWithInternalGlobalAttributes)
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_TIMESTAMP
+            )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_ERROR_TYPE
+            )
+    }
+
+    @Test
+    fun `M drop the internal reserved attributes W serialize { custom user attributes }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeInternalTimestamp = forge.aLong()
+        val fakeErrorType = forge.aString()
+        val fakeEvent: RumEvent = forge.getForgery()
+        val fakeEventWithInternalUserAttributes = fakeEvent.copy(
+            globalAttributes = fakeEvent.userExtraAttributes + mapOf(
+                RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
+            )
+        )
+        // WHEN
+        val serializedEvent = testedSerializer.serialize(fakeEvent)
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_TIMESTAMP
+            )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_ERROR_TYPE
+            )
     }
 
     // region Internal

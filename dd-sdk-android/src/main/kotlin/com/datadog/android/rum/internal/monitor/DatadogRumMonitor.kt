@@ -141,8 +141,18 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         val eventTime = getEventTime(attributes)
+        val errorType = getErrorType(attributes)
         handleEvent(
-            RumRawEvent.AddError(message, source, throwable, null, false, attributes, eventTime)
+            RumRawEvent.AddError(
+                message,
+                source,
+                throwable,
+                null,
+                false,
+                attributes,
+                eventTime,
+                errorType
+            )
         )
     }
 
@@ -153,8 +163,18 @@ internal class DatadogRumMonitor(
         attributes: Map<String, Any?>
     ) {
         val eventTime = getEventTime(attributes)
+        val errorType = getErrorType(attributes)
         handleEvent(
-            RumRawEvent.AddError(message, source, null, stacktrace, false, attributes, eventTime)
+            RumRawEvent.AddError(
+                message,
+                source,
+                null,
+                stacktrace,
+                false,
+                attributes,
+                eventTime,
+                errorType
+            )
         )
     }
 
@@ -228,6 +248,10 @@ internal class DatadogRumMonitor(
 
     private fun getEventTime(attributes: Map<String, Any?>): Time {
         return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: Time()
+    }
+
+    private fun getErrorType(attributes: Map<String, Any?>): String? {
+        return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
     }
 
     // endregion

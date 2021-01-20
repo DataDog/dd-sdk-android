@@ -228,7 +228,8 @@ internal class DatadogNdkCrashHandler(
                     errorLogMessage,
                     ErrorEvent.Source.SOURCE,
                     ndkCrashLog.stacktrace,
-                    true
+                    true,
+                    ndkCrashLog.signalName
                 )
             ),
             rumViewEvent.globalAttributes,

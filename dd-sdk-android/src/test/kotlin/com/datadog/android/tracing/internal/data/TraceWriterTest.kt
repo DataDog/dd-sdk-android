@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -97,12 +98,13 @@ internal class TraceWriterTest {
 
         // THEN
         val errorMessagesCaptor = argumentCaptor<String>()
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         val stackTracesCaptor = argumentCaptor<String>()
         verify(mockAdvancedRumMonitor, times(2)).addErrorWithStacktrace(
             errorMessagesCaptor.capture(),
             eq(RumErrorSource.SOURCE),
             stackTracesCaptor.capture(),
-            eq(emptyMap())
+            attributesCaptor.capture()
         )
         errorMessagesCaptor.allValues.forEachIndexed { index, message ->
             assertThat(message).isEqualTo(
@@ -112,6 +114,12 @@ internal class TraceWriterTest {
                     spansList[index].tags[DDTags.ERROR_TYPE].toString(),
                     spansList[index].tags[DDTags.ERROR_MSG].toString()
                 )
+            )
+        }
+        attributesCaptor.allValues.forEachIndexed { index, map ->
+            assertThat(map).containsEntry(
+                RumAttributes.INTERNAL_ERROR_TYPE,
+                spansList[index].tags[DDTags.ERROR_TYPE].toString()
             )
         }
         stackTracesCaptor.allValues.forEachIndexed { index, stacktrace ->
@@ -189,12 +197,13 @@ internal class TraceWriterTest {
 
         // THEN
         val errorMessagesCaptor = argumentCaptor<String>()
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         val stackTracesCaptor = argumentCaptor<String>()
         verify(mockAdvancedRumMonitor, times(2)).addErrorWithStacktrace(
             errorMessagesCaptor.capture(),
             eq(RumErrorSource.SOURCE),
             stackTracesCaptor.capture(),
-            eq(emptyMap())
+            attributesCaptor.capture()
         )
         errorMessagesCaptor.allValues.forEachIndexed { index, message ->
             assertThat(message).isEqualTo(
@@ -208,6 +217,12 @@ internal class TraceWriterTest {
 
         stackTracesCaptor.allValues.forEachIndexed { index, stacktrace ->
             assertThat(stacktrace).isEqualTo(spansList[index].tags[DDTags.ERROR_STACK].toString())
+        }
+        attributesCaptor.allValues.forEachIndexed { index, map ->
+            assertThat(map).containsEntry(
+                RumAttributes.INTERNAL_ERROR_TYPE,
+                spansList[index].tags[DDTags.ERROR_TYPE].toString()
+            )
         }
         spansList.forEach {
             it.finish()

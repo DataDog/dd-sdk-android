@@ -214,7 +214,8 @@ internal class RumResourceScope(
                     method = method.toErrorMethod(),
                     statusCode = statusCode ?: 0,
                     provider = resolveErrorProvider()
-                )
+                ),
+                type = throwable.javaClass.canonicalName
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
