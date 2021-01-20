@@ -33,21 +33,16 @@ data class Book(
         fun fromJson(serializedObject: String): Book {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val bookId = jsonObject.getAsJsonPrimitive("bookId").asLong
-                val title = jsonObject.getAsJsonPrimitive("title").asString
-                val price = jsonObject.getAsJsonPrimitive("price").asDouble
-                val author = jsonObject.getAsJsonObject("author").toString().let {
+                val bookId = jsonObject.get("bookId").asLong
+                val title = jsonObject.get("title").asString
+                val price = jsonObject.get("price").asDouble
+                val author = jsonObject.get("author").toString().let {
                     Author.fromJson(it)
                 }
-                return Book(
-                    bookId,
-                    title,
-                    price,
-                    author
-                )
-            } catch(e:IllegalStateException) {
+                return Book(bookId, title, price, author)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -72,19 +67,15 @@ data class Book(
             fun fromJson(serializedObject: String): Author {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val firstName = jsonObject.getAsJsonPrimitive("firstName").asString
-                    val lastName = jsonObject.getAsJsonPrimitive("lastName").asString
-                    val contact = jsonObject.getAsJsonObject("contact").toString().let {
+                    val firstName = jsonObject.get("firstName").asString
+                    val lastName = jsonObject.get("lastName").asString
+                    val contact = jsonObject.get("contact").toString().let {
                         Contact.fromJson(it)
                     }
-                    return Author(
-                        firstName,
-                        lastName,
-                        contact
-                    )
-                } catch(e:IllegalStateException) {
+                    return Author(firstName, lastName, contact)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }
@@ -108,15 +99,12 @@ data class Book(
             fun fromJson(serializedObject: String): Contact {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val phone = jsonObject.getAsJsonPrimitive("phone")?.asString
-                    val email = jsonObject.getAsJsonPrimitive("email")?.asString
-                    return Contact(
-                        phone,
-                        email
-                    )
-                } catch(e:IllegalStateException) {
+                    val phone = jsonObject.get("phone")?.asString
+                    val email = jsonObject.get("email")?.asString
+                    return Contact(phone, email)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }

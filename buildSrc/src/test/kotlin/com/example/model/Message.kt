@@ -47,39 +47,29 @@ data class Message(
         fun fromJson(serializedObject: String): Message {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val destination = jsonObject.get("destination").asJsonArray.let {
-                    jsonArray -> 
+                val destination = jsonObject.get("destination").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                val origin = jsonObject.getAsJsonPrimitive("origin").asString
-                val subject = jsonObject.getAsJsonPrimitive("subject")?.asString
-                val message = jsonObject.getAsJsonPrimitive("message")?.asString
-                val labels = jsonObject.get("labels")?.asJsonArray?.let {
-                    jsonArray -> 
+                val origin = jsonObject.get("origin").asString
+                val subject = jsonObject.get("subject")?.asString
+                val message = jsonObject.get("message")?.asString
+                val labels = jsonObject.get("labels")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                val read = jsonObject.getAsJsonPrimitive("read")?.asBoolean
-                val important = jsonObject.getAsJsonPrimitive("important")?.asBoolean
-                return Message(
-                    destination,
-                    origin,
-                    subject,
-                    message,
-                    labels,
-                    read,
-                    important
-                )
-            } catch(e:IllegalStateException) {
+                val read = jsonObject.get("read")?.asBoolean
+                val important = jsonObject.get("important")?.asBoolean
+                return Message(destination, origin, subject, message, labels, read, important)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

@@ -30,17 +30,13 @@ data class Person(
         fun fromJson(serializedObject: String): Person {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val firstName = jsonObject.getAsJsonPrimitive("firstName")?.asString
-                val lastName = jsonObject.getAsJsonPrimitive("lastName")?.asString
-                val age = jsonObject.getAsJsonPrimitive("age")?.asLong
-                return Person(
-                    firstName,
-                    lastName,
-                    age
-                )
-            } catch(e:IllegalStateException) {
+                val firstName = jsonObject.get("firstName")?.asString
+                val lastName = jsonObject.get("lastName")?.asString
+                val age = jsonObject.get("age")?.asLong
+                return Person(firstName, lastName, age)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

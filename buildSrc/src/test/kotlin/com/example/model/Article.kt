@@ -38,31 +38,25 @@ data class Article(
         fun fromJson(serializedObject: String): Article {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val title = jsonObject.getAsJsonPrimitive("title").asString
-                val tags = jsonObject.get("tags")?.asJsonArray?.let {
-                    jsonArray -> 
+                val title = jsonObject.get("title").asString
+                val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                val authors = jsonObject.get("authors").asJsonArray.let {
-                    jsonArray -> 
+                val authors = jsonObject.get("authors").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                return Article(
-                    title,
-                    tags,
-                    authors
-                )
-            } catch(e:IllegalStateException) {
+                return Article(title, tags, authors)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

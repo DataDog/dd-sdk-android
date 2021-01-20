@@ -6,7 +6,8 @@
     "sizes": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "enum": ["x small", "small", "medium", "large", "x large"]
       },
       "uniqueItems": true
     }

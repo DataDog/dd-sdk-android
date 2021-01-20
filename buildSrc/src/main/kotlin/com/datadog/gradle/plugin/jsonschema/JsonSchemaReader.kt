@@ -137,10 +137,10 @@ class JsonSchemaReader(
         val type = definition.type
         return when (type) {
             JsonType.NULL -> TypeDefinition.Null(definition.description.orEmpty())
-            JsonType.BOOLEAN,
-            JsonType.NUMBER,
-            JsonType.INTEGER,
-            JsonType.STRING -> transformPrimitive(definition, typeName)
+            JsonType.BOOLEAN -> transformPrimitive(definition, JsonPrimitiveType.BOOLEAN, typeName)
+            JsonType.NUMBER -> transformPrimitive(definition, JsonPrimitiveType.DOUBLE, typeName)
+            JsonType.INTEGER -> transformPrimitive(definition, JsonPrimitiveType.INTEGER, typeName)
+            JsonType.STRING -> transformPrimitive(definition, JsonPrimitiveType.STRING, typeName)
             JsonType.ARRAY -> transformArray(definition, typeName)
             JsonType.OBJECT, null -> transformType(definition, typeName)
         }
@@ -148,6 +148,7 @@ class JsonSchemaReader(
 
     private fun transformPrimitive(
         definition: JsonDefinition,
+        primitiveType: JsonPrimitiveType,
         typeName: String
     ): TypeDefinition {
         return if (!definition.enum.isNullOrEmpty()) {
@@ -156,7 +157,7 @@ class JsonSchemaReader(
             transformConstant(definition.type, definition.constant, definition.description)
         } else {
             TypeDefinition.Primitive(
-                type = definition.type ?: JsonType.NULL,
+                type = primitiveType,
                 description = definition.description.orEmpty()
             )
         }
@@ -209,7 +210,7 @@ class JsonSchemaReader(
             transformEnum(typeName, definition.type, definition.enum, definition.description)
         } else if (definition.constant != null) {
             transformConstant(definition.type, definition.constant, definition.description)
-        } else if (!definition.properties.isNullOrEmpty()) {
+        } else if (!definition.properties.isNullOrEmpty() || definition.additionalProperties != null) {
             generateDataClass(typeName, definition)
         } else if (!definition.allOf.isNullOrEmpty()) {
             generateTypeAllOf(typeName, definition.allOf)
@@ -255,11 +256,13 @@ class JsonSchemaReader(
             )
             properties.add(TypeProperty(name, propertyType, !required, readOnly))
         }
+        val additional = definition.additionalProperties?.let { transform(it, "?") }
 
         return TypeDefinition.Class(
             name = typeName,
             description = definition.description.orEmpty(),
-            properties = properties
+            properties = properties,
+            additionalProperties = additional
         )
     }
 

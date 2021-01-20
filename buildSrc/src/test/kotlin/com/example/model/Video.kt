@@ -40,31 +40,25 @@ data class Video(
         fun fromJson(serializedObject: String): Video {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val title = jsonObject.getAsJsonPrimitive("title").asString
-                val tags = jsonObject.get("tags")?.asJsonArray?.let {
-                    jsonArray -> 
+                val title = jsonObject.get("title").asString
+                val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->
                     val collection = HashSet<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                val links = jsonObject.get("links")?.asJsonArray?.let {
-                    jsonArray -> 
+                val links = jsonObject.get("links")?.asJsonArray?.let { jsonArray ->
                     val collection = HashSet<String>(jsonArray.size())
                     jsonArray.forEach {
                         collection.add(it.asString)
                     }
                     collection
                 }
-                return Video(
-                    title,
-                    tags,
-                    links
-                )
-            } catch(e:IllegalStateException) {
+                return Video(title, tags, links)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

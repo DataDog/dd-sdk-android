@@ -7,14 +7,13 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.nio.file.Files
-import java.nio.file.Paths
-import org.assertj.core.api.Assertions.assertThat
 
 @RunWith(Parameterized::class)
 class PokoGeneratorTest(
@@ -43,17 +42,26 @@ class PokoGeneratorTest(
         ).findFirst().get().toFile()
 
         val generatedContent = generatedFile.readText(Charsets.UTF_8)
-        val outputContent = File(outputPath).readText(Charsets.UTF_8)
-        assertThat(generatedContent)
-            .overridingErrorMessage(
-                "File $outputFile generated from type \n$inputType \ndidn't match expectation:\n" +
-                    "<<<<<<< EXPECTED\n" +
-                    outputContent +
-                    "=======\n" +
-                    generatedContent +
-                    "\n>>>>>>> GENERATED\n"
-            )
-            .isEqualTo(outputContent)
+        val expectedContent = File(outputPath).readText(Charsets.UTF_8)
+
+        if (generatedContent != expectedContent) {
+            val genLines = generatedContent.lines()
+            val expLines = expectedContent.lines()
+            for (i in 0 until minOf(genLines.size, expLines.size)) {
+                if (genLines[i] != expLines[i]) {
+                    System.err.println(generatedContent)
+                    throw AssertionError(
+                        "File $outputFile generated from \n$inputType didn't match expectation:\n" +
+                            "First error on line ${i + 1}:\n" +
+                            "<<<<<<< EXPECTED\n" +
+                            expLines[i] +
+                            "\n=======\n" +
+                            genLines[i] +
+                            "\n>>>>>>> GENERATED\n"
+                    )
+                }
+            }
+        }
     }
 
     companion object {
@@ -63,6 +71,7 @@ class PokoGeneratorTest(
             return listOf(
                 arrayOf(Article, "Article"),
                 arrayOf(Book, "Book"),
+                arrayOf(Comment, "Comment"),
                 arrayOf(Conflict, "Conflict"),
                 arrayOf(Customer, "Customer"),
                 arrayOf(DateTime, "DateTime"),
@@ -72,6 +81,7 @@ class PokoGeneratorTest(
                 arrayOf(Person, "Person"),
                 arrayOf(Location, "Location"),
                 arrayOf(Message, "Message"),
+                arrayOf(Order, "Order"),
                 arrayOf(Opus, "Opus"),
                 arrayOf(Product, "Product"),
                 arrayOf(Shipping, "Shipping"),

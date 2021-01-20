@@ -25,11 +25,10 @@ class Location {
         fun fromJson(serializedObject: String): Location {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                return Location(
-                )
-            } catch(e:IllegalStateException) {
+                return Location()
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

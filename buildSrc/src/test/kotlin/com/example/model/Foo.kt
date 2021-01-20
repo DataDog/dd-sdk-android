@@ -28,15 +28,12 @@ data class Foo(
         fun fromJson(serializedObject: String): Foo {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val bar = jsonObject.getAsJsonPrimitive("bar")?.asString
-                val baz = jsonObject.getAsJsonPrimitive("baz")?.asLong
-                return Foo(
-                    bar,
-                    baz
-                )
-            } catch(e:IllegalStateException) {
+                val bar = jsonObject.get("bar")?.asString
+                val baz = jsonObject.get("baz")?.asLong
+                return Foo(bar, baz)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

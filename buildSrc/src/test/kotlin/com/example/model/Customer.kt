@@ -29,23 +29,17 @@ data class Customer(
         fun fromJson(serializedObject: String): Customer {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val name = jsonObject.getAsJsonPrimitive("name")?.asString
-                val billingAddress =
-                        jsonObject.getAsJsonObject("billing_address")?.toString()?.let {
+                val name = jsonObject.get("name")?.asString
+                val billingAddress = jsonObject.get("billing_address")?.toString()?.let {
                     Address.fromJson(it)
                 }
-                val shippingAddress =
-                        jsonObject.getAsJsonObject("shipping_address")?.toString()?.let {
+                val shippingAddress = jsonObject.get("shipping_address")?.toString()?.let {
                     Address.fromJson(it)
                 }
-                return Customer(
-                    name,
-                    billingAddress,
-                    shippingAddress
-                )
-            } catch(e:IllegalStateException) {
+                return Customer(name, billingAddress, shippingAddress)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -70,17 +64,13 @@ data class Customer(
             fun fromJson(serializedObject: String): Address {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val streetAddress = jsonObject.getAsJsonPrimitive("street_address").asString
-                    val city = jsonObject.getAsJsonPrimitive("city").asString
-                    val state = jsonObject.getAsJsonPrimitive("state").asString
-                    return Address(
-                        streetAddress,
-                        city,
-                        state
-                    )
-                } catch(e:IllegalStateException) {
+                    val streetAddress = jsonObject.get("street_address").asString
+                    val city = jsonObject.get("city").asString
+                    val state = jsonObject.get("state").asString
+                    return Address(streetAddress, city, state)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }

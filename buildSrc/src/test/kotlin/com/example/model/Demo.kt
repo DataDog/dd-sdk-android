@@ -46,31 +46,20 @@ data class Demo(
         fun fromJson(serializedObject: String): Demo {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val s = jsonObject.getAsJsonPrimitive("s").asString
-                val i = jsonObject.getAsJsonPrimitive("i").asLong
-                val n = jsonObject.getAsJsonPrimitive("n").asDouble
-                val b = jsonObject.getAsJsonPrimitive("b").asBoolean
+                val s = jsonObject.get("s").asString
+                val i = jsonObject.get("i").asLong
+                val n = jsonObject.get("n").asDouble
+                val b = jsonObject.get("b").asBoolean
                 val l = null
-                val ns = jsonObject.getAsJsonPrimitive("ns")?.asString
-                val ni = jsonObject.getAsJsonPrimitive("ni")?.asLong
-                val nn = jsonObject.getAsJsonPrimitive("nn")?.asDouble
-                val nb = jsonObject.getAsJsonPrimitive("nb")?.asBoolean
+                val ns = jsonObject.get("ns")?.asString
+                val ni = jsonObject.get("ni")?.asLong
+                val nn = jsonObject.get("nn")?.asDouble
+                val nb = jsonObject.get("nb")?.asBoolean
                 val nl = null
-                return Demo(
-                    s,
-                    i,
-                    n,
-                    b,
-                    l,
-                    ns,
-                    ni,
-                    nn,
-                    nb,
-                    nl
-                )
-            } catch(e:IllegalStateException) {
+                return Demo(s, i, n, b, l, ns, ni, nn, nb, nl)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }

@@ -46,26 +46,28 @@ class JsonSchemaReaderTest(
         @Parameterized.Parameters(name = "{index}: {0}")
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf("minimal", Person),
-                arrayOf("required", Product),
-                arrayOf("nested", Book),
                 arrayOf("arrays", Article),
-                arrayOf("sets", Video),
+                arrayOf("nested", Book),
+                arrayOf("additional_props", Comment),
+                arrayOf("definition_name_conflict", Conflict),
                 arrayOf("definition", Customer),
                 arrayOf("definition_with_id", Customer),
-                arrayOf("enum", Style),
-                arrayOf("constant", Location),
-                arrayOf("constant_number", Version),
                 arrayOf("nested_enum", DateTime),
-                arrayOf("description", Opus),
-                arrayOf("top_level_definition", Foo),
+                arrayOf("external_description", Delivery),
                 arrayOf("types", Demo),
+                arrayOf("top_level_definition", Foo),
+                arrayOf("constant", Location),
+                arrayOf("read_only", Message),
+                arrayOf("enum_array", Order),
+                arrayOf("description", Opus),
+                arrayOf("minimal", Person),
+                arrayOf("required", Product),
+                arrayOf("external_nested_description", Shipping),
+                arrayOf("enum", Style),
                 arrayOf("all_of", User),
                 arrayOf("all_of_merged", UserMerged),
-                arrayOf("external_description", Delivery),
-                arrayOf("external_nested_description", Shipping),
-                arrayOf("definition_name_conflict", Conflict),
-                arrayOf("read_only", Message)
+                arrayOf("constant_number", Version),
+                arrayOf("sets", Video)
             )
         }
     }

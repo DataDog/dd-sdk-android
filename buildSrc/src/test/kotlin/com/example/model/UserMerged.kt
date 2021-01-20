@@ -33,23 +33,17 @@ data class UserMerged(
         fun fromJson(serializedObject: String): UserMerged {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val email = jsonObject.getAsJsonPrimitive("email")?.asString
-                val phone = jsonObject.getAsJsonPrimitive("phone")?.asString
-                val info = jsonObject.getAsJsonObject("info")?.toString()?.let {
+                val email = jsonObject.get("email")?.asString
+                val phone = jsonObject.get("phone")?.asString
+                val info = jsonObject.get("info")?.toString()?.let {
                     Info.fromJson(it)
                 }
-                val firstname = jsonObject.getAsJsonPrimitive("firstname")?.asString
-                val lastname = jsonObject.getAsJsonPrimitive("lastname").asString
-                return UserMerged(
-                    email,
-                    phone,
-                    info,
-                    firstname,
-                    lastname
-                )
-            } catch(e:IllegalStateException) {
+                val firstname = jsonObject.get("firstname")?.asString
+                val lastname = jsonObject.get("lastname").asString
+                return UserMerged(email, phone, info, firstname, lastname)
+            } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
-            } catch(e:NumberFormatException) {
+            } catch (e: NumberFormatException) {
                 throw JsonParseException(e.message)
             }
         }
@@ -72,15 +66,12 @@ data class UserMerged(
             fun fromJson(serializedObject: String): Info {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                    val notes = jsonObject.getAsJsonPrimitive("notes")?.asString
-                    val source = jsonObject.getAsJsonPrimitive("source")?.asString
-                    return Info(
-                        notes,
-                        source
-                    )
-                } catch(e:IllegalStateException) {
+                    val notes = jsonObject.get("notes")?.asString
+                    val source = jsonObject.get("source")?.asString
+                    return Info(notes, source)
+                } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
-                } catch(e:NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw JsonParseException(e.message)
                 }
             }

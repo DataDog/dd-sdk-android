@@ -22,5 +22,6 @@ data class JsonDefinition(
     @SerializedName("allOf") val allOf: List<JsonDefinition>?,
     @SerializedName("properties") val properties: Map<String, JsonDefinition>?,
     @SerializedName("definitions") val definitions: Map<String, JsonDefinition>?,
-    @SerializedName("readOnly") val readOnly: Boolean?
+    @SerializedName("readOnly") val readOnly: Boolean?,
+    @SerializedName("additionalProperties") val additionalProperties: JsonDefinition?
 )
