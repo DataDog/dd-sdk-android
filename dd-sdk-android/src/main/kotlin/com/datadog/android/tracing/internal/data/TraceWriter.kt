@@ -7,6 +7,7 @@
 package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.opentracing.DDSpan
@@ -45,38 +46,48 @@ internal class TraceWriter(
     // region Internals
 
     private fun sendRumErrorEvent(span: DDSpan) {
+        val errorType = span.tags[DDTags.ERROR_TYPE] as? String
+        val errorMessage = span.tags[DDTags.ERROR_MSG] as? String
+        val composedErrorMessage = spanErrorMessage(span.operationName, errorType, errorMessage)
+        val attributes = if (errorType != null) {
+            mapOf(RumAttributes.INTERNAL_ERROR_TYPE to errorType)
+        } else {
+            emptyMap()
+        }
         (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
-            spanErrorMessage(span),
+            composedErrorMessage,
             RumErrorSource.SOURCE,
             span.tags[DDTags.ERROR_STACK]?.toString(),
-            emptyMap()
+            attributes
         )
     }
 
-    private fun spanErrorMessage(span: DDSpan): String {
-        val errorType = span.tags[DDTags.ERROR_TYPE]
-        val errorMessage = span.tags[DDTags.ERROR_MSG]
+    private fun spanErrorMessage(
+        operationName: String,
+        errorType: String?,
+        errorMessage: String?
+    ): String {
         return when {
             errorMessage != null && errorType != null ->
                 SPAN_ERROR_WITH_TYPE_AND_MESSAGE_FORMAT.format(
                     Locale.US,
-                    span.operationName,
+                    operationName,
                     errorType,
                     errorMessage
                 )
             errorType != null ->
                 SPAN_ERROR_WITH_TYPE_FORMAT.format(
                     Locale.US,
-                    span.operationName,
+                    operationName,
                     errorType
                 )
             errorMessage != null ->
                 SPAN_ERROR_WITH_MESSAGE_FORMAT.format(
                     Locale.US,
-                    span.operationName,
+                    operationName,
                     errorMessage
                 )
-            else -> SPAN_ERROR_FORMAT.format(Locale.US, span.operationName)
+            else -> SPAN_ERROR_FORMAT.format(Locale.US, operationName)
         }
     }
 

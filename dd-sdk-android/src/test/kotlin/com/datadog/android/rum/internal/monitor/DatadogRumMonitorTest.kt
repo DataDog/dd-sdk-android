@@ -729,6 +729,65 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope with error type W addError`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery errorType: String
+    ) {
+        val fakeAttributesWithErrorType =
+            fakeAttributes + (RumAttributes.INTERNAL_ERROR_TYPE to errorType)
+        testedMonitor.addError(message, source, throwable, fakeAttributesWithErrorType)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.stacktrace).isNull()
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W error type onAddErrorWithStacktrace`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @StringForgery errorType: String
+    ) {
+        val fakeAttributesWithErrorType =
+            fakeAttributes + (RumAttributes.INTERNAL_ERROR_TYPE to errorType)
+        testedMonitor.addErrorWithStacktrace(
+            message,
+            source,
+            stacktrace,
+            fakeAttributesWithErrorType
+        )
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isNull()
+            assertThat(event.stacktrace).isEqualTo(stacktrace)
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
+            assertThat(event.type).isEqualTo(errorType)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `sends keep alive event to rootScope regularly`() {
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {

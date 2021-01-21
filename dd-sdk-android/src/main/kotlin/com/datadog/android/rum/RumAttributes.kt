@@ -60,6 +60,11 @@ object RumAttributes {
     // region Internal
 
     /**
+     * Overrides the automatic RUM error event type with a custom one.
+     */
+    const val INTERNAL_ERROR_TYPE: String = "_dd.error_type"
+
+    /**
      * Overrides the automatic RUM event timestamp with a custom one.
      */
     const val INTERNAL_TIMESTAMP: String = "_dd.timestamp"

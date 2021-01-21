@@ -184,14 +184,15 @@ internal class RumViewScope(
         val user = CoreFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
-
+        val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val errorEvent = ErrorEvent(
             date = event.eventTime.timestamp,
             error = ErrorEvent.Error(
                 message = event.message,
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                isCrash = event.isFatal
+                isCrash = event.isFatal,
+                type = errorType
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(

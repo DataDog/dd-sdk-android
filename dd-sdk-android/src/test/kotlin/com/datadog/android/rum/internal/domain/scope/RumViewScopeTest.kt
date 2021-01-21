@@ -103,7 +103,7 @@ internal class RumViewScopeTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
 
-        val fakeOffset = - forge.aLong(1000, 50000)
+        val fakeOffset = -forge.aLong(1000, 50000)
         val fakeTimestamp = System.currentTimeMillis() + fakeOffset
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
@@ -1481,6 +1481,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
 
             assertThat(lastValue)
@@ -1537,6 +1538,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasErrorType(null)
                 }
 
             assertThat(lastValue)
@@ -1604,6 +1606,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
 
             assertThat(lastValue)
@@ -1667,6 +1670,73 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    isActive(true)
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send events 𝕎 handleEvent(AddError) {custom error type}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery errorType: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes()
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            attributes,
+            type = errorType
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasErrorData {
+                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(true)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorType(errorType)
                 }
 
             assertThat(lastValue)
@@ -1734,6 +1804,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
 
             assertThat(lastValue)

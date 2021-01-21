@@ -636,6 +636,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -693,6 +694,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -740,6 +742,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
+                    hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
         verify(mockParentScope).handleEvent(
@@ -786,6 +789,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
                 }
         }
@@ -841,6 +845,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
                 }
         }
