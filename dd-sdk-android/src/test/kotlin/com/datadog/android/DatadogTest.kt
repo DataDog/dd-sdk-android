@@ -30,6 +30,7 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -85,9 +86,6 @@ internal class DatadogTest {
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
-
-    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-    lateinit var fakeApplicationId: String
 
     @TempDir
     lateinit var tempRootDir: File
@@ -303,6 +301,58 @@ internal class DatadogTest {
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
     }
 
+    @Test
+    fun `𝕄 log a warning 𝕎 initialize() { null applicationID, rumEnabled }`() {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isTrue()
+        verify(mockDevLogHandler).handleLog(
+            android.util.Log.WARN,
+            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
+        )
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 initialize() { null applicationID, rumDisabled }`() {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        ).build()
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isFalse()
+        verify(mockDevLogHandler, never()).handleLog(
+            android.util.Log.WARN,
+            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
+        )
+    }
+
     // region Deprecated
 
     @Test
@@ -357,25 +407,46 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 initialize features 𝕎 initialize(context, config) deprecated method`() {
+    fun `𝕄 log a warning 𝕎 initialize(context, config) { null applicationID, rumEnabled }`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
-        val configuration = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        ).build()
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName)
+            .setRumEnabled(true)
+            .build()
 
         // When
-        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+        Datadog.initialize(mockAppContext, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracesFeature.initialized.get()).isTrue()
-        assertThat(RumFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isFalse()
+        verify(mockDevLogHandler).handleLog(
+            android.util.Log.WARN,
+            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
+        )
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 initialize(context, config) { null applicationID, rumDisabled }`() {
+        // Given
+        val config = DatadogConfig.Builder(fakeToken, fakeEnvName)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, config)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isFalse()
+        verify(mockDevLogHandler, never()).handleLog(
+            android.util.Log.WARN,
+            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
+        )
     }
 
     // endregion

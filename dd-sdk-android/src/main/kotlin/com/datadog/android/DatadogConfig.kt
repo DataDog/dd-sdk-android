@@ -258,7 +258,7 @@ private constructor(
          */
         fun setRumEnabled(enabled: Boolean): Builder {
             if (enabled && rumConfig.applicationId == UUID(0, 0)) {
-                devLogger.w(RUM_NOT_INITIALISED_WARNING_MESSAGE)
+                devLogger.w(Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
                 return this
             }
             rumEnabled = enabled
@@ -536,12 +536,6 @@ private constructor(
 
         companion object {
             private val URL_REGEX = Regex("^(http|https)://(.*)")
-            internal const val RUM_NOT_INITIALISED_WARNING_MESSAGE =
-                "You're trying to enable RUM but no Application Id was provided. " +
-                    "Please use the following line to create your DatadogConfig:\n" +
-                    "val config = " +
-                    "DatadogConfig.Builder" +
-                    "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<APPLICATION_ID>\").build()"
         }
     }
 

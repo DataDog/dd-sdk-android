@@ -210,6 +210,9 @@ object Datadog {
         appContext: Context
     ) {
         if (configuration != null) {
+            if (CoreFeature.rumApplicationId.isNullOrBlank()) {
+                devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
+            }
             RumFeature.initialize(appContext, configuration)
         }
     }
@@ -322,11 +325,19 @@ object Datadog {
 
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
+    internal const val WARNING_MESSAGE_APPLICATION_ID_IS_NULL =
+        "You're trying to enable RUM but no Application Id was provided. " +
+            "Please pass this value into the Datadog Credentials:\n" +
+            "val credentials = " +
+            "Credentials" +
+            "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
+            "Datadog.initialize(context, credentials, configuration, trackingConsent);"
+
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
         "Please add the following code in your application's onCreate() method:\n" +
-        "val config = DatadogConfig.Builder(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", " +
-        "\"<APPLICATION_ID>\").build()\n" +
-        "Datadog.initialize(context, config);"
+        "val credentials = Credentials" +
+        "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
+        "Datadog.initialize(context, credentials, configuration, trackingConsent);"
 
     internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
         "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
