@@ -123,7 +123,10 @@ internal class LogSerializer(
         jsonLog: JsonObject
     ) {
         log.throwable?.let {
-            jsonLog.addProperty(LogAttributes.ERROR_KIND, it.javaClass.simpleName)
+            jsonLog.addProperty(
+                LogAttributes.ERROR_KIND,
+                it.javaClass.canonicalName ?: it.javaClass.simpleName
+            )
             jsonLog.addProperty(LogAttributes.ERROR_MESSAGE, it.message)
             jsonLog.addProperty(LogAttributes.ERROR_STACK, it.loggableStackTrace())
         }
