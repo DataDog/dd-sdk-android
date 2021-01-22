@@ -233,8 +233,7 @@ internal class DatadogNdkCrashHandler(
                 )
             ),
             rumViewEvent.globalAttributes,
-            rumViewEvent.userExtraAttributes,
-            rumViewEvent.customTimings
+            rumViewEvent.userExtraAttributes
         )
     }
 

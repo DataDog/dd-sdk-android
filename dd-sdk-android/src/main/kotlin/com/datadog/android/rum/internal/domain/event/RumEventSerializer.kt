@@ -45,17 +45,6 @@ internal class RumEventSerializer(
             json,
             USER_ATTRIBUTE_PREFIX
         )
-        model.customTimings?.let {
-            addCustomAttributes(
-                dataConstraints.validateAttributes(
-                    it,
-                    keyPrefix = VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX,
-                    attributesGroupName = CUSTOM_TIMINGS_GROUP_VERBOSE_NAME
-                ),
-                json,
-                VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX
-            )
-        }
 
         return json.toString()
     }
@@ -103,9 +92,7 @@ internal class RumEventSerializer(
 
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
         internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
-        internal const val VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX: String = "view.custom_timings"
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
-        internal const val CUSTOM_TIMINGS_GROUP_VERBOSE_NAME = "view custom timings"
     }
 }
 

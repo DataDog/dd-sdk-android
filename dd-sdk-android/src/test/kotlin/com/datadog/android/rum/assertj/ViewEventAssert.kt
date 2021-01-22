@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.model.ViewEvent
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -182,6 +183,25 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     " but was ${actual.view.isActive}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoCustomTimings(): ViewEventAssert {
+        assertThat(actual.view.customTimings).isNull()
+        return this
+    }
+
+    fun hasCustomTimings(customTimings: Map<String, Long>): ViewEventAssert {
+        customTimings.entries.forEach { entry ->
+            assertThat(actual.view.customTimings?.additionalProperties)
+                .hasEntrySatisfying(entry.key) {
+                    assertThat(it).isCloseTo(
+                        entry.value,
+                        Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
+                    )
+                }
+        }
+
         return this
     }
 

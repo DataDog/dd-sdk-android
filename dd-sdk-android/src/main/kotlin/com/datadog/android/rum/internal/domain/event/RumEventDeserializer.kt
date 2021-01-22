@@ -25,23 +25,20 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
             val jsonObject = JsonParser.parseString(model).asJsonObject
             val userAttributes: MutableMap<String, Any?> = mutableMapOf()
             val globalAttributes: MutableMap<String, Any?> = mutableMapOf()
-            val customTimings: MutableMap<String, Long> = mutableMapOf()
-            resolveAttributes(userAttributes, globalAttributes, customTimings, jsonObject)
-            val resolvedCustomTimings = resolveCustomTimings(customTimings)
-            val deserializedBundledEvent =
-                fromJson(jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString, model)
+
+            resolveCustomAttributes(userAttributes, globalAttributes, jsonObject)
+
+            val deserializedBundledEvent = parseEvent(
+                jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString,
+                model
+            )
             RumEvent(
                 deserializedBundledEvent,
                 globalAttributes,
-                userAttributes,
-                resolvedCustomTimings
+                userAttributes
             )
         } catch (e: JsonParseException) {
-            sdkLogger.e(
-                "Error while trying to deserialize " +
-                    "the serialized RumEvent: $model",
-                e
-            )
+            sdkLogger.e("Error while trying to deserialize the serialized RumEvent: $model", e)
             null
         }
     }
@@ -50,41 +47,23 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
 
     // region Internal
 
-    private fun resolveCustomTimings(timings: MutableMap<String, Long>): MutableMap<String, Long>? {
-        return if (timings.isNotEmpty()) {
-            timings
-        } else {
-            null
-        }
-    }
-
-    private fun resolveAttributes(
+    private fun resolveCustomAttributes(
         userAttributes: MutableMap<String, Any?>,
         globalAttributes: MutableMap<String, Any?>,
-        customTimings: MutableMap<String, Long>,
         jsonObject: JsonObject
     ) {
-        val customGlobalAttributesPrefix = RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + '.'
-        val customUserAttributesPrefix = RumEventSerializer.USER_ATTRIBUTE_PREFIX + '.'
-        val customTimingsAttributesPrefix =
-            RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX + '.'
-        val customGlobalAttributesPrefixLength = customGlobalAttributesPrefix.length
-        val customUserAttributesPrefixLength = customUserAttributesPrefix.length
-        val customTimingsAttributesPrefixLength = customTimingsAttributesPrefix.length
+        val globalAttrPrefix = RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + '.'
+        val userAttrPrefix = RumEventSerializer.USER_ATTRIBUTE_PREFIX + '.'
+        val globalAttrPrefixLength = globalAttrPrefix.length
+        val userAttrPrefixLength = userAttrPrefix.length
 
         jsonObject.keySet().forEach {
             when {
-                it.startsWith(customUserAttributesPrefix) -> {
-                    userAttributes[it.substring(customUserAttributesPrefixLength)] =
-                        jsonObject.get(it)
+                it.startsWith(userAttrPrefix) -> {
+                    userAttributes[it.substring(userAttrPrefixLength)] = jsonObject.get(it)
                 }
-                it.startsWith(customGlobalAttributesPrefix) -> {
-                    globalAttributes[it.substring(customGlobalAttributesPrefixLength)] =
-                        jsonObject.get(it)
-                }
-                it.startsWith(customTimingsAttributesPrefix) -> {
-                    customTimings[it.substring(customTimingsAttributesPrefixLength)] =
-                        jsonObject.get(it).asLong
+                it.startsWith(globalAttrPrefix) -> {
+                    globalAttributes[it.substring(globalAttrPrefixLength)] = jsonObject.get(it)
                 }
             }
         }
@@ -92,15 +71,14 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
 
     @SuppressWarnings("ThrowingInternalException")
     @Throws(JsonParseException::class)
-    private fun fromJson(eventType: String?, jsonString: String): Any {
+    private fun parseEvent(eventType: String?, jsonString: String): Any {
         return when (eventType) {
             EVENT_TYPE_VIEW -> ViewEvent.fromJson(jsonString)
             EVENT_TYPE_RESOURCE -> ResourceEvent.fromJson(jsonString)
             EVENT_TYPE_ACTION -> ActionEvent.fromJson(jsonString)
             EVENT_TYPE_ERROR -> ErrorEvent.fromJson(jsonString)
             else -> throw JsonParseException(
-                "We could not deserialize the " +
-                    "event with type: $eventType"
+                "We could not deserialize the event with type: $eventType"
             )
         }
     }

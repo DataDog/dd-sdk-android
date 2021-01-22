@@ -58,6 +58,11 @@
           "description": "Type of the session",
           "enum": ["user", "synthetics"],
           "readOnly": true
+        },
+        "has_replay": {
+          "type": "boolean",
+          "description": "Whether this session has a replay",
+          "readOnly": true
         }
       },
       "readOnly": true

@@ -294,41 +294,6 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `M serialize W serialize() with custom timing`(
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeCustomTimings = forge.aMap { forge.anAlphabeticalString() to forge.aLong() }
-        val fakeEvent: RumEvent =
-            forge.getForgery(RumEvent::class.java).copy(customTimings = fakeCustomTimings)
-
-        // WHEN
-        val serialized = testedSerializer.serialize(fakeEvent)
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-
-        // THEN
-        fakeCustomTimings
-            .filter { it.key.isNotBlank() }
-            .forEach {
-                val keyName = "${RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX}.${it.key}"
-                assertThat(jsonObject).hasField(keyName, it.value)
-            }
-    }
-
-    @Test
-    fun `M not add custom timings group at all W serialize() with custom timings null`(
-        @Forgery fakeEvent: RumEvent
-    ) {
-        // WHEN
-        val serialized = testedSerializer.serialize(fakeEvent)
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-
-        // THEN
-        assertThat(jsonObject)
-            .doesNotHaveField(RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX)
-    }
-
-    @Test
     fun `M sanitise the custom attributes keys W level deeper than 9`(forge: Forge) {
         // GIVEN
         val fakeBadKey =
@@ -387,37 +352,6 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `M sanitise the custom timings keys W level deeper than 8`(forge: Forge) {
-        // GIVEN
-        val fakeBadKey =
-            forge.aList(size = 9) { forge.anAlphabeticalString() }.joinToString(".")
-        val lastIndexOf = fakeBadKey.lastIndexOf('.')
-        val expectedSanitisedKey =
-            fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
-        val fakeTimingValue = forge.aLong(min = 1)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java).copy(
-            customTimings = mapOf(
-                fakeBadKey to fakeTimingValue
-            )
-        )
-
-        // WHEN
-        val serializedEvent = testedSerializer.serialize(fakeEvent)
-        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
-
-        // THEN
-        assertThat(jsonObject)
-            .hasField(
-                "${RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX}.$expectedSanitisedKey",
-                fakeTimingValue
-            )
-        assertThat(jsonObject)
-            .doesNotHaveField(
-                "${RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX}.$fakeBadKey"
-            )
-    }
-
-    @Test
     fun `M use the attributes group verbose name W validateAttributes { user extra info }`(
         @Forgery fakeEvent: RumEvent
     ) {
@@ -434,30 +368,6 @@ internal class RumEventSerializerTest {
             fakeEvent.userExtraAttributes,
             RumEventSerializer.USER_ATTRIBUTE_PREFIX,
             RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME
-        )
-    }
-
-    @Test
-    fun `M use the attributes group verbose name W validateAttributes { custom timings }`(
-        forge: Forge
-    ) {
-
-        // GIVEN
-        val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
-        val fakeCustomTimings = forge.aMap { forge.anAlphabeticalString() to forge.aLong(min = 1) }
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java).copy(
-            customTimings = fakeCustomTimings
-        )
-
-        // WHEN
-        testedSerializer.serialize(fakeEvent)
-
-        // THEN
-        verify(mockedDataConstrains).validateAttributes(
-            fakeCustomTimings,
-            RumEventSerializer.VIEW_CUSTOM_TIMINGS_ATTRIBUTE_PREFIX,
-            RumEventSerializer.CUSTOM_TIMINGS_GROUP_VERBOSE_NAME
         )
     }
 

@@ -69,6 +69,12 @@
               "minimum": 0,
               "readOnly": true
             },
+            "first_input_time": {
+              "type": "integer",
+              "description": "Duration in ns to the first input",
+              "minimum": 0,
+              "readOnly": true
+            },
             "cumulative_layout_shift": {
               "type": "number",
               "description": "Total layout shift score that occured on the view",
@@ -97,6 +103,16 @@
               "type": "integer",
               "description": "Duration in ns to the end of the load event handler execution",
               "minimum": 0,
+              "readOnly": true
+            },
+            "custom_timings": {
+              "type": "object",
+              "description": "User custom timings of the view",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "readOnly": true
+              },
               "readOnly": true
             },
             "is_active": {
