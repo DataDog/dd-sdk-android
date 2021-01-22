@@ -33,7 +33,7 @@ object DatadogEndpoint {
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
-    const val LOGS_GOV: String = "https://mobile-http-intake.logs.ddog-gov.com"
+    const val LOGS_GOV: String = "https://logs.browser-intake-ddog-gov.com"
 
     /**
      * The endpoint for Traces (US based servers), used by default by the SDK.
@@ -55,7 +55,7 @@ object DatadogEndpoint {
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
-    const val TRACES_GOV: String = "https://public-trace-http-intake.logs.ddog-gov.com"
+    const val TRACES_GOV: String = "https://trace.browser-intake-ddog-gov.com"
 
     /**
      * The endpoint for Real User Monitoring (US based servers), used by default by the SDK.
@@ -77,7 +77,7 @@ object DatadogEndpoint {
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
      */
-    const val RUM_GOV: String = "https://rum-http-intake.logs.ddog-gov.com"
+    const val RUM_GOV: String = "https://rum.browser-intake-ddog-gov.com"
 
     /**
      * Endpoint for the Network Time Protocol time syncing.
