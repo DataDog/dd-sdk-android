@@ -86,27 +86,21 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
-     * @param tracedHosts a list of all the hosts that you want to be automatically tracked
-     * by our APM [TracingInterceptor]. If no host provided the interceptor won't trace
-     * any OkHttp [Request], nor propagate tracing information to the backend.
-     * Please note that the host constraint will only be applied on the [TracingInterceptor] and we
-     * will continue to dispatch RUM Resource events for each request without applying any host
-     * filtering.
+     * @param firstPartyHosts the list of first party hosts.
+     * Requests made to a URL with any one of these hosts (or any subdomain) will:
+     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
+     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+     * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
+     * information to the backend, but RUM Resource events will still be sent for each request.
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
      * the possibility to modify the created [io.opentracing.Span].
      */
     @JvmOverloads
-    @Deprecated(
-        "Hosts should be defined in the DatadogConfig.setFirstPartyHosts()",
-        ReplaceWith(
-            expression = "DatadogInterceptor(tracedRequestListener)"
-        )
-    )
     constructor(
-        tracedHosts: List<String>,
+        firstPartyHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
     ) : this(
-        tracedHosts,
+        firstPartyHosts,
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
         { AndroidTracer.Builder().build() }

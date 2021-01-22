@@ -11,6 +11,7 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /**
  * Provides automatic RUM integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -31,5 +32,13 @@ import okhttp3.OkHttpClient
  *       .addInterceptor(new RumInterceptor())
  *       .build();
  * ```
+ * @param firstPartyHosts the list of first party hosts.
+ * Requests made to a URL with any one of these hosts (or any subdomain) will:
+ * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
+ * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+ * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
+ * information to the backend, but RUM Resource events will still be sent for each request.
  */
-class RumInterceptor : DatadogInterceptor(listOf(""))
+class RumInterceptor(
+    firstPartyHosts: List<String> = emptyList()
+) : DatadogInterceptor(firstPartyHosts)
