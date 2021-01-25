@@ -67,7 +67,7 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  DEPRECATED constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
@@ -260,6 +260,7 @@ enum com.datadog.android.rum.RumErrorSource
   - AGENT
   - WEBVIEW
 class com.datadog.android.rum.RumInterceptor : com.datadog.android.DatadogInterceptor
+  constructor(List<String> = emptyList())
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -905,7 +906,7 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  DEPRECATED constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
+  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
   constructor(TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)

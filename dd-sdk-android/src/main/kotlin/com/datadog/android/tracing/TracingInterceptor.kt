@@ -62,8 +62,7 @@ import okhttp3.Response
  */
 @Suppress("StringLiteralDuplication")
 open class TracingInterceptor
-@JvmOverloads internal constructor(
-    @Deprecated("hosts should be defined in the DatadogConfig.setFirstPartyHosts()")
+internal constructor(
     internal val tracedHosts: List<String>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
@@ -73,11 +72,12 @@ open class TracingInterceptor
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
 
+    private val localFirstPartyHostDetector = FirstPartyHostDetector(tracedHosts)
+
     init {
-        if (tracedHosts.isEmpty() && firstPartyHostDetector.isEmpty()) {
+        if (localFirstPartyHostDetector.isEmpty() && firstPartyHostDetector.isEmpty()) {
             devLogger.w(WARNING_TRACING_NO_HOSTS)
         }
-        firstPartyHostDetector.addKnownHosts(tracedHosts)
     }
 
     /**
@@ -89,12 +89,6 @@ open class TracingInterceptor
      * @param tracedRequestListener a listener for automatically created [Span]s
      */
     @JvmOverloads
-    @Deprecated(
-        "Hosts should be defined in the DatadogConfig.setFirstPartyHosts().",
-        ReplaceWith(
-            expression = "TracingInterceptor(tracedRequestListener)"
-        )
-    )
     constructor(
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
