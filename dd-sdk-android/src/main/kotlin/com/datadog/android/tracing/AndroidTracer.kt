@@ -7,9 +7,11 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
@@ -73,6 +75,13 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
+            if (!TracesFeature.isInitialized()) {
+                devLogger.e(TRACING_NOT_ENABLED_ERROR_MESSAGE)
+            }
+            if (bundleWithRumEnabled && !RumFeature.isInitialized()) {
+                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
+                bundleWithRumEnabled = false
+            }
             return AndroidTracer(
                 config(),
                 TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
@@ -169,6 +178,15 @@ class AndroidTracer internal constructor(
     // endregion
 
     companion object {
+        internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
+            "You're trying to create an AndroidTracer instance, " +
+                "but the Tracing feature was disabled in your DatadogConfig. " +
+                "No tracing data will be sent."
+        internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
+            "You're trying to bundle the traces with a RUM context, " +
+                "but the RUM feature was disabled in your DatadogConfig. " +
+                "No RUM context will be attached to your traces in this case."
+
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5

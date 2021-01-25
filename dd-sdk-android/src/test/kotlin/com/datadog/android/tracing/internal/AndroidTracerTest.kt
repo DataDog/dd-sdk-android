@@ -7,16 +7,20 @@
 package com.datadog.android.tracing.internal
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ContextualScopeManager
@@ -73,13 +77,18 @@ internal class AndroidTracerTest {
     @Mock
     lateinit var mockLogsHandler: LogHandler
 
+    lateinit var mockDevLogsHandler: com.datadog.android.log.internal.logger.LogHandler
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockDevLogsHandler = mockDevLogHandler()
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
         mockCoreFeature()
+        TracesFeature.initialize(mockAppContext, Configuration.DEFAULT_TRACING_CONFIG)
+        RumFeature.initialize(mockAppContext, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
     }
@@ -100,6 +109,42 @@ internal class AndroidTracerTest {
     }
 
     // region Tracer
+
+    @Test
+    fun `M log a developer error W buildTracer { TracingFeature not enabled }`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @LongForgery seed: Long
+    ) {
+        // GIVEN
+        TracesFeature.stop()
+
+        // WHEN
+        testedTracerBuilder.build()
+
+        // THEN
+        verify(mockDevLogsHandler).handleLog(
+            Log.ERROR,
+            AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M log a developer error W buildTracer { RumFeature not enabled and bundleWithRum true }`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @LongForgery seed: Long
+    ) {
+        // GIVEN
+        RumFeature.stop()
+
+        // WHEN
+        testedTracerBuilder.build()
+
+        // THEN
+        verify(mockDevLogsHandler).handleLog(
+            Log.ERROR,
+            AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
+        )
+    }
 
     @Test
     fun `buildSpan will inject a parent context`(
@@ -149,7 +194,7 @@ internal class AndroidTracerTest {
     }
 
     @Test
-    fun `buildSpan will inject RumContext if RumMonitor is Set`(
+    fun `M inject RumContext W buildSpan { bundleWithRum enabled and RumFeature initialized }`(
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
         forge: Forge
     ) {
@@ -173,6 +218,56 @@ internal class AndroidTracerTest {
             assertThat(meta[LogAttributes.RUM_VIEW_ID])
                 .isEqualTo(viewId)
         }
+    }
+
+    @Test
+    fun `M not inject RumContext W buildSpan { RumFeature not initialized }`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @LongForgery seed: Long
+    ) {
+        // GIVEN
+        val rumContext = forge.getForgery<RumContext>()
+        GlobalRum.registerIfAbsent(mock<RumMonitor>())
+        GlobalRum.updateRumContext(rumContext)
+        RumFeature.stop()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // WHEN
+        val span = tracer.buildSpan(operationName).start() as DDSpan
+
+        // THEN
+        val meta = span.meta
+        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+            .isNull()
+        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+            .isNull()
+    }
+
+    @Test
+    fun `M not inject RumContext W buildSpan { bundleWithRum disabled }`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
+        @LongForgery seed: Long
+    ) {
+        // GIVEN
+        val rumContext = forge.getForgery<RumContext>()
+        GlobalRum.registerIfAbsent(mock<RumMonitor>())
+        GlobalRum.updateRumContext(rumContext)
+        val tracer = AndroidTracer.Builder()
+            .setBundleWithRumEnabled(false)
+            .build()
+
+        // WHEN
+        val span = tracer.buildSpan(operationName).start() as DDSpan
+
+        // THEN
+        val meta = span.meta
+        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+            .isNull()
+        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+            .isNull()
     }
 
     @Test

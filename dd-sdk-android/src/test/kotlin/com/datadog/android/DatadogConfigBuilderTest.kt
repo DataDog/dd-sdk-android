@@ -1144,7 +1144,7 @@ internal class DatadogConfigBuilderTest {
         assertThat(config.rumConfig).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            DatadogConfig.Builder.RUM_NOT_INITIALISED_WARNING_MESSAGE
+            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
     }
 
