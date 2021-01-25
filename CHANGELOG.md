@@ -1,3 +1,7 @@
+# 1.7.1 / 2021-01-25
+
+* [OTHER] Global: update the endpoints for `ddog-gov.com`
+
 # 1.7.0 / 2021-01-04
 
 * [BUGFIX] RUM: fix RUM Error timestamps
