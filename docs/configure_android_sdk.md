@@ -82,7 +82,7 @@ In addition to the [default RUM attributes][3] captured by the Mobile SDK automa
 Widgets are not automatically tracked with the SDK. To send UI interactions from your widgets manually call Datadog API. [See example][7].
 
 
-## Configure Library Initialization
+## Initialization Parameters
  
 The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
  
@@ -168,11 +168,11 @@ If you need to modify some attributes in your RUM events or to drop some of the 
 {{< partial name="whats-next/whats-next.html" >}}
 
 [1]: https://app.datadoghq.com/rum/create
-[2]: <Link to RUM Android Setup>
-[3]: <Link to RUM Data Collection>
-[4]: <Link to View Tracking Strategy>
-[5]: <Link to Configuration Page>
-[6]: <Link to automatically track network requests>
+[2]: /real_user_monitoring/android
+[3]: /real_user_monitoring/data_collected
+[4]: /real_user_monitoring/android/configure_android_sdk/track_view
+[5]: /real_user_monitoring/android/configure_android_sdk/track_action
+[6]: /real_user_monitoring/android/configure_android_sdk/track_resource
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
 [8]: https://square.github.io/okhttp/events/
  

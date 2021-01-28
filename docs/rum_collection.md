@@ -102,9 +102,9 @@ You can further add an EventListener for the OkHttpClient to [automatically trac
 [2]: https://app.datadoghq.com/rum/create
 [3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
-[5]: <Link to ViewTracking Steategy>
-[6]: <Link to Tracking Consent>
-[7]: <Link to Configuration Page>
+[5]: /real_user_monitoring/android/configure_android_sdk/track_view
+[6]: /real_user_monitoring/android/troubleshooting_android/tracking_consent
+[7]: /real_user_monitoring/android/configure_android_sdk/initialization_parameters
 [8]: https://square.github.io/okhttp/interceptors/
 [9]: https://square.github.io/okhttp/events/
-[10]: <Link to Automatically Track Newtork Requests>
+[10]: /real_user_monitoring/android/configure_android_sdk/track_resource

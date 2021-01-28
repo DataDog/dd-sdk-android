@@ -1,16 +1,16 @@
-In## Integrated Libraries
+## Integrated Libraries
  
 ### Coil
  
-If you use Coil to load images in your application, take a look at Datadog's [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-coil).
+If you use Coil to load images in your application, take a look at Datadog's [dedicated library][1].
  
 ### Fresco
  
-If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-fresco).
+If you use Fresco to load images in your application, take a look at Datadog's [dedicated library][2].
  
 ### Glide
  
-If you use Glide to load images in your application, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide).
+If you use Glide to load images in your application, take a look at our [dedicated library][3].
  
 ### Picasso
  
@@ -37,11 +37,11 @@ If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM 
  
 ### SQLDelight
  
-If you use SQLDelight, take a look at our [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqldelight).
+If you use SQLDelight, take a look at our [dedicated library][4].
  
 ### SQLite
  
-Following SQLiteOpenHelper's [Generated API documentation][8], you only have to provide the implementation of the
+Following SQLiteOpenHelper's [Generated API documentation][5], you only have to provide the implementation of the
 DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
  
 Doing this detects whenever a database is corrupted and sends a relevant
@@ -73,9 +73,8 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 
 {{< partial name="whats-next/whats-next.html" >}}
 
-[1]: https://github.com/DataDog/dd-sdk-android
-[2]: https://app.datadoghq.com/rum/create
-[3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
-[4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
-[5]: https://square.github.io/okhttp/interceptors/
-[6]: https://square.github.io/okhttp/events/
+[1]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-coil
+[2]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-fresco
+[3]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide
+[4]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqldelight
+[5]: https://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper
