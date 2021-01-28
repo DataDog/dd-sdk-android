@@ -27,17 +27,24 @@ To ensure safety of your data, you must use a client token: you cannot use [Data
 
     {{< tabs >}}
     {{% tab "US" %}}
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
 
-        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+   
+```kotlin
+   class SampleApplication : Application() {
+       override fun onCreate() {
+           super.onCreate()
+
+          val configuration = Configuration.Builder()
+                        .trackInteractions()
+                        .useViewTrackingStrategy(strategy)
                         .build()
-        Datadog.initialize(this, trackingConsent, config)
-    }
-}
+          val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+          Datadog.initialize(this, credentials, configuration, trackingConsent)
+
+       }
+   }
 ```
+
     {{% /tab %}}
     {{% tab "EU" %}}
 ```kotlin
@@ -45,59 +52,34 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+        val configuration = Configuration.Builder()
+                        .trackInteractions()
+                        .useViewTrackingStrategy(strategy)
                         .useEUEndpoints()
                         .build()
-        Datadog.initialize(this, trackingConsent, config)
+        val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+        Datadog.initialize(this, credentials, configuration, trackingConsent)
+          
     }
 }
 ```
     {{% /tab %}}
     {{< /tabs >}}
-    
 
-4. To automatically track your views, provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the strategies:
+Learn more about [ViewTrackingStrategy][5] to enable auto tracking of all your views (activities, fragments etc.), [trackingConsent][6] to add GDPR compliance for your EU users and [other configuration options][7] to initialize the library.
 
-
-| Strategy | Description                                                                                                                                                                                                                                                   |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  `ActivityViewTrackingStrategy`   | Every activity in your application is considered a distinct view. |
-| `FragmentViewTrackingStrategy`     | Every fragment in your application is considered a distinct view.    |
-| `MixedViewTrackingStrategy` | Every activity or fragment in your application is considered a distinct view.  |
-| `NavigationViewTrackingStrategy`| Recommended for Android Jetpack Navigation library users. Each Navigation destination is considered a distinct view.  |
-   
-   ```kotlin
-   class SampleApplication : Application() {
-       override fun onCreate() {
-           super.onCreate()
-           
-          val configuration = Configuration.Builder()
-                           .trackInteractions()
-                           .useViewTrackingStrategy(Strategy)
-                           .build()
-          
-          Datadog.initialize(this, credentials, configuration, trackingConsent)
-       }
-   }
-   ```
-   
-   **Tip**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
-   
-   **Note**: By default, the library won't track any view. If you decide not to provide a view tracking strategy you will have to manually send the views by calling the `startView` and `stopView` methods yourself.
-
+Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time. This allows a Datadog dashboard to de-obfuscate the stack traces.
 
 4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
     ```kotlin
     val monitor = RumMonitor.Builder()
-            // Optionally set a sampling between 0.0 and 100.0%
-            // Here 75% of the RUM Sessions will be sent to Datadog
-            .sampleRumSessions(75.0f)
             .build()
     GlobalRum.registerIfAbsent(monitor)
     ```
 
-5. To track your OkHttp requests as resources, add the provided [Interceptor][5]:
+
+5. To track your OkHttp requests as resources, add the provided [Interceptor][8]:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
@@ -105,18 +87,11 @@ class SampleApplication : Application() {
         .build()
     ```
 
-    This creates RUM Resource data around each request processed by the OkHttpClient, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in the background, you can [create a view manually][7].
+    This records each request processed by the OkHttpClient as a Resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in the background, you can [create a view manually][9].
 
     **Note**: If you also use multiple Interceptors, this one must be called first.
 
-6. (Optional) To get timing information in Resources (such as time to first byte, DNS resolution, etc.),  add the [Event][6] listener factory:
-
-    ```kotlin
-    val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor())
-        .eventListenerFactory(DatadogEventListener.Factory())
-        .build()
-    ```
+You can further add an EventListener for the OkHttpClient to [automatically track resource timing][10] (3rd party providers, network requests). 
 
 
 ## Further Reading
@@ -127,5 +102,9 @@ class SampleApplication : Application() {
 [2]: https://app.datadoghq.com/rum/create
 [3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
-[5]: https://square.github.io/okhttp/interceptors/
-[6]: https://square.github.io/okhttp/events/
+[5]: <Link to ViewTracking Steategy>
+[6]: <Link to Tracking Consent>
+[7]: <Link to Configuration Page>
+[8]: https://square.github.io/okhttp/interceptors/
+[9]: https://square.github.io/okhttp/events/
+[10]: <Link to Automatically Track Newtork Requests>
