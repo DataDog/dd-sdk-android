@@ -4,18 +4,18 @@
 ## Check if Datadog RUM is initialized
 Use the utility method isInitialized to check if the SDK is properly initialized:
 
-   ```kotlin
+```kotlin
     if (Datadog.isInitialized()) {
         // your code here
     }
-    ```
+```
 
 ## Debugging
 When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
 
-    ```kotlin
+```kotlin
     Datadog.setVerbosity(Log.INFO)
-    ```
+```
 
 ## Set Tracking Consent (GDPR compliance)
 
@@ -36,13 +36,13 @@ To be compliant with the GDPR regulation, the SDK requires the tracking consent 
 
 To control the data your application sends to Datadog RUM, you can secify a sampling rate for RUM sessions while [initializing the RumMonitor][] as a percentage between 0 and 100.
 
-    ```kotlin
+```kotlin
     val monitor = RumMonitor.Builder()
             // Here 75% of the RUM Sessions will be sent to Datadog
             .sampleRumSessions(75.0f)
             .build()
     GlobalRum.registerIfAbsent(monitor)
-
+```
 
 ## Sending data when device is offline
 
