@@ -6,6 +6,9 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.os.Build
+import android.os.Process
+import android.os.SystemClock
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.data.NoOpWriter
 import com.datadog.android.core.internal.data.Writer
@@ -101,11 +104,23 @@ internal class RumSessionScope(
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true
-            val applicationStartTime = resetSessionTime ?: Datadog.startupTimeNs
+            val applicationStartTime = resolveStartupTimeNs()
             viewScope.handleEvent(
                 RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
                 writer
             )
+        }
+    }
+
+    private fun resolveStartupTimeNs(): Long {
+        val resetTimeNs = resetSessionTime
+        return when {
+            resetTimeNs != null -> resetTimeNs
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> {
+                val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+                System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+            }
+            else -> Datadog.startupTimeNs
         }
     }
 

@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 object Datadog {
 
     internal val initialized = AtomicBoolean(false)
-    internal val startupTimeNs = System.nanoTime()
+    internal val startupTimeNs: Long = System.nanoTime()
 
     internal var libraryVerbosity = Int.MAX_VALUE
         private set
