@@ -9,6 +9,7 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -64,6 +65,15 @@ internal class RumEventAssert(actual: RumEvent) :
             .isInstanceOf(ErrorEvent::class.java)
 
         ErrorEventAssert(actual.event as ErrorEvent).assert()
+
+        return this
+    }
+
+    fun hasLongTaskData(assert: LongTaskEventAssert.() -> Unit): RumEventAssert {
+        assertThat(actual.event)
+            .isInstanceOf(LongTaskEvent::class.java)
+
+        LongTaskEventAssert(actual.event as LongTaskEvent).assert()
 
         return this
     }

@@ -132,6 +132,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasLongTaskCount(expected: Long): ViewEventAssert {
+        assertThat(actual.view.longTask?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.longTask.count $expected " +
+                    "but was ${actual.view.longTask?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasViewId(expectedId: String): ViewEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(

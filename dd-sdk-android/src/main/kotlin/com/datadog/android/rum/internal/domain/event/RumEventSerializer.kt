@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonElement
@@ -102,6 +103,7 @@ private fun Any.toJson(): JsonElement {
         is ActionEvent -> toJson()
         is ResourceEvent -> toJson()
         is ErrorEvent -> toJson()
+        is LongTaskEvent -> toJson()
         else -> JsonObject()
     }
 }

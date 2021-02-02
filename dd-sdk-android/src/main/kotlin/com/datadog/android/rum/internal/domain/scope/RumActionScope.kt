@@ -43,6 +43,7 @@ internal class RumActionScope(
     internal var resourceCount: Long = 0
     internal var errorCount: Long = 0
     internal var crashCount: Long = 0
+    internal var longTaskCount: Long = 0
     internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
@@ -68,6 +69,7 @@ internal class RumActionScope(
             event is RumRawEvent.StopResource -> onStopResource(event, now)
             event is RumRawEvent.AddError -> onError(event, now, writer)
             event is RumRawEvent.StopResourceWithError -> onResourceError(event, now)
+            event is RumRawEvent.AddLongTask -> onLongTask(event, now)
         }
 
         return if (sent) null else this
@@ -150,6 +152,11 @@ internal class RumActionScope(
         }
     }
 
+    private fun onLongTask(event: RumRawEvent.AddLongTask, now: Long) {
+        lastInteractionNanos = now
+        longTaskCount++
+    }
+
     private fun sendAction(
         endNanos: Long,
         writer: Writer<RumEvent>
@@ -157,7 +164,7 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount
+        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount + longTaskCount
         if (sideEffectsCount > 0 || actualType == RumActionType.CUSTOM) {
             attributes.putAll(GlobalRum.globalAttributes)
 
@@ -172,6 +179,7 @@ internal class RumActionScope(
                     target = ActionEvent.Target(name),
                     error = ActionEvent.Error(errorCount),
                     crash = ActionEvent.Crash(crashCount),
+                    longTask = ActionEvent.LongTask(longTaskCount),
                     resource = ActionEvent.Resource(resourceCount),
                     loadingTime = max(endNanos - startedNanos, 1L)
                 ),

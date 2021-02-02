@@ -178,6 +178,15 @@ object RumAttributes {
 
     // endregion
 
+    // region Long Task
+
+    /**
+     * The Long Task target info. (String)
+     */
+    const val LONG_TASK_TARGET: String = "long_task.target"
+
+    // endregion
+
     // region Network Info
 
     /**
