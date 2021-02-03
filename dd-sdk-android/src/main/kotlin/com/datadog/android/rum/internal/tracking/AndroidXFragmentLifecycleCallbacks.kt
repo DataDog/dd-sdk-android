@@ -77,12 +77,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         componentPredicate.runIfValid(f) {
             val key = resolveKey(it)
             viewLoadingTimer.onFinishedLoading(key)
-            val customViewName = componentPredicate.getViewName(f)
-            val viewName = if (customViewName.isNullOrBlank()) {
-                it.resolveViewName()
-            } else {
-                customViewName
-            }
+            val viewName = componentPredicate.resolveViewName(f)
             rumMonitor.startView(key, viewName, argumentsProvider(it))
             val loadingTime = viewLoadingTimer.getLoadingTime(key)
             if (loadingTime != null) {

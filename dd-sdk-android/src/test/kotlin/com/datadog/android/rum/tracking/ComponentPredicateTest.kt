@@ -7,7 +7,14 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
+import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.internal.utils.runIfValid
+import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,9 +26,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 class ComponentPredicateTest {
 
     lateinit var testedPredicate: ComponentPredicate<Activity>
@@ -32,6 +41,15 @@ class ComponentPredicateTest {
     @Mock
     lateinit var mockInvalidActivity: Activity
 
+    @Mock
+    lateinit var mockBlankActivity: Activity
+
+    @StringForgery
+    lateinit var fakeValidName: String
+
+    @StringForgery(StringForgeryType.WHITESPACE)
+    lateinit var fakeBlankName: String
+
     @BeforeEach
     fun `set up`() {
         testedPredicate = object : ComponentPredicate<Activity> {
@@ -40,26 +58,53 @@ class ComponentPredicateTest {
             }
 
             override fun getViewName(component: Activity): String? {
-                return null
+                return when (component) {
+                    mockValidActivity -> fakeValidName
+                    mockBlankActivity -> fakeBlankName
+                    else -> null
+                }
             }
         }
     }
 
     @Test
-    fun `it will not execute operation if argument is not verified`() {
+    fun `M not execute operation W runIfValid() {invalid}`() {
         var operationExecuted = false
+
         testedPredicate.runIfValid(mockInvalidActivity) {
             operationExecuted = true
         }
+
         assertThat(operationExecuted).isFalse()
     }
 
     @Test
-    fun `it will execute operation if argument is verified`() {
+    fun `M execute operation W runIfValid() {valid}`() {
         var operationExecuted = false
         testedPredicate.runIfValid(mockValidActivity) {
             operationExecuted = true
         }
         assertThat(operationExecuted).isTrue()
+    }
+
+    @Test
+    fun `M return custom name W resolveViewName() {valid}`() {
+        val name = testedPredicate.resolveViewName(mockValidActivity)
+
+        assertThat(name).isEqualTo(fakeValidName)
+    }
+
+    @Test
+    fun `M return default url W resolveViewName() {blank}`() {
+        val name = testedPredicate.resolveViewName(mockBlankActivity)
+
+        assertThat(name).isEqualTo(mockBlankActivity.resolveViewUrl())
+    }
+
+    @Test
+    fun `M return default url W resolveViewName() {null}`() {
+        val name = testedPredicate.resolveViewName(mockInvalidActivity)
+
+        assertThat(name).isEqualTo(mockInvalidActivity.resolveViewUrl())
     }
 }

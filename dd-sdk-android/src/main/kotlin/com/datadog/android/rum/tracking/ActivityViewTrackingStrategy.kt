@@ -51,12 +51,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         componentPredicate.runIfValid(activity) {
-            val customViewName = componentPredicate.getViewName(activity)
-            val viewName = if (customViewName.isNullOrBlank()) {
-                it.resolveViewName()
-            } else {
-                customViewName
-            }
+            val viewName = componentPredicate.resolveViewName(activity)
             val attributes = if (trackExtras) {
                 convertToRumAttributes(it.intent?.extras)
             } else {

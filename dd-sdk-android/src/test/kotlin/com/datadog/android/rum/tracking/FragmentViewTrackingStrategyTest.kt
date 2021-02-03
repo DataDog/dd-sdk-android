@@ -14,7 +14,7 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
-import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
@@ -157,7 +157,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -234,7 +234,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -338,7 +338,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -419,7 +419,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(

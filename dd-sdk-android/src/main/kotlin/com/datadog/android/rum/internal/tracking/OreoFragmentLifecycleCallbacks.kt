@@ -77,12 +77,7 @@ internal class OreoFragmentLifecycleCallbacks(
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         componentPredicate.runIfValid(f) {
-            val customViewName = componentPredicate.getViewName(f)
-            val viewName = if (customViewName.isNullOrBlank()) {
-                it.resolveViewName()
-            } else {
-                customViewName
-            }
+            val viewName = componentPredicate.resolveViewName(f)
             viewLoadingTimer.onFinishedLoading(f)
             rumMonitor.startView(it, viewName, argumentsProvider(it))
             val loadingTime = viewLoadingTimer.getLoadingTime(it)
