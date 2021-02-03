@@ -156,12 +156,14 @@ internal class ActionEventAssert(actual: ActionEvent) :
             .isEqualTo(expected.viewId.orEmpty())
         assertThat(actual.view.name)
             .overridingErrorMessage(
-                "Expected event data to have view.name ${expected.viewName} but was ${actual.view.name}"
+                "Expected event data to have view.name ${expected.viewName} " +
+                    "but was ${actual.view.name}"
             )
             .isEqualTo(expected.viewName)
         assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.url ${expected.viewUrl} but was ${actual.view.url}"
+                "Expected event data to have view.url ${expected.viewUrl} " +
+                    "but was ${actual.view.url}"
             )
             .isEqualTo(expected.viewUrl.orEmpty())
         return this
