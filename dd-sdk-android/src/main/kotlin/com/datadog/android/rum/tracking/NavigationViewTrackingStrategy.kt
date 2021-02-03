@@ -48,6 +48,10 @@ class NavigationViewTrackingStrategy(
         override fun accept(component: Fragment): Boolean {
             return !NavHostFragment::class.java.isAssignableFrom(component.javaClass)
         }
+
+        override fun getViewName(component: Fragment): String? {
+            return null
+        }
     }
 
     // region ActivityLifecycleTrackingStrategy

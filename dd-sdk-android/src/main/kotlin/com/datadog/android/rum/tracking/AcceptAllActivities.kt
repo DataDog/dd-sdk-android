@@ -13,9 +13,15 @@ import android.app.Activity
  * to be tracked as a RUM View event.
  * This is the default behaviour for the [ActivityViewTrackingStrategy].
  */
-class AcceptAllActivities : ComponentPredicate<Activity> {
+open class AcceptAllActivities : ComponentPredicate<Activity> {
 
+    /** @inheritdoc */
     override fun accept(component: Activity): Boolean {
         return true
+    }
+
+    /** @inheritdoc */
+    override fun getViewName(component: Activity): String? {
+        return null
     }
 }

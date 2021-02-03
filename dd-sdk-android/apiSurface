@@ -823,12 +823,15 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun reset()
   override fun close()
   companion object 
-class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
+open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
-class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
+  override fun getViewName(android.app.Activity): String?
+open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
   override fun accept(android.app.Fragment): Boolean
-class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
+  override fun getViewName(android.app.Fragment): String?
+open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
+  override fun getViewName(androidx.fragment.app.Fragment): String?
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
   override fun register(android.content.Context)
   override fun unregister(android.content.Context?)
@@ -851,6 +854,7 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   override fun onActivityDestroyed(android.app.Activity)
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
+  fun getViewName(T): String?
 class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityStarted(android.app.Activity)
