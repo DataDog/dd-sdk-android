@@ -32,6 +32,15 @@ internal class ViewEventAssert(actual: ViewEvent) :
     }
 
     fun hasName(expected: String): ViewEventAssert {
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name $expected but was ${actual.view.name}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasUrl(expected: String): ViewEventAssert {
         assertThat(actual.view.url)
             .overridingErrorMessage(
                 "Expected event data to have view.url $expected but was ${actual.view.url}"

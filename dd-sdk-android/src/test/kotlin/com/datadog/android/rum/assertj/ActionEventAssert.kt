@@ -123,17 +123,47 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasView(expectedId: String?, expectedUrl: String?): ActionEventAssert {
+    fun hasView(
+        expectedId: String?,
+        expectedName: String?,
+        expectedUrl: String?
+    ): ActionEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(
                 "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId.orEmpty())
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name $expectedName but was ${actual.view.name}"
+            )
+            .isEqualTo(expectedName)
         assertThat(actual.view.url)
             .overridingErrorMessage(
                 "Expected event data to have view.url $expectedUrl but was ${actual.view.url}"
             )
             .isEqualTo(expectedUrl.orEmpty())
+        return this
+    }
+
+    fun hasView(
+        expected: RumContext
+    ): ActionEventAssert {
+        assertThat(actual.view.id)
+            .overridingErrorMessage(
+                "Expected event data to have view.id ${expected.viewId} but was ${actual.view.id}"
+            )
+            .isEqualTo(expected.viewId.orEmpty())
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name ${expected.viewName} but was ${actual.view.name}"
+            )
+            .isEqualTo(expected.viewName)
+        assertThat(actual.view.url)
+            .overridingErrorMessage(
+                "Expected event data to have view.url ${expected.viewUrl} but was ${actual.view.url}"
+            )
+            .isEqualTo(expected.viewUrl.orEmpty())
         return this
     }
 
