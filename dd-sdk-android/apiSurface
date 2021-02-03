@@ -309,7 +309,7 @@ class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): Session
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
@@ -421,7 +421,7 @@ class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Session
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
@@ -553,7 +553,7 @@ class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): Session
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
@@ -714,7 +714,7 @@ class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): Session
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Double? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Double? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
@@ -829,6 +829,9 @@ open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredi
 open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
   override fun accept(android.app.Fragment): Boolean
   override fun getViewName(android.app.Fragment): String?
+open class com.datadog.android.rum.tracking.AcceptAllNavDestinations : ComponentPredicate<androidx.navigation.NavDestination>
+  override fun accept(androidx.navigation.NavDestination): Boolean
+  override fun getViewName(androidx.navigation.NavDestination): String?
 open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
   override fun getViewName(androidx.fragment.app.Fragment): String?
@@ -868,7 +871,7 @@ class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifec
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityDestroyed(android.app.Activity)
 class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
-  constructor(Int, Boolean)
+  constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
