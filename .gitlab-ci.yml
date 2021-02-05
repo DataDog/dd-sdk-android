@@ -247,12 +247,26 @@ notify:failure:
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
-notify:dogfooding:
-  stage: notify
-  when: on_success
+notify:dogfood-app:
+  tags: [ "runner:main", "size:large" ]
   only:
     - tags
+  image: $CI_IMAGE_DOCKER
+  stage: notify
+  when: on_success
   script:
   - pip3 install GitPython requests
   - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-  - python3 dogfood.py -v $CI_COMMIT_TAG
+  - python3 dogfood.py -v $CI_COMMIT_TAG -t app
+
+notify:dogfood-demo:
+  tags: [ "runner:main", "size:large" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: notify
+  when: on_success
+  script:
+    - pip3 install GitPython requests
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
+    - python3 dogfood.py -v $CI_COMMIT_TAG -t demo
