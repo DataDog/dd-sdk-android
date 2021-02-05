@@ -2,7 +2,14 @@ package com.example.model
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import java.lang.IllegalStateException
+import java.lang.NumberFormatException
+import kotlin.String
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.Throws
 
 data class Style(
     val color: Color
@@ -13,26 +20,45 @@ data class Style(
         return json
     }
 
-    enum class Color {
-        RED,
+    companion object {
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        fun fromJson(serializedObject: String): Style {
+            try {
+                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val color = jsonObject.get("color").asString.let {
+                    Color.fromJson(it)
+                }
+                return Style(color)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(e.message)
+            } catch (e: NumberFormatException) {
+                throw JsonParseException(e.message)
+            }
+        }
+    }
 
-        AMBER,
+    enum class Color(
+        private val jsonValue: String
+    ) {
+        RED("red"),
 
-        GREEN,
+        AMBER("amber"),
 
-        DARK_BLUE,
+        GREEN("green"),
 
-        LIME_GREEN,
+        DARK_BLUE("dark_blue"),
 
-        SUNBURST_YELLOW;
+        LIME_GREEN("lime green"),
 
-        fun toJson(): JsonElement = when (this) {
-            RED -> JsonPrimitive("red")
-            AMBER -> JsonPrimitive("amber")
-            GREEN -> JsonPrimitive("green")
-            DARK_BLUE -> JsonPrimitive("dark_blue")
-            LIME_GREEN -> JsonPrimitive("lime green")
-            SUNBURST_YELLOW -> JsonPrimitive("sunburst-yellow")
+        SUNBURST_YELLOW("sunburst-yellow");
+
+        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
+
+        companion object {
+            @JvmStatic
+            fun fromJson(serializedObject: String): Color = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

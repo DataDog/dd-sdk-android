@@ -184,14 +184,15 @@ internal class RumViewScope(
         val user = CoreFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
-
+        val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val errorEvent = ErrorEvent(
             date = event.eventTime.timestamp,
             error = ErrorEvent.Error(
                 message = event.message,
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                isCrash = event.isFatal
+                isCrash = event.isFatal,
+                type = errorType
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
@@ -280,6 +281,11 @@ internal class RumViewScope(
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val timings = if (customTimings.isNotEmpty()) {
+            ViewEvent.CustomTimings(LinkedHashMap(customTimings))
+        } else {
+            null
+        }
 
         val viewEvent = ViewEvent(
             date = eventTimestamp,
@@ -293,6 +299,7 @@ internal class RumViewScope(
                 resource = ViewEvent.Resource(resourceCount),
                 error = ViewEvent.Error(errorCount),
                 crash = ViewEvent.Crash(crashCount),
+                customTimings = timings,
                 isActive = !stopped
             ),
             usr = ViewEvent.Usr(
@@ -308,8 +315,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo,
-            customTimings = customTimings
+            userExtraAttributes = user.extraInfo
         )
         writer.write(rumEvent)
     }

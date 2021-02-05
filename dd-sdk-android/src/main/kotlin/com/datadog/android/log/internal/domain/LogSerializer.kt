@@ -123,7 +123,10 @@ internal class LogSerializer(
         jsonLog: JsonObject
     ) {
         log.throwable?.let {
-            jsonLog.addProperty(LogAttributes.ERROR_KIND, it.javaClass.simpleName)
+            jsonLog.addProperty(
+                LogAttributes.ERROR_KIND,
+                it.javaClass.canonicalName ?: it.javaClass.simpleName
+            )
             jsonLog.addProperty(LogAttributes.ERROR_MESSAGE, it.message)
             jsonLog.addProperty(LogAttributes.ERROR_STACK, it.loggableStackTrace())
         }
@@ -157,14 +160,6 @@ internal class LogSerializer(
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
 
         internal val reservedAttributes = arrayOf(
-            LogAttributes.HOST,
-            LogAttributes.MESSAGE,
-            LogAttributes.STATUS,
-            LogAttributes.SERVICE_NAME,
-            LogAttributes.SOURCE,
-            LogAttributes.ERROR_KIND,
-            LogAttributes.ERROR_MESSAGE,
-            LogAttributes.ERROR_STACK,
             TAG_DATADOG_TAGS
         )
 

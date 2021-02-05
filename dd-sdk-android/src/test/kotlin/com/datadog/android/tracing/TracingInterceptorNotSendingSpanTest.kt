@@ -580,6 +580,19 @@ internal open class TracingInterceptorNotSendingSpanTest {
     }
 
     @Test
+    fun `M do not update the hostDetector W host list provided`(forge: Forge) {
+        // GIVEN
+        val localHosts =
+            forge.aList { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) }
+
+        // WHEN
+        testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
+
+        // THEN
+        verify(mockDetector, never()).addKnownHosts(localHosts)
+    }
+
+    @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge

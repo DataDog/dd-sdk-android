@@ -14,7 +14,6 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.toMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -25,7 +24,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         ResourceEventAssert::class.java
     ) {
 
-    fun hasId(expected: String): ResourceEventAssert {
+    fun hasId(expected: String?): ResourceEventAssert {
         assertThat(actual.resource.id)
             .overridingErrorMessage(
                 "Expected event data to have resource.id $expected " +
@@ -398,7 +397,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L
 
-        internal fun assertThat(actual: ViewEvent): ViewEventAssert =
-            ViewEventAssert(actual)
+        internal fun assertThat(actual: ResourceEvent): ResourceEventAssert =
+            ResourceEventAssert(actual)
     }
 }

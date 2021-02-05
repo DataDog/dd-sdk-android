@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.model.ViewEvent
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -112,7 +113,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasCrashCount(expected: Long): ViewEventAssert {
+    fun hasCrashCount(expected: Long?): ViewEventAssert {
         assertThat(actual.view.crash?.count)
             .overridingErrorMessage(
                 "Expected event data to have view.crash.count $expected " +
@@ -185,7 +186,48 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasNoCustomTimings(): ViewEventAssert {
+        assertThat(actual.view.customTimings).isNull()
+        return this
+    }
+
+    fun hasCustomTimings(customTimings: Map<String, Long>): ViewEventAssert {
+        customTimings.entries.forEach { entry ->
+            assertThat(actual.view.customTimings?.additionalProperties)
+                .hasEntrySatisfying(entry.key) {
+                    assertThat(it).isCloseTo(
+                        entry.value,
+                        Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
+                    )
+                }
+        }
+
+        return this
+    }
+
     fun hasUserInfo(expected: UserInfo?): ViewEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        return this
+    }
+
+    fun hasUserInfo(expected: ViewEvent.Usr?): ViewEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
                 "Expected RUM event to have usr.id ${expected?.id} " +

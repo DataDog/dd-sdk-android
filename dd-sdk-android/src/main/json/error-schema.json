@@ -49,6 +49,11 @@
               "description": "Whether this error crashed the host application",
               "readOnly": true
             },
+            "type": {
+              "type": "string",
+              "description": "The type of the error",
+              "readOnly": true
+            },
             "resource": {
               "type": "object",
               "description": "Resource properties of the error",

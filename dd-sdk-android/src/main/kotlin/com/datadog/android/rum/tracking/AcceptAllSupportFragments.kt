@@ -12,9 +12,15 @@ import androidx.fragment.app.Fragment
  * A predefined [ComponentPredicate] which accepts all [Fragment] to be tracked as RUM View
  * event. This is the default behaviour of the [FragmentViewTrackingStrategy].
  */
-class AcceptAllSupportFragments : ComponentPredicate<Fragment> {
+open class AcceptAllSupportFragments : ComponentPredicate<Fragment> {
 
+    /** @inheritdoc */
     override fun accept(component: Fragment): Boolean {
         return true
+    }
+
+    /** @inheritdoc */
+    override fun getViewName(component: Fragment): String? {
+        return null
     }
 }

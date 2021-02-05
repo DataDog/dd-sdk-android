@@ -176,8 +176,16 @@ internal class RumResourceScope(
             userExtraAttributes = user.extraInfo
         )
         writer.write(rumEvent)
+        if (isFailedHttpRequest(statusCode)) {
+            val errorMessage = ERROR_MSG_FORMAT.format(method, url)
+            sendError(errorMessage, RumErrorSource.NETWORK, statusCode, null, writer)
+        }
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
         sent = true
+    }
+
+    private fun isFailedHttpRequest(statusCode: Long?): Boolean {
+        return (statusCode ?: 0) >= HTTP_ERROR_CODE_THRESHOLD
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
@@ -195,7 +203,7 @@ internal class RumResourceScope(
         message: String,
         source: RumErrorSource,
         statusCode: Long?,
-        throwable: Throwable,
+        throwable: Throwable?,
         writer: Writer<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
@@ -207,14 +215,15 @@ internal class RumResourceScope(
             error = ErrorEvent.Error(
                 message = message,
                 source = source.toSchemaSource(),
-                stack = throwable.loggableStackTrace(),
+                stack = throwable?.loggableStackTrace(),
                 isCrash = false,
                 resource = ErrorEvent.Resource(
                     url = url,
                     method = method.toErrorMethod(),
                     statusCode = statusCode ?: 0,
                     provider = resolveErrorProvider()
-                )
+                ),
+                type = resolveErrorType(statusCode, throwable)
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
@@ -263,9 +272,22 @@ internal class RumResourceScope(
         }
     }
 
+    private fun resolveErrorType(statusCode: Long?, throwable: Throwable?): String? {
+        return if (throwable != null) {
+            throwable.javaClass.canonicalName
+        } else if (statusCode != null) {
+            ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(statusCode)
+        } else {
+            null
+        }
+    }
+
     // endregion
 
     companion object {
+        internal const val HTTP_ERROR_CODE_THRESHOLD = 400
+        internal const val ERROR_MSG_FORMAT = "Request error %s %s"
+        internal const val ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT = "HTTP %d"
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,

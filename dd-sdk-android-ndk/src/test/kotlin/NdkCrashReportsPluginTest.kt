@@ -4,14 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import android.content.Context
 import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -24,6 +32,9 @@ import org.mockito.quality.Strictness
 internal class NdkCrashReportsPluginTest {
 
     lateinit var testedPlugin: NdkCrashReportsPlugin
+
+    @TempDir
+    lateinit var tempDir: File
 
     @BeforeEach
     fun `set up`() {
@@ -49,5 +60,62 @@ internal class NdkCrashReportsPluginTest {
         assertThat(testedPlugin.consentToInt(TrackingConsent.NOT_GRANTED)).isEqualTo(
             NdkCrashReportsPlugin.TRACKING_CONSENT_NOT_GRANTED
         )
+    }
+
+    @Test
+    fun `M create the NDK crash reports directory W register { nativeLibrary loaded }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val mockedContext: Context = mock {
+            whenever(it.filesDir).thenReturn(tempDir)
+        }
+        val config = DatadogPluginConfig(
+            mockedContext,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            forge.aValueFrom(TrackingConsent::class.java)
+        )
+        testedPlugin.setFieldValue("nativeLibraryLoaded", true)
+
+        // WHEN
+        try {
+            testedPlugin.register(config)
+        } catch (e: UnsatisfiedLinkError) {
+            // Do nothing. Just to avoid the NDK linkage error.
+        }
+
+        // THEN
+        val ndkCrashDirectory = File(tempDir, NdkCrashReportsPlugin.NDK_CRASH_REPORTS_FOLDER)
+        assertThat(ndkCrashDirectory.exists()).isTrue()
+    }
+
+    @Test
+    fun `M do nothing  W register { nativeLibrary not loaded }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val mockedContext: Context = mock {
+            whenever(it.filesDir).thenReturn(tempDir)
+        }
+        val config = DatadogPluginConfig(
+            mockedContext,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            forge.aValueFrom(TrackingConsent::class.java)
+        )
+
+        // WHEN
+        try {
+            testedPlugin.register(config)
+        } catch (e: UnsatisfiedLinkError) {
+            // Do nothing. Just to avoid the NDK linkage error.
+        }
+
+        // THEN
+        val ndkCrashDirectory = File(tempDir, NdkCrashReportsPlugin.NDK_CRASH_REPORTS_FOLDER)
+        assertThat(ndkCrashDirectory.exists()).isFalse()
     }
 }

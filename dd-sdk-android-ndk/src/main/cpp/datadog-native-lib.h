@@ -15,18 +15,14 @@ extern "C" {
 #endif
 
 void update_main_context(JNIEnv *env,
-                         jstring storage_path,
-                         jstring service_name,
-                         jstring environment);
-
-void update_rum_context(JNIEnv *env,
-                        jstring application_id,
-                        jstring session_id,
-                        jstring view_id);
+                         jstring storage_path);
 
 void update_tracking_consent(jint consent);
 
-void crash_signal_intercepted(int signal, const char *signal_name, const char *error_message);
+void write_crash_report(int signum,
+                        const char *signal_name,
+                        const char *error_message,
+                        const char *error_stacktrace);
 
 #ifdef __cplusplus
 }

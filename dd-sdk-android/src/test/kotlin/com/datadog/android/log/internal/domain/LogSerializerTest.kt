@@ -165,7 +165,7 @@ internal class LogSerializerTest {
 
         // WHEN
         val serializedEvent = testedSerializer.serialize(fakeLog)
-        JsonParser.parseString(serializedEvent).asJsonObject
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
 
         // THEN
         verify(mockedDataConstrains).validateAttributes(
@@ -173,6 +173,30 @@ internal class LogSerializerTest {
             eq(LogAttributes.USR_ATTRIBUTES_GROUP),
             eq(LogSerializer.USER_EXTRA_GROUP_VERBOSE_NAME)
         )
+    }
+
+    @Test
+    fun `M use the simple name as error kind W serialize { canonical name is null }`(
+        @Forgery fakeLog: Log,
+        forge: Forge
+    ) {
+
+        // GIVEN
+        class CustomThrowable : Throwable()
+
+        val fakeThrowable = CustomThrowable()
+        val fakeLogWithLocalThrowable = fakeLog.copy(throwable = fakeThrowable)
+
+        // WHEN
+        val serializedEvent = testedSerializer.serialize(fakeLogWithLocalThrowable)
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .hasField(
+                LogAttributes.ERROR_KIND,
+                fakeThrowable.javaClass.simpleName
+            )
     }
 
     // region Internal
@@ -271,8 +295,10 @@ internal class LogSerializerTest {
     ) {
         val throwable = log.throwable
         if (throwable != null) {
+            val expectedErrorKind =
+                throwable.javaClass.canonicalName ?: throwable.javaClass.simpleName
             assertThat(jsonObject)
-                .hasField(LogAttributes.ERROR_KIND, throwable.javaClass.simpleName)
+                .hasField(LogAttributes.ERROR_KIND, expectedErrorKind)
                 .hasNullableField(LogAttributes.ERROR_MESSAGE, throwable.message)
                 .hasField(LogAttributes.ERROR_STACK, throwable.loggableStackTrace())
         } else {

@@ -49,6 +49,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("DEPRECATION")
 internal class FragmentViewTrackingStrategyTest {
 
     lateinit var testedStrategy: FragmentViewTrackingStrategy
@@ -177,6 +178,10 @@ internal class FragmentViewTrackingStrategyTest {
             supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
+                }
+
+                override fun getViewName(component: Fragment): String? {
+                    return null
                 }
             }
         )
@@ -354,6 +359,10 @@ internal class FragmentViewTrackingStrategyTest {
             defaultFragmentComponentPredicate = object : ComponentPredicate<android.app.Fragment> {
                 override fun accept(component: android.app.Fragment): Boolean {
                     return false
+                }
+
+                override fun getViewName(component: android.app.Fragment): String? {
+                    return null
                 }
             }
         )

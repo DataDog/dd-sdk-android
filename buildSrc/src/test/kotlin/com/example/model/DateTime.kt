@@ -2,8 +2,15 @@ package com.example.model
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import java.lang.IllegalStateException
+import java.lang.NumberFormatException
 import kotlin.Long
+import kotlin.String
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.Throws
 
 data class DateTime(
     val date: Date? = null,
@@ -14,6 +21,27 @@ data class DateTime(
         date?.let { json.add("date", it.toJson()) }
         time?.let { json.add("time", it.toJson()) }
         return json
+    }
+
+    companion object {
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        fun fromJson(serializedObject: String): DateTime {
+            try {
+                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val date = jsonObject.get("date")?.toString()?.let {
+                    Date.fromJson(it)
+                }
+                val time = jsonObject.get("time")?.toString()?.let {
+                    Time.fromJson(it)
+                }
+                return DateTime(date, time)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(e.message)
+            } catch (e: NumberFormatException) {
+                throw JsonParseException(e.message)
+            }
+        }
     }
 
     data class Date(
@@ -27,6 +55,26 @@ data class DateTime(
             month?.let { json.add("month", it.toJson()) }
             day?.let { json.addProperty("day", it) }
             return json
+        }
+
+        companion object {
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            fun fromJson(serializedObject: String): Date {
+                try {
+                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val year = jsonObject.get("year")?.asLong
+                    val month = jsonObject.get("month")?.asString?.let {
+                        Month.fromJson(it)
+                    }
+                    val day = jsonObject.get("day")?.asLong
+                    return Date(year, month, day)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(e.message)
+                } catch (e: NumberFormatException) {
+                    throw JsonParseException(e.message)
+                }
+            }
         }
     }
 
@@ -42,46 +90,59 @@ data class DateTime(
             seconds?.let { json.addProperty("seconds", it) }
             return json
         }
+
+        companion object {
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            fun fromJson(serializedObject: String): Time {
+                try {
+                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val hour = jsonObject.get("hour")?.asLong
+                    val minute = jsonObject.get("minute")?.asLong
+                    val seconds = jsonObject.get("seconds")?.asLong
+                    return Time(hour, minute, seconds)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(e.message)
+                } catch (e: NumberFormatException) {
+                    throw JsonParseException(e.message)
+                }
+            }
+        }
     }
 
-    enum class Month {
-        JAN,
+    enum class Month(
+        private val jsonValue: String
+    ) {
+        JAN("jan"),
 
-        FEB,
+        FEB("feb"),
 
-        MAR,
+        MAR("mar"),
 
-        APR,
+        APR("apr"),
 
-        MAY,
+        MAY("may"),
 
-        JUN,
+        JUN("jun"),
 
-        JUL,
+        JUL("jul"),
 
-        AUG,
+        AUG("aug"),
 
-        SEP,
+        SEP("sep"),
 
-        OCT,
+        OCT("oct"),
 
-        NOV,
+        NOV("nov"),
 
-        DEC;
+        DEC("dec");
 
-        fun toJson(): JsonElement = when (this) {
-            JAN -> JsonPrimitive("jan")
-            FEB -> JsonPrimitive("feb")
-            MAR -> JsonPrimitive("mar")
-            APR -> JsonPrimitive("apr")
-            MAY -> JsonPrimitive("may")
-            JUN -> JsonPrimitive("jun")
-            JUL -> JsonPrimitive("jul")
-            AUG -> JsonPrimitive("aug")
-            SEP -> JsonPrimitive("sep")
-            OCT -> JsonPrimitive("oct")
-            NOV -> JsonPrimitive("nov")
-            DEC -> JsonPrimitive("dec")
+        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
+
+        companion object {
+            @JvmStatic
+            fun fromJson(serializedObject: String): Month = values().first { it.jsonValue ==
+                    serializedObject }
         }
     }
 }

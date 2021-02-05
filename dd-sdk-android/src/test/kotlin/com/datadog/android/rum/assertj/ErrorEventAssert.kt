@@ -242,6 +242,46 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasConnectivityStatus(expected: ErrorEvent.Status?): ErrorEventAssert {
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity status: $expected" +
+                    " but was: ${actual.connectivity?.status} "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasConnectivityInterface(expected: List<ErrorEvent.Interface>?): ErrorEventAssert {
+        val interfaces = actual.connectivity?.interfaces
+        assertThat(interfaces)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity interfaces: $expected" +
+                    " but was: $interfaces "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasConnectivityCellular(expected: ErrorEvent.Cellular?): ErrorEventAssert {
+        assertThat(actual.connectivity?.cellular)
+            .overridingErrorMessage(
+                "Expected event data to have connectivity cellular: $expected" +
+                    " but was: ${actual.connectivity?.cellular} "
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasErrorType(expected: String?): ErrorEventAssert {
+        assertThat(actual.error.type)
+            .overridingErrorMessage(
+                "Expected event data to have error type $expected" +
+                    " but was ${actual.error.type}"
+            ).isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

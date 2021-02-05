@@ -5,7 +5,6 @@
  */
 
 package com.example.forgery
-
 import com.example.model.Article
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

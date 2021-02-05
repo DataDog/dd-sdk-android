@@ -7,11 +7,13 @@ add_library(
         datadog-native-lib-test
         SHARED
         integration-tests.cpp
-        test_datetime_utils.cpp
-        test_generate_backtrace.cpp
-        test_signal_monitor.cpp
-        test_utils.cpp
-        test_utils.h
+        test-crash-log.cpp
+        test-datetime-utils.cpp
+        test-format-utils.cpp
+        test-generate-backtrace.cpp
+        test-signal-monitor.cpp
+        test-utils.cpp
+        test-utils.h
 )
 find_library( # Sets the name of the path variable.
         log-lib

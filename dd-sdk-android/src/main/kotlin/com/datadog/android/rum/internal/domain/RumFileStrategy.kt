@@ -12,8 +12,10 @@ import com.datadog.android.core.internal.domain.FilePersistenceStrategy
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.data.file.RumFileWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -31,7 +33,15 @@ internal class RumFileStrategy(
     filePersistenceConfig,
     PayloadDecoration.NEW_LINE_DECORATION,
     trackingConsentProvider,
-    eventMapper
+    eventMapper,
+    fileWriterFactory = { fileOrchestrator, eventSerializer, eventSeparator ->
+        RumFileWriter(
+            File(context.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME),
+            fileOrchestrator,
+            eventSerializer,
+            eventSeparator
+        )
+    }
 ) {
     companion object {
         internal const val VERSION = 1

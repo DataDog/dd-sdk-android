@@ -18,7 +18,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../datadog-native-lib.h"
+#include "backtrace-handler.h"
+#include "datadog-native-lib.h"
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static sigset_t signals_mask;
@@ -70,7 +71,7 @@ static const struct signal handled_signals[] = {
         {SIGILL,  "SIGILL",  "Illegal instruction"},
         {SIGBUS,  "SIGBUS",  "Bus error (bad memory access)"},
         {SIGFPE,  "SIGFPE",  "Floating-point exception"},
-        {SIGABRT,  "SIGABRT",  "The process was terminated"},
+        {SIGABRT, "SIGABRT", "The process was terminated"},
         {SIGSEGV, "SIGSEGV", "Segmentation violation (invalid memory reference)"},
         {SIGQUIT, "SIGQUIT", "Application Not Responding"}
 };
@@ -121,9 +122,14 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
         if (signal == signum) {
-            crash_signal_intercepted(signal,
-                                     handled_signals[i].signal_name,
-                                     handled_signals[i].signal_error_message);
+            char backtrace[max_stack_size];
+            // in case the stacktrace is bigger than the required size it will be truncated
+            generate_backtrace(backtrace, max_stack_size);
+            write_crash_report(signal,
+                               handled_signals[i].signal_name,
+                               handled_signals[i].signal_error_message,
+                               backtrace);
+
             break;
         }
     }

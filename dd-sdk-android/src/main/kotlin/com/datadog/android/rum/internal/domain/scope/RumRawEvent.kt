@@ -89,7 +89,8 @@ internal sealed class RumRawEvent {
         val stacktrace: String?,
         val isFatal: Boolean,
         val attributes: Map<String, Any?>,
-        override val eventTime: Time = Time()
+        override val eventTime: Time = Time(),
+        val type: String? = null
     ) : RumRawEvent()
 
     internal data class UpdateViewLoadingTime(

@@ -570,15 +570,15 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M update the hostDetector W legacy host list provided`(forge: Forge) {
+    fun `M do not update the hostDetector W host list provided`(forge: Forge) {
         // GIVEN
-        val legacyHostList = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
+        val localHosts = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
 
         // WHEN
-        testedInterceptor = instantiateTestedInterceptor(legacyHostList) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
 
         // THEN
-        verify(mockDetector).addKnownHosts(legacyHostList)
+        verify(mockDetector, never()).addKnownHosts(localHosts)
     }
 
     @Test

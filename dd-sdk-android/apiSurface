@@ -67,7 +67,7 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  DEPRECATED constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
@@ -229,6 +229,7 @@ object com.datadog.android.rum.RumAttributes
   const val SOURCE: String
   const val VARIANT: String
   const val SDK_VERSION: String
+  const val INTERNAL_ERROR_TYPE: String
   const val INTERNAL_TIMESTAMP: String
   const val TRACE_ID: String
   const val SPAN_ID: String
@@ -259,6 +260,7 @@ enum com.datadog.android.rum.RumErrorSource
   - AGENT
   - WEBVIEW
 class com.datadog.android.rum.RumInterceptor : com.datadog.android.DatadogInterceptor
+  constructor(List<String> = emptyList())
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -294,55 +296,90 @@ class com.datadog.android.rum.model.ActionEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd, Action)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ActionEvent
   class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
   class Session
-    constructor(kotlin.String, SessionType)
+    constructor(kotlin.String, SessionType, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
   class Usr
     constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
   class Connectivity
     constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
   class Action
     constructor(ActionType, kotlin.String? = null, kotlin.Long? = null, Target? = null, Error? = null, Crash? = null, LongTask? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cellular
   class Target
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Target
   class Error
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
   class Crash
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Crash
   class LongTask
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
   class Resource
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Resource
   enum SessionType
+    constructor(kotlin.String)
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SessionType
   enum Status
+    constructor(kotlin.String)
     - CONNECTED
     - NOT_CONNECTED
     - MAYBE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
   enum Interface
+    constructor(kotlin.String)
     - BLUETOOTH
     - CELLULAR
     - ETHERNET
@@ -353,7 +390,10 @@ class com.datadog.android.rum.model.ActionEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Interface
   enum ActionType
+    constructor(kotlin.String)
     - CUSTOM
     - CLICK
     - TAP
@@ -362,53 +402,86 @@ class com.datadog.android.rum.model.ActionEvent
     - APPLICATION_START
     - BACK
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ActionType
 class com.datadog.android.rum.model.ErrorEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd, Error, Action? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ErrorEvent
   class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
   class Session
-    constructor(kotlin.String, SessionType)
+    constructor(kotlin.String, SessionType, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
   class Usr
     constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
   class Connectivity
     constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
   class Error
-    constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, Resource? = null)
+    constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
   class Action
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cellular
   class Resource
     constructor(Method, kotlin.Long, kotlin.String, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Resource
   class Provider
     constructor(kotlin.String? = null, kotlin.String? = null, ProviderType? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Provider
   enum SessionType
+    constructor(kotlin.String)
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SessionType
   enum Status
+    constructor(kotlin.String)
     - CONNECTED
     - NOT_CONNECTED
     - MAYBE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
   enum Interface
+    constructor(kotlin.String)
     - BLUETOOTH
     - CELLULAR
     - ETHERNET
@@ -419,7 +492,10 @@ class com.datadog.android.rum.model.ErrorEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Interface
   enum Source
+    constructor(kotlin.String)
     - NETWORK
     - SOURCE
     - CONSOLE
@@ -428,7 +504,10 @@ class com.datadog.android.rum.model.ErrorEvent
     - WEBVIEW
     - CUSTOM
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
   enum Method
+    constructor(kotlin.String)
     - POST
     - GET
     - HEAD
@@ -436,7 +515,10 @@ class com.datadog.android.rum.model.ErrorEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Method
   enum ProviderType
+    constructor(kotlin.String)
     - AD
     - ADVERTISING
     - ANALYTICS
@@ -452,69 +534,112 @@ class com.datadog.android.rum.model.ErrorEvent
     - UTILITY
     - VIDEO
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ProviderType
 class com.datadog.android.rum.model.ResourceEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd? = null, Resource, Action? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ResourceEvent
   class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
   class Session
-    constructor(kotlin.String, SessionType)
+    constructor(kotlin.String, SessionType, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
   class View
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
   class Usr
     constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
   class Connectivity
     constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
   class Dd
     constructor(kotlin.String? = null, kotlin.String? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
   class Resource
     constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Resource
   class Action
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cellular
   class Redirect
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Redirect
   class Dns
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dns
   class Connect
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connect
   class Ssl
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Ssl
   class FirstByte
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): FirstByte
   class Download
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Download
   class Provider
     constructor(kotlin.String? = null, kotlin.String? = null, ProviderType? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Provider
   enum SessionType
+    constructor(kotlin.String)
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SessionType
   enum Status
+    constructor(kotlin.String)
     - CONNECTED
     - NOT_CONNECTED
     - MAYBE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
   enum Interface
+    constructor(kotlin.String)
     - BLUETOOTH
     - CELLULAR
     - ETHERNET
@@ -525,7 +650,10 @@ class com.datadog.android.rum.model.ResourceEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Interface
   enum ResourceType
+    constructor(kotlin.String)
     - DOCUMENT
     - XHR
     - BEACON
@@ -537,7 +665,10 @@ class com.datadog.android.rum.model.ResourceEvent
     - MEDIA
     - OTHER
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ResourceType
   enum Method
+    constructor(kotlin.String)
     - POST
     - GET
     - HEAD
@@ -545,7 +676,10 @@ class com.datadog.android.rum.model.ResourceEvent
     - DELETE
     - PATCH
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Method
   enum ProviderType
+    constructor(kotlin.String)
     - AD
     - ADVERTISING
     - ANALYTICS
@@ -561,52 +695,89 @@ class com.datadog.android.rum.model.ResourceEvent
     - UTILITY
     - VIDEO
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ProviderType
 class com.datadog.android.rum.model.ViewEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ViewEvent
   class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
   class Session
-    constructor(kotlin.String, Type)
+    constructor(kotlin.String, Type, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
   class View
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Double? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Double? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, Resource)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
   class Usr
     constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
   class Connectivity
     constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
   class Dd
     constructor(kotlin.Long)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+  class CustomTimings
+    constructor(kotlin.collections.Map<kotlin.String, kotlin.Long> = emptyMap())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CustomTimings
   class Action
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   class Error
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
   class Crash
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Crash
   class LongTask
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
   class Resource
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Resource
   class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cellular
   enum Type
+    constructor(kotlin.String)
     - USER
     - SYNTHETICS
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type
   enum LoadingType
+    constructor(kotlin.String)
     - INITIAL_LOAD
     - ROUTE_CHANGE
     - ACTIVITY_DISPLAY
@@ -616,12 +787,18 @@ class com.datadog.android.rum.model.ViewEvent
     - VIEW_CONTROLLER_DISPLAY
     - VIEW_CONTROLLER_REDISPLAY
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LoadingType
   enum Status
+    constructor(kotlin.String)
     - CONNECTED
     - NOT_CONNECTED
     - MAYBE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
   enum Interface
+    constructor(kotlin.String)
     - BLUETOOTH
     - CELLULAR
     - ETHERNET
@@ -632,6 +809,8 @@ class com.datadog.android.rum.model.ViewEvent
     - UNKNOWN
     - NONE
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Interface
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String)
   override fun read(): Int
@@ -644,12 +823,15 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun reset()
   override fun close()
   companion object 
-class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
+open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
-class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
+  override fun getViewName(android.app.Activity): String?
+open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
   override fun accept(android.app.Fragment): Boolean
-class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
+  override fun getViewName(android.app.Fragment): String?
+open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
+  override fun getViewName(androidx.fragment.app.Fragment): String?
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
   override fun register(android.content.Context)
   override fun unregister(android.content.Context?)
@@ -672,6 +854,7 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   override fun onActivityDestroyed(android.app.Activity)
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
+  fun getViewName(T): String?
 class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityStarted(android.app.Activity)
@@ -727,7 +910,7 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  DEPRECATED constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
+  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener())
   constructor(TracedRequestListener = NoOpTracedRequestListener())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)

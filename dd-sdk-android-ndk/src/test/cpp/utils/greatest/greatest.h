@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 /* Make it possible to replace fprintf with another
  * function with the same interface. */
 #ifndef GREATEST_FPRINTF
-#define GREATEST_FPRINTF fprintf
+#define GREATEST_FPRINTF(ignore, fmt, ...) __android_log_print(ANDROID_LOG_INFO, "DatadogNDKTests", fmt, ##__VA_ARGS__)
 #endif
 
 #if GREATEST_USE_LONGJMP

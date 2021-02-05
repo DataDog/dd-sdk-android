@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Comment",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "ratings": {
+      "type": "object",
+      "properties": {
+        "global": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "required": [ "global"]
+    },
+    "flags": {
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

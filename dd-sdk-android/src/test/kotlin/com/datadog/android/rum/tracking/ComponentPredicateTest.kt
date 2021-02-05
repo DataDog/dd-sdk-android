@@ -38,6 +38,10 @@ class ComponentPredicateTest {
             override fun accept(component: Activity): Boolean {
                 return component == mockValidActivity
             }
+
+            override fun getViewName(component: Activity): String? {
+                return null
+            }
         }
     }
 
