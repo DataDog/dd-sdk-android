@@ -118,7 +118,7 @@ internal class ViewUtilsTest {
     }
 
     @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator no component}`() {
+    fun `𝕄 return unknown name 𝕎 resolveViewUrl() {ActivityNavigator no component}`() {
         // Given
         val destination = mock<ActivityNavigator.Destination>().apply {
             whenever(component) doReturn null
