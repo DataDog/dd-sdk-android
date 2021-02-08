@@ -346,7 +346,11 @@ internal class DatadogNdkCrashHandlerTest {
         ErrorEventAssert.assertThat(argumentCaptor.secondValue.event as ErrorEvent)
             .hasApplicationId(fakeBundledViewEvent.application.id)
             .hasSessionId(fakeBundledViewEvent.session.id)
-            .hasView(fakeBundledViewEvent.view.id, fakeBundledViewEvent.view.url)
+            .hasView(
+                fakeBundledViewEvent.view.id,
+                fakeBundledViewEvent.view.name,
+                fakeBundledViewEvent.view.url
+            )
             .hasMessage(
                 DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)
             )

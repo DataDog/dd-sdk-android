@@ -9,6 +9,7 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -173,17 +174,48 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasView(expectedId: String?, expectedUrl: String?): ErrorEventAssert {
+    fun hasView(
+        expectedId: String?,
+        expectedName: String?,
+        expectedUrl: String?
+    ): ErrorEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(
                 "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId.orEmpty())
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name $expectedName but was ${actual.view.name}"
+            )
+            .isEqualTo(expectedName)
         assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedUrl but was ${actual.view.url}"
+                "Expected event data to have view.url $expectedUrl but was ${actual.view.url}"
             )
             .isEqualTo(expectedUrl.orEmpty())
+        return this
+    }
+
+    fun hasView(expected: RumContext): ErrorEventAssert {
+        assertThat(actual.view.id)
+            .overridingErrorMessage(
+                "Expected event data to have view.id ${expected.viewId} " +
+                    "but was ${actual.view.id}"
+            )
+            .isEqualTo(expected.viewId.orEmpty())
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name ${expected.viewName} " +
+                    "but was ${actual.view.name}"
+            )
+            .isEqualTo(expected.viewName)
+        assertThat(actual.view.url)
+            .overridingErrorMessage(
+                "Expected event data to have view.url ${expected.viewUrl} " +
+                    "but was ${actual.view.url}"
+            )
+            .isEqualTo(expected.viewUrl.orEmpty())
         return this
     }
 

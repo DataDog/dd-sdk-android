@@ -12,6 +12,7 @@ internal data class RumContext(
     val applicationId: String = NULL_UUID,
     val sessionId: String = NULL_UUID,
     val viewId: String? = null,
+    val viewName: String? = null,
     val viewUrl: String? = null,
     val actionId: String? = null
 ) {

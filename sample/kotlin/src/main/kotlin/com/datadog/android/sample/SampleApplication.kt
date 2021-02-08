@@ -122,7 +122,13 @@ class SampleApplication : Application() {
         )
             .setFirstPartyHosts(tracedHosts)
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
-            .useViewTrackingStrategy(NavigationViewTrackingStrategy(R.id.nav_host_fragment, true))
+            .useViewTrackingStrategy(
+                NavigationViewTrackingStrategy(
+                    R.id.nav_host_fragment,
+                    true,
+                    SampleNavigationPredicate()
+                )
+            )
             .trackInteractions()
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {

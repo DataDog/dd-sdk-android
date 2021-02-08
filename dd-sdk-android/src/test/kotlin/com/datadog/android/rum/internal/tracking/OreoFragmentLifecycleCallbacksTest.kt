@@ -13,7 +13,7 @@ import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
 import android.view.Window
-import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
@@ -261,7 +261,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         // Then
         verify(mockRumMonitor).startView(
             mockFragment,
-            mockFragment.resolveViewName(),
+            mockFragment.resolveViewUrl(),
             fakeAttributes
         )
     }
@@ -299,7 +299,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         // Then
         verify(mockRumMonitor).startView(
             mockFragment,
-            mockFragment.resolveViewName(),
+            mockFragment.resolveViewUrl(),
             fakeAttributes
         )
     }
@@ -327,7 +327,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
             verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
             verify(mockRumMonitor).startView(
                 mockFragment,
-                mockFragment.resolveViewName(),
+                mockFragment.resolveViewUrl(),
                 fakeAttributes
             )
             verify(mockAdvancedRumMonitor).updateViewLoadingTime(
