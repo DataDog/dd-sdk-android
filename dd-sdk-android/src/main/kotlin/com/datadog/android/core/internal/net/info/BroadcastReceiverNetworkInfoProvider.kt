@@ -14,17 +14,24 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
-internal class BroadcastReceiverNetworkInfoProvider :
+internal class BroadcastReceiverNetworkInfoProvider(
+    private val consentAwareDataWriter: ConsentAwareDataWriter<NetworkInfo>
+) :
     ThreadSafeReceiver(),
     NetworkInfoProvider {
 
     private var networkInfo: NetworkInfo =
         NetworkInfo()
+        set(value) {
+                field = value
+                consentAwareDataWriter.write(field)
+            }
 
     // region BroadcastReceiver
 

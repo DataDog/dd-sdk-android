@@ -36,8 +36,12 @@ import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.rum.internal.ndk.NdkNetworkInfoFileStrategy
+import com.datadog.android.rum.internal.ndk.NdkUserInfoFileStrategy
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -100,11 +104,17 @@ internal object CoreFeature {
         readApplicationInformation(appContext, credentials)
         resolveIsMainProcess(appContext)
         initializeClockSync(appContext)
-        setupInfoProviders(appContext, consent)
         setupOkHttpClient(configuration.needsClearTextHttp)
         firstPartyHostDetector = FirstPartyHostDetector(configuration.firstPartyHosts)
         setupExecutors()
-
+        val ndkCrashDirectoryTemp =
+            File(
+                appContext.filesDir,
+                DatadogNdkCrashHandler.NDK_CRASH_REPORTS_INTERMEDIARY_FOLDER_NAME
+            )
+        val ndkCrashDirectory =
+            File(appContext.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
+        setupInfoProviders(appContext, consent, ndkCrashDirectory, ndkCrashDirectoryTemp)
         initialized.set(true)
     }
 
@@ -166,7 +176,15 @@ internal object CoreFeature {
         uploadFrequency = configuration.uploadFrequency
     }
 
-    private fun setupInfoProviders(appContext: Context, consent: TrackingConsent) {
+    private fun setupInfoProviders(
+        appContext: Context,
+        consent: TrackingConsent,
+        ndkCrashDirectory: File,
+        ndkCrashDirectoryTemp: File
+    ) {
+        // Tracking Consent Provider
+        trackingConsentProvider = TrackingConsentProvider(consent)
+
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
 
@@ -175,18 +193,40 @@ internal object CoreFeature {
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            CallbackNetworkInfoProvider()
-        } else {
-            BroadcastReceiverNetworkInfoProvider()
-        }
-        networkInfoProvider.register(appContext)
+        setupNetworkInfoProviders(appContext, ndkCrashDirectory, ndkCrashDirectoryTemp)
 
         // User Info Provider
-        userInfoProvider = DatadogUserInfoProvider()
+        val ndkUserInfoFileStrategy = NdkUserInfoFileStrategy(
+            ndkCrashDirectoryTemp,
+            ndkCrashDirectory,
+            uploadExecutorService,
+            trackingConsentProvider
+        )
+        userInfoProvider = DatadogUserInfoProvider(ndkUserInfoFileStrategy.consentAwareDataWriter)
+    }
 
-        // Tracking Consent Provider
-        trackingConsentProvider = TrackingConsentProvider(consent)
+    private fun setupNetworkInfoProviders(
+        appContext: Context,
+        ndkCrashDirectory: File,
+        ndkCrashDirectoryTemp: File
+    ) {
+        val ndkNetworkInfoFileStrategy = NdkNetworkInfoFileStrategy(
+            ndkCrashDirectoryTemp,
+            ndkCrashDirectory,
+            uploadExecutorService,
+            trackingConsentProvider
+        )
+        networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+
+            CallbackNetworkInfoProvider(
+                ndkNetworkInfoFileStrategy.consentAwareDataWriter
+            )
+        } else {
+            BroadcastReceiverNetworkInfoProvider(
+                ndkNetworkInfoFileStrategy.consentAwareDataWriter
+            )
+        }
+        networkInfoProvider.register(appContext)
     }
 
     private fun setupOkHttpClient(needsClearTextHttp: Boolean) {

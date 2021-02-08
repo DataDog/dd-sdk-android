@@ -10,7 +10,6 @@ import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
-import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.model.ActionEvent
@@ -21,10 +20,8 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -34,7 +31,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -60,9 +57,6 @@ internal class RumFileWriterTest {
     @Mock
     lateinit var mockOrchestrator: Orchestrator
 
-    @Mock
-    lateinit var mockDeferredHandler: AndroidDeferredHandler
-
     @StringForgery(regex = "[a-zA-z]{3,10}")
     lateinit var fakeNdkCrashDataFolderName: String
 
@@ -75,10 +69,6 @@ internal class RumFileWriterTest {
     fun `set up`() {
         fakeNdkCrashDataDirectory = File(tempRootDir, fakeNdkCrashDataFolderName)
         rumSerializer = RumEventSerializer()
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            val runnable = it.arguments[0] as Runnable
-            runnable.run()
-        }
         testedWriter = RumFileWriter(
             fakeNdkCrashDataDirectory,
             mockOrchestrator,
@@ -101,7 +91,7 @@ internal class RumFileWriterTest {
 
         testedWriter.write(fakeModel)
 
-        Assertions.assertThat(file.readText())
+        assertThat(file.readText())
             .isEqualTo(rumSerializer.serialize(fakeModel))
     }
 
@@ -115,7 +105,7 @@ internal class RumFileWriterTest {
 
         testedWriter.write(fakeModels)
 
-        Assertions.assertThat(file.readText())
+        assertThat(file.readText())
             .isEqualTo(
                 fakeModels.map { rumSerializer.serialize(it) }
                     .joinToString(PayloadDecoration.JSON_ARRAY_DECORATION.separator)
@@ -141,7 +131,7 @@ internal class RumFileWriterTest {
             testedWriter.write(it)
         }
 
-        Assertions.assertThat(file.readText())
+        assertThat(file.readText())
             .isEqualTo(fakeModels.map { rumSerializer.serialize(it) }.joinToString(separator))
     }
 
@@ -162,7 +152,8 @@ internal class RumFileWriterTest {
 
         testedWriter.write(fakeModel)
 
-        verifyZeroInteractions(mockDeferredHandler)
+        assertThat(tempRootDir.listFiles()).containsExactly(fakeNdkCrashDataDirectory)
+        assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
     }
 
     @Test
@@ -176,11 +167,12 @@ internal class RumFileWriterTest {
 
         testedWriter.write(fakeModel)
 
-        verifyZeroInteractions(mockDeferredHandler)
+        assertThat(tempRootDir.listFiles()).containsExactly(fakeNdkCrashDataDirectory)
+        assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write() and FileOrchestrator returns a null file`(
+    fun `𝕄 do nothing 𝕎 write and FileOrchestrator returns a null file`(
         @Forgery fakeModel: RumEvent,
         forge: Forge
     ) {
@@ -190,7 +182,8 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel)
 
         // Then
-        verifyZeroInteractions(mockDeferredHandler)
+        assertThat(tempRootDir.listFiles()).containsExactly(fakeNdkCrashDataDirectory)
+        assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
     }
 
     @Test
@@ -208,7 +201,8 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel)
 
         // Then
-        verifyZeroInteractions(mockDeferredHandler)
+        assertThat(tempRootDir.listFiles()).containsExactly(fakeNdkCrashDataDirectory)
+        assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
     }
 
     @Test
@@ -232,7 +226,7 @@ internal class RumFileWriterTest {
             outputStream.close()
         }
 
-        Assertions.assertThat(file.readText())
+        assertThat(file.readText())
             .isEmpty()
     }
 
@@ -263,7 +257,7 @@ internal class RumFileWriterTest {
         val rawData = file.readText()
         val dataAsJsonArray = "[$rawData]"
         val jsonArray = JsonParser.parseString(dataAsJsonArray).asJsonArray
-        Assertions.assertThat(jsonArray.size())
+        assertThat(jsonArray.size())
             .isEqualTo(fakeModels.map { rumSerializer.serialize(it) }.size)
     }
 
@@ -282,7 +276,7 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel)
 
         // THEN
-        Assertions.assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
+        assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
             .isEqualTo(rumSerializer.serialize(fakeModel))
     }
 
@@ -303,7 +297,7 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel2)
 
         // THEN
-        Assertions.assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
+        assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
             .isEqualTo(rumSerializer.serialize(fakeModel2))
     }
 
@@ -323,7 +317,7 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel)
 
         // THEN
-        Assertions.assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
+        assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
             .isEqualTo(rumSerializer.serialize(fakeModel))
     }
 
@@ -351,6 +345,6 @@ internal class RumFileWriterTest {
         testedWriter.write(fakeModel)
 
         // THEN
-        Assertions.assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
+        assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
     }
 }

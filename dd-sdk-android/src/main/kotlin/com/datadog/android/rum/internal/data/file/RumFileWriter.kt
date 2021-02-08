@@ -30,15 +30,16 @@ internal class RumFileWriter(
 
     // region ImmediateFileWriter
 
-    override fun writeData(data: ByteArray, model: RumEvent) {
-        super.writeData(data, model)
-        if (model.event is ViewEvent) {
+    override fun writeData(data: ByteArray, model: RumEvent): Boolean {
+        val writeDataSuccess = super.writeData(data, model)
+        if (writeDataSuccess && model.event is ViewEvent) {
             if (!lastViewEventFile.exists()) {
                 lastViewEventFile.createNewFile()
             }
             // persist the serialised ViewEvent in the NDK crash data folder
-            writeDataToFile(lastViewEventFile, data, false)
+            fileHandler.writeData(lastViewEventFile, data)
         }
+        return writeDataSuccess
     }
 
     // endregion

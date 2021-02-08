@@ -255,8 +255,12 @@ internal class DatadogNdkCrashHandler(
     companion object {
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
         const val CRASH_LOG_FILE_NAME = "crash_log"
+        const val LAST_USER_INFORMATION_FILE_NAME = "user_information"
+        const val LAST_NETWORK_INFORMATION_FILE_NAME = "network_information"
         const val LOGGER_NAME = "ndk_crash"
         const val NDK_ERROR_LOG_MESSAGE = "NDK crash detected with signal: %s"
         internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
+        internal const val NDK_CRASH_REPORTS_INTERMEDIARY_FOLDER_NAME =
+            "ndk_crash_reports_intermediary"
     }
 }
