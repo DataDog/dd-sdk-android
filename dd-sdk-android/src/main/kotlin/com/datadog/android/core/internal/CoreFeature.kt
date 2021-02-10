@@ -32,13 +32,16 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.rum.internal.ndk.NdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkNetworkInfoFileStrategy
 import com.datadog.android.rum.internal.ndk.NdkUserInfoFileStrategy
+import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import java.io.File
@@ -86,6 +89,7 @@ internal object CoreFeature {
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
+    internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -96,10 +100,10 @@ internal object CoreFeature {
         configuration: Configuration.Core,
         consent: TrackingConsent
     ) {
+
         if (initialized.get()) {
             return
         }
-
         readConfigurationSettings(configuration)
         readApplicationInformation(appContext, credentials)
         resolveIsMainProcess(appContext)
@@ -107,6 +111,13 @@ internal object CoreFeature {
         setupOkHttpClient(configuration.needsClearTextHttp)
         firstPartyHostDetector = FirstPartyHostDetector(configuration.firstPartyHosts)
         setupExecutors()
+        // BIG NOTE !!
+        // Please do not move the block bellow.
+        // The NDK crash handler `prepareData` function needs to be called exactly at this moment
+        // to make sure it is the first task that goes in the persistence ExecutorService.
+        // Because all our persisting components are working asynchronously this will avoid
+        // having corrupted data (data from previous process over - written in this process into the
+        // ndk crash folder before the crash was actually handled)
         val ndkCrashDirectoryTemp =
             File(
                 appContext.filesDir,
@@ -114,6 +125,7 @@ internal object CoreFeature {
             )
         val ndkCrashDirectory =
             File(appContext.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
+        prepareNdkCrashData(ndkCrashDirectory)
         setupInfoProviders(appContext, consent, ndkCrashDirectory, ndkCrashDirectoryTemp)
         initialized.set(true)
     }
@@ -132,6 +144,7 @@ internal object CoreFeature {
             cleanupProviders()
             shutDownExecutors()
             initialized.set(false)
+            ndkCrashHandler = NoOpNdkCrashHandler()
         }
     }
 
@@ -142,6 +155,24 @@ internal object CoreFeature {
     }
 
     // region Internal
+
+    private fun prepareNdkCrashData(ndkCrashDirectory: File) {
+        if (isMainProcess) {
+            ndkCrashHandler = DatadogNdkCrashHandler(
+                ndkCrashDirectory,
+                persistenceExecutorService,
+                LogGenerator(
+                    serviceName,
+                    DatadogNdkCrashHandler.LOGGER_NAME,
+                    networkInfoProvider,
+                    userInfoProvider,
+                    envName,
+                    packageVersion
+                )
+            )
+            ndkCrashHandler.prepareData()
+        }
+    }
 
     private fun initializeClockSync(appContext: Context) {
         kronosClock = AndroidClockFactory.createKronosClock(

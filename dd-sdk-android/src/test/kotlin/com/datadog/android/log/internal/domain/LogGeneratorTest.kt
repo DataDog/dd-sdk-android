@@ -268,7 +268,26 @@ internal class LogGeneratorTest {
     }
 
     @Test
-    fun `M add the userNetworkInfo W creating the Log`() {
+    fun `M use custom userInfo W creating the Log { userInfo provided }`(
+        @Forgery fakeCustomUserInfo: UserInfo
+    ) {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            userInfo = fakeCustomUserInfo
+        )
+
+        // THEN
+        assertThat(log).hasUserInfo(fakeCustomUserInfo)
+    }
+
+    @Test
+    fun `M add the userInfo W creating the Log`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -322,6 +341,34 @@ internal class LogGeneratorTest {
 
         // THEN
         assertThat(log).doesNotHaveNetworkInfo()
+    }
+
+    @Test
+    fun `M use custom networkInfo W creating Log { networkInfo provided }`(
+        @Forgery fakeCustomNetworkInfo: NetworkInfo
+    ) {
+        // GIVEN
+        testedLogGenerator = LogGenerator(
+            fakeServiceName,
+            fakeLoggerName,
+            null,
+            mockUserInfoProvider,
+            fakeEnvName,
+            fakeAppVersion
+        )
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            networkInfo = fakeCustomNetworkInfo
+        )
+
+        // THEN
+        assertThat(log).hasNetworkInfo(fakeCustomNetworkInfo)
     }
 
     @Test

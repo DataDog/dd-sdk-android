@@ -38,7 +38,10 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
                 userAttributes
             )
         } catch (e: JsonParseException) {
-            sdkLogger.e("Error while trying to deserialize the serialized RumEvent: $model", e)
+            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
+            null
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
             null
         }
     }
@@ -93,5 +96,7 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
         const val EVENT_TYPE_RESOURCE = "resource"
         const val EVENT_TYPE_ACTION = "action"
         const val EVENT_TYPE_ERROR = "error"
+        const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
+            "Error while trying to deserialize the serialized RumEvent: %s"
     }
 }
