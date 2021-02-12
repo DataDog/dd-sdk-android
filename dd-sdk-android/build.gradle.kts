@@ -33,7 +33,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("apiSurface")
-    id("jsonschema2poko")
     id("transitiveDependencies")
     id("org.jetbrains.dokka")
     id("com.jfrog.bintray")
@@ -153,19 +152,7 @@ unMock {
 
 apply(from = "clone_dd_trace.gradle.kts")
 apply(from = "clone_rum_schema.gradle.kts")
-
-jsonSchema2Poko {
-    inputDirPath = "src/main/json"
-    targetPackageName = "com.datadog.android.rum.model"
-    ignoredFiles = arrayOf("_common-schema.json")
-    nameMapping = mapOf(
-        "action-schema.json" to "ActionEvent",
-        "error-schema.json" to "ErrorEvent",
-        "resource-schema.json" to "ResourceEvent",
-        "view-schema.json" to "ViewEvent",
-        "long_task-schema.json" to "LongTaskEvent"
-    )
-}
+apply(from = "generate_pokos.gradle.kts")
 
 kotlinConfig()
 detektConfig(excludes = listOf("**/com/datadog/android/rum/model/**"))
