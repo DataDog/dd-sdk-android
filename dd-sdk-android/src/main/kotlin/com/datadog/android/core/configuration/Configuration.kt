@@ -7,6 +7,7 @@
 package com.datadog.android.core.configuration
 
 import android.os.Build
+import android.os.Looper
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -18,6 +19,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
@@ -26,6 +28,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.net.MalformedURLException
@@ -79,6 +82,7 @@ internal constructor(
             val gesturesTracker: GesturesTracker?,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
+            val longTaskTrackingStrategy: TrackingStrategy?,
             val rumEventMapper: EventMapper<RumEvent>
         ) : Feature()
     }
@@ -236,6 +240,23 @@ internal constructor(
                     userActionTrackingStrategy = provideUserTrackingStrategy(
                         gesturesTracker
                     )
+                )
+            }
+            return this
+        }
+
+        /**
+         * Enable long operations on the main thread to be tracked automatically.
+         * Any long running operation on the main thread will appear as Long Tasks in Datadog
+         * RUM Explorer
+         * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
+         * the Main thread [Looper] is considered as a long task (default 100ms)
+         */
+        @JvmOverloads
+        fun trackLongTasks(longTaskThresholdMs: Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "trackLongTasks") {
+                rumConfig = rumConfig.copy(
+                    longTaskTrackingStrategy = MainLooperLongTaskStrategy(longTaskThresholdMs)
                 )
             }
             return this
@@ -440,6 +461,7 @@ internal constructor(
 
     companion object {
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
+        internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
@@ -466,6 +488,7 @@ internal constructor(
             gesturesTracker = null,
             userActionTrackingStrategy = null,
             viewTrackingStrategy = null,
+            longTaskTrackingStrategy = null,
             rumEventMapper = NoOpEventMapper()
         )
 
