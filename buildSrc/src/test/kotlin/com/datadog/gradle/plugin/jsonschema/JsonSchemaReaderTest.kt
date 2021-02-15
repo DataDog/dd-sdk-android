@@ -34,6 +34,7 @@ class JsonSchemaReaderTest(
 
         val generatedType = testedReader.readSchema(File(inputPath))
 
+        System.out.println(generatedType)
         assertThat(generatedType)
             .overridingErrorMessage(
                 "Expected definition:\n$outputType\nbut was:\n$generatedType"
@@ -67,7 +68,8 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of", User),
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("constant_number", Version),
-                arrayOf("sets", Video)
+                arrayOf("sets", Video),
+                arrayOf("defaults_with_optionals", Bike)
             )
         }
     }

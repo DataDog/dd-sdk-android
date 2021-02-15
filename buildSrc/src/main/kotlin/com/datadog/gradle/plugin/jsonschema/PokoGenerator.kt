@@ -6,20 +6,19 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.MAP
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
+import java.lang.IllegalArgumentException
 
 class PokoGenerator(
     internal val outputDir: File,
@@ -165,17 +164,19 @@ class PokoGenerator(
         docBuilder: CodeBlock.Builder
     ) {
         val varName = property.name.variableName()
-        val nullable = property.optional || property.type is TypeDefinition.Null
-        val type = property.type.asKotlinTypeName(
+        val nullable = (property.optional || property.type is TypeDefinition.Null)
+        val notNullableType = property.type.asKotlinTypeName(
             nestedEnums,
             nestedClasses,
             knownTypes,
             packageName,
             rootTypeName
-        ).copy(nullable = nullable)
-
+        )
+        val type = notNullableType.copy(nullable = nullable)
         val constructorParamBuilder = ParameterSpec.builder(varName, type)
-        if (nullable) {
+        if (property.defaultValue != null) {
+            appendDefaultConstructorValue(property, constructorParamBuilder, notNullableType)
+        } else if (nullable) {
             constructorParamBuilder.defaultValue("null")
         }
         constructorBuilder.addParameter(constructorParamBuilder.build())
@@ -189,6 +190,43 @@ class PokoGenerator(
 
         if (property.type.description.isNotBlank()) {
             docBuilder.add("@param $varName ${property.type.description}\n")
+        }
+    }
+
+    /**
+     * Appends property default constructor value.
+     * @param property the property type
+     * @param constructorParamBuilder the `data class` constructor builder.
+     * @param propertyTypeName Kotlin Poet equivalent property [TypeName]
+     */
+    private fun appendDefaultConstructorValue(
+        property: TypeProperty,
+        constructorParamBuilder: ParameterSpec.Builder,
+        propertyTypeName: TypeName
+    ) {
+        val type = property.type
+        when (type) {
+            is TypeDefinition.Primitive -> {
+                constructorParamBuilder.defaultValue(
+                    getKotlinValue(
+                        property.defaultValue,
+                        type.type
+                    )
+                )
+            }
+            is TypeDefinition.Enum -> {
+                constructorParamBuilder.defaultValue(
+                    "%T.%L",
+                    propertyTypeName,
+                    (property.defaultValue as String).enumConstantName()
+                )
+            }
+            else -> {
+                throw IllegalArgumentException(
+                    "Unable to generate default value " +
+                        "for class: $type. This feature is not supported yet"
+                )
+            }
         }
     }
 
@@ -247,21 +285,10 @@ class PokoGenerator(
     ) {
         val varName = name.variableName()
         val constantValue = definition.value
-        val propertyBuilder = if (constantValue is String) {
-            PropertySpec.builder(varName, STRING)
-                .initializer("\"$constantValue\"")
-        } else if (constantValue is Double && definition.type == JsonType.INTEGER) {
-            PropertySpec.builder(varName, LONG)
-                .initializer("${constantValue.toLong()}L")
-        } else if (constantValue is Double) {
-            PropertySpec.builder(varName, DOUBLE)
-                .initializer("$constantValue")
-        } else if (constantValue is Boolean) {
-            PropertySpec.builder(varName, BOOLEAN)
-                .initializer("$constantValue")
-        } else {
-            throw IllegalStateException("Unable to generate constant type $definition")
-        }
+        val constantType = definition.type.asKotlinTypeName()
+        val constantDefinitionForType = getKotlinValue(constantValue, definition.type)
+        val propertyBuilder = PropertySpec.builder(varName, constantType)
+            .initializer(constantDefinitionForType)
 
         if (definition.description.isNotBlank()) {
             propertyBuilder.addKdoc(definition.description)
@@ -318,6 +345,30 @@ class PokoGenerator(
         }
 
         typeBuilder.addFunction(serializerGenerator.generateClassSerializer(definition))
+    }
+
+    /**
+     * Generates the value definition for a specific type [JsonPrimitiveType] or [JsonType].
+     * @param constantValue
+     * @param type the type of the value ]
+     */
+    private fun getKotlinValue(
+        constantValue: Any?,
+        type: Any?
+    ): String {
+        return if (constantValue is String) {
+            "\"$constantValue\""
+        } else if (constantValue is Double &&
+            (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER)
+        ) {
+            "${constantValue.toLong()}L"
+        } else if (constantValue is Double) {
+            "$constantValue"
+        } else if (constantValue is Boolean) {
+            "$constantValue"
+        } else {
+            throw IllegalStateException("Unable to generate constant type $type")
+        }
     }
 
     // endregion

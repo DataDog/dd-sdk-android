@@ -254,7 +254,15 @@ class JsonSchemaReader(
                 property,
                 name.toCamelCase()
             )
-            properties.add(TypeProperty(name, propertyType, !required, readOnly))
+            properties.add(
+                TypeProperty(
+                    name,
+                    propertyType,
+                    !required,
+                    readOnly,
+                    property.default
+                )
+            )
         }
         val additional = definition.additionalProperties?.let { transform(it, "?") }
 

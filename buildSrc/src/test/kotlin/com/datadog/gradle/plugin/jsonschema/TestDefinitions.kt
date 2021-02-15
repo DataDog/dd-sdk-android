@@ -42,8 +42,16 @@ val Book = TypeDefinition.Class(
             "author", TypeDefinition.Class(
                 name = "Author",
                 properties = listOf(
-                    TypeProperty("firstName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-                    TypeProperty("lastName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+                    TypeProperty(
+                        "firstName",
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                        false
+                    ),
+                    TypeProperty(
+                        "lastName",
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                        false
+                    ),
                     TypeProperty(
                         "contact",
                         TypeDefinition.Class(
@@ -88,7 +96,11 @@ val Comment = TypeDefinition.Class(
             TypeDefinition.Class(
                 name = "Ratings",
                 properties = listOf(
-                    TypeProperty("global", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false)
+                    TypeProperty(
+                        "global",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        false
+                    )
                 ),
                 additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
             ),
@@ -171,8 +183,16 @@ val DateTime = TypeDefinition.Class(
                 name = "Time",
                 properties = listOf(
                     TypeProperty("hour", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
-                    TypeProperty("minute", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
-                    TypeProperty("seconds", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+                    TypeProperty(
+                        "minute",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        true
+                    ),
+                    TypeProperty(
+                        "seconds",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        true
+                    )
                 )
             ),
             true
@@ -301,7 +321,10 @@ val Opus = TypeDefinition.Class(
                     properties = listOf(
                         TypeProperty(
                             "name",
-                            TypeDefinition.Primitive(JsonPrimitiveType.STRING, "The artist's name."),
+                            TypeDefinition.Primitive(
+                                JsonPrimitiveType.STRING,
+                                "The artist's name."
+                            ),
                             true
                         ),
                         TypeProperty(
@@ -346,6 +369,72 @@ val Product = TypeDefinition.Class(
         TypeProperty("productId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
         TypeProperty("productName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
         TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE), false)
+    )
+)
+
+val Bike = TypeDefinition.Class(
+    name = "Bike",
+    properties = listOf(
+        TypeProperty(
+            "productId",
+            TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+            false,
+            defaultValue = 1.0
+        ),
+        TypeProperty(
+            "productName",
+            TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            false
+        ),
+        TypeProperty(
+            "type",
+            TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            true,
+            defaultValue = "road"
+        ),
+        TypeProperty(
+            "price",
+            TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE),
+            false,
+            defaultValue = 55.5
+        ),
+        TypeProperty(
+            "frameMaterial",
+            TypeDefinition.Enum(
+                name = "FrameMaterial",
+                type = JsonType.STRING,
+                values = listOf(
+                    "carbon",
+                    "light_aluminium",
+                    "iron"
+                )
+            ),
+            true,
+            defaultValue = "light_aluminium"
+        ),
+        TypeProperty(
+            "inStock",
+            TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
+            false,
+            defaultValue = true
+        ),
+        TypeProperty(
+            "color",
+            TypeDefinition.Enum(
+                name = "Color",
+                type = JsonType.STRING,
+                values = listOf(
+                    "red",
+                    "amber",
+                    "green",
+                    "dark_blue",
+                    "lime green",
+                    "sunburst-yellow"
+                )
+            ),
+            false,
+            defaultValue = "lime green"
+        )
     )
 )
 
@@ -444,12 +533,18 @@ val Video = TypeDefinition.Class(
         TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
         TypeProperty(
             "tags",
-            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING), uniqueItems = true),
+            TypeDefinition.Array(
+                TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                uniqueItems = true
+            ),
             true
         ),
         TypeProperty(
             "links",
-            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING), uniqueItems = true),
+            TypeDefinition.Array(
+                TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                uniqueItems = true
+            ),
             true
         )
     )
