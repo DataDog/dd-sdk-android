@@ -7,9 +7,9 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.domain.FilePersistenceStrategy
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoSerializer
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.model.NetworkInfo
 import java.io.File
 import java.util.concurrent.ExecutorService
 

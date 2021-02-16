@@ -9,10 +9,10 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.constraints.DataConstraints
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -285,10 +285,10 @@ internal class SpanSerializerTest {
             assertThat(jsonObject).apply {
                 hasField(
                     LogAttributes.NETWORK_CONNECTIVITY,
-                    networkInfo.connectivity.serialized
+                    networkInfo.connectivity.toJson().asString
                 )
                 if (!networkInfo.carrierName.isNullOrBlank()) {
-                    hasField(LogAttributes.NETWORK_CARRIER_NAME, networkInfo.carrierName)
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, networkInfo.carrierName!!)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }

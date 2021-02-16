@@ -6,13 +6,13 @@
 
 package com.datadog.android.core.internal.net.info
 
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,88 +37,13 @@ internal class NetworkInfoSerializerTest {
     }
 
     @Test
-    fun `M serialize the model W serialize`(@Forgery networkInfo: NetworkInfo, forge: Forge) {
-        // GIVEN
-        val fakeNetworkInfo = networkInfo.copy(
-            carrierName = forge.aString(),
-            cellularTechnology = forge.aString()
-        )
+    fun `M serialize the model W serialize`(@Forgery fakeNetworkInfo: NetworkInfo, forge: Forge) {
         // WHEN
         val serializedObject = testedSerializer.serialize(fakeNetworkInfo)
-        val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
 
         // THEN
-        assertThat(jsonObject)
-            .hasField(NetworkInfoSerializer.CARRIER_NAME, fakeNetworkInfo.carrierName!!)
-            .hasField(NetworkInfoSerializer.CARRIER_ID, fakeNetworkInfo.carrierId)
-            .hasField(
-                NetworkInfoSerializer.CELLULAR_TECHNOLOGY,
-                fakeNetworkInfo.cellularTechnology!!
-            )
-            .hasField(NetworkInfoSerializer.STRENGTH, fakeNetworkInfo.strength)
-            .hasField(NetworkInfoSerializer.DOWN_KBPS, fakeNetworkInfo.downKbps)
-            .hasField(NetworkInfoSerializer.UP_KBPS, fakeNetworkInfo.upKbps)
-            .hasField(
-                NetworkInfoSerializer.CONNECTIVITY,
-                fakeNetworkInfo.connectivity.toString()
-            )
-    }
+        val deserializedObject = NetworkInfo.fromJson(serializedObject)
 
-    @Test
-    fun `M serialize the model W serialize {carrierName is null}`(
-        @Forgery networkInfo: NetworkInfo,
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeNetworkInfo =
-            networkInfo.copy(carrierName = null, cellularTechnology = forge.aString())
-
-        // WHEN
-        val serializedObject = testedSerializer.serialize(fakeNetworkInfo)
-        val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-
-        // THEN
-        assertThat(jsonObject)
-            .doesNotHaveField(NetworkInfoSerializer.CARRIER_NAME)
-            .hasField(NetworkInfoSerializer.CARRIER_ID, fakeNetworkInfo.carrierId)
-            .hasField(
-                NetworkInfoSerializer.CELLULAR_TECHNOLOGY,
-                fakeNetworkInfo.cellularTechnology!!
-            )
-            .hasField(NetworkInfoSerializer.STRENGTH, fakeNetworkInfo.strength)
-            .hasField(NetworkInfoSerializer.DOWN_KBPS, fakeNetworkInfo.downKbps)
-            .hasField(NetworkInfoSerializer.UP_KBPS, fakeNetworkInfo.upKbps)
-            .hasField(
-                NetworkInfoSerializer.CONNECTIVITY,
-                fakeNetworkInfo.connectivity.toString()
-            )
-    }
-
-    @Test
-    fun `M serialize the model W serialize {cellular technology is null}`(
-        @Forgery networkInfo: NetworkInfo,
-        forge: Forge
-    ) {
-
-        // GIVEN
-        val fakeNetworkInfo =
-            networkInfo.copy(cellularTechnology = null, carrierName = forge.aString())
-
-        // WHEN
-        val serializedObject = testedSerializer.serialize(fakeNetworkInfo)
-        val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-
-        // THEN
-        assertThat(jsonObject)
-            .doesNotHaveField(NetworkInfoSerializer.CELLULAR_TECHNOLOGY)
-            .hasField(NetworkInfoSerializer.CARRIER_ID, fakeNetworkInfo.carrierId)
-            .hasField(NetworkInfoSerializer.CARRIER_NAME, fakeNetworkInfo.carrierName!!)
-            .hasField(NetworkInfoSerializer.STRENGTH, fakeNetworkInfo.strength)
-            .hasField(NetworkInfoSerializer.DOWN_KBPS, fakeNetworkInfo.downKbps)
-            .hasField(NetworkInfoSerializer.UP_KBPS, fakeNetworkInfo.upKbps)
-            .hasField(
-                NetworkInfoSerializer.CONNECTIVITY,
-                fakeNetworkInfo.connectivity.toString()
-            )
+        assertThat(deserializedObject).isEqualTo(fakeNetworkInfo)
     }
 }

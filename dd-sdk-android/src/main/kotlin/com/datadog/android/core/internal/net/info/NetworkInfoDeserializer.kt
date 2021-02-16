@@ -8,34 +8,14 @@ package com.datadog.android.core.internal.net.info
 
 import com.datadog.android.core.internal.domain.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.NetworkInfo
 import com.google.gson.JsonParseException
-import com.google.gson.JsonParser
 
 internal class NetworkInfoDeserializer : Deserializer<NetworkInfo> {
 
     override fun deserialize(model: String): NetworkInfo? {
         return try {
-            val jsonObject = JsonParser.parseString(model).asJsonObject
-            val connectivity = jsonObject.get(NetworkInfoSerializer.CONNECTIVITY)?.let {
-                NetworkInfo.Connectivity.valueOf(it.asString)
-            } ?: NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-            val carrierId = jsonObject.get(NetworkInfoSerializer.CARRIER_ID).asInt
-            val upKbs = jsonObject.get(NetworkInfoSerializer.UP_KBPS).asInt
-            val downKbs = jsonObject.get(NetworkInfoSerializer.DOWN_KBPS).asInt
-            val strength = jsonObject.get(NetworkInfoSerializer.STRENGTH).asInt
-            val carrierName = jsonObject.get(NetworkInfoSerializer.CARRIER_NAME)?.asString
-            val cellularTechnology =
-                jsonObject.get(NetworkInfoSerializer.CELLULAR_TECHNOLOGY)?.asString
-
-            NetworkInfo(
-                connectivity,
-                carrierName,
-                carrierId,
-                upKbs,
-                downKbs,
-                strength,
-                cellularTechnology
-            )
+            NetworkInfo.fromJson(model)
         } catch (e: JsonParseException) {
             sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
             null

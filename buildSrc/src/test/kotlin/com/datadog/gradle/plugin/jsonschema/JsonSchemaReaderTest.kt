@@ -34,7 +34,6 @@ class JsonSchemaReaderTest(
 
         val generatedType = testedReader.readSchema(File(inputPath))
 
-        System.out.println(generatedType)
         assertThat(generatedType)
             .overridingErrorMessage(
                 "Expected definition:\n$outputType\nbut was:\n$generatedType"

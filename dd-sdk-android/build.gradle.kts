@@ -20,7 +20,6 @@ import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
-import org.jetbrains.kotlin.kapt3.base.Kapt.kapt
 
 plugins {
     id("com.android.library")
@@ -155,7 +154,11 @@ apply(from = "clone_rum_schema.gradle.kts")
 apply(from = "generate_pokos.gradle.kts")
 
 kotlinConfig()
-detektConfig(excludes = listOf("**/com/datadog/android/rum/model/**"))
+detektConfig(
+    excludes = listOf(
+        "**/com/datadog/android/rum/model/**"
+    )
+)
 ktLintConfig()
 junitConfig()
 jacocoConfig()

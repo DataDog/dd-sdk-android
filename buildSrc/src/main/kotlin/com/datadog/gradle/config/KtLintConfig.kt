@@ -21,7 +21,7 @@ fun Project.ktLintConfig() {
         filter {
             exclude("**/generated/**")
             exclude("**/com/datadog/android/rum/model/**")
-            exclude("**/com/datadog/android/core/internal/model/**")
+            exclude("**/com/datadog/android/core/model/**")
             include("**/kotlin/**")
         }
     }

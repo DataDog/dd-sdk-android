@@ -17,6 +17,7 @@ import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.NetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
@@ -104,7 +105,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
             val telephonyMgr =
                 context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
-            val carrierId = telephonyMgr?.simCarrierId ?: -1
+            val carrierId = telephonyMgr?.simCarrierId?.toLong() ?: -1L
             NetworkInfo(
                 connectivity,
                 carrierName.toString(),

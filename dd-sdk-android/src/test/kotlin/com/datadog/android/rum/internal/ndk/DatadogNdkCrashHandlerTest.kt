@@ -7,8 +7,9 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoSerializer
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
@@ -30,7 +31,6 @@ import com.datadog.android.utils.restoreSdkLogHandler
 import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
@@ -113,7 +113,7 @@ internal class DatadogNdkCrashHandlerTest {
     private var rumEventSerializer = RumEventSerializer()
     private var userInfoEventSerializer = UserInfoSerializer()
     private var networkInfoSerializer = NetworkInfoSerializer()
-
+    private var networkInfoDeserializer = NetworkInfoDeserializer()
     // region Unit Tests
 
     @BeforeEach
