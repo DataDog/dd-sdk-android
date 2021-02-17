@@ -28,6 +28,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
@@ -1135,11 +1136,13 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `M do nothing W enabling RUM { APP_ID not provided }`() {
+        // GIVEN
+        val configBuilder = DatadogConfig.Builder(fakeClientToken, fakeEnvName)
+        reset(mockDevLogHandler)
+
         // WHEN
-        val config =
-            DatadogConfig.Builder(fakeClientToken, fakeEnvName)
-                .setRumEnabled(true)
-                .build()
+        val config = configBuilder.setRumEnabled(true).build()
+
         // THEN
         assertThat(config.rumConfig).isNull()
         verify(mockDevLogHandler).handleLog(
@@ -1150,11 +1153,13 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `M not send any warning W disabling RUM { APP_ID not provided }`() {
+        // GIVEN
+        val configBuilder = DatadogConfig.Builder(fakeClientToken, fakeEnvName)
+        reset(mockDevLogHandler)
+
         // WHEN
-        val config =
-            DatadogConfig.Builder(fakeClientToken, fakeEnvName)
-                .setRumEnabled(false)
-                .build()
+        val config = configBuilder.setRumEnabled(false).build()
+
         // THEN
         assertThat(config.rumConfig).isNull()
         verifyZeroInteractions(mockDevLogHandler)

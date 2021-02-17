@@ -77,29 +77,6 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 disable all features by default 𝕎 build()`() {
-        // Given
-        val builder = Configuration.Builder()
-
-        // When
-        val config = builder.build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.Core(
-                needsClearTextHttp = false,
-                firstPartyHosts = emptyList(),
-                batchSize = BatchSize.MEDIUM,
-                uploadFrequency = UploadFrequency.AVERAGE
-            )
-        )
-        assertThat(config.logsConfig).isNull()
-        assertThat(config.tracesConfig).isNull()
-        assertThat(config.crashReportConfig).isNull()
-        assertThat(config.rumConfig).isNull()
-    }
-
-    @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
         val config = testedBuilder.build()
