@@ -1,3 +1,20 @@
+# 1.8.0 / 2021-02-??
+
+* [BUGFIX] Global: handle correctly incorrect domain names in Interceptors' known hosts
+* [BUGFIX] RUM: RUM Context was bundled in spans even when RUM was not enabled
+* [FEATURE] Global: Allow user to configure the Upload Frequency (see `Configuration.Builder().setUploadFrequency(…).build()`)
+* [FEATURE] Global: Allow user to configure the Batch Size (see `Configuration.Builder().setBatchSize(…).build()`)
+* [FEATURE] RUM: Customize Views' name
+* [FEATURE] RUM: Send NDK Crash related RUM Error
+* [FEATURE] RUM: Track custom timings in RUM Views (see `GlobalRum.get().addTiming("<timing_name>")`)
+* [FEATURE] RUM: Provide a PII Data Scrubbing feature (see `Configuration.Builder().setRum***EventMapper(…).build()`)
+* [FEATURE] RUM: Send NDK Crash related RUM Error
+* [IMPROVEMENT] APM: Stop duplicating APM errors as RUM errors
+* [IMPROVEMENT] Logs Align the 'error.kind' attribute value with RUM Error 'error.type'
+* [IMPROVEMENT] RUM: Get a more accurate Application loading time
+* [IMPROVEMENT] RUM: Duplicate RUM Resource with failures as RUM Error
+* [IMPROVEMENT] RUM: Add a variant tag on RUM events
+
 # 1.7.0 / 2021-01-04
 
 * [BUGFIX] RUM: fix RUM Error timestamps
@@ -55,8 +72,8 @@
 * [FEATURE] RUM: Add helper library to track Glide requests and errors
 * [FEATURE] CrashReport: Add a helper library to detect C/C++ crashes in Android NDK
 * [FEATURE] Global: add a method to clear all local unsent data
-* [BUGFIX] Trace: Fix clock skew issue in traced requests
-* [BUGFIX] Logger: Prevent Logcat noise from our SDK when running Robolectric tests
+* [BUGFIX] APM: Fix clock skew issue in traced requests
+* [BUGFIX] Logs: Prevent Logcat noise from our SDK when running Robolectric tests
 * [IMPROVEMENT] Global: Enhance the SDK performance and ensure it works properly in a multi-process application
 * [OTHER] Global: The DatadogConfig needs a valid environment name (`envName`), applied to all features
 * [OTHER] Global: The serviceName by default will use your application's package name
@@ -78,9 +95,9 @@
 
 * [FEATURE] Global: Update the SDK initialization code
 * [FEATURE] Global: Add a Kotlin extension module with Kotlin specific integrations
-* [FEATURE] Trace: Implement OpenTracing specifications
-* [FEATURE] Trace: Add helper methods to attach an error to a span
-* [FEATURE] Trace: Add helper Interceptor to trace OkHttp requests
+* [FEATURE] APM: Implement OpenTracing specifications
+* [FEATURE] APM: Add helper methods to attach an error to a span
+* [FEATURE] APM: Add helper Interceptor to trace OkHttp requests
 * [FEATURE] Logs: Add sampling option in the Logger
 * [IMPROVEMENT] Logs: Make the log operations thread safe
 * [BUGFIX] Logs: Fix rare crash on upload requests
