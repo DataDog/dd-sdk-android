@@ -35,46 +35,41 @@ internal class RumEventAssert(actual: RumEvent) :
 
     fun hasViewData(assert: ViewEventAssert.() -> Unit): RumEventAssert {
         assertThat(actual.event)
-            .isInstanceOf(ViewEvent::class.java)
-
-        ViewEventAssert(actual.event as ViewEvent).assert()
-
+            .isInstanceOfSatisfying(ViewEvent::class.java) {
+                ViewEventAssert(actual.event as ViewEvent).assert()
+            }
         return this
     }
 
     fun hasResourceData(assert: ResourceEventAssert.() -> Unit): RumEventAssert {
         assertThat(actual.event)
-            .isInstanceOf(ResourceEvent::class.java)
-
-        ResourceEventAssert(actual.event as ResourceEvent).assert()
-
+            .isInstanceOfSatisfying(ResourceEvent::class.java) {
+                ResourceEventAssert(actual.event as ResourceEvent).assert()
+            }
         return this
     }
 
     fun hasActionData(assert: ActionEventAssert.() -> Unit): RumEventAssert {
         assertThat(actual.event)
-            .isInstanceOf(ActionEvent::class.java)
-
-        ActionEventAssert(actual.event as ActionEvent).assert()
-
+            .isInstanceOfSatisfying(ActionEvent::class.java) {
+                ActionEventAssert(actual.event as ActionEvent).assert()
+            }
         return this
     }
 
     fun hasErrorData(assert: ErrorEventAssert.() -> Unit): RumEventAssert {
         assertThat(actual.event)
-            .isInstanceOf(ErrorEvent::class.java)
-
-        ErrorEventAssert(actual.event as ErrorEvent).assert()
-
+            .isInstanceOfSatisfying(ErrorEvent::class.java) {
+                ErrorEventAssert(actual.event as ErrorEvent).assert()
+            }
         return this
     }
 
     fun hasLongTaskData(assert: LongTaskEventAssert.() -> Unit): RumEventAssert {
         assertThat(actual.event)
-            .isInstanceOf(LongTaskEvent::class.java)
-
-        LongTaskEventAssert(actual.event as LongTaskEvent).assert()
-
+            .isInstanceOfSatisfying(LongTaskEvent::class.java) {
+                LongTaskEventAssert(actual.event as LongTaskEvent).assert()
+            }
         return this
     }
 

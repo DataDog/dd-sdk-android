@@ -164,8 +164,7 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount + longTaskCount
-        if (sideEffectsCount > 0 || actualType == RumActionType.CUSTOM) {
+        if (actionCanBeSent(actualType)) {
             attributes.putAll(GlobalRum.globalAttributes)
 
             val context = getRumContext()
@@ -213,6 +212,11 @@ internal class RumActionScope(
             )
         }
         sent = true
+    }
+
+    private fun actionCanBeSent(actualType: RumActionType): Boolean {
+        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount + longTaskCount
+        return sideEffectsCount > 0 || actualType == RumActionType.CUSTOM
     }
 
     // endregion
