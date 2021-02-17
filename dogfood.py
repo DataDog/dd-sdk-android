@@ -92,7 +92,7 @@ def git_push_changes(repo: Repo, version: str):
     repo.git.add(update=True)
     repo.index.commit("Update DD SDK to " + version)
 
-    print("⑊ Pushing branch")
+    print("- Pushing branch")
     origin = repo.remote(name="origin")
     repo.git.push("--set-upstream", "--force", origin, repo.head.ref)
 
