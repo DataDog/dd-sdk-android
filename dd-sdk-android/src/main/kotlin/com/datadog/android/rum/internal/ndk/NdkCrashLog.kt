@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.ndk
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import java.lang.IllegalStateException
 
 internal data class NdkCrashLog(
     val signal: Int,
@@ -36,7 +37,7 @@ internal data class NdkCrashLog(
         internal const val SIGNAL_NAME_KEY_NAME = "signal_name"
         internal const val STACKTRACE_KEY_NAME = "stacktrace"
 
-        @Throws(JsonParseException::class)
+        @Throws(JsonParseException::class, IllegalStateException::class)
         internal fun fromJson(jsonString: String): NdkCrashLog {
             val jsonObject = JsonParser.parseString(jsonString).asJsonObject
             return NdkCrashLog(

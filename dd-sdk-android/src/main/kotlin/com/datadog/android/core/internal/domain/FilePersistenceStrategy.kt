@@ -34,20 +34,18 @@ internal open class FilePersistenceStrategy<T : Any>(
     fileWriterFactory: (Orchestrator, Serializer<T>, CharSequence) -> Writer<T> =
         { fileOrchestrator, eventSerializer, eventSeparator ->
             ImmediateFileWriter(fileOrchestrator, eventSerializer, eventSeparator)
-        }
-) : PersistenceStrategy<T> {
-
-    internal val intermediateFileOrchestrator = FileOrchestrator(
+        },
+    val intermediateFileOrchestrator: Orchestrator = FileOrchestrator(
         intermediateStorageFolder,
         filePersistenceConfig
-    )
-
-    internal val authorizedFileOrchestrator = FileOrchestrator(
+    ),
+    val authorizedFileOrchestrator: Orchestrator = FileOrchestrator(
         authorizedStorageFolder,
         filePersistenceConfig
     )
+) : PersistenceStrategy<T> {
 
-    internal val fileReader = FileReader(
+    val fileReader = FileReader(
         authorizedFileOrchestrator,
         authorizedStorageFolder,
         payloadDecoration.prefix,

@@ -12,6 +12,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
@@ -50,10 +51,15 @@ internal class CallbackNetworkInfoProviderTest {
 
     @Mock
     lateinit var mockNetwork: Network
+
     @Mock
     lateinit var mockCapabilities: NetworkCapabilities
+
     @Mock
     lateinit var mockDevLogHandler: LogHandler
+
+    @Mock
+    lateinit var mockConsentAwareWriter: ConsentAwareDataWriter<NetworkInfo>
 
     @BeforeEach
     fun `set up`() {
@@ -61,7 +67,7 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.hasTransport(any())) doReturn false
 
         testedProvider =
-            CallbackNetworkInfoProvider()
+            CallbackNetworkInfoProvider(mockConsentAwareWriter)
     }
 
     @Test
@@ -314,6 +320,26 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M delegate to persister with new NetworkInfo W register()`(
+        @IntForgery(min = 1) upSpeed: Int,
+        @IntForgery(min = 1) downSpeed: Int
+    ) {
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.activeNetwork) doReturn mockNetwork
+        whenever(manager.getNetworkCapabilities(mockNetwork)) doReturn mockCapabilities
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
+        whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
+        whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
+
+        testedProvider.register(context)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        verify(mockConsentAwareWriter).write(networkInfo)
+    }
+
+    @Test
     fun `M register callback safely W register() with SecurityException`(
         @StringForgery message: String
     ) {
@@ -390,6 +416,21 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M delegate to persister with new NetworkInfo W register() with RuntimeException`(
+        @StringForgery message: String
+    ) {
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = RuntimeException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+
+        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
+    }
+
+    @Test
     fun `M assume network is available W register() with SecurityException + getLatestNetworkInfo`(
         @StringForgery message: String
     ) {
@@ -409,6 +450,21 @@ internal class CallbackNetworkInfoProviderTest {
             .hasCarrierId(-1)
             .hasUpSpeed(-1)
             .hasDownSpeed(-1)
+    }
+
+    @Test
+    fun `M delegate to persister with new NetworkInfo W register() with SecurityException`(
+        @StringForgery message: String
+    ) {
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        val exception = SecurityException(message)
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(manager.registerDefaultNetworkCallback(testedProvider)) doThrow exception
+
+        testedProvider.register(context)
+
+        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
     }
 
     @Test
@@ -520,5 +576,14 @@ internal class CallbackNetworkInfoProviderTest {
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER,
                 exception
             )
+    }
+
+    @Test
+    fun `M delegate to persister W capabilities changed`() {
+        // WHEN
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+
+        // THEN
+        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
     }
 }

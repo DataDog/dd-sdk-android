@@ -12,15 +12,22 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 
 @TargetApi(Build.VERSION_CODES.N)
-internal class CallbackNetworkInfoProvider :
+internal class CallbackNetworkInfoProvider(
+    private val consentAwareDataWriter: ConsentAwareDataWriter<NetworkInfo>
+) :
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
-    private var networkInfo: NetworkInfo = NetworkInfo()
+    private var lastNetworkInfo: NetworkInfo = NetworkInfo()
+        set(value) {
+            field = value
+            consentAwareDataWriter.write(field)
+        }
 
     // region NetworkCallback
 
@@ -28,7 +35,7 @@ internal class CallbackNetworkInfoProvider :
         super.onCapabilitiesChanged(network, networkCapabilities)
         sdkLogger.v("onCapabilitiesChanged $network $networkCapabilities")
 
-        networkInfo = NetworkInfo(
+        lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
             upKbps = networkCapabilities.linkUpstreamBandwidthKbps,
             downKbps = networkCapabilities.linkDownstreamBandwidthKbps,
@@ -39,10 +46,7 @@ internal class CallbackNetworkInfoProvider :
     override fun onLost(network: Network) {
         super.onLost(network)
         sdkLogger.i("onLost $network")
-        networkInfo =
-            NetworkInfo(
-                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-            )
+        lastNetworkInfo = NetworkInfo(connectivity = NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
     }
 
     // endregion
@@ -70,13 +74,13 @@ internal class CallbackNetworkInfoProvider :
             // RUMM-852 On some devices we get a SecurityException with message
             // "package does not belong to xxxx"
             devLogger.e(ERROR_REGISTER, e)
-            networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+            lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
         } catch (e: RuntimeException) {
             // RUMM-918 in some cases the device throws a IllegalArgumentException on register
             // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
             // called too many times without matching unregisterNetworkCallback
             devLogger.e(ERROR_REGISTER, e)
-            networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+            lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
         }
     }
 
@@ -104,7 +108,7 @@ internal class CallbackNetworkInfoProvider :
     }
 
     override fun getLatestNetworkInfo(): NetworkInfo {
-        return networkInfo
+        return lastNetworkInfo
     }
 
     // endregion

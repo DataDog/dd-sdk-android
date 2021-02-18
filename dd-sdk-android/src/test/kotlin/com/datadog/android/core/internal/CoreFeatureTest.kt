@@ -29,6 +29,8 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -86,8 +88,10 @@ internal class CoreFeatureTest {
 
     @StringForgery
     lateinit var fakePackageName: String
+
     @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
+
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
@@ -535,6 +539,23 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
+        // Given
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        CoreFeature.stop()
+
+        // Then
+        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+    }
+
+    @Test
     fun `𝕄 cleanup app info 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
@@ -651,6 +672,57 @@ internal class CoreFeatureTest {
             .isEqualTo(FilePersistenceConfig.MAX_ITEMS_PER_BATCH)
         assertThat(config.recentDelayMs)
             .isEqualTo(fakeConfig.batchSize.windowDurationMs)
+    }
+
+    @Test
+    fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {main process}`(
+        @StringForgery otherProcessName: String
+    ) {
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+            mockActivityManager
+        )
+        val myProcess = forgeAppProcessInfo(Process.myPid(), fakePackageName)
+        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
+        whenever(mockActivityManager.runningAppProcesses)
+            .thenReturn(listOf(myProcess, otherProcess))
+
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(DatadogNdkCrashHandler::class.java)
+    }
+
+    @Test
+    fun `𝕄 not initialize the NdkCrashHandler data 𝕎 initialize() {not main process}`(
+        @StringForgery otherProcessName: String
+    ) {
+        // Given
+        val mockActivityManager = mock<ActivityManager>()
+        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+            mockActivityManager
+        )
+        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
+        whenever(mockActivityManager.runningAppProcesses)
+            .thenReturn(listOf(myProcess))
+
+        // When
+        CoreFeature.initialize(
+            mockAppContext,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
     }
 
     // region Internal

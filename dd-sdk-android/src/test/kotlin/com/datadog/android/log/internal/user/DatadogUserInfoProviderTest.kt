@@ -6,7 +6,9 @@
 
 package com.datadog.android.log.internal.user
 
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -14,16 +16,23 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(Configurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogUserInfoProviderTest {
 
     lateinit var testedProvider: DatadogUserInfoProvider
 
+    @Mock
+    lateinit var mockConsentAwareWriter: ConsentAwareDataWriter<UserInfo>
+
     @BeforeEach
     fun `set up`() {
-        testedProvider = DatadogUserInfoProvider()
+        testedProvider = DatadogUserInfoProvider(mockConsentAwareWriter)
     }
 
     @Test
@@ -45,5 +54,14 @@ internal class DatadogUserInfoProviderTest {
 
         // Then
         assertThat(result).isEqualTo(userInfo)
+    }
+
+    @Test
+    fun `M delegate to persister W setUserInfo`(@Forgery userInfo: UserInfo) {
+        // When
+        testedProvider.setUserInfo(userInfo)
+
+        // Then
+        verify(mockConsentAwareWriter).write(userInfo)
     }
 }

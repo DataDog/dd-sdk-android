@@ -339,7 +339,8 @@ class JsonObjectAssert(actual: JsonObject) :
     ): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
-                "Expected json object to have field named $name but couldn't find one"
+                "Expected json object to have field named %s but couldn't find one",
+                name
             )
             .isTrue()
 
@@ -348,13 +349,17 @@ class JsonObjectAssert(actual: JsonObject) :
             is JsonPrimitive -> {
                 assertThat(element is JsonPrimitive)
                     .overridingErrorMessage(
-                        "Expected json object to have primitive field named $name but was $element"
+                        "Expected json object to have primitive field named %s but was %s",
+                        name,
+                        element
                     ).isTrue()
             }
             is JsonObject -> {
                 assertThat(element is JsonObject)
                     .overridingErrorMessage(
-                        "Expected json object to have object field named $name but was $element"
+                        "Expected json object to have object field named %s but was %s",
+                        name,
+                        element
                     ).isTrue()
                 expectedValue.keySet().forEach {
                     assertThat(element as JsonObject).hasField(it, expectedValue.get(it))
@@ -363,7 +368,9 @@ class JsonObjectAssert(actual: JsonObject) :
             is JsonArray -> {
                 assertThat(element is JsonArray)
                     .overridingErrorMessage(
-                        "Expected json object to have array field named $name but was $element"
+                        "Expected json object to have array field named %s but was %s",
+                        name,
+                        element
                     ).isTrue()
                 expectedValue.forEach {
                     assertThat(element as JsonArray).contains(it)
@@ -372,7 +379,9 @@ class JsonObjectAssert(actual: JsonObject) :
             is JsonNull -> {
                 assertThat(element is JsonNull)
                     .overridingErrorMessage(
-                        "Expected json object to have null field named $name but was $element"
+                        "Expected json object to have null field named %s but was %s",
+                        name,
+                        element
                     ).isTrue()
             }
         }
@@ -391,15 +400,17 @@ class JsonObjectAssert(actual: JsonObject) :
     ): JsonObjectAssert {
         assertThat(actual.has(name))
             .overridingErrorMessage(
-                "Expected json object to have field named $name but couldn't find one"
+                "Expected json object to have field named %s but couldn't find one",
+                name
             )
             .isTrue()
 
         val element = actual.get(name)
         assertThat(element is JsonObject)
             .overridingErrorMessage(
-                "Expected json object to have object field $name " +
-                    "but was ${element.javaClass.simpleName}"
+                "Expected json object to have object field %s but was %s",
+                name,
+                element.javaClass.simpleName
             )
             .isTrue()
 

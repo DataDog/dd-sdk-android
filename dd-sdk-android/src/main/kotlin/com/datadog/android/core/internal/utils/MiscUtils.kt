@@ -35,6 +35,7 @@ internal fun Any?.toJsonElement(): JsonElement {
     return when (this) {
         NULL_MAP_VALUE -> JsonNull.INSTANCE
         null -> JsonNull.INSTANCE
+        JsonNull.INSTANCE -> JsonNull.INSTANCE
         is Boolean -> JsonPrimitive(this)
         is Int -> JsonPrimitive(this)
         is Long -> JsonPrimitive(this)

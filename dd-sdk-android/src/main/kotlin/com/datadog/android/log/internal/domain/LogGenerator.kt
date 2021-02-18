@@ -6,8 +6,10 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import io.opentracing.util.GlobalTracer
@@ -43,7 +45,9 @@ internal class LogGenerator(
         timestamp: Long,
         threadName: String? = null,
         bundleWithTraces: Boolean = true,
-        bundleWithRum: Boolean = true
+        bundleWithRum: Boolean = true,
+        userInfo: UserInfo? = null,
+        networkInfo: NetworkInfo? = null
     ): Log {
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
         val combinedTags = resolveTags(tags)
@@ -55,8 +59,8 @@ internal class LogGenerator(
             throwable = throwable,
             attributes = combinedAttributes,
             tags = combinedTags.toList(),
-            networkInfo = networkInfoProvider?.getLatestNetworkInfo(),
-            userInfo = userInfoProvider.getUserInfo(),
+            networkInfo = networkInfo ?: networkInfoProvider?.getLatestNetworkInfo(),
+            userInfo = userInfo ?: userInfoProvider.getUserInfo(),
             loggerName = loggerName,
             threadName = threadName ?: Thread.currentThread().name
         )

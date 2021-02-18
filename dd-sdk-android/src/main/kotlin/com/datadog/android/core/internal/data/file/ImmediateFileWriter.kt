@@ -12,16 +12,13 @@ import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.core.internal.utils.use
 import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
 
 internal open class ImmediateFileWriter<T : Any>(
     internal val fileOrchestrator: Orchestrator,
     private val serializer: Serializer<T>,
-    separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator
+    separator: CharSequence = PayloadDecoration.JSON_ARRAY_DECORATION.separator,
+    protected val fileHandler: FileHandler = FileHandler()
 ) : Writer<T> {
 
     private val separatorBytes = separator.toString().toByteArray(Charsets.UTF_8)
@@ -40,53 +37,39 @@ internal open class ImmediateFileWriter<T : Any>(
 
     // endregion
 
-    @SuppressWarnings("TooGenericExceptionCaught")
-    private fun consume(model: T) {
-        serialiseEvent(model)?.let {
-            persistData(it, model)
-        }
-    }
-
     // region Protected
 
-    protected open fun writeData(data: ByteArray, model: T) {
-        val file = try {
+    protected open fun writeData(data: ByteArray, model: T): Boolean {
+        val file = getFile(data)
+
+        if (file != null) {
+            return fileHandler.writeData(file, data, true, separatorBytes)
+        } else {
+            sdkLogger.e("Could not get a valid file")
+        }
+
+        return false
+    }
+
+    protected fun getFile(data: ByteArray): File? {
+        return try {
             fileOrchestrator.getWritableFile(data.size)
         } catch (e: SecurityException) {
             sdkLogger.e("Unable to access batch file directory", e)
             null
-        }
-
-        if (file != null) {
-            writeDataToFile(file, data)
-        } else {
-            sdkLogger.e("Could not get a valid file")
-        }
-    }
-
-    protected fun writeDataToFile(
-        file: File,
-        dataAsByteArray: ByteArray,
-        append: Boolean = true,
-        withSeparator: Boolean = true
-    ) {
-        try {
-            val outputStream = FileOutputStream(file, append)
-            outputStream.use { stream ->
-                lockFileAndWriteData(stream, file, dataAsByteArray, withSeparator)
-            }
-        } catch (e: IllegalStateException) {
-            sdkLogger.e("Exception when trying to lock the file: [${file.canonicalPath}] ", e)
-        } catch (e: FileNotFoundException) {
-            sdkLogger.e("Couldn't create an output stream to file ${file.path}", e)
-        } catch (e: IOException) {
-            sdkLogger.e("Exception when trying to write data to: [${file.canonicalPath}] ", e)
         }
     }
 
     // endregion
 
     // region Internal
+
+    @SuppressWarnings("TooGenericExceptionCaught")
+    private fun consume(model: T) {
+        serialiseEvent(model)?.let {
+            checkDataSizeAndWrite(it, model)
+        }
+    }
 
     @SuppressWarnings("TooGenericExceptionCaught")
     private fun serialiseEvent(model: T): String? {
@@ -98,27 +81,12 @@ internal open class ImmediateFileWriter<T : Any>(
         }
     }
 
-    private fun persistData(data: String, model: T) {
+    private fun checkDataSizeAndWrite(data: String, model: T) {
         if (data.length >= MAX_ITEM_SIZE) {
             devLogger.e("Unable to persist data, serialized size is too big\n$data")
         } else {
             synchronized(this) {
                 writeData(data.toByteArray(Charsets.UTF_8), model)
-            }
-        }
-    }
-
-    private fun lockFileAndWriteData(
-        stream: FileOutputStream,
-        file: File,
-        dataAsByteArray: ByteArray,
-        withSeparator: Boolean = true
-    ) {
-        stream.channel.lock().use {
-            if (file.length() > 0 && withSeparator) {
-                stream.write(separatorBytes + dataAsByteArray)
-            } else {
-                stream.write(dataAsByteArray)
             }
         }
     }
