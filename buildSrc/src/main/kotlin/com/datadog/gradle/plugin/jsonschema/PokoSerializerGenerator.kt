@@ -45,7 +45,10 @@ class PokoSerializerGenerator {
 
         when (additionalProperties) {
             is TypeDefinition.Primitive -> funBuilder.addStatement("json.addProperty(k, v)")
-            is TypeDefinition.Class,
+            is TypeDefinition.Class -> funBuilder.addStatement(
+                "json.add(k, v.%L())",
+                TO_JSON_ELEMENT
+            )
             is TypeDefinition.Enum -> funBuilder.addStatement("json.add(k, v.%L()) }", TO_JSON)
             is TypeDefinition.Null -> funBuilder.addStatement("json.add(k, null) }")
             is TypeDefinition.Array -> throw IllegalStateException(
@@ -126,7 +129,8 @@ class PokoSerializerGenerator {
             funBuilder.addStatement(
                 "json.add(%S, %L.%L())",
                 property.name,
-                varName, TO_JSON
+                varName,
+                TO_JSON
             )
         }
     }
@@ -145,8 +149,10 @@ class PokoSerializerGenerator {
         }
 
         funBuilder.addStatement(
-            "val %LArray = %T(%L.size)", varName,
-            JSON_ARRAY, arrayVar
+            "val %LArray = %T(%L.size)",
+            varName,
+            JSON_ARRAY,
+            arrayVar
         )
         when (type.items) {
             is TypeDefinition.Null,
@@ -224,6 +230,7 @@ class PokoSerializerGenerator {
     companion object {
 
         private const val TO_JSON = "toJson"
+        private const val TO_JSON_ELEMENT = "toJsonElement"
         private val JSON_ELEMENT = ClassName.bestGuess("com.google.gson.JsonElement")
         private val JSON_OBJECT = ClassName.bestGuess("com.google.gson.JsonObject")
         private val JSON_ARRAY = ClassName.bestGuess("com.google.gson.JsonArray")

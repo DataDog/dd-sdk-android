@@ -100,20 +100,24 @@ fun Project.bintrayConfig() {
         override = true
         publish = true
 
-        pkg(delegateClosureOf<BintrayExtension.PackageConfig> {
-            repo = "datadog-maven"
-            name = projectName
-            userOrg = "datadog"
-            desc = "Datadog SDK fot Android"
-            websiteUrl = "https://www.datadoghq.com/"
-            setLicenses("Apache-2.0")
-            githubRepo = "DataDog/dd-sdk-android"
-            githubReleaseNotesFile = "README.md"
-            vcsUrl = "https://github.com/DataDog/dd-sdk-android.git"
+        pkg(
+            delegateClosureOf<BintrayExtension.PackageConfig> {
+                repo = "datadog-maven"
+                name = projectName
+                userOrg = "datadog"
+                desc = "Datadog SDK fot Android"
+                websiteUrl = "https://www.datadoghq.com/"
+                setLicenses("Apache-2.0")
+                githubRepo = "DataDog/dd-sdk-android"
+                githubReleaseNotesFile = "README.md"
+                vcsUrl = "https://github.com/DataDog/dd-sdk-android.git"
 
-            version(delegateClosureOf<BintrayExtension.VersionConfig> {
-                name = AndroidConfig.VERSION.name
-            })
-        })
+                version(
+                    delegateClosureOf<BintrayExtension.VersionConfig> {
+                        name = AndroidConfig.VERSION.name
+                    }
+                )
+            }
+        )
     }
 }

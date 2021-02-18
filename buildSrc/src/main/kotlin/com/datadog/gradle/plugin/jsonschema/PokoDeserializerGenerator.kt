@@ -84,19 +84,24 @@ class PokoDeserializerGenerator(
         appendDeserializerFunctionBlock(funBuilder, definition)
 
         funBuilder.nextControlFlow(
-            "catch (%L: %T)", EXEPTION_VAR_NAME, ILLEGAL_STATE_EXCEPTION
+            "catch (%L: %T)",
+            EXCEPTION_VAR_NAME,
+            ILLEGAL_STATE_EXCEPTION
         )
         funBuilder.addStatement(
             "throw %T(%L.message)",
-            JSON_PARSE_EXCEPTION, EXEPTION_VAR_NAME
+            JSON_PARSE_EXCEPTION,
+            EXCEPTION_VAR_NAME
         )
         funBuilder.nextControlFlow(
-            "catch (%L: %T)", EXEPTION_VAR_NAME,
+            "catch (%L: %T)",
+            EXCEPTION_VAR_NAME,
             NUMBER_FORMAT_EXCEPTION
         )
         funBuilder.addStatement(
             "throw %T(%L.message)",
-            JSON_PARSE_EXCEPTION, EXEPTION_VAR_NAME
+            JSON_PARSE_EXCEPTION,
+            EXCEPTION_VAR_NAME
         )
         funBuilder.endControlFlow()
         return funBuilder.build()
@@ -162,7 +167,7 @@ class PokoDeserializerGenerator(
             "val %L = mutableMapOf<%T, %T>()",
             PokoGenerator.ADDITIONAL_PROPERTIES_NAME,
             STRING,
-            additionalProperties.asKotlinTypeName(
+            additionalProperties.additionalPropertyType(
                 nestedEnums,
                 nestedClasses,
                 knownTypes,
@@ -176,13 +181,20 @@ class PokoDeserializerGenerator(
             funBuilder.beginControlFlow("if (entry.key !in %L)", RESERVED_PROPERTIES_NAME)
         }
 
-        assignDeserializedProperty(
-            propertyType = additionalProperties,
-            assignee = "${PokoGenerator.ADDITIONAL_PROPERTIES_NAME}[entry.key]",
-            getter = "entry.value",
-            nullable = false,
-            funBuilder = funBuilder
-        )
+        if (additionalProperties is TypeDefinition.Class) {
+            funBuilder.addStatement(
+                "%L[entry.key] = entry.value",
+                PokoGenerator.ADDITIONAL_PROPERTIES_NAME
+            )
+        } else {
+            assignDeserializedProperty(
+                propertyType = additionalProperties,
+                assignee = "${PokoGenerator.ADDITIONAL_PROPERTIES_NAME}[entry.key]",
+                getter = "entry.value",
+                nullable = false,
+                funBuilder = funBuilder
+            )
+        }
 
         if (hasKnownProperties) {
             funBuilder.endControlFlow()
@@ -478,7 +490,7 @@ class PokoDeserializerGenerator(
         private const val FROM_JSON = "fromJson"
         private const val FROM_JSON_PARAM_NAME = "serializedObject"
         private const val ROOT_JSON_OBJECT_PARAM_NAME = "jsonObject"
-        private const val EXEPTION_VAR_NAME = "e"
+        private const val EXCEPTION_VAR_NAME = "e"
         private const val ARRAY_COLLECTION_VAR_NAME = "collection"
         private const val JSON_ARRAY_VAR_NAME = "jsonArray"
         private val JSON_PARSE_EXCEPTION =

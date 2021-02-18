@@ -16,7 +16,8 @@ class ThirdPartyLicensesPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions
             .create(EXT_NAME, ThirdPartyLicensesExtension::class.java)
-        extension.csvFile = File(target.rootDir,
+        extension.csvFile = File(
+            target.rootDir,
             ThirdPartyLicensesExtension.DEFAULT_TP_LICENCE_FILENAME
         )
 

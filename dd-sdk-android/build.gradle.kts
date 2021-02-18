@@ -156,7 +156,8 @@ apply(from = "generate_pokos.gradle.kts")
 kotlinConfig()
 detektConfig(
     excludes = listOf(
-        "**/com/datadog/android/rum/model/**"
+        "**/com/datadog/android/rum/model/**",
+        "**/com/datadog/android/core/model/**"
     )
 )
 ktLintConfig()

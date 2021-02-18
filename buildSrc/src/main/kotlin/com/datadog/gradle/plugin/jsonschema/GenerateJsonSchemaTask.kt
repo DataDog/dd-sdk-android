@@ -23,7 +23,6 @@ import org.gradle.api.tasks.TaskAction
  */
 open class GenerateJsonSchemaTask : DefaultTask() {
 
-
     init {
         group = "datadog"
         description = "Review the Android benchmark results and ensure they fit the provided rules"
@@ -104,7 +103,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     }
 
     private fun getInputDir(): File {
-        return File("${project.projectDir.path}${File.separator}${inputDirPath}")
+        return File("${project.projectDir.path}${File.separator}$inputDirPath")
     }
 
     private fun getOutputDir(): File {

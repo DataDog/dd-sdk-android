@@ -118,6 +118,49 @@ val Comment = TypeDefinition.Class(
     )
 )
 
+val Company = TypeDefinition.Class(
+    name = "Company",
+    properties = listOf(
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty(
+            "ratings",
+            TypeDefinition.Class(
+                name = "Ratings",
+                properties = listOf(
+                    TypeProperty(
+                        "global",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        false
+                    )
+                ),
+                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
+            ),
+            true
+        ),
+        TypeProperty(
+            "information",
+            TypeDefinition.Class(
+                name = "Information",
+                properties = listOf(
+                    TypeProperty(
+                        "date",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        true
+                    ),
+                    TypeProperty(
+                        "priority",
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                        true
+                    )
+                ),
+                additionalProperties = TypeDefinition.Class("?", emptyList())
+            ),
+            true
+        )
+    ),
+    additionalProperties = TypeDefinition.Class("?", emptyList())
+)
+
 val Conflict = TypeDefinition.Class(
     name = "Conflict",
     properties = listOf(
