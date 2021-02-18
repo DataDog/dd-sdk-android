@@ -13,8 +13,8 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.toHexString
@@ -118,7 +118,8 @@ internal class SpanSerializerTest {
         @LongForgery serverOffsetNanos: Long
     ) {
         // Given
-        val fakeMinimalUserInfo = UserInfo()
+        val fakeMinimalUserInfo =
+            UserInfo()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeMinimalUserInfo
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
         val serialized = testedSerializer.serialize(span)

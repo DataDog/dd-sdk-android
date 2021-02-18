@@ -9,9 +9,9 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.containsExtraAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject

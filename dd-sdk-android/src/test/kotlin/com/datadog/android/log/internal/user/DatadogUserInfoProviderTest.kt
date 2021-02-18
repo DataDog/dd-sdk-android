@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery

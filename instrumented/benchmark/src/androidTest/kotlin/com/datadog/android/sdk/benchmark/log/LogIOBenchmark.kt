@@ -123,7 +123,7 @@ class LogIOBenchmark {
         val throwable: Throwable = forge.aThrowable()
         val networkInfo: Any? = null
         val userInfo: Any = createInstance(
-            "com.datadog.android.log.internal.user.UserInfo",
+            "com.datadog.android.core.model.UserInfo",
             forge.anHexadecimalString(),
             forge.anAlphabeticalString(),
             forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com")

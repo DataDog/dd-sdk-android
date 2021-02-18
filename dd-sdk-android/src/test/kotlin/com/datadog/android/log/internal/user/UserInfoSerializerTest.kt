@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.internal.utils.toJsonElement
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser

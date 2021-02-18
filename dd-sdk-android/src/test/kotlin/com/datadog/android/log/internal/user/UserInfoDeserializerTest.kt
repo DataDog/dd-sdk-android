@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.user
 
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery

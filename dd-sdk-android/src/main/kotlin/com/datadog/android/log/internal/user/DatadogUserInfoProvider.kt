@@ -7,16 +7,18 @@
 package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.model.UserInfo
 
 internal class DatadogUserInfoProvider(
     val consentAwareWriter: ConsentAwareDataWriter<UserInfo>
 ) : MutableUserInfoProvider {
 
-    private var internalUserInfo = UserInfo()
+    private var internalUserInfo =
+        UserInfo()
         set(value) {
-            field = value
-            consentAwareWriter.write(field)
-        }
+                field = value
+                consentAwareWriter.write(field)
+            }
 
     override fun setUserInfo(userInfo: UserInfo) {
         internalUserInfo = userInfo

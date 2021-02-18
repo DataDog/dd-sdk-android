@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.internal.domain.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.UserInfo
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 
@@ -28,7 +29,12 @@ internal class UserInfoDeserializer : Deserializer<UserInfo> {
                     extraAttributes
                 } ?: emptyMap()
 
-            UserInfo(id, name, email, extraAttributes)
+            UserInfo(
+                id,
+                name,
+                email,
+                extraAttributes
+            )
         } catch (e: JsonParseException) {
             sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
             null

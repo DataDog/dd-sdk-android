@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.utils.toJsonElement
+import com.datadog.android.core.model.UserInfo
 import com.google.gson.JsonObject
 
 internal class UserInfoSerializer :

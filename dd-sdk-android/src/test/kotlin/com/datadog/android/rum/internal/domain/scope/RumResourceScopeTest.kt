@@ -12,7 +12,7 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
