@@ -187,7 +187,7 @@ internal class SpanSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeUserInfoCopy = fakeUserInfo.copy(
-            extraInfo = mapOf(
+            additionalProperties = mapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -234,7 +234,7 @@ internal class SpanSerializerTest {
 
         // THEN
         verify(mockedDataConstrains).validateAttributes(
-            fakeUserInfo.extraInfo,
+            fakeUserInfo.additionalProperties,
             LogAttributes.USR_ATTRIBUTES_GROUP,
             SpanSerializer.USER_EXTRA_GROUP_VERBOSE_NAME
         )
@@ -339,20 +339,20 @@ internal class SpanSerializerTest {
             if (userInfo.id.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_ID)
             } else {
-                hasField(LogAttributes.USR_ID, userInfo.id)
+                hasField(LogAttributes.USR_ID, userInfo.id!!)
             }
             if (userInfo.name.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_NAME)
             } else {
-                hasField(LogAttributes.USR_NAME, userInfo.name)
+                hasField(LogAttributes.USR_NAME, userInfo.name!!)
             }
             if (userInfo.email.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_EMAIL)
             } else {
-                hasField(LogAttributes.USR_EMAIL, userInfo.email)
+                hasField(LogAttributes.USR_EMAIL, userInfo.email!!)
             }
             containsExtraAttributesMappedToStrings(
-                userInfo.extraInfo,
+                userInfo.additionalProperties,
                 LogAttributes.USR_ATTRIBUTES_GROUP + "."
             )
         }

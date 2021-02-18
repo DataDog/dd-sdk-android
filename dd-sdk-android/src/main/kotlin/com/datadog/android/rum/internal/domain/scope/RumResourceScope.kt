@@ -173,7 +173,7 @@ internal class RumResourceScope(
         val rumEvent = RumEvent(
             event = resourceEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         if (isFailedHttpRequest(statusCode)) {
@@ -246,7 +246,7 @@ internal class RumResourceScope(
         val rumEvent = RumEvent(
             event = errorEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)

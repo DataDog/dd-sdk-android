@@ -367,7 +367,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -413,7 +413,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -470,7 +470,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -529,7 +529,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -578,7 +578,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -626,7 +626,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -748,7 +748,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -785,7 +785,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -822,7 +822,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -868,7 +868,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -922,7 +922,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -960,7 +960,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -998,7 +998,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1057,7 +1057,7 @@ internal class RumViewScopeTest {
                 }
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1116,7 +1116,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1411,7 +1411,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1428,7 +1428,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1475,7 +1475,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1492,7 +1492,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1541,7 +1541,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1559,7 +1559,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1602,7 +1602,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1620,7 +1620,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1674,7 +1674,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1692,7 +1692,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1742,7 +1742,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1760,7 +1760,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1811,7 +1811,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1829,7 +1829,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1883,7 +1883,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1901,7 +1901,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
@@ -1987,7 +1987,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(capture())
 
             assertThat(firstValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasLongTaskData {
                     hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
                     hasDuration(durationNs)
@@ -2000,7 +2000,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(0)
@@ -2045,7 +2045,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasLongTaskData {
                     hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
                     hasDuration(durationNs)
@@ -2059,7 +2059,7 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(0)
@@ -2117,7 +2117,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2160,7 +2160,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2221,7 +2221,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2269,7 +2269,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2290,7 +2290,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)

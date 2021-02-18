@@ -155,7 +155,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -176,7 +176,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -230,7 +230,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -252,7 +252,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -316,7 +316,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -338,7 +338,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, brokenUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -395,7 +395,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -416,7 +416,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -471,7 +471,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -492,7 +492,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -537,7 +537,7 @@ internal class RumResourceScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -558,7 +558,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(fakeAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -603,7 +603,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(2)).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                     hasSource(RumErrorSource.NETWORK)
@@ -703,7 +703,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -724,7 +724,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -780,7 +780,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -802,7 +802,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -859,7 +859,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
                     hasTimestamp(fakeEventTime.timestamp)
@@ -881,7 +881,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -932,7 +932,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -988,7 +988,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -1036,7 +1036,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -1085,7 +1085,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -1141,7 +1141,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasMessage(message)
                     hasSource(source)
@@ -1258,7 +1258,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
@@ -1276,7 +1276,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -1332,7 +1332,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
@@ -1350,7 +1350,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)
@@ -1407,7 +1407,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter, times(expectedCallTimes)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasUrl(fakeUrl)
@@ -1426,7 +1426,7 @@ internal class RumResourceScopeTest {
             if (expectedCallTimes > 1) {
                 assertThat(lastValue)
                     .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                    .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                     .hasErrorData {
                         hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
                         hasSource(RumErrorSource.NETWORK)

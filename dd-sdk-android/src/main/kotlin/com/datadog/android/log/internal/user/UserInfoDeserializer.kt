@@ -10,31 +10,12 @@ import com.datadog.android.core.internal.domain.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.google.gson.JsonParseException
-import com.google.gson.JsonParser
 
 internal class UserInfoDeserializer : Deserializer<UserInfo> {
 
     override fun deserialize(model: String): UserInfo? {
         return try {
-            val jsonObject = JsonParser.parseString(model).asJsonObject
-            val name = jsonObject.get(UserInfoSerializer.NAME)?.asString
-            val id = jsonObject.get(UserInfoSerializer.ID)?.asString
-            val email = jsonObject.get(UserInfoSerializer.EMAIL)?.asString
-            val extraAttributes: Map<String, Any?> =
-                jsonObject.get(UserInfoSerializer.EXTRA_INFO)?.asJsonObject?.let {
-                    val extraAttributes = mutableMapOf<String, Any?>()
-                    it.entrySet().forEach {
-                        extraAttributes[it.key] = it.value
-                    }
-                    extraAttributes
-                } ?: emptyMap()
-
-            UserInfo(
-                id,
-                name,
-                email,
-                extraAttributes
-            )
+            UserInfo.fromJson(model)
         } catch (e: JsonParseException) {
             sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
             null

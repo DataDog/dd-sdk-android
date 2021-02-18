@@ -706,7 +706,7 @@ internal class DatadogNdkCrashHandlerTest {
             it?.name == value.name &&
                 it?.id == value.id &&
                 it?.email == value.email &&
-                it?.extraInfo?.size == value.extraInfo.size
+                it?.additionalProperties?.size == value.additionalProperties.size
         } ?: value
     }
 }

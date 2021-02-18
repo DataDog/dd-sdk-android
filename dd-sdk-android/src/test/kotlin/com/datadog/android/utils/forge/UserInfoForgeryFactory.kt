@@ -17,7 +17,7 @@ internal class UserInfoForgeryFactory : ForgeryFactory<UserInfo> {
             id = forge.anHexadecimalString(),
             name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
             email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-            extraInfo = forge.exhaustiveAttributes()
+            additionalProperties = forge.exhaustiveAttributes()
         )
     }
 }

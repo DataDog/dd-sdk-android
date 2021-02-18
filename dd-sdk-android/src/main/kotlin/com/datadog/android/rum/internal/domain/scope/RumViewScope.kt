@@ -223,7 +223,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = errorEvent,
             globalAttributes = updatedAttributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         errorCount++
@@ -325,7 +325,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
     }
@@ -384,7 +384,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = actionEvent,
             globalAttributes = GlobalRum.globalAttributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
 
@@ -434,7 +434,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = longTaskEvent,
             globalAttributes = updatedAttributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         longTaskCount++

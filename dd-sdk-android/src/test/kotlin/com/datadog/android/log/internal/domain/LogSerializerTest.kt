@@ -138,7 +138,9 @@ internal class LogSerializerTest {
         val expectedSanitisedKey =
             fakeBadKey.replaceRange(lastDotIndex..lastDotIndex, "_")
         val attributeValue = forge.anAlphabeticalString()
-        val fakeUserInfo = fakeLog.userInfo.copy(extraInfo = mapOf(fakeBadKey to attributeValue))
+        val fakeUserInfo = fakeLog.userInfo.copy(
+            additionalProperties = mapOf(fakeBadKey to attributeValue)
+        )
 
         // WHEN
         val serializedEvent = testedSerializer.serialize(fakeLog.copy(userInfo = fakeUserInfo))
@@ -314,23 +316,27 @@ internal class LogSerializerTest {
         log: Log
     ) {
         val info = log.userInfo
+        val userId = info.id
         assertThat(jsonObject).apply {
-            if (info.id.isNullOrEmpty()) {
+            if (userId.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_ID)
             } else {
-                hasField(LogAttributes.USR_ID, info.id)
+                hasField(LogAttributes.USR_ID, userId)
             }
             if (info.name.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_NAME)
             } else {
-                hasField(LogAttributes.USR_NAME, info.name)
+                hasField(LogAttributes.USR_NAME, info.name!!)
             }
             if (info.email.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_EMAIL)
             } else {
-                hasField(LogAttributes.USR_EMAIL, info.email)
+                hasField(LogAttributes.USR_EMAIL, info.email!!)
             }
-            containsExtraAttributes(info.extraInfo, LogAttributes.USR_ATTRIBUTES_GROUP + ".")
+            containsExtraAttributes(
+                info.additionalProperties,
+                LogAttributes.USR_ATTRIBUTES_GROUP + "."
+            )
         }
     }
 
