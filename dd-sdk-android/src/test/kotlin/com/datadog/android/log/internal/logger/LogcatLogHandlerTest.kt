@@ -88,9 +88,10 @@ internal class LogcatLogHandlerTest {
     @Test
     fun `resolves valid stack trace element when wrapped in timber`() {
 
+        /* ktlint-disable max-line-length */
         // Given
         val rawStackTrace =
-                "com.datadog.android.log.internal.logger.LogcatLogHandler.handleLog(LogcatLogHandler.kt:31)\n" +
+            "com.datadog.android.log.internal.logger.LogcatLogHandler.handleLog(LogcatLogHandler.kt:31)\n" +
                 "com.datadog.android.log.internal.logger.CombinedLogHandler.handleLog(CombinedLogHandler.kt:23)\n" +
                 "com.datadog.android.log.Logger.internalLog\$dd_sdk_android_debug(Logger.kt:517)\n" +
                 "com.datadog.android.log.Logger.internalLog\$dd_sdk_android_debug\$default(Logger.kt:512)\n" +
@@ -105,6 +106,7 @@ internal class LogcatLogHandlerTest {
                 "android.view.View.performClick(View.java:7448)\n" +
                 "android.view.View.performClickInternal(View.java:7425)\n" +
                 "android.view.View.access\$3600(View.java:810)"
+        /* ktlint-enable max-line-length */
 
         val matchingRegex = Regex("(\\S+)\\((\\S+)\\)")
 
