@@ -70,11 +70,19 @@ internal class LogcatLogHandler(
     internal fun getCallerStackElement(): StackTraceElement? {
         return if (Datadog.isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
-            stackTrace.firstOrNull {
-                it.className !in ignoredClassNames
-            }
+            return findValidCallStackElement(stackTrace)
         } else {
             null
+        }
+    }
+
+    internal fun findValidCallStackElement(
+        stackTrace: Array<StackTraceElement>
+    ): StackTraceElement? {
+        return stackTrace.firstOrNull {
+            it.className !in ignoredClassNames &&
+                !it.className.startsWith("com.datadog.android.timber") &&
+                !it.className.startsWith("timber.log")
         }
     }
 
