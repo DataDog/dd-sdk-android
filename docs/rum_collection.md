@@ -1,4 +1,4 @@
-# Android RUM Collection
+# Getting Started with Android RUM Collection
 
 Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
 
