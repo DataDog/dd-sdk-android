@@ -228,6 +228,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addLongTask(durationNs: Long, target: String) {
+        handleEvent(
+            RumRawEvent.AddLongTask(durationNs, target)
+        )
+    }
+
     // endregion
 
     // region Internal

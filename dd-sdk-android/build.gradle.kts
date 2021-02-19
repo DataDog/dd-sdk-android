@@ -157,12 +157,13 @@ apply(from = "clone_rum_schema.gradle.kts")
 jsonSchema2Poko {
     inputDirPath = "src/main/json"
     targetPackageName = "com.datadog.android.rum.model"
-    ignoredFiles = arrayOf("_common-schema.json", "long_task-schema.json")
+    ignoredFiles = arrayOf("_common-schema.json")
     nameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
         "error-schema.json" to "ErrorEvent",
         "resource-schema.json" to "ResourceEvent",
-        "view-schema.json" to "ViewEvent"
+        "view-schema.json" to "ViewEvent",
+        "long_task-schema.json" to "LongTaskEvent"
     )
 }
 

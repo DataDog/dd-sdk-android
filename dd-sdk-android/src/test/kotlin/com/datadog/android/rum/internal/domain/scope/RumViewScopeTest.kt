@@ -252,6 +252,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -296,6 +297,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -340,6 +342,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -375,6 +378,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -420,6 +424,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -476,6 +481,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -534,6 +540,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -582,6 +589,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -629,6 +637,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -668,6 +677,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -749,6 +759,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -785,6 +796,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -821,6 +833,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -882,6 +895,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -919,6 +933,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -956,6 +971,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -993,6 +1009,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1051,6 +1068,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1109,6 +1127,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1416,6 +1435,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1479,6 +1499,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1545,6 +1566,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1605,6 +1627,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(if (fatal) 1 else 0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1676,6 +1699,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1743,6 +1767,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1811,6 +1836,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1882,6 +1908,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1942,6 +1969,135 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Long Task
+
+    @Test
+    fun `𝕄 send events 𝕎 handleEvent(AddLongTask) on active view`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasLongTaskData {
+                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasDuration(durationNs)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send events with global attributes 𝕎 handleEvent(AddLongTask)`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedViewAttributes = attributes.toMutableMap().apply {
+            putAll(fakeAttributes)
+        }
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasLongTaskData {
+                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasDuration(durationNs)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(expectedViewAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(AddLongTask) on stopped view`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        testedScope.stopped = true
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+    // endregion
+
     // region Loading Time
 
     @Test
@@ -1973,6 +2129,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2015,6 +2172,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2075,6 +2233,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -2122,6 +2281,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -2142,6 +2302,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(
                         mapOf(

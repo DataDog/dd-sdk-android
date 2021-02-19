@@ -22,7 +22,8 @@ internal class ConfigurationRumForgeryFactory :
             gesturesTracker = mock(),
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = mock(),
-            rumEventMapper = mock()
+            rumEventMapper = mock(),
+            longTaskTrackingStrategy = mock()
         )
     }
 }

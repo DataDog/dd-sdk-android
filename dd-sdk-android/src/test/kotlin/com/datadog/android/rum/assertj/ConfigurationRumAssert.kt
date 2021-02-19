@@ -9,6 +9,7 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -43,6 +44,20 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
     fun hasGesturesTrackingStrategy(): ConfigurationRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isInstanceOf(GesturesTrackingStrategy::class.java)
+        return this
+    }
+
+    fun doesNotHaveLongTaskTrackingEnabled(): ConfigurationRumAssert {
+        assertThat(actual.longTaskTrackingStrategy).isNull()
+        return this
+    }
+
+    fun hasLongTaskTrackingEnabled(expectedThresholdMs: Long): ConfigurationRumAssert {
+        assertThat(actual.longTaskTrackingStrategy)
+            .isNotNull()
+            .isInstanceOf(MainLooperLongTaskStrategy::class.java)
+        assertThat((actual.longTaskTrackingStrategy as MainLooperLongTaskStrategy).thresholdMs)
+            .isEqualTo(expectedThresholdMs)
         return this
     }
 

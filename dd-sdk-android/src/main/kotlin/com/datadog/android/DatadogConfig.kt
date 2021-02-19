@@ -111,7 +111,8 @@ private constructor(
                     gesturesTracker = it.gesturesTracker,
                     userActionTrackingStrategy = it.userActionTrackingStrategy,
                     viewTrackingStrategy = it.viewTrackingStrategy,
-                    rumEventMapper = it.rumEventMapper
+                    rumEventMapper = it.rumEventMapper,
+                    longTaskTrackingStrategy = null
                 )
             }
         )

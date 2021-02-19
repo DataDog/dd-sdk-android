@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
+import java.security.SecureRandom
 import timber.log.Timber
 
 class NavActivity : AppCompatActivity() {
@@ -89,9 +90,18 @@ class NavActivity : AppCompatActivity() {
             R.id.gdpr -> {
                 navController.navigate(R.id.fragment_gdpr)
             }
+            R.id.long_task -> {
+                runLongTask()
+            }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
+    }
+
+    private fun runLongTask() {
+        val random = SecureRandom()
+        val duration = random.nextInt(500) + 500
+        Thread.sleep(duration.toLong())
     }
 
     // endregion

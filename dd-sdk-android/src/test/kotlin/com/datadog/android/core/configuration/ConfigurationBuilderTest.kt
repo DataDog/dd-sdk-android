@@ -35,6 +35,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -139,7 +140,8 @@ internal class ConfigurationBuilderTest {
                 gesturesTracker = null,
                 userActionTrackingStrategy = null,
                 viewTrackingStrategy = null,
-                rumEventMapper = NoOpEventMapper()
+                rumEventMapper = NoOpEventMapper(),
+                longTaskTrackingStrategy = null
             )
         )
     }
@@ -301,6 +303,7 @@ internal class ConfigurationBuilderTest {
             .hasGesturesTrackingStrategy()
             .hasViewAttributeProviders(mockProviders)
             .doesNotHaveViewTrackingStrategy()
+            .doesNotHaveLongTaskTrackingEnabled()
     }
 
     @TestTargetApi(value = Build.VERSION_CODES.Q)
@@ -328,6 +331,29 @@ internal class ConfigurationBuilderTest {
             .hasGesturesTrackingStrategyApi29()
             .hasViewAttributeProviders(mockProviders)
             .doesNotHaveViewTrackingStrategy()
+            .doesNotHaveLongTaskTrackingEnabled()
+    }
+
+    @Test
+    fun `𝕄 build config with long tasks enabled 𝕎 trackLongTasks() and build()`(
+        @LongForgery(1L, 65536L) durationMs: Long
+    ) {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .trackLongTasks(durationMs)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .doesNotHaveGesturesTrackingStrategy()
+            .doesNotHaveViewTrackingStrategy()
+            .hasLongTaskTrackingEnabled(durationMs)
     }
 
     @Test
@@ -348,6 +374,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig!!)
             .doesNotHaveGesturesTrackingStrategy()
             .hasViewTrackingStrategy(strategy)
+            .doesNotHaveLongTaskTrackingEnabled()
     }
 
     @Test
@@ -454,6 +481,32 @@ internal class ConfigurationBuilderTest {
                 Locale.US,
                 Feature.RUM.featureName,
                 "trackInteractions"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 trackLongTasks() {RUM disabled}`(
+        @LongForgery(1L, 65536L) durationMs: Long
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        testedBuilder.trackLongTasks(durationMs)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "trackLongTasks"
             )
         )
     }

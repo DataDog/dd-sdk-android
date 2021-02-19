@@ -91,6 +91,7 @@ class com.datadog.android.core.configuration.Configuration
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
+    fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
@@ -245,6 +246,7 @@ object com.datadog.android.rum.RumAttributes
   const val ACTION_TARGET_PARENT_RESOURCE_ID: String
   const val ACTION_TARGET_RESOURCE_ID: String
   const val ACTION_GESTURE_DIRECTION: String
+  const val LONG_TASK_TARGET: String
   const val NETWORK_CARRIER_ID: String
   const val NETWORK_CARRIER_NAME: String
   const val NETWORK_CONNECTIVITY: String
@@ -536,6 +538,86 @@ class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ProviderType
+class com.datadog.android.rum.model.LongTaskEvent
+  constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd, LongTask, Action? = null)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): LongTaskEvent
+  class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  class Session
+    constructor(kotlin.String, Type, kotlin.Boolean? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  class View
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
+  class Connectivity
+    constructor(Status, kotlin.collections.List<Interface>, Cellular? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
+  class Dd
+    val formatVersion: kotlin.Long
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+  class LongTask
+    constructor(kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
+  class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+  class Cellular
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cellular
+  enum Type
+    constructor(kotlin.String)
+    - USER
+    - SYNTHETICS
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type
+  enum Status
+    constructor(kotlin.String)
+    - CONNECTED
+    - NOT_CONNECTED
+    - MAYBE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
+  enum Interface
+    constructor(kotlin.String)
+    - BLUETOOTH
+    - CELLULAR
+    - ETHERNET
+    - WIFI
+    - WIMAX
+    - MIXED
+    - OTHER
+    - UNKNOWN
+    - NONE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Interface
 class com.datadog.android.rum.model.ResourceEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, Session, View, Usr? = null, Connectivity? = null, Dd? = null, Resource, Action? = null)
   val type: kotlin.String

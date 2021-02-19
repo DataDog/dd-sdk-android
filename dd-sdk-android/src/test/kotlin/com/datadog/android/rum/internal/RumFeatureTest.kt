@@ -16,6 +16,7 @@ import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTra
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -119,6 +120,17 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     }
 
     @Test
+    fun `𝕄 store longTaskTrackingStrategy 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+
+        // Then
+        assertThat(testedFeature.longTaskTrackingStrategy)
+            .isEqualTo(fakeConfigurationFeature.longTaskTrackingStrategy)
+        verify(fakeConfigurationFeature.longTaskTrackingStrategy!!).register(mockAppContext)
+    }
+
+    @Test
     fun `𝕄 use noop gesturesTracker 𝕎 initialize()`() {
         // Given
         val config = fakeConfigurationFeature.copy(gesturesTracker = null)
@@ -155,6 +167,19 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         // Then
         assertThat(testedFeature.actionTrackingStrategy)
             .isInstanceOf(NoOpUserActionTrackingStrategy::class.java)
+    }
+
+    @Test
+    fun `𝕄 use noop longTaskTrackingStrategy 𝕎 initialize()`() {
+        // Given
+        val config = fakeConfigurationFeature.copy(longTaskTrackingStrategy = null)
+
+        // When
+        testedFeature.initialize(mockAppContext, config)
+
+        // Then
+        assertThat(testedFeature.longTaskTrackingStrategy)
+            .isInstanceOf(NoOpTrackingStrategy::class.java)
     }
 
     @Test
@@ -224,9 +249,11 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
         val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
         val mockViewTreeTrackingStrategy: TrackingStrategy = mock()
+        val mockLongTaskTrackingStrategy: TrackingStrategy = mock()
         testedFeature.actionTrackingStrategy = mockActionTrackingStrategy
         testedFeature.viewTrackingStrategy = mockViewTrackingStrategy
         testedFeature.viewTreeTrackingStrategy = mockViewTreeTrackingStrategy
+        testedFeature.longTaskTrackingStrategy = mockLongTaskTrackingStrategy
 
         // When
         testedFeature.stop()
@@ -235,6 +262,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         verify(mockActionTrackingStrategy).unregister(mockAppContext)
         verify(mockViewTrackingStrategy).unregister(mockAppContext)
         verify(mockViewTreeTrackingStrategy).unregister(mockAppContext)
+        verify(mockLongTaskTrackingStrategy).unregister(mockAppContext)
     }
 
     @Test

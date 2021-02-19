@@ -130,6 +130,7 @@ class SampleApplication : Application() {
                 )
             )
             .trackInteractions()
+            .trackLongTasks(250L)
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)

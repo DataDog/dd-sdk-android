@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -38,6 +39,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         NoOpUserActionTrackingStrategy()
     internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
     internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
+    internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
     // region SdkFeature
 
@@ -48,6 +50,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         configuration.gesturesTracker?.let { gesturesTracker = it }
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
+        configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
         registerTrackingStrategies(context)
     }
@@ -57,6 +60,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         gesturesTracker = NoOpGesturesTracker()
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
+        longTaskTrackingStrategy = NoOpTrackingStrategy()
         rumEventMapper = NoOpEventMapper()
     }
 
@@ -85,12 +89,14 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         actionTrackingStrategy.register(appContext)
         viewTrackingStrategy.register(appContext)
         viewTreeTrackingStrategy.register(appContext)
+        longTaskTrackingStrategy.register(appContext)
     }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
         actionTrackingStrategy.unregister(appContext)
         viewTrackingStrategy.unregister(appContext)
         viewTreeTrackingStrategy.unregister(appContext)
+        longTaskTrackingStrategy.unregister(appContext)
     }
 
     // endregion

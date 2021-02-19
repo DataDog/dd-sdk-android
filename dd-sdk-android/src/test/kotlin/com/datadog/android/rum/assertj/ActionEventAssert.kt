@@ -123,6 +123,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasLongTaskCount(expected: Long): ActionEventAssert {
+        assertThat(actual.action.longTask?.count ?: 0)
+            .overridingErrorMessage(
+                "Expected event data to have action.longTask.count $expected " +
+                    "but was ${actual.action.longTask?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasView(
         expectedId: String?,
         expectedName: String?,

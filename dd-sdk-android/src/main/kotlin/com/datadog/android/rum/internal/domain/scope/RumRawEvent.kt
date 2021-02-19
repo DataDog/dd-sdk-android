@@ -133,4 +133,10 @@ internal sealed class RumRawEvent {
         val name: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
+
+    internal data class AddLongTask(
+        val durationNs: Long,
+        val target: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
 }
