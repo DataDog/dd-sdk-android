@@ -31,7 +31,7 @@ DEPRECATED class com.datadog.android.DatadogConfig
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
     fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun sampleRumSessions(Float): Builder
-    fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
+    fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
@@ -97,7 +97,7 @@ class com.datadog.android.core.configuration.Configuration
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
-    fun setRumViewEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>): Builder
+    fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
@@ -133,6 +133,8 @@ class com.datadog.android.core.model.NetworkInfo
       fun fromJson(kotlin.String): Connectivity
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
+interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
+  override fun map(com.datadog.android.rum.model.ViewEvent): com.datadog.android.rum.model.ViewEvent
 object com.datadog.android.log.LogAttributes
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String

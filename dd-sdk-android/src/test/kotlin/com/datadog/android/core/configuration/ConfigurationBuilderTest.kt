@@ -11,6 +11,7 @@ import android.util.Log
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -19,7 +20,6 @@ import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
@@ -401,7 +401,7 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `𝕄 build config with RUM View eventMapper 𝕎 setRumViewEventMapper() and build()`() {
         // Given
-        val eventMapper: EventMapper<ViewEvent> = mock()
+        val eventMapper: ViewEventMapper = mock()
 
         // When
         val config = testedBuilder
@@ -571,7 +571,7 @@ internal class ConfigurationBuilderTest {
             crashReportsEnabled = true,
             rumEnabled = false
         )
-        val eventMapper: EventMapper<ViewEvent> = mock()
+        val eventMapper: ViewEventMapper = mock()
 
         // When
         testedBuilder.setRumViewEventMapper(eventMapper)

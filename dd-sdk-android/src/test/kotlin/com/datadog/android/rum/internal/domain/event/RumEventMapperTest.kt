@@ -14,8 +14,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -54,13 +56,17 @@ internal class RumEventMapperTest {
     lateinit var mockViewEventMapper: EventMapper<ViewEvent>
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockSdkLogHandler: LogHandler
+
+    lateinit var mockDevLogHandler: LogHandler
 
     lateinit var originalLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
-        originalLogHandler = mockSdkLogHandler(mockLogHandler)
+        originalLogHandler = mockSdkLogHandler(mockSdkLogHandler)
+        mockDevLogHandler = mockDevLogHandler()
+        whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
         testedRumEventMapper = RumEventMapper(
             actionEventMapper = mockActionEventMapper,
             viewEventMapper = mockViewEventMapper,
@@ -164,33 +170,99 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEventCopy)
 
         // THEN
-        verify(mockLogHandler).handleLog(
+        verify(mockSdkLogHandler).handleLog(
             Log.WARN,
-            "RumEventMapper: there was no EventMapper assigned for" +
-                " RUM event type: [${fakeRumEventCopy.event.javaClass.simpleName}]"
+            RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
+                .format(fakeRumEventCopy.event.javaClass.simpleName)
         )
         assertThat(mappedRumEvent).isEqualTo(fakeRumEventCopy)
     }
 
     @Test
-    fun `M return null event W map { internal mapper returns NULL }`(forge: Forge) {
+    fun `M use the original event W map returns null object { ViewEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent: RumEvent = forge.getForgery()
+        val fakeBundledEvent = forge.getForgery<ViewEvent>()
+        val fakeRumEvent: RumEvent =
+            forge.getForgery<RumEvent>().copy(event = fakeBundledEvent)
+        whenever(mockViewEventMapper.map(fakeBundledEvent))
+            .thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent.toString())
+        )
+    }
+
+    @Test
+    fun `M return null event W map returns null object { ResourceEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<ResourceEvent>()
+        val fakeRumEvent: RumEvent =
+            forge.getForgery<RumEvent>().copy(event = fakeBundledEvent)
+        whenever(mockResourceEventMapper.map(fakeBundledEvent))
+            .thenReturn(null)
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockLogHandler).handleLog(
-            Log.INFO,
-            "RumEventMapper: the returned mapped object was null." +
-                "This event will be dropped: [$fakeRumEvent]"
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent.toString())
+
         )
     }
 
     @Test
-    fun `M return null event W map returns different object { ViewEvent }`(forge: Forge) {
+    fun `M return null event W map returns null object { ErrorEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<ErrorEvent>()
+        val fakeRumEvent: RumEvent =
+            forge.getForgery<RumEvent>().copy(event = fakeBundledEvent)
+        whenever(mockErrorEventMapper.map(fakeBundledEvent))
+            .thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent.toString())
+
+        )
+    }
+
+    @Test
+    fun `M return null event W map returns null object { ActionEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<ActionEvent>()
+        val fakeRumEvent: RumEvent =
+            forge.getForgery<RumEvent>().copy(event = fakeBundledEvent)
+        whenever(mockActionEventMapper.map(fakeBundledEvent))
+            .thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent.toString())
+
+        )
+    }
+
+    @Test
+    fun `M use the original event W map returns different object { ViewEvent }`(forge: Forge) {
         // GIVEN
         val fakeBundledEvent = forge.getForgery<ViewEvent>()
         val fakeRumEvent: RumEvent =
@@ -202,11 +274,10 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNull()
-        verify(mockLogHandler).handleLog(
+        assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+        verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "RumEventMapper: the returned mapped object was not the " +
-                "same instance as the original object. This event will be dropped: [$fakeRumEvent]"
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent.toString())
         )
     }
 
@@ -224,10 +295,10 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockLogHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "RumEventMapper: the returned mapped object was not the " +
-                "same instance as the original object. This event will be dropped: [$fakeRumEvent]"
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent.toString())
+
         )
     }
 
@@ -245,10 +316,9 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockLogHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "RumEventMapper: the returned mapped object was not the " +
-                "same instance as the original object. This event will be dropped: [$fakeRumEvent]"
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent.toString())
         )
     }
 
@@ -266,10 +336,10 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockLogHandler).handleLog(
+        verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            "RumEventMapper: the returned mapped object was not the " +
-                "same instance as the original object. This event will be dropped: [$fakeRumEvent]"
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent.toString())
+
         )
     }
 }

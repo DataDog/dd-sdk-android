@@ -13,6 +13,7 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -346,12 +347,12 @@ internal constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [ViewEvent]. You can use this interface implementation
+         * Sets the [ViewEventMapper] for the RUM [ViewEvent]. You can use this interface implementation
          * to modify the [ViewEvent] attributes before serialisation.
          *
-         * @param eventMapper the [EventMapper] implementation.
+         * @param eventMapper the [ViewEventMapper] implementation.
          */
-        fun setRumViewEventMapper(eventMapper: EventMapper<ViewEvent>): Builder {
+        fun setRumViewEventMapper(eventMapper: ViewEventMapper): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "setRumViewEventMapper") {
                 rumConfig = rumConfig.copy(
                     rumEventMapper = getRumEventMapper().copy(viewEventMapper = eventMapper)
