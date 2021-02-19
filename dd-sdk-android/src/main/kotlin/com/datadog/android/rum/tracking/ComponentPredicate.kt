@@ -24,4 +24,10 @@ interface ComponentPredicate<T> {
      *
      */
     fun accept(component: T): Boolean
+
+    /**
+     * Sets a custome name for the tracked RUM View.
+     * @return the name to use for this view (if null or blank, the default will be used)
+     */
+    fun getViewName(component: T): String?
 }

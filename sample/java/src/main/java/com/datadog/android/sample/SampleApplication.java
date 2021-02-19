@@ -62,6 +62,10 @@ public class SampleApplication extends Application {
                                 return !NavHostFragment.class.isAssignableFrom(
                                         component.getClass());
                             }
+                            @Override
+                            public String getViewName(Fragment component) {
+                                return null;
+                            }
                         }))
                 .trackInteractions();
 

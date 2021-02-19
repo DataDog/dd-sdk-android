@@ -10,11 +10,23 @@ import com.datadog.android.rum.tracking.ComponentPredicate
 
 /**
  * Executes the provided operation if the predicate verifies the argument.
- * @param arg to be verified
+ * @param component to be verified
  * @param operation to be executed
  */
-internal inline fun <reified T> ComponentPredicate<T>.runIfValid(arg: T, operation: (T) -> Unit) {
-    if (accept(arg)) {
-        operation(arg)
+internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
+    component: T,
+    operation: (T) -> Unit
+) {
+    if (accept(component)) {
+        operation(component)
+    }
+}
+
+internal inline fun <reified T : Any> ComponentPredicate<T>.resolveViewName(component: T): String {
+    val customName = getViewName(component)
+    return if (customName.isNullOrBlank()) {
+        component.resolveViewUrl()
+    } else {
+        customName
     }
 }

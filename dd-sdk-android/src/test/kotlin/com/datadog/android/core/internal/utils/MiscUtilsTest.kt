@@ -109,6 +109,7 @@ internal class MiscUtilsTest {
         // GIVEN
         val attributes = forge.exhaustiveAttributes().toMutableMap()
         attributes[forge.aString()] = NULL_MAP_VALUE
+        attributes[forge.aString()] = JsonNull.INSTANCE
 
         // WHEN
         attributes.forEach {
@@ -125,6 +126,7 @@ internal class MiscUtilsTest {
         when (kotlinObject) {
             NULL_MAP_VALUE -> assertThat(jsonElement).isEqualTo(JsonNull.INSTANCE)
             null -> assertThat(jsonElement).isEqualTo(JsonNull.INSTANCE)
+            JsonNull.INSTANCE -> assertThat(jsonElement).isEqualTo(JsonNull.INSTANCE)
             is Boolean -> assertThat(jsonElement.asBoolean).isEqualTo(kotlinObject)
             is Int -> assertThat(jsonElement.asInt).isEqualTo(kotlinObject)
             is Long -> assertThat(jsonElement.asLong).isEqualTo(kotlinObject)

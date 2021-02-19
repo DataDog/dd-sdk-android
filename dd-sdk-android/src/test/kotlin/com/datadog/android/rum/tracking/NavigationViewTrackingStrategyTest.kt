@@ -93,6 +93,9 @@ internal class NavigationViewTrackingStrategyTest {
     @Mock
     lateinit var mockFragment: Fragment
 
+    @Mock
+    lateinit var mockPredicate: ComponentPredicate<NavDestination>
+
     @IntForgery
     var fakeNavViewId: Int = 0
 
@@ -108,7 +111,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
-        testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true)
+        testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
     }
 
     @AfterEach
@@ -239,16 +242,40 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
-    fun `starts view onDestinationChanged`() {
+    fun `M start view W onDestinationChanged()`() {
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
         verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, emptyMap())
     }
 
     @Test
-    fun `starts view onDestinationChanged with arguments`(
+    fun `M start view W onDestinationChanged() {destination not tracked}`() {
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn false
+
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M start view W onDestinationChanged() {custom name}`(
+        @StringForgery customName: String
+    ) {
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+        whenever(mockPredicate.getViewName(mockNavDestination)) doReturn customName
+
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+
+        verify(mockRumMonitor).startView(mockNavDestination, customName, emptyMap())
+    }
+
+    @Test
+    fun `M start view W onDestinationChanged() {with arguments}`(
         forge: Forge
     ) {
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>()
         for (i in 0..10) {
@@ -267,6 +294,7 @@ internal class NavigationViewTrackingStrategyTest {
     fun `starts view onDestinationChanged with arguments un-tracked`(
         forge: Forge
     ) {
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, false)
 
         val arguments = Bundle()
@@ -286,7 +314,11 @@ internal class NavigationViewTrackingStrategyTest {
         forge: Forge,
         @StringForgery newDestinationName: String
     ) {
+
         val newDestination = mockNavDestination(forge, newDestinationName)
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+        whenever(mockPredicate.accept(newDestination)) doReturn true
+
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
         testedStrategy.onDestinationChanged(mockNavController, newDestination, null)

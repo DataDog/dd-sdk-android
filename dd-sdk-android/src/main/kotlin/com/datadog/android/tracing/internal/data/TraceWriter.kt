@@ -26,9 +26,6 @@ internal class TraceWriter(
 
     override fun write(trace: MutableList<DDSpan>?) {
         trace?.let {
-            it.filter { it.isError }.forEach { span ->
-                sendRumErrorEvent(span)
-            }
             writer.write(it)
         }
     }

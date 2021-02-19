@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -84,6 +85,8 @@ internal class RumViewScopeTest {
 
     @RegexForgery("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
     lateinit var fakeActionId: String
+
+    lateinit var fakeUrl: String
     lateinit var fakeKey: ByteArray
     lateinit var fakeAttributes: Map<String, Any?>
 
@@ -110,6 +113,7 @@ internal class RumViewScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
         fakeEvent = mockEvent()
+        fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
 
         mockCoreFeature()
         whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
@@ -147,7 +151,8 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isNull()
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
-        assertThat(context.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
     }
@@ -163,7 +168,8 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isEqualTo(fakeActionId)
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
-        assertThat(context.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
     }
@@ -184,13 +190,15 @@ internal class RumViewScopeTest {
         // Then
         assertThat(context.actionId).isNull()
         assertThat(context.viewId).isEqualTo(initialViewId)
-        assertThat(context.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(context.viewName).isEqualTo(fakeName)
+        assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
 
         assertThat(updatedContext.actionId).isNull()
         assertThat(updatedContext.viewId).isNotEqualTo(initialViewId)
-        assertThat(updatedContext.viewUrl).isEqualTo(testedScope.urlName)
+        assertThat(updatedContext.viewName).isEqualTo(fakeName)
+        assertThat(updatedContext.viewUrl).isEqualTo(fakeUrl)
         assertThat(updatedContext.sessionId).isEqualTo(newSessionId.toString())
         assertThat(updatedContext.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
@@ -236,7 +244,8 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -279,7 +288,8 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -322,7 +332,8 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -356,7 +367,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -400,7 +412,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -455,7 +468,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -512,7 +526,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -559,7 +574,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -605,7 +621,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -643,7 +660,8 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -723,7 +741,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -758,7 +777,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -793,7 +813,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -845,7 +866,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasUserInfo(fakeUserInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -853,7 +874,8 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes + attributes)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -889,7 +911,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(1)
@@ -925,7 +948,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -961,7 +985,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -1009,7 +1034,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasUserInfo(fakeUserInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1018,7 +1043,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -1075,7 +1101,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
                     hasErrorCount(0)
@@ -1374,7 +1401,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1393,6 +1420,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1435,7 +1464,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1454,6 +1483,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1498,7 +1529,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1518,6 +1549,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1556,7 +1589,7 @@ internal class RumViewScopeTest {
                     isCrash(fatal)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1576,6 +1609,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1625,7 +1660,7 @@ internal class RumViewScopeTest {
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1645,6 +1680,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1690,7 +1727,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1709,6 +1746,8 @@ internal class RumViewScopeTest {
                     isActive(true)
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1756,7 +1795,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1776,6 +1815,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1825,7 +1866,7 @@ internal class RumViewScopeTest {
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
-                    hasView(testedScope.viewId, testedScope.urlName)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
@@ -1845,6 +1886,8 @@ internal class RumViewScopeTest {
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
+                    hasName(testedScope.name)
+                    hasUrl(testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1921,7 +1964,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(loadingTime)
                     hasLoadingType(loadingType)
@@ -1962,7 +2006,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(loadingTime)
                     hasLoadingType(loadingType)
@@ -2021,7 +2066,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
                     hasLoadingType(null)
@@ -2067,7 +2113,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
                     hasLoadingType(null)
@@ -2086,7 +2133,8 @@ internal class RumViewScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName.replace('.', '/'))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
                     hasLoadingTime(null)
                     hasLoadingType(null)

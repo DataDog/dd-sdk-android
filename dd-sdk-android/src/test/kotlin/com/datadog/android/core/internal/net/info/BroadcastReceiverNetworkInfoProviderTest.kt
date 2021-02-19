@@ -12,6 +12,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -47,6 +48,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     lateinit var testedProvider: BroadcastReceiverNetworkInfoProvider
 
     @Mock
+    lateinit var mockConsentAwareDataWriter: ConsentAwareDataWriter<NetworkInfo>
+
+    @Mock
     lateinit var mockContext: Context
 
     @Mock
@@ -69,7 +73,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider()
+        testedProvider = BroadcastReceiverNetworkInfoProvider(mockConsentAwareDataWriter)
     }
 
     @Test
@@ -128,6 +132,30 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
+    fun `M delegate to persister W register`() {
+        stubNetworkInfo(ConnectivityManager.TYPE_WIFI, -1)
+
+        testedProvider.register(mockContext)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        verify(mockConsentAwareDataWriter).write(networkInfo)
+    }
+
+    @Test
+    fun `M delegate to persister W onReceive`() {
+        stubNetworkInfo(ConnectivityManager.TYPE_WIFI, -1)
+        testedProvider.onReceive(mockContext, mockIntent)
+
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
+            .hasCarrierName(null)
+            .hasCarrierId(-1)
+            .hasCellularTechnology(null)
+    }
+
+    @Test
     fun `not connected (null)`() {
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn null
         testedProvider.onReceive(mockContext, mockIntent)
@@ -170,17 +198,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to ethernet`() {
-        stubNetworkInfo(ConnectivityManager.TYPE_ETHERNET, -1)
+    fun `connected to ethernet`(forge: Forge) {
+        stubNetworkInfo(forge.anInt(), -1)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
-            .hasCarrierName(null)
-            .hasCarrierId(-1)
-            .hasCellularTechnology(null)
+        verify(mockConsentAwareDataWriter).write(networkInfo)
     }
 
     @Test

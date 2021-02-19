@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
@@ -21,6 +22,8 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -53,7 +56,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -354,7 +358,6 @@ internal class RumSessionScopeTest {
     @Test
     fun `M remove children scope W handleEvent child returns null`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
-        val newChildScope: RumScope = mock()
         whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
@@ -364,6 +367,7 @@ internal class RumSessionScopeTest {
         verifyZeroInteractions(mockWriter)
     }
 
+    @TestTargetApi(Build.VERSION_CODES.KITKAT)
     @Test
     fun `M send ApplicationStarted event W applicationDisplayed`(
         @StringForgery key: String,
@@ -379,6 +383,27 @@ internal class RumSessionScopeTest {
 
             val event = firstValue as RumRawEvent.ApplicationStarted
             assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+        }
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @TestTargetApi(Build.VERSION_CODES.N)
+    @Test
+    fun `M send ApplicationStarted event W applicationDisplayed {API 24+}`(
+        @StringForgery key: String,
+        @StringForgery name: String
+    ) {
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+
+        argumentCaptor<RumRawEvent> {
+            verify(childView).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ApplicationStarted
+            assertThat(event.applicationStartupNanos)
+                .isCloseTo(System.nanoTime(), Offset.offset(TimeUnit.MILLISECONDS.toNanos(100)))
         }
         verifyZeroInteractions(mockWriter)
     }

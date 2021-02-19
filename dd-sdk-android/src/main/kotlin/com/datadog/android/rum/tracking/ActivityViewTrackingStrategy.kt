@@ -8,6 +8,7 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.os.Bundle
+import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -50,13 +51,15 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         componentPredicate.runIfValid(activity) {
-            val javaClass = it.javaClass
-            val vieName = javaClass.canonicalName ?: javaClass.simpleName
-            val attributes =
-                if (trackExtras) convertToRumAttributes(it.intent?.extras) else emptyMap()
+            val viewName = componentPredicate.resolveViewName(activity)
+            val attributes = if (trackExtras) {
+                convertToRumAttributes(it.intent?.extras)
+            } else {
+                emptyMap()
+            }
             GlobalRum.monitor.startView(
                 it,
-                vieName,
+                viewName,
                 attributes
             )
             // we still need to call onFinishedLoading here for API bellow 29 as the

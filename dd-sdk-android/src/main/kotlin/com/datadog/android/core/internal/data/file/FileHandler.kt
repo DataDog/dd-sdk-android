@@ -7,7 +7,11 @@
 package com.datadog.android.core.internal.data.file
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.use
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 import java.lang.NullPointerException
 
 internal class FileHandler {
@@ -57,9 +61,50 @@ internal class FileHandler {
             }
     }
 
+    fun writeData(
+        file: File,
+        dataAsByteArray: ByteArray,
+        append: Boolean = false,
+        separator: ByteArray? = null
+    ): Boolean {
+
+        var isSuccess = false
+
+        try {
+            val outputStream = FileOutputStream(file, append)
+            outputStream.use { stream ->
+                lockFileAndWriteData(stream, file, dataAsByteArray, separator)
+            }
+            isSuccess = true
+        } catch (e: IllegalStateException) {
+            sdkLogger.e("Exception when trying to lock the file: [${file.canonicalPath}] ", e)
+        } catch (e: FileNotFoundException) {
+            sdkLogger.e("Couldn't create an output stream to file ${file.path}", e)
+        } catch (e: IOException) {
+            sdkLogger.e("Exception when trying to write data to: [${file.canonicalPath}] ", e)
+        }
+
+        return isSuccess
+    }
+
     // endregion
 
     // region Internal
+
+    private fun lockFileAndWriteData(
+        stream: FileOutputStream,
+        file: File,
+        dataAsByteArray: ByteArray,
+        separator: ByteArray?
+    ) {
+        stream.channel.lock().use {
+            if (file.length() > 0 && separator != null) {
+                stream.write(separator + dataAsByteArray)
+            } else {
+                stream.write(dataAsByteArray)
+            }
+        }
+    }
 
     @SuppressWarnings("TooGenericExceptionCaught")
     private fun moveFile(destinationDirectory: File, file: File): Boolean {

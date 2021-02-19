@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -31,7 +32,7 @@ internal class RumViewScope(
     internal val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {
 
-    internal val urlName = name.replace('.', '/')
+    internal val url = key.resolveViewUrl().replace('.', '/')
 
     internal val keyRef: Reference<Any> = WeakReference(key)
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
@@ -111,7 +112,8 @@ internal class RumViewScope(
         return parentContext
             .copy(
                 viewId = viewId,
-                viewUrl = urlName,
+                viewName = name,
+                viewUrl = url,
                 actionId = (activeActionScope as? RumActionScope)?.actionId
             )
     }
@@ -197,6 +199,7 @@ internal class RumViewScope(
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
             usr = ErrorEvent.Usr(
@@ -291,6 +294,7 @@ internal class RumViewScope(
             date = eventTimestamp,
             view = ViewEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName.orEmpty(),
                 url = context.viewUrl.orEmpty(),
                 loadingTime = loadingTime,
                 loadingType = loadingType,
@@ -356,6 +360,7 @@ internal class RumViewScope(
             ),
             view = ActionEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
             usr = ActionEvent.Usr(

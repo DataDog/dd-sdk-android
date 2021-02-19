@@ -11,4 +11,3 @@ This folder has dedicated documentation for:
 * [Timber API integration](timber_integration.md).
 * [Migrating from earlier versions to the v1.0 of the dd-sdk-android](Migrating_To_1.0.0.md).
 * [SDK Perfomance](sdk_performance.md)
-* [SDK Benchmarks](sdk_benchmarks.md)

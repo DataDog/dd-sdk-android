@@ -11,7 +11,10 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -322,6 +325,165 @@ internal class FileHandlerTest {
             fakeException
         )
         restoreSdkLogHandler(originalLogHandler)
+    }
+
+    // endregion
+
+    // region Write data to file
+
+    @Test
+    fun `M write data W writeData{ append is false, separator is null }`(forge: Forge) {
+        // GIVEN
+        val fakeFile = File(fakeRootDirectory, forge.anAlphabeticalString())
+        fakeFile.createNewFile()
+        val fakeDataRow1 = forge.aString()
+        val fakeDataRow2 = forge.aString()
+        val fakeDataRow3 = forge.aString()
+
+        // WHEN
+        val isSuccess =
+            testedFileHandler.writeData(fakeFile, fakeDataRow1.toByteArray()) &&
+                testedFileHandler.writeData(fakeFile, fakeDataRow2.toByteArray()) &&
+                testedFileHandler.writeData(fakeFile, fakeDataRow3.toByteArray())
+
+        // THEN
+        assertThat(isSuccess).isTrue()
+        val readText = fakeFile.readText()
+        assertThat(readText).isEqualTo(fakeDataRow3)
+    }
+
+    @Test
+    fun `M write data W writeData{ append is true, separator is not null }`(forge: Forge) {
+        // GIVEN
+        val fakeFile = File(fakeRootDirectory, forge.anAlphabeticalString())
+        fakeFile.createNewFile()
+        val fakeDataRow1 = forge.aString()
+        val fakeDataRow2 = forge.aString()
+        val fakeDataRow3 = forge.aString()
+        val fakeSeparator = forge.anAlphabeticalString()
+        val expectedData =
+            arrayOf(fakeDataRow1, fakeDataRow2, fakeDataRow3).joinToString(fakeSeparator)
+
+        // WHEN
+        val isSuccess =
+            testedFileHandler.writeData(
+                fakeFile,
+                fakeDataRow1.toByteArray(),
+                true,
+                fakeSeparator.toByteArray()
+            ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow2.toByteArray(),
+                    true,
+                    fakeSeparator.toByteArray()
+                ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow3.toByteArray(),
+                    true,
+                    fakeSeparator.toByteArray()
+                )
+
+        // THEN
+        assertThat(isSuccess).isTrue()
+        val readText = fakeFile.readText()
+        assertThat(readText).isEqualTo(expectedData)
+    }
+
+    @Test
+    fun `M write data W writeData{ append is true, separator is null }`(forge: Forge) {
+        // GIVEN
+        val fakeFile = File(fakeRootDirectory, forge.anAlphabeticalString())
+        fakeFile.createNewFile()
+        val fakeDataRow1 = forge.aString()
+        val fakeDataRow2 = forge.aString()
+        val fakeDataRow3 = forge.aString()
+        val expectedData =
+            arrayOf(fakeDataRow1, fakeDataRow2, fakeDataRow3).joinToString("")
+
+        // WHEN
+        val isSuccess =
+            testedFileHandler.writeData(
+                fakeFile,
+                fakeDataRow1.toByteArray(),
+                true
+            ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow2.toByteArray(),
+                    true
+                ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow3.toByteArray(),
+                    true
+                )
+
+        // THEN
+        assertThat(isSuccess).isTrue()
+        val readText = fakeFile.readText()
+        assertThat(readText).isEqualTo(expectedData)
+    }
+
+    @Test
+    fun `M write data W writeData{ append is false, separator is not null }`(forge: Forge) {
+        // GIVEN
+        val fakeFile = File(fakeRootDirectory, forge.anAlphabeticalString())
+        fakeFile.createNewFile()
+        val fakeDataRow1 = forge.aString()
+        val fakeDataRow2 = forge.aString()
+        val fakeDataRow3 = forge.aString()
+        val fakeSeparator = forge.anAlphabeticalString()
+
+        // WHEN
+        val isSuccess =
+            testedFileHandler.writeData(
+                fakeFile,
+                fakeDataRow1.toByteArray(),
+                false,
+                fakeSeparator.toByteArray()
+            ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow2.toByteArray(),
+                    false,
+                    fakeSeparator.toByteArray()
+                ) &&
+                testedFileHandler.writeData(
+                    fakeFile,
+                    fakeDataRow3.toByteArray(),
+                    false,
+                    fakeSeparator.toByteArray()
+                )
+
+        // THEN
+        assertThat(isSuccess).isTrue()
+        val readText = fakeFile.readText()
+        assertThat(readText).isEqualTo(fakeDataRow3)
+    }
+
+    @Test
+    fun `M do nothing and log error W writeData { file does not exist }`(forge: Forge) {
+        // GIVEN
+        val mockLogHandler: LogHandler = mock()
+        val originalLogHandler: LogHandler = mockSdkLogHandler(mockLogHandler)
+
+        // WHEN
+        testedFileHandler.writeData(fakeRootDirectory, forge.aString().toByteArray())
+
+        // THEN
+        restoreSdkLogHandler(originalLogHandler)
+        verify(mockLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq("Couldn't create an output stream to file ${fakeRootDirectory.path}"),
+            isA(),
+            eq(
+                emptyMap()
+            ),
+            eq(emptySet()),
+            anyOrNull()
+        )
     }
 
     // endregion

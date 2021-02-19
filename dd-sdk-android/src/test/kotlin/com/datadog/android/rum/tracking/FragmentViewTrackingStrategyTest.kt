@@ -14,7 +14,7 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
-import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
@@ -49,6 +49,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("DEPRECATION")
 internal class FragmentViewTrackingStrategyTest {
 
     lateinit var testedStrategy: FragmentViewTrackingStrategy
@@ -156,7 +157,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -177,6 +178,10 @@ internal class FragmentViewTrackingStrategyTest {
             supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
                 override fun accept(component: Fragment): Boolean {
                     return false
+                }
+
+                override fun getViewName(component: Fragment): String? {
+                    return null
                 }
             }
         )
@@ -229,7 +234,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -333,7 +338,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(
@@ -354,6 +359,10 @@ internal class FragmentViewTrackingStrategyTest {
             defaultFragmentComponentPredicate = object : ComponentPredicate<android.app.Fragment> {
                 override fun accept(component: android.app.Fragment): Boolean {
                     return false
+                }
+
+                override fun getViewName(component: android.app.Fragment): String? {
+                    return null
                 }
             }
         )
@@ -410,7 +419,7 @@ internal class FragmentViewTrackingStrategyTest {
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor).startView(
                 eq(mockFragment),
-                eq(mockFragment.resolveViewName()),
+                eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
             verify(mockRumMonitor).stopView(

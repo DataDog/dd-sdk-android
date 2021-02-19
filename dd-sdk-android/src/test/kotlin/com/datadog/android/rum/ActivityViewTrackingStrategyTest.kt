@@ -14,12 +14,18 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
-import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -42,45 +48,36 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     @Mock
     lateinit var mockViewLoadingTimer: ViewLoadingTimer
 
-    // region tests
+    @Mock
+    lateinit var mockPredicate: ComponentPredicate<Activity>
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        testedStrategy =
-            ActivityViewTrackingStrategy(true)
+        testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
         testedStrategy.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
     }
 
+    // region Track View Loading Time
+
     @Test
-    fun `when created will notify the viewLoadingTimer`(forge: Forge) {
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityCreated()`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
+
         // Then
         verify(mockViewLoadingTimer).onCreated(mockActivity)
     }
 
     @Test
-    fun `when created will do nothing if activity not whitelisted`(forge: Forge) {
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityStarted()`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            true,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
-        // When
-        testedStrategy.onActivityCreated(mockActivity, null)
-        // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
-    }
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
 
-    @Test
-    fun `when started will notify the viewLoadingTimer for startLoading`() {
-        // Whenever
+        // When
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -88,19 +85,75 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     }
 
     @Test
-    fun `when started and activity not whitelisted will do nothing`() {
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityResumed()`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            trackExtras = false,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
 
-        // Whenever
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
+    }
+
+    @Test
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPostResumed()`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityPostResumed(mockActivity)
+
+        // Then
+        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
+    }
+
+    @Test
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused()`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
+
+        // Then
+        verify(mockViewLoadingTimer).onPaused(mockActivity)
+    }
+
+    @Test
+    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed()`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityDestroyed(mockActivity)
+
+        // Then
+        verify(mockViewLoadingTimer).onDestroyed(mockActivity)
+    }
+
+    // endregion
+
+    // region Track View Loading Time (not tracked)
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityCreated() {activity not tracked}`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
+        // When
+        testedStrategy.onActivityCreated(mockActivity, null)
+
+        // Then
+        verifyZeroInteractions(mockViewLoadingTimer)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityStarted() {activity not tracked}`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
+        // When
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -108,121 +161,23 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     }
 
     @Test
-    fun `when resumed it will start a view event`(forge: Forge) {
+    fun `𝕄 do nothing 𝕎 onActivityResumed() {activity not tracked}`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
         // When
         testedStrategy.onActivityResumed(mockActivity)
-        // Then
-        verify(mockRumMonitor).startView(
-            eq(mockActivity),
-            eq(mockActivity.resolveViewName()),
-            eq(emptyMap())
-        )
-    }
-
-    @Test
-    fun `when resumed will start a view event with intent extras as attributes`(
-        forge: Forge
-    ) {
-        // Given
-        val arguments = Bundle()
-        val expectedAttrs = mutableMapOf<String, Any?>()
-        for (i in 0..10) {
-            val key = forge.anAlphabeticalString()
-            val value = forge.anAsciiString()
-            arguments.putString(key, value)
-            expectedAttrs["view.arguments.$key"] = value
-        }
-        whenever(mockIntent.extras).thenReturn(arguments)
-        whenever(mockActivity.intent).thenReturn(mockIntent)
-
-        // Whenever
-        testedStrategy.onActivityResumed(mockActivity)
-
-        verify(mockRumMonitor).startView(
-            eq(mockActivity),
-            eq(mockActivity.resolveViewName()),
-            eq(expectedAttrs)
-        )
-    }
-
-    @Test
-    fun `when resumed and not tracking intent extras will send empty attributes`(
-        forge: Forge
-    ) {
-        // Given
-        testedStrategy =
-            ActivityViewTrackingStrategy(false)
-        val arguments = Bundle()
-        for (i in 0..10) {
-            val key = forge.anAlphabeticalString()
-            val value = forge.anAsciiString()
-            arguments.putString(key, value)
-        }
-        whenever(mockIntent.extras).thenReturn(arguments)
-        whenever(mockActivity.intent).thenReturn(mockIntent)
-
-        // Whenever
-        testedStrategy.onActivityResumed(mockActivity)
-
-        verify(mockRumMonitor).startView(
-            eq(mockActivity),
-            eq(mockActivity.resolveViewName()),
-            eq(emptyMap())
-        )
-    }
-
-    @Test
-    fun `when resumed will do nothing if activity is not whitelisted`() {
-        // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            trackExtras = false,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
-
-        // Whenever
-        testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockViewLoadingTimer)
     }
 
     @Test
-    fun `when postResumed will notify the viewLoadingTimer for stopLoading`() {
-        // Whenever
-        testedStrategy.onActivityPostResumed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
-    }
-
-    @Test
-    fun `when resumed will notify the viewLoadingTimer for stopLoading`() {
-        // Whenever
-        testedStrategy.onActivityResumed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
-    }
-
-    @Test
-    fun `when postResumed and activity not whitelisted will do nothing`() {
+    fun `𝕄 do nothing 𝕎 onActivityPostResumed() {activity not tracked}`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            trackExtras = false,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
 
-        // Whenever
+        // When
         testedStrategy.onActivityPostResumed(mockActivity)
 
         // Then
@@ -230,20 +185,151 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
     }
 
     @Test
-    fun `when paused it will update the view loading time and stop it in this order`(forge: Forge) {
+    fun `𝕄 do nothing 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
-        val expectedLoadingTime = forge.aLong()
-        val firsTimeLoading = forge.aBool()
-        val expectedLoadingType =
-            if (firsTimeLoading) {
-                ViewEvent.LoadingType.ACTIVITY_DISPLAY
-            } else {
-                ViewEvent.LoadingType.ACTIVITY_REDISPLAY
-            }
-        whenever(mockViewLoadingTimer.getLoadingTime(mockActivity))
-            .thenReturn(expectedLoadingTime)
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity))
-            .thenReturn(firsTimeLoading)
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
+
+        // Then
+        verifyZeroInteractions(mockViewLoadingTimer)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityDestroyed() {activity not tracked}`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
+        // When
+        testedStrategy.onActivityDestroyed(mockActivity)
+
+        // Then
+        verifyZeroInteractions(mockViewLoadingTimer)
+    }
+
+    // endregion
+
+    // region Track RUM View
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed()`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockRumMonitor).startView(
+            mockActivity,
+            mockActivity.resolveViewName(),
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {extra attributes}`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
+        ) attributes: Map<String, String>
+    ) {
+        // Given
+        val arguments = Bundle(attributes.size)
+        attributes.forEach { (k, v) -> arguments.putString(k, v) }
+        whenever(mockIntent.extras).thenReturn(arguments)
+        whenever(mockActivity.intent).thenReturn(mockIntent)
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockRumMonitor).startView(
+            mockActivity,
+            mockActivity.resolveViewName(),
+            attributes.map { (k, v) -> "view.arguments.$k" to v }.toMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {extra attributes not tracked}`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
+        ) attributes: Map<String, String>
+    ) {
+        // Given
+        val arguments = Bundle(attributes.size)
+        attributes.forEach { (k, v) -> arguments.putString(k, v) }
+        testedStrategy = ActivityViewTrackingStrategy(false, mockPredicate)
+        whenever(mockIntent.extras).thenReturn(arguments)
+        whenever(mockActivity.intent).thenReturn(mockIntent)
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        verify(mockRumMonitor).startView(
+            mockActivity,
+            mockActivity.resolveViewName(),
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {custom view name}`(
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockRumMonitor).startView(
+            mockActivity,
+            fakeName,
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {custom blank view name}`(
+        @StringForgery(StringForgeryType.WHITESPACE) fakeName: String
+    ) {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockRumMonitor).startView(
+            mockActivity,
+            mockActivity.resolveViewName(),
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused()`(
+        @BoolForgery firstTimeLoading: Boolean,
+        @LongForgery(1L) loadingTime: Long
+    ) {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        val expectedLoadingType = if (firstTimeLoading) {
+            ViewEvent.LoadingType.ACTIVITY_DISPLAY
+        } else {
+            ViewEvent.LoadingType.ACTIVITY_REDISPLAY
+        }
+        whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn firstTimeLoading
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -252,7 +338,7 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         inOrder(mockRumMonitor, mockViewLoadingTimer) {
             verify(mockRumMonitor).updateViewLoadingTime(
                 mockActivity,
-                expectedLoadingTime,
+                loadingTime,
                 expectedLoadingType
             )
             verify(mockRumMonitor).stopView(mockActivity, emptyMap())
@@ -260,55 +346,33 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         }
     }
 
-    @Test
-    fun `when paused will do nothing if activity is not whitelisted`() {
-        // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            trackExtras = false,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
+    // endregion
 
-        // Whenever
-        testedStrategy.onActivityPaused(mockActivity)
+    // region Track RUM View (not tracked)
+
+    @Test
+    fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {activity not tracked}`() {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
+
+        // When
+        testedStrategy.onActivityResumed(mockActivity)
 
         // Then
         verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
-    fun `when activity destroyed will notify the viewLoadingTimer for onDestroy`() {
-        // Whenever
-        testedStrategy.onActivityDestroyed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onDestroyed(mockActivity)
-    }
-
-    @Test
-    fun `when activity destroyed and not whitelisted will do nothing`() {
+    fun `𝕄 update RUM View loading time 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
-        testedStrategy = ActivityViewTrackingStrategy(
-            trackExtras = false,
-            componentPredicate = object :
-                ComponentPredicate<Activity> {
-                override fun accept(component: Activity): Boolean {
-                    return false
-                }
-            }
-        )
+        whenever(mockPredicate.accept(mockActivity)) doReturn false
 
-        // Whenever
-        testedStrategy.onActivityDestroyed(mockActivity)
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyZeroInteractions(mockRumMonitor, mockViewLoadingTimer)
     }
-
     // endregion
 
     // region internal

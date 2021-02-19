@@ -77,11 +77,8 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         componentPredicate.runIfValid(f) {
             val key = resolveKey(it)
             viewLoadingTimer.onFinishedLoading(key)
-            rumMonitor.startView(
-                key,
-                it.resolveViewName(),
-                argumentsProvider(it)
-            )
+            val viewName = componentPredicate.resolveViewName(f)
+            rumMonitor.startView(key, viewName, argumentsProvider(it))
             val loadingTime = viewLoadingTimer.getLoadingTime(key)
             if (loadingTime != null) {
                 advancedRumMonitor.updateViewLoadingTime(

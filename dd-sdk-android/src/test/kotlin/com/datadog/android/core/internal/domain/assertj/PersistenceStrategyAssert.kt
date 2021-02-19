@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.domain.assertj
 
+import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.FileOrchestrator
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.FilePersistenceConfig
@@ -21,8 +22,12 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
         PersistenceStrategyAssert::class.java
     ) {
 
+    // region Unit Tests
+
     fun hasIntermediateStorageFolder(folderPath: String): PersistenceStrategyAssert<T> {
-        val absolutePath = actual.intermediateFileOrchestrator.rootDirectory.absolutePath
+        val intermediateFileOrchestrator =
+            getAsFileOrchestrator(actual.intermediateFileOrchestrator)
+        val absolutePath = intermediateFileOrchestrator?.rootDirectory?.absolutePath
         assertThat(absolutePath)
             .overridingErrorMessage(
                 "Expected strategy to have intermediate folder " +
@@ -33,7 +38,8 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
     }
 
     fun hasAuthorizedStorageFolder(folderPath: String): PersistenceStrategyAssert<T> {
-        val absolutePath = actual.authorizedFileOrchestrator.rootDirectory.absolutePath
+        val authorizedFileOrchestrator = getAsFileOrchestrator(actual.authorizedFileOrchestrator)
+        val absolutePath = authorizedFileOrchestrator?.rootDirectory?.absolutePath
         assertThat(absolutePath)
             .overridingErrorMessage(
                 "Expected strategy to have authorized folder " +
@@ -63,9 +69,12 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
     }
 
     fun hasConfig(config: FilePersistenceConfig): PersistenceStrategyAssert<T> {
-        assertThat(actual.intermediateFileOrchestrator.filePersistenceConfig)
+        val intermediateFileOrchestrator =
+            getAsFileOrchestrator(actual.intermediateFileOrchestrator)
+        val authorizedFileOrchestrator = getAsFileOrchestrator(actual.authorizedFileOrchestrator)
+        assertThat(intermediateFileOrchestrator?.filePersistenceConfig)
             .isEqualToComparingFieldByField(config)
-        assertThat(actual.authorizedFileOrchestrator.filePersistenceConfig)
+        assertThat(authorizedFileOrchestrator?.filePersistenceConfig)
             .isEqualToComparingFieldByField(config)
         return this
     }
@@ -81,6 +90,22 @@ internal class PersistenceStrategyAssert<T : Any>(actual: FilePersistenceStrateg
             .isEqualTo(folderPath)
         return this
     }
+
+    // endregion
+
+    // region Internals
+
+    private fun getAsFileOrchestrator(orchestrator: Orchestrator): FileOrchestrator? {
+        val fileOrchestrator = orchestrator as? FileOrchestrator
+        assertThat(orchestrator).overridingErrorMessage(
+            "Expected that orchestrator is of type " +
+                "FileOrchestrator instead it was of type %s",
+            orchestrator::class.java
+        ).isNotNull()
+        return fileOrchestrator
+    }
+
+    // endregion
 
     companion object {
         internal fun <T : Any> assertThat(actual: FilePersistenceStrategy<T>):

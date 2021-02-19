@@ -18,6 +18,8 @@ import androidx.navigation.findNavController
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
+import com.datadog.android.core.internal.utils.resolveViewName
+import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -36,7 +38,8 @@ import java.util.WeakHashMap
  */
 class NavigationViewTrackingStrategy(
     @IdRes private val navigationViewId: Int,
-    private val trackArguments: Boolean
+    private val trackArguments: Boolean,
+    private val componentPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy,
@@ -44,9 +47,14 @@ class NavigationViewTrackingStrategy(
 
     private var lifecycleCallbackRefs =
         WeakHashMap<Activity, NavControllerFragmentLifecycleCallbacks>()
+
     private val predicate: ComponentPredicate<Fragment> = object : ComponentPredicate<Fragment> {
         override fun accept(component: Fragment): Boolean {
             return !NavHostFragment::class.java.isAssignableFrom(component.javaClass)
+        }
+
+        override fun getViewName(component: Fragment): String? {
+            return null
         }
     }
 
@@ -58,9 +66,7 @@ class NavigationViewTrackingStrategy(
             if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
                     it,
-                    argumentsProvider = {
-                        emptyMap()
-                    },
+                    argumentsProvider = { emptyMap() },
                     componentPredicate = predicate
                 )
                 navControllerFragmentCallbacks.register(activity as FragmentActivity)
@@ -96,9 +102,11 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
-        val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
-        val name = destination.getRumViewName()
-        GlobalRum.get().startView(destination, name, attributes)
+        componentPredicate.runIfValid(destination) {
+            val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
+            val viewName = componentPredicate.resolveViewName(destination)
+            GlobalRum.get().startView(destination, viewName, attributes)
+        }
     }
 
     // endregion

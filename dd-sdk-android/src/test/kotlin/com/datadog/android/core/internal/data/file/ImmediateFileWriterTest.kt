@@ -9,14 +9,12 @@ package com.datadog.android.core.internal.data.file
 import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.Serializer
-import com.datadog.android.core.internal.threading.AndroidDeferredHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -54,9 +52,6 @@ internal class ImmediateFileWriterTest {
     @Mock
     lateinit var mockOrchestrator: Orchestrator
 
-    @Mock
-    lateinit var mockDeferredHandler: AndroidDeferredHandler
-
     @TempDir
     lateinit var tempRootDir: File
 
@@ -64,10 +59,6 @@ internal class ImmediateFileWriterTest {
     fun `set up`() {
         whenever(mockSerializer.serialize(any())).doAnswer {
             it.getArgument(0)
-        }
-        whenever(mockDeferredHandler.handle(any())) doAnswer {
-            val runnable = it.arguments[0] as Runnable
-            runnable.run()
         }
         testedWriter = ImmediateFileWriter(
             mockOrchestrator,
@@ -111,15 +102,18 @@ internal class ImmediateFileWriterTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 write several models 𝕎 write()+`(forge: Forge) {
+        // GIVEN
         val models = forge.aList { anAlphabeticalString() }
         val fileNameToWriteTo = forge.anAlphaNumericalString()
         val file = File(tempRootDir, fileNameToWriteTo)
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
+        // WHEN
         models.forEach {
             testedWriter.write(it)
         }
 
+        // THEN
         assertThat(file.readText())
             .isEqualTo(models.joinToString(","))
     }
@@ -127,6 +121,7 @@ internal class ImmediateFileWriterTest {
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 write several models with custom separator 𝕎 write()+`(forge: Forge) {
+        // GIVEN
         val separator = forge.anAsciiString()
         testedWriter = ImmediateFileWriter(
             mockOrchestrator,
@@ -138,6 +133,7 @@ internal class ImmediateFileWriterTest {
         val file = File(tempRootDir, fileNameToWriteTo)
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
+        // WHEN
         models.forEach {
             testedWriter.write(it)
         }
@@ -152,12 +148,15 @@ internal class ImmediateFileWriterTest {
         @StringForgery model: String,
         @StringForgery errorMessage: String
     ) {
+        // GIVEN
         val throwable = RuntimeException(errorMessage)
         doThrow(throwable).whenever(mockSerializer).serialize(model)
 
+        // WHEN
         testedWriter.write(model)
 
-        verifyZeroInteractions(mockDeferredHandler)
+        // THEN
+        assertThat(tempRootDir.listFiles()).isEmpty()
     }
 
     @Test
@@ -165,27 +164,31 @@ internal class ImmediateFileWriterTest {
     fun `𝕄 do nothing 𝕎 write() with SecurityException thrown while providing a file`(
         forge: Forge
     ) {
+        // GIVEN
         val modelValue = forge.anAlphabeticalString()
         val exception = SecurityException(forge.anAlphabeticalString())
         doThrow(exception).whenever(mockOrchestrator).getWritableFile(any())
 
+        // WHEN
         testedWriter.write(modelValue)
 
-        verifyZeroInteractions(mockDeferredHandler)
+        // THEN
+        assertThat(tempRootDir.listFiles()).isEmpty()
     }
 
     @Test
     fun `𝕄 do nothing 𝕎 write() and FileOrchestrator returns a null file`(
         forge: Forge
     ) {
+        // GIVEN
         val modelValue = forge.anAlphabeticalString()
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
 
-        // When
+        // WHEN
         testedWriter.write(modelValue)
 
-        // Then
-        verifyZeroInteractions(mockDeferredHandler)
+        // THEN
+        assertThat(tempRootDir.listFiles()).isEmpty()
     }
 
     @Test
@@ -194,16 +197,17 @@ internal class ImmediateFileWriterTest {
         @StringForgery fileName: String,
         forge: Forge
     ) {
+        // GIVEN
         val nonExistentDir = File(tempRootDir, dirName)
         val file = File(nonExistentDir, fileName)
         val modelValue = forge.anAlphabeticalString()
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
 
-        // When
+        // WHEN
         testedWriter.write(modelValue)
 
-        // Then
-        verifyZeroInteractions(mockDeferredHandler)
+        // THEN
+        assertThat(tempRootDir.listFiles()).isEmpty()
     }
 
     @Test

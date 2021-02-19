@@ -90,6 +90,11 @@
           "type": "string",
           "description": "URL of the view",
           "readOnly": false
+        },
+        "name": {
+          "type": "string",
+          "description": "User defined name of the view",
+          "readOnly": false
         }
       },
       "readOnly": true

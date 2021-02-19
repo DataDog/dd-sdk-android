@@ -107,7 +107,7 @@
             },
             "custom_timings": {
               "type": "object",
-              "description": "User custom timings of the view",
+              "description": "User custom timings of the view. As timing name is used as facet path, it must contain only letters, digits, or the characters - _ . @ $",
               "additionalProperties": {
                 "type": "integer",
                 "minimum": 0,
