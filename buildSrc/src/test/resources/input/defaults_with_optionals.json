@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bike",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "integer",
+      "default": 1
+    },
+    "productName": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "default": "road"
+    },
+    "price": {
+      "type": "number",
+      "default": 55.5
+    },
+    "frameMaterial": {
+      "type": "string",
+      "enum": [
+        "carbon",
+        "light_aluminium",
+        "iron"
+      ],
+      "default": "light_aluminium"
+    },
+    "inStock": {
+      "type": "boolean",
+      "default": true
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "red",
+        "amber",
+        "green",
+        "dark_blue",
+        "lime green",
+        "sunburst-yellow"
+      ],
+      "default": "lime green"
+    }
+  },
+  "required": [
+    "productId",
+    "productName",
+    "price",
+    "inStock",
+    "color"
+  ]
+}

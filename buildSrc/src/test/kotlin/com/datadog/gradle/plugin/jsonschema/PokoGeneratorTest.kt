@@ -7,13 +7,13 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @RunWith(Parameterized::class)
 class PokoGeneratorTest(
@@ -90,7 +90,8 @@ class PokoGeneratorTest(
                 arrayOf(Version, "Version"),
                 arrayOf(Video, "Video"),
                 arrayOf(User, "User"),
-                arrayOf(UserMerged, "UserMerged")
+                arrayOf(UserMerged, "UserMerged"),
+                arrayOf(Bike, "Bike")
             )
         }
     }

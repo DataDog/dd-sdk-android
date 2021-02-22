@@ -81,10 +81,6 @@ gradlePlugin {
             id = "cloneDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin"
         }
-        register("jsonschema2poko") {
-            id = "jsonschema2poko" // the alias
-            implementationClass = "com.datadog.gradle.plugin.jsonschema.JsonSchemaPlugin"
-        }
         register("transitiveDependencies") {
             id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
