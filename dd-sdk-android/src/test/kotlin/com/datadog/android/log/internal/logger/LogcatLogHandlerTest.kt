@@ -8,6 +8,8 @@ package com.datadog.android.log.internal.logger
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
+import fr.xgouchet.elmyr.Case
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -83,5 +85,58 @@ internal class LogcatLogHandlerTest {
                     "\$resolves nested stack trace element from caller" +
                     "\$runnable\$1"
             )
+    }
+
+    @Test
+    fun `resolves valid stack trace element when wrapped in timber`(forge: Forge) {
+
+        // Given
+        val forgeFileName: Forge.() -> String = {
+            "${this.anAlphabeticalString(Case.ANY)}.${this.aStringMatching("(kt|java)")}"
+        }
+
+        val ignoredElements = forge.aList {
+
+            val className = if (aBool()) {
+                // generate from ignored class names pattern
+                LogcatLogHandler.IGNORED_CLASS_NAMES.random()
+            } else {
+                // generate from ignored packages prefixes pattern
+                val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
+                packagePrefix + ".${anAlphabeticalString(Case.ANY).capitalize()}"
+            }
+
+            StackTraceElement(
+                className,
+                anAlphabeticalString(Case.ANY),
+                forgeFileName(this),
+                aSmallInt()
+            )
+        }
+
+        val validElements = forge.aList {
+
+            val className = "com.${anAlphabeticalString(Case.LOWER, 5)}" +
+                ".${anAlphabeticalString(Case.LOWER, 6)}" +
+                ".${anAlphabeticalString(Case.LOWER, 7)}" +
+                ".${anAlphabeticalString(Case.ANY, 8)}"
+
+            StackTraceElement(
+                className,
+                anAlphabeticalString(Case.ANY),
+                forgeFileName(this),
+                aSmallInt()
+            )
+        }
+
+        val stackTrace = (ignoredElements + validElements).toTypedArray()
+
+        // When
+        val element = testedHandler.findValidCallStackElement(stackTrace)
+
+        // Then
+        checkNotNull(element)
+        assertThat(element.className)
+            .isEqualTo(validElements.first().className)
     }
 }
