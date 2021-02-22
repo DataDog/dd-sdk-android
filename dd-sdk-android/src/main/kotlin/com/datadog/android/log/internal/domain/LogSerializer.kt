@@ -77,7 +77,10 @@ internal class LogSerializer(
     ) {
         val info = log.networkInfo
         if (info != null) {
-            jsonLog.addProperty(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            jsonLog.addProperty(
+                LogAttributes.NETWORK_CONNECTIVITY,
+                info.connectivity.toJson().asString
+            )
             if (!info.carrierName.isNullOrBlank()) {
                 jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
             }

@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.assertj
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.model.NetworkInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
@@ -33,7 +33,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasCarrierId(expected: Int): NetworkInfoAssert {
+    fun hasCarrierId(expected: Long): NetworkInfoAssert {
         assertThat(actual.carrierId)
             .overridingErrorMessage(
                 "Expected networkInfo to have carrierId $expected " +
@@ -53,7 +53,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasUpSpeed(expected: Int): NetworkInfoAssert {
+    fun hasUpSpeed(expected: Long): NetworkInfoAssert {
         assertThat(actual.upKbps)
             .overridingErrorMessage(
                 "Expected networkInfo to have upKbps $expected " +
@@ -63,7 +63,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasDownSpeed(expected: Int): NetworkInfoAssert {
+    fun hasDownSpeed(expected: Long): NetworkInfoAssert {
         assertThat(actual.downKbps)
             .overridingErrorMessage(
                 "Expected networkInfo to have downKbps $expected " +
@@ -73,7 +73,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasStrength(expected: Int): NetworkInfoAssert {
+    fun hasStrength(expected: Long): NetworkInfoAssert {
         assertThat(actual.strength)
             .overridingErrorMessage(
                 "Expected networkInfo to have strength $expected " +

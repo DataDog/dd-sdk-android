@@ -235,9 +235,9 @@ internal class LogSerializerTest {
         val info = log.networkInfo
         if (info != null) {
             assertThat(jsonObject).apply {
-                hasField(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
+                hasField(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.toJson().asString)
                 if (!info.carrierName.isNullOrBlank()) {
-                    hasField(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName!!)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }

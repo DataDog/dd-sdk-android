@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.net.info
 
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -28,54 +29,16 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class NetworkInfoDeserializerTest {
     lateinit var testedDeserializer: NetworkInfoDeserializer
-    lateinit var serializer: NetworkInfoSerializer
 
     @BeforeEach
     fun `set up`() {
-        serializer = NetworkInfoSerializer()
         testedDeserializer = NetworkInfoDeserializer()
     }
 
     @Test
-    fun `M deserialize a model W deserialize`(@Forgery networkInfo: NetworkInfo, forge: Forge) {
+    fun `M deserialize a model W deserialize`(@Forgery fakeNetworkInfo: NetworkInfo, forge: Forge) {
         // GIVEN
-        val fakeNetworkInfo =
-            networkInfo.copy(carrierName = forge.aString(), cellularTechnology = forge.aString())
-        val serializedNetworkInfo = serializer.serialize(fakeNetworkInfo)
-
-        // WHEN
-        val deserializedNetworkInfo = testedDeserializer.deserialize(serializedNetworkInfo)
-
-        // THEN
-        assertThat(deserializedNetworkInfo).isEqualTo(fakeNetworkInfo)
-    }
-
-    @Test
-    fun `M deserialize a model W deserialize {carrierName is null }`(
-        @Forgery networkInfo: NetworkInfo,
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeNetworkInfo =
-            networkInfo.copy(carrierName = null, cellularTechnology = forge.aString())
-        val serializedNetworkInfo = serializer.serialize(fakeNetworkInfo)
-
-        // WHEN
-        val deserializedNetworkInfo = testedDeserializer.deserialize(serializedNetworkInfo)
-
-        // THEN
-        assertThat(deserializedNetworkInfo).isEqualTo(fakeNetworkInfo)
-    }
-
-    @Test
-    fun `M deserialize a model W deserialize {cellularTechnology is null }`(
-        @Forgery networkInfo: NetworkInfo,
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeNetworkInfo =
-            networkInfo.copy(carrierName = forge.aString(), cellularTechnology = null)
-        val serializedNetworkInfo = serializer.serialize(fakeNetworkInfo)
+        val serializedNetworkInfo = fakeNetworkInfo.toJson().asJsonObject.toString()
 
         // WHEN
         val deserializedNetworkInfo = testedDeserializer.deserialize(serializedNetworkInfo)

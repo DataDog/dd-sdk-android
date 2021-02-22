@@ -19,3 +19,4 @@ build/
 
 # Generated Poko
 src/main/kotlin/com/datadog/android/rum/model/
+src/main/kotlin/com/datadog/android/core/model/

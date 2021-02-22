@@ -6,8 +6,8 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.user.UserInfo

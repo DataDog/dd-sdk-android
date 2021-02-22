@@ -13,6 +13,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
@@ -80,7 +81,7 @@ internal class CallbackNetworkInfoProviderTest {
             .hasCarrierId(-1)
             .hasUpSpeed(-1)
             .hasDownSpeed(-1)
-            .hasStrength(Int.MIN_VALUE)
+            .hasStrength(Int.MIN_VALUE.toLong())
     }
 
     @Test
@@ -102,9 +103,9 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
-            .hasStrength(strength)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(strength.toLong())
     }
 
     @Test
@@ -124,9 +125,9 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
-            .hasStrength(Int.MIN_VALUE)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(Int.MIN_VALUE.toLong())
     }
 
     @Test
@@ -149,9 +150,9 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
-            .hasStrength(strength)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(strength.toLong())
     }
 
     @Test
@@ -172,9 +173,9 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
-            .hasStrength(Int.MIN_VALUE)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(Int.MIN_VALUE.toLong())
     }
 
     @Test
@@ -194,8 +195,8 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
     }
 
     @Test
@@ -215,8 +216,8 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
     }
 
     @Test
@@ -235,8 +236,8 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
     }
 
     @Test
@@ -256,8 +257,8 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
     }
 
     @Test
@@ -314,9 +315,9 @@ internal class CallbackNetworkInfoProviderTest {
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
             .hasCarrierId(-1)
-            .hasUpSpeed(upSpeed)
-            .hasDownSpeed(downSpeed)
-            .hasStrength(Int.MIN_VALUE)
+            .hasUpSpeed(upSpeed.toLong())
+            .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(Int.MIN_VALUE.toLong())
     }
 
     @Test

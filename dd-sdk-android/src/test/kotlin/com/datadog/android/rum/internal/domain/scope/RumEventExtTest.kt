@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -131,7 +131,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {not connected}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -149,7 +151,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIFI
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -167,7 +171,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIMAX)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIMAX
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -185,7 +191,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_ETHERNET)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -203,7 +211,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_BLUETOOTH)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -232,7 +242,10 @@ internal class RumEventExtTest {
             NetworkInfo.Connectivity.NETWORK_CELLULAR
         )
         val technology = forge.anAlphabeticalString()
-        val networkInfo = NetworkInfo(connectivity, cellularTechnology = technology)
+        val networkInfo = NetworkInfo(
+            connectivity,
+            cellularTechnology = technology
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -250,7 +263,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_OTHER
+        )
 
         // When
         val result = networkInfo.toResourceConnectivity()
@@ -268,7 +283,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {not connected}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -286,7 +303,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIFI)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIFI
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -304,7 +323,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_WIMAX)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIMAX
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -322,7 +343,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_ETHERNET)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -340,7 +363,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_BLUETOOTH)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -369,7 +394,10 @@ internal class RumEventExtTest {
             NetworkInfo.Connectivity.NETWORK_CELLULAR
         )
         val technology = forge.anAlphabeticalString()
-        val networkInfo = NetworkInfo(connectivity, cellularTechnology = technology)
+        val networkInfo = NetworkInfo(
+            connectivity,
+            cellularTechnology = technology
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()
@@ -387,7 +415,9 @@ internal class RumEventExtTest {
     @Test
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other}`() {
         // Given
-        val networkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_OTHER
+        )
 
         // When
         val result = networkInfo.toErrorConnectivity()

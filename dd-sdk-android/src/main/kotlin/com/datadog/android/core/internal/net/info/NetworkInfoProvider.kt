@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net.info
 
 import android.content.Context
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

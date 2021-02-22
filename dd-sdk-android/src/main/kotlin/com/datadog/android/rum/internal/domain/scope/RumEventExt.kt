@@ -7,8 +7,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -210,4 +210,8 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
         interfaces,
         cellular
     )
+}
+
+internal fun NetworkInfo.isConnected(): Boolean {
+    return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
 }

@@ -1,7 +1,10 @@
 import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
 
+val generateRumPokosTaskName: String = "generateJsonSchema2Poko"
+val generateCorePokosTaskName: String = "generateCoreClasses"
+
 tasks.register(
-    "generateJsonSchema2Poko",
+    generateRumPokosTaskName,
     com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
 ) {
     inputDirPath = "src/main/json"
@@ -16,7 +19,16 @@ tasks.register(
     )
 }
 
-tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
-    ?.dependsOn("generateJsonSchema2Poko")
+tasks.register(
+    generateCorePokosTaskName,
+    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
+) {
+    inputDirPath = "src/main/core-internal-schemas"
+    targetPackageName = "com.datadog.android.core.model"
+}
 
-tasks.named("preBuild") { dependsOn("generateJsonSchema2Poko") }
+tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
+    ?.dependsOn(generateRumPokosTaskName, generateCorePokosTaskName)
+
+tasks.findByName("preBuild")
+    ?.dependsOn(generateRumPokosTaskName, generateCorePokosTaskName)

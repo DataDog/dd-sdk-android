@@ -13,6 +13,7 @@ import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -240,7 +241,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(carrierName)
-            .hasCarrierId(carrierId)
+            .hasCarrierId(carrierId.toLong())
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -277,7 +278,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(carrierName)
-            .hasCarrierId(carrierId)
+            .hasCarrierId(carrierId.toLong())
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -314,7 +315,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(carrierName)
-            .hasCarrierId(carrierId)
+            .hasCarrierId(carrierId.toLong())
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -351,7 +352,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(carrierName)
-            .hasCarrierId(carrierId)
+            .hasCarrierId(carrierId.toLong())
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -388,7 +389,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(carrierName)
-            .hasCarrierId(carrierId)
+            .hasCarrierId(carrierId.toLong())
             .hasCellularTechnology(null)
     }
 
@@ -429,7 +430,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     private fun stubTelephonyManager(carrierName: String?, carrierId: Int) {
         whenever(mockTelephonyManager.simCarrierIdName) doReturn carrierName
-        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId
+        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId.toInt()
     }
 
     private fun stubNetworkInfo(networkType: Int, networkSubtype: Int) {

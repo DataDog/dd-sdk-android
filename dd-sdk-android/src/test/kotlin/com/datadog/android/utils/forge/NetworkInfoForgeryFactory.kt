@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.model.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -20,10 +20,10 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
                 forge.aWhitespaceString(),
                 null
             ),
-            carrierId = if (forge.aBool()) forge.anInt(0, 10000) else -1,
-            upKbps = forge.anInt(0, Int.MAX_VALUE),
-            downKbps = forge.anInt(0, Int.MAX_VALUE),
-            strength = forge.anInt(-100, -30), // dBm for wifi signal
+            carrierId = if (forge.aBool()) forge.aLong(0, 10000) else -1,
+            upKbps = forge.aLong(0, Long.MAX_VALUE),
+            downKbps = forge.aLong(0, Long.MAX_VALUE),
+            strength = forge.aLong(-100, -30), // dBm for wifi signal
             cellularTechnology = forge.aNullable { anAlphabeticalString() }
         )
     }

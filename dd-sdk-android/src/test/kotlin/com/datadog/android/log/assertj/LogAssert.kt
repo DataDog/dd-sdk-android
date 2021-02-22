@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.assertj
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.user.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
