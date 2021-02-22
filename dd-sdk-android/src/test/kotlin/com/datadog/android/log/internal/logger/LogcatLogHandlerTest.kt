@@ -8,6 +8,8 @@ package com.datadog.android.log.internal.logger
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
+import fr.xgouchet.elmyr.Case
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -86,45 +88,48 @@ internal class LogcatLogHandlerTest {
     }
 
     @Test
-    fun `resolves valid stack trace element when wrapped in timber`() {
+    fun `resolves valid stack trace element when wrapped in timber`(forge: Forge) {
 
-        /* ktlint-disable max-line-length */
         // Given
-        val rawStackTrace =
-            "com.datadog.android.log.internal.logger.LogcatLogHandler.handleLog(LogcatLogHandler.kt:31)\n" +
-                "com.datadog.android.log.internal.logger.CombinedLogHandler.handleLog(CombinedLogHandler.kt:23)\n" +
-                "com.datadog.android.log.Logger.internalLog\$dd_sdk_android_debug(Logger.kt:517)\n" +
-                "com.datadog.android.log.Logger.internalLog\$dd_sdk_android_debug\$default(Logger.kt:512)\n" +
-                "com.datadog.android.log.Logger.log(Logger.kt:165)\n" +
-                "com.datadog.android.log.Logger.log\$default(Logger.kt:163)\n" +
-                "com.datadog.android.timber.DatadogTree.log(DatadogTree.kt:32)\n" +
-                "timber.log.Timber\$Tree.prepareLog(Timber.java:532)\n" +
-                "timber.log.Timber\$Tree.d(Timber.java:405)\n" +
-                "timber.log.Timber\$1.d(Timber.java:243)\n" +
-                "timber.log.Timber.d(Timber.java:38)\n" +
-                "com.datadog.android.sample.home.HomeFragment.onClick(HomeFragment.kt:65)\n" +
-                "android.view.View.performClick(View.java:7448)\n" +
-                "android.view.View.performClickInternal(View.java:7425)\n" +
-                "android.view.View.access\$3600(View.java:810)"
-        /* ktlint-enable max-line-length */
+        val forgeFileName: Forge.() -> String = {
+            "${this.anAlphabeticalString(Case.ANY)}.${this.aStringMatching("(kt|java)")}"
+        }
 
-        val matchingRegex = Regex("(\\S+)\\((\\S+)\\)")
+        val ignoredElements = forge.aList {
 
-        val stackTrace = rawStackTrace.lines().map { line ->
-            // let it crash here if something is wrong with matching
-            val groups = matchingRegex.matchEntire(line)!!.groupValues
+            val className = if (aBool()) {
+                // generate from ignored class names pattern
+                LogcatLogHandler.IGNORED_CLASS_NAMES.random()
+            } else {
+                // generate from ignored packages prefixes pattern
+                val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
+                packagePrefix + ".${anAlphabeticalString(Case.ANY).capitalize()}"
+            }
 
-            // group 1 is like com.datadog.android.log.internal.logger.LogcatLogHandler.handleLog
-            val declaringClass = groups[1].split('.')
-                .dropLast(1)
-                .joinToString(separator = ".")
-            val methodName = groups[1].split('.').last()
+            StackTraceElement(
+                className,
+                anAlphabeticalString(Case.ANY),
+                forgeFileName(this),
+                aSmallInt()
+            )
+        }
 
-            // group 2 is like LogcatLogHandler.kt:31
-            val (fileName, lineNumber) = groups[2].split(':')
+        val validElements = forge.aList {
 
-            StackTraceElement(declaringClass, methodName, fileName, lineNumber.toInt())
-        }.toTypedArray()
+            val className = "com.${anAlphabeticalString(Case.LOWER, 5)}" +
+                ".${anAlphabeticalString(Case.LOWER, 6)}" +
+                ".${anAlphabeticalString(Case.LOWER, 7)}" +
+                ".${anAlphabeticalString(Case.ANY, 8)}"
+
+            StackTraceElement(
+                className,
+                anAlphabeticalString(Case.ANY),
+                forgeFileName(this),
+                aSmallInt()
+            )
+        }
+
+        val stackTrace = (ignoredElements + validElements).toTypedArray()
 
         // When
         val element = testedHandler.findValidCallStackElement(stackTrace)
@@ -132,6 +137,6 @@ internal class LogcatLogHandlerTest {
         // Then
         checkNotNull(element)
         assertThat(element.className)
-            .isEqualTo("com.datadog.android.sample.home.HomeFragment")
+            .isEqualTo(validElements.first().className)
     }
 }
