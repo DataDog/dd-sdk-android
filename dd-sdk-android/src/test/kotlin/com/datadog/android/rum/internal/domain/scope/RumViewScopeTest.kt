@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
@@ -25,9 +26,14 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
+import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -1172,13 +1178,14 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartAction) with active child ActionScope`(
+    fun `𝕄 do nothing and log warning 𝕎 handleEvent(StartAction) with active child ActionScope`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
         // Given
+        val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes()
         testedScope.activeActionScope = mockChildScope
         fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
@@ -1192,6 +1199,21 @@ internal class RumViewScopeTest {
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
+
+        verify(mockDevLogHandler).handleLog(
+            eq(Log.WARN),
+            argThat {
+                contains("was dropped") &&
+                    contains((fakeEvent as RumRawEvent.StartAction).name) &&
+                    contains((fakeEvent as RumRawEvent.StartAction).type.toString())
+            },
+            isNull(),
+            any(),
+            any(),
+            anyOrNull()
+        )
+
+        verifyNoMoreInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -2246,7 +2268,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multipe times`(
+    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multiple times`(
         forge: Forge
     ) {
         // Given
