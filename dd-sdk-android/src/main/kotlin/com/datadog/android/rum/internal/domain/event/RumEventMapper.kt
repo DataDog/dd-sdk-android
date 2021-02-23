@@ -53,17 +53,17 @@ internal data class RumEventMapper(
             (bundledMappedEvent == null || bundledMappedEvent != event.event)
         ) {
             devLogger.w(
-                VIEW_EVENT_NULL_WARNING_MESSAGE.format(event.toString())
+                VIEW_EVENT_NULL_WARNING_MESSAGE.format(event)
             )
             event
         } else if (bundledMappedEvent == null) {
             devLogger.w(
-                EVENT_NULL_WARNING_MESSAGE.format(event.toString())
+                EVENT_NULL_WARNING_MESSAGE.format(event)
             )
             null
         } else if (bundledMappedEvent !== event.event) {
             devLogger.w(
-                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(event.toString())
+                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(event)
             )
             null
         } else {
@@ -73,13 +73,13 @@ internal data class RumEventMapper(
 
     companion object {
         internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped ViewEvent was null." +
+            "RumEventMapper: the returned mapped ViewEvent was null. " +
                 "The original event object will be used instead: %s"
         internal const val EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped object was null." +
+            "RumEventMapper: the returned mapped object was null. " +
                 "This event will be dropped: %s"
         internal const val NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped object was not the" +
+            "RumEventMapper: the returned mapped object was not the " +
                 "same instance as the original object. This event will be dropped: %s"
         internal const val NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE =
             "RumEventMapper: there was no EventMapper assigned for" +
