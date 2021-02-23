@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
@@ -158,7 +159,15 @@ internal class RumViewScope(
     ) {
         delegateEventToChildren(event, writer)
 
-        if (stopped || activeActionScope != null) return
+        if (stopped) return
+
+        if (activeActionScope != null) {
+            devLogger.w(
+                "RUM Action (${event.type} on ${event.name}) was dropped, because" +
+                    " another action is still active for the same view"
+            )
+            return
+        }
 
         activeActionScope = RumActionScope.fromEvent(this, event)
     }
