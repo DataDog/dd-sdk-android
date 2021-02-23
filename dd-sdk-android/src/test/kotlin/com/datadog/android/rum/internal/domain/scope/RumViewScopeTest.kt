@@ -28,12 +28,8 @@ import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -48,6 +44,7 @@ import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -1201,16 +1198,12 @@ internal class RumViewScopeTest {
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
         verify(mockDevLogHandler).handleLog(
-            eq(Log.WARN),
-            argThat {
-                contains("was dropped") &&
-                    contains((fakeEvent as RumRawEvent.StartAction).name) &&
-                    contains((fakeEvent as RumRawEvent.StartAction).type.toString())
-            },
-            isNull(),
-            any(),
-            any(),
-            anyOrNull()
+            Log.WARN,
+            RumViewScope.ACTION_DROPPED_WARNING.format(
+                Locale.US,
+                (fakeEvent as RumRawEvent.StartAction).type,
+                (fakeEvent as RumRawEvent.StartAction).name
+            )
         )
 
         verifyNoMoreInteractions(mockDevLogHandler)
