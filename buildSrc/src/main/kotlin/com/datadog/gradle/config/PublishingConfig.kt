@@ -14,7 +14,7 @@ import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.delegateClosureOf
 
-const val MAVEN_PUBLICATION = "artifact"
+const val MAVEN_PUBLICATION = "aar"
 const val BINTRAY_USER = "bintrayUser"
 const val BINTRAY_API_KEY = "bintrayApiKey"
 
@@ -41,11 +41,7 @@ fun Project.publishingConfig(
                 artifactId = projectName
                 version = AndroidConfig.VERSION.name
 
-                if (asAar) {
-                    artifact("$buildDir/outputs/aar/$projectName-release.aar")
-                } else {
-                    artifact(tasks.findByName("jar"))
-                }
+                artifact("$buildDir/outputs/aar/$projectName-release.aar")
                 artifact(tasks.findByName("sourcesJar"))
                 artifact(tasks.findByName("generateJavadoc"))
 
@@ -53,14 +49,10 @@ fun Project.publishingConfig(
                 pom.withXml {
                     val dependenciesNode = asNode().appendNode("dependencies")
                     configurations.named("implementation").get().allDependencies.forEach {
-                        if (it.group.isNullOrBlank() || it.version.isNullOrBlank()) {
-                            System.err.println("Ignoring dependency $it for $projectName")
-                        } else {
-                            val dependencyNode = dependenciesNode.appendNode("dependency")
-                            dependencyNode.appendNode("groupId", it.group)
-                            dependencyNode.appendNode("artifactId", it.name)
-                            dependencyNode.appendNode("version", it.version)
-                        }
+                        val dependencyNode = dependenciesNode.appendNode("dependency")
+                        dependencyNode.appendNode("groupId", it.group)
+                        dependencyNode.appendNode("artifactId", it.name)
+                        dependencyNode.appendNode("version", it.version)
                     }
                 }
             }
