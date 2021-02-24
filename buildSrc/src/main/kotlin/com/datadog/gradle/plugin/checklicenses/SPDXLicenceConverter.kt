@@ -28,7 +28,8 @@ object SPDXLicenceConverter {
     private fun convertLicense(license: String): SPDXLicense? {
         if (license.isBlank()) return null
 
-        val nameMatch = FuzzySearch.extractOne(license.trim(),
+        val nameMatch = FuzzySearch.extractOne(
+            license.trim(),
             nameList
         )
         if (nameMatch.score > 90) {
@@ -36,7 +37,8 @@ object SPDXLicenceConverter {
             return nameMap[nameMatch.string]
         }
 
-        val identifierMatch = FuzzySearch.extractOne(license.trim(),
+        val identifierMatch = FuzzySearch.extractOne(
+            license.trim(),
             identifierList
         )
         if (identifierMatch.score > 90) {

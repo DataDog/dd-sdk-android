@@ -15,20 +15,30 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 
 fun Project.jacocoConfig() {
 
-    val jacocoTestDebugUnitTestReport = tasks.create("jacocoTestDebugUnitTestReport", JacocoReport::class.java)
+    val jacocoTestDebugUnitTestReport = tasks.create(
+        "jacocoTestDebugUnitTestReport",
+        JacocoReport::class.java
+    )
     jacocoTestDebugUnitTestReport.reports {
         csv.isEnabled = false
         xml.isEnabled = true
         html.isEnabled = true
-        html.destination = file("${buildDir.path}/reports/jacoco/jacocoTestDebugUnitTestReport/html")
+        html.destination = file(
+            "${buildDir.path}/reports/jacoco/jacocoTestDebugUnitTestReport/html"
+        )
     }
 
-    val jacocoTestReleaseUnitTestReport = tasks.create("jacocoTestReleaseUnitTestReport", JacocoReport::class.java)
+    val jacocoTestReleaseUnitTestReport = tasks.create(
+        "jacocoTestReleaseUnitTestReport",
+        JacocoReport::class.java
+    )
     jacocoTestReleaseUnitTestReport.reports {
         csv.isEnabled = false
         xml.isEnabled = true
         html.isEnabled = true
-        html.destination = file("${buildDir.path}/reports/jacoco/jacocoTestReleaseUnitTestReport/html")
+        html.destination = file(
+            "${buildDir.path}/reports/jacoco/jacocoTestReleaseUnitTestReport/html"
+        )
     }
 
     val jacocoTestCoverageVerification =

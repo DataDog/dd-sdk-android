@@ -20,8 +20,8 @@ sealed class BenchmarkStrategy {
                 else -> {
                     System.err.println(
                         "Benchmark test \"$$compare\" reported a median time of " +
-                                "$toMeasure milliseconds, but threshold is set to " +
-                                "$threshold milliseconds"
+                            "$toMeasure milliseconds, but threshold is set to " +
+                            "$threshold milliseconds"
                     )
                     false
                 }
@@ -44,8 +44,8 @@ sealed class BenchmarkStrategy {
                 else -> {
                     System.err.println(
                         "We were expecting a relativeThreshold smaller or equal with $threshold " +
-                                "milliseconds between the benchmark : \"$compare\" and : " +
-                                "\"$compareTo\" instead it was of $toMeasure milliseconds"
+                            "milliseconds between the benchmark : \"$compare\" and : " +
+                            "\"$compareTo\" instead it was of $toMeasure milliseconds"
                     )
                     false
                 }

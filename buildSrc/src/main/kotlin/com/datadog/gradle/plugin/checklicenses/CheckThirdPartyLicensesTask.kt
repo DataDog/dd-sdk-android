@@ -78,7 +78,9 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
                 error = true
                 System.err.println("✗ $check dependency in ${extension.csvFile.name} : $dep")
             } else if (knownInOtherComponent != null) {
-                System.err.println("✗ $dep $check but exist in component ${knownInOtherComponent.component}")
+                System.err.println(
+                    "✗ $dep $check but exist in component ${knownInOtherComponent.component}"
+                )
             }
         }
 

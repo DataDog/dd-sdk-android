@@ -59,12 +59,12 @@ class PokoGenerator(
 
         rootTypeName = definition.name
         val fileBuilder = FileSpec.builder(packageName, definition.name)
-        val typeBuilder = generateClass(definition)
+        val typeBuilder = generateClass(definition, fileBuilder)
 
         while (nestedClasses.isNotEmpty()) {
             val definitions = nestedClasses.toList()
             definitions.forEach {
-                typeBuilder.addType(generateClass(it).build())
+                typeBuilder.addType(generateClass(it, fileBuilder).build())
             }
             nestedClasses.removeAll(definitions)
         }
@@ -85,12 +85,14 @@ class PokoGenerator(
      * @param definition the definition of the type
      */
     private fun generateClass(
-        definition: TypeDefinition.Class
+        definition: TypeDefinition.Class,
+        fileBuilder: FileSpec.Builder
     ): TypeSpec.Builder {
         val constructorBuilder = FunSpec.constructorBuilder()
         val typeBuilder = TypeSpec.classBuilder(definition.name)
         val docBuilder = CodeBlock.builder()
 
+        addClassImports(definition, fileBuilder)
         appendTypeDefinition(
             definition,
             typeBuilder,
@@ -104,6 +106,26 @@ class PokoGenerator(
             .addType(companion)
 
         return typeBuilder
+    }
+
+    /**
+     * Provides extra imports for this specific class.
+     * @param definition the class type
+     * @param fileBuilder the file builder
+     */
+    private fun addClassImports(
+        definition: TypeDefinition.Class,
+        fileBuilder: FileSpec.Builder
+    ) {
+        if (definition.additionalProperties != null &&
+            definition.additionalProperties is TypeDefinition.Class
+        ) {
+            // import extension functions
+            fileBuilder.addImport(
+                EXTENSION_FUNCTIONS_PACKAGE_NAME,
+                TO_JSON_ELEMENT_EXTENSION_FUNCTION
+            )
+        }
     }
 
     /**
@@ -243,14 +265,14 @@ class PokoGenerator(
         constructorBuilder: FunSpec.Builder,
         docBuilder: CodeBlock.Builder
     ) {
-        val type = additionalPropertyType.asKotlinTypeName(
+
+        val type = additionalPropertyType.additionalPropertyType(
             nestedEnums,
             nestedClasses,
             knownTypes,
             packageName,
             rootTypeName
         )
-
         val constructorParamBuilder = ParameterSpec.builder(
             ADDITIONAL_PROPERTIES_NAME,
             MAP.parameterizedBy(STRING, type)
@@ -374,6 +396,8 @@ class PokoGenerator(
     // endregion
 
     companion object {
+        const val EXTENSION_FUNCTIONS_PACKAGE_NAME = "com.datadog.android.core.internal.utils"
+        const val TO_JSON_ELEMENT_EXTENSION_FUNCTION = "toJsonElement"
         const val ENUM_CONSTRUCTOR_JSON_VALUE_NAME = "jsonValue"
         const val ADDITIONAL_PROPERTIES_NAME = "additionalProperties"
     }
