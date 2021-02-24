@@ -25,7 +25,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
 
     init {
         group = "datadog"
-        description = "Review the Android benchmark results and ensure they fit the provided rules"
+        description = "Read source JSON schema files and generate the relevant Kotlin data classes"
     }
 
     // region Input/Output
