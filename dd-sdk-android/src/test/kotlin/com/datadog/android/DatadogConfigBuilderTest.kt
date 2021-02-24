@@ -10,6 +10,7 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -17,7 +18,6 @@ import com.datadog.android.rum.assertj.RumConfigAssert.Companion.assertThat
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
@@ -1164,7 +1164,7 @@ internal class DatadogConfigBuilderTest {
     fun `M provide the update mapper into RUM config W all event mappers are set`() {
         // GIVEN
         val mockActionEventMapper: EventMapper<ActionEvent> = mock()
-        val mockViewEventMapper: EventMapper<ViewEvent> = mock()
+        val mockViewEventMapper: ViewEventMapper = mock()
         val mockResourceEventMapper: EventMapper<ResourceEvent> = mock()
         val mockErrorEventMapper: EventMapper<ErrorEvent> = mock()
 
@@ -1198,8 +1198,7 @@ internal class DatadogConfigBuilderTest {
     @Test
     fun `M add the event mapper into the RUM config W { setRumViewEventMapper }`() {
         // GIVEN
-        val mockMapper: EventMapper<ViewEvent> = mock()
-
+        val mockMapper: ViewEventMapper = mock()
         // WHEN
         val config =
             DatadogConfig.Builder(fakeClientToken, fakeEnvName, fakeApplicationId)
