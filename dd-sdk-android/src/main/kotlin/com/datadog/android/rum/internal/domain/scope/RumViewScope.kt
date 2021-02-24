@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
@@ -22,6 +23,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -158,7 +160,12 @@ internal class RumViewScope(
     ) {
         delegateEventToChildren(event, writer)
 
-        if (stopped || activeActionScope != null) return
+        if (stopped) return
+
+        if (activeActionScope != null) {
+            devLogger.w(ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name))
+            return
+        }
 
         activeActionScope = RumActionScope.fromEvent(this, event)
     }
@@ -444,6 +451,9 @@ internal class RumViewScope(
     // endregion
 
     companion object {
+
+        internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
+            " another action is still active for the same view"
 
         internal fun fromEvent(
             parentScope: RumScope,
