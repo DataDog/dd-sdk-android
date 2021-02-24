@@ -10,11 +10,11 @@ import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoSerializer
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoSerializer
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
@@ -706,7 +706,7 @@ internal class DatadogNdkCrashHandlerTest {
             it?.name == value.name &&
                 it?.id == value.id &&
                 it?.email == value.email &&
-                it?.extraInfo?.size == value.extraInfo.size
+                it?.additionalProperties?.size == value.additionalProperties.size
         } ?: value
     }
 }

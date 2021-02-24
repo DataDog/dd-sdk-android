@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert

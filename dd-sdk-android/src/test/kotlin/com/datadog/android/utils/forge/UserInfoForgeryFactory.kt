@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -17,7 +17,7 @@ internal class UserInfoForgeryFactory : ForgeryFactory<UserInfo> {
             id = forge.anHexadecimalString(),
             name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
             email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-            extraInfo = forge.exhaustiveAttributes()
+            additionalProperties = forge.exhaustiveAttributes()
         )
     }
 }

@@ -6,6 +6,8 @@
 
 package com.datadog.android.log.internal.user
 
+import com.datadog.android.core.model.UserInfo
+
 internal interface UserInfoProvider {
 
     fun getUserInfo(): UserInfo

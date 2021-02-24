@@ -131,6 +131,11 @@ class com.datadog.android.core.model.NetworkInfo
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Connectivity
+class com.datadog.android.core.model.UserInfo
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): UserInfo
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 object com.datadog.android.log.LogAttributes

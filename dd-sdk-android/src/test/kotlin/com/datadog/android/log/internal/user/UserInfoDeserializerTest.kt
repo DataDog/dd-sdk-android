@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.user
 
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -39,7 +40,7 @@ internal class UserInfoDeserializerTest {
     @Test
     fun `M deserialize a model W deserialize`(@Forgery fakeUserInfo: UserInfo) {
         // GIVEN
-        val serializedUserInfo = serializer.serialize(fakeUserInfo)
+        val serializedUserInfo = fakeUserInfo.toJson().asJsonObject.toString()
 
         // WHEN
         val deserializedUserInfo = testedDeserializer.deserialize(serializedUserInfo)
@@ -47,11 +48,11 @@ internal class UserInfoDeserializerTest {
         // THEN
         assertThat(deserializedUserInfo).isEqualToIgnoringGivenFields(
             fakeUserInfo,
-            "extraInfo"
+            "additionalProperties"
         )
 
-        DatadogMapAnyValueAssert.assertThat(deserializedUserInfo!!.extraInfo)
-            .isEqualTo(fakeUserInfo.extraInfo)
+        DatadogMapAnyValueAssert.assertThat(deserializedUserInfo!!.additionalProperties)
+            .isEqualTo(fakeUserInfo.additionalProperties)
     }
 
     @Test

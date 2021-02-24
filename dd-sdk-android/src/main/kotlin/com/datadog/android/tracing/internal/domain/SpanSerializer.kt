@@ -15,8 +15,8 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.opentracing.DDSpan
 import com.google.gson.JsonArray
@@ -153,7 +153,7 @@ internal class SpanSerializer(
         }
         // add extra attributes
         dataConstraints.validateAttributes(
-            userInfo.extraInfo,
+            userInfo.additionalProperties,
             keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
             attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
         ).forEach {

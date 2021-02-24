@@ -7,7 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 
 /**
  * Represents a Log before it is persisted and sent to Datadog servers.

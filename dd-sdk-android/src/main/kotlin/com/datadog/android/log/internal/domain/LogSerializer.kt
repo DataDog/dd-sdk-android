@@ -112,7 +112,7 @@ internal class LogSerializer(
         }
         // add extra info
         dataConstraints.validateAttributes(
-            userInfo.extraInfo,
+            userInfo.additionalProperties,
             keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
             attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
         ).forEach {
