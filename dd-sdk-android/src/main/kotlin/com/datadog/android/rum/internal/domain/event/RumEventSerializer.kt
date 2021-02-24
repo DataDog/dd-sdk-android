@@ -26,7 +26,8 @@ internal class RumEventSerializer(
     // region Serializer
 
     override fun serialize(model: RumEvent): String {
-        val json = model.event.toJson().asJsonObject
+
+        val json = dataConstraints.validateEvent(model.event).toJson().asJsonObject
 
         addCustomAttributes(
             dataConstraints.validateAttributes(
