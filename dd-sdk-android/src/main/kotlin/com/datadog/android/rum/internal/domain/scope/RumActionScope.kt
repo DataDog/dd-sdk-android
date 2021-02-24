@@ -204,7 +204,6 @@ internal class RumActionScope(
                 userExtraAttributes = user.additionalProperties
             )
             writer.write(rumEvent)
-            parentScope.handleEvent(RumRawEvent.SentAction(), writer)
         } else {
             devLogger.i(
                 "RUM Action $actionId ($actualType on $name) was dropped " +

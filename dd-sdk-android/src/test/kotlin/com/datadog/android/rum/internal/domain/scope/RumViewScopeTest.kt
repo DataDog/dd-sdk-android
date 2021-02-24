@@ -868,7 +868,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
@@ -883,26 +883,6 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasUserInfo(fakeUserInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes + attributes)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(1)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1026,7 +1006,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(ApplicationStarted) on stopped view`(
+    fun `𝕄 send event 𝕎 handleEvent(ApplicationStarted) on stopped view`(
         @StringForgery key: String,
         @StringForgery name: String,
         @LongForgery(0) duration: Long
@@ -1042,7 +1022,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasActionData {
                     hasNonNullId()
@@ -1055,27 +1035,6 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasUserInfo(fakeUserInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(1)
-                    hasLongTaskCount(0)
-                    isActive(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
@@ -1400,7 +1359,7 @@ internal class RumViewScopeTest {
     // region Error
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(AddError) on active view`(
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1422,7 +1381,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1440,33 +1399,13 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send Error and View event 𝕎 AddError {throwable=null}`(
+    fun `𝕄 send event 𝕎 AddError {throwable=null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
@@ -1486,7 +1425,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1504,33 +1443,13 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send Error and View event 𝕎 AddError {stacktrace=null}`(
+    fun `𝕄 send event 𝕎 AddError {stacktrace=null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1552,7 +1471,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1571,33 +1490,13 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null}`(
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @BoolForgery fatal: Boolean,
@@ -1613,7 +1512,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1632,33 +1531,13 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(null)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(if (fatal) 1 else 0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events with global attributes 𝕎 handleEvent(AddError)`(
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError)`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1681,11 +1560,8 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val expectedViewAttributes = attributes.toMutableMap().apply {
-            putAll(fakeAttributes)
-        }
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1704,33 +1580,13 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1753,7 +1609,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1772,32 +1628,13 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(AddError) {custom error type}`(
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {custom error type}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1822,7 +1659,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1841,33 +1678,13 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasErrorType(errorType)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events with global attributes 𝕎 handleEvent(AddError) {isFatal=true}`(
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddError) {isFatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -1894,7 +1711,7 @@ internal class RumViewScopeTest {
             putAll(fakeAttributes)
         }
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -1912,26 +1729,6 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
-                }
-
-            assertThat(lastValue)
-                .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(1)
-                    hasCrashCount(1)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(0)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasName(testedScope.name)
-                    hasUrl(testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1987,7 +1784,7 @@ internal class RumViewScopeTest {
     // region Long Task
 
     @Test
-    fun `𝕄 send events 𝕎 handleEvent(AddLongTask) on active view`(
+    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view`(
         @LongForgery durationNs: Long,
         @StringForgery target: String
     ) {
@@ -1999,7 +1796,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
@@ -2012,31 +1809,13 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                 }
-
-            assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(1)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 send events with global attributes 𝕎 handleEvent(AddLongTask)`(
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask)`(
         @LongForgery durationNs: Long,
         @StringForgery target: String,
         forge: Forge
@@ -2056,7 +1835,7 @@ internal class RumViewScopeTest {
             putAll(fakeAttributes)
         }
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
@@ -2070,24 +1849,6 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
-                }
-
-            assertThat(lastValue)
-                .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasLongTaskCount(1)
-                    isActive(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2111,6 +1872,7 @@ internal class RumViewScopeTest {
         verifyZeroInteractions(mockWriter)
         assertThat(result).isNull()
     }
+
     // endregion
 
     // region Loading Time

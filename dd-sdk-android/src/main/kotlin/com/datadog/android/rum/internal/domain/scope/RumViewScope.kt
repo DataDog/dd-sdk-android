@@ -233,11 +233,6 @@ internal class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        errorCount++
-        if (event.isFatal) {
-            crashCount++
-        }
-        sendViewUpdate(event, writer)
     }
 
     private fun onAddCustomTiming(event: RumRawEvent.AddCustomTiming, writer: Writer<RumEvent>) {
@@ -394,9 +389,6 @@ internal class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-
-        actionCount++
-        sendViewUpdate(event, writer)
     }
 
     private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
@@ -444,8 +436,6 @@ internal class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        longTaskCount++
-        sendViewUpdate(event, writer)
     }
 
     // endregion
