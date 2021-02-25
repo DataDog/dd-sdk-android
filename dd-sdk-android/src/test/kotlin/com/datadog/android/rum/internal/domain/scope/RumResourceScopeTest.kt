@@ -150,9 +150,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -162,6 +161,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -173,29 +173,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -225,9 +202,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -237,6 +213,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -249,29 +226,6 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -311,9 +265,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -323,6 +276,7 @@ internal class RumResourceScopeTest {
                     hasUrl(brokenUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -335,29 +289,6 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, brokenUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(brokenUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -390,9 +321,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -402,6 +332,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -413,29 +344,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(fakeSpanId)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -466,9 +374,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -478,6 +385,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -489,29 +397,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -533,9 +418,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
                 .hasResourceData {
@@ -544,6 +428,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -555,29 +440,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(fakeAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -588,7 +450,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send related error event 𝕎 handleEvent(StopResource with error statusCode)`(
+    fun `𝕄 do not send error event 𝕎 handleEvent(StopResource with error statusCode)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(400, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long
@@ -600,31 +462,23 @@ internal class RumResourceScopeTest {
 
         // Then
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(2)).write(capture())
-            assertThat(lastValue)
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                .hasErrorData {
-                    hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                    hasSource(RumErrorSource.NETWORK)
-                    hasStackTrace(null)
-                    isCrash(false)
-                    hasResource(fakeUrl, fakeMethod, statusCode)
+                .hasResourceData {
+                    hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
-                    hasErrorType(
-                        RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                            statusCode
-                        )
-                    )
                 }
         }
         verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
+            isA<RumRawEvent.SentResource>(),
             same(mockWriter)
         )
         verifyNoMoreInteractions(mockWriter)
@@ -698,9 +552,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -710,6 +563,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -721,29 +575,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -775,9 +606,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -787,6 +617,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasTiming(timing)
                     hasUserInfo(fakeUserInfo)
@@ -799,29 +630,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -854,9 +662,8 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -866,6 +673,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasNoTiming()
                     hasUserInfo(fakeUserInfo)
@@ -878,29 +686,6 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -1253,9 +1038,8 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -1264,6 +1048,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -1273,29 +1058,6 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -1327,9 +1089,8 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -1338,6 +1099,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -1347,29 +1109,6 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -1402,9 +1141,8 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
 
-        val expectedCallTimes = resolveExpectedCallTimes(statusCode)
         argumentCaptor<RumEvent> {
-            verify(mockWriter, times(expectedCallTimes)).write(capture())
+            verify(mockWriter).write(capture())
             assertThat(firstValue)
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.extraInfo)
@@ -1413,6 +1151,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
+                    hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
                     hasTiming(timing)
                     hasUserInfo(fakeUserInfo)
@@ -1423,29 +1162,6 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                 }
-            if (expectedCallTimes > 1) {
-                assertThat(lastValue)
-                    .hasAttributes(expectedAttributes)
-                    .hasUserExtraAttributes(fakeUserInfo.extraInfo)
-                    .hasErrorData {
-                        hasMessage(RumResourceScope.ERROR_MSG_FORMAT.format(fakeMethod, fakeUrl))
-                        hasSource(RumErrorSource.NETWORK)
-                        hasStackTrace(null)
-                        isCrash(false)
-                        hasResource(fakeUrl, fakeMethod, statusCode)
-                        hasUserInfo(fakeUserInfo)
-                        hasConnectivityInfo(fakeNetworkInfo)
-                        hasView(fakeParentContext.viewId, fakeParentContext.viewUrl)
-                        hasApplicationId(fakeParentContext.applicationId)
-                        hasSessionId(fakeParentContext.sessionId)
-                        hasActionId(fakeParentContext.actionId)
-                        hasErrorType(
-                            RumResourceScope.ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(
-                                statusCode
-                            )
-                        )
-                    }
-            }
         }
         verify(mockParentScope).handleEvent(
             isA<RumRawEvent.SentResource>(),
@@ -1463,14 +1179,6 @@ internal class RumResourceScopeTest {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
-    }
-
-    private fun resolveExpectedCallTimes(statusCode: Long): Int {
-        return if (statusCode < RumResourceScope.HTTP_ERROR_CODE_THRESHOLD) {
-            1
-        } else {
-            2
-        }
     }
 
     // endregion
