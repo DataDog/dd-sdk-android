@@ -55,15 +55,15 @@ def github_create_pr(repository: str, branch_name: str, base_name: str, version:
     url = "https://api.github.com/repos/DataDog/" + repository + "/pulls"
     response = requests.post(url=url, headers=headers, data=data)
     if response.status_code == 201:
-        print("✔ Pull Request created successfully")
+        print("Pull Request created successfully")
         return 0
     else:
-        print("✘ pull request failed " + str(response.status_code) + '\n' + response.text)
+        print("pull request failed " + str(response.status_code) + '\n' + response.text)
         return 1
 
 
 def generate_target_code(target: str, temp_dir_path: str, version: str):
-    print("… Generating code with version " + version)
+    print("Generating code with version " + version)
     file_path = FILE_PATH[target]
     target_file = os.path.join(temp_dir_path, file_path)
     prefix = PREFIX[target]
@@ -80,7 +80,7 @@ def generate_target_code(target: str, temp_dir_path: str, version: str):
 
 
 def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> Tuple[Repo, str]:
-    print("… Cloning repository " + repo_name)
+    print("Cloning repository " + repo_name)
     url = "https://" + gh_token + ":x-oauth-basic@github.com/DataDog/" + repo_name
     repo = Repo.clone_from(url, temp_dir_path)
     base_name = repo.active_branch.name
@@ -88,11 +88,11 @@ def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> T
 
 
 def git_push_changes(repo: Repo, version: str):
-    print("… Committing changes")
+    print("Committing changes")
     repo.git.add(update=True)
     repo.index.commit("Update DD SDK to " + version)
 
-    print("- Pushing branch")
+    print("Pushing branch")
     origin = repo.remote(name="origin")
     repo.git.push("--set-upstream", "--force", origin, repo.head.ref)
 
@@ -105,13 +105,13 @@ def update_dependant(version: str, target: str, gh_token: str) -> int:
 
     repo, base_name = git_clone_repository(repo_name, gh_token, temp_dir_path)
 
-    print("… Creating branch " + branch_name)
+    print("Creating branch " + branch_name)
     repo.git.checkout('HEAD', b=branch_name)
 
     generate_target_code(target, temp_dir_path, version)
 
     if not repo.is_dirty():
-        print("∅ Nothing to commit, all is in order…")
+        print("Nothing to commit, all is in order-")
         return 0
 
     git_push_changes(repo, version)
