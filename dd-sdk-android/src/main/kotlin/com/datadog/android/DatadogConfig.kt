@@ -12,6 +12,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
@@ -172,6 +173,15 @@ private constructor(
          */
         constructor(clientToken: String, envName: String, applicationId: String) :
             this(clientToken, envName, UUID.fromString(applicationId))
+
+        init {
+            warnDeprecated(
+                "DatadogConfig.Builder",
+                "1.8.0",
+                "1.10.0",
+                "Configuration()"
+            )
+        }
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,

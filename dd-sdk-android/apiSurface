@@ -80,7 +80,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean = false, Boolean = false, Boolean = false, Boolean = false)
+    constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setFirstPartyHosts(List<String>): Builder
     fun useEUEndpoints(): Builder

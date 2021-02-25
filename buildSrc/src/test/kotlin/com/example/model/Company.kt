@@ -27,7 +27,7 @@ data class Company(
         ratings?.let { json.add("ratings", it.toJson()) }
         information?.let { json.add("information", it.toJson()) }
         additionalProperties.forEach { (k, v) ->
-            json.add(k,v.toJsonElement())
+            json.add(k, v.toJsonElement())
         }
         return json
     }
@@ -110,7 +110,7 @@ data class Company(
             date?.let { json.addProperty("date", it) }
             priority?.let { json.addProperty("priority", it) }
             additionalProperties.forEach { (k, v) ->
-                json.add(k,v.toJsonElement())
+                json.add(k, v.toJsonElement())
             }
             return json
         }

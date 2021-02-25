@@ -13,11 +13,11 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.util.Date
 
 class ModelWithAdditionalAttributesTest {
 
@@ -59,7 +59,6 @@ class ModelWithAdditionalAttributesTest {
                 )
                 .usingComparatorForType(additionalPropertiesComparator, mapClass)
                 .isEqualToComparingFieldByField(expectedInformation)
-
         }
     }
 

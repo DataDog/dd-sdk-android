@@ -20,63 +20,63 @@ Send [Real User Monitoring data][1] to Datadog from your Android applications wi
     }
     ```
 
-2. Initialize the library with your application context, tracking consent, and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
-
-    {{< tabs >}}
-    {{% tab "US" %}}
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
-                        .build()
-        Datadog.initialize(this, trackingConsent, config)
+2. Initialize the library with your application context, tracking consent, and the [Datadog client token][4] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][3] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
+ 
+   {{< tabs >}}
+   {{% tab "US" %}}
+   ```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+            super.onCreate()
+            val configuration = Configuration.Builder().build()
+            val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
     }
-}
-```
-    {{% /tab %}}
-    {{% tab "EU" %}}
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
-                        .useEUEndpoints()
-                        .build()
-        Datadog.initialize(this, trackingConsent, config)
-    }
-}
-```
-    {{% /tab %}}
-    {{< /tabs >}}
-    
-    To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
-    The tracking consent can be one of the following values:
-    * `TrackingConsent.PENDING`: The SDK starts collecting and batching the data but does not send it to the data
+   ```
+   {{% /tab %}}
+   {{% tab "EU" %}}
+   ```kotlin
+   class SampleApplication : Application() {
+       override fun onCreate() {
+          super.onCreate()
+          val configuration = Configuration.Builder()
+             .useEUEndpoints()
+             .build()
+          val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+          Datadog.initialize(this, credentials, configuration, trackingConsent)
+       }
+   }
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+   
+   To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
+   The tracking consent can be one of the following values:
+   * `TrackingConsent.PENDING`: The SDK starts collecting and batching the data but does not send it to the data
      collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
-    * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
-    * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You will not be able to manually send any logs, traces, or
+   * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
+   * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You will not be able to manually send any logs, traces, or
      RUM events.
 
-    To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
-    The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
-    * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
-    * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
+   To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
+   The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
+   * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
+   * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
 
-   **Note**: Use the utility method `isInitialized` to check if the SDK is properly initialized:
+   Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time. This allows a Datadog dashboard to de-obfuscate the stack traces.
 
-    ```kotlin
-    if (Datadog.isInitialized()) {
+   Use the utility method `isInitialized` to check if the SDK is properly initialized:
+
+   ```kotlin
+    if(Datadog.isInitialized()){
         // your code here
     }
-    ```
-    When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
-
-    ```kotlin
-    Datadog.setVerbosity(Log.INFO)
-    ```
+   ```
+   When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
+   ```kotlin
+   Datadog.setVerbosity(Log.INFO)
+   ```
 
 3. To enable the automatic view tracking in the SDK, provide a tracking strategy at initialization.
    Depending on your application's architecture, you can choose one of several implementations of `ViewTrackingStrategy`:

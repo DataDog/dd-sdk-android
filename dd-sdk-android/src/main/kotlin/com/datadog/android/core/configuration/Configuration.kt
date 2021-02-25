@@ -92,17 +92,17 @@ internal constructor(
 
     /**
      * A Builder class for a [Configuration].
-     * @param logsEnabled whether Logs are tracked and sent to Datadog (default: false)
-     * @param tracesEnabled whether Spans are tracked and sent to Datadog (default: false)
-     * @param crashReportsEnabled whether crashes are tracked and sent to Datadog (default: false)
-     * @param rumEnabled whether RUM events are tracked and sent to Datadog (default: false)
+     * @param logsEnabled whether Logs are tracked and sent to Datadog
+     * @param tracesEnabled whether Spans are tracked and sent to Datadog
+     * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
+     * @param rumEnabled whether RUM events are tracked and sent to Datadog
      */
     @Suppress("TooManyFunctions")
     class Builder(
-        val logsEnabled: Boolean = false,
-        val tracesEnabled: Boolean = false,
-        val crashReportsEnabled: Boolean = false,
-        val rumEnabled: Boolean = false
+        val logsEnabled: Boolean,
+        val tracesEnabled: Boolean,
+        val crashReportsEnabled: Boolean,
+        val rumEnabled: Boolean
     ) {
         private var logsConfig: Feature.Logs = DEFAULT_LOGS_CONFIG
         private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG

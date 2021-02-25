@@ -7,7 +7,6 @@
 package com.example.forgery
 
 import com.example.model.Order
-
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
