@@ -57,6 +57,12 @@ internal class RumViewScope(
     private var errorCount: Long = 0
     private var crashCount: Long = 0
     private var longTaskCount: Long = 0
+
+    internal var pendingResourceCount: Long = 0
+    internal var pendingActionCount: Long = 0
+    internal var pendingErrorCount: Long = 0
+    internal var pendingLongTaskCount: Long = 0
+
     private var version: Long = 1
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
@@ -75,34 +81,34 @@ internal class RumViewScope(
         event: RumRawEvent,
         writer: Writer<RumEvent>
     ): RumScope? {
-
         when (event) {
-            is RumRawEvent.SentError -> {
-                errorCount++
-                sendViewUpdate(event, writer)
-            }
-            is RumRawEvent.SentResource -> {
-                resourceCount++
-                sendViewUpdate(event, writer)
-            }
-            is RumRawEvent.SentAction -> {
-                actionCount++
-                sendViewUpdate(event, writer)
-            }
+            is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
+            is RumRawEvent.ActionSent -> onActionSent(event, writer)
+            is RumRawEvent.ErrorSent -> onErrorSent(event, writer)
+            is RumRawEvent.LongTaskSent -> onLongTaskSent(event, writer)
+
+            is RumRawEvent.ResourceDropped -> onResourceDropped(event)
+            is RumRawEvent.ActionDropped -> onActionDropped(event)
+            is RumRawEvent.ErrorDropped -> onErrorDropped(event)
+            is RumRawEvent.LongTaskDropped -> onLongTaskDropped(event)
+
             is RumRawEvent.StartView -> onStartView(event, writer)
             is RumRawEvent.StopView -> onStopView(event, writer)
+
             is RumRawEvent.StartAction -> onStartAction(event, writer)
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
-            is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
-            is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
-            is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
-            is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+
+            is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
+            is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
+            is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
+            is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+
             else -> delegateEventToChildren(event, writer)
         }
 
-        return if (stopped && activeResourceScopes.isEmpty()) {
+        return if (isViewComplete()) {
             null
         } else {
             this
@@ -168,6 +174,7 @@ internal class RumViewScope(
         }
 
         activeActionScope = RumActionScope.fromEvent(this, event)
+        pendingActionCount++
     }
 
     private fun onStartResource(
@@ -185,6 +192,7 @@ internal class RumViewScope(
             updatedEvent,
             firstPartyHostDetector
         )
+        pendingResourceCount++
     }
 
     private fun onAddError(
@@ -233,6 +241,7 @@ internal class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
+        pendingErrorCount++
     }
 
     private fun onAddCustomTiming(event: RumRawEvent.AddCustomTiming, writer: Writer<RumEvent>) {
@@ -282,6 +291,75 @@ internal class RumViewScope(
             if (scope == null) {
                 iterator.remove()
             }
+        }
+    }
+
+    private fun onResourceSent(
+        event: RumRawEvent.ResourceSent,
+        writer: Writer<RumEvent>
+    ) {
+        if (event.viewId == viewId) {
+            pendingResourceCount--
+            resourceCount++
+            sendViewUpdate(event, writer)
+        }
+    }
+
+    private fun onActionSent(
+        event: RumRawEvent.ActionSent,
+        writer: Writer<RumEvent>
+    ) {
+        if (event.viewId == viewId) {
+            pendingActionCount--
+            actionCount++
+            sendViewUpdate(event, writer)
+        }
+    }
+
+    private fun onErrorSent(
+        event: RumRawEvent.ErrorSent,
+        writer: Writer<RumEvent>
+    ) {
+        if (event.viewId == viewId) {
+            pendingErrorCount--
+            errorCount++
+            if (event.isCrash) crashCount++
+            sendViewUpdate(event, writer)
+        }
+    }
+
+    private fun onLongTaskSent(
+        event: RumRawEvent.LongTaskSent,
+        writer: Writer<RumEvent>
+    ) {
+        if (event.viewId == viewId) {
+            pendingLongTaskCount--
+            longTaskCount++
+            sendViewUpdate(event, writer)
+        }
+    }
+
+    private fun onResourceDropped(event: RumRawEvent.ResourceDropped) {
+        if (event.viewId == viewId) {
+            pendingResourceCount--
+        }
+    }
+
+    private fun onActionDropped(event: RumRawEvent.ActionDropped) {
+        if (event.viewId == viewId) {
+            pendingActionCount--
+        }
+    }
+
+    private fun onErrorDropped(event: RumRawEvent.ErrorDropped) {
+        if (event.viewId == viewId) {
+            pendingErrorCount--
+        }
+    }
+
+    private fun onLongTaskDropped(event: RumRawEvent.LongTaskDropped) {
+        if (event.viewId == viewId) {
+            pendingLongTaskCount--
         }
     }
 
@@ -436,6 +514,15 @@ internal class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
+        pendingLongTaskCount++
+    }
+
+    private fun isViewComplete(): Boolean {
+        val pending = pendingActionCount +
+            pendingResourceCount +
+            pendingErrorCount +
+            pendingLongTaskCount
+        return stopped && activeResourceScopes.isEmpty() && pending == 0L
     }
 
     // endregion

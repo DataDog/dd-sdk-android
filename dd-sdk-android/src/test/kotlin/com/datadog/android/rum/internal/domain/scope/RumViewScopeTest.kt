@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -49,6 +48,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -83,10 +83,10 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
-    @RegexForgery("([a-z]+\\.)+[A-Z][a-z]+")
+    @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
 
-    @RegexForgery("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
+    @StringForgery(regex = "[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}")
     lateinit var fakeActionId: String
 
     lateinit var fakeUrl: String
@@ -739,9 +739,12 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentError) on active view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
         // Given
-        fakeEvent = RumRawEvent.SentError()
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, isCrash = false)
+        testedScope.pendingErrorCount = pending
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -773,12 +776,78 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending - 1)
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentResource) on active view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on active view {isCrash = true}`(
+        @LongForgery(1) pending: Long
+    ) {
         // Given
-        fakeEvent = RumRawEvent.SentResource()
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, isCrash = true)
+        testedScope.pendingErrorCount = pending
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending - 1)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ErrorSent) on active view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @BoolForgery isCrash: Boolean,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(viewId, isCrash)
+        testedScope.pendingErrorCount = pending
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -810,12 +879,36 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentAction) on active view`() {
+    fun `𝕄 do nothing 𝕎 handleEvent(ResourceSent) on active view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
         // Given
-        fakeEvent = RumRawEvent.SentAction()
+        testedScope.pendingResourceCount = pending
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ResourceSent(viewId)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
+        testedScope.pendingActionCount = pending
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -847,6 +940,88 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending - 1)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on active view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId)
+        testedScope.pendingActionCount = pending
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
+        testedScope.pendingLongTaskCount = pending
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending - 1)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskSent) on active view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(viewId)
+        testedScope.pendingLongTaskCount = pending
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
     }
 
     @Test
@@ -892,10 +1067,11 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentError) on stopped view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on stopped view`() {
         // Given
         testedScope.stopped = true
-        fakeEvent = RumRawEvent.SentError()
+        testedScope.pendingErrorCount = 1
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, isCrash = false)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -927,13 +1103,77 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
+        assertThat(testedScope.pendingErrorCount).isEqualTo(0)
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentResource) on stopped view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on stopped view {isCrash = true}`() {
         // Given
         testedScope.stopped = true
-        fakeEvent = RumRawEvent.SentResource()
+        testedScope.pendingErrorCount = 1
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, isCrash = true)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    isActive(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+        assertThat(testedScope.pendingErrorCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ErrorSent) on stopped view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @BoolForgery isCrash: Boolean,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingErrorCount = pending
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(viewId, isCrash)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on stopped view`() {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingResourceCount = 1
+        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -965,13 +1205,36 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
+        assertThat(testedScope.pendingResourceCount).isEqualTo(0)
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(SentAction) on stopped view`() {
+    fun `𝕄 do nothing 𝕎 handleEvent(ResourceSent) on stopped view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
         // Given
         testedScope.stopped = true
-        fakeEvent = RumRawEvent.SentAction()
+        testedScope.pendingResourceCount = pending
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ResourceSent(viewId)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`() {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingActionCount = 1
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1003,6 +1266,89 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
+        assertThat(testedScope.pendingActionCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on stopped view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingActionCount = pending
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on stopped view`() {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingLongTaskCount = 1
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskSent) on stopped view {unknown viewId}`(
+        @Forgery viewUuid: UUID,
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingLongTaskCount = pending
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(viewId)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
     }
 
     @Test
@@ -1099,6 +1445,88 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 returns null 𝕎 handleEvent(any) on stopped view {no pending event}`() {
+        // Given
+        testedScope.stopped = true
+        fakeEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending action event}`(
+        @LongForgery(1, 32) pendingEvents: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingActionCount = pendingEvents
+        fakeEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending resource event}`(
+        @LongForgery(1, 32) pendingEvents: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingResourceCount = pendingEvents
+        fakeEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending error event}`(
+        @LongForgery(1, 32) pendingEvents: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingErrorCount = pendingEvents
+        fakeEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending long task event}`(
+        @LongForgery(1, 32) pendingEvents: Long
+    ) {
+        // Given
+        testedScope.stopped = true
+        testedScope.pendingLongTaskCount = pendingEvents
+        fakeEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -1234,6 +1662,85 @@ internal class RumViewScopeTest {
         assertThat(testedScope.activeActionScope).isNull()
     }
 
+    @Test
+    fun `𝕄 wait for pending 𝕎 handleEvent(StartAction) on active view`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @BoolForgery waitForStop: Boolean
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        testedScope.pendingActionCount = 0
+        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, emptyMap())
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.pendingActionCount = pending
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on stopped view`() {
+        // Given
+        testedScope.pendingActionCount = 1
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ActionDropped) on active view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingActionCount = pending
+        fakeEvent = RumRawEvent.ActionDropped(viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ActionDropped) on stopped view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingActionCount = pending
+        fakeEvent = RumRawEvent.ActionDropped(viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
     // endregion
 
     // region Resource
@@ -1242,7 +1749,7 @@ internal class RumViewScopeTest {
     fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         forge: Forge
     ) {
         // Given
@@ -1274,7 +1781,7 @@ internal class RumViewScopeTest {
     fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         forge: Forge
     ) {
         // Given
@@ -1352,6 +1859,84 @@ internal class RumViewScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 wait for pending Resource 𝕎 handleEvent(StartResource) on active view`(
+        @StringForgery key: String,
+        @StringForgery method: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+    ) {
+        // Given
+        testedScope.pendingResourceCount = 0
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on stopped view`() {
+        // Given
+        testedScope.pendingResourceCount = 1
+        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ResourceDropped) on active view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceDropped(viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ResourceDropped) on stopped view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceDropped(viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
     }
 
     // endregion
@@ -1707,9 +2292,6 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val expectedViewAttributes = attributes.toMutableMap().apply {
-            putAll(fakeAttributes)
-        }
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
 
@@ -1779,13 +2361,92 @@ internal class RumViewScopeTest {
         assertThat(result).isNull()
     }
 
+    @Test
+    fun `𝕄 wait for pending Error 𝕎 handleEvent(AddError) on active view`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @BoolForgery fatal: Boolean
+    ) {
+        // Given
+        testedScope.pendingErrorCount = 0
+        fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, fatal, emptyMap())
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.pendingErrorCount = pending
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on stopped view`() {
+        // Given
+        testedScope.pendingErrorCount = 1
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ErrorDropped) on active view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingErrorCount = pending
+        fakeEvent = RumRawEvent.ErrorDropped(viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(ErrorDropped) on stopped view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingErrorCount = pending
+        fakeEvent = RumRawEvent.ErrorDropped(viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
     // endregion
 
     // region Long Task
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view`(
-        @LongForgery durationNs: Long,
+        @LongForgery(0) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
@@ -1816,7 +2477,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask)`(
-        @LongForgery durationNs: Long,
+        @LongForgery(0) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
     ) {
@@ -1831,9 +2492,6 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val expectedViewAttributes = attributes.toMutableMap().apply {
-            putAll(fakeAttributes)
-        }
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
 
@@ -1857,11 +2515,13 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(AddLongTask) on stopped view`(
-        @LongForgery durationNs: Long,
-        @StringForgery target: String
+        @LongForgery(0) durationNs: Long,
+        @StringForgery target: String,
+        @LongForgery(1) pending: Long
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
+        testedScope.pendingLongTaskCount = pending
         fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
         testedScope.stopped = true
 
@@ -1870,7 +2530,85 @@ internal class RumViewScopeTest {
 
         // Then
         verifyZeroInteractions(mockWriter)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 wait for pending Long Task 𝕎 handleEvent(AddLongTask) on active view`(
+        @LongForgery(0) duration: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = 0
+        fakeEvent = RumRawEvent.AddLongTask(duration, target)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view`(
+        @LongForgery(1) pending: Long
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = pending
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on stopped view`() {
+        // Given
+        testedScope.pendingLongTaskCount = 1
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on active view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingLongTaskCount = pending
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on stopped view {unknown viewId}`(
+        @LongForgery(1) pending: Long,
+        @Forgery viewUuid: UUID
+    ) {
+        // Given
+        val viewId = viewUuid.toString()
+        assumeTrue(viewId != testedScope.viewId)
+        testedScope.pendingLongTaskCount = pending
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId)
+        testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
+        assertThat(result).isSameAs(testedScope)
     }
 
     // endregion
