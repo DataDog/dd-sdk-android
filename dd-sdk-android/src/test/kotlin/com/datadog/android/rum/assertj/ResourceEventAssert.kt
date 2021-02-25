@@ -76,6 +76,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasStatusCode(expected: Long?): ResourceEventAssert {
+        assertThat(actual.resource.statusCode)
+            .overridingErrorMessage(
+                "Expected event data to have resource.status_code $expected " +
+                    "but was ${actual.resource.statusCode}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasDurationGreaterThan(upperBound: Long): ResourceEventAssert {
         assertThat(actual.resource.duration)
             .overridingErrorMessage(
