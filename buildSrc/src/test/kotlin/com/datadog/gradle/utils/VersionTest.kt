@@ -55,6 +55,13 @@ class VersionTest {
     }
 
     @Test
+    fun addNoSuffixForRelease() {
+        val name = Version(3, 12, 7, Version.Type.Release).name
+        val expected = "3.12.7"
+        assert(name == expected) { " expected name to be $expected but was $name" }
+    }
+
+    @Test
     fun addSuffixForRC() {
         val name = Version(3, 12, 7, Version.Type.ReleaseCandidate(1)).name
         val expected = "3.12.7-rc1"
@@ -72,6 +79,13 @@ class VersionTest {
     fun addSuffixForAlpha() {
         val name = Version(3, 12, 7, Version.Type.Alpha(3)).name
         val expected = "3.12.7-alpha3"
+        assert(name == expected) { " expected name to be $expected but was $name" }
+    }
+
+    @Test
+    fun addSuffixForDev() {
+        val name = Version(3, 12, 7, Version.Type.Dev).name
+        val expected = "3.12.7-dev"
         assert(name == expected) { " expected name to be $expected but was $name" }
     }
 }
