@@ -55,7 +55,7 @@ internal abstract class LogsTest {
                 .hasField(TAG_MESSAGE, m.second)
                 .hasField(TAG_SERVICE, activity.packageName)
                 .hasField(TAG_LOGGER_NAME, expectedLoggerName())
-                .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.VERSION_NAME)
+                .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.SDK_VERSION_NAME)
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
             assertThat(tags).containsOnlyElementsOf(globalTags)

@@ -214,7 +214,7 @@ internal class LogSerializerTest {
             .hasField(LogAttributes.STATUS, levels[log.level])
             .hasField(LogAttributes.LOGGER_NAME, log.loggerName)
             .hasField(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
-            .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
+            .hasField(LogAttributes.LOGGER_VERSION, BuildConfig.SDK_VERSION_NAME)
 
         // yyyy-mm-ddThh:mm:ss.SSSZ
         assertThat(jsonObject)

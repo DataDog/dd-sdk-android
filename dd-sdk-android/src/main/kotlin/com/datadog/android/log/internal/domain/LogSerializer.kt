@@ -45,7 +45,7 @@ internal class LogSerializer(
         jsonLog.addProperty(LogAttributes.STATUS, resolveLogLevelStatus(log.level))
         jsonLog.addProperty(LogAttributes.LOGGER_NAME, log.loggerName)
         jsonLog.addProperty(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
-        jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
+        jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.SDK_VERSION_NAME)
 
         // Timestamp
         val formattedDate = synchronized(simpleDateFormat) {

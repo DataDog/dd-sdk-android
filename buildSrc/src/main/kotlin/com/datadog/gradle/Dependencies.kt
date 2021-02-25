@@ -16,7 +16,7 @@ object Dependencies {
         const val KronosNTP = "0.0.1-alpha10"
 
         // Android
-        const val AndroidToolsPlugin = "4.0.1"
+        const val AndroidToolsPlugin = "4.1.2"
         const val AndroidXAnnotations = "1.1.0"
         const val AndroidXAppCompat = "1.2.0"
         const val AndroidXCore = "1.3.1"

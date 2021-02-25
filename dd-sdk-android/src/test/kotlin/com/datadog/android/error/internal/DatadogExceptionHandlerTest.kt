@@ -170,7 +170,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
                     )
                 )
                 .hasExactlyAttributes(emptyMap())
@@ -219,7 +219,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
                     )
                 )
                 .hasExactlyAttributes(emptyMap())
@@ -256,7 +256,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
                     )
                 )
                 .hasExactlyAttributes(emptyMap())
