@@ -1,4 +1,4 @@
-# 1.8.0 / 2021-02-??
+# 1.8.0 / 2021-02-25
 
 * [BUGFIX] Global: handle correctly incorrect domain names in Interceptors' known hosts
 * [BUGFIX] RUM: RUM Context was bundled in spans even when RUM was not enabled
@@ -12,7 +12,6 @@
 * [IMPROVEMENT] APM: Stop duplicating APM errors as RUM errors
 * [IMPROVEMENT] Logs Align the 'error.kind' attribute value with RUM Error 'error.type'
 * [IMPROVEMENT] RUM: Get a more accurate Application loading time
-* [IMPROVEMENT] RUM: Duplicate RUM Resource with failures as RUM Error
 * [IMPROVEMENT] RUM: Add a variant tag on RUM events
 
 # 1.7.0 / 2021-01-04
