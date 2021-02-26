@@ -15,7 +15,7 @@ import com.datadog.android.DatadogConfig
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeGenericMethod
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -64,9 +64,15 @@ class LogIOBenchmark {
                 .build()
         )
         val classLoader = Datadog::class.java.classLoader!!
-        val LogFeatureClass =
-            classLoader.loadClass("com.datadog.android.log.internal.LogsFeature") as Class<Any>
-        testedStrategy = LogFeatureClass.getStaticValue("persistenceStrategy")
+        val logFeatureInstance = classLoader
+            .loadClass("com.datadog.android.log.internal.LogsFeature").kotlin.objectInstance
+
+        testedStrategy = logFeatureInstance!!.getFieldValue(
+            "persistenceStrategy",
+            enclosingClass = classLoader
+                .loadClass("com.datadog.android.core.internal.SdkFeature") as Class<Any>
+        )
+
         testedWriter = testedStrategy.invokeMethod("getWriter")!!
         testedReader = testedStrategy.invokeMethod("getReader")!!
     }
@@ -126,7 +132,8 @@ class LogIOBenchmark {
             "com.datadog.android.core.model.UserInfo",
             forge.anHexadecimalString(),
             forge.anAlphabeticalString(),
-            forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com")
+            forge.aStringMatching("[a-z0-9]+@[a-z0-9]+\\.com"),
+            forge.aMap { Pair(forge.anAlphabeticalString(), forge.anAlphabeticalString()) }
         )
 
         return createInstance(

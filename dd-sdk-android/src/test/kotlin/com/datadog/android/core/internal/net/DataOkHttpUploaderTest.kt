@@ -334,7 +334,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         assertThat(request.getHeader("Content-Type"))
             .isEqualTo(testedUploader.contentType)
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
-            "Datadog/${BuildConfig.VERSION_NAME} " +
+            "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
                 "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
                 "${Build.MODEL} Build/${Build.ID})"
         } else {

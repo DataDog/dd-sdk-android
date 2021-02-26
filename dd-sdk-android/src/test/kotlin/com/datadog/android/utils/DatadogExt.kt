@@ -34,8 +34,8 @@ import kotlin.math.min
  */
 inline fun <reified T : Context> mockContext(
     packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
-    versionName: String? = BuildConfig.VERSION_NAME,
-    versionCode: Int = BuildConfig.VERSION_CODE
+    versionName: String? = BuildConfig.SDK_VERSION_NAME,
+    versionCode: Int = BuildConfig.SDK_VERSION_CODE
 ): T {
     val mockPackageInfo = PackageInfo()
     val mockPackageMgr = mock<PackageManager>()
@@ -106,9 +106,9 @@ internal fun mockDevLogHandler(): LogHandler {
 
 internal fun mockCoreFeature(
     packageName: String = BuildConfig.LIBRARY_PACKAGE_NAME,
-    packageVersion: String = BuildConfig.VERSION_NAME,
+    packageVersion: String = BuildConfig.SDK_VERSION_NAME,
     envName: String = BuildConfig.BUILD_TYPE,
-    variant: String = BuildConfig.VERSION_NAME + BuildConfig.BUILD_TYPE,
+    variant: String = BuildConfig.SDK_VERSION_NAME + BuildConfig.BUILD_TYPE,
     trackingConsent: TrackingConsent = TrackingConsent.PENDING,
     rumApplicationId: String = UUID.randomUUID().toString()
 ) {

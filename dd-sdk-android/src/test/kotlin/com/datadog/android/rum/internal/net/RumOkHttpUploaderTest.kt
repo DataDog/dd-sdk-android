@@ -88,7 +88,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "&${RumOkHttpUploader.QP_TAGS}=" +
             "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
             "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}," +
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
             "${RumAttributes.ENV}:$fakeEnvName," +
             "${RumAttributes.VARIANT}:$fakeVariant" +
             "$"
