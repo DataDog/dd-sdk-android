@@ -10,7 +10,14 @@ import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.data.file.ImmediateFileWriter
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.io.File
 
@@ -32,14 +39,40 @@ internal class RumFileWriter(
 
     override fun writeData(data: ByteArray, model: RumEvent): Boolean {
         val writeDataSuccess = super.writeData(data, model)
-        if (writeDataSuccess && model.event is ViewEvent) {
-            if (!lastViewEventFile.exists()) {
-                lastViewEventFile.createNewFile()
+        if (writeDataSuccess) {
+            val event = model.event
+            when (event) {
+                is ViewEvent -> persistViewEvent(data)
+                is ActionEvent -> notifyEventSent(event.view.id, EventType.ACTION)
+                is ResourceEvent -> notifyEventSent(event.view.id, EventType.RESOURCE)
+                is ErrorEvent -> notifyEventSent(event.view.id, EventType.ERROR)
+                is LongTaskEvent -> notifyEventSent(event.view.id, EventType.LONG_TASK)
             }
-            // persist the serialised ViewEvent in the NDK crash data folder
-            fileHandler.writeData(lastViewEventFile, data)
+        } else {
+            System.err.println("writeDataFailed!")
         }
         return writeDataSuccess
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun persistViewEvent(data: ByteArray) {
+        if (!lastViewEventFile.exists()) {
+            lastViewEventFile.createNewFile()
+        }
+        // persist the serialised ViewEvent in the NDK crash data folder
+        fileHandler.writeData(lastViewEventFile, data)
+    }
+
+    private fun notifyEventSent(viewId: String, eventType: EventType) {
+        val rumMonitor = GlobalRum.get()
+        if (rumMonitor is AdvancedRumMonitor) {
+            rumMonitor.eventSent(viewId, eventType)
+        } else {
+            System.err.println("Monitor is not an AdvancedRumMonitor: $rumMonitor")
+        }
     }
 
     // endregion

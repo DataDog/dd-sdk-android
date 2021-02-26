@@ -234,6 +234,10 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun eventSent(viewId: String, type: EventType) {
+        TODO("Not yet implemented")
+    }
+
     // endregion
 
     // region Internal

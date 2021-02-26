@@ -33,4 +33,6 @@ internal interface AdvancedRumMonitor : RumMonitor {
         source: RumErrorSource,
         throwable: Throwable
     )
+
+    fun eventSent(viewId: String, type: EventType)
 }

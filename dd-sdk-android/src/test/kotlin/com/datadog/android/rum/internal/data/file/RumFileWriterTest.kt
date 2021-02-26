@@ -10,22 +10,29 @@ import android.os.Build
 import com.datadog.android.core.internal.data.Orchestrator
 import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
-import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -52,63 +59,79 @@ import org.mockito.quality.Strictness
 internal class RumFileWriterTest {
     lateinit var testedWriter: RumFileWriter
 
-    lateinit var rumSerializer: Serializer<RumEvent>
+    @Mock
+    lateinit var mockRumSerializer: Serializer<RumEvent>
 
     @Mock
     lateinit var mockOrchestrator: Orchestrator
+
+    @Mock
+    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @StringForgery(regex = "[a-zA-z]{3,10}")
     lateinit var fakeNdkCrashDataFolderName: String
 
     lateinit var fakeNdkCrashDataDirectory: File
 
+    @StringForgery
+    lateinit var fakeSerializedEvent: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeFileName: String
+
+    lateinit var fakeOutputFile: File
+
     @TempDir
     lateinit var tempRootDir: File
 
     @BeforeEach
     fun `set up`() {
+        GlobalRum.monitor = mockRumMonitor
+        GlobalRum.isRegistered.set(true)
+        fakeOutputFile = File(tempRootDir, fakeFileName)
         fakeNdkCrashDataDirectory = File(tempRootDir, fakeNdkCrashDataFolderName)
-        rumSerializer = RumEventSerializer()
         testedWriter = RumFileWriter(
             fakeNdkCrashDataDirectory,
             mockOrchestrator,
-            rumSerializer
+            mockRumSerializer
         )
     }
 
     @AfterEach
     fun `tear down`() {
         tempRootDir.deleteRecursively()
+
+        GlobalRum.monitor = NoOpRumMonitor()
+        GlobalRum.isRegistered.set(false)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 write a valid model 𝕎 write(model)`(forge: Forge) {
         val fakeModel: RumEvent = forge.getForgery()
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        whenever(mockRumSerializer.serialize(fakeModel)) doReturn fakeSerializedEvent
 
         testedWriter.write(fakeModel)
 
-        assertThat(file.readText())
-            .isEqualTo(rumSerializer.serialize(fakeModel))
+        assertThat(fakeOutputFile.readText()).isEqualTo(fakeSerializedEvent)
     }
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `𝕄 write a collection of models 𝕎 write(list)`(forge: Forge) {
-        val fakeModels: List<RumEvent> = forge.aList { forge.getForgery(RumEvent::class.java) }
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        val fakeModels = forge.aList { forge.getForgery(RumEvent::class.java) }
+        val serializedEvents = forge.aList(fakeModels.size) { forge.anAlphabeticalString() }
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        for (i in fakeModels.indices) {
+            whenever(mockRumSerializer.serialize(fakeModels[i])) doReturn serializedEvents[i]
+        }
 
         testedWriter.write(fakeModels)
 
-        assertThat(file.readText())
+        assertThat(fakeOutputFile.readText())
             .isEqualTo(
-                fakeModels.map { rumSerializer.serialize(it) }
-                    .joinToString(PayloadDecoration.JSON_ARRAY_DECORATION.separator)
+                serializedEvents.joinToString(PayloadDecoration.JSON_ARRAY_DECORATION.separator)
             )
     }
 
@@ -119,20 +142,22 @@ internal class RumFileWriterTest {
         testedWriter = RumFileWriter(
             tempRootDir,
             mockOrchestrator,
-            rumSerializer,
+            mockRumSerializer,
             separator
         )
         val fakeModels: List<RumEvent> = forge.aList { forge.getForgery(RumEvent::class.java) }
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        val serializedEvents = forge.aList(fakeModels.size) { forge.anAlphabeticalString() }
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        for (i in fakeModels.indices) {
+            whenever(mockRumSerializer.serialize(fakeModels[i])) doReturn serializedEvents[i]
+        }
 
         fakeModels.forEach {
             testedWriter.write(it)
         }
 
-        assertThat(file.readText())
-            .isEqualTo(fakeModels.map { rumSerializer.serialize(it) }.joinToString(separator))
+        assertThat(fakeOutputFile.readText())
+            .isEqualTo(serializedEvents.joinToString(separator))
     }
 
     @Test
@@ -210,12 +235,10 @@ internal class RumFileWriterTest {
         forge: Forge
     ) {
         val fakeModels = forge.aList { forge.getForgery(RumEvent::class.java) }
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
 
-        val outputStream = file.outputStream()
+        val outputStream = fakeOutputFile.outputStream()
         val lock = outputStream.channel.lock()
         try {
             fakeModels.forEach {
@@ -226,17 +249,19 @@ internal class RumFileWriterTest {
             outputStream.close()
         }
 
-        assertThat(file.readText())
+        assertThat(fakeOutputFile.readText())
             .isEmpty()
     }
 
     @Test
     fun `𝕄 lock and release file 𝕎 write() from multiple threads`(forge: Forge) {
         val fakeModels = forge.aList(size = 10) { forge.getForgery(RumEvent::class.java) }
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        val serializedEvents = forge.aList(fakeModels.size) { forge.anAlphabeticalString() }
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        for (i in fakeModels.indices) {
+            whenever(mockRumSerializer.serialize(fakeModels[i])) doReturn serializedEvents[i]
+        }
         val countDownLatch = CountDownLatch(2)
 
         Thread {
@@ -254,11 +279,10 @@ internal class RumFileWriterTest {
         }.start()
 
         countDownLatch.await(4, TimeUnit.SECONDS)
-        val rawData = file.readText()
-        val dataAsJsonArray = "[$rawData]"
-        val jsonArray = JsonParser.parseString(dataAsJsonArray).asJsonArray
-        assertThat(jsonArray.size())
-            .isEqualTo(fakeModels.map { rumSerializer.serialize(it) }.size)
+        val rawData = fakeOutputFile.readText()
+            .split(PayloadDecoration.JSON_ARRAY_DECORATION.separator.toString())
+            .sorted()
+        assertThat(rawData).isEqualTo(serializedEvents.sorted())
     }
 
     @Test
@@ -266,18 +290,17 @@ internal class RumFileWriterTest {
         // GIVEN
         val fakeModel: RumEvent = forge.getForgery(RumEvent::class.java)
             .copy(event = forge.getForgery(ViewEvent::class.java))
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
         fakeNdkCrashDataDirectory.mkdirs()
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        whenever(mockRumSerializer.serialize(fakeModel)) doReturn fakeSerializedEvent
 
         // WHEN
         testedWriter.write(fakeModel)
 
         // THEN
         assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
-            .isEqualTo(rumSerializer.serialize(fakeModel))
+            .isEqualTo(fakeSerializedEvent)
     }
 
     @Test
@@ -285,12 +308,14 @@ internal class RumFileWriterTest {
         // GIVEN
         val fakeModel1: RumEvent = forge.getForgery(RumEvent::class.java)
             .copy(event = forge.getForgery(ViewEvent::class.java))
+        val fakeSerializedEvent1 = forge.anAlphabeticalString()
         val fakeModel2: RumEvent = forge.getForgery(RumEvent::class.java)
             .copy(event = forge.getForgery(ViewEvent::class.java))
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        val fakeSerializedEvent2 = forge.anAlphabeticalString()
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        whenever(mockRumSerializer.serialize(fakeModel1)) doReturn fakeSerializedEvent1
+        whenever(mockRumSerializer.serialize(fakeModel1)) doReturn fakeSerializedEvent2
 
         // WHEN
         testedWriter.write(fakeModel1)
@@ -298,7 +323,7 @@ internal class RumFileWriterTest {
 
         // THEN
         assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
-            .isEqualTo(rumSerializer.serialize(fakeModel2))
+            .isEqualTo(fakeSerializedEvent2)
     }
 
     @Test
@@ -308,17 +333,16 @@ internal class RumFileWriterTest {
         // GIVEN
         val fakeModel: RumEvent = forge.getForgery(RumEvent::class.java)
             .copy(event = forge.getForgery(ViewEvent::class.java))
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+        whenever(mockRumSerializer.serialize(fakeModel)) doReturn fakeSerializedEvent
 
         // WHEN
         testedWriter.write(fakeModel)
 
         // THEN
         assertThat(fakeNdkCrashDataDirectory.listFiles()?.get(0)?.readText())
-            .isEqualTo(rumSerializer.serialize(fakeModel))
+            .isEqualTo(fakeSerializedEvent)
     }
 
     @Test
@@ -336,15 +360,166 @@ internal class RumFileWriterTest {
                     )
                 )
             )
-        val fileNameToWriteTo = forge.anAlphaNumericalString()
-        val file = File(tempRootDir, fileNameToWriteTo)
-        file.createNewFile()
-        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(file)
+        fakeOutputFile.createNewFile()
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
 
         // WHEN
         testedWriter.write(fakeModel)
 
         // THEN
         assertThat(fakeNdkCrashDataDirectory.listFiles()).isEmpty()
+    }
+
+    @Test
+    fun `M do not notify the RumMonitor W write() { ViewEvent }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery viewEvent: ViewEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = viewEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M notify the RumMonitor W write() { ActionEvent }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery actionEvent: ActionEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = actionEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verify(mockRumMonitor).eventSent(actionEvent.view.id, EventType.ACTION)
+    }
+
+    @Test
+    fun `M do not notify the RumMonitor W write() { ActionEvent, write fails }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery actionEvent: ActionEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = actionEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M notify the RumMonitor W write() { ResourceEvent }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery resourceEvent: ResourceEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = resourceEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verify(mockRumMonitor).eventSent(resourceEvent.view.id, EventType.RESOURCE)
+    }
+
+    @Test
+    fun `M do not notify the RumMonitor W write() { ResourceEvent, write fails }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery actionEvent: ResourceEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = actionEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M notify the RumMonitor W write() { ErrorEvent }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery errorEvent: ErrorEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = errorEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verify(mockRumMonitor).eventSent(errorEvent.view.id, EventType.ERROR)
+    }
+
+    @Test
+    fun `M do not notify the RumMonitor W write() { ErrorEvent, write fails }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery actionEvent: ErrorEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = actionEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verifyZeroInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M notify the RumMonitor W write() { LongTaskEvent }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery longTaskEvent: LongTaskEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = longTaskEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verify(mockRumMonitor).eventSent(longTaskEvent.view.id, EventType.LONG_TASK)
+    }
+
+    @Test
+    fun `M do not notify the RumMonitor W write() { LongTaskEvent, write fails }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery actionEvent: LongTaskEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(event = actionEvent)
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verifyZeroInteractions(mockRumMonitor)
     }
 }
