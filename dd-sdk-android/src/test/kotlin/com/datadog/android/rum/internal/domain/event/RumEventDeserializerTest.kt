@@ -48,6 +48,9 @@ internal class RumEventDeserializerTest {
             whenever(it.validateTags(any())).thenAnswer {
                 it.getArgument(0)
             }
+            whenever(it.validateEvent(any())).thenAnswer {
+                it.getArgument(0)
+            }
         }
     )
 
