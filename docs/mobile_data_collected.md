@@ -10,6 +10,7 @@ The Datadog Real User Monitoring SDK generates six types of events:
 | [Resource][3]   | Resource represents network requests to first-party hosts, APIs, 3rd party providers and libraries in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`                                                      |
 | [Error][5]     | Error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
 | [Action][6]     | Action represents user activity in your mobile application (application launch, tap, swipe, back etc). Each action is attached with a unique `action_id` attached to the view it gets generated in.  )                                                                                                                                                            |
+| [Long Task][7] | 
 
 The following diagram illustrates the RUM event hierarchy:
 

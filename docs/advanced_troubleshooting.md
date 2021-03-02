@@ -1,4 +1,4 @@
-# Troubleshooting
+# Advanced Troubleshooting
 
 ## Compilation issues
 
@@ -62,7 +62,7 @@ kotlinOptions {
 }
 ```
 
-## Featured issues
+## SDK Behavior issues
 
 ### Foreword
 

@@ -56,19 +56,25 @@ In addition to [tracking resources automatically][6], you can track specific cus
     {{% /tab %}}
     {{% tab "Custom Errors" %}}
 
-To track specific specific errors, notify the monitor when an error occurs with the message, source, exception and additional attributes. Refer to default [Error Attributes][3].
+To track specific errors, notify the monitor when an error occurs with the message, source, exception and additional attributes. Refer to default [Error Attributes][3].
 
 
    ```kotlin
-      `addError(<message>, <source>, <throwable>, <attributes>)`
+      `addError(message, source, throwable, attributes)`
    ```
     {{% /tab %}}
     {{< /tabs >}}
 
-## Track Custom Attribues
+
+### Track Custom Global Attribues
 
 In addition to the [default RUM attributes][3] captured by the Mobile SDK automatically, you can choose to add additional contextual information as custom attributes to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice infomation about observed user behavior (cart value, merchant-tier, ad campaign) with code-level infomation (backend services, session timeline, error logs, network health etc).
  
+## Add User info
+
+
+## Set General Attributes
+
    ```kotlin
       // Adds an attribute to all future RUM events
       GlobalRum.addAttribute(key, value)
@@ -112,9 +118,6 @@ For instance to set each Fragment as a distinct view, use the following configur
           val configuration = Configuration.Builder()
                            .useViewTrackingStrategy(FragmentViewTrackingStrategy)
                            .build()
-          
-       }
-   }
 ```
    
 **Tip**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
@@ -133,6 +136,16 @@ To get timing information in Resources (3rd party providers, network requests) s
         .build()
     ```
 
+### Automatically Track Long Tasks
+
+To track long running operations performed on the main thread, which can impact the visual performance and reactivity of your app, you can do so by defining the duration threshold above which a task will be considerd too long.
+
+
+    ```kotlin
+    val config = Configuration.Builder(rumEnabled=true)
+                        .trackLongTasks(durationThreshold)
+                        .build()
+    ```
 
 ## Modify or Drop RUM Events
 

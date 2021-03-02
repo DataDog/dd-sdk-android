@@ -36,6 +36,7 @@ To ensure safety of your data, you must use a client token: you cannot use [Data
 
           val configuration = Configuration.Builder()
                         .trackInteractions()
+                        .trackLongTasks(durationThresold)
                         .useViewTrackingStrategy(strategy)
                         .build()
           val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
@@ -54,6 +55,7 @@ class SampleApplication : Application() {
 
         val configuration = Configuration.Builder()
                         .trackInteractions()
+                        .trackLongTasks(durationThresold)
                         .useViewTrackingStrategy(strategy)
                         .useEUEndpoints()
                         .build()
@@ -68,7 +70,7 @@ class SampleApplication : Application() {
 
 Learn more about [ViewTrackingStrategy][5] to enable auto tracking of all your views (activities, fragments etc.), [trackingConsent][6] to add GDPR compliance for your EU users and [other configuration options][7] to initialize the library.
 
-Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time. This allows a Datadog dashboard to de-obfuscate the stack traces.
+Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
 
 4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
