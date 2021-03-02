@@ -127,7 +127,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String
     ) {
         testedMonitor.startView(key, name, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -145,7 +145,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery(type = StringForgeryType.ASCII) key: String
     ) {
         testedMonitor.stopView(key, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -163,7 +163,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String
     ) {
         testedMonitor.addUserAction(type, name, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -183,7 +183,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String
     ) {
         testedMonitor.startUserAction(type, name, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -200,7 +200,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M delegate event to rootScope W stopUserAction()`() {
         testedMonitor.stopUserAction(fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -219,7 +219,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String
     ) {
         testedMonitor.stopUserAction(type, name, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -239,7 +239,7 @@ internal class DatadogRumMonitorTest {
         @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         testedMonitor.startResource(key, method, url, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -261,7 +261,7 @@ internal class DatadogRumMonitorTest {
         @Forgery kind: RumResourceKind
     ) {
         testedMonitor.stopResource(key, statusCode, size, kind, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -282,7 +282,7 @@ internal class DatadogRumMonitorTest {
         @Forgery kind: RumResourceKind
     ) {
         testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -306,7 +306,7 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         testedMonitor.stopResourceWithError(key, statusCode, message, source, throwable)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -329,7 +329,7 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         testedMonitor.stopResourceWithError(key, null, message, source, throwable)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -351,7 +351,7 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         testedMonitor.addError(message, source, throwable, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -374,7 +374,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery stacktrace: String
     ) {
         testedMonitor.addErrorWithStacktrace(message, source, stacktrace, fakeAttributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -394,7 +394,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W viewTreeChanged()`() {
         val eventTime = Time()
         testedMonitor.viewTreeChanged(eventTime)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -410,7 +410,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery key: String
     ) {
         testedMonitor.waitForResourceTiming(key)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -428,7 +428,7 @@ internal class DatadogRumMonitorTest {
         @Forgery timing: ResourceTiming
     ) {
         testedMonitor.addResourceTiming(key, timing)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -446,7 +446,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String
     ) {
         testedMonitor.addTiming(name)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -465,7 +465,7 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         testedMonitor.addCrash(message, source, throwable)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -487,7 +487,7 @@ internal class DatadogRumMonitorTest {
         val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -505,7 +505,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W resetSession()`() {
 
         testedMonitor.resetSession()
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -524,7 +524,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startView(key, name, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -545,7 +545,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopView(key, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -566,7 +566,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addUserAction(type, name, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -589,7 +589,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startUserAction(type, name, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -612,7 +612,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopUserAction(type, name, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -635,7 +635,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.startResource(key, method, url, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -660,7 +660,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.stopResource(key, statusCode, size, kind, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -685,7 +685,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addError(message, source, throwable, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -711,7 +711,7 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         testedMonitor.addErrorWithStacktrace(message, source, stacktrace, attributes)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -738,7 +738,7 @@ internal class DatadogRumMonitorTest {
         val fakeAttributesWithErrorType =
             fakeAttributes + (RumAttributes.INTERNAL_ERROR_TYPE to errorType)
         testedMonitor.addError(message, source, throwable, fakeAttributesWithErrorType)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -770,7 +770,7 @@ internal class DatadogRumMonitorTest {
             stacktrace,
             fakeAttributesWithErrorType
         )
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
@@ -793,13 +793,141 @@ internal class DatadogRumMonitorTest {
         @StringForgery target: String
     ) {
         testedMonitor.addLongTask(duration, target)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.AddLongTask
             assertThat(event.durationNs).isEqualTo(duration)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventSent {action}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventSent(viewId, EventType.ACTION)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ActionSent
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventSent {resource}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventSent(viewId, EventType.RESOURCE)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ResourceSent
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventSent {error}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventSent(viewId, EventType.ERROR)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ErrorSent
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventSent {longTask}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventSent(viewId, EventType.LONG_TASK)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.LongTaskSent
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventDropped {action}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventDropped(viewId, EventType.ACTION)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ActionDropped
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventDropped {resource}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventDropped(viewId, EventType.RESOURCE)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ResourceDropped
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventDropped {error}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventDropped(viewId, EventType.ERROR)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.ErrorDropped
+            assertThat(event.viewId).isEqualTo(viewId)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventDropped {longTask}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventDropped(viewId, EventType.LONG_TASK)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.LongTaskDropped
+            assertThat(event.viewId).isEqualTo(viewId)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -812,7 +940,7 @@ internal class DatadogRumMonitorTest {
                 verifyZeroInteractions(mockScope)
                 val runnable = firstValue
                 runnable.run()
-                Thread.sleep(200)
+                Thread.sleep(PROCESSING_DELAY)
                 verify(mockHandler).removeCallbacks(same(runnable))
                 verify(mockScope).handleEvent(
                     argThat { this is RumRawEvent.KeepAlive },
@@ -830,7 +958,7 @@ internal class DatadogRumMonitorTest {
         val runnable = testedMonitor.keepAliveRunnable
 
         testedMonitor.handleEvent(mockEvent)
-        Thread.sleep(200)
+        Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {
@@ -851,5 +979,9 @@ internal class DatadogRumMonitorTest {
 
         verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
         verifyNoMoreInteractions(mockHandler, mockWriter, mockScope)
+    }
+
+    companion object {
+        const val PROCESSING_DELAY = 100L
     }
 }

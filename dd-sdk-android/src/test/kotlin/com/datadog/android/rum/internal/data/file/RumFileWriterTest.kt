@@ -456,12 +456,16 @@ internal class RumFileWriterTest {
     }
 
     @Test
-    fun `M notify the RumMonitor W write() { ErrorEvent }`(
+    fun `M notify the RumMonitor W write() { ErrorEvent isCrash=false }`(
         @Forgery fakeModel: RumEvent,
         @Forgery errorEvent: ErrorEvent
     ) {
         // GIVEN
-        val rumEvent = fakeModel.copy(event = errorEvent)
+        val rumEvent = fakeModel.copy(
+            event = errorEvent.copy(
+                error = errorEvent.error.copy(isCrash = false)
+            )
+        )
         whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
 
@@ -470,6 +474,27 @@ internal class RumFileWriterTest {
 
         // THEN
         verify(mockRumMonitor).eventSent(errorEvent.view.id, EventType.ERROR)
+    }
+
+    @Test
+    fun `M notify the RumMonitor W write() { ErrorEvent isCrash=true }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery errorEvent: ErrorEvent
+    ) {
+        // GIVEN
+        val rumEvent = fakeModel.copy(
+            event = errorEvent.copy(
+                error = errorEvent.error.copy(isCrash = true)
+            )
+        )
+        whenever(mockRumSerializer.serialize(rumEvent)) doReturn fakeSerializedEvent
+        whenever(mockOrchestrator.getWritableFile(any())).thenReturn(fakeOutputFile)
+
+        // WHEN
+        testedWriter.write(rumEvent)
+
+        // THEN
+        verify(mockRumMonitor).eventSent(errorEvent.view.id, EventType.CRASH)
     }
 
     @Test

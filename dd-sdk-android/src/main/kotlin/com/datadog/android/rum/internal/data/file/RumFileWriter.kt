@@ -45,11 +45,15 @@ internal class RumFileWriter(
                 is ViewEvent -> persistViewEvent(data)
                 is ActionEvent -> notifyEventSent(event.view.id, EventType.ACTION)
                 is ResourceEvent -> notifyEventSent(event.view.id, EventType.RESOURCE)
-                is ErrorEvent -> notifyEventSent(event.view.id, EventType.ERROR)
+                is ErrorEvent -> {
+                    if (event.error.isCrash == true) {
+                        notifyEventSent(event.view.id, EventType.CRASH)
+                    } else {
+                        notifyEventSent(event.view.id, EventType.ERROR)
+                    }
+                }
                 is LongTaskEvent -> notifyEventSent(event.view.id, EventType.LONG_TASK)
             }
-        } else {
-            System.err.println("writeDataFailed!")
         }
         return writeDataSuccess
     }
@@ -70,8 +74,6 @@ internal class RumFileWriter(
         val rumMonitor = GlobalRum.get()
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.eventSent(viewId, eventType)
-        } else {
-            System.err.println("Monitor is not an AdvancedRumMonitor: $rumMonitor")
         }
     }
 
