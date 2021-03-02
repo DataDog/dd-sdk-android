@@ -7,6 +7,7 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import android.databinding.tool.ext.joinToCamelCaseAsVar
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
@@ -128,5 +129,25 @@ internal fun TypeDefinition.asKotlinTypeName(
             nestedEnums.add(def)
             ClassName(packageName, rootTypeName, def.name)
         }
+    }
+}
+
+internal fun TypeDefinition.additionalPropertyType(
+    nestedEnums: MutableSet<TypeDefinition.Enum>,
+    nestedClasses: MutableSet<TypeDefinition.Class>,
+    knownTypes: MutableList<String>,
+    packageName: String,
+    rootTypeName: String
+): TypeName {
+    return if (this is TypeDefinition.Primitive) {
+        this.asKotlinTypeName(
+            nestedEnums,
+            nestedClasses,
+            knownTypes,
+            packageName,
+            rootTypeName
+        )
+    } else {
+        ANY.copy(nullable = true)
     }
 }

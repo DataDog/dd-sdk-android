@@ -32,5 +32,7 @@ internal class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(StyleForgeryFactory())
         forge.addFactory(VersionForgeryFactory())
         forge.addFactory(VideoForgeryFactory())
+        forge.addFactory(BikeForgeryFactory())
+        forge.addFactory(CompanyForgeryFactory())
     }
 }

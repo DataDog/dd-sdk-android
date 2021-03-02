@@ -23,7 +23,7 @@ internal open class RumOkHttpUploader(
         arrayOf(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
             "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.VERSION_NAME}",
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}",
             "${RumAttributes.ENV}:${CoreFeature.envName}",
             "${RumAttributes.VARIANT}:${CoreFeature.variant}"
         ).joinToString(",")

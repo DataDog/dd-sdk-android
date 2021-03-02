@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
@@ -118,6 +118,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
             .overridingErrorMessage(
                 "Expected event data to have action.crash.count $expected " +
                     "but was ${actual.action.crash?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasLongTaskCount(expected: Long): ActionEventAssert {
+        assertThat(actual.action.longTask?.count ?: 0)
+            .overridingErrorMessage(
+                "Expected event data to have action.longTask.count $expected " +
+                    "but was ${actual.action.longTask?.count}"
             )
             .isEqualTo(expected)
         return this

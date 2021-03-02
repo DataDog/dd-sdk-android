@@ -9,12 +9,12 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.constraints.DataConstraints
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.extension.toHexString
@@ -118,7 +118,8 @@ internal class SpanSerializerTest {
         @LongForgery serverOffsetNanos: Long
     ) {
         // Given
-        val fakeMinimalUserInfo = UserInfo()
+        val fakeMinimalUserInfo =
+            UserInfo()
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeMinimalUserInfo
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn serverOffsetNanos
         val serialized = testedSerializer.serialize(span)
@@ -186,7 +187,7 @@ internal class SpanSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeUserInfoCopy = fakeUserInfo.copy(
-            extraInfo = mapOf(
+            additionalProperties = mapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -233,7 +234,7 @@ internal class SpanSerializerTest {
 
         // THEN
         verify(mockedDataConstrains).validateAttributes(
-            fakeUserInfo.extraInfo,
+            fakeUserInfo.additionalProperties,
             LogAttributes.USR_ATTRIBUTES_GROUP,
             SpanSerializer.USER_EXTRA_GROUP_VERBOSE_NAME
         )
@@ -266,7 +267,7 @@ internal class SpanSerializerTest {
             .hasField(SpanSerializer.TAG_META) {
                 hasField(SpanSerializer.TAG_DD_SOURCE, SpanSerializer.DD_SOURCE_ANDROID)
                 hasField(SpanSerializer.TAG_SPAN_KIND, SpanSerializer.KIND_CLIENT)
-                hasField(SpanSerializer.TAG_TRACER_VERSION, BuildConfig.VERSION_NAME)
+                hasField(SpanSerializer.TAG_TRACER_VERSION, BuildConfig.SDK_VERSION_NAME)
                 hasField(SpanSerializer.TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
             }
             .hasField(SpanSerializer.TAG_METRICS, span.metrics)
@@ -285,10 +286,10 @@ internal class SpanSerializerTest {
             assertThat(jsonObject).apply {
                 hasField(
                     LogAttributes.NETWORK_CONNECTIVITY,
-                    networkInfo.connectivity.serialized
+                    networkInfo.connectivity.toJson().asString
                 )
                 if (!networkInfo.carrierName.isNullOrBlank()) {
-                    hasField(LogAttributes.NETWORK_CARRIER_NAME, networkInfo.carrierName)
+                    hasField(LogAttributes.NETWORK_CARRIER_NAME, networkInfo.carrierName!!)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }
@@ -338,20 +339,20 @@ internal class SpanSerializerTest {
             if (userInfo.id.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_ID)
             } else {
-                hasField(LogAttributes.USR_ID, userInfo.id)
+                hasField(LogAttributes.USR_ID, userInfo.id!!)
             }
             if (userInfo.name.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_NAME)
             } else {
-                hasField(LogAttributes.USR_NAME, userInfo.name)
+                hasField(LogAttributes.USR_NAME, userInfo.name!!)
             }
             if (userInfo.email.isNullOrEmpty()) {
                 doesNotHaveField(LogAttributes.USR_EMAIL)
             } else {
-                hasField(LogAttributes.USR_EMAIL, userInfo.email)
+                hasField(LogAttributes.USR_EMAIL, userInfo.email!!)
             }
             containsExtraAttributesMappedToStrings(
-                userInfo.extraInfo,
+                userInfo.additionalProperties,
                 LogAttributes.USR_ATTRIBUTES_GROUP + "."
             )
         }

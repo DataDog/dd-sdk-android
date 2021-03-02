@@ -15,11 +15,11 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
@@ -136,7 +136,13 @@ internal class DatadogTest {
         Datadog.setUserInfo(id, name, email)
 
         // Then
-        verify(mockUserInfoProvider).setUserInfo(UserInfo(id, name, email))
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email
+            )
+        )
     }
 
     @Test
@@ -154,8 +160,20 @@ internal class DatadogTest {
         Datadog.setUserInfo()
 
         // Then
-        verify(mockUserInfoProvider).setUserInfo(UserInfo(id, name, email))
-        verify(mockUserInfoProvider).setUserInfo(UserInfo(null, null, null))
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email
+            )
+        )
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                null,
+                null,
+                null
+            )
+        )
     }
 
     @Test

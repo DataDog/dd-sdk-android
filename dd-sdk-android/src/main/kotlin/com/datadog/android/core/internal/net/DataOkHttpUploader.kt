@@ -62,7 +62,7 @@ internal abstract class DataOkHttpUploader(
     private val userAgent by lazy {
         System.getProperty(SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
-                "Datadog/${BuildConfig.VERSION_NAME} " +
+                "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
                     "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
                     "${Build.MODEL} Build/${Build.ID})"
             } else {

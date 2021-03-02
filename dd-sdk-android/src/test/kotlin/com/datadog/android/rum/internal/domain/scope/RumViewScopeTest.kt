@@ -6,14 +6,15 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -25,6 +26,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
+import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -42,6 +44,7 @@ import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -252,6 +255,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -296,6 +300,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -340,6 +345,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -364,7 +370,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -375,6 +381,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -409,7 +416,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -420,6 +427,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -465,7 +473,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -476,6 +484,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -523,7 +532,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -534,6 +543,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -571,7 +581,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -582,6 +592,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -618,7 +629,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -629,6 +640,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -668,6 +680,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -738,7 +751,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -749,6 +762,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -774,7 +788,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -785,6 +799,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -810,7 +825,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -821,6 +836,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -855,7 +871,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -882,6 +898,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -908,7 +925,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -919,6 +936,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -945,7 +963,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -956,6 +974,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -982,7 +1001,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -993,6 +1012,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1040,7 +1060,7 @@ internal class RumViewScopeTest {
                 }
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1051,6 +1071,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1098,7 +1119,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1109,6 +1130,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1153,13 +1175,14 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StartAction) with active child ActionScope`(
+    fun `𝕄 do nothing and log warning 𝕎 handleEvent(StartAction) with active child ActionScope`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
         // Given
+        val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes()
         testedScope.activeActionScope = mockChildScope
         fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
@@ -1173,6 +1196,17 @@ internal class RumViewScopeTest {
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
+
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumViewScope.ACTION_DROPPED_WARNING.format(
+                Locale.US,
+                (fakeEvent as RumRawEvent.StartAction).type,
+                (fakeEvent as RumRawEvent.StartAction).name
+            )
+        )
+
+        verifyNoMoreInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -1392,7 +1426,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1409,13 +1443,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1455,7 +1490,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1472,13 +1507,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1520,7 +1556,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1538,13 +1574,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1580,7 +1617,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1598,13 +1635,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(if (fatal) 1 else 0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1651,7 +1689,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1669,13 +1707,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1718,7 +1757,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1736,13 +1775,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1786,7 +1826,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1804,13 +1844,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1857,7 +1898,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .hasAttributes(attributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
                     hasTimestamp(fakeEvent.eventTime.timestamp)
                     hasMessage(message)
@@ -1875,13 +1916,14 @@ internal class RumViewScopeTest {
 
             assertThat(lastValue)
                 .hasAttributes(expectedViewAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1942,6 +1984,135 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Long Task
+
+    @Test
+    fun `𝕄 send events 𝕎 handleEvent(AddLongTask) on active view`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasLongTaskData {
+                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasDuration(durationNs)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send events with global attributes 𝕎 handleEvent(AddLongTask)`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedViewAttributes = attributes.toMutableMap().apply {
+            putAll(fakeAttributes)
+        }
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(2)).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasLongTaskData {
+                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasDuration(durationNs)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                }
+
+            assertThat(lastValue)
+                .hasAttributes(expectedViewAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(AddLongTask) on stopped view`(
+        @LongForgery durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        testedScope.stopped = true
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+    // endregion
+
     // region Loading Time
 
     @Test
@@ -1961,7 +2132,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -1973,6 +2144,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2003,7 +2175,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2015,6 +2187,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2063,7 +2236,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2075,6 +2248,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -2087,7 +2261,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multipe times`(
+    fun `𝕄 send event with custom timings 𝕎 handleEvent(AddCustomTiming) called multiple times`(
         forge: Forge
     ) {
         // Given
@@ -2110,7 +2284,7 @@ internal class RumViewScopeTest {
         argumentCaptor<RumEvent> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2122,6 +2296,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -2130,7 +2305,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
             assertThat(lastValue)
-                .hasUserExtraAttributes(fakeUserInfo.extraInfo)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasName(fakeName)
@@ -2142,6 +2317,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasLongTaskCount(0)
                     isActive(true)
                     hasCustomTimings(
                         mapOf(

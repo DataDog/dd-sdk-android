@@ -18,8 +18,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     dependencies {
         implementation "com.datadoghq:dd-sdk-android:x.x.x"
     }
-    ```
-
+   ```
 
 2. Initialize the library with your application context, tracking consent, and the [Datadog client token][4] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][7] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
 
@@ -34,22 +33,6 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
             Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
-
-```
-  {{< tabs >}}
-   {{% tab "EU" %}}
-   ```kotlin
-    class SampleApplication : Application() {
-        override fun onCreate() {
-            super.onCreate()
-            val configuration = Configuration.Builder()
-            .useEUEndpoints()
-            .build()
-            val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
-            Datadog.initialize(this, credentials, configuration, trackingConsent)
-        }
-    }
-
    ```
    {{% /tab %}}
    {{% tab "EU" %}}

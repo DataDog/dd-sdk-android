@@ -16,10 +16,10 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.warnDeprecated
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
@@ -274,7 +274,14 @@ object Datadog {
         email: String? = null,
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        CoreFeature.userInfoProvider.setUserInfo(UserInfo(id, name, email, extraInfo))
+        CoreFeature.userInfoProvider.setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email,
+                extraInfo
+            )
+        )
     }
 
     // region Internal Initialization

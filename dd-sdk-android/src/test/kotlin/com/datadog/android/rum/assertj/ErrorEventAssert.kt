@@ -6,10 +6,11 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.internal.net.info.NetworkInfo
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
 import org.assertj.core.api.AbstractObjectAssert

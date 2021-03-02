@@ -70,11 +70,18 @@ internal class LogcatLogHandler(
     internal fun getCallerStackElement(): StackTraceElement? {
         return if (Datadog.isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
-            stackTrace.firstOrNull {
-                it.className !in ignoredClassNames
-            }
+            return findValidCallStackElement(stackTrace)
         } else {
             null
+        }
+    }
+
+    internal fun findValidCallStackElement(
+        stackTrace: Array<StackTraceElement>
+    ): StackTraceElement? {
+        return stackTrace.firstOrNull { element ->
+            element.className !in IGNORED_CLASS_NAMES &&
+                IGNORED_PACKAGE_PREFIXES.none { element.className.startsWith(it) }
         }
     }
 
@@ -85,7 +92,8 @@ internal class LogcatLogHandler(
         private const val MAX_TAG_LENGTH = 23
 
         private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
-        private val ignoredClassNames = arrayOf(
+        // internal for testing
+        internal val IGNORED_CLASS_NAMES = arrayOf(
             Logger::class.java.canonicalName,
             LogHandler::class.java.canonicalName,
             LogHandler::class.java.canonicalName + "\$DefaultImpls",
@@ -93,6 +101,12 @@ internal class LogcatLogHandler(
             ConditionalLogHandler::class.java.canonicalName,
             CombinedLogHandler::class.java.canonicalName,
             DatadogLogHandler::class.java.canonicalName
+        )
+
+        // internal for testing
+        internal val IGNORED_PACKAGE_PREFIXES = arrayOf(
+            "com.datadog.android.timber",
+            "timber.log"
         )
     }
 }

@@ -173,19 +173,11 @@ internal class RumResourceScope(
         val rumEvent = RumEvent(
             event = resourceEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        if (isFailedHttpRequest(statusCode)) {
-            val errorMessage = ERROR_MSG_FORMAT.format(method, url)
-            sendError(errorMessage, RumErrorSource.NETWORK, statusCode, null, writer)
-        }
         parentScope.handleEvent(RumRawEvent.SentResource(), writer)
         sent = true
-    }
-
-    private fun isFailedHttpRequest(statusCode: Long?): Boolean {
-        return (statusCode ?: 0) >= HTTP_ERROR_CODE_THRESHOLD
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
@@ -246,7 +238,7 @@ internal class RumResourceScope(
         val rumEvent = RumEvent(
             event = errorEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         parentScope.handleEvent(RumRawEvent.SentError(), writer)

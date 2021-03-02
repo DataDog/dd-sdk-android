@@ -18,4 +18,6 @@ internal interface DataConstraints {
     ): Map<String, Any?>
 
     fun validateTags(tags: List<String>): List<String>
+
+    fun validateEvent(rumEvent: Any): Any
 }

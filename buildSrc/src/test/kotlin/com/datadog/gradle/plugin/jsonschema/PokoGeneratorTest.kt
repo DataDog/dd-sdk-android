@@ -90,7 +90,8 @@ class PokoGeneratorTest(
                 arrayOf(Version, "Version"),
                 arrayOf(Video, "Video"),
                 arrayOf(User, "User"),
-                arrayOf(UserMerged, "UserMerged")
+                arrayOf(UserMerged, "UserMerged"),
+                arrayOf(Bike, "Bike")
             )
         }
     }

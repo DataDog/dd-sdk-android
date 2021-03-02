@@ -23,38 +23,12 @@ import org.gradle.api.tasks.TaskAction
  */
 open class GenerateJsonSchemaTask : DefaultTask() {
 
-    private lateinit var extension: JsonSchemaExtension
-
     init {
         group = "datadog"
-        description = "Review the Android benchmark results and ensure they fit the provided rules"
+        description = "Read source JSON schema files and generate the relevant Kotlin data classes"
     }
 
-    // region Task
-
-    /**
-     * The main [TaskAction].
-     */
-    @TaskAction
-    fun performTask() {
-        val inputDir = getInputDir()
-        val outputDir = getOutputDir()
-        val files = getInputFiles()
-            .filter { it.name !in extension.ignoredFiles }
-
-        println("Found ${files.size} in input dir: $inputDir")
-
-        val reader = JsonSchemaReader(extension.nameMapping)
-        val generator = PokoGenerator(outputDir, extension.targetPackageName)
-        files.forEach {
-            val type = reader.readSchema(it)
-            generator.generate(type)
-        }
-    }
-
-    private fun getInputDir(): File {
-        return File("${project.projectDir.path}${File.separator}${extension.inputDirPath}")
-    }
+    // region Input/Output
 
     /**
      * The [InputFiles] (E.g.: all the json files in `resources/json`).
@@ -66,28 +40,30 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     }
 
     /**
-     * The [Input] package name of generated classes (E.g.: `com.example.model`).
+     * The directory from which to read the files json schema files.
      */
     @Input
-    fun getInputPackageName(): String {
-        return extension.inputDirPath
-    }
+    var inputDirPath: String = ""
 
     /**
-     * The [Input] a list of input file name to ignore
+     * The package name where to generate the models based on the schema files.
+     * (E.g.: `com.example.model`).
      */
     @Input
-    fun getInputIgnoredFiles(): Array<String> {
-        return extension.ignoredFiles
-    }
+    var targetPackageName: String = ""
 
     /**
-     * The [Input] a list of map from file name to type name
+     * The list of schema files to be ignored.
      */
     @Input
-    fun getInputNameMapping(): Map<String, String> {
-        return extension.nameMapping
-    }
+    var ignoredFiles: Array<String> = emptyArray()
+
+    /**
+     * The mapping of the schema file to the generated model name. Mostly used for merged
+     * schemas.
+     */
+    @Input
+    var inputNameMapping: Map<String, String> = emptyMap()
 
     /**
      * The [OutputDirectory] (`src/main/kotlin/{out_package}`).
@@ -97,13 +73,37 @@ open class GenerateJsonSchemaTask : DefaultTask() {
         val topDir = getOutputDir()
         val outputPackageDir = File(
             topDir.absolutePath + File.separator +
-                extension.targetPackageName.replace('.', File.separatorChar)
+                targetPackageName.replace('.', File.separatorChar)
         )
         return outputPackageDir
     }
 
-    internal fun setParams(extension: JsonSchemaExtension) {
-        this.extension = extension
+    // endregion
+
+    // region Task action
+
+    /**
+     * The main [TaskAction].
+     */
+    @TaskAction
+    fun performTask() {
+        val inputDir = getInputDir()
+        val outputDir = getOutputDir()
+        val files = getInputFiles()
+            .filter { it.name !in ignoredFiles }
+
+        logger.info("Found ${files.size} files in input dir: $inputDir")
+
+        val reader = JsonSchemaReader(inputNameMapping)
+        val generator = PokoGenerator(outputDir, targetPackageName)
+        files.forEach {
+            val type = reader.readSchema(it)
+            generator.generate(type)
+        }
+    }
+
+    private fun getInputDir(): File {
+        return File("${project.projectDir.path}${File.separator}$inputDirPath")
     }
 
     private fun getOutputDir(): File {

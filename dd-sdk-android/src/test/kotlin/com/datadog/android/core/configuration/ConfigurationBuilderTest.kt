@@ -11,6 +11,7 @@ import android.util.Log
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -19,7 +20,6 @@ import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
@@ -35,6 +35,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -77,29 +78,6 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 disable all features by default 𝕎 build()`() {
-        // Given
-        val builder = Configuration.Builder()
-
-        // When
-        val config = builder.build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.Core(
-                needsClearTextHttp = false,
-                firstPartyHosts = emptyList(),
-                batchSize = BatchSize.MEDIUM,
-                uploadFrequency = UploadFrequency.AVERAGE
-            )
-        )
-        assertThat(config.logsConfig).isNull()
-        assertThat(config.tracesConfig).isNull()
-        assertThat(config.crashReportConfig).isNull()
-        assertThat(config.rumConfig).isNull()
-    }
-
-    @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
         val config = testedBuilder.build()
@@ -139,7 +117,8 @@ internal class ConfigurationBuilderTest {
                 gesturesTracker = null,
                 userActionTrackingStrategy = null,
                 viewTrackingStrategy = null,
-                rumEventMapper = NoOpEventMapper()
+                rumEventMapper = NoOpEventMapper(),
+                longTaskTrackingStrategy = null
             )
         )
     }
@@ -301,6 +280,7 @@ internal class ConfigurationBuilderTest {
             .hasGesturesTrackingStrategy()
             .hasViewAttributeProviders(mockProviders)
             .doesNotHaveViewTrackingStrategy()
+            .doesNotHaveLongTaskTrackingEnabled()
     }
 
     @TestTargetApi(value = Build.VERSION_CODES.Q)
@@ -328,6 +308,29 @@ internal class ConfigurationBuilderTest {
             .hasGesturesTrackingStrategyApi29()
             .hasViewAttributeProviders(mockProviders)
             .doesNotHaveViewTrackingStrategy()
+            .doesNotHaveLongTaskTrackingEnabled()
+    }
+
+    @Test
+    fun `𝕄 build config with long tasks enabled 𝕎 trackLongTasks() and build()`(
+        @LongForgery(1L, 65536L) durationMs: Long
+    ) {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .trackLongTasks(durationMs)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .doesNotHaveGesturesTrackingStrategy()
+            .doesNotHaveViewTrackingStrategy()
+            .hasLongTaskTrackingEnabled(durationMs)
     }
 
     @Test
@@ -348,6 +351,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig!!)
             .doesNotHaveGesturesTrackingStrategy()
             .hasViewTrackingStrategy(strategy)
+            .doesNotHaveLongTaskTrackingEnabled()
     }
 
     @Test
@@ -374,7 +378,7 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `𝕄 build config with RUM View eventMapper 𝕎 setRumViewEventMapper() and build()`() {
         // Given
-        val eventMapper: EventMapper<ViewEvent> = mock()
+        val eventMapper: ViewEventMapper = mock()
 
         // When
         val config = testedBuilder
@@ -459,6 +463,32 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 warn user 𝕎 trackLongTasks() {RUM disabled}`(
+        @LongForgery(1L, 65536L) durationMs: Long
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        testedBuilder.trackLongTasks(durationMs)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "trackLongTasks"
+            )
+        )
+    }
+
+    @Test
     fun `𝕄 warn user 𝕎 useViewTrackingStrategy() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
@@ -518,7 +548,7 @@ internal class ConfigurationBuilderTest {
             crashReportsEnabled = true,
             rumEnabled = false
         )
-        val eventMapper: EventMapper<ViewEvent> = mock()
+        val eventMapper: ViewEventMapper = mock()
 
         // When
         testedBuilder.setRumViewEventMapper(eventMapper)

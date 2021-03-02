@@ -22,6 +22,7 @@
     <string name="title_user_info">User Info</string>
     <string name="title_about">About…</string>
     <string name="title_gdpr">GDPR</string>
+    <string name="title_long_task">Long Task</string>
 
     <string name="msg_native_crash">Native Crash</string>
     <string name="msg_java_crash">Java Crash</string>

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.constraints
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
@@ -65,6 +66,34 @@ internal class DatadogDataConstraints : DataConstraints {
             devLogger.w(warningMessage)
         }
         return convertedAttributes.take(MAX_ATTR_COUNT).toMap()
+    }
+
+    override fun validateEvent(rumEvent: Any): Any {
+        return if (rumEvent is ViewEvent) {
+
+            val customTimings = rumEvent.view.customTimings?.let {
+                it.copy(
+                    additionalProperties = it.additionalProperties.mapKeys { entry ->
+                        val sanitizedKey =
+                            entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
+                        if (sanitizedKey != entry.key) {
+                            devLogger.w(
+                                CUSTOM_TIMING_KEY_REPLACED_WARNING.format(entry.key, sanitizedKey)
+                            )
+                        }
+                        sanitizedKey
+                    }
+                )
+            }
+
+            rumEvent.copy(
+                view = rumEvent.view.copy(
+                    customTimings = customTimings
+                )
+            )
+        } else {
+            rumEvent
+        }
     }
 
     private fun resolveDiscardedAttrsWarning(
@@ -139,6 +168,9 @@ internal class DatadogDataConstraints : DataConstraints {
 
         private const val MAX_ATTR_COUNT = 128
         private const val MAX_DEPTH_LEVEL = 9
+
+        internal const val CUSTOM_TIMING_KEY_REPLACED_WARNING = "Invalid timing name: %s," +
+            " sanitized to: %s"
 
         private val reservedTagKeys = setOf(
             "host",

@@ -8,14 +8,14 @@ package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Deserializer
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoDeserializer
 import com.datadog.android.rum.internal.data.file.RumFileWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent

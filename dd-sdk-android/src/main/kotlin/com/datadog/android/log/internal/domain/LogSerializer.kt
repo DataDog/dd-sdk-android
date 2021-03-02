@@ -45,7 +45,7 @@ internal class LogSerializer(
         jsonLog.addProperty(LogAttributes.STATUS, resolveLogLevelStatus(log.level))
         jsonLog.addProperty(LogAttributes.LOGGER_NAME, log.loggerName)
         jsonLog.addProperty(LogAttributes.LOGGER_THREAD_NAME, log.threadName)
-        jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.VERSION_NAME)
+        jsonLog.addProperty(LogAttributes.LOGGER_VERSION, BuildConfig.SDK_VERSION_NAME)
 
         // Timestamp
         val formattedDate = synchronized(simpleDateFormat) {
@@ -77,7 +77,10 @@ internal class LogSerializer(
     ) {
         val info = log.networkInfo
         if (info != null) {
-            jsonLog.addProperty(LogAttributes.NETWORK_CONNECTIVITY, info.connectivity.serialized)
+            jsonLog.addProperty(
+                LogAttributes.NETWORK_CONNECTIVITY,
+                info.connectivity.toJson().asString
+            )
             if (!info.carrierName.isNullOrBlank()) {
                 jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
             }
@@ -109,7 +112,7 @@ internal class LogSerializer(
         }
         // add extra info
         dataConstraints.validateAttributes(
-            userInfo.extraInfo,
+            userInfo.additionalProperties,
             keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
             attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
         ).forEach {

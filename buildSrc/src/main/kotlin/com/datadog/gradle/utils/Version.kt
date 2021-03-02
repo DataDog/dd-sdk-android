@@ -34,6 +34,10 @@ data class Version(
         data class Alpha(val number: Int) : Type() {
             override val suffix: String = "-alpha$number"
         }
+
+        object Dev : Type() {
+            override val suffix: String = "-dev"
+        }
     }
 
     // endregion

@@ -18,7 +18,9 @@ import androidx.multidex.MultiDex;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.datadog.android.Datadog;
-import com.datadog.android.DatadogConfig;
+import com.datadog.android.core.configuration.Configuration;
+import com.datadog.android.core.configuration.Credentials;
+import com.datadog.android.privacy.TrackingConsent;
 import com.datadog.android.rum.tracking.ComponentPredicate;
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy;
 import com.datadog.android.log.Logger;
@@ -30,11 +32,17 @@ import com.facebook.stetho.Stetho;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.util.Arrays;
+import java.util.List;
+
 import io.opentracing.util.GlobalTracer;
 
 public class SampleApplication extends Application {
 
     private Logger logger;
+
+    private final List<String> tracedHosts = Arrays.asList("datadoghq.com",
+            "127.0.0.1");
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -46,29 +54,64 @@ public class SampleApplication extends Application {
     public void onCreate() {
         super.onCreate();
         Stetho.initializeWithDefaults(this);
+        initializeDatadog();
+    }
 
-        final DatadogConfig.Builder configBuilder;
-        final String environment = BuildConfig.FLAVOR;
-        configBuilder = new DatadogConfig.Builder(
-                BuildConfig.DD_CLIENT_TOKEN,
-                environment,
-                BuildConfig.DD_RUM_APPLICATION_ID
+    private void initializeDatadog() {
+        Datadog.initialize(
+                this,
+                createDatadogCredentials(),
+                createDatadogConfiguration(),
+                TrackingConsent.GRANTED
         );
-        configBuilder.setServiceName("android-sample-java")
-                .useViewTrackingStrategy(new FragmentViewTrackingStrategy(true,
-                        new ComponentPredicate<Fragment>() {
-                            @Override
-                            public boolean accept(Fragment component) {
-                                return !NavHostFragment.class.isAssignableFrom(
-                                        component.getClass());
-                            }
-                            @Override
-                            public String getViewName(Fragment component) {
-                                return null;
-                            }
-                        }))
-                .trackInteractions();
+        Datadog.setVerbosity(Log.VERBOSE);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        Datadog.setUserInfo(
+                prefs.getString(UserFragment.PREF_ID, null),
+                prefs.getString(UserFragment.PREF_NAME, null),
+                prefs.getString(UserFragment.PREF_EMAIL, null)
+        );
 
+        initializeLogger();
+        GlobalTracer.registerIfAbsent(new AndroidTracer.Builder().build());
+        GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
+    }
+
+    private Credentials createDatadogCredentials() {
+        return new Credentials(
+                BuildConfig.DD_CLIENT_TOKEN,
+                BuildConfig.BUILD_TYPE,
+                BuildConfig.FLAVOR,
+                BuildConfig.DD_RUM_APPLICATION_ID,
+                "android-sample-java"
+        );
+    }
+
+    private Configuration createDatadogConfiguration() {
+
+        final Configuration.Builder configBuilder = new Configuration.Builder(
+                true,
+                true,
+                true,
+                true
+        ).setFirstPartyHosts(tracedHosts)
+                .useViewTrackingStrategy(
+                        new FragmentViewTrackingStrategy(true,
+                                new ComponentPredicate<Fragment>() {
+                                    @Override
+                                    public boolean accept(Fragment component) {
+                                        return !NavHostFragment.class.isAssignableFrom(
+                                                component.getClass());
+                                    }
+
+                                    @Override
+                                    public String getViewName(Fragment component) {
+                                        return component.getClass().getSimpleName();
+                                    }
+                                })
+                )
+                .trackInteractions()
+                .trackLongTasks(250L);
 
         if (!BuildConfig.DD_OVERRIDE_LOGS_URL.isEmpty()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL);
@@ -80,17 +123,10 @@ public class SampleApplication extends Application {
         if (!BuildConfig.DD_OVERRIDE_RUM_URL.isEmpty()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL);
         }
+        return configBuilder.build();
+    }
 
-        // Initialise Datadog
-        Datadog.initialize(this, configBuilder.build());
-        Datadog.setVerbosity(Log.VERBOSE);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        Datadog.setUserInfo(
-                prefs.getString(UserFragment.PREF_ID, null),
-                prefs.getString(UserFragment.PREF_NAME, null),
-                prefs.getString(UserFragment.PREF_EMAIL, null)
-        );
-
+    private void initializeLogger() {
         // Initialise Logger
         logger = new Logger.Builder()
                 .setLogcatLogsEnabled(true)
@@ -125,15 +161,6 @@ public class SampleApplication extends Application {
         logger.addTag("flavor", BuildConfig.FLAVOR);
         logger.addTag("build_type", BuildConfig.BUILD_TYPE);
         logger.v("Added tags");
-
-        // initialize the tracer here
-        GlobalTracer.registerIfAbsent(
-                new AndroidTracer.Builder()
-                        .addGlobalTag("flavor", BuildConfig.FLAVOR)
-                        .addGlobalTag("build_type", BuildConfig.BUILD_TYPE)
-                        .build()
-        );
-        GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
     }
 
     public Logger getLogger() {

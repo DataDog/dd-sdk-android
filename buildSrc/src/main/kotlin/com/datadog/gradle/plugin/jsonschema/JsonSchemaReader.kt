@@ -210,7 +210,9 @@ class JsonSchemaReader(
             transformEnum(typeName, definition.type, definition.enum, definition.description)
         } else if (definition.constant != null) {
             transformConstant(definition.type, definition.constant, definition.description)
-        } else if (!definition.properties.isNullOrEmpty() || definition.additionalProperties != null) {
+        } else if (!definition.properties.isNullOrEmpty() ||
+            definition.additionalProperties != null
+        ) {
             generateDataClass(typeName, definition)
         } else if (!definition.allOf.isNullOrEmpty()) {
             generateTypeAllOf(typeName, definition.allOf)
@@ -223,6 +225,8 @@ class JsonSchemaReader(
                     "Definition reference not found: ${definition.ref}."
                 )
             }
+        } else if (definition.type == JsonType.OBJECT) {
+            generateDataClass(typeName, definition)
         } else {
             throw UnsupportedOperationException("Unsupported schema definition\n$definition")
         }
@@ -254,7 +258,15 @@ class JsonSchemaReader(
                 property,
                 name.toCamelCase()
             )
-            properties.add(TypeProperty(name, propertyType, !required, readOnly))
+            properties.add(
+                TypeProperty(
+                    name,
+                    propertyType,
+                    !required,
+                    readOnly,
+                    property.default
+                )
+            )
         }
         val additional = definition.additionalProperties?.let { transform(it, "?") }
 

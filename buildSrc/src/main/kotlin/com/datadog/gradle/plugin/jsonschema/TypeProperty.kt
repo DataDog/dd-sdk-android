@@ -10,7 +10,8 @@ data class TypeProperty(
     val name: String,
     val type: TypeDefinition,
     val optional: Boolean,
-    val readOnly: Boolean = true
+    val readOnly: Boolean = true,
+    val defaultValue: Any? = null
 ) {
     fun mergedWith(other: TypeProperty): TypeProperty {
         return if (this == other) {

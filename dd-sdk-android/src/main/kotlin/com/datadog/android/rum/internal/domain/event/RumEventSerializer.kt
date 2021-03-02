@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonElement
@@ -25,7 +26,8 @@ internal class RumEventSerializer(
     // region Serializer
 
     override fun serialize(model: RumEvent): String {
-        val json = model.event.toJson().asJsonObject
+
+        val json = dataConstraints.validateEvent(model.event).toJson().asJsonObject
 
         addCustomAttributes(
             dataConstraints.validateAttributes(
@@ -102,6 +104,7 @@ private fun Any.toJson(): JsonElement {
         is ActionEvent -> toJson()
         is ResourceEvent -> toJson()
         is ErrorEvent -> toJson()
+        is LongTaskEvent -> toJson()
         else -> JsonObject()
     }
 }

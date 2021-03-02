@@ -788,6 +788,23 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W addLongTask`(
+        @LongForgery duration: Long,
+        @StringForgery target: String
+    ) {
+        testedMonitor.addLongTask(duration, target)
+        Thread.sleep(200)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddLongTask
+            assertThat(event.durationNs).isEqualTo(duration)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `sends keep alive event to rootScope regularly`() {
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {

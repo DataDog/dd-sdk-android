@@ -27,7 +27,12 @@ open class CheckApiSurfaceTask : DefaultTask() {
     @TaskAction
     fun applyTask() {
         val lines = project.execShell(
-            "git", "diff", "--color=never", "HEAD", "--", surfaceFile.absolutePath
+            "git",
+            "diff",
+            "--color=never",
+            "HEAD",
+            "--",
+            surfaceFile.absolutePath
         )
 
         val additions = lines.filter { it.matches(Regex("^\\+[^+].*$")) }
@@ -35,7 +40,8 @@ open class CheckApiSurfaceTask : DefaultTask() {
 
         if (additions.isNotEmpty() || removals.isNotEmpty()) {
             throw IllegalStateException(
-                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task before you push your PR.\n" +
+                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task" +
+                    " before you push your PR.\n" +
                     additions.joinToString("\n") + removals.joinToString("\n")
             )
         }

@@ -11,12 +11,12 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.domain.Serializer
-import com.datadog.android.core.internal.net.info.NetworkInfo
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.opentracing.DDSpan
 import com.google.gson.JsonArray
@@ -78,7 +78,7 @@ internal class SpanSerializer(
 
         metaObject.addProperty(TAG_DD_SOURCE, DD_SOURCE_ANDROID)
         metaObject.addProperty(TAG_SPAN_KIND, KIND_CLIENT)
-        metaObject.addProperty(TAG_TRACER_VERSION, BuildConfig.VERSION_NAME)
+        metaObject.addProperty(TAG_TRACER_VERSION, BuildConfig.SDK_VERSION_NAME)
         metaObject.addProperty(TAG_APPLICATION_VERSION, CoreFeature.packageVersion)
 
         addLogNetworkInfo(networkInfoProvider.getLatestNetworkInfo(), metaObject)
@@ -104,9 +104,9 @@ internal class SpanSerializer(
         jsonLog: JsonObject
     ) {
         if (networkInfo != null) {
-            jsonLog.addProperty(
+            jsonLog.add(
                 LogAttributes.NETWORK_CONNECTIVITY,
-                networkInfo.connectivity.serialized
+                networkInfo.connectivity.toJson()
             )
             if (!networkInfo.carrierName.isNullOrBlank()) {
                 jsonLog.addProperty(
@@ -153,7 +153,7 @@ internal class SpanSerializer(
         }
         // add extra attributes
         dataConstraints.validateAttributes(
-            userInfo.extraInfo,
+            userInfo.additionalProperties,
             keyPrefix = LogAttributes.USR_ATTRIBUTES_GROUP,
             attributesGroupName = USER_EXTRA_GROUP_VERBOSE_NAME
         ).forEach {

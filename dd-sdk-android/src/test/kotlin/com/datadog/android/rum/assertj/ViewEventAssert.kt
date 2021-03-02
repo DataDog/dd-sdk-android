@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.log.internal.user.UserInfo
+import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
@@ -127,6 +127,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
             .overridingErrorMessage(
                 "Expected event data to have view.crash.count $expected " +
                     "but was ${actual.view.crash?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasLongTaskCount(expected: Long): ViewEventAssert {
+        assertThat(actual.view.longTask?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.longTask.count $expected " +
+                    "but was ${actual.view.longTask?.count}"
             )
             .isEqualTo(expected)
         return this

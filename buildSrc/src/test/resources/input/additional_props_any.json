@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Company",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "ratings": {
+      "type": "object",
+      "properties": {
+        "global": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "required": [ "global"]
+    },
+    "information": {
+      "properties": {
+        "date":{
+          "type": "integer"
+        },
+        "priority": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": {
+    "type": "object"
+  }
+}

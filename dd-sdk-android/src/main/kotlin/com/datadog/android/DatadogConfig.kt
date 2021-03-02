@@ -12,7 +12,9 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
@@ -111,7 +113,8 @@ private constructor(
                     gesturesTracker = it.gesturesTracker,
                     userActionTrackingStrategy = it.userActionTrackingStrategy,
                     viewTrackingStrategy = it.viewTrackingStrategy,
-                    rumEventMapper = it.rumEventMapper
+                    rumEventMapper = it.rumEventMapper,
+                    longTaskTrackingStrategy = null
                 )
             }
         )
@@ -170,6 +173,15 @@ private constructor(
          */
         constructor(clientToken: String, envName: String, applicationId: String) :
             this(clientToken, envName, UUID.fromString(applicationId))
+
+        init {
+            warnDeprecated(
+                "DatadogConfig.Builder",
+                "1.8.0",
+                "1.10.0",
+                "Configuration()"
+            )
+        }
 
         private var logsConfig: FeatureConfig = FeatureConfig(
             clientToken,
@@ -459,12 +471,12 @@ private constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [ViewEvent]. You can use this interface implementation
+         * Sets the [ViewEventMapper] for the RUM [ViewEvent]. You can use this interface implementation
          * to modify the [ViewEvent] attributes before serialisation.
          *
-         * @param eventMapper the [EventMapper] implementation.
+         * @param eventMapper the [ViewEventMapper] implementation.
          */
-        fun setRumViewEventMapper(eventMapper: EventMapper<ViewEvent>): Builder {
+        fun setRumViewEventMapper(eventMapper: ViewEventMapper): Builder {
             rumConfig = rumConfig.copy(
                 rumEventMapper = rumConfig.rumEventMapper.copy(viewEventMapper = eventMapper)
             )

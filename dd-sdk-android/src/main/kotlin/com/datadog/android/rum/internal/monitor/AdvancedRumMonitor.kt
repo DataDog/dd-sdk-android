@@ -26,6 +26,8 @@ internal interface AdvancedRumMonitor : RumMonitor {
 
     fun addResourceTiming(key: String, timing: ResourceTiming)
 
+    fun addLongTask(durationNs: Long, target: String)
+
     fun addCrash(
         message: String,
         source: RumErrorSource,

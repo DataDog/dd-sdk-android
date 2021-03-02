@@ -10,17 +10,22 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 internal class RumViewScope(
@@ -51,6 +56,7 @@ internal class RumViewScope(
     private var actionCount: Long = 0
     private var errorCount: Long = 0
     private var crashCount: Long = 0
+    private var longTaskCount: Long = 0
     private var version: Long = 1
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
@@ -92,6 +98,7 @@ internal class RumViewScope(
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
+            is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
             else -> delegateEventToChildren(event, writer)
         }
 
@@ -153,7 +160,12 @@ internal class RumViewScope(
     ) {
         delegateEventToChildren(event, writer)
 
-        if (stopped || activeActionScope != null) return
+        if (stopped) return
+
+        if (activeActionScope != null) {
+            devLogger.w(ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name))
+            return
+        }
 
         activeActionScope = RumActionScope.fromEvent(this, event)
     }
@@ -218,7 +230,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = errorEvent,
             globalAttributes = updatedAttributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
         errorCount++
@@ -303,6 +315,7 @@ internal class RumViewScope(
                 resource = ViewEvent.Resource(resourceCount),
                 error = ViewEvent.Error(errorCount),
                 crash = ViewEvent.Crash(crashCount),
+                longTask = ViewEvent.LongTask(longTaskCount),
                 customTimings = timings,
                 isActive = !stopped
             ),
@@ -319,7 +332,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = viewEvent,
             globalAttributes = attributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
     }
@@ -378,7 +391,7 @@ internal class RumViewScope(
         val rumEvent = RumEvent(
             event = actionEvent,
             globalAttributes = GlobalRum.globalAttributes,
-            userExtraAttributes = user.extraInfo
+            userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
 
@@ -392,9 +405,55 @@ internal class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
+    private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: Writer<RumEvent>) {
+        delegateEventToChildren(event, writer)
+        if (stopped) return
+
+        val context = getRumContext()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val updatedAttributes = addExtraAttributes(
+            mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
+        )
+        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
+        val longTaskEvent = LongTaskEvent(
+            date = event.eventTime.timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
+            longTask = LongTaskEvent.LongTask(
+                duration = event.durationNs
+            ),
+            action = context.actionId?.let { LongTaskEvent.Action(it) },
+            view = LongTaskEvent.View(
+                id = context.viewId.orEmpty(),
+                url = context.viewUrl.orEmpty()
+            ),
+            usr = LongTaskEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email
+            ),
+            connectivity = networkInfo.toLongTaskConnectivity(),
+            application = LongTaskEvent.Application(context.applicationId),
+            session = LongTaskEvent.Session(
+                id = context.sessionId,
+                type = LongTaskEvent.Type.USER
+            ),
+            dd = LongTaskEvent.Dd()
+        )
+        val rumEvent = RumEvent(
+            event = longTaskEvent,
+            globalAttributes = updatedAttributes,
+            userExtraAttributes = user.additionalProperties
+        )
+        writer.write(rumEvent)
+        longTaskCount++
+        sendViewUpdate(event, writer)
+    }
+
     // endregion
 
     companion object {
+
+        internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
+            " another action is still active for the same view"
 
         internal fun fromEvent(
             parentScope: RumScope,

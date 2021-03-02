@@ -15,6 +15,7 @@ import android.os.Build
 import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.model.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
@@ -37,9 +38,9 @@ internal class CallbackNetworkInfoProvider(
 
         lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
-            upKbps = networkCapabilities.linkUpstreamBandwidthKbps,
-            downKbps = networkCapabilities.linkDownstreamBandwidthKbps,
-            strength = getStrength(networkCapabilities)
+            upKbps = networkCapabilities.linkUpstreamBandwidthKbps.toLong(),
+            downKbps = networkCapabilities.linkDownstreamBandwidthKbps.toLong(),
+            strength = getStrength(networkCapabilities).toLong()
         )
     }
 

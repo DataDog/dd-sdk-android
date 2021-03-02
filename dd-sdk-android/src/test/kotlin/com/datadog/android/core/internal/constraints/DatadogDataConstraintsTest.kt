@@ -10,6 +10,7 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.times
@@ -18,6 +19,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
@@ -287,6 +289,60 @@ internal class DatadogDataConstraintsTest {
             Log.WARN,
             "Too many attributes were added for [$fakeAttributesGroup]," +
                 " $discardedCount had to be discarded."
+        )
+    }
+
+    // endregion
+
+    // region Events
+
+    @Test
+    fun `M sanitize custom timings and log warning W validateEvent`(
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+
+        // Given
+        val goodTimingPart = forge.anAlphabeticalString(case = Case.ANY)
+        val badTimingPart = forge.aStringMatching("[^a-zA-Z0-9\\-_.@$]+")
+
+        val malformedKey = (goodTimingPart + badTimingPart)
+
+        val viewEventWithMalformedTiming = viewEvent.copy(
+            view = viewEvent.view.copy(
+                customTimings = ViewEvent.CustomTimings(
+                    additionalProperties = mapOf(
+                        malformedKey to forge.aGaussianLong()
+                    )
+                )
+            )
+        )
+
+        // When
+        val validatedEvent = testedConstraints.validateEvent(viewEventWithMalformedTiming)
+
+        // Then
+        assertThat(validatedEvent)
+            .isNotEqualTo(viewEventWithMalformedTiming)
+
+        val originalTimings = viewEventWithMalformedTiming.view.customTimings!!.additionalProperties
+        val sanitizedTimings = (validatedEvent as ViewEvent).view
+            .customTimings!!.additionalProperties
+
+        assertThat(sanitizedTimings.size)
+            .isEqualTo(originalTimings.size)
+
+        val sanitizedBadTimingPart = "_".repeat(badTimingPart.length)
+
+        assertThat(sanitizedTimings.keys.first())
+            .isEqualTo(goodTimingPart + sanitizedBadTimingPart)
+
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            DatadogDataConstraints.CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+                malformedKey,
+                goodTimingPart + sanitizedBadTimingPart
+            )
         )
     }
 
