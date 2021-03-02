@@ -10,8 +10,12 @@ import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 
@@ -23,7 +27,17 @@ internal data class RumEventMapper(
 ) : EventMapper<RumEvent> {
 
     override fun map(event: RumEvent): RumEvent? {
-        val bundledMappedEvent = when (val bundledEvent = event.event) {
+        val mappedEvent = resolveEvent(event)
+        if (mappedEvent == null) {
+            notifyEventDropped(event)
+        }
+        return mappedEvent
+    }
+
+    // region Internal
+
+    private fun mapRumEvent(event: RumEvent): Any? {
+        return when (val bundledEvent = event.event) {
             is ViewEvent -> viewEventMapper.map(bundledEvent)
             is ActionEvent -> actionEventMapper.map(bundledEvent)
             is ErrorEvent -> errorEventMapper.map(bundledEvent)
@@ -36,14 +50,13 @@ internal data class RumEventMapper(
                 bundledEvent
             }
         }
-
-        return resolveEvent(bundledMappedEvent, event)
     }
 
     private fun resolveEvent(
-        bundledMappedEvent: Any?,
         event: RumEvent
     ): RumEvent? {
+        val bundledMappedEvent = mapRumEvent(event)
+
         // we need to check if the returned bundled mapped object is not null and same instance
         // as the original one. Otherwise we will drop the event.
         // In case the event is of type ViewEvent this cannot be null according with the interface
@@ -70,6 +83,21 @@ internal data class RumEventMapper(
             event
         }
     }
+
+    private fun notifyEventDropped(event: RumEvent) {
+        val monitor = (GlobalRum.get() as? AdvancedRumMonitor) ?: return
+        when (val rumEvent = event.event) {
+            is ActionEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ACTION)
+            is ResourceEvent -> monitor.eventDropped(rumEvent.view.id, EventType.RESOURCE)
+            is ErrorEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ERROR)
+            is LongTaskEvent -> monitor.eventDropped(rumEvent.view.id, EventType.LONG_TASK)
+            else -> {
+                // Nothing to do
+            }
+        }
+    }
+
+    // endregion
 
     companion object {
         internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =

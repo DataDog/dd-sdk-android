@@ -35,4 +35,6 @@ internal interface AdvancedRumMonitor : RumMonitor {
     )
 
     fun eventSent(viewId: String, type: EventType)
+
+    fun eventDropped(viewId: String, type: EventType)
 }
