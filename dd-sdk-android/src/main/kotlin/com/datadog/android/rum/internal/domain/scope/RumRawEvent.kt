@@ -100,15 +100,44 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class SentResource(
+    internal data class ResourceSent(
+        val viewId: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class SentAction(
+    internal data class ActionSent(
+        val viewId: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class SentError(
+    internal data class ErrorSent(
+        val viewId: String,
+        val isCrash: Boolean,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class LongTaskSent(
+        val viewId: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class ResourceDropped(
+        val viewId: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class ActionDropped(
+        val viewId: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class ErrorDropped(
+        val viewId: String,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class LongTaskDropped(
+        val viewId: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

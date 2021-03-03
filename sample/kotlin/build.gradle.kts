@@ -69,6 +69,7 @@ android {
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
         register("production") {
+            isDefault = true
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }

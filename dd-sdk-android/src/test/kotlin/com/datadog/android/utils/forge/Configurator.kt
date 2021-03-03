@@ -41,14 +41,15 @@ internal class Configurator :
 
         // RUM
         forge.addFactory(ActionEventForgeryFactory())
+        forge.addFactory(ErrorEventForgeryFactory())
+        forge.addFactory(LongTaskEventForgeryFactory())
+        forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(RumEventForgeryFactory())
+        forge.addFactory(RumEventMapperFactory())
         forge.addFactory(RumContextForgeryFactory())
         forge.addFactory(ResourceEventForgeryFactory())
         forge.addFactory(ResourceTimingForgeryFactory())
-        forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(ViewEventForgeryFactory())
-        forge.addFactory(MotionEventForgeryFactory())
-        forge.addFactory(RumEventMapperFactory())
 
         // NDK Crash
         forge.addFactory(NdkCrashLogForgeryFactory())
