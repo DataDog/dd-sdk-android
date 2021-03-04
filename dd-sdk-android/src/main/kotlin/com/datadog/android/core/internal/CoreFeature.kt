@@ -102,7 +102,7 @@ internal object CoreFeature {
         initializeClockSync(appContext)
         setupInfoProviders(appContext, consent)
         setupOkHttpClient(configuration.needsClearTextHttp)
-        firstPartyHostDetector = FirstPartyHostDetector(configuration.firstPartyHosts)
+        firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         setupExecutors()
 
         initialized.set(true)
