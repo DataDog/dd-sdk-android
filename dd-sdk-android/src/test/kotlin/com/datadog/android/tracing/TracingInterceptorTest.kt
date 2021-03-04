@@ -147,6 +147,9 @@ internal open class TracingInterceptorTest {
     @StringForgery
     lateinit var fakeOrigin: String
 
+    @StringForgery(regex = HOSTNAME_PATTERN)
+    lateinit var fakeLocalHosts: List<String>
+
     // endregion
 
     @BeforeEach
@@ -168,13 +171,13 @@ internal open class TracingInterceptorTest {
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeMediaType = MediaType.parse(mediaType)
-        // by default the request has a valid host
-        fakeRequest = forgeRequest(forge, true)
+        fakeUrl = forgeUrl(forge)
+        fakeRequest = forgeRequest(forge)
         TracesFeature.initialize(
             mockAppContext,
             fakeConfig
         )
-        testedInterceptor = instantiateTestedInterceptor {
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
 
@@ -207,12 +210,13 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `𝕄 inject tracing header 𝕎 intercept() for any request`(
+    fun `𝕄 inject tracing header 𝕎 intercept() {global known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         stubChain(mockChain, statusCode)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -228,12 +232,15 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `𝕄 inject tracing header 𝕎 intercept() for any request with legacy host regex`(
+    fun `𝕄 inject tracing header 𝕎 intercept() {local known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
+        fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeRequest = forgeRequest(forge)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -260,7 +267,8 @@ internal open class TracingInterceptorTest {
         val parentSpanContext: SpanContext = mock()
         whenever(parentSpan.context()) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(parentSpanContext)) doReturn mockSpanBuilder
-        fakeRequest = forgeRequest(forge, true) { it.tag(Span::class.java, parentSpan) }
+        fakeRequest = forgeRequest(forge) { it.tag(Span::class.java, parentSpan) }
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -290,6 +298,7 @@ internal open class TracingInterceptorTest {
         val parentSpanContext: SpanContext = mock()
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -311,6 +320,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -327,6 +337,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -345,6 +356,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for failing request {5xx}`(
         @IntForgery(min = 500, max = 600) statusCode: Int
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -361,6 +373,7 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 create a span with info 𝕎 intercept() for 404 request`() {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, 404)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -379,6 +392,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
@@ -401,6 +415,7 @@ internal open class TracingInterceptorTest {
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         TracesFeature.invokeMethod("stop")
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -421,6 +436,7 @@ internal open class TracingInterceptorTest {
         val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
@@ -452,6 +468,7 @@ internal open class TracingInterceptorTest {
         val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
@@ -493,6 +510,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -519,6 +537,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -545,6 +564,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
         ).doAnswer {
@@ -586,7 +606,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        fakeRequest = forgeRequest(forge, false)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -625,6 +645,7 @@ internal open class TracingInterceptorTest {
             mockLocalTracer
         }
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val countDownLatch = CountDownLatch(2)
@@ -652,18 +673,17 @@ internal open class TracingInterceptorTest {
         whenever(chain.proceed(any())) doReturn fakeResponse
     }
 
+    private fun forgeUrl(forge: Forge, knownHost: String? = null): String {
+        val protocol = forge.anElementFrom("http", "https")
+        val host = knownHost ?: forge.aStringMatching(HOSTNAME_PATTERN)
+        val path = forge.anAlphaNumericalString()
+        return "$protocol://$host/$path"
+    }
+
     private fun forgeRequest(
         forge: Forge,
-        validHost: Boolean = false,
         configure: (Request.Builder) -> Unit = {}
     ): Request {
-        val protocol = forge.anElementFrom("http", "https")
-        val host = forge.aStringMatching(HOSTNAME_PATTERN)
-        val path = forge.anAlphaNumericalString()
-        fakeUrl = "$protocol://$host/$path"
-        if (validHost) {
-            whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        }
         val builder = Request.Builder().url(fakeUrl)
         if (forge.aBool()) {
             fakeMethod = "POST"

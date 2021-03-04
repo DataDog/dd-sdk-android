@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
@@ -98,14 +97,7 @@ internal constructor(
         CoreFeature.firstPartyHostDetector,
         null,
         { AndroidTracer.Builder().build() }
-    ) {
-        warnDeprecated(
-            "Constructor TracingInterceptor(List<String>, TracedRequestListener)",
-            "1.6.0",
-            "1.8.0",
-            "TracingInterceptor(TracedRequestListener)"
-        )
-    }
+    )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
@@ -174,7 +166,8 @@ internal constructor(
 
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
-        return firstPartyHostDetector.isFirstPartyUrl(url)
+        return firstPartyHostDetector.isFirstPartyUrl(url) ||
+            localFirstPartyHostDetector.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
