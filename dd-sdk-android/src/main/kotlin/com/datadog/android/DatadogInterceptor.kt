@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -104,14 +103,7 @@ internal constructor(
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
         { AndroidTracer.Builder().build() }
-    ) {
-        warnDeprecated(
-            "Constructor DatadogInterceptor(List<String>, TracedRequestListener)",
-            "1.6.0",
-            "1.8.0",
-            "DatadogInterceptor(TracedRequestListener)"
-        )
-    }
+    )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and

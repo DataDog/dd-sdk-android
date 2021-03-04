@@ -1,3 +1,7 @@
+# 1.8.1 / 2021-03-04
+
+* [BUGFIX] RUM/APM: handle correctly known hosts in global configuration and interceptors [#513](https://github.com/DataDog/dd-sdk-android/issues/513) (Thanks [@erawhctim](https://github.com/erawhctim))
+
 # 1.8.0 / 2021-02-25
 
 * [BUGFIX] Global: handle correctly incorrect domain names in Interceptors' known hosts
@@ -35,7 +39,7 @@
 * [BUGFIX] RUM: Resources are linked with the wrong Action
 * [BUGFIX] Global: Validate the env value passed in the DatadogConfig.Builder
 * [BUGFIX] RUM: prevent `trackInterations()` from messing with the Application's theme
-* [BUGFIX] Global: Remove unnecessary transitive dependencies from library [#396](https://github.com/DataDog/dd-sdk-android/issues/396) (Thanks @rashadsookram)
+* [BUGFIX] Global: Remove unnecessary transitive dependencies from library [#396](https://github.com/DataDog/dd-sdk-android/issues/396) (Thanks [@rashadsookram](https://github.com/rashadsookram))
 * [BUGFIX] Global: Prevent a crash in CallbackNetworkProvider
 * [FEATURE] Global: Provide an RxJava integration (`dd-sdk-android-rx`)
 * [FEATURE] Global: Provide a Coil integration (`dd-sdk-android-coil`)
@@ -52,7 +56,7 @@
 
 # 1.5.2 / 2020-09-18
 
-* [BUGFIX] Global: Prevent a crash when sending data. See [#377](https://github.com/DataDog/dd-sdk-android/issues/377) (Thanks @ronak-earnin)
+* [BUGFIX] Global: Prevent a crash when sending data. See [#377](https://github.com/DataDog/dd-sdk-android/issues/377) (Thanks [@ronak-earnin](https://github.com/ronak-earnin))
 
 # 1.5.1 / 2020-09-03
 
@@ -100,14 +104,14 @@
 * [FEATURE] Logs: Add sampling option in the Logger
 * [IMPROVEMENT] Logs: Make the log operations thread safe
 * [BUGFIX] Logs: Fix rare crash on upload requests
-* [BUGFIX] Global: Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks @alparp27)
+* [BUGFIX] Global: Prevent OutOfMemory crash on upload. See [#164](https://github.com/DataDog/dd-sdk-android/issues/164) (Thanks [@alparp27](https://github.com/alparp27))
 
 
 # 1.3.1 / 2020-04-30
 
 ### Changes
 
-* [BUGFIX] Fix ConcurrentModificationException crash in the FileReader class. See [#234](https://github.com/DataDog/dd-sdk-android/issues/234) (Thanks @alparp27)
+* [BUGFIX] Fix ConcurrentModificationException crash in the FileReader class. See [#234](https://github.com/DataDog/dd-sdk-android/issues/234) (Thanks [@alparp27](https://github.com/alparp27))
 
 # 1.3.0 / 2020-03-02
 
@@ -125,20 +129,20 @@
 
 ### Changes
 
-* [BUGFIX] Fix invalid dependency group in `dd-sdk-android-timber`. See [#147](https://github.com/DataDog/dd-sdk-android/issues/147) (Thanks @mduong, @alparp27, @rafaela-stockx)
+* [BUGFIX] Fix invalid dependency group in `dd-sdk-android-timber`. See [#147](https://github.com/DataDog/dd-sdk-android/issues/147) (Thanks [@mduong](https://github.com/mduong), [@alparp27](https://github.com/alparp27), [@rafaela-stockx](https://github.com/rafaela-stockx))
 
 # 1.2.1 / 2020-02-19
 
 ### Changes
 
-* [BUGFIX] Fix invalid dependency version in `dd-sdk-android-timber`. See [#138](https://github.com/DataDog/dd-sdk-android/issues/138) (Thanks @mduong)
+* [BUGFIX] Fix invalid dependency version in `dd-sdk-android-timber`. See [#138](https://github.com/DataDog/dd-sdk-android/issues/138) (Thanks [@mduong](https://github.com/mduong))
 
 # 1.2.0 / 2020-01-20
 
 ### Changes
 
-* [BUGFIX] Fail silently when trying to initialize the SDK twice. See #86 (Thanks @Vavassor)
-* [BUGFIX] Publish the Timber artifact automatically. See #90 (Thanks @Macarse)
+* [BUGFIX] Fail silently when trying to initialize the SDK twice. See #86 (Thanks [@Vavassor](https://github.com/Vavassor))
+* [BUGFIX] Publish the Timber artifact automatically. See #90 (Thanks [@Macarse](https://github.com/Macarse))
 * [FEATURE] Create a Crash Handler : App crashes will be automatically logged.
 * [FEATURE] Downgrade OkHttp4 to OkHttp3
 * [FEATURE] Make Library compatible with API 19+
