@@ -33,6 +33,6 @@ internal class FirstPartyHostDetector(
     }
 
     fun addKnownHosts(hosts: List<String>) {
-        knownHosts = knownHosts + hosts
+        knownHosts = knownHosts + hosts.map { it.toLowerCase(Locale.US) }
     }
 }
