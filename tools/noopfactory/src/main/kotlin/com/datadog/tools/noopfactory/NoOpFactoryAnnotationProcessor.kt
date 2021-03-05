@@ -105,7 +105,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
         file.writeTo(writer)
         writer.close()
 
-        processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, "Generated ${file.name}")
+        processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, "Generated ${file.name}\r\n")
     }
 
     /**
