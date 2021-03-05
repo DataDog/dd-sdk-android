@@ -53,6 +53,8 @@ android {
 
         buildConfigField("int", "SDK_VERSION_CODE", "${AndroidConfig.VERSION.code}")
         buildConfigField("String", "SDK_VERSION_NAME", "\"${AndroidConfig.VERSION.name}\"")
+
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     sourceSets.named("main") {
