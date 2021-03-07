@@ -72,6 +72,26 @@ In addition to the [default RUM attributes][3] captured by the Mobile SDK automa
  
 ## Add User info
 
+### Identify user sessions
+Adding user information to your RUM sessions makes it easy to:
+* Follow the journey of a given user
+* Know which users are the most impacted by errors
+* Monitor performance for your most important users
+
+{{< img src="real_user_monitoring/browser/advanced_configuration/user-api.png" alt="User API in RUM UI"  >}}
+
+The following attributes are **optional** but it is recommended to provide **at least one** of them:
+
+| Attribute  | Type | Description                                                                                              |
+|------------|------|----------------------------------------------------------------------------------------------------|
+| usr.id    | String | Unique user identifier.                                                                                  |
+| usr.name  | String | User friendly name, displayed by default in the RUM UI.                                                  |
+| usr.email | String | User email, displayed in the RUM UI if the user name is not present. It is also used to fetch Gravatars. |
+
+To identify user sessions, use the `setUser` API:
+
+// TODO Add code snippet
+//Datadog.setUserInfo()
 
 ## Set General Attributes
 
@@ -182,7 +202,7 @@ If you need to modify some attributes in your RUM events or to drop some of the 
 
 [1]: https://app.datadoghq.com/rum/create
 [2]: /real_user_monitoring/android
-[3]: /real_user_monitoring/data_collected
+[3]: /real_user_monitoring/android/data_collected
 [4]: /real_user_monitoring/android/configure_android_sdk/track_view
 [5]: /real_user_monitoring/android/configure_android_sdk/track_action
 [6]: /real_user_monitoring/android/configure_android_sdk/track_resource

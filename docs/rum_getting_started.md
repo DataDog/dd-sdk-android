@@ -70,7 +70,7 @@ class SampleApplication : Application() {
 
 Learn more about [ViewTrackingStrategy][5] to enable auto tracking of all your views (activities, fragments etc.), [trackingConsent][6] to add GDPR compliance for your EU users and [other configuration options][7] to initialize the library.
 
-Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
+Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right proguard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
 
 4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
