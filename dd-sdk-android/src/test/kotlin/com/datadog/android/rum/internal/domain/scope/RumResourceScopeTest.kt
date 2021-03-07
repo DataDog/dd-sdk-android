@@ -31,10 +31,8 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atMost
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -132,7 +130,7 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 send Resource 𝕎 handleEvent(StopResource)`(
+    fun `𝕄 send Resource event 𝕎 handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -174,10 +172,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -227,10 +222,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(URL(fakeUrl).host)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -290,10 +282,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(brokenUrl)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -345,10 +334,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -398,10 +384,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -441,10 +424,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -477,10 +457,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -501,10 +478,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue.event).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -524,10 +498,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(capture())
             assertThat(lastValue.event).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -576,10 +547,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -631,10 +599,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -687,10 +652,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -733,10 +695,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -791,10 +750,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -839,10 +795,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -887,10 +840,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -943,10 +893,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentError>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1059,11 +1006,8 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
         verifyNoMoreInteractions(mockWriter)
+        verify(mockParentScope, never()).handleEvent(any(), any())
         assertThat(resultWaitForTiming).isSameAs(testedScope)
         assertThat(resultStop).isEqualTo(null)
     }
@@ -1110,11 +1054,8 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
         verifyNoMoreInteractions(mockWriter)
+        verify(mockParentScope, never()).handleEvent(any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(null)
@@ -1163,11 +1104,8 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentResource>(),
-            same(mockWriter)
-        )
         verifyNoMoreInteractions(mockWriter)
+        verify(mockParentScope, never()).handleEvent(any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)

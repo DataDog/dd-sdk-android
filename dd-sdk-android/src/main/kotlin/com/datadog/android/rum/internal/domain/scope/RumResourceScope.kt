@@ -176,7 +176,6 @@ internal class RumResourceScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        parentScope.handleEvent(RumRawEvent.SentResource(), writer)
         sent = true
     }
 
@@ -241,7 +240,6 @@ internal class RumResourceScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        parentScope.handleEvent(RumRawEvent.SentError(), writer)
         sent = true
     }
 

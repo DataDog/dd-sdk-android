@@ -17,11 +17,11 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -153,10 +153,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
@@ -231,10 +228,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
@@ -307,10 +301,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -356,10 +347,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -397,10 +385,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -444,10 +429,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -485,10 +467,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -524,10 +503,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -564,10 +540,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -605,10 +578,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -648,10 +618,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -689,10 +656,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -736,10 +700,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -777,10 +738,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -818,10 +776,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -859,10 +814,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -901,10 +853,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -943,10 +892,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
         assertThat(result2).isNull()
@@ -1053,10 +999,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
@@ -1091,10 +1034,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -1128,10 +1068,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
@@ -1171,10 +1108,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                 }
         }
-        verify(mockParentScope).handleEvent(
-            isA<RumRawEvent.SentAction>(),
-            same(mockWriter)
-        )
+        verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }

@@ -134,7 +134,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 ## Advanced logging
 
-### Library Initialization
+### Library initialization
 
 The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
 
@@ -144,8 +144,7 @@ The following methods in `DatadogConfig.Builder` can be used when creating the D
 | `setLogsEnabled(true)`     | Set to `true` to enable sending logs to Datadog.                                                                                                                                                                                                                                  |
 | `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
 
-
-### Logger Initialization
+### Logger initialization
 
 The following methods in `Logger.Builder` can be used when initializing the logger to send logs to Datadog:
 
@@ -166,9 +165,9 @@ The following methods in `Logger.Builder` can be used when initializing the logg
 
 Find below functions to add/remove tags and attributes to all logs sent by a given logger.
 
-#### Global Tags
+#### Global tags
 
-##### Add Tags
+##### Add tags
 
 Use the `addTag("<TAG_KEY>","<TAG_VALUE>")` function to add tags to all logs sent by a specific logger:
 
@@ -182,7 +181,7 @@ logger.addTag("device", "android")
 
 **Note**: `<TAG_VALUE>` must be a String.
 
-##### Remove Tags
+##### Remove tags
 
 Use the `removeTagsWithKey("<TAG_KEY>")` function to remove tags from all logs sent by a specific logger:
 
@@ -193,7 +192,7 @@ logger.removeTagsWithKey("build_type")
 
 [Learn more about Datadog tags][5].
 
-#### Global Attributes
+#### Global attributes
 
 ##### Add attributes
 
@@ -236,7 +235,7 @@ The data on disk will automatically be discarded if it gets too old to ensure th
 
 ## Extensions
 
-### Timber 
+### Timber
 
 If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-timber).
 

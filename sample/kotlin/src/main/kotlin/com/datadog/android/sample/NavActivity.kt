@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -23,6 +24,7 @@ class NavActivity : AppCompatActivity() {
 
     lateinit var navController: NavController
     lateinit var rootView: View
+    lateinit var appInfoView: TextView
 
     // region Activity
 
@@ -34,6 +36,7 @@ class NavActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_nav)
         rootView = findViewById(R.id.frame_container)
+        appInfoView = findViewById<TextView>(R.id.app_info)
 
         navController = findNavController(R.id.nav_host_fragment)
     }
@@ -51,6 +54,9 @@ class NavActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Timber.d("onResume")
+
+        val tracking = Preferences.defaultPreferences(this).getTrackingConsent()
+        appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $tracking"
     }
 
     override fun onPause() {
