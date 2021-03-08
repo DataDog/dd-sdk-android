@@ -15,6 +15,7 @@ variables:
 
 stages:
   - ci-image
+  - security
   - analysis
   - test
   - publish
@@ -31,6 +32,24 @@ ci-image:
   script:
     - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
     - docker push $CI_IMAGE_DOCKER
+
+# SECURITY
+
+create_key:
+  stage: security
+  when: manual
+  tags: [ "runner:docker", "size:large" ]
+  variables:
+    PROJECT_NAME: "dd-sdk-android"
+    EXPORT_TO_KEYSERVER: "true"
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/agent-key-management-tools/gpg:1
+  script:
+    - /create.sh
+  artifacts:
+    expire_in: 13 mos
+    paths:
+      - pubkeys
+
 
 # STATIC ANALYSIS
 
