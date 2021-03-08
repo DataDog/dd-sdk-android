@@ -154,7 +154,8 @@ unMock {
 
 apply(from = "clone_dd_trace.gradle.kts")
 apply(from = "clone_rum_schema.gradle.kts")
-apply(from = "generate_pokos.gradle.kts")
+apply(from = "generate_rum_models.gradle.kts")
+apply(from = "generate_core_models.gradle.kts")
 
 kotlinConfig()
 detektConfig(
