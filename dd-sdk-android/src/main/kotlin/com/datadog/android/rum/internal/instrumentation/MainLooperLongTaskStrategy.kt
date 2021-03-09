@@ -44,6 +44,29 @@ internal class MainLooperLongTaskStrategy(
 
     // endregion
 
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MainLooperLongTaskStrategy
+
+        if (thresholdMs != other.thresholdMs) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return thresholdMs.hashCode()
+    }
+
+    override fun toString(): String {
+        return "MainLooperLongTaskStrategy($thresholdMs)"
+    }
+
+    // endregion
+
     // region Internal
 
     private fun detectLongTask(message: String) {

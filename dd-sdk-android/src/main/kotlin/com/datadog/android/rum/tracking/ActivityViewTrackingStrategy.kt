@@ -94,6 +94,28 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     // endregion
 
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ActivityViewTrackingStrategy
+
+        if (trackExtras != other.trackExtras) return false
+        if (componentPredicate != other.componentPredicate) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = trackExtras.hashCode()
+        result = 31 * result + componentPredicate.hashCode()
+        return result
+    }
+
+    // endregion
+
     // region Internal
 
     private fun updateLoadingTime(activity: Activity) {

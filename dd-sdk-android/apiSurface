@@ -937,15 +937,23 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
   override fun accept(android.app.Fragment): Boolean
   override fun getViewName(android.app.Fragment): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 open class com.datadog.android.rum.tracking.AcceptAllNavDestinations : ComponentPredicate<androidx.navigation.NavDestination>
   override fun accept(androidx.navigation.NavDestination): Boolean
   override fun getViewName(androidx.navigation.NavDestination): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
   override fun getViewName(androidx.fragment.app.Fragment): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
   override fun register(android.content.Context)
   override fun unregister(android.content.Context?)
@@ -966,6 +974,8 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   override fun onActivityPostResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
   override fun onActivityDestroyed(android.app.Activity)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
   fun getViewName(T): String?

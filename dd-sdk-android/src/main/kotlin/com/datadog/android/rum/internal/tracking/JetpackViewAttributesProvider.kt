@@ -54,6 +54,20 @@ internal class JetpackViewAttributesProvider :
 
     // endregion
 
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return javaClass.hashCode()
+    }
+
+    // endregion
+
     // region Internal
 
     private fun isDirectChildOfRecyclerView(child: View): Boolean {

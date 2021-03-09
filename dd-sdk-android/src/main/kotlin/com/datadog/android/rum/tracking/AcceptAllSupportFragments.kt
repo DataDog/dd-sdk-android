@@ -23,4 +23,14 @@ open class AcceptAllSupportFragments : ComponentPredicate<Fragment> {
     override fun getViewName(component: Fragment): String? {
         return null
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return javaClass.hashCode()
+    }
 }
