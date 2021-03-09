@@ -150,6 +150,8 @@ unMock {
     keepStartingWith("com.android.internal.util.")
     keepStartingWith("android.util.")
     keep("android.content.ComponentName")
+    keep("android.os.Looper")
+    keep("android.os.MessageQueue")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")

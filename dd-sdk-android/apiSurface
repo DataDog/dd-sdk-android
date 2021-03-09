@@ -35,7 +35,6 @@ DEPRECATED class com.datadog.android.DatadogConfig
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
-    companion object 
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US: String
   const val LOGS_EU: String

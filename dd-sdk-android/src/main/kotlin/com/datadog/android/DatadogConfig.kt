@@ -544,10 +544,6 @@ private constructor(
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers)
         }
-
-        companion object {
-            private val URL_REGEX = Regex("^(http|https)://(.*)")
-        }
     }
 
     // endregion

@@ -16,6 +16,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
@@ -28,6 +29,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -282,9 +284,9 @@ internal constructor(
          * was enabled.
          * @param plugin a [DatadogPlugin]
          * @param feature the feature for which this plugin should be registered
-         * @see [Feature.LOG]
-         * @see [Feature.CRASH]
-         * @see [Feature.TRACE]
+         * @see [Feature.Logs]
+         * @see [Feature.CrashReport]
+         * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
         fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {

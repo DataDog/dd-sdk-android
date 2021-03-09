@@ -25,16 +25,6 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
 
     // region Assertions
 
-    fun doesNotHaveGesturesTrackingStrategy(): ConfigurationRumAssert {
-        assertThat(actual.userActionTrackingStrategy).isNull()
-        return this
-    }
-
-    fun doesNotHaveViewTrackingStrategy(): ConfigurationRumAssert {
-        assertThat(actual.viewTrackingStrategy).isNull()
-        return this
-    }
-
     fun hasUserActionTrackingStrategy(
         userActionTrackingStrategy: UserActionTrackingStrategy
     ): ConfigurationRumAssert {
@@ -48,15 +38,10 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
             .isInstanceOf(UserActionTrackingStrategyApi29::class.java)
         return this
     }
- 
+
     fun hasUserActionTrackingStrategyLegacy(): ConfigurationRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isInstanceOf(UserActionTrackingStrategyLegacy::class.java)
-        return this
-      }
-
-    fun doesNotHaveLongTaskTrackingEnabled(): ConfigurationRumAssert {
-        assertThat(actual.longTaskTrackingStrategy).isNull()
         return this
     }
 
@@ -69,7 +54,7 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
         return this
     }
 
-    fun hasViewAttributeProviders(
+    fun hasActionTargetAttributeProviders(
         providers: Array<ViewAttributesProvider> = emptyArray()
     ): ConfigurationRumAssert {
         val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()

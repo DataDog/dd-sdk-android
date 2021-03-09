@@ -11,6 +11,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Looper
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
@@ -20,7 +21,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setFieldValue
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -126,4 +129,23 @@ internal fun mockCoreFeature(
     CoreFeature.trackingConsentProvider = mock()
     CoreFeature.userInfoProvider = mock()
     whenever(CoreFeature.trackingConsentProvider.getConsent()) doReturn trackingConsent
+}
+
+internal fun prepareMainLooper() {
+    val mainLooper = Looper.getMainLooper()
+    if (mainLooper == null) {
+        try {
+            Looper.prepareMainLooper()
+        } catch (e: IllegalStateException) {
+            // main looper already prepared
+        }
+    }
+    checkNotNull(Looper.getMainLooper())
+}
+
+internal fun disposeMainLooper() {
+    Looper::class.java.setStaticValue("sMainLooper", null)
+    Looper::class.java.getStaticValue<Looper, ThreadLocal<Looper>>("sThreadLocal").set(null)
+
+    check(Looper.getMainLooper() == null)
 }
