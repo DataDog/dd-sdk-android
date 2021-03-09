@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.instrumentation
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategyTest
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,7 +29,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class UserActionTrackingStrategyApi29Test : ActivityLifecycleTrackingStrategyTest() {
 
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
@@ -36,22 +37,14 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        testedStrategy = GesturesTrackingStrategy(mockGesturesTracker)
+        testedStrategy = UserActionTrackingStrategyApi29(mockGesturesTracker)
     }
 
     @Test
-    fun `when activity resumed it will start tracking gestures`(forge: Forge) {
+    fun `when activity pre created it will start tracking gestures`(forge: Forge) {
         // When
-        testedStrategy.onActivityResumed(mockActivity)
+        testedStrategy.onActivityPreCreated(mockActivity, mock())
         // Then
         verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
-    }
-
-    @Test
-    fun `when activity paused it will stop tracking gestures`(forge: Forge) {
-        // When
-        testedStrategy.onActivityPaused(mockActivity)
-        // Then
-        verify(mockGesturesTracker).stopTracking(mockWindow, mockActivity)
     }
 }

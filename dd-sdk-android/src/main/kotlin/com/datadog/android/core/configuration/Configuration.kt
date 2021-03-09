@@ -18,9 +18,9 @@ import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -405,16 +405,6 @@ internal constructor(
             }
         }
 
-        private fun provideUserTrackingStrategy(
-            gesturesTracker: GesturesTracker
-        ): UserActionTrackingStrategy {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                GesturesTrackingStrategyApi29(gesturesTracker)
-            } else {
-                GesturesTrackingStrategy(gesturesTracker)
-            }
-        }
-
         private fun getRumEventMapper(): RumEventMapper {
             val rumEventMapper = rumConfig.rumEventMapper
             return if (rumEventMapper is RumEventMapper) {
@@ -422,14 +412,6 @@ internal constructor(
             } else {
                 RumEventMapper()
             }
-        }
-
-        private fun gestureTracker(
-            customProviders: Array<ViewAttributesProvider>
-        ): DatadogGesturesTracker {
-            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
-            val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers)
         }
 
         private fun applyIfFeatureEnabled(
@@ -479,9 +461,9 @@ internal constructor(
             endpointUrl = DatadogEndpoint.RUM_US,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
-            userActionTrackingStrategy = null,
-            viewTrackingStrategy = null,
-            longTaskTrackingStrategy = null,
+            userActionTrackingStrategy = provideUserTrackingStrategy(emptyArray()),
+            viewTrackingStrategy = ActivityViewTrackingStrategy(false),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper()
         )
 
