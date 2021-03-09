@@ -73,6 +73,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
     lateinit var mockFragmentManager: FragmentManager
 
     @Mock
+    lateinit var mockUserActionTrackingStrategy: UserActionTrackingStrategy
+
+    @Mock
     lateinit var mockGesturesTracker: GesturesTracker
 
     @Mock
@@ -91,7 +94,8 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature.gesturesTracker = mockGesturesTracker
+        RumFeature.actionTrackingStrategy = mockUserActionTrackingStrategy
+        whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         whenever(mockActivity.window).thenReturn(mockWindow)

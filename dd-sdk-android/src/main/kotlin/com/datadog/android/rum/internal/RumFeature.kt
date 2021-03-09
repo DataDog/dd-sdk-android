@@ -16,8 +16,6 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
-import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -33,7 +31,6 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
 
     internal var samplingRate: Float = 0f
 
-    internal var gesturesTracker: GesturesTracker = NoOpGesturesTracker()
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
@@ -47,7 +44,6 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         samplingRate = configuration.samplingRate
         rumEventMapper = configuration.rumEventMapper
 
-        configuration.gesturesTracker?.let { gesturesTracker = it }
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
@@ -57,7 +53,6 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
 
     override fun onStop() {
         unregisterTrackingStrategies(CoreFeature.contextRef.get())
-        gesturesTracker = NoOpGesturesTracker()
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
         longTaskTrackingStrategy = NoOpTrackingStrategy()

@@ -69,6 +69,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     lateinit var mockDialog: Dialog
 
     @Mock
+    lateinit var mockUserActionTrackingStrategy: UserActionTrackingStrategy
+
+    @Mock
     lateinit var mockGesturesTracker: GesturesTracker
 
     @Mock
@@ -87,7 +90,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature.gesturesTracker = mockGesturesTracker
+        RumFeature.actionTrackingStrategy = mockUserActionTrackingStrategy
+        whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
 
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
         fakeAttributes = forge.aMap { forge.aString() to forge.aString() }

@@ -55,7 +55,7 @@ internal class OreoFragmentLifecycleCallbacks(
 
         if (f is DialogFragment && context != null) {
             val window = f.dialog?.window
-            val gesturesTracker = RumFeature.gesturesTracker
+            val gesturesTracker = RumFeature.actionTrackingStrategy.getGesturesTracker()
             gesturesTracker.startTracking(window, context)
         }
     }

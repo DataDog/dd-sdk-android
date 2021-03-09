@@ -114,7 +114,6 @@ internal class ConfigurationBuilderTest {
                 endpointUrl = DatadogEndpoint.RUM_US,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
-                gesturesTracker = null,
                 userActionTrackingStrategy = null,
                 viewTrackingStrategy = null,
                 rumEventMapper = NoOpEventMapper(),

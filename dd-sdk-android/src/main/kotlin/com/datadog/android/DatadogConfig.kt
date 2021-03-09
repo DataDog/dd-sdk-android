@@ -110,7 +110,6 @@ private constructor(
                     endpointUrl = it.endpointUrl,
                     plugins = it.plugins,
                     samplingRate = it.samplingRate,
-                    gesturesTracker = it.gesturesTracker,
                     userActionTrackingStrategy = it.userActionTrackingStrategy,
                     viewTrackingStrategy = it.viewTrackingStrategy,
                     rumEventMapper = it.rumEventMapper,

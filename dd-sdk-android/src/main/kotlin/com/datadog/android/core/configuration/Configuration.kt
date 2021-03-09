@@ -22,7 +22,6 @@ import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
 import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.model.ActionEvent
@@ -80,7 +79,6 @@ internal constructor(
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>,
             val samplingRate: Float,
-            val gesturesTracker: GesturesTracker?,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
@@ -234,14 +232,9 @@ internal constructor(
         fun trackInteractions(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
+            val strategy = provideUserTrackingStrategy(touchTargetExtraAttributesProviders)
             applyIfFeatureEnabled(PluginFeature.RUM, "trackInteractions") {
-                val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
-                rumConfig = rumConfig.copy(
-                    gesturesTracker = gesturesTracker,
-                    userActionTrackingStrategy = provideUserTrackingStrategy(
-                        gesturesTracker
-                    )
-                )
+                rumConfig = rumConfig.copy(userActionTrackingStrategy = strategy)
             }
             return this
         }
@@ -486,7 +479,6 @@ internal constructor(
             endpointUrl = DatadogEndpoint.RUM_US,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
-            gesturesTracker = null,
             userActionTrackingStrategy = null,
             viewTrackingStrategy = null,
             longTaskTrackingStrategy = null,
@@ -542,6 +534,25 @@ internal constructor(
                     null
                 }
             }
+        }
+
+        private fun provideUserTrackingStrategy(
+            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>
+        ): UserActionTrackingStrategy {
+            val gesturesTracker = provideGestureTracker(touchTargetExtraAttributesProviders)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                UserActionTrackingStrategyApi29(gesturesTracker)
+            } else {
+                UserActionTrackingStrategyLegacy(gesturesTracker)
+            }
+        }
+
+        private fun provideGestureTracker(
+            customProviders: Array<ViewAttributesProvider>
+        ): DatadogGesturesTracker {
+            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
+            val providers = customProviders + defaultProviders
+            return DatadogGesturesTracker(providers)
         }
     }
 }
