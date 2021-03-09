@@ -10,7 +10,7 @@ tasks.register<GitCloneDependenciesTask>("cloneRumSchema") {
         clone(
             "https://github.com/DataDog/rum-events-format.git",
             "schemas",
-            destinationFolder = "src/main/json",
+            destinationFolder = "src/main/json/rum",
             ref = "master"
         )
     }

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserInfo",
+  "type": "object",
+  "description": "Structure holding information about the current user.",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "a (unique) user identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "the user name or alias"
+    },
+    "email": {
+      "type": "string",
+      "description": "the user email"
+    }
+  },
+  "additionalProperties": {
+    "type": "object",
+    "description": "additional custom user properties"
+  }
+}
