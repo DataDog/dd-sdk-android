@@ -165,6 +165,8 @@ interface RumMonitor {
      * @param message a message explaining the error
      * @param source the source of the error
      * @param throwable the throwable
+     * @param attributes additional custom attributes to attach to the error. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
      * @see [startResource]
      * @see [stopResource]
      */
@@ -173,7 +175,8 @@ interface RumMonitor {
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
-        throwable: Throwable
+        throwable: Throwable,
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**

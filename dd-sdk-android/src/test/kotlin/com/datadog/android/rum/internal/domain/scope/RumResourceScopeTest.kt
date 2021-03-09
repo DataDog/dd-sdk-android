@@ -66,7 +66,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumResourceScopeTest {
 
-    lateinit var testedScope: RumResourceScope
+    private lateinit var testedScope: RumResourceScope
 
     @Mock
     lateinit var mockParentScope: RumScope
@@ -95,7 +95,7 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
-    lateinit var fakeEventTime: Time
+    private lateinit var fakeEventTime: Time
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -666,9 +666,19 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
+        val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
 
         // When
         Thread.sleep(500)
@@ -719,9 +729,19 @@ internal class RumResourceScopeTest {
             mockDetector
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
+        val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
 
         // When
         Thread.sleep(500)
@@ -764,9 +784,20 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+
+        val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
 
         // When
         Thread.sleep(500)
@@ -809,9 +840,19 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
+        val attributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        mockEvent = RumRawEvent.StopResourceWithError(fakeKey, null, message, source, throwable)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            attributes
+        )
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
@@ -855,16 +896,20 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val errorAttributes = forge.exhaustiveAttributes()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(errorAttributes)
+
         GlobalRum.globalAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
             statusCode,
             message,
             source,
-            throwable
+            throwable,
+            errorAttributes
         )
 
         // When
@@ -932,7 +977,8 @@ internal class RumResourceScopeTest {
             statusCode,
             message,
             source,
-            throwable
+            throwable,
+            emptyMap()
         )
 
         Thread.sleep(500)
