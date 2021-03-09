@@ -14,6 +14,7 @@ import org.assertj.core.api.Assertions
 internal const val TARGET_CLASS_NAME = "action.target.classname"
 internal const val TARGET_RESOURCE_ID = "action.target.resource_id"
 internal const val VIEW_ARGUMENTS_PREFIX = "context.view.arguments."
+internal const val CONTEXT_PREFIX = "context."
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
     return payload.split(Regex("\n"))
@@ -36,6 +37,8 @@ internal fun List<JsonObject>.verifyEventMatches(
             is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedApplicationStart -> event.verifyEventMatches(expectedEvent)
+            is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
+            is ExpectedErrorEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
                 // Do nothing
             }
@@ -87,6 +90,43 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
     assertThat(this.getAsJsonObject("view"))
         .containsAttributesMatchingPredicate(event.extraViewAttributesWithPredicate)
     assertThat(this).containsAttributes(viewArguments)
+}
+
+private fun JsonObject.verifyEventMatches(event: ExpectedResourceEvent) {
+    verifyRootMatches(event)
+
+    assertThat(this)
+        .hasField("resource") {
+            hasField("status_code", event.statusCode)
+            hasField("url", event.url)
+        }
+
+    val extraAttributes = event.extraAttributes
+        .mapKeys { "$CONTEXT_PREFIX${it.key}" }
+
+    assertThat(this)
+        .containsAttributes(extraAttributes)
+}
+
+private fun JsonObject.verifyEventMatches(event: ExpectedErrorEvent) {
+    verifyRootMatches(event)
+
+    assertThat(this)
+        .hasField("error") {
+            if (has("resource")) {
+                hasField("resource") {
+                    hasField("url", event.url)
+                    hasField("is_crash", event.isCrash)
+                    hasField("source", event.source.sourceName)
+                }
+            }
+        }
+
+    val extraAttributes = event.extraAttributes
+        .mapKeys { "$CONTEXT_PREFIX${it.key}" }
+
+    assertThat(this)
+        .containsAttributes(extraAttributes)
 }
 
 private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {

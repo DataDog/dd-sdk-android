@@ -28,6 +28,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 
 internal open class MockServerActivityTestRule<T : Activity>(
     val activityClass: Class<T>,
@@ -68,15 +69,21 @@ internal open class MockServerActivityTestRule<T : Activity>(
                         Log.w(TAG, "Dropping @request:$request")
                     }
 
-                    return mockResponse(200)
+                    return if (request.path == CONNECTION_ISSUE_PATH) {
+                        MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
+                    } else {
+                        mockResponse(200)
+                    }
                 }
             }
         )
 
-        val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        RuntimeConfig.logsEndpointUrl = fakeEndpoint + "/$LOGS_URL_SUFFIX"
-        RuntimeConfig.tracesEndpointUrl = fakeEndpoint + "/$TRACES_URL_SUFFIX"
-        RuntimeConfig.rumEndpointUrl = fakeEndpoint + "/$RUM_URL_SUFFIX"
+        getConnectionUrl().let {
+            RuntimeConfig.logsEndpointUrl = "$it/$LOGS_URL_SUFFIX"
+            RuntimeConfig.tracesEndpointUrl = "$it/$TRACES_URL_SUFFIX"
+            RuntimeConfig.rumEndpointUrl = "$it/$RUM_URL_SUFFIX"
+        }
+
         super.beforeActivityLaunched()
     }
 
@@ -101,6 +108,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
         Log.i(TAG, "Caught ${requests.size} requests")
         return requests.toList()
     }
+
+    fun getConnectionUrl(): String = mockWebServer.url("/").toString().removeSuffix("/")
 
     // endregion
 
@@ -174,5 +183,6 @@ internal open class MockServerActivityTestRule<T : Activity>(
         const val LOGS_URL_SUFFIX = "logs"
         const val TRACES_URL_SUFFIX = "traces"
         const val RUM_URL_SUFFIX = "rum"
+        const val CONNECTION_ISSUE_PATH = "/connection-issue"
     }
 }

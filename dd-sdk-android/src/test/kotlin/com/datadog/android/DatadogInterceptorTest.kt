@@ -12,23 +12,29 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -49,8 +55,13 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
+
     @Forgery
     lateinit var fakeRumConfig: Configuration.Feature.RUM
+
+    private lateinit var fakeAttributes: Map<String, Any?>
 
     override fun instantiateTestedInterceptor(
         tracedHosts: List<String>,
@@ -61,11 +72,30 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             fakeRumConfig
         )
         GlobalRum.registerIfAbsent(mockRumMonitor)
-        return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
+        return DatadogInterceptor(
+            tracedHosts,
+            mockRequestListener,
+            mockDetector,
+            mockRumAttributesProvider,
+            factory
+        )
     }
 
     override fun getExpectedOrigin(): String {
         return DatadogInterceptor.ORIGIN_RUM
+    }
+
+    @BeforeEach
+    override fun `set up`(forge: Forge) {
+        super.`set up`(forge)
+        fakeAttributes = forge.exhaustiveAttributes()
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        ) doReturn fakeAttributes
     }
 
     @AfterEach
@@ -84,7 +114,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceId,
             RumAttributes.SPAN_ID to fakeSpanId
-        )
+        ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -124,7 +154,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceId,
             RumAttributes.SPAN_ID to fakeSpanId
-        )
+        ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -182,7 +212,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 null,
                 "OkHttp request error $fakeMethod $fakeUrl",
                 RumErrorSource.NETWORK,
-                throwable
+                throwable,
+                fakeAttributes
             )
         }
     }

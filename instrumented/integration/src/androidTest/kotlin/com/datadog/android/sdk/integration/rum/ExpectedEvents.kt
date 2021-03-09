@@ -40,6 +40,21 @@ internal data class ExpectedViewEvent(
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 
+internal data class ExpectedResourceEvent(
+    val url: String,
+    val statusCode: Int,
+    val extraAttributes: Map<String, Any?>,
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
+internal data class ExpectedErrorEvent(
+    val url: String,
+    val extraAttributes: Map<String, Any?>,
+    val isCrash: Boolean,
+    val source: ErrorSource,
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
 internal interface ExpectedEvent {
     val rumContext: ExpectedRumContext
 }
@@ -47,6 +62,10 @@ internal interface ExpectedEvent {
 internal enum class Gesture(val gestureName: String) {
     TAP("tap"),
     SWIPE("swipe")
+}
+
+internal enum class ErrorSource(val sourceName: String) {
+    NETWORK("network")
 }
 
 private fun rumContextValues(): Triple<String, String, String> {

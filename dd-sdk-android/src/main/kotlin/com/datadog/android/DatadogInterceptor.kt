@@ -11,10 +11,12 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -65,13 +67,16 @@ import okhttp3.Response
  * continue to dispatch RUM Resource events for each request without applying any host filtering.
  * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
  * the possibility to modify the created [io.opentracing.Span].
- *
+ * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
+ * and offers the possibility to add custom attributes to the RUM resource events.
  */
 open class DatadogInterceptor
 internal constructor(
     tracedHosts: List<String>,
     tracedRequestListener: TracedRequestListener,
     firstPartyHostDetector: FirstPartyHostDetector,
+    private val rumResourceAttributesProvider: RumResourceAttributesProvider =
+        NoOpRumResourceAttributesProvider(),
     localTracerFactory: () -> Tracer
 ) : TracingInterceptor(
     tracedHosts,
@@ -93,15 +98,20 @@ internal constructor(
      * information to the backend, but RUM Resource events will still be sent for each request.
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
      * the possibility to modify the created [io.opentracing.Span].
+     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
+     * and offers the possibility to add custom attributes to the RUM resource events.
      */
     @JvmOverloads
     constructor(
         firstPartyHosts: List<String>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        rumResourceAttributesProvider: RumResourceAttributesProvider =
+            NoOpRumResourceAttributesProvider()
     ) : this(
         firstPartyHosts,
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
+        rumResourceAttributesProvider,
         { AndroidTracer.Builder().build() }
     )
 
@@ -111,14 +121,19 @@ internal constructor(
      *
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
      * the possibility to modify the created [io.opentracing.Span].
+     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
+     * and offers the possibility to add custom attributes to the RUM resource events.
      */
     @JvmOverloads
     constructor(
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        rumResourceAttributesProvider: RumResourceAttributesProvider =
+            NoOpRumResourceAttributesProvider()
     ) : this(
         emptyList(),
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
+        rumResourceAttributesProvider,
         { AndroidTracer.Builder().build() }
     )
 
@@ -197,7 +212,7 @@ internal constructor(
             statusCode,
             getBodyLength(response),
             kind,
-            attributes
+            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )
     }
 
@@ -213,7 +228,8 @@ internal constructor(
             null,
             ERROR_MSG_FORMAT.format(method, url),
             RumErrorSource.NETWORK,
-            throwable
+            throwable,
+            rumResourceAttributesProvider.onProvideAttributes(request, null, throwable)
         )
     }
 

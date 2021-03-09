@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracedRequestListener
@@ -23,13 +24,17 @@ import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -79,6 +84,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockRequestListener: TracedRequestListener
 
+    @Mock
+    lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
+
     lateinit var mockDevLogHandler: LogHandler
 
     lateinit var mockAppContext: Context
@@ -92,9 +100,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     // endregion
 
     // region Fakes
-
-    @RegexForgery(TracingInterceptorTest.HOSTNAME_PATTERN)
-    lateinit var fakeHostName: String
 
     lateinit var fakeMethod: String
     var fakeBody: String? = null
@@ -120,6 +125,8 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
+    lateinit var fakeResourceAttributes: Map<String, Any?>
+
     // endregion
 
     @BeforeEach
@@ -136,7 +143,8 @@ internal class DatadogInterceptorWithoutTracesTest {
         testedInterceptor = DatadogInterceptor(
             emptyList(),
             mockRequestListener,
-            mockDetector
+            mockDetector,
+            mockRumAttributesProvider
         ) { mockLocalTracer }
         TracesFeature.initialize(
             mockAppContext,
@@ -146,6 +154,16 @@ internal class DatadogInterceptorWithoutTracesTest {
             mockAppContext,
             fakeRumConfig
         )
+
+        fakeResourceAttributes = forge.exhaustiveAttributes()
+
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        ) doReturn fakeResourceAttributes
 
         GlobalRum.registerIfAbsent(mockRumMonitor)
     }
@@ -165,7 +183,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         // Given
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = fakeResourceAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -202,7 +220,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         // Given
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = fakeResourceAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -238,6 +256,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     ) {
         // Given
         val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = fakeResourceAttributes
         val requestId = identifyRequest(fakeRequest)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
@@ -260,7 +279,8 @@ internal class DatadogInterceptorWithoutTracesTest {
                 null,
                 "OkHttp request error $fakeMethod $fakeUrl",
                 RumErrorSource.NETWORK,
-                throwable
+                throwable,
+                expectedStopAttrs
             )
         }
     }
