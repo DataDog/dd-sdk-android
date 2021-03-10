@@ -19,6 +19,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
+import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -50,7 +51,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @Suppress("DEPRECATION")
-internal class FragmentViewTrackingStrategyTest {
+internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackingStrategy>() {
 
     lateinit var testedStrategy: FragmentViewTrackingStrategy
 
@@ -506,6 +507,39 @@ internal class FragmentViewTrackingStrategyTest {
                     baseArgumentCaptor.firstValue
                 )
         }
+    }
+
+    // endregion
+
+    // region ObjectTest
+
+    override fun createInstance(forge: Forge): FragmentViewTrackingStrategy {
+        return FragmentViewTrackingStrategy(
+            forge.aBool(),
+            StubComponentPredicate(forge),
+            StubComponentPredicate(forge)
+        )
+    }
+
+    override fun createEqualInstance(
+        source: FragmentViewTrackingStrategy,
+        forge: Forge
+    ): FragmentViewTrackingStrategy {
+        val trackExtras = source.trackArguments
+        val supportCP = source.supportFragmentComponentPredicate
+        val defaultCP = source.defaultFragmentComponentPredicate
+        return FragmentViewTrackingStrategy(trackExtras, supportCP, defaultCP)
+    }
+
+    override fun createUnequalInstance(
+        source: FragmentViewTrackingStrategy,
+        forge: Forge
+    ): FragmentViewTrackingStrategy? {
+        return FragmentViewTrackingStrategy(
+            !source.trackArguments,
+            StubComponentPredicate(forge, useAlpha = false),
+            StubComponentPredicate(forge, useAlpha = false)
+        )
     }
 
     // endregion

@@ -24,8 +24,8 @@ import com.datadog.android.rum.model.ViewEvent
  * valid RUM View events.
  */
 class ActivityViewTrackingStrategy @JvmOverloads constructor(
-    private val trackExtras: Boolean,
-    private val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
+    internal val trackExtras: Boolean,
+    internal val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
