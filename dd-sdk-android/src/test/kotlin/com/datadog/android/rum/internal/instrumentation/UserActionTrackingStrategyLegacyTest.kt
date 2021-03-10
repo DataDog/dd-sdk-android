@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.instrumentation
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategyTest
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,7 +29,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class UserActionTrackingStrategyLegacyTest :
+    ActivityLifecycleTrackingStrategyTest<UserActionTrackingStrategyLegacy>() {
 
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
@@ -36,7 +38,7 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        testedStrategy = GesturesTrackingStrategy(mockGesturesTracker)
+        testedStrategy = UserActionTrackingStrategyLegacy(mockGesturesTracker)
     }
 
     @Test
@@ -53,5 +55,23 @@ internal class GesturesTrackingStrategyTest : ActivityLifecycleTrackingStrategyT
         testedStrategy.onActivityPaused(mockActivity)
         // Then
         verify(mockGesturesTracker).stopTracking(mockWindow, mockActivity)
+    }
+
+    override fun createInstance(forge: Forge): UserActionTrackingStrategyLegacy {
+        return UserActionTrackingStrategyLegacy(mockGesturesTracker)
+    }
+
+    override fun createEqualInstance(
+        source: UserActionTrackingStrategyLegacy,
+        forge: Forge
+    ): UserActionTrackingStrategyLegacy {
+        return UserActionTrackingStrategyLegacy(source.gesturesTracker)
+    }
+
+    override fun createUnequalInstance(
+        source: UserActionTrackingStrategyLegacy,
+        forge: Forge
+    ): UserActionTrackingStrategyLegacy? {
+        return UserActionTrackingStrategyLegacy(mock())
     }
 }

@@ -12,6 +12,7 @@ import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
+import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
@@ -43,7 +44,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class ActivityViewTrackingStrategyTest :
+    ActivityLifecycleTrackingStrategyTest<ActivityViewTrackingStrategy>() {
 
     @Mock
     lateinit var mockViewLoadingTimer: ViewLoadingTimer
@@ -56,6 +58,43 @@ internal class ActivityViewTrackingStrategyTest : ActivityLifecycleTrackingStrat
         super.`set up`(forge)
         testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
         testedStrategy.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+    }
+
+    override fun createInstance(forge: Forge): ActivityViewTrackingStrategy {
+        return ActivityViewTrackingStrategy(
+            forge.aBool(),
+            StubComponentPredicate(forge)
+        )
+    }
+
+    override fun createEqualInstance(
+        source: ActivityViewTrackingStrategy,
+        forge: Forge
+    ): ActivityViewTrackingStrategy {
+        val componentPredicate = source.componentPredicate
+        check(componentPredicate is StubComponentPredicate)
+        return ActivityViewTrackingStrategy(
+            source.trackExtras,
+            StubComponentPredicate(
+                componentPredicate.componentName,
+                componentPredicate.name
+            )
+        )
+    }
+
+    override fun createUnequalInstance(
+        source: ActivityViewTrackingStrategy,
+        forge: Forge
+    ): ActivityViewTrackingStrategy {
+        val componentPredicate = source.componentPredicate
+        check(componentPredicate is StubComponentPredicate)
+        return ActivityViewTrackingStrategy(
+            !source.trackExtras,
+            StubComponentPredicate(
+                componentPredicate.componentName + forge.aNumericalString(),
+                componentPredicate.name + forge.aNumericalString()
+            )
+        )
     }
 
     // region Track View Loading Time

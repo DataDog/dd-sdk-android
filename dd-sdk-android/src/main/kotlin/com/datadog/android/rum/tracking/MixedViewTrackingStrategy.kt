@@ -29,8 +29,8 @@ import androidx.fragment.app.Fragment
  * that will be taken into account as valid RUM View events.
  */
 class MixedViewTrackingStrategy internal constructor(
-    private val activityViewTrackingStrategy: ActivityViewTrackingStrategy,
-    private val fragmentViewTrackingStrategy: FragmentViewTrackingStrategy
+    internal val activityViewTrackingStrategy: ActivityViewTrackingStrategy,
+    internal val fragmentViewTrackingStrategy: FragmentViewTrackingStrategy
 ) : ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
@@ -87,6 +87,28 @@ class MixedViewTrackingStrategy internal constructor(
         super.onActivityDestroyed(activity)
         activityViewTrackingStrategy.onActivityDestroyed(activity)
         fragmentViewTrackingStrategy.onActivityDestroyed(activity)
+    }
+
+    // endregion
+
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MixedViewTrackingStrategy
+
+        if (activityViewTrackingStrategy != other.activityViewTrackingStrategy) return false
+        if (fragmentViewTrackingStrategy != other.fragmentViewTrackingStrategy) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = activityViewTrackingStrategy.hashCode()
+        result = 31 * result + fragmentViewTrackingStrategy.hashCode()
+        return result
     }
 
     // endregion

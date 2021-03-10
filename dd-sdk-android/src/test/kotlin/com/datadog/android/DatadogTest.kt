@@ -23,9 +23,11 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.doReturn
@@ -97,6 +99,7 @@ internal class DatadogTest {
         fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
+        prepareMainLooper()
         whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -111,6 +114,7 @@ internal class DatadogTest {
         } catch (e: IllegalStateException) {
             // nevermind
         }
+        disposeMainLooper()
     }
 
     @Test

@@ -8,8 +8,8 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.DatadogConfig
 import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -99,7 +99,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     fun hasGesturesTrackingStrategyApi29(
         extraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
     ): RumConfigAssert {
-        val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategyApi29>()
+        val userActionTrackingStrategy = isInstanceOf<UserActionTrackingStrategyApi29>()
         val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
         RumGestureTrackerAssert.assertThat(gesturesTracker)
             .hasCustomTargetAttributesProviders(extraAttributesProviders)
@@ -110,7 +110,7 @@ internal class RumConfigAssert(actual: DatadogConfig.RumConfig) :
     fun hasGesturesTrackingStrategy(
         extraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
     ): RumConfigAssert {
-        val userActionTrackingStrategy = isInstanceOf<GesturesTrackingStrategy>()
+        val userActionTrackingStrategy = isInstanceOf<UserActionTrackingStrategyLegacy>()
         val gesturesTracker = userActionTrackingStrategy.gesturesTracker as DatadogGesturesTracker
         RumGestureTrackerAssert.assertThat(gesturesTracker)
             .hasCustomTargetAttributesProviders(extraAttributesProviders)

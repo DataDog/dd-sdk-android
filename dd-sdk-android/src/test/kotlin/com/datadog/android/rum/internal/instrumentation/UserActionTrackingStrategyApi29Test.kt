@@ -29,7 +29,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStrategyTest() {
+internal class UserActionTrackingStrategyApi29Test :
+    ActivityLifecycleTrackingStrategyTest<UserActionTrackingStrategyApi29>() {
 
     @Mock
     lateinit var mockGesturesTracker: GesturesTracker
@@ -37,7 +38,7 @@ internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStra
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        testedStrategy = GesturesTrackingStrategyApi29(mockGesturesTracker)
+        testedStrategy = UserActionTrackingStrategyApi29(mockGesturesTracker)
     }
 
     @Test
@@ -46,5 +47,23 @@ internal class GesturesTrackingStrategyApi29Test : ActivityLifecycleTrackingStra
         testedStrategy.onActivityPreCreated(mockActivity, mock())
         // Then
         verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
+    }
+
+    override fun createInstance(forge: Forge): UserActionTrackingStrategyApi29 {
+        return UserActionTrackingStrategyApi29(mockGesturesTracker)
+    }
+
+    override fun createEqualInstance(
+        source: UserActionTrackingStrategyApi29,
+        forge: Forge
+    ): UserActionTrackingStrategyApi29 {
+        return UserActionTrackingStrategyApi29(source.gesturesTracker)
+    }
+
+    override fun createUnequalInstance(
+        source: UserActionTrackingStrategyApi29,
+        forge: Forge
+    ): UserActionTrackingStrategyApi29? {
+        return UserActionTrackingStrategyApi29(mock())
     }
 }

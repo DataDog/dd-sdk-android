@@ -32,10 +32,10 @@ import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
  * that will be taken into account as valid RUM View events.
  */
 class FragmentViewTrackingStrategy @JvmOverloads constructor(
-    private val trackArguments: Boolean,
-    private val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
+    internal val trackArguments: Boolean,
+    internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
         AcceptAllSupportFragments(),
-    private val defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment> =
+    internal val defaultFragmentComponentPredicate: ComponentPredicate<android.app.Fragment> =
         AcceptAllDefaultFragment()
 ) :
     ActivityLifecycleTrackingStrategy(),
@@ -90,6 +90,34 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
             // old deprecated way
             oreoLifecycleCallbacks.unregister(activity)
         }
+    }
+
+    // endregion
+
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FragmentViewTrackingStrategy
+
+        if (trackArguments != other.trackArguments) return false
+        if (supportFragmentComponentPredicate != other.supportFragmentComponentPredicate) {
+            return false
+        }
+        if (defaultFragmentComponentPredicate != other.defaultFragmentComponentPredicate) {
+            return false
+        }
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = trackArguments.hashCode()
+        result = 31 * result + supportFragmentComponentPredicate.hashCode()
+        result = 31 * result + defaultFragmentComponentPredicate.hashCode()
+        return result
     }
 
     // endregion

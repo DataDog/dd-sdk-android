@@ -24,8 +24,8 @@ import com.datadog.android.rum.model.ViewEvent
  * valid RUM View events.
  */
 class ActivityViewTrackingStrategy @JvmOverloads constructor(
-    private val trackExtras: Boolean,
-    private val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
+    internal val trackExtras: Boolean,
+    internal val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
@@ -90,6 +90,28 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         componentPredicate.runIfValid(activity) {
             viewLoadingTimer.onDestroyed(it)
         }
+    }
+
+    // endregion
+
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ActivityViewTrackingStrategy
+
+        if (trackExtras != other.trackExtras) return false
+        if (componentPredicate != other.componentPredicate) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = trackExtras.hashCode()
+        result = 31 * result + componentPredicate.hashCode()
+        return result
     }
 
     // endregion

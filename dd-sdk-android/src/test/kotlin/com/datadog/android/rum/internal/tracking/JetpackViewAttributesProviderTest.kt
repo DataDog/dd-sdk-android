@@ -13,6 +13,7 @@ import android.view.ViewParent
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.rum.RumAttributes
+import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -32,7 +33,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class JetpackViewAttributesProviderTest {
+internal class JetpackViewAttributesProviderTest : ObjectTest<JetpackViewAttributesProvider>() {
 
     lateinit var testedAttributesProvider: JetpackViewAttributesProvider
 
@@ -47,6 +48,22 @@ internal class JetpackViewAttributesProviderTest {
         testedAttributesProvider =
             JetpackViewAttributesProvider()
     }
+
+    override fun createInstance(forge: Forge): JetpackViewAttributesProvider {
+        return JetpackViewAttributesProvider()
+    }
+
+    override fun createEqualInstance(
+        source: JetpackViewAttributesProvider,
+        forge: Forge
+    ): JetpackViewAttributesProvider {
+        return JetpackViewAttributesProvider()
+    }
+
+    override fun createUnequalInstance(
+        source: JetpackViewAttributesProvider,
+        forge: Forge
+    ): JetpackViewAttributesProvider? = null
 
     @Test
     fun `will add the adapter position event if the target is a RecyclerView nested child`(

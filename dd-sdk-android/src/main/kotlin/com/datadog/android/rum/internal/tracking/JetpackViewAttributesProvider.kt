@@ -20,9 +20,9 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
  *     of the target inside the adapter attribute together
  *     with the container class name and resource id </li>
  * </ul>
- * @see [RumAttributes.TAG_TARGET_POSITION_IN_SCROLLABLE_CONTAINER]
- * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_CLASS_NAME]
- * @see [RumAttributes.TAG_TARGET_SCROLLABLE_CONTAINER_RESOURCE_ID]
+ * @see [RumAttributes.ACTION_TARGET_PARENT_INDEX]
+ * @see [RumAttributes.ACTION_TARGET_PARENT_CLASSNAME]
+ * @see [RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID]
  */
 internal class JetpackViewAttributesProvider :
     ViewAttributesProvider {
@@ -50,6 +50,20 @@ internal class JetpackViewAttributesProvider :
             child = parent as? View
             parent = parent.parent
         }
+    }
+
+    // endregion
+
+    // region Object
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return javaClass.hashCode()
     }
 
     // endregion

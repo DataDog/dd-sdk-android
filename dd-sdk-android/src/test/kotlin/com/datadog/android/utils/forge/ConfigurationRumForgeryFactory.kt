@@ -19,7 +19,6 @@ internal class ConfigurationRumForgeryFactory :
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             plugins = forge.aList { mock<DatadogPlugin>() },
             samplingRate = forge.aFloat(0f, 100f),
-            gesturesTracker = mock(),
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = mock(),
             rumEventMapper = mock(),

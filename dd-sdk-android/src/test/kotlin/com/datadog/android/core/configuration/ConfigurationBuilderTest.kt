@@ -17,9 +17,14 @@ import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
+import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
@@ -114,11 +119,14 @@ internal class ConfigurationBuilderTest {
                 endpointUrl = DatadogEndpoint.RUM_US,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
-                gesturesTracker = null,
-                userActionTrackingStrategy = null,
-                viewTrackingStrategy = null,
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                ),
+                viewTrackingStrategy = ActivityViewTrackingStrategy(false),
                 rumEventMapper = NoOpEventMapper(),
-                longTaskTrackingStrategy = null
+                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L)
             )
         )
     }
@@ -277,13 +285,13 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
-            .hasGesturesTrackingStrategy()
-            .hasViewAttributeProviders(mockProviders)
-            .doesNotHaveViewTrackingStrategy()
-            .doesNotHaveLongTaskTrackingEnabled()
+            .hasUserActionTrackingStrategyLegacy()
+            .hasActionTargetAttributeProviders(mockProviders)
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
-    @TestTargetApi(value = Build.VERSION_CODES.Q)
+    @TestTargetApi(Build.VERSION_CODES.Q)
     @Test
     fun `𝕄 build config with gestures enabled 𝕎 trackInteractions() and build() {Android Q}`(
         @IntForgery(0, 10) attributesCount: Int
@@ -305,10 +313,10 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
-            .hasGesturesTrackingStrategyApi29()
-            .hasViewAttributeProviders(mockProviders)
-            .doesNotHaveViewTrackingStrategy()
-            .doesNotHaveLongTaskTrackingEnabled()
+            .hasUserActionTrackingStrategyApi29()
+            .hasActionTargetAttributeProviders(mockProviders)
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test
@@ -327,10 +335,11 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .doesNotHaveGesturesTrackingStrategy()
-            .doesNotHaveViewTrackingStrategy()
-            .hasLongTaskTrackingEnabled(durationMs)
+        assertThat(config.rumConfig!!).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
+            )
+        )
     }
 
     @Test
@@ -348,10 +357,16 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .doesNotHaveGesturesTrackingStrategy()
-            .hasViewTrackingStrategy(strategy)
-            .doesNotHaveLongTaskTrackingEnabled()
+        assertThat(config.rumConfig!!).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                ),
+                viewTrackingStrategy = strategy
+            )
+        )
     }
 
     @Test
@@ -862,7 +877,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                )
+            )
+        )
     }
 
     @Test
@@ -992,7 +1015,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                )
+            )
+        )
     }
 
     @Test
@@ -1016,7 +1047,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                )
+            )
+        )
     }
 
     @Test
@@ -1103,7 +1142,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
+                    DatadogGesturesTracker(
+                        arrayOf(JetpackViewAttributesProvider())
+                    )
+                )
+            )
+        )
     }
 
     @Test

@@ -19,8 +19,8 @@ import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
@@ -110,7 +110,6 @@ private constructor(
                     endpointUrl = it.endpointUrl,
                     plugins = it.plugins,
                     samplingRate = it.samplingRate,
-                    gesturesTracker = it.gesturesTracker,
                     userActionTrackingStrategy = it.userActionTrackingStrategy,
                     viewTrackingStrategy = it.viewTrackingStrategy,
                     rumEventMapper = it.rumEventMapper,
@@ -532,9 +531,9 @@ private constructor(
             gesturesTracker: GesturesTracker
         ): UserActionTrackingStrategy {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                GesturesTrackingStrategyApi29(gesturesTracker)
+                UserActionTrackingStrategyApi29(gesturesTracker)
             } else {
-                GesturesTrackingStrategy(gesturesTracker)
+                UserActionTrackingStrategyLegacy(gesturesTracker)
             }
         }
 
@@ -544,10 +543,6 @@ private constructor(
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
             return DatadogGesturesTracker(providers)
-        }
-
-        companion object {
-            private val URL_REGEX = Regex("^(http|https)://(.*)")
         }
     }
 

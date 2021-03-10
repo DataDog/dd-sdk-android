@@ -10,10 +10,12 @@ import android.util.Printer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -38,7 +40,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class MainLooperLongTaskStrategyTest {
+internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStrategy>() {
 
     lateinit var testedPrinter: Printer
 
@@ -95,6 +97,24 @@ internal class MainLooperLongTaskStrategyTest {
 
         // Then
         verifyZeroInteractions(mockRumMonitor)
+    }
+
+    override fun createInstance(forge: Forge): MainLooperLongTaskStrategy {
+        return MainLooperLongTaskStrategy(forge.aLong(0, 65536L))
+    }
+
+    override fun createEqualInstance(
+        source: MainLooperLongTaskStrategy,
+        forge: Forge
+    ): MainLooperLongTaskStrategy {
+        return MainLooperLongTaskStrategy(source.thresholdMs)
+    }
+
+    override fun createUnequalInstance(
+        source: MainLooperLongTaskStrategy,
+        forge: Forge
+    ): MainLooperLongTaskStrategy? {
+        return MainLooperLongTaskStrategy(source.thresholdMs + forge.aLong(1, 65536L))
     }
 
     companion object {

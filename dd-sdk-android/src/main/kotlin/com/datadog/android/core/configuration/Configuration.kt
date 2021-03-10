@@ -16,19 +16,20 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategy
-import com.datadog.android.rum.internal.instrumentation.GesturesTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
+import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -80,7 +81,6 @@ internal constructor(
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>,
             val samplingRate: Float,
-            val gesturesTracker: GesturesTracker?,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
@@ -234,14 +234,9 @@ internal constructor(
         fun trackInteractions(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
         ): Builder {
+            val strategy = provideUserTrackingStrategy(touchTargetExtraAttributesProviders)
             applyIfFeatureEnabled(PluginFeature.RUM, "trackInteractions") {
-                val gesturesTracker = gestureTracker(touchTargetExtraAttributesProviders)
-                rumConfig = rumConfig.copy(
-                    gesturesTracker = gesturesTracker,
-                    userActionTrackingStrategy = provideUserTrackingStrategy(
-                        gesturesTracker
-                    )
-                )
+                rumConfig = rumConfig.copy(userActionTrackingStrategy = strategy)
             }
             return this
         }
@@ -289,9 +284,9 @@ internal constructor(
          * was enabled.
          * @param plugin a [DatadogPlugin]
          * @param feature the feature for which this plugin should be registered
-         * @see [Feature.LOG]
-         * @see [Feature.CRASH]
-         * @see [Feature.TRACE]
+         * @see [Feature.Logs]
+         * @see [Feature.CrashReport]
+         * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
         fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
@@ -412,16 +407,6 @@ internal constructor(
             }
         }
 
-        private fun provideUserTrackingStrategy(
-            gesturesTracker: GesturesTracker
-        ): UserActionTrackingStrategy {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                GesturesTrackingStrategyApi29(gesturesTracker)
-            } else {
-                GesturesTrackingStrategy(gesturesTracker)
-            }
-        }
-
         private fun getRumEventMapper(): RumEventMapper {
             val rumEventMapper = rumConfig.rumEventMapper
             return if (rumEventMapper is RumEventMapper) {
@@ -429,14 +414,6 @@ internal constructor(
             } else {
                 RumEventMapper()
             }
-        }
-
-        private fun gestureTracker(
-            customProviders: Array<ViewAttributesProvider>
-        ): DatadogGesturesTracker {
-            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
-            val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers)
         }
 
         private fun applyIfFeatureEnabled(
@@ -486,10 +463,9 @@ internal constructor(
             endpointUrl = DatadogEndpoint.RUM_US,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
-            gesturesTracker = null,
-            userActionTrackingStrategy = null,
-            viewTrackingStrategy = null,
-            longTaskTrackingStrategy = null,
+            userActionTrackingStrategy = provideUserTrackingStrategy(emptyArray()),
+            viewTrackingStrategy = ActivityViewTrackingStrategy(false),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper()
         )
 
@@ -542,6 +518,25 @@ internal constructor(
                     null
                 }
             }
+        }
+
+        private fun provideUserTrackingStrategy(
+            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>
+        ): UserActionTrackingStrategy {
+            val gesturesTracker = provideGestureTracker(touchTargetExtraAttributesProviders)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                UserActionTrackingStrategyApi29(gesturesTracker)
+            } else {
+                UserActionTrackingStrategyLegacy(gesturesTracker)
+            }
+        }
+
+        private fun provideGestureTracker(
+            customProviders: Array<ViewAttributesProvider>
+        ): DatadogGesturesTracker {
+            val defaultProviders = arrayOf(JetpackViewAttributesProvider())
+            val providers = customProviders + defaultProviders
+            return DatadogGesturesTracker(providers)
         }
     }
 }

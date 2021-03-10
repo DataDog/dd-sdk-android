@@ -10,6 +10,7 @@ import android.os.Bundle
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
+import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.inOrder
 import fr.xgouchet.elmyr.Forge
@@ -30,7 +31,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategyTest() {
+internal class MixedViewTrackingStrategyTest :
+    ActivityLifecycleTrackingStrategyTest<MixedViewTrackingStrategy>() {
 
     @Mock
     lateinit var mockActivityViewTrackingStrategy: ActivityViewTrackingStrategy
@@ -141,4 +143,37 @@ internal class MixedViewTrackingStrategyTest : ActivityLifecycleTrackingStrategy
     }
 
     // endregion
+
+    override fun createInstance(forge: Forge): MixedViewTrackingStrategy {
+        return MixedViewTrackingStrategy(
+            forge.aBool(),
+            StubComponentPredicate(forge),
+            StubComponentPredicate(forge),
+            StubComponentPredicate(forge)
+        )
+    }
+
+    override fun createEqualInstance(
+        source: MixedViewTrackingStrategy,
+        forge: Forge
+    ): MixedViewTrackingStrategy {
+        val trackExtras = source.activityViewTrackingStrategy.trackExtras &&
+            source.fragmentViewTrackingStrategy.trackArguments
+        val activityCP = source.activityViewTrackingStrategy.componentPredicate
+        val supportCP = source.fragmentViewTrackingStrategy.supportFragmentComponentPredicate
+        val defaultCP = source.fragmentViewTrackingStrategy.defaultFragmentComponentPredicate
+        return MixedViewTrackingStrategy(trackExtras, activityCP, supportCP, defaultCP)
+    }
+
+    override fun createUnequalInstance(
+        source: MixedViewTrackingStrategy,
+        forge: Forge
+    ): MixedViewTrackingStrategy? {
+        return MixedViewTrackingStrategy(
+            !source.activityViewTrackingStrategy.trackExtras,
+            StubComponentPredicate(forge, useAlpha = false),
+            StubComponentPredicate(forge, useAlpha = false),
+            StubComponentPredicate(forge, useAlpha = false)
+        )
+    }
 }

@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.rum.internal.domain.RumFileStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.instrumentation.gestures.NoOpGesturesTracker
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -88,16 +87,6 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     }
 
     @Test
-    fun `𝕄 store gesturesTracker 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
-
-        // Then
-        assertThat(testedFeature.gesturesTracker)
-            .isEqualTo(fakeConfigurationFeature.gesturesTracker)
-    }
-
-    @Test
     fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
         // When
         testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
@@ -128,19 +117,6 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         assertThat(testedFeature.longTaskTrackingStrategy)
             .isEqualTo(fakeConfigurationFeature.longTaskTrackingStrategy)
         verify(fakeConfigurationFeature.longTaskTrackingStrategy!!).register(mockAppContext)
-    }
-
-    @Test
-    fun `𝕄 use noop gesturesTracker 𝕎 initialize()`() {
-        // Given
-        val config = fakeConfigurationFeature.copy(gesturesTracker = null)
-
-        // When
-        testedFeature.initialize(mockAppContext, config)
-
-        // Then
-        assertThat(testedFeature.gesturesTracker)
-            .isInstanceOf(NoOpGesturesTracker::class.java)
     }
 
     @Test
@@ -200,19 +176,6 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
 
         // Then
         assertThat(testedFeature.rumEventMapper).isSameAs(fakeConfigurationFeature.rumEventMapper)
-    }
-
-    @Test
-    fun `𝕄 use noop gesturesTracker 𝕎 stop()`() {
-        // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        assertThat(testedFeature.gesturesTracker)
-            .isInstanceOf(NoOpGesturesTracker::class.java)
     }
 
     @Test

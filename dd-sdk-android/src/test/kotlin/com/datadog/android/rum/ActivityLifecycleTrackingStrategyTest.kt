@@ -14,6 +14,7 @@ import android.view.Window
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -36,7 +37,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal abstract class ActivityLifecycleTrackingStrategyTest {
+internal abstract class ActivityLifecycleTrackingStrategyTest<T : Any> : ObjectTest<T>() {
 
     lateinit var testedStrategy: ActivityLifecycleTrackingStrategy
 

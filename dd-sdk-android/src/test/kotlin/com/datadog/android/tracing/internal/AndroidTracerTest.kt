@@ -17,10 +17,12 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ContextualScopeManager
@@ -87,6 +89,7 @@ internal class AndroidTracerTest {
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
         mockCoreFeature()
+        prepareMainLooper()
         TracesFeature.initialize(mockAppContext, Configuration.DEFAULT_TRACING_CONFIG)
         RumFeature.initialize(mockAppContext, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
@@ -106,6 +109,8 @@ internal class AndroidTracerTest {
         val tlsScope: ThreadLocal<*> =
             ContextualScopeManager::class.java.getStaticValue("tlsScope")
         tlsScope.remove()
+        RumFeature.stop()
+        disposeMainLooper()
     }
 
     // region Tracer
