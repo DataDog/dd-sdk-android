@@ -38,9 +38,9 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
         )
     }
 
-    override fun createUploader(): DataUploader {
+    override fun createUploader(configuration: Configuration.Feature.Tracing): DataUploader {
         return TracesOkHttpUploader(
-            endpointUrl,
+            configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.okHttpClient
         )

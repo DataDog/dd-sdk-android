@@ -72,8 +72,12 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         )
     }
 
-    override fun createUploader(): DataUploader {
-        return RumOkHttpUploader(endpointUrl, CoreFeature.clientToken, CoreFeature.okHttpClient)
+    override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
+        return RumOkHttpUploader(
+            configuration.endpointUrl,
+            CoreFeature.clientToken,
+            CoreFeature.okHttpClient
+        )
     }
 
     // endregion

@@ -125,15 +125,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     @Test
-    fun `𝕄 store upload url 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
-
-        // Then
-        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfigurationFeature.endpointUrl)
-    }
-
-    @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
         testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
@@ -239,7 +230,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             .isInstanceOf(NoOpPersistenceStrategy::class.java)
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(NoOpUploadScheduler::class.java)
-        assertThat(testedFeature.endpointUrl).isEqualTo("")
     }
 
     @Test
@@ -268,7 +258,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature.initialize(mockAppContext, otherConfig)
 
         // Then
-        assertThat(testedFeature.endpointUrl).isEqualTo(fakeConfigurationFeature.endpointUrl)
         assertThat(testedFeature.persistenceStrategy).isSameAs(persistenceStrategy)
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
     }

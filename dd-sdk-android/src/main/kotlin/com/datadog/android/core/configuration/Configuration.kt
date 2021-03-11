@@ -67,6 +67,12 @@ internal constructor(
             override val plugins: List<DatadogPlugin>
         ) : Feature()
 
+        internal data class InternalLogs(
+            val internalClientToken: String,
+            override val endpointUrl: String,
+            override val plugins: List<DatadogPlugin>
+        ) : Feature()
+
         internal data class CrashReport(
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>

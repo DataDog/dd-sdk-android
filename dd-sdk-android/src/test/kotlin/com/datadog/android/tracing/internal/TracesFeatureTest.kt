@@ -55,16 +55,14 @@ internal class TracesFeatureTest :
 
     @Test
     fun `𝕄 create a tracing uploader 𝕎 createUploader()`() {
-        // Given
-        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
-
         // When
-        val uploader = testedFeature.createUploader()
+        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
         assertThat(uploader).isInstanceOf(TracesOkHttpUploader::class.java)
         val tracesUploader = uploader as TracesOkHttpUploader
         assertThat(tracesUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(tracesUploader.url).endsWith(CoreFeature.clientToken)
         assertThat(tracesUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 }

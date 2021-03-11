@@ -44,9 +44,9 @@ internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.Cras
         )
     }
 
-    override fun createUploader(): DataUploader {
+    override fun createUploader(configuration: Configuration.Feature.CrashReport): DataUploader {
         return LogsOkHttpUploader(
-            endpointUrl,
+            configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.okHttpClient
         )

@@ -20,13 +20,12 @@ import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Suppress("TooManyFunctions")
 internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
     internal val authorizedFolderName: String
 ) {
 
     internal val initialized = AtomicBoolean(false)
-
-    internal var endpointUrl: String = ""
 
     internal var persistenceStrategy: PersistenceStrategy<T> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -40,10 +39,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
             return
         }
 
-        endpointUrl = configuration.endpointUrl
         persistenceStrategy = createPersistenceStrategy(context, configuration)
 
-        setupUploader()
+        setupUploader(configuration)
 
         registerPlugins(
             configuration.plugins,
@@ -60,6 +58,8 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         onInitialize(context, configuration)
 
         initialized.set(true)
+
+        onPostInitialized(context)
     }
 
     fun isInitialized(): Boolean {
@@ -76,11 +76,11 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
             uploadScheduler.stopScheduling()
             persistenceStrategy = NoOpPersistenceStrategy()
             uploadScheduler = NoOpUploadScheduler()
-            endpointUrl = ""
 
             onStop()
 
             initialized.set(false)
+            onPostStopped()
         }
     }
 
@@ -94,14 +94,18 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
 
     open fun onInitialize(context: Context, configuration: C) {}
 
+    open fun onPostInitialized(context: Context) {}
+
     open fun onStop() {}
+
+    open fun onPostStopped() { }
 
     abstract fun createPersistenceStrategy(
         context: Context,
         configuration: C
     ): PersistenceStrategy<T>
 
-    abstract fun createUploader(): DataUploader
+    abstract fun createUploader(configuration: C): DataUploader
 
     // endregion
 
@@ -126,9 +130,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         featurePlugins.clear()
     }
 
-    private fun setupUploader() {
+    private fun setupUploader(configuration: C) {
         uploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = createUploader()
+            uploader = createUploader(configuration)
             DataUploadScheduler(
                 persistenceStrategy.getReader(),
                 uploader,
