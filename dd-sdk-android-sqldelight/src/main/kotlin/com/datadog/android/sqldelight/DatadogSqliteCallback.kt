@@ -28,9 +28,9 @@ class DatadogSqliteCallback(schema: SqlDriver.Schema) : AndroidSqliteDriver.Call
         GlobalRum.get()
             .addError(
                 String.format(
+                    Locale.US,
                     DATABASE_CORRUPTION_ERROR_MESSAGE,
-                    db.path,
-                    Locale.US
+                    db.path
                 ),
                 RumErrorSource.SOURCE,
                 null,

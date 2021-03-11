@@ -45,6 +45,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import org.assertj.core.api.Assertions.assertThat
@@ -159,7 +160,12 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(
             mockedLockGenerator.generateLog(
                 eq(Log.CRASH),
-                eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+                eq(
+                    DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                        Locale.US,
+                        fakeNdkCrashLog.signalName
+                    )
+                ),
                 anyOrNull(),
                 eq(
                     mapOf(
@@ -340,7 +346,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             eq(
                 mapOf(
@@ -373,7 +384,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             eq(
                 mapOf(
@@ -406,7 +422,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             any(),
             eq(emptySet()),
@@ -434,7 +455,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             any(),
             eq(emptySet()),
@@ -462,7 +488,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             any(),
             eq(emptySet()),
@@ -490,7 +521,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             any(),
             eq(emptySet()),
@@ -516,7 +552,12 @@ internal class DatadogNdkCrashHandlerTest {
         // THEN
         verify(mockedLockGenerator).generateLog(
             eq(Log.CRASH),
-            eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+            eq(
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
+            ),
             anyOrNull(),
             eq(
                 mapOf(
@@ -591,7 +632,10 @@ internal class DatadogNdkCrashHandlerTest {
                 fakeBundledViewEvent.view.url
             )
             .hasMessage(
-                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)
+                DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                    Locale.US,
+                    fakeNdkCrashLog.signalName
+                )
             )
             .hasStackTrace(fakeNdkCrashLog.stacktrace)
             .isCrash(true)
@@ -678,7 +722,12 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(
             mockedLockGenerator.generateLog(
                 eq(Log.CRASH),
-                eq(DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(fakeNdkCrashLog.signalName)),
+                eq(
+                    DatadogNdkCrashHandler.NDK_ERROR_LOG_MESSAGE.format(
+                        Locale.US,
+                        fakeNdkCrashLog.signalName
+                    )
+                ),
                 anyOrNull(),
                 eq(
                     mapOf(

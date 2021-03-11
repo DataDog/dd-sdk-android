@@ -30,6 +30,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -189,7 +190,7 @@ internal class RumEventMapperTest {
         verify(mockSdkLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
-                .format(fakeRumEventCopy.event.javaClass.simpleName)
+                .format(Locale.US, fakeRumEventCopy.event.javaClass.simpleName)
         )
         assertThat(mappedRumEvent).isEqualTo(fakeRumEventCopy)
     }
@@ -209,7 +210,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -228,7 +229,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -248,7 +249,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -268,7 +269,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -288,7 +289,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -307,7 +308,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -327,7 +328,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -346,7 +347,7 @@ internal class RumEventMapperTest {
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(fakeRumEvent)
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
         )
     }

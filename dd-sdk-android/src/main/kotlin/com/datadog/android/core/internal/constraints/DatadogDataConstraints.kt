@@ -78,7 +78,11 @@ internal class DatadogDataConstraints : DataConstraints {
                             entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
                         if (sanitizedKey != entry.key) {
                             devLogger.w(
-                                CUSTOM_TIMING_KEY_REPLACED_WARNING.format(entry.key, sanitizedKey)
+                                CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+                                    Locale.US,
+                                    entry.key,
+                                    sanitizedKey
+                                )
                             )
                         }
                         sanitizedKey

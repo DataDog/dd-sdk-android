@@ -26,6 +26,7 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.Tracer
+import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -226,7 +227,7 @@ internal constructor(
         GlobalRum.get().stopResourceWithError(
             requestId,
             null,
-            ERROR_MSG_FORMAT.format(method, url),
+            ERROR_MSG_FORMAT.format(Locale.US, method, url),
             RumErrorSource.NETWORK,
             throwable,
             rumResourceAttributesProvider.onProvideAttributes(request, null, throwable)

@@ -758,7 +758,7 @@ public class Config {
 
     public String getFinalProfilingUrl() {
         if (profilingUrl == null) {
-            return String.format(PROFILING_URL_TEMPLATE, site);
+            return String.format(Locale.US, PROFILING_URL_TEMPLATE, site);
         } else {
             return profilingUrl;
         }

@@ -15,6 +15,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import java.util.Locale
 
 internal class RumEventDeserializer : Deserializer<RumEvent> {
 
@@ -38,10 +39,10 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
                 userAttributes
             )
         } catch (e: JsonParseException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
+            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(model), e)
+            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         }
     }

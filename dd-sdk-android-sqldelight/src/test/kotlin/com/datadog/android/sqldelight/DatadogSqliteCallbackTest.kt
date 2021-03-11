@@ -82,9 +82,9 @@ class DatadogSqliteCallbackTest {
         verify(mockRumMonitor).addError(
             eq(
                 String.format(
+                    Locale.US,
                     DatadogSqliteCallback.DATABASE_CORRUPTION_ERROR_MESSAGE,
-                    fakeDbPath,
-                    Locale.US
+                    fakeDbPath
                 )
             ),
             eq(RumErrorSource.SOURCE),

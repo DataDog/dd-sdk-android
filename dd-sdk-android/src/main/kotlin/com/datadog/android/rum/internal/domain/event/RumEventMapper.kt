@@ -18,6 +18,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import java.util.Locale
 
 internal data class RumEventMapper(
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
@@ -45,7 +46,7 @@ internal data class RumEventMapper(
             else -> {
                 sdkLogger.w(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
-                        .format(bundledEvent.javaClass.simpleName)
+                        .format(Locale.US, bundledEvent.javaClass.simpleName)
                 )
                 bundledEvent
             }
@@ -66,17 +67,17 @@ internal data class RumEventMapper(
             (bundledMappedEvent == null || bundledMappedEvent != event.event)
         ) {
             devLogger.w(
-                VIEW_EVENT_NULL_WARNING_MESSAGE.format(event)
+                VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             event
         } else if (bundledMappedEvent == null) {
             devLogger.w(
-                EVENT_NULL_WARNING_MESSAGE.format(event)
+                EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             null
         } else if (bundledMappedEvent !== event.event) {
             devLogger.w(
-                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(event)
+                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
             )
             null
         } else {
