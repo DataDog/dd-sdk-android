@@ -54,6 +54,8 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
@@ -161,7 +163,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected")
+                .hasMessage("Application crash detected: " + fakeThrowable.message)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -200,7 +202,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M log exception W caught`(forge: Forge) {
+    fun `M log exception W caught { exception with message }`(forge: Forge) {
         val currentThread = Thread.currentThread()
 
         val now = System.currentTimeMillis()
@@ -210,7 +212,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected")
+                .hasMessage("Application crash detected: " + fakeThrowable.message)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -225,6 +227,37 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+    }
+
+    @Test
+    fun `M log exception W caught { exception without message }`(forge: Forge) {
+        val currentThread = Thread.currentThread()
+
+        val now = System.currentTimeMillis()
+
+        val throwableNoMessage = forge.aThrowableWithoutMessage()
+
+        testedHandler.uncaughtException(currentThread, throwableNoMessage)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).write(capture())
+            assertThat(lastValue)
+                .hasThreadName(currentThread.name)
+                .hasMessage("Application crash detected")
+                .hasLevel(Log.CRASH)
+                .hasThrowable(throwableNoMessage)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasTimestampAround(now)
+                .hasExactlyTags(
+                    listOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                    )
+                )
+                .hasExactlyAttributes(emptyMap())
+        }
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwableNoMessage)
     }
 
     @Test
@@ -247,7 +280,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(threadName)
-                .hasMessage("Application crash detected")
+                .hasMessage("Application crash detected: " + fakeThrowable.message)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -291,18 +324,37 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M register RUM Error with crash W RumMonitor registered`() {
+    fun `M register RUM Error with crash W RumMonitor registered { exception with message }`() {
         val currentThread = Thread.currentThread()
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         verify(mockRumMonitor).addCrash(
-            "Application crash detected",
+            "Application crash detected: " + fakeThrowable.message,
             RumErrorSource.SOURCE,
             fakeThrowable
         )
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+    }
+
+    @Test
+    fun `M register RUM Error with crash W RumMonitor registered { exception without message }`(
+        forge: Forge
+    ) {
+        val currentThread = Thread.currentThread()
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        val throwableNoMessage = forge.aThrowableWithoutMessage()
+
+        testedHandler.uncaughtException(currentThread, throwableNoMessage)
+
+        verify(mockRumMonitor).addCrash(
+            "Application crash detected",
+            RumErrorSource.SOURCE,
+            throwableNoMessage
+        )
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwableNoMessage)
     }
 
     @Test
@@ -328,5 +380,27 @@ internal class DatadogExceptionHandlerTest {
                 )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+    }
+
+    private fun Forge.aThrowableWithoutMessage(): Throwable {
+        val exceptionClass = anElementFrom(
+            IOException::class.java,
+            IllegalStateException::class.java,
+            UnknownError::class.java,
+            ArrayIndexOutOfBoundsException::class.java,
+            NullPointerException::class.java,
+            UnsupportedOperationException::class.java,
+            FileNotFoundException::class.java
+        )
+
+        return if (aBool()) {
+            exceptionClass.newInstance()
+        } else {
+            exceptionClass.constructors
+                .first {
+                    it.parameterTypes.size == 1 && it.parameterTypes[0] == String::class.java
+                }
+                .newInstance(anElementFrom("", aWhitespaceString())) as Throwable
+        }
     }
 }

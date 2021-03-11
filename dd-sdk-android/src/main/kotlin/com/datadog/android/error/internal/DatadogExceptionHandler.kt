@@ -15,6 +15,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.lang.ref.WeakReference
+import java.util.Locale
 
 internal class DatadogExceptionHandler(
     private val logGenerator: LogGenerator,
@@ -33,7 +34,11 @@ internal class DatadogExceptionHandler(
         writer.write(createLog(t, e))
 
         // write a RUM Error too
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(MESSAGE, RumErrorSource.SOURCE, e)
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
+            createCrashMessage(e),
+            RumErrorSource.SOURCE,
+            e
+        )
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
@@ -60,13 +65,21 @@ internal class DatadogExceptionHandler(
     private fun createLog(thread: Thread, throwable: Throwable): Log {
         return logGenerator.generateLog(
             Log.CRASH,
-            MESSAGE,
+            createCrashMessage(throwable),
             throwable,
             emptyMap(),
             emptySet(),
             System.currentTimeMillis(),
             thread.name
         )
+    }
+
+    private fun createCrashMessage(throwable: Throwable): String {
+        return if (throwable.message.isNullOrBlank()) {
+            MESSAGE
+        } else {
+            MESSAGE + ": %s".format(Locale.US, throwable.message)
+        }
     }
 
     // endregion
