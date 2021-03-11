@@ -42,6 +42,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.MalformedURLException
@@ -129,6 +130,7 @@ internal class ConfigurationBuilderTest {
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L)
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -150,6 +152,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_US)
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -171,6 +174,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_EU)
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -192,6 +196,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -227,6 +232,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -262,6 +268,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -289,6 +296,7 @@ internal class ConfigurationBuilderTest {
             .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @TestTargetApi(Build.VERSION_CODES.Q)
@@ -317,6 +325,7 @@ internal class ConfigurationBuilderTest {
             .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -340,6 +349,7 @@ internal class ConfigurationBuilderTest {
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -367,6 +377,7 @@ internal class ConfigurationBuilderTest {
                 viewTrackingStrategy = strategy
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -388,6 +399,7 @@ internal class ConfigurationBuilderTest {
                 samplingRate = sampling
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -411,6 +423,7 @@ internal class ConfigurationBuilderTest {
                 rumEventMapper = expectedRumEventMapper
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -451,6 +464,7 @@ internal class ConfigurationBuilderTest {
                 plugins = listOf(rumPlugin)
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -886,6 +900,7 @@ internal class ConfigurationBuilderTest {
                 )
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -908,6 +923,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -948,6 +964,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1024,6 +1041,7 @@ internal class ConfigurationBuilderTest {
                 )
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1056,6 +1074,7 @@ internal class ConfigurationBuilderTest {
                 )
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1077,6 +1096,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1151,6 +1171,7 @@ internal class ConfigurationBuilderTest {
                 )
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1170,6 +1191,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
     }
 
     @Test
@@ -1189,5 +1211,27 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
+    }
+
+    @Test
+    fun `𝕄 build internal logs config 𝕎 setUploadFrequency()`(
+        @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // When
+        val config = testedBuilder
+            .setInternalLogsEnabled(clientToken, url)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isEqualTo(
+            Configuration.Feature.InternalLogs(clientToken, url, emptyList())
+        )
     }
 }
