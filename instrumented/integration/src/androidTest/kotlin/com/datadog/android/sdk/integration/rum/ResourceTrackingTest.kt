@@ -15,9 +15,9 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
+import com.datadog.android.sdk.utils.exhaustiveAttributes
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.io.IOException
 import okhttp3.OkHttpClient
@@ -130,18 +130,5 @@ internal class ResourceTrackingTest {
         return filter { it.url?.isRumUrl() ?: false }
             .flatMap { rumPayloadToJsonList(it.textBody!!) }
             .filter { predicate.invoke(it) }
-    }
-
-    private fun Forge.exhaustiveAttributes(): Map<String, Any?> {
-        return listOf(
-            aBool(),
-            anInt(),
-            aLong(),
-            aFloat(),
-            aDouble(),
-            anAsciiString(),
-            aList { anAlphabeticalString() },
-            null
-        ).associateBy { anAlphabeticalString() }
     }
 }
