@@ -7,7 +7,9 @@
 package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.model.UserInfo
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface UserInfoProvider {
 
     fun getUserInfo(): UserInfo
