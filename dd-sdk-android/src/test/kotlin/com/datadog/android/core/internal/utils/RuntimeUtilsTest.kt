@@ -8,15 +8,18 @@ package com.datadog.android.core.internal.utils
 
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
+import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.extension.EnableLogcat
 import com.datadog.android.utils.extension.EnableLogcatExtension
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -47,41 +50,97 @@ class RuntimeUtilsTest {
     @AfterEach
     fun `tear down`() {
         Datadog.setFieldValue("isDebug", false)
+        InternalLogsFeature.stop()
+
         devLogger.setFieldValue("handler", buildDevLogHandler())
+        rebuildSdkLogger()
     }
+
+    // region sdkLogger
 
     @Test
     @EnableLogcat(isEnabled = false)
-    fun `the sdk logger should disable the logcat logs if the BuildConfig flag is false`() {
+    fun `M build noop sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=false, InternalLogs off}`() {
+        // When
         val logger = buildSdkLogger()
-        val handler: LogHandler = logger.getFieldValue("handler")
+
+        // Then
+        val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
     @Test
     @EnableLogcat(isEnabled = true)
-    fun `the sdk logger should enable the logcat logs if the BuildConfig flag is true`() {
+    fun `M build LogCat sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=true, InternalLogs off}`() {
+        // When
         val logger = buildSdkLogger()
-        val handler: LogHandler = logger.getFieldValue("handler")
-        assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
-        assertThat((handler as LogcatLogHandler).serviceName)
-            .isEqualTo(SDK_LOG_PREFIX)
+
+        // Then
+        val handler: LogHandler = logger.handler
+        assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
+        val handlers = (handler as CombinedLogHandler).handlers.toList()
+        assertThat(handlers.filterIsInstance<LogcatLogHandler>())
+            .hasSize(1)
+            .allMatch { it.serviceName == SDK_LOG_PREFIX }
+        assertThat(handlers.filterIsInstance<DatadogLogHandler>())
+            .hasSize(0)
+        assertThat(handlers.filterIsInstance<NoOpLogHandler>())
+            .hasSize(1)
     }
 
     @Test
-    fun `the dev logger should always be enabled`() {
-        val handler: LogHandler = devLogger.getFieldValue("handler")
-        assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
-        assertThat((handler as ConditionalLogHandler).delegateHandler)
-            .isInstanceOf(LogcatLogHandler::class.java)
+    @EnableLogcat(isEnabled = false)
+    fun `M build internal sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=false, InternalLogs on}`() {
+        // Given
+        InternalLogsFeature.initialized.set(true)
+
+        // When
+        val logger = buildSdkLogger()
+
+        // Then
+        val handler: LogHandler = logger.handler
+        assertThat(handler).isInstanceOf(DatadogLogHandler::class.java)
     }
 
     @Test
-    fun `the dev logger handler should use the Datadog verbosity level`(
+    @EnableLogcat(isEnabled = true)
+    fun `M build combined sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=true, InternalLogs on}`() {
+        // Given
+        InternalLogsFeature.initialized.set(true)
+
+        // When
+        val logger = buildSdkLogger()
+
+        // Then
+        val handler: LogHandler = logger.handler
+        assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
+        val handlers = (handler as CombinedLogHandler).handlers.toList()
+        assertThat(handlers.filterIsInstance<LogcatLogHandler>())
+            .hasSize(1)
+            .allMatch { it.serviceName == SDK_LOG_PREFIX }
+        assertThat(handlers.filterIsInstance<DatadogLogHandler>())
+            .hasSize(1)
+            .allMatch { it.logGenerator.serviceName == InternalLogsFeature.SERVICE_NAME }
+            .allMatch { it.logGenerator.envTag == "env:prod" }
+            .allMatch { it.logGenerator.loggerName == SDK_LOGGER_NAME }
+            .allMatch { it.logGenerator.userInfoProvider is NoOpUserInfoProvider }
+    }
+
+    // endregion
+
+    // region devLogger
+
+    @Test
+    fun `M build conditional Log handler W buildDevLogger()`(
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) level: Int
     ) {
+        // Given
         Datadog.setVerbosity(level)
-        val handler: LogHandler = devLogger.getFieldValue("handler")
+
+        // When
+        val handler = buildDevLogHandler()
+
+        // Then
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
 
         val condition = (handler as ConditionalLogHandler).condition
@@ -94,6 +153,10 @@ class RuntimeUtilsTest {
             }
         }
     }
+
+    // endregion
+
+    // region warnDeprecated
 
     @Test
     fun `M log a warning W warnDeprecated()`(
@@ -144,4 +207,6 @@ class RuntimeUtilsTest {
             )
         )
     }
+
+    // endregion
 }

@@ -11,30 +11,40 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
-import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import java.util.Locale
 
 internal const val SDK_LOG_PREFIX = "DD_LOG"
+internal const val SDK_LOGGER_NAME = "sdkLogger"
 internal const val DEV_LOG_PREFIX = "Datadog"
 
 /**
- * Global SDK Logger. This logger is meant for internal debugging purposes. Should not post logs
- * to Datadog endpoint and should be conditioned by the BuildConfig flag.
+ * Global SDK Logger. This logger is meant for internal debugging purposes.
+ * Logcat logs are conditioned by a BuildConfig flag (set to false for releases).
+ * Datadog logs are conditioned by the [InternalLogsFeature].
  */
-internal val sdkLogger: Logger = buildSdkLogger()
+internal var sdkLogger: Logger = buildSdkLogger()
+    private set
+
+internal fun rebuildSdkLogger() {
+    sdkLogger = buildSdkLogger()
+}
 
 internal fun buildSdkLogger(): Logger {
-    val handler = if (BuildConfig.LOGCAT_ENABLED) {
-        LogcatLogHandler(SDK_LOG_PREFIX, true)
-    } else {
-        NoOpLogHandler()
-    }
-    return Logger(handler)
+    return Logger.Builder()
+        .setLogcatLogsEnabled(BuildConfig.LOGCAT_ENABLED)
+        .setServiceName(SDK_LOG_PREFIX)
+        .setLoggerName(SDK_LOGGER_NAME)
+        .setBundleWithRumEnabled(false)
+        .setBundleWithTraceEnabled(false)
+        .setInternal(true)
+        .build()
 }
 
 /**
- * Global Dev Logger. This logger is meant for user's debugging purposes. Should not post logs
- * to Datadog endpoint and should be conditioned by the Datadog Verbosity level.
+ * Global Dev Logger. This logger is meant for user's debugging purposes.
+ * Logcat logs are conditioned by the [Datadog.libraryVerbosity].
+ * No Datadog logs should be sent.
  */
 internal val devLogger: Logger = buildDevLogger()
 
@@ -50,6 +60,13 @@ internal fun buildDevLogHandler(): ConditionalLogHandler {
     }
 }
 
+/**
+ * Warns the user that they're using a deprecated feature.
+ * @param target the target feature (e.g. method name)
+ * @param deprecatedSince the version when the feature was deprecated
+ * @param removedInVersion the version in which the feature will disappear
+ * @param alternative an alternative option to get the same effect
+ */
 internal fun warnDeprecated(
     target: String,
     deprecatedSince: String,
