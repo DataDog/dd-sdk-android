@@ -66,8 +66,8 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
-  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener())
+  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider())
+  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider())
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
@@ -290,7 +290,7 @@ enum com.datadog.android.rum.RumErrorSource
   - AGENT
   - WEBVIEW
 class com.datadog.android.rum.RumInterceptor : com.datadog.android.DatadogInterceptor
-  constructor(List<String> = emptyList())
+  constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider())
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -300,7 +300,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
-  fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable)
+  fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
@@ -308,6 +308,8 @@ interface com.datadog.android.rum.RumMonitor
     fun sampleRumSessions(Float): Builder
     fun build(): RumMonitor
     companion object 
+interface com.datadog.android.rum.RumResourceAttributesProvider
+  fun onProvideAttributes(okhttp3.Request, okhttp3.Response?, Throwable?): Map<String, Any?>
 enum com.datadog.android.rum.RumResourceKind
   constructor(String)
   - BEACON
@@ -1018,6 +1020,7 @@ open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.Web
   override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
   override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
+  open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
   companion object 
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())

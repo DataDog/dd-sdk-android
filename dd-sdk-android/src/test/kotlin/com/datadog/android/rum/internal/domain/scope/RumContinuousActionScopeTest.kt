@@ -368,7 +368,14 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(1000)
-        fakeEvent = RumRawEvent.StopResourceWithError(key, statusCode, message, source, throwable)
+        fakeEvent = RumRawEvent.StopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            throwable,
+            emptyMap()
+        )
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)

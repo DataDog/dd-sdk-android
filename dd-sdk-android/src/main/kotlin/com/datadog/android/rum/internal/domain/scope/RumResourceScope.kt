@@ -106,6 +106,8 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
 
+        attributes.putAll(event.attributes)
+
         sendError(
             event.message,
             event.source,

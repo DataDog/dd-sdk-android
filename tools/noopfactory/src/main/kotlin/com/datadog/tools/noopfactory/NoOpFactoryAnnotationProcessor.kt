@@ -16,6 +16,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
@@ -253,8 +254,9 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
      *  - if the return type is nullable, the method will return null
      *  - if the return type is a primitive, the method will return 0/false
      *  - if the return type is a String, the method will return an empty String
-     *  - if the return type is an enume, the method will return the first enum constant
-     *  - if the return type is an interface, it will assume a NoOp implementation exist
+     *  - if the return type is an enum, the method will return the first enum constant
+     *  - if the return type is an interface, it will check if it known SDK collection interface
+     *  (one of [Map], [List], [Set]), otherwise assume a NoOp implementation exist
      *  - otherwise it will assume a default constructor for the given type exists.
      */
     private fun generateFunctionReturnStatement(
@@ -281,11 +283,35 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
                 funSpecBuilder.addStatement("return %T.${firstValue.simpleName}", type)
             }
             returnTypeDef.kind == ElementKind.INTERFACE -> {
-                val packageName = (returnTypeDef as TypeElement).qualifiedName
-                    .toString()
-                    .substringBeforeLast('.')
-                val noOpReturnType = ClassName(packageName, "NoOp${returnTypeDef.simpleName}")
-                funSpecBuilder.addStatement("return %T()", noOpReturnType)
+                val returnTypeElement = returnTypeDef as TypeElement
+                when (returnTypeElement.qualifiedName.toString()) {
+                    List::class.java.name -> {
+                        funSpecBuilder.addStatement(
+                            "return %M()",
+                            MemberName(KOTLIN_COLLECTIONS_PACKAGE, "emptyList")
+                        )
+                    }
+                    Map::class.java.name -> {
+                        funSpecBuilder.addStatement(
+                            "return %M()",
+                            MemberName(KOTLIN_COLLECTIONS_PACKAGE, "emptyMap")
+                        )
+                    }
+                    Set::class.java.name -> {
+                        funSpecBuilder.addStatement(
+                            "return %M()",
+                            MemberName(KOTLIN_COLLECTIONS_PACKAGE, "emptySet")
+                        )
+                    }
+                    else -> {
+                        val packageName = returnTypeElement.qualifiedName
+                            .toString()
+                            .substringBeforeLast('.')
+                        val noOpReturnType =
+                            ClassName(packageName, "NoOp${returnTypeDef.simpleName}")
+                        funSpecBuilder.addStatement("return %T()", noOpReturnType)
+                    }
+                }
             }
             else -> funSpecBuilder.addStatement("return %T()", type)
         }
@@ -294,6 +320,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
     // endregion
 
     companion object {
+        const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
     }
 }

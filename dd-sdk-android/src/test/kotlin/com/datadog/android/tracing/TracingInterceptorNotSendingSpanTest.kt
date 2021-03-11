@@ -159,7 +159,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     // endregion
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    open fun `set up`(forge: Forge) {
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)

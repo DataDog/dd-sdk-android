@@ -38,7 +38,14 @@ import okhttp3.Request
  * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
  * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
  * information to the backend, but RUM Resource events will still be sent for each request.
+ * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
+ * and offers the possibility to add custom attributes to the RUM resource events.
  */
 class RumInterceptor(
-    firstPartyHosts: List<String> = emptyList()
-) : DatadogInterceptor(firstPartyHosts)
+    firstPartyHosts: List<String> = emptyList(),
+    rumResourceAttributesProvider: RumResourceAttributesProvider =
+        NoOpRumResourceAttributesProvider()
+) : DatadogInterceptor(
+    firstPartyHosts,
+    rumResourceAttributesProvider = rumResourceAttributesProvider
+)

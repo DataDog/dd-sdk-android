@@ -9,6 +9,7 @@ package com.datadog.android
 import android.util.Log
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.forge.Configurator
@@ -45,6 +46,9 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
+
     @BeforeEach
     fun `set up RUM`() {
         GlobalRum.registerIfAbsent(mockRumMonitor)
@@ -59,7 +63,13 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        return DatadogInterceptor(tracedHosts, mockRequestListener, mockDetector, factory)
+        return DatadogInterceptor(
+            tracedHosts,
+            mockRequestListener,
+            mockDetector,
+            mockRumAttributesProvider,
+            factory
+        )
     }
 
     override fun getExpectedOrigin(): String {
@@ -94,6 +104,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockRumAttributesProvider)
     }
 
     @Test
@@ -108,6 +119,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockRumAttributesProvider)
     }
 
     @Test
@@ -125,5 +137,6 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockRumAttributesProvider)
     }
 }

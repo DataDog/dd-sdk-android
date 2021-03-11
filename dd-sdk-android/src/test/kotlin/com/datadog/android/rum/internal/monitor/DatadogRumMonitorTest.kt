@@ -305,7 +305,14 @@ internal class DatadogRumMonitorTest {
         @IntForgery(200, 600) statusCode: Int,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.stopResourceWithError(key, statusCode, message, source, throwable)
+        testedMonitor.stopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            throwable,
+            fakeAttributes
+        )
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -317,6 +324,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -328,7 +336,7 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
-        testedMonitor.stopResourceWithError(key, null, message, source, throwable)
+        testedMonitor.stopResourceWithError(key, null, message, source, throwable, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -340,6 +348,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

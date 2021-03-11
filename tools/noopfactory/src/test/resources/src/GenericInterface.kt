@@ -12,4 +12,10 @@ interface GenericInterface<T : CharSequence> {
     fun doSomethingWithNullableParams(t: T?)
 
     fun doSomethingWithNullableReturn(): T?
+
+    fun doSomethingWithListReturn(): List<T>
+
+    fun doSomethingWithMapReturn(): Map<T, T>
+
+    fun doSomethingWithSetReturn(): Set<T>
 }

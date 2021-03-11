@@ -27,4 +27,10 @@ interface SimpleInterface {
     fun doSomethingWithStringReturn(): String
 
     fun doSomethingWithNullableReturn(): Date?
+
+    fun doSomethingWithListReturn(): List<String>
+
+    fun doSomethingWithMapReturn(): Map<String, String>
+
+    fun doSomethingWithSetReturn(): Set<String>
 }

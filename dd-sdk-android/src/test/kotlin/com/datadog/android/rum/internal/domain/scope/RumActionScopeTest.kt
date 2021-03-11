@@ -201,7 +201,14 @@ internal class RumActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
-        fakeEvent = RumRawEvent.StopResourceWithError(key, statusCode, message, source, throwable)
+        fakeEvent = RumRawEvent.StopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            throwable,
+            emptyMap()
+        )
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -250,7 +257,14 @@ internal class RumActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
-        fakeEvent = RumRawEvent.StopResourceWithError(key2, statusCode, message, source, throwable)
+        fakeEvent = RumRawEvent.StopResourceWithError(
+            key2,
+            statusCode,
+            message,
+            source,
+            throwable,
+            emptyMap()
+        )
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)

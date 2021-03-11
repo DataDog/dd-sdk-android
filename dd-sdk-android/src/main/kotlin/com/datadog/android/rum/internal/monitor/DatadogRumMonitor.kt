@@ -127,10 +127,18 @@ internal class DatadogRumMonitor(
         statusCode: Int?,
         message: String,
         source: RumErrorSource,
-        throwable: Throwable
+        throwable: Throwable,
+        attributes: Map<String, Any?>
     ) {
         handleEvent(
-            RumRawEvent.StopResourceWithError(key, statusCode?.toLong(), message, source, throwable)
+            RumRawEvent.StopResourceWithError(
+                key,
+                statusCode?.toLong(),
+                message,
+                source,
+                throwable,
+                attributes
+            )
         )
     }
 

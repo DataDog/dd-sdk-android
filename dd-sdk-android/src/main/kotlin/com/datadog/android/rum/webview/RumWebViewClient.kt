@@ -53,7 +53,7 @@ open class RumWebViewClient : WebViewClient() {
                 200,
                 null,
                 RumResourceKind.DOCUMENT,
-                emptyMap()
+                onProvideRumResourceAttributes(view, url)
             )
         }
     }
@@ -123,8 +123,21 @@ open class RumWebViewClient : WebViewClient() {
 
     // endregion
 
+    // region Internal
+
+    /**
+     * Offers a possibility to create custom attributes collection which later will be attached to
+     * the RUM resource event associated with the request.
+     * @param view The WebView that is initiating the callback.
+     * @param url The url of the page.
+     */
+    open fun onProvideRumResourceAttributes(view: WebView?, url: String?): Map<String, Any?> {
+        return emptyMap()
+    }
+
+    // endregion
+
     companion object {
-        internal const val ORIGIN = "WebViewClient"
         internal const val METHOD_GET = "GET"
     }
 }

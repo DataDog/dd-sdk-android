@@ -286,10 +286,10 @@ internal constructor(
         val statusCode = response.code()
         span?.setTag(Tags.HTTP_STATUS.key, statusCode)
         if (statusCode in 400..499) {
-            (span as? MutableSpan)?.setError(true)
+            (span as? MutableSpan)?.isError = true
         }
         if (statusCode == 404) {
-            (span as? MutableSpan)?.setResourceName(RESOURCE_NAME_404)
+            (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
         }
         onRequestIntercepted(request, span, response, null)
         if (canSendSpan()) {
@@ -302,7 +302,7 @@ internal constructor(
         throwable: Throwable,
         span: Span
     ) {
-        (span as? MutableSpan)?.setError(true)
+        (span as? MutableSpan)?.isError = true
         span.setTag(DDTags.ERROR_MSG, throwable.message)
         span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
         span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())

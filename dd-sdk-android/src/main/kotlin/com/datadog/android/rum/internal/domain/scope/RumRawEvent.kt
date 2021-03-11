@@ -79,6 +79,7 @@ internal sealed class RumRawEvent {
         val message: String,
         val source: RumErrorSource,
         val throwable: Throwable,
+        val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
