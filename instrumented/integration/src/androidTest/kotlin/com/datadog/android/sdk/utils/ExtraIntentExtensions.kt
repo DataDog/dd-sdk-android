@@ -21,7 +21,7 @@ fun Intent.addExtras(map: Map<String, Any?>) {
     }
 }
 
-internal fun Intent.addTrackingConsent(consent: TrackingConsent) {
+fun Intent.addTrackingConsent(consent: TrackingConsent) {
     val consentToInt = when (consent) {
         TrackingConsent.PENDING -> PENDING
         TrackingConsent.GRANTED -> GRANTED

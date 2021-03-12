@@ -28,7 +28,7 @@ abstract class ObjectTest<T : Any> {
      * x.equals(x) is always true
      */
     @Test
-    fun `equals is reflexive`(forge: Forge) {
+    fun equalsIsReflexive(forge: Forge) {
         // Given
         val x = createInstance(forge)
 
@@ -44,7 +44,7 @@ abstract class ObjectTest<T : Any> {
      * x.equals(y) == y.equals(x)
      */
     @Test
-    fun `equals is symmetric`(forge: Forge) {
+    fun equalsIsSymmetric(forge: Forge) {
         // Given
         val x = createInstance(forge)
         val y = createInstance(forge)
@@ -63,7 +63,7 @@ abstract class ObjectTest<T : Any> {
      * if (x.equals(y) && y.equals(z)) then x.equals(z)
      */
     @Test
-    fun `equals is transitive`(forge: Forge) {
+    fun equalsIsTransitive(forge: Forge) {
         // Given
         val x = createInstance(forge)
         val y = createEqualInstance(x, forge)
@@ -86,7 +86,7 @@ abstract class ObjectTest<T : Any> {
      * if a (relevant) field is changed, equals should detect it
      */
     @Test
-    fun `equals is consistent`(forge: Forge) {
+    fun equalsIsConsistent(forge: Forge) {
         // Given
         val x = createInstance(forge)
         val y = createUnequalInstance(x, forge) ?: return
@@ -104,7 +104,7 @@ abstract class ObjectTest<T : Any> {
      * if the two compared instances are of different types, equals is false
      */
     @Test
-    fun `equals is type sensitive`(forge: Forge) {
+    fun equalsIsTypeSensitive(forge: Forge) {
         // Given
         val x = createInstance(forge)
         val y = Object()
@@ -130,7 +130,7 @@ abstract class ObjectTest<T : Any> {
      */
     @Test
     @Suppress("FunctionMaxLength")
-    fun `hashCode is internally consistent`(forge: Forge) {
+    fun hashCodeIsInternallyConsistent(forge: Forge) {
         // Given
         val x = createInstance(forge)
 
@@ -162,7 +162,7 @@ abstract class ObjectTest<T : Any> {
      */
     @Test
     @Suppress("FunctionMaxLength")
-    fun `hashCode is consistent with equal`(forge: Forge) {
+    fun hashCodeIsConsistentWithEqual(forge: Forge) {
         // Given
         val x = createInstance(forge)
         val y = createEqualInstance(x, forge)

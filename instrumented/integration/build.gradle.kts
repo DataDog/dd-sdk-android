@@ -61,7 +61,6 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
-            isUseProguard = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -69,7 +68,6 @@ android {
         }
         getByName("debug") {
             isMinifyEnabled = true
-            isUseProguard = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

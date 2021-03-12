@@ -23,8 +23,11 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val credentials = RuntimeConfig.credentials()
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
         val config = RuntimeConfig.configBuilder()
             .trackInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
         val trackingConsent = intent.getTrackingConsent()

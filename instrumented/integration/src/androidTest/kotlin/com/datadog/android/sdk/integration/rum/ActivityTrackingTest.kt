@@ -21,7 +21,6 @@ internal abstract class ActivityTrackingTest :
     ): MutableList<ExpectedEvent> {
 
         val expectedEvents = mutableListOf<ExpectedEvent>()
-        expectedEvents.add(ExpectedApplicationStart())
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val activity = mockServerRule.activity
         val viewUrl = activity.javaClass.canonicalName!!.replace(
@@ -30,6 +29,11 @@ internal abstract class ActivityTrackingTest :
         )
 
         instrumentation.waitForIdleSync()
+
+        // one for the Application start action
+        expectedEvents.add(
+            ExpectedApplicationStart()
+        )
 
         // one for application start update
         expectedEvents.add(
@@ -73,6 +77,7 @@ internal abstract class ActivityTrackingTest :
 
         instrumentation.waitForIdleSync()
 
+        Thread.sleep(500)
         // activity start - resume
 
         instrumentation.runOnMainSync {

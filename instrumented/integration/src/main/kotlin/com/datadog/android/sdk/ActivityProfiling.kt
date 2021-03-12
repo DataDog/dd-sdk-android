@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sdk.integrationtests
+package com.datadog.android.sdk
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

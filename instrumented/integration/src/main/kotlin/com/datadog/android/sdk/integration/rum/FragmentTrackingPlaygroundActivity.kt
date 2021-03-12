@@ -29,6 +29,7 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder()
             .trackInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
             .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
             .build()
         val trackingConsent = intent.getTrackingConsent()

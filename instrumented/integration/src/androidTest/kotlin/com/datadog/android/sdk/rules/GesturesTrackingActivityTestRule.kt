@@ -9,7 +9,6 @@ package com.datadog.android.sdk.rules
 import android.app.Activity
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
@@ -25,21 +24,22 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
     override fun beforeActivityLaunched() {
         super.beforeActivityLaunched()
         // attach the gestures tracker
-        val config = DatadogConfig.Builder(
-            RuntimeConfig.DD_TOKEN,
-            RuntimeConfig.INTEGRATION_TESTS_ENVIRONMENT,
-            RuntimeConfig.APP_ID
-        ).useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
+        val config = RuntimeConfig.configBuilder()
+            .useCustomLogsEndpoint(RuntimeConfig.logsEndpointUrl)
             .useCustomTracesEndpoint(RuntimeConfig.tracesEndpointUrl)
             .useCustomRumEndpoint(RuntimeConfig.rumEndpointUrl)
             .trackInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
             .build()
 
         Datadog.initialize(
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
-            trackingConsent,
-            config
+            RuntimeConfig.credentials(),
+            config,
+            trackingConsent
         )
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }

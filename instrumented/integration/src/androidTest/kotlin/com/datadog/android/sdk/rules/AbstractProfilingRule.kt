@@ -9,7 +9,6 @@ package com.datadog.android.sdk.rules
 import androidx.test.platform.app.InstrumentationRegistry
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 import kotlin.math.max
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.rules.TestRule
@@ -122,16 +121,6 @@ internal abstract class AbstractProfilingRule(
     private fun List<Double>.average(): Double {
         val sum = sumByDouble { it }
         return sum / size.toDouble()
-    }
-
-    private fun List<Double>.statistics(): Pair<Double, Double> {
-        val sum = sumByDouble { it }
-        val average = sum / size.toDouble()
-
-        val sumDeviation = sumByDouble { abs(it - average) }
-        val stDeviation = sumDeviation / size.toDouble()
-
-        return average to stDeviation
     }
 
     // endregion
