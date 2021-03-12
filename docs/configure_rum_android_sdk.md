@@ -110,15 +110,25 @@ Widgets are not automatically tracked with the SDK. To send UI interactions from
 
 ## Initialization Parameters
  
-The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
+The following methods in `Configuration.Builder` can be used when creating the Datadog Configuration to initialize the library:
  
 | Method                           | Description                                                                                                                                                                                                                                                             |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as default value for the `service` [standard attribute][4] attached to all logs sent to Datadog (this can be overriden in each Logger).                                                                                                                                                           |
-| `setRumEnabled(true)`     | Set to `true` to enable sending RUM data to Datadog.                                                                                                                                                                                                                                  |
+
 | `trackInteractions(Array<ViewAttributesProvider>)` | Enables tracking User interactions (such as Tap, Scroll or Swipe). The parameter also allow you to add custom attributes to the RUM Action events based on the widget with which the user interacted. |
 | `useViewTrackingStrategy(strategy)` | Defines the strategy used to track Views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][3] or implement your own. |
 | `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
+| `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog UI.  |
+| `setFirstPartyHosts()` | Define hosts that will have tracing enabled and have RUM rersources categorized as `first-party` |
+| `useEUEndpoints()` | Switch target data to EU endpoints |
+| `useUSEndpoints()` | Switch target data to US endpoints |
+| `useGovEndpoints()` | Switch target data to GOV endpoints |
+| `setBatchSize([SMALL|MEDIUM|LARGE])` | Define the individual batch size for requests sent to Datadog |
+| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Define frequency for requests made to Datadog endpoints (if requests are avaialble) |
+| `sampleRumSessions(<samplingRate>)` | set the RUM sessions sampling rate (A value of 0 means no RUM event will be sent, 100 means all sessions will be kept.) |
+| `setRumXxxEventMapper()` | set the data scrubbing callbacks for Views, Actions, Resources and Errors |
+
+
  
 ### Automatically Track Views
 
