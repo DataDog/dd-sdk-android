@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.net.info
 
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -37,7 +36,7 @@ internal class NetworkInfoSerializerTest {
     }
 
     @Test
-    fun `M serialize the model W serialize`(@Forgery fakeNetworkInfo: NetworkInfo, forge: Forge) {
+    fun `M serialize the model W serialize`(@Forgery fakeNetworkInfo: NetworkInfo) {
         // WHEN
         val serializedObject = testedSerializer.serialize(fakeNetworkInfo)
 

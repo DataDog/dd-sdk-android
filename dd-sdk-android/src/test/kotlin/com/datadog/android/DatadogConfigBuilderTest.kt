@@ -35,7 +35,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 
+@Suppress("DEPRECATION")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -495,10 +495,10 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @RegexForgery("https://[a-z]+\\.com") logsUrl: String,
-        @RegexForgery("https://[a-z]+\\.com") tracesUrl: String,
-        @RegexForgery("https://[a-z]+\\.com") crashReportsUrl: String,
-        @RegexForgery("https://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com") logsUrl: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") tracesUrl: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
     ) {
         // When
         val config = testedBuilder
@@ -557,10 +557,10 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build config with custom cleartext endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @RegexForgery("http://[a-z]+\\.com") logsUrl: String,
-        @RegexForgery("http://[a-z]+\\.com") tracesUrl: String,
-        @RegexForgery("http://[a-z]+\\.com") crashReportsUrl: String,
-        @RegexForgery("http://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "http://[a-z]+\\.com") logsUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") tracesUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String
     ) {
         // When
         val config = testedBuilder
@@ -977,7 +977,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build RUM config with gestures enabled 𝕎 trackInteractions() and build()`(
-        @RegexForgery("http://[a-z]+\\.com") rumUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String,
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -1006,7 +1006,7 @@ internal class DatadogConfigBuilderTest {
     @TestTargetApi(value = Build.VERSION_CODES.Q)
     @Test
     fun `𝕄 build RUM config with gestures enabled 𝕎 trackInteractions() and build() {Android Q}`(
-        @RegexForgery("http://[a-z]+\\.com") rumUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String,
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -1032,7 +1032,7 @@ internal class DatadogConfigBuilderTest {
 
     @Test
     fun `𝕄 build RUM config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`(
-        @RegexForgery("http://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String
     ) {
         // Given
         val strategy = ActivityViewTrackingStrategy(true)

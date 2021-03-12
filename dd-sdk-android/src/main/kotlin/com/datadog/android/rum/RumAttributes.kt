@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.DatadogConfig
 import com.datadog.android.DatadogInterceptor
+import com.datadog.android.core.configuration.Credentials
 
 /**
  * This class holds constant rum attribute keys.
@@ -32,9 +32,9 @@ object RumAttributes {
 
     /**
      * The name of the application or service generating the rum events. (String)
-     * This values is configurable through the DatadogConfig during the SDK initialization.
+     * This values is configurable through the [Credentials] during the SDK initialization.
      * By default it will take the application package name.
-     * @see [DatadogConfig.Builder.setServiceName]
+     * @see [Credentials.serviceName]
      */
     const val SERVICE_NAME: String = "service"
 

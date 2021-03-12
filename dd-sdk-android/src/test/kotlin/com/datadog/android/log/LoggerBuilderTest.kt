@@ -123,7 +123,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can disable datadog logs`(@Forgery forge: Forge) {
+    fun `builder can disable datadog logs`() {
         val datadogLogsEnabled = false
 
         val logger: Logger = Logger.Builder()
@@ -135,9 +135,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can enable logcat logs`(
-        @Forgery forge: Forge
-    ) {
+    fun `builder can enable logcat logs`() {
         val logcatLogsEnabled = true
 
         val logger = Logger.Builder()
@@ -175,7 +173,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can enable network info`(@Forgery forge: Forge) {
+    fun `builder can enable network info`() {
         val networkInfoEnabled = true
 
         val logger = Logger.Builder()
@@ -199,7 +197,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `buider can disable the bundle with trace feature`(@Forgery forge: Forge) {
+    fun `buider can disable the bundle with trace feature`() {
         val logger = Logger.Builder()
             .setBundleWithTraceEnabled(false)
             .build()

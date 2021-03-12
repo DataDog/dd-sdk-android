@@ -19,7 +19,6 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -63,7 +62,7 @@ internal class DatadogEventListenerTest {
     @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeKey: String
 
-    @RegexForgery("[a-z]+\\.[a-z]{3}")
+    @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeDomain: String
 
     @LongForgery(min = 1L)
@@ -316,9 +315,7 @@ internal class DatadogEventListenerTest {
     }
 
     @Test
-    fun `𝕄 doNothing 𝕎 call without RumMonitor`(
-        @IntForgery(400, 600) statusCode: Int
-    ) {
+    fun `𝕄 doNothing 𝕎 call without RumMonitor`() {
         // Given
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.isRegistered.set(false)

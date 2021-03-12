@@ -42,7 +42,7 @@ internal class UserActionTrackingStrategyLegacyTest :
     }
 
     @Test
-    fun `when activity resumed it will start tracking gestures`(forge: Forge) {
+    fun `when activity resumed it will start tracking gestures`() {
         // When
         testedStrategy.onActivityResumed(mockActivity)
         // Then
@@ -50,7 +50,7 @@ internal class UserActionTrackingStrategyLegacyTest :
     }
 
     @Test
-    fun `when activity paused it will stop tracking gestures`(forge: Forge) {
+    fun `when activity paused it will stop tracking gestures`() {
         // When
         testedStrategy.onActivityPaused(mockActivity)
         // Then

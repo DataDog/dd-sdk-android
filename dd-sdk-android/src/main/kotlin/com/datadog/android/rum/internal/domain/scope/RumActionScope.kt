@@ -69,7 +69,7 @@ internal class RumActionScope(
             event is RumRawEvent.StopResource -> onStopResource(event, now)
             event is RumRawEvent.AddError -> onError(event, now, writer)
             event is RumRawEvent.StopResourceWithError -> onResourceError(event, now)
-            event is RumRawEvent.AddLongTask -> onLongTask(event, now)
+            event is RumRawEvent.AddLongTask -> onLongTask(now)
         }
 
         return if (sent) null else this
@@ -152,7 +152,7 @@ internal class RumActionScope(
         }
     }
 
-    private fun onLongTask(event: RumRawEvent.AddLongTask, now: Long) {
+    private fun onLongTask(now: Long) {
         lastInteractionNanos = now
         longTaskCount++
     }

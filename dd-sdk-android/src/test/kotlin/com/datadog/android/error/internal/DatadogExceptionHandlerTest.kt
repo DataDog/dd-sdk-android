@@ -12,7 +12,8 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.UploadWorker
@@ -26,14 +27,17 @@ import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
@@ -49,7 +53,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -114,7 +117,7 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
 
-    @RegexForgery("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @BeforeEach
@@ -122,8 +125,13 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         val mockContext: Application = mockContext()
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName).build()
-        Datadog.initialize(mockContext(), config)
+        prepareMainLooper()
+        Datadog.initialize(
+            mockContext,
+            Credentials(fakeToken, fakeEnvName, "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
+        )
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
@@ -151,10 +159,11 @@ internal class DatadogExceptionHandlerTest {
         GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        disposeMainLooper()
     }
 
     @Test
-    fun `M log exception W caught with no previous handler`(forge: Forge) {
+    fun `M log exception W caught with no previous handler`() {
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
@@ -184,7 +193,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M schedule the worker W logging an exception`(forge: Forge) {
+    fun `M schedule the worker W logging an exception`() {
 
         whenever(
             mockWorkManager.enqueueUniqueWork(
@@ -199,7 +208,6 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
-        val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         verify(mockWorkManager)
@@ -214,7 +222,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M log exception W caught { exception with message }`(forge: Forge) {
+    fun `M log exception W caught { exception with message }`() {
         val currentThread = Thread.currentThread()
 
         val now = System.currentTimeMillis()

@@ -164,7 +164,7 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return the original event W map { no internal mapper used }`(forge: Forge) {
+    fun `M return the original event W map { no internal mapper used }`() {
         // GIVEN
         testedRumEventMapper = RumEventMapper()
         val bundledEvent = fakeRumEvent.event
@@ -178,7 +178,7 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return the original event W map { bundled event unknown }`(forge: Forge) {
+    fun `M return the original event W map { bundled event unknown }`() {
         // GIVEN
         testedRumEventMapper = RumEventMapper()
         val fakeRumEventCopy = fakeRumEvent.copy(event = Any())

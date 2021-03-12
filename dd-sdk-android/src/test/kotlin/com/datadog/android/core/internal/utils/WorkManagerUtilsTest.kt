@@ -11,10 +11,14 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.upload.UploadWorker
+import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -55,12 +59,12 @@ internal class WorkManagerUtilsTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockAppContext = mockContext()
+        prepareMainLooper()
         Datadog.initialize(
             mockAppContext,
-            DatadogConfig.Builder(
-                forge.anAlphabeticalString(),
-                forge.anHexadecimalString()
-            ).build()
+            Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
         )
 
         whenever(mockWorkManager.cancelAllWorkByTag(anyString())) doReturn mock()
@@ -76,6 +80,7 @@ internal class WorkManagerUtilsTest {
     @AfterEach
     fun `tear down`() {
         Datadog.invokeMethod("stop")
+        disposeMainLooper()
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 

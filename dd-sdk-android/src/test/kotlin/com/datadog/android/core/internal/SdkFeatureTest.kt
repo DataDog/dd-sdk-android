@@ -31,7 +31,6 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -200,9 +199,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     @Test
-    fun `𝕄 stop scheduler 𝕎 stop()`(
-        @IntForgery(1, 10) pluginsCount: Int
-    ) {
+    fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
         testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
         val mockUploadScheduler: UploadScheduler = mock()
@@ -216,9 +213,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     @Test
-    fun `𝕄 cleanup data 𝕎 stop()`(
-        @IntForgery(1, 10) pluginsCount: Int
-    ) {
+    fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
         testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
 

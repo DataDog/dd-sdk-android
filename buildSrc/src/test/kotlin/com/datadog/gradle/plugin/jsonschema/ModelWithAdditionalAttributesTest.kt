@@ -30,7 +30,7 @@ class ModelWithAdditionalAttributesTest {
     }
 
     @Test
-    fun `validate model for additionalProperties with Any? key value type`() {
+    fun `validate model for additionalProperties with optional Any value type`() {
         val type = Class.forName("com.example.model.Company")
         val toJson = type.getMethod("toJson")
         val fromJson = type.getMethod("fromJson", String::class.java)

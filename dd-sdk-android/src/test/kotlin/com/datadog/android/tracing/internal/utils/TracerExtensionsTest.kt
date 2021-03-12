@@ -43,6 +43,7 @@ class TracerExtensionsTest {
     @AfterEach
     fun `tear down`() {
         val activeSpan = tracer.activeSpan()
+        @Suppress("DEPRECATION")
         val activeScope = tracer.scopeManager().active()
         activeSpan?.finish()
         activeScope?.close()

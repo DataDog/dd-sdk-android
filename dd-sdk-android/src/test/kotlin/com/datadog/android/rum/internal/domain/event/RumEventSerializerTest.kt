@@ -405,15 +405,8 @@ internal class RumEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeInternalTimestamp = forge.aLong()
-        val fakeErrorType = forge.aString()
         val fakeEvent: RumEvent = forge.getForgery()
-        val fakeEventWithInternalUserAttributes = fakeEvent.copy(
-            globalAttributes = fakeEvent.userExtraAttributes + mapOf(
-                RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
-                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
-            )
-        )
+
         // WHEN
         val serializedEvent = testedSerializer.serialize(fakeEvent)
         val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject

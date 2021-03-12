@@ -11,7 +11,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -66,10 +65,7 @@ internal class NdkUserInfoFileStrategyTest {
     }
 
     @Test
-    fun `M use the appropriate NdkFileOrchestrator W writing in temp folder`(
-        forge: Forge,
-        @StringForgery fakeData: String
-    ) {
+    fun `M use the appropriate NdkFileOrchestrator W writing in temp folder`(forge: Forge) {
         // WHEN
         val writableFile =
             testedFileStrategy.intermediateFileOrchestrator.getWritableFile(forge.anInt())
@@ -84,10 +80,7 @@ internal class NdkUserInfoFileStrategyTest {
     }
 
     @Test
-    fun `M use the appropriate NdkFileOrchestrator W writing in authorized folder`(
-        forge: Forge,
-        @StringForgery fakeData: String
-    ) {
+    fun `M use the appropriate NdkFileOrchestrator W writing in authorized folder`(forge: Forge) {
         // WHEN
         val writableFile =
             testedFileStrategy.authorizedFileOrchestrator.getWritableFile(forge.anInt())

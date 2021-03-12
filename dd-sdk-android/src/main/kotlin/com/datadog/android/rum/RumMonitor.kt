@@ -7,10 +7,10 @@
 package com.datadog.android.rum
 
 import android.app.Activity
-import android.app.Fragment
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
+import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature

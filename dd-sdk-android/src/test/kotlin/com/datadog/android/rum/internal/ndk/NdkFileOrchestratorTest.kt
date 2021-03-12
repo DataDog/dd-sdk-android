@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -36,8 +35,7 @@ internal class NdkFileOrchestratorTest {
 
     @Test
     fun `M create the file and its parent dir W getWritableFile { file does not exist }`(
-        forge: Forge,
-        @StringForgery fakeData: String
+        forge: Forge
     ) {
         // GIVEN
         val fakeDir = File(tempDir, forge.anAlphabeticalString())
@@ -52,10 +50,7 @@ internal class NdkFileOrchestratorTest {
     }
 
     @Test
-    fun `M return the file W getWritableFile { file exists }`(
-        forge: Forge,
-        @StringForgery fakeData: String
-    ) {
+    fun `M return the file W getWritableFile { file exists }`(forge: Forge) {
         // GIVEN
         val fakeFile = File(tempDir, forge.anAlphabeticalString())
         fakeFile.createNewFile()

@@ -79,7 +79,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     // region Strategy tests
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         GlobalRum.registerIfAbsent(mockRumMonitor)
         whenever(mockAndroidxActivity.supportFragmentManager)
             .thenReturn(mockAndroidxFragmentManager)

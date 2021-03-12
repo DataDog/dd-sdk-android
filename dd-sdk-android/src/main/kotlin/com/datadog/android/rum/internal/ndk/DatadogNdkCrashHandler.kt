@@ -51,11 +51,11 @@ internal class DatadogNdkCrashHandler(
     }
 
     override fun handleNdkCrash(
-        logWriter: Writer<Log>,
-        rumWriter: Writer<RumEvent>
+        asyncLogWriter: Writer<Log>,
+        asyncRumWriter: Writer<RumEvent>
     ) {
         dataPersistenceExecutorService.submit {
-            checkAndHandleNdkCrashReport(logWriter, rumWriter)
+            checkAndHandleNdkCrashReport(asyncLogWriter, asyncRumWriter)
         }
     }
 

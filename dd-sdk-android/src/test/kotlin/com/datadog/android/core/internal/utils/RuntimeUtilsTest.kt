@@ -143,7 +143,7 @@ class RuntimeUtilsTest {
         // Then
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
 
-        val condition = (handler as ConditionalLogHandler).condition
+        val condition = handler.condition
 
         for (i in 0..10) {
             if (i >= level) {

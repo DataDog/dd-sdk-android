@@ -65,9 +65,7 @@ internal class FileHandlerTest {
     // region MoveFiles
 
     @Test
-    fun `M return true W moveFiles { source directory does not exist}`(
-        forge: Forge
-    ) {
+    fun `M return true W moveFiles { source directory does not exist}`() {
         // WHEN
         val success =
             testedFileHandler.moveFiles(
@@ -80,9 +78,7 @@ internal class FileHandlerTest {
     }
 
     @Test
-    fun `M send a warning log W moveFiles { source directory does not exist}`(
-        forge: Forge
-    ) {
+    fun `M send a warning log W moveFiles { source directory does not exist}`() {
         // GIVEN
         val mockLogHandler: LogHandler = mock()
         val originalLogHandler: LogHandler = mockSdkLogHandler(mockLogHandler)
@@ -103,9 +99,7 @@ internal class FileHandlerTest {
     }
 
     @Test
-    fun `M return true W moveFiles { source directory is not a directory}`(
-        forge: Forge
-    ) {
+    fun `M return true W moveFiles { source directory is not a directory}`() {
         // GIVEN
         fakeSourceDirectory.createNewFile()
 
@@ -121,9 +115,7 @@ internal class FileHandlerTest {
     }
 
     @Test
-    fun `M send a warning log W moveFiles { source directory is not a directory}`(
-        forge: Forge
-    ) {
+    fun `M send a warning log W moveFiles { source directory is not a directory}`() {
         // GIVEN
         val mockLogHandler: LogHandler = mock()
         val originalLogHandler: LogHandler = mockSdkLogHandler(mockLogHandler)
@@ -169,7 +161,7 @@ internal class FileHandlerTest {
     }
 
     @Test
-    fun `M return true W moveFiles { sourceDirectory is empty }`(forge: Forge) {
+    fun `M return true W moveFiles { sourceDirectory is empty }`() {
         // GIVEN
         fakeSourceDirectory.mkdirs()
         fakeDestinationDirectory.mkdirs()
@@ -187,7 +179,7 @@ internal class FileHandlerTest {
     }
 
     @Test
-    fun `M create the destination directory if does not exists W moveFiles`(forge: Forge) {
+    fun `M create the destination directory if does not exists W moveFiles`() {
         // GIVEN
         fakeSourceDirectory.mkdirs()
 

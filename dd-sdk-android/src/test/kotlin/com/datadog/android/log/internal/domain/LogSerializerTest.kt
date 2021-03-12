@@ -103,7 +103,7 @@ internal class LogSerializerTest {
     }
 
     @Test
-    fun `serializes a log with no network info available`(@Forgery fakeLog: Log, forge: Forge) {
+    fun `serializes a log with no network info available`(@Forgery fakeLog: Log) {
         // Given
         val logWithoutNetworkInfo = fakeLog.copy(networkInfo = null)
 
@@ -115,7 +115,7 @@ internal class LogSerializerTest {
     }
 
     @Test
-    fun `serializes a log with no throwable available`(@Forgery fakeLog: Log, forge: Forge) {
+    fun `serializes a log with no throwable available`(@Forgery fakeLog: Log) {
         // Given
         val logWithoutThrowable = fakeLog.copy(throwable = null)
 
@@ -158,16 +158,14 @@ internal class LogSerializerTest {
 
     @Test
     fun `M use the attributes group verbose name W validateAttributes { user extra info }`(
-        @Forgery fakeLog: Log,
-        forge: Forge
+        @Forgery fakeLog: Log
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = LogSerializer(mockedDataConstrains)
 
         // WHEN
-        val serializedEvent = testedSerializer.serialize(fakeLog)
-        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+        testedSerializer.serialize(fakeLog)
 
         // THEN
         verify(mockedDataConstrains).validateAttributes(
@@ -179,8 +177,7 @@ internal class LogSerializerTest {
 
     @Test
     fun `M use the simple name as error kind W serialize { canonical name is null }`(
-        @Forgery fakeLog: Log,
-        forge: Forge
+        @Forgery fakeLog: Log
     ) {
 
         // GIVEN

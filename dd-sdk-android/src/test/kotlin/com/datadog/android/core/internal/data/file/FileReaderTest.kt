@@ -194,8 +194,7 @@ internal class FileReaderTest {
     @Test
     fun `M returns empty batch W readNextBatch() and file doesn't exist`(
         @StringForgery dirName: String,
-        @StringForgery fileName: String,
-        forge: Forge
+        @StringForgery fileName: String
     ) {
         // Given
         val file = File(File(tempRootDir, dirName), fileName)

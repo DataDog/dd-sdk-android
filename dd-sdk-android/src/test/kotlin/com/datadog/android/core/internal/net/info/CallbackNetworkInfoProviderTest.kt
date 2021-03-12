@@ -357,9 +357,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W register() with null service`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W register() with null service`() {
         val context = mock<Context>()
         whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn null
 
@@ -542,9 +540,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W unregister() with null service`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W unregister() with null service`() {
         val context = mock<Context>()
         whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn null
 

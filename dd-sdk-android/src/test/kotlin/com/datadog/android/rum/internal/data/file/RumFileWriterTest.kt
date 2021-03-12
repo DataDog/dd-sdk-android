@@ -198,8 +198,7 @@ internal class RumFileWriterTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 write and FileOrchestrator returns a null file`(
-        @Forgery fakeModel: RumEvent,
-        forge: Forge
+        @Forgery fakeModel: RumEvent
     ) {
         whenever(mockOrchestrator.getWritableFile(any())).thenReturn(null)
 
@@ -215,8 +214,7 @@ internal class RumFileWriterTest {
     fun `𝕄 do nothing 𝕎 write() and FileOrchestrator returns a file that doesn't exist`(
         @Forgery fakeModel: RumEvent,
         @StringForgery dirName: String,
-        @StringForgery fileName: String,
-        forge: Forge
+        @StringForgery fileName: String
     ) {
         val nonExistentDir = File(tempRootDir, dirName)
         val file = File(nonExistentDir, fileName)

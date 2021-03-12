@@ -195,7 +195,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M prepare all the crash data W prepareData`(forge: Forge) {
+    fun `M prepare all the crash data W prepareData`() {
         // WHEN
         testedHandler.prepareData()
 
@@ -302,9 +302,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M do nothing and log exception W handleNdkCrash { persisted crash report is broken }`(
-        forge: Forge
-    ) {
+    fun `M do nothing and log exception W handleNdkCrash { persisted crash report is broken }`() {
         // GIVEN
         val mockLogHandler: LogHandler = mock()
         val originalLogHandler: LogHandler = mockSdkLogHandler(mockLogHandler)
@@ -332,7 +330,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { does not have last view event }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { does not have last view event }`() {
         // GIVEN
         fakeNdkCrashReportsDirectory
             .listFiles()
@@ -370,7 +368,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { last view event is broken }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { last view event is broken }`() {
         // GIVEN
         val fakeBrokenJson = "{]"
         lastRumViewEventFile.outputStream().use {
@@ -408,7 +406,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { does not have last user info }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { does not have last user info }`() {
         // GIVEN
         fakeNdkCrashReportsDirectory
             .listFiles()
@@ -441,7 +439,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { last user info is broken }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { last user info is broken }`() {
         // GIVEN
         val fakeBrokenJson = "{]"
         lastUserInfoFile.outputStream().use {
@@ -474,7 +472,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { does not have last network info }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { does not have last network info }`() {
         // GIVEN
         fakeNdkCrashReportsDirectory
             .listFiles()
@@ -507,7 +505,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W handleNdkCrash { last network info is broken }`(forge: Forge) {
+    fun `M send an error log W handleNdkCrash { last network info is broken }`() {
         // GIVEN
         val fakeBrokenJson = "{]"
         lastNetworkInfoFile.outputStream().use {
@@ -540,7 +538,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send an error log W RUM context handleNdkCrash { has last view event }`(forge: Forge) {
+    fun `M send an error log W RUM context handleNdkCrash { has last view event }`() {
         // GIVEN
         val fakeBundledViewEvent = fakeRumViewEvent.event as ViewEvent
         mockTheLogGenerator(fakeBundledViewEvent)
@@ -579,7 +577,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send the updated RUM ViewEvent W handleNdkCrash { has last view event }`(forge: Forge) {
+    fun `M send the updated RUM ViewEvent W handleNdkCrash { has last view event }`() {
         // GIVEN
         val fakeBundledViewEvent = fakeRumViewEvent.event as ViewEvent
         mockTheLogGenerator(fakeBundledViewEvent)
@@ -610,7 +608,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M send the updated RUM ErrorEvent W handleNdkCrash { has last view event }`(forge: Forge) {
+    fun `M send the updated RUM ErrorEvent W handleNdkCrash { has last view event }`() {
         // GIVEN
         val fakeBundledViewEvent = fakeRumViewEvent.event as ViewEvent
         mockTheLogGenerator(fakeBundledViewEvent)
@@ -669,9 +667,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M only send the RUM ErrorEvent W handleNdkCrash { last view event older than 4h }`(
-        forge: Forge
-    ) {
+    fun `M only send the RUM ErrorEvent W handleNdkCrash { last view event older than 4h }`() {
         // GIVEN
         val fakeOldBundledViewEvent = fakeRumViewEvent.event as ViewEvent
         val fakeOldSerializedRumViewEvent = rumEventSerializer.serialize(

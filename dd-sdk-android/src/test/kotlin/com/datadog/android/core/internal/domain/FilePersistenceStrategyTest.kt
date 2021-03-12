@@ -9,10 +9,12 @@ package com.datadog.android.core.internal.domain
 import android.content.Context
 import android.os.Build
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.file.Batch
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.asJsonArray
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.lines
@@ -82,7 +84,9 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         }
         Datadog.initialize(
             mockContext,
-            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anHexadecimalString()).build()
+            Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
         )
         val persistingStrategy = getStrategy()
 
@@ -176,7 +180,7 @@ internal abstract class FilePersistenceStrategyTest<T : Any>(
         waitForNextBatch()
         val batch = testedReader.readNextBatch()!!
         val elements = getBatchElements(batch)
-        elements.forEachIndexed { i, jsonElement ->
+        elements.forEachIndexed { _, jsonElement ->
             val jsonObject = jsonElement.asJsonObject
             assertJsonContainsModels(jsonObject, fakeModels)
         }

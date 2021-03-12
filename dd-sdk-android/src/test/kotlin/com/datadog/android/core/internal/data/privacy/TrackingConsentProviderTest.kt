@@ -50,7 +50,7 @@ internal class TrackingConsentProviderTest {
     }
 
     @Test
-    fun `M hold PENDING consent by default W initialised`(forge: Forge) {
+    fun `M hold PENDING consent by default W initialised`() {
         assertThat(testedConsentProvider.getConsent()).isEqualTo(TrackingConsent.PENDING)
     }
 
@@ -165,7 +165,7 @@ internal class TrackingConsentProviderTest {
     }
 
     @Test
-    fun `M notify the registered callback W registering from different threads`(forge: Forge) {
+    fun `M notify the registered callback W registering from different threads`() {
         // GIVEN
         val fakeConsent1 = TrackingConsent.GRANTED
         val fakeConsent2 = TrackingConsent.NOT_GRANTED

@@ -11,7 +11,8 @@ import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.domain.PersistenceStrategy
@@ -20,10 +21,13 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
@@ -97,9 +101,12 @@ internal class UploadWorkerTest {
         whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReportsReader
 
         mockContext = mockContext()
+        prepareMainLooper()
         Datadog.initialize(
             mockContext,
-            DatadogConfig.Builder("CLIENT_TOKEN", "ENVIRONMENT").build()
+            Credentials("CLIENT_TOKEN", "ENVIRONMENT", "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
         )
 
         LogsFeature.persistenceStrategy = mockLogsStrategy
@@ -118,6 +125,7 @@ internal class UploadWorkerTest {
     @AfterEach
     fun `tear down`() {
         Datadog.invokeMethod("stop")
+        disposeMainLooper()
     }
 
     @Test

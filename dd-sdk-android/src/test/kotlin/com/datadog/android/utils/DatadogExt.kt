@@ -135,6 +135,7 @@ internal fun prepareMainLooper() {
     val mainLooper = Looper.getMainLooper()
     if (mainLooper == null) {
         try {
+            @Suppress("DEPRECATION")
             Looper.prepareMainLooper()
         } catch (e: IllegalStateException) {
             // main looper already prepared

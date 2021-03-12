@@ -418,6 +418,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
                 whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+                    @Suppress("UNCHECKED_CAST")
                     val map = it.arguments[1] as MutableMap<String, Any?>
                     map[forge.aString()] = forge.aString()
                     expectedAttributes = map
@@ -478,6 +479,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
                 whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+                    @Suppress("UNCHECKED_CAST")
                     val map = it.arguments[1] as MutableMap<String, Any?>
                     map[forge.aString()] = forge.aString()
                     expectedAttributes = map

@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment
  * @param defaultFragmentComponentPredicate to accept the default Android Fragments
  * that will be taken into account as valid RUM View events.
  */
+@Suppress("DEPRECATION")
 class MixedViewTrackingStrategy internal constructor(
     internal val activityViewTrackingStrategy: ActivityViewTrackingStrategy,
     internal val fragmentViewTrackingStrategy: FragmentViewTrackingStrategy

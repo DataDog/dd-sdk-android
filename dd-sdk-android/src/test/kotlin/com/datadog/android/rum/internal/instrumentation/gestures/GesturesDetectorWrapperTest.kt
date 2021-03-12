@@ -84,6 +84,8 @@ internal class GesturesDetectorWrapperTest {
             )
         }
 
+        testedWrapper.onTouchEvent(event)
+
         verifyZeroInteractions(mockGesturesDetectorListener)
     }
 }

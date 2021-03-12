@@ -44,18 +44,20 @@ internal class DatadogDataConstraints : DataConstraints {
         val convertedAttributes = attributes.mapNotNull {
             // We need this in case the attributes are added from JAVA code and a null key may be
             // passed.
+            @Suppress("SENSELESS_COMPARISON")
             if (it.key == null) {
                 devLogger.e("\"$it\" is an invalid attribute, and was ignored.")
                 null
+            } else {
+                val key = convertAttributeKey(it.key, prefixDotCount)
+                if (key != it.key) {
+                    devLogger.w(
+                        "Key \"${it.key}\" " +
+                            "was modified to \"$key\" to match our constraints."
+                    )
+                }
+                key to it.value
             }
-            val key = convertAttributeKey(it.key, prefixDotCount)
-            if (key != it.key) {
-                devLogger.w(
-                    "Key \"${it.key}\" " +
-                        "was modified to \"$key\" to match our constraints."
-                )
-            }
-            key to it.value
         }
         val discardedCount = convertedAttributes.size - MAX_ATTR_COUNT
         if (discardedCount > 0) {

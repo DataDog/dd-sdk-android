@@ -25,7 +25,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -59,7 +58,7 @@ internal class RumWebViewClientTest {
     @Mock
     private lateinit var mockBitmap: Bitmap
 
-    @RegexForgery("http(s?)://[a-z]+\\.com/\\w+")
+    @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
     private lateinit var fakeUrl: String
 
     @BeforeEach
@@ -118,6 +117,7 @@ internal class RumWebViewClientTest {
         @IntForgery errorCode: Int,
         @StringForgery description: String
     ) {
+        @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, description, fakeUrl)
 
         verify(mockRumMonitor).addError(
@@ -130,9 +130,9 @@ internal class RumWebViewClientTest {
 
     @Test
     fun `onReceivedError with null description sends a RUM Error`(
-        @IntForgery errorCode: Int,
-        @StringForgery description: String
+        @IntForgery errorCode: Int
     ) {
+        @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, null, fakeUrl)
 
         verify(mockRumMonitor).addError(
@@ -148,6 +148,7 @@ internal class RumWebViewClientTest {
         @IntForgery errorCode: Int,
         @StringForgery description: String
     ) {
+        @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, description, null)
 
         verify(mockRumMonitor).addError(
@@ -203,10 +204,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.M)
-    fun `onReceivedError (request) with null error sends a RUM Error`(
-        @IntForgery errorCode: Int,
-        @StringForgery description: String
-    ) {
+    fun `onReceivedError (request) with null error sends a RUM Error`() {
         val mockRequest: WebResourceRequest = mock()
         val mockUri: Uri = mock()
         whenever(mockRequest.url) doReturn mockUri
@@ -246,10 +244,7 @@ internal class RumWebViewClientTest {
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `onReceivedHttpError with null response sends a RUM Error`(
-        @IntForgery statusCode: Int,
-        @StringForgery reasonPhrase: String
-    ) {
+    fun `onReceivedHttpError with null response sends a RUM Error`() {
         val mockRequest: WebResourceRequest = mock()
         val mockUri: Uri = mock()
         whenever(mockRequest.url) doReturn mockUri
@@ -321,9 +316,7 @@ internal class RumWebViewClientTest {
     }
 
     @Test
-    fun `onReceivedSslError with null error sends a RUM Error`(
-        @IntForgery primaryError: Int
-    ) {
+    fun `onReceivedSslError with null error sends a RUM Error`() {
         testedClient.onReceivedSslError(mockWebView, mock(), null)
 
         verify(mockRumMonitor).addError(
