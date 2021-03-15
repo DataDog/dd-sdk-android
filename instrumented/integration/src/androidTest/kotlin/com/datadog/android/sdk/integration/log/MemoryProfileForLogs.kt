@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration.log
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.datadog.android.sdk.integrationtests.ActivityProfiling
+import com.datadog.android.sdk.ActivityProfiling
 import com.datadog.android.sdk.rules.AbstractProfilingRule
 import com.datadog.android.sdk.rules.MemoryProfilingRule
 import com.datadog.android.sdk.rules.MockServerActivityTestRule

@@ -28,6 +28,8 @@ internal object RuntimeConfig {
     var tracesEndpointUrl: String = LOCALHOST
     var rumEndpointUrl: String = LOCALHOST
 
+    val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
+
     fun logger(): Logger {
         // Initialise Logger
         val logger = Logger.Builder()

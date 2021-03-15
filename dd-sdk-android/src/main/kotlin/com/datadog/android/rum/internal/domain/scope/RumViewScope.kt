@@ -434,6 +434,7 @@ internal class RumViewScope(
         event: RumRawEvent.ApplicationStarted,
         writer: Writer<RumEvent>
     ) {
+        pendingActionCount++
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
 
@@ -522,7 +523,9 @@ internal class RumViewScope(
             pendingResourceCount +
             pendingErrorCount +
             pendingLongTaskCount
-        return stopped && activeResourceScopes.isEmpty() && pending == 0L
+        // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
+        // be closed.
+        return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
     }
 
     // endregion
