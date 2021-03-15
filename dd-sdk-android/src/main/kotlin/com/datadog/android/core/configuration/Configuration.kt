@@ -502,10 +502,16 @@ internal constructor(
                 if (it.matches(validUrlRegex)) {
                     try {
                         val parsedUrl = URL(it)
-                        devLogger.w(WARNING_USING_URL_FOR_HOST.format(it, parsedUrl.host))
+                        devLogger.w(
+                            WARNING_USING_URL_FOR_HOST.format(
+                                Locale.US,
+                                it,
+                                parsedUrl.host
+                            )
+                        )
                         parsedUrl.host
                     } catch (e: MalformedURLException) {
-                        devLogger.e(ERROR_MALFORMED_URL.format(it), e)
+                        devLogger.e(ERROR_MALFORMED_URL.format(Locale.US, it), e)
                         null
                     }
                 } else if (it.matches(validHostNameRegEx)) {
@@ -514,7 +520,7 @@ internal constructor(
                     // special rule exception to accept `localhost` as a valid domain name
                     it
                 } else {
-                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(it))
+                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it))
                     null
                 }
             }

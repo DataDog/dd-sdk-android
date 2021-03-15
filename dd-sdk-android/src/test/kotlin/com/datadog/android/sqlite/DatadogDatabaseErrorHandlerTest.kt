@@ -87,9 +87,9 @@ class DatadogDatabaseErrorHandlerTest {
         verify(mockRumMonitor).addError(
             eq(
                 String.format(
+                    Locale.US,
                     DatadogDatabaseErrorHandler.DATABASE_CORRUPTION_ERROR_MESSAGE,
-                    fakeDbPath,
-                    Locale.US
+                    fakeDbPath
                 )
             ),
             eq(RumErrorSource.SOURCE),

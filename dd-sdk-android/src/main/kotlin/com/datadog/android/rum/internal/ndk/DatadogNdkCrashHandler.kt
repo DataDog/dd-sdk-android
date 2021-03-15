@@ -25,6 +25,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonParseException
 import java.io.File
 import java.lang.IllegalStateException
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -137,7 +138,7 @@ internal class DatadogNdkCrashHandler(
         if (ndkCrashLog == null) {
             return
         }
-        val errorLogMessage = NDK_ERROR_LOG_MESSAGE.format(ndkCrashLog.signalName)
+        val errorLogMessage = NDK_ERROR_LOG_MESSAGE.format(Locale.US, ndkCrashLog.signalName)
         val bundledViewEvent = lastRumViewEvent?.event as? ViewEvent
         val logAttributes: Map<String, String>
         if (lastRumViewEvent != null && bundledViewEvent != null) {

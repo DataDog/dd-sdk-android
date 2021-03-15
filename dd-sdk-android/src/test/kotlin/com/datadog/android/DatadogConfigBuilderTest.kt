@@ -42,6 +42,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.Locale
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -808,7 +809,7 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
             )
         }
     }
@@ -831,7 +832,7 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
             )
         }
     }
@@ -922,7 +923,7 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.WARN,
-                Configuration.WARNING_USING_URL_FOR_HOST.format(it, URL(it).host)
+                Configuration.WARNING_USING_URL_FOR_HOST.format(Locale.US, it, URL(it).host)
             )
         }
     }
@@ -943,7 +944,7 @@ internal class DatadogConfigBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 eq(Log.ERROR),
-                eq(Configuration.ERROR_MALFORMED_URL.format(it)),
+                eq(Configuration.ERROR_MALFORMED_URL.format(Locale.US, it)),
                 any<MalformedURLException>(),
                 anyOrNull(),
                 anyOrNull(),

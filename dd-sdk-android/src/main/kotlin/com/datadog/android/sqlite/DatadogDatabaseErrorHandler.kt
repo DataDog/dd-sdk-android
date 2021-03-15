@@ -30,7 +30,7 @@ class DatadogDatabaseErrorHandler(
         defaultErrorHandler.onCorruption(dbObj)
         GlobalRum.get()
             .addError(
-                String.format(DATABASE_CORRUPTION_ERROR_MESSAGE, dbObj.path, Locale.US),
+                String.format(Locale.US, DATABASE_CORRUPTION_ERROR_MESSAGE, dbObj.path),
                 RumErrorSource.SOURCE,
                 null,
                 mapOf(

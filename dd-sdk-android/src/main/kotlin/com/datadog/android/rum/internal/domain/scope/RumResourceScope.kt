@@ -22,6 +22,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.Locale
 import java.util.UUID
 
 internal class RumResourceScope(
@@ -268,7 +269,7 @@ internal class RumResourceScope(
         return if (throwable != null) {
             throwable.javaClass.canonicalName
         } else if (statusCode != null) {
-            ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(statusCode)
+            ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(Locale.US, statusCode)
         } else {
             null
         }

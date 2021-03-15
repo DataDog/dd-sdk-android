@@ -967,7 +967,7 @@ internal class ConfigurationBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
             )
         }
     }
@@ -990,7 +990,7 @@ internal class ConfigurationBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(it)
+                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
             )
         }
     }
@@ -1094,7 +1094,7 @@ internal class ConfigurationBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 Log.WARN,
-                Configuration.WARNING_USING_URL_FOR_HOST.format(it, URL(it).host)
+                Configuration.WARNING_USING_URL_FOR_HOST.format(Locale.US, it, URL(it).host)
             )
         }
     }
@@ -1115,7 +1115,7 @@ internal class ConfigurationBuilderTest {
         hosts.forEach {
             verify(mockDevLogHandler).handleLog(
                 eq(Log.ERROR),
-                eq(Configuration.ERROR_MALFORMED_URL.format(it)),
+                eq(Configuration.ERROR_MALFORMED_URL.format(Locale.US, it)),
                 any<MalformedURLException>(),
                 anyOrNull(),
                 anyOrNull(),
