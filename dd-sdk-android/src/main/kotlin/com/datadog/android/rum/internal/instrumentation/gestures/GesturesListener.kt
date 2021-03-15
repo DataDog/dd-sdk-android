@@ -137,7 +137,7 @@ internal class GesturesListener(
         onUpEvent: MotionEvent
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.targetName(),
             RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
         )
         gestureDirection = resolveGestureDirection(onUpEvent)
@@ -162,7 +162,7 @@ internal class GesturesListener(
             findTargetForTap(decorView, e.x, e.y)?.let { target ->
                 val targetId: String = resourceIdName(target.id)
                 val attributes = mutableMapOf<String, Any?>(
-                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.javaClass.canonicalName,
+                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetName(),
                     RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
                 )
                 attributesProviders.forEach {
@@ -278,6 +278,10 @@ internal class GesturesListener(
                 SCROLL_DIRECTION_UP
             }
         }
+    }
+
+    private fun View.targetName(): String {
+        return this.javaClass.canonicalName ?: this.javaClass.simpleName
     }
 
     // endregion

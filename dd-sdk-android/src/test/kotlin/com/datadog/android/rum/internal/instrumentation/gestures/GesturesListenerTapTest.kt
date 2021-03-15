@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.content.Context
 import android.content.res.Resources
 import android.util.Log
 import android.view.MotionEvent
@@ -414,6 +415,66 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
         )
+        val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
+            mock {
+                whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+                    val map = it.arguments[1] as MutableMap<String, Any?>
+                    map[forge.aString()] = forge.aString()
+                    expectedAttributes = map
+                    null
+                }
+            }
+        }
+
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            providers
+        )
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(mockRumMonitor).addUserAction(
+            RumActionType.TAP,
+            targetName(validTarget, expectedResourceName),
+            expectedAttributes
+        )
+    }
+
+    @Test
+    fun `M use the class simple name as target name W tapIntercepted { cannonicalName is null }`(
+        forge: Forge
+    ) {
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+
+        // we will use a LocalViewClass to reproduce the behaviour when getCanonicalName function
+        // can return a null object.
+        class LocalViewClass(context: Context) : View(context)
+
+        val validTarget: LocalViewClass = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+        var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.simpleName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+        )
+
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
                 whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
