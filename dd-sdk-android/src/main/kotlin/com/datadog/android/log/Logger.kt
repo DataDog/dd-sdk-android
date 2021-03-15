@@ -10,10 +10,12 @@ import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
@@ -303,18 +305,9 @@ internal constructor(internal val handler: LogHandler) {
 
         private fun buildDatadogHandler(): LogHandler {
             val writer = if (isInternalLogger) {
-                if (InternalLogsFeature.isInitialized()) {
-                    InternalLogsFeature.persistenceStrategy.getWriter()
-                } else {
-                    null
-                }
+                buildInternalLogWriter()
             } else {
-                if (LogsFeature.isInitialized()) {
-                    LogsFeature.persistenceStrategy.getWriter()
-                } else {
-                    devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
-                    null
-                }
+                buildLogWriter()
             } ?: return NoOpLogHandler()
 
             val logGenerator = if (isInternalLogger) {
@@ -329,6 +322,23 @@ internal constructor(internal val handler: LogHandler) {
                 bundleWithRum = bundleWithRumEnabled,
                 sampler = RateBasedSampler(sampleRate)
             )
+        }
+
+        private fun buildInternalLogWriter(): Writer<Log>? {
+            return if (InternalLogsFeature.isInitialized()) {
+                InternalLogsFeature.persistenceStrategy.getWriter()
+            } else {
+                null
+            }
+        }
+
+        private fun buildLogWriter(): Writer<Log>? {
+            return if (LogsFeature.isInitialized()) {
+                LogsFeature.persistenceStrategy.getWriter()
+            } else {
+                devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+                null
+            }
         }
 
         private fun buildLogGenerator(): LogGenerator {
