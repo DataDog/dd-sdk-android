@@ -69,7 +69,7 @@ object Dependencies {
         const val RxJava = "3.0.0"
         const val SQLDelight = "1.4.3"
         const val Timber = "4.7.1"
-        const val Coroutines = "1.3.9"
+        const val Coroutines = "1.4.1"
 
         // NDK
         const val NdkVersion = "21.3.6528147"
