@@ -19,6 +19,7 @@ import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogInterceptor
 import java.io.InputStream
 import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /**
  * Provides a basic implementation of [AppGlideModule] already set up to send relevant information
@@ -26,18 +27,17 @@ import okhttp3.OkHttpClient
  *
  * This sets up an OkHttp based downloader that will send Traces and RUM Resource events.
  * Also any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
+ * @param firstPartyHosts the list of first party hosts.
+ * Requests made to a URL with any one of these hosts (or any subdomain) will:
+ * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
+ * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+ * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
+ * information to the backend, but RUM Resource events will still be sent for each request.
  */
-@Deprecated(
-    "Hosts should be defined in the DatadogConfig.setFirstPartyHosts()",
-    ReplaceWith(
-        expression = "DatadogInterceptor(tracedRequestListener)"
-    )
-)
-open class DatadogGlideModule(
-    private val tracedHosts: List<String>
+open class DatadogGlideModule
+@JvmOverloads constructor(
+    private val firstPartyHosts: List<String> = emptyList()
 ) : AppGlideModule() {
-
-    constructor() : this (emptyList())
 
     // region AppGlideModule
 
@@ -76,7 +76,7 @@ open class DatadogGlideModule(
      */
     open fun getClientBuilder(): OkHttpClient.Builder {
         return OkHttpClient.Builder()
-            .addInterceptor((DatadogInterceptor(tracedHosts)))
+            .addInterceptor((DatadogInterceptor(firstPartyHosts)))
             .eventListenerFactory(DatadogEventListener.Factory())
     }
 
