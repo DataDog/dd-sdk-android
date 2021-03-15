@@ -18,8 +18,11 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -71,6 +75,14 @@ internal class ProcessLifecycleCallbackTest {
                     NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
                 )
             )
+
+        whenever(
+            mockWorkManager.enqueueUniqueWork(
+                ArgumentMatchers.anyString(),
+                any(),
+                any<OneTimeWorkRequest>()
+            )
+        ) doReturn mock()
 
         // When
         testedCallback.onStopped()

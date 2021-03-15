@@ -18,7 +18,6 @@ import com.datadog.gradle.testImplementation
 plugins {
     id("com.android.library")
     kotlin("android")
-    kotlin("android.extensions")
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")

@@ -22,7 +22,6 @@ plugins {
     id("com.android.library")
     id("androidx.benchmark")
     kotlin("android")
-    kotlin("android.extensions")
     `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
