@@ -11,6 +11,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.GesturesTrackingActivityTestRule
+import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,8 +33,10 @@ internal class ConsentGrantedGesturesTrackingTest : GesturesTrackingTest() {
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(FINAL_WAIT_MS)
 
-        verifyExpectedEvents(mockServerRule.getRequests(), expectedEvents)
+        ConditionWatcher {
+            verifyExpectedEvents(mockServerRule.getRequests(), expectedEvents)
+            true
+        }.doWait(timeoutMs = FINAL_WAIT_MS)
     }
 }

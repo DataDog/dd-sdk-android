@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,11 +38,13 @@ internal class ConsentPendingGrantedTracesTest : TracesTest() {
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
 
-        // Check sent requests
-        val handledRequests = mockServerRule.getRequests()
-        verifyExpectedSpans(handledRequests, mockServerRule.activity.getSentSpans())
-        verifyExpectedLogs(handledRequests, mockServerRule.activity.getSentLogs())
+        ConditionWatcher {
+            // Check sent requests
+            val handledRequests = mockServerRule.getRequests()
+            verifyExpectedSpans(handledRequests, mockServerRule.activity.getSentSpans())
+            verifyExpectedLogs(handledRequests, mockServerRule.activity.getSentLogs())
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }

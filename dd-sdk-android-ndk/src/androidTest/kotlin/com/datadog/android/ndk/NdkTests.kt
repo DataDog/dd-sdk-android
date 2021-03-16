@@ -7,6 +7,7 @@
 package com.datadog.android.ndk
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.datadog.tools.unit.ConditionWatcher
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -67,27 +68,29 @@ internal class NdkTests {
             fakeErrorStack
         )
 
+        val expectedTimestamp = System.currentTimeMillis()
+
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
-        val expectedTimestamp = System.currentTimeMillis()
-        Thread.sleep(5000)
-
-        // assert the log file
-        val listFiles = temporaryFolder.root.listFiles()
-        val inputStream = listFiles?.first()?.inputStream()
-        inputStream?.use {
-            val jsonString = String(it.readBytes(), Charset.forName("utf-8"))
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            assertThat(jsonObject).hasField("signal", fakeSignal)
-            assertThat(jsonObject).hasField("signal_name", fakeSignalName)
-            assertThat(jsonObject).hasField("message", fakeErrorMessage)
-            assertThat(jsonObject).hasField("stacktrace", fakeErrorStack)
-            assertThat(jsonObject).hasField(
-                "timestamp",
-                expectedTimestamp,
-                Offset.offset(TimeUnit.SECONDS.toMillis(10))
-            )
-        }
+        ConditionWatcher {
+            // assert the log file
+            val listFiles = temporaryFolder.root.listFiles()
+            val inputStream = listFiles?.first()?.inputStream()
+            inputStream?.use {
+                val jsonString = String(it.readBytes(), Charset.forName("utf-8"))
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                assertThat(jsonObject).hasField("signal", fakeSignal)
+                assertThat(jsonObject).hasField("signal_name", fakeSignalName)
+                assertThat(jsonObject).hasField("message", fakeErrorMessage)
+                assertThat(jsonObject).hasField("stacktrace", fakeErrorStack)
+                assertThat(jsonObject).hasField(
+                    "timestamp",
+                    expectedTimestamp,
+                    Offset.offset(TimeUnit.SECONDS.toMillis(10))
+                )
+            }
+            true
+        }.doWait(timeoutMs = 5000)
     }
 
     @Test
@@ -109,10 +112,11 @@ internal class NdkTests {
 
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
-        Thread.sleep(5000)
-
-        // assert the log file
-        Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+        ConditionWatcher {
+            // assert the log file
+            Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+            true
+        }.doWait(timeoutMs = 5000)
     }
 
     @Test
@@ -134,10 +138,11 @@ internal class NdkTests {
 
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
-        Thread.sleep(5000)
-
-        // assert the log file
-        Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+        ConditionWatcher {
+            // assert the log file
+            Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+            true
+        }.doWait(timeoutMs = 5000)
     }
 
     // region NDK
