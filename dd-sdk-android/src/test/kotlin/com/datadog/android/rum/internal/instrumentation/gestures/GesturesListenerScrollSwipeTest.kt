@@ -436,6 +436,80 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
     }
 
     @Test
+    fun `M use the class simple name as target name W scrollDetected { cannonicalName is null }`(
+        forge: Forge
+    ) {
+        val listSize = forge.anInt(1, 20)
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val expectedDirection = forge.anElementFrom(
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        )
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val velocityX = forge.aFloat()
+        val velocityY = forge.aFloat()
+        val targetId = forge.anInt()
+
+        // we will use a LocalViewClass to reproduce the behaviour when getCanonicalName function
+        // can return a null object.
+        class LocalScrollableView() : ScrollableListView()
+        val scrollingTarget: LocalScrollableView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.simpleName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection
+        )
+        testedListener = GesturesListener(
+            WeakReference(mockWindow)
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onFling(startDownEvent, endUpEvent, velocityX, velocityY)
+        testedListener.onUp(endUpEvent)
+
+        // Then
+
+        inOrder(mockDatadogRumMonitor) {
+            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            val argumentCaptor = argumentCaptor<Map<String, Any?>>()
+            verify(mockDatadogRumMonitor).stopUserAction(
+                eq(RumActionType.SWIPE),
+                eq(targetName(scrollingTarget, expectedResourceName)),
+                argumentCaptor.capture()
+            )
+            assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockDatadogRumMonitor)
+    }
+
+    @Test
     fun `it will reset the swipe data between 2 consecutive gestures`(forge: Forge) {
         val listSize = forge.anInt(1, 20)
         val startDownEvent: MotionEvent = forge.getForgery()
@@ -590,7 +664,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
     }
 
-    internal class ScrollableListView : AbsListView(mock()) {
+    internal open class ScrollableListView : AbsListView(mock()) {
         override fun getAdapter(): ListAdapter {
             return mock()
         }
