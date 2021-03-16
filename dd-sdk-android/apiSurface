@@ -358,8 +358,6 @@ class com.datadog.android.rum.model.ActionEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
   class Action
     constructor(ActionType, kotlin.String? = null, kotlin.Long? = null, Target? = null, Error? = null, Crash? = null, LongTask? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -470,8 +468,6 @@ class com.datadog.android.rum.model.ErrorEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
   class Error
     constructor(kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -602,8 +598,6 @@ class com.datadog.android.rum.model.LongTaskEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
   class LongTask
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement

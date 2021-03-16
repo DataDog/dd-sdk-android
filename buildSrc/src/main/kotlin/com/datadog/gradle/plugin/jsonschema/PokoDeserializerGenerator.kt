@@ -73,83 +73,101 @@ class PokoDeserializerGenerator(
         definition: TypeDefinition.Class,
         rootTypeName: String
     ): FunSpec {
+        val isConstantClass = definition.isConstantClass()
         this.rootTypeName = rootTypeName
         val funBuilder = FunSpec.builder(FROM_JSON)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .returns(ClassName.bestGuess(definition.name))
-        funBuilder.throws(JSON_PARSE_EXCEPTION)
-        funBuilder.addParameter(FROM_JSON_PARAM_NAME, STRING)
-        funBuilder.beginControlFlow("try")
+        if (!isConstantClass) {
+            funBuilder.throws(JSON_PARSE_EXCEPTION)
+            funBuilder.addParameter(FROM_JSON_PARAM_NAME, STRING)
+            funBuilder.beginControlFlow("try")
+        }
 
-        appendDeserializerFunctionBlock(funBuilder, definition)
+        appendDeserializerFunctionBlock(funBuilder, definition, isConstantClass)
 
-        funBuilder.nextControlFlow(
-            "catch (%L: %T)",
-            EXCEPTION_VAR_NAME,
-            ILLEGAL_STATE_EXCEPTION
-        )
-        funBuilder.addStatement(
-            "throw %T(%L.message)",
-            JSON_PARSE_EXCEPTION,
-            EXCEPTION_VAR_NAME
-        )
-        funBuilder.nextControlFlow(
-            "catch (%L: %T)",
-            EXCEPTION_VAR_NAME,
-            NUMBER_FORMAT_EXCEPTION
-        )
-        funBuilder.addStatement(
-            "throw %T(%L.message)",
-            JSON_PARSE_EXCEPTION,
-            EXCEPTION_VAR_NAME
-        )
-        funBuilder.endControlFlow()
+        if (!isConstantClass) {
+            funBuilder.nextControlFlow(
+                "catch (%L: %T)",
+                EXCEPTION_VAR_NAME,
+                ILLEGAL_STATE_EXCEPTION
+            )
+            funBuilder.addStatement(
+                "throw %T(%L.message)",
+                JSON_PARSE_EXCEPTION,
+                EXCEPTION_VAR_NAME
+            )
+            funBuilder.nextControlFlow(
+                "catch (%L: %T)",
+                EXCEPTION_VAR_NAME,
+                NUMBER_FORMAT_EXCEPTION
+            )
+            funBuilder.addStatement(
+                "throw %T(%L.message)",
+                JSON_PARSE_EXCEPTION,
+                EXCEPTION_VAR_NAME
+            )
+            funBuilder.endControlFlow()
+        }
         return funBuilder.build()
     }
 
     private fun appendDeserializerFunctionBlock(
         funBuilder: FunSpec.Builder,
-        definition: TypeDefinition.Class
+        definition: TypeDefinition.Class,
+        isConstantClass: Boolean = false
     ) {
-        funBuilder.addStatement(
-            "val %L = %T.parseString(%L).asJsonObject",
-            ROOT_JSON_OBJECT_PARAM_NAME,
-            JSON_PARSER,
-            FROM_JSON_PARAM_NAME
-        )
-
-        definition.properties.forEach { p ->
+        val filteredProperties =
+            definition.properties.filter { it.type !is TypeDefinition.Constant }
+        if (!isConstantClass) {
+            funBuilder.addStatement(
+                "val %L = %T.parseString(%L).asJsonObject",
+                ROOT_JSON_OBJECT_PARAM_NAME,
+                JSON_PARSER,
+                FROM_JSON_PARAM_NAME
+            )
+        }
+        filteredProperties.forEach { p ->
             assignDeserializedProperty(
                 propertyType = p.type,
                 assignee = "val ${p.name.variableName()}",
                 getter = "$ROOT_JSON_OBJECT_PARAM_NAME.get(\"${p.name}\")",
                 nullable = p.optional,
+                isConstantParentClass = isConstantClass,
                 funBuilder = funBuilder
             )
         }
-        if (definition.additionalProperties != null) {
+        definition.additionalProperties?.let {
             appendAdditionalPropertiesDeserialization(
-                definition.additionalProperties,
+                it,
                 funBuilder,
                 !definition.properties.isNullOrEmpty()
             )
         }
 
-        val filteredProperties =
-            definition.properties.filter { it.type !is TypeDefinition.Constant }
-        val properties = filteredProperties.joinToString(", ") { it.name.variableName() }
+        val constructorArguments =
+            resolveArgumentsAsLiteral(filteredProperties, definition.additionalProperties)
 
-        val additionalSuffix = if (definition.additionalProperties != null) {
-            if (filteredProperties.isEmpty()) {
-                PokoGenerator.ADDITIONAL_PROPERTIES_NAME
-            } else {
+        funBuilder.addStatement(
+            "return %L($constructorArguments)",
+            definition.name
+        )
+    }
+
+    private fun resolveArgumentsAsLiteral(
+        filteredProperties: List<TypeProperty>,
+        additionalProperties: TypeDefinition?
+    ): String {
+        return if (filteredProperties.isNotEmpty() && additionalProperties != null) {
+            filteredProperties.joinToString(", ") { it.name.variableName() } +
                 ", ${PokoGenerator.ADDITIONAL_PROPERTIES_NAME}"
-            }
+        } else if (filteredProperties.isNotEmpty() && additionalProperties == null) {
+            filteredProperties.joinToString(", ") { it.name.variableName() }
+        } else if (filteredProperties.isEmpty() && additionalProperties != null) {
+            PokoGenerator.ADDITIONAL_PROPERTIES_NAME
         } else {
             ""
         }
-
-        funBuilder.addStatement("return %L($properties$additionalSuffix)", definition.name)
     }
 
     /**
@@ -192,6 +210,7 @@ class PokoDeserializerGenerator(
                 assignee = "${PokoGenerator.ADDITIONAL_PROPERTIES_NAME}[entry.key]",
                 getter = "entry.value",
                 nullable = false,
+                isConstantParentClass = false,
                 funBuilder = funBuilder
             )
         }
@@ -208,6 +227,7 @@ class PokoDeserializerGenerator(
      * @param assignee the assignee prefix
      * @param getter the code snippet to get the json value
      * @param nullable whether the value is nullable
+     * @param isConstantParentClass whether this property parent class is a constant Class or not
      * @param funBuilder the `toJson()` [FunSpec] builder.
      */
     private fun assignDeserializedProperty(
@@ -215,6 +235,7 @@ class PokoDeserializerGenerator(
         assignee: String,
         getter: String,
         nullable: Boolean,
+        isConstantParentClass: Boolean,
         funBuilder: FunSpec.Builder
     ) {
         when (propertyType) {
@@ -233,13 +254,25 @@ class PokoDeserializerGenerator(
                 nullable,
                 funBuilder
             )
-            is TypeDefinition.Class -> appendObjectDeserialization(
-                propertyType,
-                assignee,
-                getter,
-                nullable,
-                funBuilder
-            )
+            is TypeDefinition.Class -> {
+                if (propertyType.isConstantClass()) {
+                    appendDeserializationForConstantProperty(
+                        propertyType,
+                        assignee,
+                        getter,
+                        nullable,
+                        funBuilder
+                    )
+                } else {
+                    appendObjectDeserialization(
+                        propertyType,
+                        assignee,
+                        getter,
+                        nullable,
+                        funBuilder
+                    )
+                }
+            }
             is TypeDefinition.Enum -> appendEnumDeserialization(
                 propertyType,
                 assignee,
@@ -381,8 +414,13 @@ class PokoDeserializerGenerator(
     ) {
         val opt = if (nullable) "?" else ""
         funBuilder.beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
+        val codeBlockFormat = if (propertyType.isConstantClass()) {
+            "%T.fromJson()"
+        } else {
+            "%T.fromJson(it)"
+        }
         funBuilder.addStatement(
-            "%T.fromJson(it)",
+            codeBlockFormat,
             propertyType.asKotlinTypeName(
                 nestedEnums,
                 nestedClasses,
@@ -392,6 +430,50 @@ class PokoDeserializerGenerator(
             )
         )
         funBuilder.endControlFlow()
+    }
+
+    /**
+     * Appends an Object property deserialization to a [FunSpec.Builder].
+     * @param propertyType the property's type definition
+     * @param assignee the assignee prefix
+     * @param getter the code snippet to get the json value
+     * @param nullable whether the value is nullable
+     * @param funBuilder the `toJson()` [FunSpec] builder.
+     */
+    private fun appendDeserializationForConstantProperty(
+        propertyType: TypeDefinition.Class,
+        assignee: String,
+        getter: String,
+        nullable: Boolean,
+        funBuilder: FunSpec.Builder
+    ) {
+        if (nullable) {
+            val opt = if (nullable) "?" else ""
+            funBuilder.beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
+            funBuilder.addStatement(
+                "%T()",
+                propertyType.asKotlinTypeName(
+                    nestedEnums,
+                    nestedClasses,
+                    knownTypes,
+                    packageName,
+                    rootTypeName
+                )
+            )
+            funBuilder.endControlFlow()
+        } else {
+            funBuilder.addStatement(
+                "%L=%T()",
+                assignee,
+                propertyType.asKotlinTypeName(
+                    nestedEnums,
+                    nestedClasses,
+                    knownTypes,
+                    packageName,
+                    rootTypeName
+                )
+            )
+        }
     }
 
     /**
@@ -411,7 +493,6 @@ class PokoDeserializerGenerator(
     ) {
         val opt = if (nullable) "?" else ""
         funBuilder.beginControlFlow("$assignee = $getter$opt.asString$opt.let")
-
         funBuilder.addStatement(
             "%T.fromJson(it)",
             propertyType.asKotlinTypeName(
@@ -448,9 +529,9 @@ class PokoDeserializerGenerator(
         }
     }
 
-    // endregion
+// endregion
 
-    // region Internal / Enum
+// region Internal / Enum
 
     /**
      * Generates a function that deserializes a Json into an instance of class [definition].
@@ -483,7 +564,7 @@ class PokoDeserializerGenerator(
         return funBuilder.build()
     }
 
-    // endregion
+// endregion
 
     companion object {
 

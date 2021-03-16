@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 class ModelValidationTest(
     internal val schemaResourcePath: String,
-    internal val className: String
+    internal val outputInfo: OutputInfo
 ) {
 
     @get:Rule
@@ -34,7 +34,7 @@ class ModelValidationTest(
 
     @Test
     fun `validates model`() {
-        val type = Class.forName("com.example.model.$className")
+        val type = Class.forName("com.example.model.${outputInfo.className}")
         val toJson = type.getMethod("toJson")
         val schema = loadSchema(schemaResourcePath)
         val file = javaClass.getResource("/input/").file
@@ -60,19 +60,25 @@ class ModelValidationTest(
 
     @Test
     fun `validate model serialization and deserialization`() {
-        val type = Class.forName("com.example.model.$className")
+        val type = Class.forName("com.example.model.${outputInfo.className}")
         val toJson = type.getMethod("toJson")
-        val fromJson = type.getMethod("fromJson", String::class.java)
+        if (outputInfo.isConstant) {
+            // skip this test as is not relevant anymore. We are just testing a constructor.
+            return
+        }
+        val generatorFunction =
+            type.getMethod("fromJson", String::class.java)
         repeat(10) {
             val entity = forge.getForgery(type)
             val json = toJson.invoke(entity).toString()
-            val generatedModel = fromJson.invoke(null, json)
+            val generatedModel =
+                generatorFunction.invoke(null, json)
             assertThat(generatedModel)
                 .overridingErrorMessage(
                     "Deserialized model was not the same " +
                         "with the serialized for type: [$type] and test iteration: [$it]"
                 )
-                .isEqualToComparingFieldByField(entity)
+                .isEqualToComparingFieldByFieldRecursively(entity)
         }
     }
 
@@ -88,30 +94,32 @@ class ModelValidationTest(
         @Parameterized.Parameters(name = "{index}: {1}")
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf("arrays", "Article"),
-                arrayOf("nested", "Book"),
-                arrayOf("additional_props", "Comment"),
-                arrayOf("definition_name_conflict", "Conflict"),
-                arrayOf("definition", "Customer"),
-                arrayOf("definition_with_id", "Customer"),
-                arrayOf("nested_enum", "DateTime"),
-                arrayOf("external_description", "Delivery"),
-                arrayOf("types", "Demo"),
-                arrayOf("top_level_definition", "Foo"),
-                arrayOf("constant", "Location"),
-                arrayOf("read_only", "Message"),
-                arrayOf("enum_array", "Order"),
-                arrayOf("description", "Opus"),
-                arrayOf("minimal", "Person"),
-                arrayOf("required", "Product"),
-                arrayOf("external_nested_description", "Shipping"),
-                arrayOf("enum", "Style"),
-                arrayOf("all_of", "User"),
-                arrayOf("all_of_merged", "UserMerged"),
-                arrayOf("constant_number", "Version"),
-                arrayOf("sets", "Video"),
-                arrayOf("defaults_with_optionals", "Bike")
+                arrayOf("arrays", OutputInfo("Article")),
+                arrayOf("nested", OutputInfo("Book")),
+                arrayOf("additional_props", OutputInfo("Comment")),
+                arrayOf("definition_name_conflict", OutputInfo("Conflict")),
+                arrayOf("definition", OutputInfo("Customer")),
+                arrayOf("definition_with_id", OutputInfo("Customer")),
+                arrayOf("nested_enum", OutputInfo("DateTime")),
+                arrayOf("external_description", OutputInfo("Delivery")),
+                arrayOf("types", OutputInfo("Demo")),
+                arrayOf("top_level_definition", OutputInfo("Foo")),
+                arrayOf("constant", OutputInfo("Location", true)),
+                arrayOf("read_only", OutputInfo("Message")),
+                arrayOf("enum_array", OutputInfo("Order")),
+                arrayOf("description", OutputInfo("Opus")),
+                arrayOf("minimal", OutputInfo("Person")),
+                arrayOf("required", OutputInfo("Product")),
+                arrayOf("external_nested_description", OutputInfo("Shipping")),
+                arrayOf("enum", OutputInfo("Style")),
+                arrayOf("all_of", OutputInfo("User")),
+                arrayOf("all_of_merged", OutputInfo("UserMerged")),
+                arrayOf("constant_number", OutputInfo("Version")),
+                arrayOf("sets", OutputInfo("Video")),
+                arrayOf("defaults_with_optionals", OutputInfo("Bike"))
             )
         }
     }
+
+    data class OutputInfo(val className: String, val isConstant: Boolean = false)
 }

@@ -12,6 +12,9 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class VersionForgeryFactory : ForgeryFactory<Version> {
     override fun getForgery(forge: Forge): Version {
-        return Version()
+        return Version(
+            Version.Id(),
+            forge.aNullable { Version.Date() }
+        )
     }
 }
