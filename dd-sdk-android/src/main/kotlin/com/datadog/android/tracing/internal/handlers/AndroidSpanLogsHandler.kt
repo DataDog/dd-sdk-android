@@ -85,7 +85,7 @@ internal class AndroidSpanLogsHandler(
 
         if (errorType != null) {
             val stackField = map.remove(Fields.STACK)
-            val msgField = map.remove(Fields.MESSAGE)
+            val msgField = map[Fields.MESSAGE]
             val stack = stackField?.toString() ?: throwable?.loggableStackTrace()
             val message = msgField?.toString() ?: throwable?.message
 
