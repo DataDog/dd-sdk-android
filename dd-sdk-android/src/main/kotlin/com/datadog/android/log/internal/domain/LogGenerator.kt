@@ -23,7 +23,7 @@ internal class LogGenerator(
     appVersion: String
 ) {
 
-    private val envTag: String? = if (envName.isNotEmpty()) {
+    internal val envTag: String? = if (envName.isNotEmpty()) {
         "${LogAttributes.ENV}:$envName"
     } else {
         null

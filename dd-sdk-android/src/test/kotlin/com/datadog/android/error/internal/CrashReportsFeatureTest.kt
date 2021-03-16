@@ -69,17 +69,15 @@ internal class CrashReportsFeatureTest :
 
     @Test
     fun `𝕄 create a crash reports uploader 𝕎 createUploader()`() {
-        // Given
-        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
-
         // When
-        val uploader = testedFeature.createUploader()
+        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
         assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
-        val logsUploader = uploader as LogsOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
+        val crashUploader = uploader as LogsOkHttpUploader
+        assertThat(crashUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(crashUploader.url).endsWith(CoreFeature.clientToken)
+        assertThat(crashUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test

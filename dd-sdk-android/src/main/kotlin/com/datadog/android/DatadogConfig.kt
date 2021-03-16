@@ -115,7 +115,8 @@ private constructor(
                     rumEventMapper = it.rumEventMapper,
                     longTaskTrackingStrategy = null
                 )
-            }
+            },
+            internalLogsConfig = null
         )
     }
 

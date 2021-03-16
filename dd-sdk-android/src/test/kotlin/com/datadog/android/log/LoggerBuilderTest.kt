@@ -11,19 +11,24 @@ import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -73,6 +78,7 @@ internal class LoggerBuilderTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
+        InternalLogsFeature.stop()
     }
 
     @Test
@@ -82,7 +88,7 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder()
             .build()
 
-        val handler: LogHandler = logger.getFieldValue("handler")
+        val handler: LogHandler = logger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
         verify(mockDevLogHandler)
@@ -94,11 +100,11 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder()
             .build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.logGenerator.serviceName).isEqualTo(CoreFeature.serviceName)
         assertThat(handler.logGenerator.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.logGenerator.networkInfoProvider).isNull()
-        assertThat(handler.writer).isNotNull()
+        assertThat(handler.writer).isSameAs(LogsFeature.persistenceStrategy.getWriter())
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
@@ -112,7 +118,7 @@ internal class LoggerBuilderTest {
             .setServiceName(serviceName)
             .build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.logGenerator.serviceName).isEqualTo(serviceName)
     }
 
@@ -124,7 +130,7 @@ internal class LoggerBuilderTest {
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
-        val handler: LogHandler = logger.getFieldValue("handler")
+        val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
@@ -138,7 +144,7 @@ internal class LoggerBuilderTest {
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
-        val handler: LogHandler = logger.getFieldValue("handler")
+        val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
         val handlers = (handler as CombinedLogHandler).handlers
         assertThat(handlers)
@@ -159,7 +165,7 @@ internal class LoggerBuilderTest {
             .setServiceName(fakeServiceName)
             .build()
 
-        val handler: LogHandler = logger.getFieldValue("handler")
+        val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
         val logcatLogHandler = handler as LogcatLogHandler
         assertThat(logcatLogHandler.serviceName)
@@ -176,7 +182,7 @@ internal class LoggerBuilderTest {
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.logGenerator.networkInfoProvider).isNotNull()
     }
 
@@ -188,7 +194,7 @@ internal class LoggerBuilderTest {
             .setLoggerName(loggerName)
             .build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.logGenerator.loggerName).isEqualTo(loggerName)
     }
 
@@ -198,7 +204,7 @@ internal class LoggerBuilderTest {
             .setBundleWithTraceEnabled(false)
             .build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.bundleWithTraces).isFalse()
     }
 
@@ -208,9 +214,42 @@ internal class LoggerBuilderTest {
 
         val logger = Logger.Builder().setSampleRate(expectedSampleRate).build()
 
-        val handler: DatadogLogHandler = logger.getFieldValue("handler")
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         val sampler = handler.sampler
         assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((sampler as RateBasedSampler).sampleRate).isEqualTo(expectedSampleRate)
+    }
+
+    @Test
+    fun `M use an InternalLogs writer W setInternal() + build()`() {
+        // Given
+        val mockPersistenceStrategy: PersistenceStrategy<Log> = mock()
+        val mockWriter: Writer<Log> = mock()
+        whenever(mockPersistenceStrategy.getWriter()) doReturn mockWriter
+        InternalLogsFeature.initialized.set(true)
+        InternalLogsFeature.persistenceStrategy = mockPersistenceStrategy
+
+        // When
+        val logger = Logger.Builder().setInternal(true).build()
+
+        // Then
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
+        assertThat(handler.writer).isSameAs(mockWriter)
+        assertThat(handler.logGenerator.envTag)
+            .isEqualTo(LogAttributes.ENV + ':' + InternalLogsFeature.ENV_NAME)
+        assertThat(handler.logGenerator.serviceName).isEqualTo(InternalLogsFeature.SERVICE_NAME)
+        assertThat(handler.logGenerator.userInfoProvider)
+            .isInstanceOf(NoOpUserInfoProvider::class.java)
+    }
+
+    @Test
+    fun `M use noop handler W setInternal() + build() {internal logs disabled)`() {
+        // Given
+        InternalLogsFeature.initialized.set(false)
+
+        val logger = Logger.Builder().setInternal(true).build()
+
+        val handler: LogHandler = logger.handler
+        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 }

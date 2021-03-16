@@ -64,17 +64,15 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
 
     @Test
     fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
-        // Given
-        testedFeature.endpointUrl = fakeConfigurationFeature.endpointUrl
-
         // When
-        val uploader = testedFeature.createUploader()
+        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
         assertThat(uploader).isInstanceOf(RumOkHttpUploader::class.java)
-        val logsUploader = uploader as RumOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
+        val rumUploader = uploader as RumOkHttpUploader
+        assertThat(rumUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(rumUploader.url).endsWith(CoreFeature.clientToken)
+        assertThat(rumUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test

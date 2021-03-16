@@ -60,4 +60,9 @@ fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
         "DD_APPLICATION_KEY",
         "\"${config.applicationKey}\""
     )
+    flavor.buildConfigField(
+        "String",
+        "DD_INTERNAL_MONITORING_CLIENT_TOKEN",
+        "\"${config.internalMonitoringToken}\""
+    )
 }

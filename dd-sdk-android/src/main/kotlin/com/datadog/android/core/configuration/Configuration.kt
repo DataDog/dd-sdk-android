@@ -8,6 +8,7 @@ package com.datadog.android.core.configuration
 
 import android.os.Build
 import android.os.Looper
+import com.datadog.android.Datadog
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -48,7 +49,8 @@ internal constructor(
     internal val logsConfig: Feature.Logs?,
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
-    internal val rumConfig: Feature.RUM?
+    internal val rumConfig: Feature.RUM?,
+    internal val internalLogsConfig: Feature.InternalLogs?
 ) {
 
     internal data class Core(
@@ -63,6 +65,12 @@ internal constructor(
         abstract val plugins: List<DatadogPlugin>
 
         internal data class Logs(
+            override val endpointUrl: String,
+            override val plugins: List<DatadogPlugin>
+        ) : Feature()
+
+        internal data class InternalLogs(
+            val internalClientToken: String,
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>
         ) : Feature()
@@ -108,6 +116,7 @@ internal constructor(
         private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
+        private var internalLogsConfig: Feature.InternalLogs? = null
 
         private var coreConfig = DEFAULT_CORE_CONFIG
 
@@ -120,7 +129,8 @@ internal constructor(
                 logsConfig = if (logsEnabled) logsConfig else null,
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
-                rumConfig = if (rumEnabled) rumConfig else null
+                rumConfig = if (rumEnabled) rumConfig else null,
+                internalLogsConfig = internalLogsConfig
             )
         }
 
@@ -398,6 +408,24 @@ internal constructor(
                     rumEventMapper = getRumEventMapper().copy(errorEventMapper = eventMapper)
                 )
             }
+            return this
+        }
+
+        /**
+         * Enables the internal logs to be sent to a dedicated Datadog Org.
+         * @param clientToken the client token to use for internal logs
+         * @param endpointUrl the endpoint url to sent the internal logs to
+         * (one of [DatadogEndpoint.LOGS_US], [DatadogEndpoint.LOGS_EU], [DatadogEndpoint.LOGS_GOV])
+         */
+        fun setInternalLogsEnabled(
+            clientToken: String,
+            endpointUrl: String
+        ): Builder {
+            internalLogsConfig = Feature.InternalLogs(
+                clientToken,
+                endpointUrl,
+                emptyList()
+            )
             return this
         }
 

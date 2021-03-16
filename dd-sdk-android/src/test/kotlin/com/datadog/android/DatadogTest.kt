@@ -20,6 +20,7 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
@@ -58,6 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@Suppress("DEPRECATION")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -294,6 +296,7 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracesFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
+        assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
 
     @Test
@@ -321,6 +324,7 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isEqualTo(crashReportEnabled)
         assertThat(TracesFeature.initialized.get()).isEqualTo(tracesEnabled)
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
+        assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
 
     @Test
@@ -343,6 +347,7 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracesFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
+        assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
@@ -369,10 +374,39 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracesFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isFalse()
+        assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler, never()).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
+    }
+
+    @Test
+    fun `𝕄 initialize InternalLogs 𝕎 initialize() { Internal logs configured }`(
+        @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+    ) {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setInternalLogsEnabled(clientToken, url)
+            .build()
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+
+        // Then
+        assertThat(CoreFeature.initialized.get()).isTrue()
+        assertThat(LogsFeature.initialized.get()).isTrue()
+        assertThat(CrashReportsFeature.initialized.get()).isTrue()
+        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(RumFeature.initialized.get()).isTrue()
+        assertThat(InternalLogsFeature.initialized.get()).isTrue()
     }
 
     // region Deprecated

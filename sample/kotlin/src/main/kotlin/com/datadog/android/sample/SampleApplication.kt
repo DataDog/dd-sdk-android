@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogEventListener
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -131,6 +132,10 @@ class SampleApplication : Application() {
             )
             .trackInteractions()
             .trackLongTasks(250L)
+            .setInternalLogsEnabled(
+                BuildConfig.DD_INTERNAL_MONITORING_CLIENT_TOKEN,
+                DatadogEndpoint.LOGS_US
+            )
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)

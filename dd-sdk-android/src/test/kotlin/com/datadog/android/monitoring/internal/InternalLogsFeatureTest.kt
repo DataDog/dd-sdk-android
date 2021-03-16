@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.monitoring.internal
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogFileStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -32,13 +32,14 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs, LogsFeature>() {
+internal class InternalLogsFeatureTest :
+    SdkFeatureTest<Log, Configuration.Feature.InternalLogs, InternalLogsFeature>() {
 
-    override fun createTestedFeature(): LogsFeature {
-        return LogsFeature
+    override fun createTestedFeature(): InternalLogsFeature {
+        return InternalLogsFeature
     }
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
+    override fun forgeConfiguration(forge: Forge): Configuration.Feature.InternalLogs {
         return forge.getForgery()
     }
 
@@ -49,7 +50,32 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(LogFileStrategy::class.java)
+            .isInstanceOf(InternalLogFileStrategy::class.java)
+    }
+    @Test
+    fun `𝕄 rebuild the sdkLogger 𝕎 initialize()`() {
+        // Given
+        val originalHandler = sdkLogger.handler
+
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+
+        // Then
+        assertThat(sdkLogger.handler).isNotSameAs(originalHandler)
+    }
+    @Test
+    fun `𝕄 rebuild the sdkLogger 𝕎 stop()`() {
+        // Given
+        val originalHandler = sdkLogger.handler
+
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        val initHandler = sdkLogger.handler
+        testedFeature.stop()
+
+        // Then
+        assertThat(sdkLogger.handler).isNotSameAs(originalHandler)
+        assertThat(sdkLogger.handler).isNotSameAs(initHandler)
     }
 
     @Test
@@ -61,7 +87,7 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
         assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
         val logsUploader = uploader as LogsOkHttpUploader
         assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.url).endsWith(CoreFeature.clientToken)
+        assertThat(logsUploader.url).endsWith(fakeConfigurationFeature.internalClientToken)
         assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
     }
 }

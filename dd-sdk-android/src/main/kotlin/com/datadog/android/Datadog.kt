@@ -20,6 +20,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
@@ -109,8 +110,9 @@ object Datadog {
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
+     * @param credentials your organization credentials
+     * @param configuration the configuration for the SDK library
      * @param trackingConsent as the initial state of the tracking consent flag.
-     * @param config the configuration for the SDK library
      * @see [DatadogConfig]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
@@ -144,6 +146,7 @@ object Datadog {
         initializeTracingFeature(configuration.tracesConfig, appContext)
         initializeRumFeature(configuration.rumConfig, appContext)
         initializeCrashReportFeature(configuration.crashReportConfig, appContext)
+        initializeInternalLogsFeature(configuration.internalLogsConfig, appContext)
 
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),
@@ -201,6 +204,15 @@ object Datadog {
         }
     }
 
+    private fun initializeInternalLogsFeature(
+        configuration: Configuration.Feature.InternalLogs?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            InternalLogsFeature.initialize(appContext, configuration)
+        }
+    }
+
     /**
      * Checks if the Datadog SDK was already initialized.
      * @return true if the SDK was initialized, false otherwise
@@ -217,6 +229,7 @@ object Datadog {
         CrashReportsFeature.clearAllData()
         RumFeature.clearAllData()
         TracesFeature.clearAllData()
+        InternalLogsFeature.clearAllData()
     }
 
     // Stop all Datadog work (for test purposes).
@@ -228,6 +241,7 @@ object Datadog {
             RumFeature.stop()
             CrashReportsFeature.stop()
             CoreFeature.stop()
+            InternalLogsFeature.stop()
             isDebug = false
             initialized.set(false)
         }
