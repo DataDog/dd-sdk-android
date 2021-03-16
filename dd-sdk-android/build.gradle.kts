@@ -24,7 +24,6 @@ import com.datadog.gradle.testImplementation
 plugins {
     id("com.android.library")
     kotlin("android")
-    kotlin("android.extensions")
     kotlin("kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")

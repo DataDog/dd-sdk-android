@@ -10,7 +10,6 @@ import org.gradle.api.JavaVersion
 plugins {
     id("com.android.application")
     kotlin("android")
-    kotlin("android.extensions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     jacoco

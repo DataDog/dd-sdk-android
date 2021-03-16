@@ -38,7 +38,7 @@ class LocalServer {
 
     fun stop() {
         Thread {
-            engine?.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            engine?.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS)
         }.start()
     }
 

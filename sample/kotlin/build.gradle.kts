@@ -17,7 +17,6 @@ import com.datadog.gradle.implementation
 plugins {
     id("com.android.application")
     kotlin("android")
-    kotlin("android.extensions")
     kotlin("kapt")
     `maven-publish`
     id("com.github.ben-manes.versions")
@@ -137,9 +136,9 @@ dependencies {
     implementation("androidx.preference:preference-ktx:1.1.1")
 
     // Ktor (local web server)
-    implementation("io.ktor:ktor:1.2.5")
-    implementation("io.ktor:ktor-server-netty:1.2.5")
-    implementation("io.ktor:ktor-gson:1.2.5")
+    implementation("io.ktor:ktor:1.4.3")
+    implementation("io.ktor:ktor-server-netty:1.4.3")
+    implementation("io.ktor:ktor-gson:1.4.3")
 
     // Image Loading Library
     implementation(Dependencies.Libraries.Coil)

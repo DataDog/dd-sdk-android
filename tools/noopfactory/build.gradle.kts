@@ -24,7 +24,7 @@ plugins {
 dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.KotlinReflect)
-    implementation("com.squareup:kotlinpoet:1.5.0")
+    implementation("com.squareup:kotlinpoet:1.7.2")
 
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)

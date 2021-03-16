@@ -10,7 +10,7 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.4.0"
+        const val Kotlin = "1.4.20"
         const val Gson = "2.8.6"
         const val OkHttp = "3.12.6"
         const val KronosNTP = "0.0.1-alpha10"
@@ -69,7 +69,7 @@ object Dependencies {
         const val RxJava = "3.0.0"
         const val SQLDelight = "1.4.3"
         const val Timber = "4.7.1"
-        const val Coroutines = "1.3.9"
+        const val Coroutines = "1.4.1"
 
         // NDK
         const val NdkVersion = "21.3.6528147"
