@@ -12,7 +12,6 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
-import com.datadog.opentracing.DDSpanContext
 import com.datadog.trace.api.DDTags
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
@@ -51,9 +50,6 @@ internal class AndroidSpanLogsHandlerTest {
 
     @Mock
     lateinit var mockSpan: DDSpan
-
-    @Mock
-    lateinit var mockSpanContext: DDSpanContext
 
     @LongForgery
     var fakeTraceId: Long = 0L
@@ -220,7 +216,7 @@ internal class AndroidSpanLogsHandlerTest {
     }
 
     @Test
-    fun `log map with throwable and overriden error fields`(
+    fun `log map with throwable and overridden error fields`(
         forge: Forge,
         @Forgery throwable: Throwable,
         @StringForgery message: String,
@@ -249,7 +245,7 @@ internal class AndroidSpanLogsHandlerTest {
         verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
-                AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
+                message,
                 null,
                 logAttributes
             )
@@ -319,7 +315,7 @@ internal class AndroidSpanLogsHandlerTest {
         verify(mockLogger)
             .internalLog(
                 Log.VERBOSE,
-                AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
+                message,
                 null,
                 logAttributes
             )
