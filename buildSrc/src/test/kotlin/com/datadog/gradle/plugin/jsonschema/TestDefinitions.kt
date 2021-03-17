@@ -566,7 +566,38 @@ val Version = TypeDefinition.Class(
     name = "Version",
     properties = listOf(
         TypeProperty("version", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
-        TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true)
+        TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true),
+        TypeProperty(
+            "id", TypeDefinition.Class(
+                name = "Id",
+                properties = listOf(
+                    TypeProperty(
+                        "serialNumber",
+                        TypeDefinition.Constant(JsonType.NUMBER, 12112.0),
+                        true
+                    )
+                )
+            ),
+            false
+        ),
+        TypeProperty(
+            "date", TypeDefinition.Class(
+                name = "Date",
+                properties = listOf(
+                    TypeProperty(
+                        "year",
+                        TypeDefinition.Constant(JsonType.INTEGER, 2021.0),
+                        true
+                    ),
+                    TypeProperty(
+                        "month",
+                        TypeDefinition.Constant(JsonType.INTEGER, 3.0),
+                        true
+                    )
+                )
+            ),
+            true
+        )
     )
 )
 

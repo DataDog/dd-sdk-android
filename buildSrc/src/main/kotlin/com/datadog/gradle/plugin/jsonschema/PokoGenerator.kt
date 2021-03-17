@@ -99,11 +99,17 @@ class PokoGenerator(
             constructorBuilder,
             docBuilder
         )
-        val companion = deserializerGenerator.generateCompanionForClass(definition, rootTypeName)
-
         typeBuilder.primaryConstructor(constructorBuilder.build())
             .addKdoc(docBuilder.build())
-            .addType(companion)
+
+        // if the class contains only constant primitives we do not need this
+        if (!definition.isConstantClass()) {
+            val companion =
+                deserializerGenerator.generateCompanionForClass(definition, rootTypeName)
+            typeBuilder.addType(companion)
+        }
+
+
 
         return typeBuilder
     }

@@ -4,13 +4,38 @@
   "type": "object",
   "properties": {
     "version": {
-      "type" : "integer",
+      "type": "integer",
       "const": 42
     },
     "delta": {
-      "type" : "number",
+      "type": "number",
       "const": 3.1415
+    },
+    "id": {
+      "type": "object",
+      "properties": {
+        "serialNumber": {
+          "type": "number",
+          "const": 12112.0
+        }
+      }
+    },
+    "date": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer",
+          "const": 2021
+        },
+        "month": {
+          "type": "integer",
+          "const": 3
+        }
+      }
     }
   },
-  "required": [ "version"]
+  "required": [
+    "version",
+    "id"
+  ]
 }

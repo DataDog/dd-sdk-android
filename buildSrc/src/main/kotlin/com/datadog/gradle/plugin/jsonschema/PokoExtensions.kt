@@ -151,3 +151,13 @@ internal fun TypeDefinition.additionalPropertyType(
         ANY.copy(nullable = true)
     }
 }
+
+internal fun TypeDefinition.Class.isConstantClass(): Boolean {
+    // all the properties are of type Constant and the additionalProperties is null
+    this.properties.forEach {
+        if (it.type !is TypeDefinition.Constant) {
+            return false
+        }
+    }
+    return this.additionalProperties == null
+}
