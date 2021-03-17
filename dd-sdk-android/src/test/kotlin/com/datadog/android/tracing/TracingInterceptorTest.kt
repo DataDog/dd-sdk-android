@@ -40,7 +40,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -290,10 +289,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 update header with parent context 𝕎 intercept() for request with tracing headers`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        @LongForgery(min = 0) traceId: Long,
-        @LongForgery(min = 0) spanId: Long,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val parentSpanContext: SpanContext = mock()
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
@@ -603,8 +599,7 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
@@ -616,10 +611,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 init() with no known host`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `𝕄 warn 𝕎 init() with no known host`() {
         // GIVEN
         whenever(mockDetector.isEmpty()).thenReturn(true)
 
@@ -636,7 +628,6 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 create only one local tracer 𝕎 intercept() called from multiple threads`(
-        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         var called = 0

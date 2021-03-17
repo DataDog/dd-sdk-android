@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
@@ -38,7 +38,7 @@ class DatadogEventListenerFactoryTest {
     @Mock
     lateinit var mockCall: Call
 
-    @RegexForgery("[a-z]+\\.[a-z]{3}")
+    @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeDomain: String
 
     lateinit var fakeRequest: Request

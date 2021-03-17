@@ -60,7 +60,7 @@ object Datadog {
             imports = ["com.datadog.android.privacy.TrackingConsent"]
         )
     )
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "DEPRECATION")
     @JvmStatic
     fun initialize(
         context: Context,
@@ -92,7 +92,7 @@ object Datadog {
             "com.datadog.android.Datadog.initialize"
         )
     )
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "DEPRECATION")
     @JvmStatic
     fun initialize(
         context: Context,

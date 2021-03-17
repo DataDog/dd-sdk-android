@@ -747,7 +747,6 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StopView) on active view without matching key`(
         @StringForgery key: String,
-        @StringForgery name: String,
         forge: Forge
     ) {
         // Given
@@ -1077,8 +1076,6 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(ApplicationStarted) on active view`(
-        @StringForgery key: String,
-        @StringForgery name: String,
         @LongForgery(0) duration: Long,
         forge: Forge
     ) {
@@ -1404,8 +1401,6 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 close the scope 𝕎 handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
-        @StringForgery key: String,
-        @StringForgery name: String,
         @LongForgery(0) duration: Long
     ) {
         // Given
@@ -1444,8 +1439,6 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 close the scope 𝕎 handleEvent(ActionDropped) on stopped view { ApplicationStarted }`(
-        @StringForgery key: String,
-        @StringForgery name: String,
         @LongForgery(0) duration: Long
     ) {
         // Given
@@ -1483,10 +1476,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(KeepAlive) on stopped view`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
+    fun `𝕄 do nothing 𝕎 handleEvent(KeepAlive) on stopped view`() {
         // Given
         testedScope.stopped = true
 
@@ -1502,10 +1492,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(KeepAlive) on active view`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
+    fun `𝕄 send event 𝕎 handleEvent(KeepAlive) on active view`() {
         // When
         val result = testedScope.handleEvent(
             RumRawEvent.KeepAlive(),

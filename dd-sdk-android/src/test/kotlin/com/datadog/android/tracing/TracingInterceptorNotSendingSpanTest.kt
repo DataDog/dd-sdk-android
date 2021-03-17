@@ -39,8 +39,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -117,10 +115,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     // region Fakes
 
-    @RegexForgery(HOSTNAME_PATTERN)
+    @StringForgery(regex = HOSTNAME_PATTERN)
     lateinit var fakeHostName: String
 
-    @RegexForgery(IPV4_PATTERN)
+    @StringForgery(regex = IPV4_PATTERN)
     lateinit var fakeHostIp: String
 
     lateinit var fakeMethod: String
@@ -138,7 +136,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @StringForgery
     lateinit var fakePackageName: String
 
-    @RegexForgery("\\d(\\.\\d){3}")
+    @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
     lateinit var fakeRequest: Request
@@ -300,8 +298,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @LongForgery(min = 0) traceId: Long,
-        @LongForgery(min = 0) spanId: Long,
         forge: Forge
     ) {
         val parentSpanContext: SpanContext = mock()
@@ -624,10 +620,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 init() with no known host`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `𝕄 warn 𝕎 init() with no known host`() {
         whenever(mockDetector.isEmpty()) doReturn true
 
         testedInterceptor = instantiateTestedInterceptor(emptyList()) { mockLocalTracer }

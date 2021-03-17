@@ -58,8 +58,8 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
                     return null
                 }
             },
-            ProgressUpdater { context, id, data -> forge.getForgery() },
-            ForegroundUpdater { context, id, foregroundInfo -> forge.getForgery() }
+            ProgressUpdater { _, _, _ -> forge.getForgery() },
+            ForegroundUpdater { _, _, _ -> forge.getForgery() }
         )
     }
 

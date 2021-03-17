@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.sampling
 
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Random
@@ -36,13 +35,13 @@ internal class RateBasedSamplerTest {
     private var randomSampleRate: Float = 0.0f
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         randomSampleRate = Random().nextFloat()
         testedSampler = RateBasedSampler(randomSampleRate)
     }
 
     @Test
-    fun `the sampler will sample the values based on the sample rate`(forge: Forge) {
+    fun `the sampler will sample the values based on the sample rate`() {
         val dataSize = 1000
         val testRepeats = 100
         val computedSamplingRates = mutableListOf<Double>()
@@ -69,7 +68,7 @@ internal class RateBasedSamplerTest {
     }
 
     @Test
-    fun `when sample rate is 0 all values will be dropped`(forge: Forge) {
+    fun `when sample rate is 0 all values will be dropped`() {
         testedSampler = RateBasedSampler(0.0f)
 
         var validated = 0
@@ -84,7 +83,7 @@ internal class RateBasedSamplerTest {
     }
 
     @Test
-    fun `when sample rate is 1 all values will pass`(forge: Forge) {
+    fun `when sample rate is 1 all values will pass`() {
         testedSampler = RateBasedSampler(1.0f)
 
         var validated = 0

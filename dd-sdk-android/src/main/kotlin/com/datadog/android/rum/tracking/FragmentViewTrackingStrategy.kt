@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
  * @param defaultFragmentComponentPredicate to accept the default Android Fragments
  * that will be taken into account as valid RUM View events.
  */
+@Suppress("DEPRECATION")
 class FragmentViewTrackingStrategy @JvmOverloads constructor(
     internal val trackArguments: Boolean,
     internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =

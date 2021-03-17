@@ -6,7 +6,6 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.LongTaskEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -16,7 +15,6 @@ import java.util.UUID
 internal class LongTaskEventForgeryFactory :
     ForgeryFactory<LongTaskEvent> {
     override fun getForgery(forge: Forge): LongTaskEvent {
-        val timing = forge.aNullable<ResourceTiming>()
         return LongTaskEvent(
             date = forge.aTimestamp(),
             longTask = LongTaskEvent.LongTask(

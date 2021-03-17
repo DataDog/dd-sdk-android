@@ -75,7 +75,6 @@ internal class NdkFileWriterTest {
 
     @Test
     fun `M do nothing W write { file orchestrator returns null }`(
-        forge: Forge,
         @StringForgery fakeData: String
     ) {
         // GIVEN

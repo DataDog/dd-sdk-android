@@ -104,7 +104,7 @@ internal class RumEventDeserializerTest {
             .isEqualTo(fakeEvent.globalAttributes)
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedResourceEvent = deserializedEvent!!.event as ResourceEvent
+        val deserializedResourceEvent = deserializedEvent.event as ResourceEvent
         assertThat(deserializedResourceEvent).isEqualTo(fakeResourceEvent)
     }
 
@@ -127,7 +127,7 @@ internal class RumEventDeserializerTest {
             .isEqualTo(fakeEvent.globalAttributes)
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedActionEvent = deserializedEvent!!.event as ActionEvent
+        val deserializedActionEvent = deserializedEvent.event as ActionEvent
         assertThat(deserializedActionEvent).isEqualToIgnoringGivenFields(
             fakeActionEvent,
             "dd"
@@ -153,7 +153,7 @@ internal class RumEventDeserializerTest {
             .isEqualTo(fakeEvent.globalAttributes)
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedErrorEvent = deserializedEvent!!.event as ErrorEvent
+        val deserializedErrorEvent = deserializedEvent.event as ErrorEvent
         assertThat(deserializedErrorEvent).isEqualToIgnoringGivenFields(
             fakeErrorEvent,
             "dd"

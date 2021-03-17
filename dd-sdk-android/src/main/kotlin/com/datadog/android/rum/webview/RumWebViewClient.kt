@@ -59,6 +59,7 @@ open class RumWebViewClient : WebViewClient() {
     }
 
     /** @inheritdoc */
+    @Suppress("DEPRECATION")
     override fun onReceivedError(
         view: WebView?,
         errorCode: Int,

@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.net.info
 
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -36,7 +35,7 @@ internal class NetworkInfoDeserializerTest {
     }
 
     @Test
-    fun `M deserialize a model W deserialize`(@Forgery fakeNetworkInfo: NetworkInfo, forge: Forge) {
+    fun `M deserialize a model W deserialize`(@Forgery fakeNetworkInfo: NetworkInfo) {
         // GIVEN
         val serializedNetworkInfo = fakeNetworkInfo.toJson().asJsonObject.toString()
 

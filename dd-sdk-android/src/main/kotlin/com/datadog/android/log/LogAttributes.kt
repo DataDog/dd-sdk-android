@@ -7,7 +7,7 @@
 package com.datadog.android.log
 
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Credentials
 
 /**
  * This class holds constant log attribute keys.
@@ -258,7 +258,7 @@ object LogAttributes {
     /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
-     * @see [DatadogConfig.Builder.setServiceName]
+     * @see [Credentials.serviceName]
      * @see [Logger.Builder.setServiceName]
      */
     const val SERVICE_NAME: String = "service"

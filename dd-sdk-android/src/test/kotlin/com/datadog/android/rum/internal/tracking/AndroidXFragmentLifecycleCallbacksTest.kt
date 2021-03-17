@@ -331,10 +331,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused()`(
-        @BoolForgery firstTimeLoading: Boolean,
-        @LongForgery(1L) loadingTime: Long
-    ) {
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -374,10 +371,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() {activity not tracked}`(
-        @BoolForgery firstTimeLoading: Boolean,
-        @LongForgery(1L) loadingTime: Long
-    ) {
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -391,9 +385,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     // endregion
 
     @Test
-    fun `when fragment activity created on DialogFragment, it will register a Window Callback`(
-        forge: Forge
-    ) {
+    fun `when fragment activity created on DialogFragment, it will register a Window Callback`() {
         val mockDialogFragment: DialogFragment = mock()
         whenever(mockDialogFragment.context) doReturn mockContext
         whenever(mockDialogFragment.dialog) doReturn mockDialog
@@ -405,7 +397,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `when fragment activity created on Fragment, registers nothing`(forge: Forge) {
+    fun `when fragment activity created on Fragment, registers nothing`() {
         whenever(mockFragment.context) doReturn mockContext
 
         testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockFragment, null)

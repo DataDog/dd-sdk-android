@@ -42,7 +42,7 @@ internal class UserActionTrackingStrategyApi29Test :
     }
 
     @Test
-    fun `when activity pre created it will start tracking gestures`(forge: Forge) {
+    fun `when activity pre created it will start tracking gestures`() {
         // When
         testedStrategy.onActivityPreCreated(mockActivity, mock())
         // Then

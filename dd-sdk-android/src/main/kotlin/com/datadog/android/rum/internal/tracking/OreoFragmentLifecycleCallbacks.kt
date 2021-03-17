@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity

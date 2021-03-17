@@ -92,11 +92,12 @@ internal class LogcatLogHandler(
         private const val MAX_TAG_LENGTH = 23
 
         private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
+
         // internal for testing
         internal val IGNORED_CLASS_NAMES = arrayOf(
             Logger::class.java.canonicalName,
             LogHandler::class.java.canonicalName,
-            LogHandler::class.java.canonicalName + "\$DefaultImpls",
+            LogHandler::class.java.canonicalName?.plus("\$DefaultImpls"),
             LogcatLogHandler::class.java.canonicalName,
             ConditionalLogHandler::class.java.canonicalName,
             CombinedLogHandler::class.java.canonicalName,

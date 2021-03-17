@@ -16,7 +16,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -38,10 +37,10 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>() {
 
-    @RegexForgery("([a-z]+\\.)+[a-z]+")
+    @StringForgery(regex = "([a-z]+\\.)+[a-z]+")
     lateinit var fakePackageName: String
 
-    @RegexForgery("\\d(\\.\\d){3}")
+    @StringForgery(regex = "\\d(\\.\\d){3}")
     lateinit var fakePackageVersion: String
 
     @StringForgery

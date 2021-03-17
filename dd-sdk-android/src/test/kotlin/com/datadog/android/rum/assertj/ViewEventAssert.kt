@@ -50,8 +50,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
     }
 
     fun hasDuration(
-        expected: Long,
-        offset: Long = DURATION_THRESHOLD_NANOS
+        expected: Long
     ): ViewEventAssert {
         assertThat(actual.view.timeSpent)
             .overridingErrorMessage(

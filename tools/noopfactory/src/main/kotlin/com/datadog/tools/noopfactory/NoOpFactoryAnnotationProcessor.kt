@@ -229,7 +229,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
 
         // add parameters
         val params = element.parameters
-        params.forEachIndexed { i, param ->
+        params.forEachIndexed { _, param ->
             val paramType = param.asType().asKotlinTypeName()
             val isNullable = param.getAnnotation(Nullable::class.java) != null
             funSpecBuilder.addParameter(

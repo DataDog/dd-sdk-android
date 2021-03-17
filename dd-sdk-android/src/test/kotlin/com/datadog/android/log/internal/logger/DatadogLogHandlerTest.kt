@@ -8,7 +8,8 @@ package com.datadog.android.log.internal.logger
 
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -20,14 +21,17 @@ import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
@@ -102,6 +106,7 @@ internal class DatadogLogHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        prepareMainLooper()
         fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
         fakeServiceName = forge.anAlphabeticalString()
@@ -134,6 +139,7 @@ internal class DatadogLogHandlerTest {
         GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
         GlobalRum.isRegistered.set(false)
         GlobalRum.monitor = NoOpRumMonitor()
+        disposeMainLooper()
     }
 
     @Test
@@ -436,10 +442,12 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will add the span id and trace id if we active an active tracer`(forge: Forge) {
         // Given
-        val config =
-            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
-                .build()
-        Datadog.initialize(mockContext(), config)
+        Datadog.initialize(
+            mockContext(),
+            Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
+        )
         val tracer = AndroidTracer.Builder().build()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
         tracer.activateSpan(span)
@@ -466,7 +474,7 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
-    fun `it will not add trace deps if we do not have active an active tracer`(forge: Forge) {
+    fun `it will not add trace deps if we do not have active an active tracer`() {
         // When
         testedHandler.handleLog(
             fakeLevel,
@@ -489,10 +497,12 @@ internal class DatadogLogHandlerTest {
     @Test
     fun `it will add the Rum context`(forge: Forge) {
         // Given
-        val config =
-            DatadogConfig.Builder(forge.anAlphabeticalString(), forge.anAlphabeticalString())
-                .build()
-        Datadog.initialize(mockContext(), config)
+        Datadog.initialize(
+            mockContext(),
+            Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
+            Configuration.Builder(true, true, true, true).build(),
+            TrackingConsent.GRANTED
+        )
         val rumContext = forge.getForgery<RumContext>()
         GlobalRum.updateRumContext(rumContext)
         GlobalRum.registerIfAbsent(mockRumMonitor)
@@ -522,7 +532,7 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
-    fun `it will not add trace deps if the flag was set to false`(forge: Forge) {
+    fun `it will not add trace deps if the flag was set to false`() {
         // Given
         testedHandler = DatadogLogHandler(
             LogGenerator(

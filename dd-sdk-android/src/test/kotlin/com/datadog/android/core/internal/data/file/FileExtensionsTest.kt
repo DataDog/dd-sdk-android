@@ -64,7 +64,7 @@ class FileExtensionsTest {
     }
 
     @Test
-    fun `returns empty ByteArray if the file is too big`(forge: Forge) {
+    fun `returns empty ByteArray if the file is too big`() {
         val file = File(tempDir, "testFile")
         file.createNewFile()
         val spiedFile = spy(file)

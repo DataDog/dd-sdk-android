@@ -39,7 +39,6 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -236,7 +235,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W startResource()`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         testedMonitor.startResource(key, method, url, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
@@ -639,7 +638,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope with timestamp W startResource()`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 

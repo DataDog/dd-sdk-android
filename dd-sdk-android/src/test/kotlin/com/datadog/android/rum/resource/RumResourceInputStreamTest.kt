@@ -254,9 +254,7 @@ internal class RumResourceInputStreamTest {
     // region Failing Atomic Methods
 
     @Test
-    fun `𝕄 send error 𝕎 read() with throwable`(
-        @IntForgery(-128, 127) byte: Int
-    ) {
+    fun `𝕄 send error 𝕎 read() with throwable`() {
         // Given
         whenever(mockInputStream.read()) doThrow IOException(fakeMessage)
 
@@ -326,9 +324,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error bytes 𝕎 available() with throwable`(
-        @IntForgery(min = 4, max = 16) available: Int
-    ) {
+    fun `𝕄 send error bytes 𝕎 available() with throwable`() {
         // Given
         whenever(mockInputStream.available()) doThrow IOException(fakeMessage)
 
@@ -350,8 +346,7 @@ internal class RumResourceInputStreamTest {
 
     @Test
     fun `𝕄 send error 𝕎 skip() with throwable`(
-        @LongForgery(0, 1024) n: Long,
-        @LongForgery(0, 1024) skipped: Long
+        @LongForgery(0, 1024) n: Long
     ) {
         // Given
         whenever(mockInputStream.skip(n)) doThrow IOException(fakeMessage)
@@ -373,9 +368,7 @@ internal class RumResourceInputStreamTest {
     }
 
     @Test
-    fun `𝕄 send error 𝕎 markSupported() with throwable`(
-        @BoolForgery markSupported: Boolean
-    ) {
+    fun `𝕄 send error 𝕎 markSupported() with throwable`() {
         // Given
         whenever(mockInputStream.markSupported()) doThrow RuntimeException(fakeMessage)
 
@@ -470,9 +463,6 @@ internal class RumResourceInputStreamTest {
         // When
         val throwable1 = assertThrows<Throwable>(fakeMessage) {
             testedInputStream.read()
-        }
-        val throwable2 = assertThrows<Throwable>(message2) {
-            testedInputStream.close()
         }
 
         // Then
@@ -673,11 +663,11 @@ internal class RumResourceInputStreamTest {
         val inputStream = contentBytes.inputStream()
         testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
         Thread.sleep(500)
-        var download: Long = 0L
+        var download: Long
 
         // When
         val result = testedInputStream.bufferedReader().use {
-            var text = ""
+            var text: String
             download = measureNanoTime {
                 text = it.readText()
             }

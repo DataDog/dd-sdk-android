@@ -269,9 +269,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return false 𝕎 isInitialized()`(
-        @Forgery applicationId: UUID
-    ) {
+    fun `𝕄 return false 𝕎 isInitialized()`() {
         // When
         val initialized = Datadog.isInitialized()
 

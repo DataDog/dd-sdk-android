@@ -30,7 +30,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -117,7 +116,7 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
@@ -165,7 +164,7 @@ internal class RumActionScopeTest {
         @StringForgery key: String,
         @StringForgery key2: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
@@ -191,7 +190,7 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithError+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -247,7 +246,7 @@ internal class RumActionScopeTest {
         @StringForgery key: String,
         @StringForgery key2: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -280,7 +279,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+any) missing resource key`(
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // Given
         var key: Any? = Object()
@@ -289,7 +288,6 @@ internal class RumActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(500)
-        key = null
         fakeEvent = mockEvent()
         System.gc()
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -721,8 +719,7 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send event with user extra attributes 𝕎 handleEvent(any)`(
-        @IntForgery(1) count: Int,
-        forge: Forge
+        @IntForgery(1) count: Int
     ) {
         // Given
         testedScope.viewTreeChangeCount = count
@@ -965,7 +962,7 @@ internal class RumActionScopeTest {
     fun `𝕄 doNothing 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
@@ -983,7 +980,7 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @RegexForgery("http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())

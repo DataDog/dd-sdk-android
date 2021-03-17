@@ -56,9 +56,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when created will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when created will delegate to the bundled strategies`() {
 
         // Whenever
         testedStrategy.onActivityCreated(mockActivity, mockBundle)
@@ -71,9 +69,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when destroyed will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when destroyed will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityDestroyed(mockActivity)
 
@@ -85,9 +81,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when started will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when started will delegate to the bundled strategies`() {
 
         // Whenever
         testedStrategy.onActivityStarted(mockActivity)
@@ -100,9 +94,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when stopped will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when stopped will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityStopped(mockActivity)
 
@@ -114,9 +106,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when resumed will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when resumed will delegate to the bundled strategies`() {
 
         // Whenever
         testedStrategy.onActivityResumed(mockActivity)
@@ -129,9 +119,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when paused will delegate to the bundled strategies`(
-        forge: Forge
-    ) {
+    fun `when paused will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityPaused(mockActivity)
 

@@ -102,6 +102,8 @@ internal class AndroidTracerTest {
 
         val tracer = GlobalTracer.get()
         val activeSpan = tracer?.activeSpan()
+
+        @Suppress("DEPRECATION")
         val activeScope = tracer?.scopeManager()?.active()
         activeSpan?.finish()
         activeScope?.close()
@@ -116,10 +118,7 @@ internal class AndroidTracerTest {
     // region Tracer
 
     @Test
-    fun `M log a developer error W buildTracer { TracingFeature not enabled }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
-    ) {
+    fun `M log a developer error W buildTracer { TracingFeature not enabled }`() {
         // GIVEN
         TracesFeature.stop()
 
@@ -134,10 +133,7 @@ internal class AndroidTracerTest {
     }
 
     @Test
-    fun `M log a developer error W buildTracer { RumFeature not enabled and bundleWithRum true }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
-    ) {
+    fun `M log a developer error W buildTracer { RumFeature not enabled, bundleWithRum true }`() {
         // GIVEN
         RumFeature.stop()
 
@@ -153,8 +149,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `buildSpan will inject a parent context`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         val tracer = testedTracerBuilder
             .build()
@@ -183,8 +178,7 @@ internal class AndroidTracerTest {
 
     @Test
     fun `buildSpan will not inject a parent context if one exists`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         val tracer = testedTracerBuilder
             .build()
@@ -228,8 +222,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M not inject RumContext W buildSpan { RumFeature not initialized }`(
         forge: Forge,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
         val rumContext = forge.getForgery<RumContext>()
@@ -253,8 +246,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M not inject RumContext W buildSpan { bundleWithRum disabled }`(
         forge: Forge,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @LongForgery seed: Long
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
         val rumContext = forge.getForgery<RumContext>()
@@ -305,7 +297,6 @@ internal class AndroidTracerTest {
             .setServiceName(fakeServiceName)
             .addGlobalTag(key, value)
             .build()
-        val properties = testedTracerBuilder.properties()
 
         // Then
         assertThat(tracer).isNotNull()

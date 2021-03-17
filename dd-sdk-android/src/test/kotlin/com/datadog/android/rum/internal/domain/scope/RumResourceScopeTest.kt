@@ -40,7 +40,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -80,7 +79,7 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
-    @RegexForgery("http(s?)://[a-z]+.com/[a-z]+")
+    @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
     lateinit var fakeMethod: String
@@ -969,8 +968,7 @@ internal class RumResourceScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @LongForgery(200, 600) statusCode: Long,
-        @Forgery throwable: Throwable,
-        forge: Forge
+        @Forgery throwable: Throwable
     ) {
         mockEvent = RumRawEvent.StopResourceWithError(
             "not_the_$fakeKey",

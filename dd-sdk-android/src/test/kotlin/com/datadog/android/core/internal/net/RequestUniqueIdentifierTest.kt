@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.annotation.RegexForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,10 +29,10 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RequestUniqueIdentifierTest {
 
-    @RegexForgery("http(s?)://[a-z]+\\.com/\\w+")
+    @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
     private lateinit var fakeUrl: String
 
-    @RegexForgery("x-[a-z]+/[a-z]+")
+    @StringForgery(regex = "x-[a-z]+/[a-z]+")
     private lateinit var fakeContentType: String
 
     @StringForgery
