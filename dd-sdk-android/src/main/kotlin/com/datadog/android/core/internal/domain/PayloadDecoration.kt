@@ -12,6 +12,10 @@ internal data class PayloadDecoration(
     val separator: CharSequence
 ) {
 
+    val separatorBytes = separator.toString().toByteArray(Charsets.UTF_8)
+    val prefixBytes = prefix.toString().toByteArray(Charsets.UTF_8)
+    val suffixBytes = suffix.toString().toByteArray(Charsets.UTF_8)
+
     companion object {
         val JSON_ARRAY_DECORATION = PayloadDecoration("[", "]", ",")
         val NEW_LINE_DECORATION = PayloadDecoration("", "", "\n")

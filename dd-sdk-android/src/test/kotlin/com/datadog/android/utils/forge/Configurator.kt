@@ -32,6 +32,7 @@ internal class Configurator :
 
         // IO
         forge.addFactory(BatchForgeryFactory())
+        forge.addFactory(PayloadDecorationForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
 
         // LOG
