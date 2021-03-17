@@ -45,6 +45,7 @@ inline fun <reified T : Context> mockContext(
     val mockContext = mock<T>()
 
     mockPackageInfo.versionName = versionName
+    @Suppress("DEPRECATION")
     mockPackageInfo.versionCode = versionCode
     whenever(mockPackageMgr.getPackageInfo(packageName, 0)) doReturn mockPackageInfo
     whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()
