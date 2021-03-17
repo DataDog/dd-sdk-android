@@ -192,6 +192,9 @@ internal object CoreFeature {
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
         packageName = appContext.packageName
         packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
+            // we need to use the deprecated method because getLongVersionCode method is only
+            // available from API 28 and above
+            @Suppress("DEPRECATION")
             it.versionName ?: it.versionCode.toString()
         }
         clientToken = credentials.clientToken
