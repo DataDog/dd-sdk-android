@@ -32,8 +32,9 @@ class ConditionWatcher(
      */
     fun doWait(timeoutMs: Long = DEFAULT_TIMEOUT_LIMIT_MS) {
         var elapsedTime = 0L
-        var status = CONDITION_NOT_MET
+        var isConditionMet = false
         var lastAssertionError: AssertionError? = null
+
         do {
             var invocationResult = false
             try {
@@ -43,19 +44,19 @@ class ConditionWatcher(
             }
 
             if (invocationResult) {
-                status = CONDITION_MET
+                isConditionMet = true
+                break
             } else {
                 elapsedTime += pollingIntervalMs
                 Thread.sleep(pollingIntervalMs)
             }
 
             if (elapsedTime >= timeoutMs) {
-                status = TIMEOUT
                 break
             }
-        } while (status != CONDITION_MET)
+        } while (!isConditionMet)
 
-        if (status == TIMEOUT) {
+        if (!isConditionMet) {
             reportTimeout(timeoutMs, lastAssertionError)
         }
     }
@@ -66,17 +67,13 @@ class ConditionWatcher(
             throw TimeoutException(message)
         } else {
             throw TimeoutException(
-                "$message Check failed assertion in the cause.",
+                "$message Underlying assertion was never satisfied.",
                 assertionError
             )
         }
     }
 
     internal companion object {
-        private const val CONDITION_NOT_MET = 0
-        private const val CONDITION_MET = 1
-        private const val TIMEOUT = 2
-
         /**
          * Default timeout in milliseconds.
          */
