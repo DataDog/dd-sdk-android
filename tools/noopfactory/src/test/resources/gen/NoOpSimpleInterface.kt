@@ -4,6 +4,8 @@ import java.util.Date
 import kotlin.ByteArray
 import kotlin.Int
 import kotlin.String
+import kotlin.Suppress
+import kotlin.Unit
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.Set
@@ -11,36 +13,39 @@ import kotlin.collections.emptyList
 import kotlin.collections.emptyMap
 import kotlin.collections.emptySet
 
+@Suppress(
+    "RedundantUnitReturnType"
+)
 internal class NoOpSimpleInterface : SimpleInterface {
 
-    override fun doSomething() {
+    public override fun doSomething(): Unit {
     }
 
-    override fun doSomethingWithParams(
+    public override fun doSomethingWithParams(
         i: Int,
         s: String,
         d: Date,
         ba: ByteArray
-    ) {
+    ): Unit {
     }
 
-    override fun doSomethingWithNullableParams(
+    public override fun doSomethingWithNullableParams(
         i: Int,
         s: String,
         d: Date,
         ba: ByteArray
-    ) {
+    ): Unit {
     }
 
-    override fun doSomethingWithReturn(): Date = Date()
+    public override fun doSomethingWithReturn(): Date = Date()
 
-    override fun doSomethingWithStringReturn(): String = ""
+    public override fun doSomethingWithStringReturn(): String = ""
 
-    override fun doSomethingWithNullableReturn(): Date? = null
+    public override fun doSomethingWithNullableReturn(): Date? = null
 
-    override fun doSomethingWithListReturn(): List<String> = emptyList()
+    public override fun doSomethingWithListReturn(): List<String> = emptyList()
 
-    override fun doSomethingWithMapReturn(): Map<String, String> = emptyMap()
+    public override fun doSomethingWithMapReturn(): Map<String, String> = emptyMap()
 
-    override fun doSomethingWithSetReturn(): Set<String> = emptySet()
+    public override fun doSomethingWithSetReturn(): Set<String> = emptySet()
 }
