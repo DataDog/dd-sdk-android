@@ -169,7 +169,7 @@ dependencies {
     api("com.facebook.stetho:stetho:1.5.1")
 }
 
-kotlinConfig()
+kotlinConfig(evaluateWarningsAsErrors = false)
 detektConfig()
 ktLintConfig()
 junitConfig()
