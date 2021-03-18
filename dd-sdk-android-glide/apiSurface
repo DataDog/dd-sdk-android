@@ -1,6 +1,5 @@
-DEPRECATED open class com.datadog.android.glide.DatadogGlideModule : com.bumptech.glide.module.AppGlideModule
-  constructor(List<String>)
-  constructor()
+open class com.datadog.android.glide.DatadogGlideModule : com.bumptech.glide.module.AppGlideModule
+  constructor(List<String> = emptyList())
   override fun registerComponents(android.content.Context, com.bumptech.glide.Glide, com.bumptech.glide.Registry)
   override fun applyOptions(android.content.Context, com.bumptech.glide.GlideBuilder)
   open fun getClientBuilder(): okhttp3.OkHttpClient.Builder
