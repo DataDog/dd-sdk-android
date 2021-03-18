@@ -11,7 +11,9 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.forge.aThrowable
@@ -19,6 +21,7 @@ import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.invokeGenericMethod
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import java.util.UUID
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -57,16 +60,31 @@ class LogIOBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
+        val config = Configuration
+            .Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            )
+            .useCustomLogsEndpoint(fakeEndpoint)
+            .build()
         Datadog.initialize(
             context,
-            DatadogConfig.Builder("NO_TOKEN", "benchmark")
-                .useCustomLogsEndpoint(fakeEndpoint)
-                .build()
+            Credentials(
+                "NO_TOKEN",
+                "benchmark",
+                "benchmark",
+                UUID.randomUUID().toString()
+            ),
+            config,
+            TrackingConsent.GRANTED
         )
         val classLoader = Datadog::class.java.classLoader!!
         val logFeatureInstance = classLoader
             .loadClass("com.datadog.android.log.internal.LogsFeature").kotlin.objectInstance
 
+        @Suppress("UNCHECKED_CAST")
         testedStrategy = logFeatureInstance!!.getFieldValue(
             "persistenceStrategy",
             enclosingClass = classLoader

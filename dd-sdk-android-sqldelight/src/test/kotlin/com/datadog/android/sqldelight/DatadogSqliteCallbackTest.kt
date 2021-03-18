@@ -18,9 +18,8 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -52,7 +51,7 @@ class DatadogSqliteCallbackTest {
     @Mock
     lateinit var mockSqliteDatabase: SupportSQLiteDatabase
 
-    @RegexForgery("[a-z]/[a-z]")
+    @StringForgery(regex = "[a-z]/[a-z]")
     lateinit var fakeDbPath: String
 
     @IntForgery
@@ -73,7 +72,7 @@ class DatadogSqliteCallbackTest {
     }
 
     @Test
-    fun `M send an error event W intercepting a DB corruption`(forge: Forge) {
+    fun `M send an error event W intercepting a DB corruption`() {
         // WHEN
         testedSqliteCallback.onCorruption(mockSqliteDatabase)
 

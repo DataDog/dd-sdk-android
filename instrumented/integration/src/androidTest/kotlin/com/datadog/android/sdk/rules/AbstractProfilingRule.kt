@@ -111,11 +111,7 @@ internal abstract class AbstractProfilingRule(
     }
 
     private fun List<Double>.max(): Double {
-        return maxWith(comparator)!!
-    }
-
-    private fun List<Double>.min(): Double {
-        return minWith(comparator)!!
+        return maxWithOrNull(comparator) ?: 0.0
     }
 
     private fun List<Double>.average(): Double {

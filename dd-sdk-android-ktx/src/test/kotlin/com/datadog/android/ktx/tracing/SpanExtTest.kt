@@ -105,7 +105,6 @@ class SpanExtTest {
 
     @Test
     fun `M create span around lambda W withinSpan(name){}`(
-        @StringForgery operationName: String,
         @LongForgery result: Long
     ) {
         var lambdaCalled = false
@@ -127,7 +126,6 @@ class SpanExtTest {
 
     @Test
     fun `M create span and scope around lambda W withinSpan(name, parent){}`(
-        @StringForgery operationName: String,
         @LongForgery result: Long
     ) {
         var lambdaCalled = false
@@ -148,9 +146,7 @@ class SpanExtTest {
 
     @Test
     fun `M create span and scope around lambda W withinSpan(name, parent){} throwing error`(
-        @StringForgery operationName: String,
-        @Forgery throwable: Throwable,
-        @LongForgery result: Long
+        @Forgery throwable: Throwable
     ) {
         var lambdaCalled = false
 

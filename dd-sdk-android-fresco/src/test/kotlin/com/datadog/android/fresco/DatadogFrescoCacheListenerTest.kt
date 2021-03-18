@@ -21,7 +21,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.IOException
@@ -57,7 +57,7 @@ internal class DatadogFrescoCacheListenerTest {
 
     lateinit var fakeEventKey: BitmapMemoryCacheKey
 
-    @RegexForgery(value = "http://[a-z]+\\.com")
+    @StringForgery(regex = "http://[a-z]+\\.com")
     lateinit var fakeCacheEventUri: String
 
     // region Unit Tests
@@ -111,7 +111,7 @@ internal class DatadogFrescoCacheListenerTest {
     }
 
     @Test
-    fun `M add RUM Error event W onReadException() with no throwable`(forge: Forge) {
+    fun `M add RUM Error event W onReadException() with no throwable`() {
         // GIVEN
         whenever(mockCacheEvent.exception).doReturn(null)
 
@@ -181,7 +181,7 @@ internal class DatadogFrescoCacheListenerTest {
     }
 
     @Test
-    fun `M add RUM Error W onWriteException() with no Throwable`(forge: Forge) {
+    fun `M add RUM Error W onWriteException() with no Throwable`() {
         // GIVEN
         whenever(mockCacheEvent.exception).doReturn(null)
 

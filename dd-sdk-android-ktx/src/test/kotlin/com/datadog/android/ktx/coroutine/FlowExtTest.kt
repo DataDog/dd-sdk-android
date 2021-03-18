@@ -83,8 +83,7 @@ class FlowExtTest {
 
     @Test
     fun `M doNothing W flow emits successfully`(
-        @StringForgery data: String,
-        @StringForgery message: String
+        @StringForgery data: String
     ) {
         // Given
         val flow = flow { emit(data) }

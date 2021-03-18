@@ -11,7 +11,9 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.tools.unit.invokeMethod
 import java.util.UUID
@@ -27,18 +29,28 @@ class CoreInitBenchmark {
     @Test
     fun benchmark_initialize() {
         val context = InstrumentationRegistry.getInstrumentation().context
-        val config = DatadogConfig
-            .Builder("NO_TOKEN", "benchmark", UUID.randomUUID().toString())
-            .setTracesEnabled(true)
-            .setLogsEnabled(true)
-            .setCrashReportsEnabled(true)
+        val config = Configuration
+            .Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            )
             .trackInteractions()
-            .useViewTrackingStrategy(MixedViewTrackingStrategy(true))
-            .setRumEnabled(true)
+            .useViewTrackingStrategy(MixedViewTrackingStrategy(trackExtras = true))
             .build()
-
         benchmark.measureRepeated {
-            Datadog.initialize(context, config)
+            Datadog.initialize(
+                context,
+                Credentials(
+                    "NO_TOKEN",
+                    "benchmark",
+                    "benchmark",
+                    UUID.randomUUID().toString()
+                ),
+                config,
+                TrackingConsent.GRANTED
+            )
 
             runWithTimingDisabled {
                 Datadog.invokeMethod("stop")

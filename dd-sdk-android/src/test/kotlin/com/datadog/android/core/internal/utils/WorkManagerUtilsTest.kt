@@ -63,7 +63,12 @@ internal class WorkManagerUtilsTest {
         Datadog.initialize(
             mockAppContext,
             Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
-            Configuration.Builder(true, true, true, true).build(),
+            Configuration.Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            ).build(),
             TrackingConsent.GRANTED
         )
 

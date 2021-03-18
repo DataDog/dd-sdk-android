@@ -6,7 +6,6 @@
 
 package com.datadog.tools.detekt.rules
 
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.gitlab.arturbosch.detekt.test.assertThat
 import io.gitlab.arturbosch.detekt.test.lint
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 internal class UnsafeCallOnNullableTypeTest {
 
     @Test
-    fun `detekt unsafe call on nullable type`(forge: Forge) {
+    fun `detekt unsafe call on nullable type`() {
         val code =
             """
                 fun test(str: String?) {
@@ -30,7 +29,7 @@ internal class UnsafeCallOnNullableTypeTest {
     }
 
     @Test
-    fun `does not detekt unsafe call on comments`(forge: Forge) {
+    fun `does not detekt unsafe call on comments`() {
         val code =
             """
                 fun test(str: String) {
@@ -44,7 +43,7 @@ internal class UnsafeCallOnNullableTypeTest {
     }
 
     @Test
-    fun `does not detekt safe call on nullable type`(forge: Forge) {
+    fun `does not detekt safe call on nullable type`() {
         val code =
             """
                 fun test(str: String?) {
@@ -57,7 +56,7 @@ internal class UnsafeCallOnNullableTypeTest {
     }
 
     @Test
-    fun `does not detekt safe call in combination with the elvis operator`(forge: Forge) {
+    fun `does not detekt safe call in combination with the elvis operator`() {
         val code =
             """
                 fun test(str: String?) {

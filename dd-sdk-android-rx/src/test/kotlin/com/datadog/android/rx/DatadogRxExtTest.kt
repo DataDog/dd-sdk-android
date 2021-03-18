@@ -12,7 +12,6 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -62,7 +61,7 @@ class DatadogRxExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the stream {Observable}`(forge: Forge) {
+    fun `M send an error event W exception in the stream {Observable}`() {
         // GIVEN
         val testObservable = Observable
             .just(0, 1, 2)
@@ -83,7 +82,7 @@ class DatadogRxExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the stream {Single}`(forge: Forge) {
+    fun `M send an error event W exception in the stream {Single}`() {
         // GIVEN
         val testSingle = SingleError.error<Int>(fakeException)
 
@@ -101,7 +100,7 @@ class DatadogRxExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the stream {Maybe}`(forge: Forge) {
+    fun `M send an error event W exception in the stream {Maybe}`() {
         // GIVEN
         val testMaybe = MaybeError.error<Int>(fakeException)
 
@@ -119,7 +118,7 @@ class DatadogRxExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the stream {Completable}`(forge: Forge) {
+    fun `M send an error event W exception in the stream {Completable}`() {
         // WHEN
         CompletableError.error(fakeException).sendErrorToDatadog().test()
 
@@ -133,7 +132,7 @@ class DatadogRxExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the stream {Flowable}`(forge: Forge) {
+    fun `M send an error event W exception in the stream {Flowable}`() {
         // GIVEN
         val testFlowable = Flowable
             .just(0, 1, 2)

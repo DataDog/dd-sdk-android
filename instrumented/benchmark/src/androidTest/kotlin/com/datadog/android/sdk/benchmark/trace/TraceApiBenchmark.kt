@@ -11,13 +11,16 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import java.util.UUID
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -56,11 +59,26 @@ class TraceApiBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        val config = DatadogConfig
-            .Builder("NO_TOKEN", "benchmark")
+        val config = Configuration
+            .Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            )
             .useCustomTracesEndpoint(fakeEndpoint)
             .build()
-        Datadog.initialize(context, config)
+        Datadog.initialize(
+            context,
+            Credentials(
+                "NO_TOKEN",
+                "benchmark",
+                "benchmark",
+                UUID.randomUUID().toString()
+            ),
+            config,
+            TrackingConsent.GRANTED
+        )
 
         testedTracer = AndroidTracer
             .Builder()
