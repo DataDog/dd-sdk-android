@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,9 +36,11 @@ internal class ConsentPendingGrantedLogsTest : LogsTest() {
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
 
-        // verify the captured log events into the MockedWebServer
-        verifyExpectedLogs(mockServerRule.activity, mockServerRule.getRequests())
+        ConditionWatcher {
+            // verify the captured log events into the MockedWebServer
+            verifyExpectedLogs(mockServerRule.activity, mockServerRule.getRequests())
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }

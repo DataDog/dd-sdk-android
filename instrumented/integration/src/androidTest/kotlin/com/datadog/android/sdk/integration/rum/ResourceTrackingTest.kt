@@ -17,6 +17,7 @@ import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.android.sdk.utils.exhaustiveAttributes
 import com.datadog.android.sdk.utils.isRumUrl
+import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.io.IOException
@@ -76,21 +77,23 @@ internal class ResourceTrackingTest {
         ).execute()
 
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(RumTest.FINAL_WAIT_MS)
 
-        val resourceRequests =
-            mockServerRule.getRequests()
-                .rumEventsBy { it.has("resource") && it.get("type").asString == "resource" }
+        ConditionWatcher {
+            val resourceRequests =
+                mockServerRule.getRequests()
+                    .rumEventsBy { it.has("resource") && it.get("type").asString == "resource" }
 
-        resourceRequests.verifyEventMatches(
-            listOf(
-                ExpectedResourceEvent(
-                    url = resourceUrl,
-                    statusCode = 200,
-                    extraAttributes = extraAttributes
+            resourceRequests.verifyEventMatches(
+                listOf(
+                    ExpectedResourceEvent(
+                        url = resourceUrl,
+                        statusCode = 200,
+                        extraAttributes = extraAttributes
+                    )
                 )
             )
-        )
+            true
+        }.doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
     }
 
     @Test
@@ -106,22 +109,24 @@ internal class ResourceTrackingTest {
         }
 
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(RumTest.FINAL_WAIT_MS)
 
-        val resourceRequests =
-            mockServerRule.getRequests()
-                .rumEventsBy { it.has("error") && it.get("type").asString == "error" }
+        ConditionWatcher {
+            val resourceRequests =
+                mockServerRule.getRequests()
+                    .rumEventsBy { it.has("error") && it.get("type").asString == "error" }
 
-        resourceRequests.verifyEventMatches(
-            listOf(
-                ExpectedErrorEvent(
-                    url = resourceUrl,
-                    extraAttributes = extraAttributes,
-                    isCrash = false,
-                    source = ErrorSource.NETWORK
+            resourceRequests.verifyEventMatches(
+                listOf(
+                    ExpectedErrorEvent(
+                        url = resourceUrl,
+                        extraAttributes = extraAttributes,
+                        isCrash = false,
+                        source = ErrorSource.NETWORK
+                    )
                 )
             )
-        )
+            true
+        }.doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
     }
 
     private fun List<HandledRequest>.rumEventsBy(

@@ -48,6 +48,8 @@ internal abstract class LogsTest {
         val globalAttributes = RuntimeConfig.allAttributes
         val localAttributes = activity.localAttributes()
 
+        assertThat(messagesSent).hasSameSizeAs(logObjects)
+
         messagesSent.forEachIndexed { i, m ->
             val log = logObjects[i]
             JsonObjectAssert.assertThat(log)

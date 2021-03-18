@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
+import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -36,11 +37,13 @@ internal class ConsentPendingNotGrantedLogsTest : LogsTest() {
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        Thread.sleep(INITIAL_WAIT_MS)
 
-        val logsPayloads = mockServerRule
-            .getRequests()
-            .filter { it.url?.isLogsUrl() ?: false }
-        assertThat(logsPayloads).isEmpty()
+        ConditionWatcher {
+            val logsPayloads = mockServerRule
+                .getRequests()
+                .filter { it.url?.isLogsUrl() ?: false }
+            assertThat(logsPayloads).isEmpty()
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }
