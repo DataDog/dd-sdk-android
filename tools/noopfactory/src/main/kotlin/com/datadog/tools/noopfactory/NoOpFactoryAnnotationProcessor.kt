@@ -7,6 +7,7 @@
 package com.datadog.tools.noopfactory
 
 import com.datadog.tools.annotation.NoOpImplementation
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
@@ -121,6 +122,11 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
 
         val typeSpecBuilder = TypeSpec.classBuilder(noOpName)
             .addModifiers(KModifier.INTERNAL)
+            .addAnnotation(
+                AnnotationSpec.builder(Suppress::class)
+                    .addMember("%S", "RedundantUnitReturnType")
+                    .build()
+            )
 
         generateSuperTypeDeclaration(typeSpecBuilder, typeElement, packageName, interfaceName)
 

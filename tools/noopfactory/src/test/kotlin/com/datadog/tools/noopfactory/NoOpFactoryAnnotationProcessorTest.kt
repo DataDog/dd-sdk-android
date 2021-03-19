@@ -21,7 +21,8 @@ internal class NoOpFactoryAnnotationProcessorTest {
         value = [
             "SimpleInterface.kt:NoOpSimpleInterface.kt",
             "GenericInterface.kt:NoOpGenericInterface.kt",
-            "InheritedInterface.kt:NoOpInheritedInterface.kt"
+            "InheritedInterface.kt:NoOpInheritedInterface.kt",
+            "AnyGenericInterface.kt:NoOpAnyGenericInterface.kt"
         ]
     )
     fun `implement a NoOp class`(srcFileName: String, genFileName: String) {

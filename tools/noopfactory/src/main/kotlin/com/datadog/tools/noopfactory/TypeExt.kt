@@ -44,9 +44,9 @@ internal fun TypeName.javaToKotlinType(): TypeName {
         }
         is WildcardTypeName -> {
             if (inTypes.isNotEmpty()) {
-                WildcardTypeName.consumerOf(inTypes[0].javaToKotlinType())
+                inTypes[0].javaToKotlinType()
             } else {
-                WildcardTypeName.producerOf(outTypes[0].javaToKotlinType())
+                outTypes[0].javaToKotlinType()
             }
         }
 

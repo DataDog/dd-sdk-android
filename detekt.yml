@@ -5,7 +5,7 @@ build:
   # LongParameterList: 1
   # style: 1
   # comments: 1
-  
+
 processors:
   active: true
   exclude:
@@ -504,7 +504,7 @@ style:
   RedundantExplicitType:
     active: true
   RedundantVisibilityModifierRule:
-    active: true
+    active: false
   ReturnCount:
     active: true
     max: 2
