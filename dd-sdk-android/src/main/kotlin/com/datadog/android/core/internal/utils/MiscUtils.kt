@@ -13,6 +13,14 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.util.Date
 
+internal fun retryWithDelay(
+    times: Int,
+    retryDelayNs: Long,
+    block: () -> Boolean
+): Boolean {
+    return retryWithDelay(block, times, retryDelayNs)
+}
+
 internal inline fun retryWithDelay(
     block: () -> Boolean,
     times: Int,
