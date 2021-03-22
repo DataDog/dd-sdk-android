@@ -10,7 +10,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogFileStrategy
+import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -49,7 +49,7 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(LogFileStrategy::class.java)
+            .isInstanceOf(LogFilePersistenceStrategy::class.java)
     }
 
     @Test

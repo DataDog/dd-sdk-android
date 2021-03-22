@@ -10,15 +10,14 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.tracing.internal.domain.TracingFileStrategy
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.opentracing.DDSpan
 
-internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>(
-    authorizedFolderName = TracingFileStrategy.AUTHORIZED_FOLDER
-) {
+internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
 
     // region SdkFeature
 
@@ -26,15 +25,15 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
         context: Context,
         configuration: Configuration.Feature.Tracing
     ): PersistenceStrategy<DDSpan> {
-        return TracingFileStrategy(
+        return TracesFilePersistenceStrategy(
+            CoreFeature.trackingConsentProvider,
             context,
-            timeProvider = CoreFeature.timeProvider,
-            networkInfoProvider = CoreFeature.networkInfoProvider,
-            userInfoProvider = CoreFeature.userInfoProvider,
-            envName = CoreFeature.envName,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
+            CoreFeature.persistenceExecutorService,
+            CoreFeature.timeProvider,
+            CoreFeature.networkInfoProvider,
+            CoreFeature.userInfoProvider,
+            CoreFeature.envName,
+            sdkLogger
         )
     }
 

@@ -10,15 +10,14 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogFileStrategy
+import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 
-internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>(
-    authorizedFolderName = LogFileStrategy.AUTHORIZED_FOLDER
-) {
+internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>() {
 
     // region SdkFeature
 
@@ -26,11 +25,11 @@ internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>(
         context: Context,
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<Log> {
-        return LogFileStrategy(
+        return LogFilePersistenceStrategy(
+            CoreFeature.trackingConsentProvider,
             context,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
+            CoreFeature.persistenceExecutorService,
+            sdkLogger
         )
     }
 

@@ -10,16 +10,16 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.rebuildSdkLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 
-internal object InternalLogsFeature : SdkFeature<Log, Configuration.Feature.InternalLogs>(
-    authorizedFolderName = InternalLogFileStrategy.AUTHORIZED_FOLDER
-) {
+internal object InternalLogsFeature : SdkFeature<Log, Configuration.Feature.InternalLogs>() {
 
     internal const val SERVICE_NAME = "dd-sdk-android"
     internal const val ENV_NAME = "prod"
@@ -41,11 +41,11 @@ internal object InternalLogsFeature : SdkFeature<Log, Configuration.Feature.Inte
         context: Context,
         configuration: Configuration.Feature.InternalLogs
     ): PersistenceStrategy<Log> {
-        return InternalLogFileStrategy(
+        return InternalLogFilePersistenceStrategy(
+            CoreFeature.trackingConsentProvider,
             context,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
+            CoreFeature.persistenceExecutorService,
+            Logger(NoOpLogHandler())
         )
     }
 

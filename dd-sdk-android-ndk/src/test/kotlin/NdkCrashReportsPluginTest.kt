@@ -74,7 +74,6 @@ internal class NdkCrashReportsPluginTest {
             mockedContext,
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
-            forge.anAlphabeticalString(),
             forge.aValueFrom(TrackingConsent::class.java)
         )
         testedPlugin.setFieldValue("nativeLibraryLoaded", true)
@@ -101,7 +100,6 @@ internal class NdkCrashReportsPluginTest {
         }
         val config = DatadogPluginConfig(
             mockedContext,
-            forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
             forge.aValueFrom(TrackingConsent::class.java)

@@ -16,6 +16,5 @@ class DatadogPluginConfig(
     val context: Context,
     val envName: String,
     val serviceName: String,
-    val featurePersistenceDirName: String,
     val trackingConsent: TrackingConsent
 )

@@ -224,7 +224,7 @@ interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy
   fun unregister()
   fun onContextChanged(DatadogContext)
 class com.datadog.android.plugin.DatadogPluginConfig
-  constructor(android.content.Context, String, String, String, com.datadog.android.privacy.TrackingConsent)
+  constructor(android.content.Context, String, String, com.datadog.android.privacy.TrackingConsent)
 class com.datadog.android.plugin.DatadogRumContext
   constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature

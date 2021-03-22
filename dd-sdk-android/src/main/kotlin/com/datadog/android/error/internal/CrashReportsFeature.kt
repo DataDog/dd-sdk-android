@@ -10,15 +10,14 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 
-internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.CrashReport>(
-    authorizedFolderName = CrashLogFileStrategy.AUTHORIZED_FOLDER
-) {
+internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.CrashReport>() {
 
     private var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
@@ -36,11 +35,11 @@ internal object CrashReportsFeature : SdkFeature<Log, Configuration.Feature.Cras
         context: Context,
         configuration: Configuration.Feature.CrashReport
     ): PersistenceStrategy<Log> {
-        return CrashLogFileStrategy(
+        return CrashReportFilePersistenceStrategy(
+            CoreFeature.trackingConsentProvider,
             context,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
+            CoreFeature.persistenceExecutorService,
+            sdkLogger
         )
     }
 

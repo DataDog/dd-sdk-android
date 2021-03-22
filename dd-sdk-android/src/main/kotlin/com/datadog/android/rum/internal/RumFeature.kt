@@ -10,12 +10,14 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -25,9 +27,7 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 
-internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
-    authorizedFolderName = RumFileStrategy.AUTHORIZED_FOLDER
-) {
+internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     internal var samplingRate: Float = 0f
 
@@ -63,12 +63,13 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>(
         context: Context,
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<RumEvent> {
-        return RumFileStrategy(
+        return RumFilePersistenceStrategy(
+            CoreFeature.trackingConsentProvider,
             context,
-            trackingConsentProvider = CoreFeature.trackingConsentProvider,
-            dataPersistenceExecutorService = CoreFeature.persistenceExecutorService,
-            eventMapper = configuration.rumEventMapper,
-            filePersistenceConfig = CoreFeature.buildFilePersistenceConfig()
+            configuration.rumEventMapper,
+            CoreFeature.persistenceExecutorService,
+            sdkLogger,
+            DatadogNdkCrashHandler.getLastViewEventFile(context)
         )
     }
 

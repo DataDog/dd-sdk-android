@@ -11,19 +11,17 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
-internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
-    internal val authorizedFolderName: String
-) {
+internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
 
     internal val initialized = AtomicBoolean(false)
 
@@ -49,7 +47,6 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
                 context = context,
                 envName = CoreFeature.envName,
                 serviceName = CoreFeature.serviceName,
-                featurePersistenceDirName = authorizedFolderName,
                 trackingConsent = CoreFeature.trackingConsentProvider.getConsent()
             ),
             CoreFeature.trackingConsentProvider
@@ -67,7 +64,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
     }
 
     fun clearAllData() {
-        persistenceStrategy.clearAllData()
+        persistenceStrategy.getReader().dropAll()
     }
 
     fun stop() {

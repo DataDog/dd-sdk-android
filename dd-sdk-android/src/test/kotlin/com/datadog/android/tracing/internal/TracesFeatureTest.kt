@@ -9,7 +9,7 @@ package com.datadog.android.tracing.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.tracing.internal.domain.TracingFileStrategy
+import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
@@ -50,7 +50,7 @@ internal class TracesFeatureTest :
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(TracingFileStrategy::class.java)
+            .isInstanceOf(TracesFilePersistenceStrategy::class.java)
     }
 
     @Test
