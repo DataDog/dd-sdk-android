@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.privacy.TrackingConsent
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareFileMigrator(
     private val fileHandler: FileHandler,
@@ -68,6 +69,14 @@ internal class ConsentAwareFileMigrator(
                 NoOpDataMigrationOperation()
             }
         }
-        executorService.submit(operation)
+        try {
+            executorService.submit(operation)
+        } catch (e: RejectedExecutionException) {
+            internalLogger.e(ERROR_REJECTED, e)
+        }
+    }
+
+    companion object {
+        internal const val ERROR_REJECTED = "Unable to schedule migration on the executor"
     }
 }

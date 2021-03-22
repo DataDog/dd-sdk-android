@@ -7,8 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -16,6 +15,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -64,7 +64,7 @@ internal class RumContinuousActionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockWriter: Writer<RumEvent>
+    lateinit var mockWriter: DataWriter<RumEvent>
 
     @Forgery
     lateinit var fakeType: RumActionType
@@ -102,7 +102,9 @@ internal class RumContinuousActionScopeTest {
             fakeEventTime,
             fakeType,
             fakeName,
-            fakeAttributes
+            fakeAttributes,
+            TEST_INACTIVITY_MS,
+            TEST_MAX_DURATION_MS
         )
     }
 
@@ -182,7 +184,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
         // Given
         testedScope.viewTreeChangeCount = 1
-        Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
+        Thread.sleep(TEST_MAX_DURATION_MS)
 
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -197,7 +199,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasDurationGreaterThan(TEST_MAX_DURATION_NS)
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -227,10 +229,10 @@ internal class RumContinuousActionScopeTest {
         testedScope.viewTreeChangeCount = 1
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(type, name, attributes)
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -243,7 +245,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasTargetName(name)
                     hasType(type)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -271,10 +273,10 @@ internal class RumContinuousActionScopeTest {
         testedScope.viewTreeChangeCount = 1
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(null, null, attributes)
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -287,7 +289,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasTargetName(fakeName)
                     hasType(fakeType)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -317,10 +319,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(1000)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap())
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -333,8 +335,8 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(1000))
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 4))
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -366,7 +368,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(1000)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopResourceWithError(
             key,
             statusCode,
@@ -376,7 +378,7 @@ internal class RumContinuousActionScopeTest {
             emptyMap()
         )
         val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -389,8 +391,8 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 4))
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(0)
@@ -420,8 +422,9 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(1000)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = mockEvent()
+        key = null
         System.gc()
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
@@ -435,7 +438,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1000))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -449,6 +452,7 @@ internal class RumContinuousActionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
+        assertThat(key as Any?).isNull()
     }
 
     @Test
@@ -467,10 +471,10 @@ internal class RumContinuousActionScopeTest {
             emptyMap()
         )
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(1000)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -483,8 +487,8 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(1000))
-                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(1500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 4))
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(0)
@@ -746,7 +750,7 @@ internal class RumContinuousActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -791,7 +795,7 @@ internal class RumContinuousActionScopeTest {
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -830,7 +834,7 @@ internal class RumContinuousActionScopeTest {
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -869,7 +873,7 @@ internal class RumContinuousActionScopeTest {
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -910,7 +914,7 @@ internal class RumContinuousActionScopeTest {
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -948,7 +952,7 @@ internal class RumContinuousActionScopeTest {
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
@@ -1042,7 +1046,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.viewTreeChangeCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
 
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -1074,7 +1078,7 @@ internal class RumContinuousActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(1000)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -1092,10 +1096,10 @@ internal class RumContinuousActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -1114,7 +1118,7 @@ internal class RumContinuousActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
+        Thread.sleep(TEST_MAX_DURATION_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -1127,7 +1131,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasDurationGreaterThan(TEST_MAX_DURATION_NS)
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -1152,10 +1156,10 @@ internal class RumContinuousActionScopeTest {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
-        Thread.sleep(RumActionScope.ACTION_MAX_DURATION_MS)
+        Thread.sleep(TEST_MAX_DURATION_MS)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -1168,7 +1172,7 @@ internal class RumContinuousActionScopeTest {
                     hasTimestamp(fakeEventTime.timestamp)
                     hasType(fakeType)
                     hasTargetName(fakeName)
-                    hasDurationGreaterThan(RumActionScope.ACTION_MAX_DURATION_NS)
+                    hasDurationGreaterThan(TEST_MAX_DURATION_NS)
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -1191,13 +1195,13 @@ internal class RumContinuousActionScopeTest {
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         val duration = measureNanoTime {
-            repeat(10) {
-                Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS / 3)
+            repeat(4) {
+                Thread.sleep(TEST_INACTIVITY_MS / 3)
                 testedScope.handleEvent(RumRawEvent.ViewTreeChanged(Time()), mockWriter)
             }
         }
         testedScope.handleEvent(RumRawEvent.ViewTreeChanged(Time()), mockWriter)
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
+        Thread.sleep(TEST_INACTIVITY_MS)
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
@@ -1235,4 +1239,10 @@ internal class RumContinuousActionScopeTest {
     }
 
     // endregion
+
+    companion object {
+        internal const val TEST_INACTIVITY_MS = 30L
+        internal const val TEST_MAX_DURATION_MS = 500L
+        internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
+    }
 }

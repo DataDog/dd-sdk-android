@@ -6,9 +6,9 @@
 
 package com.datadog.android.rum.internal.monitor
 
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation

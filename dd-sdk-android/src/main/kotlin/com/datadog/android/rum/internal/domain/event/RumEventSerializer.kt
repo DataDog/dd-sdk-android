@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent

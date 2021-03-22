@@ -7,13 +7,13 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -69,7 +69,7 @@ internal class DatadogRumMonitorTest {
     lateinit var mockScope: RumScope
 
     @Mock
-    lateinit var mockWriter: Writer<RumEvent>
+    lateinit var mockWriter: DataWriter<RumEvent>
 
     @Mock
     lateinit var mockHandler: Handler

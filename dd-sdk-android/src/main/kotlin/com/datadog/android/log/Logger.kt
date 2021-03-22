@@ -10,7 +10,7 @@ import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
@@ -324,7 +324,7 @@ internal constructor(internal val handler: LogHandler) {
             )
         }
 
-        private fun buildInternalLogWriter(): Writer<Log>? {
+        private fun buildInternalLogWriter(): DataWriter<Log>? {
             return if (InternalLogsFeature.isInitialized()) {
                 InternalLogsFeature.persistenceStrategy.getWriter()
             } else {
@@ -332,7 +332,7 @@ internal constructor(internal val handler: LogHandler) {
             }
         }
 
-        private fun buildLogWriter(): Writer<Log>? {
+        private fun buildLogWriter(): DataWriter<Log>? {
             return if (LogsFeature.isInitialized()) {
                 LogsFeature.persistenceStrategy.getWriter()
             } else {

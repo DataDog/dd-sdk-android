@@ -11,8 +11,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -86,7 +86,7 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeUserInfo: UserInfo
 
     @Mock
-    lateinit var mockWriter: Writer<Log>
+    lateinit var mockWriter: DataWriter<Log>
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor

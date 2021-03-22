@@ -6,21 +6,26 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import android.util.Log
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -259,5 +264,31 @@ internal class ConsentAwareFileMigratorTest {
 
             assertThat(firstValue).isInstanceOf(NoOpDataMigrationOperation::class.java)
         }
+    }
+
+    @Test
+    fun `𝕄 warn 𝕎 migrateData() {submission rejected}`(
+        @Forgery previousConsent: TrackingConsent,
+        @Forgery newConsent: TrackingConsent,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val exception = RejectedExecutionException(errorMessage)
+        whenever(mockExecutorService.submit(any())) doThrow exception
+
+        // When
+        testedMigrator.migrateData(
+            previousConsent,
+            mockPreviousOrchestrator,
+            newConsent,
+            mockNewOrchestrator
+        )
+
+        // Then
+        verify(mockLogHander).handleLog(
+            Log.ERROR,
+            ConsentAwareFileMigrator.ERROR_REJECTED,
+            throwable = exception
+        )
     }
 }

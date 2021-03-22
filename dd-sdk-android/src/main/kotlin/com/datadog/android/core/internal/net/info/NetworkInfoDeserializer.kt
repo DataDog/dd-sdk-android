@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.net.info
 
-import com.datadog.android.core.internal.domain.Deserializer
+import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 import com.google.gson.JsonParseException

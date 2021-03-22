@@ -10,9 +10,9 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.data.NoOpWriter
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
@@ -42,7 +42,7 @@ internal class RumSessionScope(
     private var applicationDisplayed: Boolean = false
 
     private val random = SecureRandom()
-    private val noOpWriter = NoOpWriter<RumEvent>()
+    private val noOpWriter = NoOpDataWriter<RumEvent>()
 
     init {
         GlobalRum.updateRumContext(getRumContext())
@@ -52,7 +52,7 @@ internal class RumSessionScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
             sessionId = RumContext.NULL_UUID
@@ -100,7 +100,7 @@ internal class RumSessionScope(
     internal fun onApplicationDisplayed(
         event: RumRawEvent.StartView,
         viewScope: RumViewScope,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true

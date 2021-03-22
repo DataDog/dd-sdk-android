@@ -6,11 +6,10 @@
 
 package com.datadog.android.log.internal.user
 
-import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.model.UserInfo
 
-internal class UserInfoSerializer :
-    Serializer<UserInfo> {
+internal class UserInfoSerializer : Serializer<UserInfo> {
 
     override fun serialize(model: UserInfo): String {
         return model.toJson().asJsonObject.toString()

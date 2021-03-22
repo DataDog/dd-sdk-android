@@ -7,9 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -19,6 +18,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -33,7 +33,6 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -74,7 +73,7 @@ internal class RumResourceScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: Writer<RumEvent>
+    lateinit var mockWriter: DataWriter<RumEvent>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
@@ -142,7 +141,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -159,7 +158,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -191,7 +190,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -208,7 +207,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -251,7 +250,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -268,7 +267,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -304,7 +303,7 @@ internal class RumResourceScopeTest {
         attributes[RumAttributes.SPAN_ID] = fakeSpanId
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -321,7 +320,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -354,7 +353,7 @@ internal class RumResourceScopeTest {
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -371,7 +370,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -395,7 +394,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -411,7 +410,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -435,7 +434,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -468,7 +467,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -488,7 +487,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -517,7 +516,7 @@ internal class RumResourceScopeTest {
         GlobalRum.globalAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -534,7 +533,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -568,7 +567,7 @@ internal class RumResourceScopeTest {
         // When
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -585,7 +584,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -621,7 +620,7 @@ internal class RumResourceScopeTest {
         // When
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -638,7 +637,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasNoTiming()
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -680,7 +679,7 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -743,7 +742,7 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -799,7 +798,7 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -855,7 +854,7 @@ internal class RumResourceScopeTest {
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -912,7 +911,7 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
@@ -955,7 +954,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
 
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -979,7 +978,7 @@ internal class RumResourceScopeTest {
             emptyMap()
         )
 
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -1001,7 +1000,7 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -1025,7 +1024,7 @@ internal class RumResourceScopeTest {
 
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -1040,7 +1039,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -1073,7 +1072,7 @@ internal class RumResourceScopeTest {
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -1088,7 +1087,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(fakeParentContext)
@@ -1122,7 +1121,7 @@ internal class RumResourceScopeTest {
         val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
-        Thread.sleep(500)
+        Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
 
@@ -1137,7 +1136,7 @@ internal class RumResourceScopeTest {
                     hasMethod(fakeMethod)
                     hasKind(kind)
                     hasStatusCode(statusCode)
-                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(500))
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -1164,4 +1163,8 @@ internal class RumResourceScopeTest {
     }
 
     // endregion
+
+    companion object {
+        private const val RESOURCE_DURATION_MS = 50L
+    }
 }

@@ -10,8 +10,8 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.domain.Serializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.model.NetworkInfo

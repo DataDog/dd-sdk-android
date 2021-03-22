@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.user
 
-import com.datadog.android.core.internal.domain.Deserializer
+import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.google.gson.JsonParseException

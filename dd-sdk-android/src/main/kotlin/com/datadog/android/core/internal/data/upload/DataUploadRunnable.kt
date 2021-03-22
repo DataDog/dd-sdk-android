@@ -7,11 +7,11 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.Batch
+import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -23,7 +23,7 @@ import kotlin.math.min
 
 internal class DataUploadRunnable(
     private val threadPoolExecutor: ScheduledThreadPoolExecutor,
-    private val reader: Reader,
+    private val reader: DataReader,
     private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
@@ -38,7 +38,7 @@ internal class DataUploadRunnable(
 
     override fun run() {
         val batch = if (isNetworkAvailable() && isSystemReady()) {
-            reader.readNextBatch()
+            reader.lockAndReadNext()
         } else null
 
         if (batch != null) {
@@ -78,10 +78,10 @@ internal class DataUploadRunnable(
         val status = dataUploader.upload(batch.data)
         status.logStatus(dataUploader.javaClass.simpleName, batch.data.size)
         if (status in droppableBatchStatus) {
-            reader.dropBatch(batchId)
+            reader.drop(batch)
             decreaseInterval()
         } else {
-            reader.releaseBatch(batchId)
+            reader.release(batch)
             increaseInterval()
         }
     }

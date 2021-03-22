@@ -7,12 +7,12 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import java.lang.ref.WeakReference
@@ -26,8 +26,13 @@ internal class RumActionScope(
     eventTime: Time,
     initialType: RumActionType,
     initialName: String,
-    initialAttributes: Map<String, Any?>
+    initialAttributes: Map<String, Any?>,
+    inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
+    maxDurationdMs: Long = ACTION_MAX_DURATION_MS
 ) : RumScope {
+
+    private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
+    private val maxDurationdNs = TimeUnit.MILLISECONDS.toNanos(maxDurationdMs)
 
     private val eventTimestamp = eventTime.timestamp
     internal val actionId: String = UUID.randomUUID().toString()
@@ -51,10 +56,10 @@ internal class RumActionScope(
 
     // endregion
 
-    override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<RumEvent>): RumScope? {
         val now = event.eventTime.nanoTime
-        val isInactive = now - lastInteractionNanos > ACTION_INACTIVITY_NS
-        val isLongDuration = now - startedNanos > ACTION_MAX_DURATION_NS
+        val isInactive = now - lastInteractionNanos > inactivityThresholdNs
+        val isLongDuration = now - startedNanos > maxDurationdNs
         ongoingResourceKeys.removeAll { it.get() == null }
         val isOngoing = waitForStop && !stopped
         val shouldStop = isInactive && ongoingResourceKeys.isEmpty() && !isOngoing
@@ -90,7 +95,7 @@ internal class RumActionScope(
 
     private fun onStopView(
         now: Long,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         ongoingResourceKeys.clear()
         sendAction(now, writer)
@@ -130,7 +135,7 @@ internal class RumActionScope(
     private fun onError(
         event: RumRawEvent.AddError,
         now: Long,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         lastInteractionNanos = now
         errorCount++
@@ -159,7 +164,7 @@ internal class RumActionScope(
 
     private fun sendAction(
         endNanos: Long,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (sent) return
 
@@ -223,8 +228,6 @@ internal class RumActionScope(
     companion object {
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
-        private val ACTION_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_INACTIVITY_MS)
-        internal val ACTION_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(ACTION_MAX_DURATION_MS)
 
         fun fromEvent(
             parentScope: RumScope,

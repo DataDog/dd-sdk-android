@@ -12,14 +12,14 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
-import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
-    private val consentAwareDataWriter: ConsentAwareDataWriter<NetworkInfo>
+    private val dataWriter: DataWriter<NetworkInfo>
 ) :
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
@@ -27,7 +27,7 @@ internal class CallbackNetworkInfoProvider(
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
-            consentAwareDataWriter.write(field)
+            dataWriter.write(field)
         }
 
     // region NetworkCallback

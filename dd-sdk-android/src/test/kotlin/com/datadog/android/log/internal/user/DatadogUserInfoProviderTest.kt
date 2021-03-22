@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.user
 
-import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
@@ -29,11 +29,11 @@ internal class DatadogUserInfoProviderTest {
     lateinit var testedProvider: DatadogUserInfoProvider
 
     @Mock
-    lateinit var mockConsentAwareWriter: ConsentAwareDataWriter<UserInfo>
+    lateinit var mockWriter: DataWriter<UserInfo>
 
     @BeforeEach
     fun `set up`() {
-        testedProvider = DatadogUserInfoProvider(mockConsentAwareWriter)
+        testedProvider = DatadogUserInfoProvider(mockWriter)
     }
 
     @Test
@@ -63,6 +63,6 @@ internal class DatadogUserInfoProviderTest {
         testedProvider.setUserInfo(userInfo)
 
         // Then
-        verify(mockConsentAwareWriter).write(userInfo)
+        verify(mockWriter).write(userInfo)
     }
 }

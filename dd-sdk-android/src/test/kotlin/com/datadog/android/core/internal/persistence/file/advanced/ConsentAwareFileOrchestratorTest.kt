@@ -58,10 +58,21 @@ internal class ConsentAwareFileOrchestratorTest {
     @BeforeEach
     fun `set up`() {
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
-        reset(mockDataMigrator)
+        reset(mockDataMigrator, mockConsentProvider)
     }
 
     // region init
+
+    @Test
+    fun `𝕄 registers as listener 𝕎 init()`(
+        @Forgery consent: TrackingConsent
+    ) {
+        // When
+        instantiateTestedOrchestrator(consent)
+
+        // Then
+        verify(mockConsentProvider).registerCallback(testedOrchestrator)
+    }
 
     @Test
     fun `𝕄 migrate data 𝕎 init() {GRANTED}`() {

@@ -12,7 +12,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
-import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.log.internal.logger.LogHandler
@@ -60,7 +60,7 @@ internal class CallbackNetworkInfoProviderTest {
     lateinit var mockDevLogHandler: LogHandler
 
     @Mock
-    lateinit var mockConsentAwareWriter: ConsentAwareDataWriter<NetworkInfo>
+    lateinit var mockWriter: DataWriter<NetworkInfo>
 
     @BeforeEach
     fun `set up`() {
@@ -68,7 +68,7 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.hasTransport(any())) doReturn false
 
         testedProvider =
-            CallbackNetworkInfoProvider(mockConsentAwareWriter)
+            CallbackNetworkInfoProvider(mockWriter)
     }
 
     @Test
@@ -337,7 +337,7 @@ internal class CallbackNetworkInfoProviderTest {
         testedProvider.register(context)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        verify(mockConsentAwareWriter).write(networkInfo)
+        verify(mockWriter).write(networkInfo)
     }
 
     @Test
@@ -426,7 +426,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
+        verify(mockWriter).write(testedProvider.getLatestNetworkInfo())
     }
 
     @Test
@@ -463,7 +463,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
+        verify(mockWriter).write(testedProvider.getLatestNetworkInfo())
     }
 
     @Test
@@ -581,6 +581,6 @@ internal class CallbackNetworkInfoProviderTest {
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
 
         // THEN
-        verify(mockConsentAwareWriter).write(testedProvider.getLatestNetworkInfo())
+        verify(mockWriter).write(testedProvider.getLatestNetworkInfo())
     }
 }

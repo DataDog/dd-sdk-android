@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 
@@ -24,7 +24,7 @@ internal class RumApplicationScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ): RumScope? {
         childScope.handleEvent(event, writer)
         return this
