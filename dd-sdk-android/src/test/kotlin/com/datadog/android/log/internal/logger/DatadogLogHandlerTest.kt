@@ -445,7 +445,12 @@ internal class DatadogLogHandlerTest {
         Datadog.initialize(
             mockContext(),
             Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
-            Configuration.Builder(true, true, true, true).build(),
+            Configuration.Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            ).build(),
             TrackingConsent.GRANTED
         )
         val tracer = AndroidTracer.Builder().build()
@@ -500,7 +505,12 @@ internal class DatadogLogHandlerTest {
         Datadog.initialize(
             mockContext(),
             Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
-            Configuration.Builder(true, true, true, true).build(),
+            Configuration.Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            ).build(),
             TrackingConsent.GRANTED
         )
         val rumContext = forge.getForgery<RumContext>()

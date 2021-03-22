@@ -3,12 +3,18 @@
 
 void crash_with_sigsegv_signal() {
     int *pointer = nullptr;
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "NullDereferences"
     int t = *pointer;
+#pragma clang diagnostic pop
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "hicpp-exception-baseclass"
 void crash_with_sigabrt_signal() {
     throw "Unhandled Exception";
 }
+#pragma clang diagnostic pop
 
 int crash_with_sigill_signal() {
     // do not return anything to simulate the SIGILL

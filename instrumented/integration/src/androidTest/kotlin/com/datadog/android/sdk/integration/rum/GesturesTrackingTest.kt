@@ -6,8 +6,8 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import android.view.View
 import androidx.cardview.widget.CardView
-import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.swipeDown
@@ -65,6 +65,10 @@ internal abstract class GesturesTrackingTest :
 
     // region Internal
 
+    private fun View.targetName(): String {
+        return this.javaClass.canonicalName ?: this.javaClass.simpleName
+    }
+
     private fun expectedEvents(
         viewUrl: String,
         activity: GesturesTrackingPlaygroundActivity
@@ -77,7 +81,7 @@ internal abstract class GesturesTrackingTest :
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
-                activity.button.javaClass.canonicalName,
+                activity.button.targetName(),
                 "button"
             ),
             ExpectedViewEvent(
@@ -86,7 +90,8 @@ internal abstract class GesturesTrackingTest :
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,
-                CardView::class.java.canonicalName,
+                CardView::class.java.canonicalName
+                    ?: CardView::class.java.simpleName,
                 "recyclerViewRow",
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_TARGET_PARENT_INDEX to 2,
@@ -102,7 +107,7 @@ internal abstract class GesturesTrackingTest :
             ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
-                RecyclerView::class.java.canonicalName,
+                activity.recyclerView.targetName(),
                 "recyclerView",
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"

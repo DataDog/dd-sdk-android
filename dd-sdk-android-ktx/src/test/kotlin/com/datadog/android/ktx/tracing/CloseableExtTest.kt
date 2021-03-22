@@ -15,7 +15,6 @@ import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -67,9 +66,9 @@ class CloseableExtTest {
     }
 
     @Test
-    fun `M send an error event W exception in the block`(forge: Forge) {
+    fun `M send an error event W exception in the block`() {
         // GIVEN
-        var caughtException: Throwable? = null
+        val caughtException: Throwable?
 
         // WHEN
         try {
@@ -91,9 +90,9 @@ class CloseableExtTest {
     }
 
     @Test
-    fun `M close the closeable instance W exception in the block`(forge: Forge) {
+    fun `M close the closeable instance W exception in the block`() {
         // GIVEN
-        var caughtException: Throwable? = null
+        val caughtException: Throwable?
         // WHEN
         try {
             testMockCloseable.useMonitored {
@@ -110,7 +109,7 @@ class CloseableExtTest {
     }
 
     @Test
-    fun `M close the closeable instance W no exception in the block`(forge: Forge) {
+    fun `M close the closeable instance W no exception in the block`() {
         // WHEN
         val returnedValue = testMockCloseable.useMonitored {
             fakeString

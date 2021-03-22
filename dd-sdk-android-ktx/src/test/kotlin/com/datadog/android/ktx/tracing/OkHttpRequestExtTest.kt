@@ -8,7 +8,7 @@ package com.datadog.android.ktx.tracing
 
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Span
@@ -31,7 +31,7 @@ class OkHttpRequestExtTest {
 
     @Test
     fun `set the parentSpan through the Request builder`(
-        @RegexForgery("http://[a-z0-9_]{8}\\.[a-z]{3}/") fakeUrl: String
+        @StringForgery(regex = "http://[a-z0-9_]{8}\\.[a-z]{3}/") fakeUrl: String
     ) {
         val parentSpan: Span = mock()
         val request = Request.Builder().url(fakeUrl).parentSpan(parentSpan).build()

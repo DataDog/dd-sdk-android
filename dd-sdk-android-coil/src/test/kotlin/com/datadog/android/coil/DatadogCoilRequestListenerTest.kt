@@ -168,7 +168,7 @@ internal class DatadogCoilRequestListenerTest {
     }
 
     @Test
-    fun `M send RUM error event W Drawable Request fails`(forge: Forge) {
+    fun `M send RUM error event W Drawable Request fails`() {
         // GIVEN
         val mockDrawable: Drawable = mock()
         mockRequest = mockImageRequest(mockDrawable)
@@ -188,7 +188,7 @@ internal class DatadogCoilRequestListenerTest {
     }
 
     @Test
-    fun `M send RUM error event W Bitmap Request fails`(forge: Forge) {
+    fun `M send RUM error event W Bitmap Request fails`() {
         // GIVEN
         val mockDrawable: Bitmap = mock()
         mockRequest = mockImageRequest(mockDrawable)

@@ -21,7 +21,7 @@ import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.annotation.RegexForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
@@ -61,7 +61,7 @@ internal class DatadogGlideModuleTest {
     @Mock
     lateinit var mockRegistry: Registry
 
-    @RegexForgery("[a-z]+\\.[a-z]{3}")
+    @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeHost: String
 
     @BeforeEach

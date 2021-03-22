@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
     implementation(Dependencies.Libraries.Kotlin)
+    implementation(Dependencies.Libraries.KotlinReflect)
     compileOnly(Dependencies.Libraries.DetektApi)
 
     testImplementation(Dependencies.Libraries.JUnit5)
@@ -34,6 +35,4 @@ kotlinConfig()
 detektConfig()
 ktLintConfig()
 junitConfig()
-// jacocoConfig()
 dependencyUpdateConfig()
-// publishingConfig("${rootDir.canonicalPath}/repo")

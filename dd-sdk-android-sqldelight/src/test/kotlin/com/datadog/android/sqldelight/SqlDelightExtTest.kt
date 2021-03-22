@@ -85,12 +85,12 @@ class SqlDelightExtTest {
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
         doAnswer {
-            (it.arguments[1] as TransactionWithoutReturn.() -> Unit).invoke(
+            it.getArgument<TransactionWithoutReturn.() -> Unit>(1).invoke(
                 mockTransactionWithoutReturn
             )
         }.whenever(mockTransacter).transaction(any(), any())
         doAnswer {
-            (it.arguments[1] as TransactionWithReturn<Any>.() -> Boolean).invoke(
+            it.getArgument<TransactionWithReturn<Any>.() -> Boolean>(1).invoke(
                 mockTransactionWithReturn
             )
         }.whenever(mockTransacter)
@@ -282,13 +282,12 @@ class SqlDelightExtTest {
         // // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
         whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
-        var transactionExecuted = false
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
 
         // WHEN
-        transactionExecuted =
+        val transactionExecuted =
             mockTransacter.transactionTracedWithResult(fakeOperationName, true, body)
 
         // THEN
@@ -310,13 +309,12 @@ class SqlDelightExtTest {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
         whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
-        var transactionExecuted = false
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
 
         // WHEN
-        transactionExecuted =
+        val transactionExecuted =
             mockTransacter.transactionTracedWithResult(fakeOperationName, false, body)
 
         // THEN
@@ -339,13 +337,12 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
         whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
-        var transactionExecuted = false
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
 
         // WHEN
-        transactionExecuted =
+        val transactionExecuted =
             mockTransacter.transactionTracedWithResult(fakeOperationName, fakeNoEnclosing, body)
 
         // THEN
@@ -432,7 +429,6 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
         whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
-        var transactionExecuted = false
         val afterCommitLambda = {
         }
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
@@ -441,7 +437,7 @@ class SqlDelightExtTest {
         }
 
         // WHEN
-        transactionExecuted =
+        val transactionExecuted =
             mockTransacter.transactionTracedWithResult(fakeOperationName, fakeNoEnclosing, body)
 
         // THEN
@@ -457,14 +453,13 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
         whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
-        var transactionExecuted = false
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             setTag(fakeTagKey, fakeTagValue)
             true
         }
 
         // WHEN
-        transactionExecuted =
+        val transactionExecuted =
             mockTransacter.transactionTracedWithResult(fakeOperationName, fakeNoEnclosing, body)
 
         // THEN

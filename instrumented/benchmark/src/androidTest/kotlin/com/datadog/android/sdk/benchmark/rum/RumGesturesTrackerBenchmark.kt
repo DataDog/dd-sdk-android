@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.sdk.benchmark.rum
 
 import androidx.benchmark.junit4.BenchmarkRule
@@ -16,7 +18,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -27,6 +31,7 @@ import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeGenericMethod
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -68,11 +73,27 @@ internal class RumGesturesTrackerBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        val config = DatadogConfig
-            .Builder("NO_TOKEN", "benchmark")
+        val config = Configuration
+            .Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            )
             .useCustomTracesEndpoint(fakeEndpoint)
             .build()
-        Datadog.initialize(context, config)
+        Datadog.initialize(
+            context,
+            Credentials(
+                "NO_TOKEN",
+                "benchmark",
+                "benchmark",
+                UUID.randomUUID().toString()
+            ),
+            config,
+            TrackingConsent.GRANTED
+        )
+
         val attrsProviderClassName =
             "com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider"
         val viewAttributesProvider: ViewAttributesProvider =

@@ -12,7 +12,6 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -58,7 +57,7 @@ class DatadogRumErrorConsumerTest {
     }
 
     @Test
-    fun `M send an error event W intercepting an exception`(forge: Forge) {
+    fun `M send an error event W intercepting an exception`() {
         // WHEN
         testedConsumer.accept(fakeException)
 

@@ -11,12 +11,15 @@ import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogConfig
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.benchmark.aThrowable
 import com.datadog.android.sdk.benchmark.mockResponse
 import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import java.util.UUID
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -31,6 +34,7 @@ import org.junit.runner.RunWith
 class LogApiBenchmark {
     @get:Rule
     val benchmark = BenchmarkRule()
+
     @get:Rule
     val forge = ForgeRule()
 
@@ -51,11 +55,26 @@ class LogApiBenchmark {
         val fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
 
         val context = InstrumentationRegistry.getInstrumentation().context
-        val config = DatadogConfig
-            .Builder("NO_TOKEN", "benchmark")
+        val config = Configuration
+            .Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            )
             .useCustomLogsEndpoint(fakeEndpoint)
             .build()
-        Datadog.initialize(context, config)
+        Datadog.initialize(
+            context,
+            Credentials(
+                "NO_TOKEN",
+                "benchmark",
+                "benchmark",
+                UUID.randomUUID().toString()
+            ),
+            config,
+            TrackingConsent.GRANTED
+        )
 
         testedLogger = Logger.Builder()
             .setDatadogLogsEnabled(true)
