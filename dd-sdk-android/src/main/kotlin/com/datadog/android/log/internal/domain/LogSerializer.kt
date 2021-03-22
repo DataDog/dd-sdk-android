@@ -25,7 +25,8 @@ import java.util.TimeZone
  */
 internal class LogSerializer(
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) : Serializer<Log> {
+) : Serializer<Log>,
+    com.datadog.android.core.internal.domain.Serializer<Log> {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")

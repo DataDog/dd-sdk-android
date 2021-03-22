@@ -4,21 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.user
+package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.google.gson.JsonParseException
 import java.util.Locale
 
-internal class UserInfoDeserializer(
+internal class NdkCrashLogDeserializer(
     private val internalLogger: Logger
-) : Deserializer<UserInfo> {
+) : Deserializer<NdkCrashLog> {
 
-    override fun deserialize(model: String): UserInfo? {
+    override fun deserialize(model: String): NdkCrashLog? {
         return try {
-            UserInfo.fromJson(model)
+            NdkCrashLog.fromJson(model)
         } catch (e: JsonParseException) {
             internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
@@ -30,6 +29,6 @@ internal class UserInfoDeserializer(
 
     companion object {
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized UserInfo: %s"
+            "Error while trying to deserialize the serialized NDK Crash info: %s"
     }
 }

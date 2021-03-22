@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.net.info
 
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -27,11 +30,15 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class NetworkInfoDeserializerTest {
+
     lateinit var testedDeserializer: NetworkInfoDeserializer
+
+    @Mock
+    lateinit var mockLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
-        testedDeserializer = NetworkInfoDeserializer()
+        testedDeserializer = NetworkInfoDeserializer(Logger(mockLogHandler))
     }
 
     @Test

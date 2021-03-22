@@ -30,7 +30,8 @@ internal class SpanSerializer(
     private val userInfoProvider: UserInfoProvider,
     private val envName: String,
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) : Serializer<DDSpan> {
+) : Serializer<DDSpan>,
+    com.datadog.android.core.internal.domain.Serializer<DDSpan> {
 
     // region Serializer
 

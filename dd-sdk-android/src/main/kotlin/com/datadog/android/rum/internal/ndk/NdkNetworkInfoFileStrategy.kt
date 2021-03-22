@@ -30,13 +30,13 @@ internal class NdkNetworkInfoFileStrategy(
     intermediateFileOrchestrator = NdkFileOrchestrator(
         File(
             ndkTempDir,
-            DatadogNdkCrashHandler.LAST_NETWORK_INFORMATION_FILE_NAME
+            DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME
         )
     ),
     authorizedFileOrchestrator = NdkFileOrchestrator(
         File(
             ndkDir,
-            DatadogNdkCrashHandler.LAST_NETWORK_INFORMATION_FILE_NAME
+            DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME
         )
     )
 )

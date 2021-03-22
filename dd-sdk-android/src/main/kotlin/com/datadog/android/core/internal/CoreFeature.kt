@@ -45,6 +45,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
+import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
 import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
@@ -167,9 +168,11 @@ internal object CoreFeature {
                     envName,
                     packageVersion
                 ),
+                NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
-                NetworkInfoDeserializer(),
-                UserInfoDeserializer()
+                NetworkInfoDeserializer(sdkLogger),
+                UserInfoDeserializer(sdkLogger),
+                sdkLogger
             )
             ndkCrashHandler.prepareData()
         }

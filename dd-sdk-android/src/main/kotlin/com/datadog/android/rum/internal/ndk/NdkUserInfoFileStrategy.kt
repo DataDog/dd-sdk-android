@@ -30,13 +30,13 @@ internal class NdkUserInfoFileStrategy(
     intermediateFileOrchestrator = NdkFileOrchestrator(
         File(
             ndkTempDir,
-            DatadogNdkCrashHandler.LAST_USER_INFORMATION_FILE_NAME
+            DatadogNdkCrashHandler.USER_INFO_FILE_NAME
         )
     ),
     authorizedFileOrchestrator = NdkFileOrchestrator(
         File(
             ndkDir,
-            DatadogNdkCrashHandler.LAST_USER_INFORMATION_FILE_NAME
+            DatadogNdkCrashHandler.USER_INFO_FILE_NAME
         )
     )
 )

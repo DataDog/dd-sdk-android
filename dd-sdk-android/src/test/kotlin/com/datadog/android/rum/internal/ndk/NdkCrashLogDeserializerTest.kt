@@ -4,12 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.user
+package com.datadog.android.rum.internal.ndk
 
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -30,34 +28,30 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class UserInfoDeserializerTest {
+internal class NdkCrashLogDeserializerTest {
 
-    lateinit var testedDeserializer: UserInfoDeserializer
+    lateinit var testedDeserializer: NdkCrashLogDeserializer
 
     @Mock
     lateinit var mockLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
-        testedDeserializer = UserInfoDeserializer(Logger(mockLogHandler))
+        testedDeserializer = NdkCrashLogDeserializer(Logger(mockLogHandler))
     }
 
     @Test
-    fun `M deserialize a model W deserialize`(@Forgery fakeUserInfo: UserInfo) {
+    fun `M deserialize a model W deserialize`(
+        @Forgery fakeNdkCrashLog: NdkCrashLog
+    ) {
         // GIVEN
-        val serializedUserInfo = fakeUserInfo.toJson().asJsonObject.toString()
+        val serializedNdkCrashLog = fakeNdkCrashLog.toJson()
 
         // WHEN
-        val deserializedUserInfo = testedDeserializer.deserialize(serializedUserInfo)
+        val deserializedNdkCrashLog = testedDeserializer.deserialize(serializedNdkCrashLog)
 
         // THEN
-        assertThat(deserializedUserInfo).isEqualToIgnoringGivenFields(
-            fakeUserInfo,
-            "additionalProperties"
-        )
-
-        DatadogMapAnyValueAssert.assertThat(deserializedUserInfo!!.additionalProperties)
-            .isEqualTo(fakeUserInfo.additionalProperties)
+        assertThat(deserializedNdkCrashLog).isEqualTo(fakeNdkCrashLog)
     }
 
     @Test
