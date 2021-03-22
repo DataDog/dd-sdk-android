@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
@@ -20,6 +21,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.ExecutorService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,6 +52,9 @@ internal class BatchFilePersistenceStrategyTest {
     @Mock
     lateinit var mockLogHandler: LogHandler
 
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
+
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
 
@@ -61,6 +66,7 @@ internal class BatchFilePersistenceStrategyTest {
 
         testedStrategy = BatchFilePersistenceStrategy(
             mockFileOrchestrator,
+            mockExecutorService,
             mockSerializer,
             fakePayloadDecoration,
             Logger(mockLogHandler)
@@ -73,7 +79,10 @@ internal class BatchFilePersistenceStrategyTest {
         val writer = testedStrategy.getWriter()
 
         // Then
-        assertThat(writer).isInstanceOf(BatchFileDataWriter::class.java)
+        assertThat(writer).isInstanceOf(ScheduledWriter::class.java)
+        val scheduledWriter = writer as ScheduledWriter
+        assertThat(scheduledWriter.delegateWriter).isInstanceOf(BatchFileDataWriter::class.java)
+        assertThat(scheduledWriter.executorService).isSameAs(mockExecutorService)
     }
 
     @Test
@@ -114,9 +123,11 @@ internal class BatchFilePersistenceStrategyTest {
         val reader = testedStrategy.getReader()
 
         // Then
-        check(writer is BatchFileDataWriter)
+        check(writer is ScheduledWriter)
         check(reader is BatchFileDataReader)
-        assertThat(writer.fileOrchestrator).isSameAs(reader.fileOrchestrator)
+        val delegateWriter = writer.delegateWriter
+        check(delegateWriter is BatchFileDataWriter)
+        assertThat(delegateWriter.fileOrchestrator).isSameAs(reader.fileOrchestrator)
     }
 
     @Test
@@ -128,9 +139,11 @@ internal class BatchFilePersistenceStrategyTest {
         val reader = testedStrategy.getReader()
 
         // Then
-        check(writer is BatchFileDataWriter)
+        check(writer is ScheduledWriter)
         check(reader is BatchFileDataReader)
-        assertThat(writer.decoration).isSameAs(reader.decoration)
+        val delegateWriter = writer.delegateWriter
+        check(delegateWriter is BatchFileDataWriter)
+        assertThat(delegateWriter.decoration).isSameAs(reader.decoration)
     }
 
     @Test
@@ -142,8 +155,10 @@ internal class BatchFilePersistenceStrategyTest {
         val reader = testedStrategy.getReader()
 
         // Then
-        check(writer is BatchFileDataWriter)
+        check(writer is ScheduledWriter)
         check(reader is BatchFileDataReader)
-        assertThat(writer.handler).isSameAs(reader.handler)
+        val delegateWriter = writer.delegateWriter
+        check(delegateWriter is BatchFileDataWriter)
+        assertThat(delegateWriter.handler).isSameAs(reader.handler)
     }
 }
