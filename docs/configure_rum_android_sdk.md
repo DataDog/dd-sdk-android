@@ -89,11 +89,12 @@ The following attributes are **optional**, but it is recommended to provide **at
 | usr.name  | String | User friendly name, displayed by default in the RUM UI.                                                  |
 | usr.email | String | User email, displayed in the RUM UI if the user name is not present. It is also used to fetch Gravatars. |
 
-To identify user sessions, use the `setUser` API:
+To identify user sessions, use the `setUser` API, for example:
 
-// TODO Add code snippet
-//Datadog.setUserInfo()
-
+```kotlin
+Datadog.setUserInfo('1234', 'John Doe', 'john@doe.com')
+```
+s
 ## Set general attributes
 
    ```kotlin
