@@ -10,6 +10,7 @@ import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.datalist.DataSourceType
+import io.opentracing.util.GlobalTracer
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -19,14 +20,26 @@ class DataRepository(
     private val localDataSource: LocalDataSource
 ) {
 
+    @Suppress("SimpleRedundantLet")
     fun getLogs(query: String): Flowable<List<Log>> {
         return Single.concat(
             localDataSource.fetchLogs(),
             remoteDataSource.getLogs(query)
-                .observeOn(Schedulers.io())
+                .subscribeOn(Schedulers.io())
                 .map { it.data }
                 .doOnSuccess {
                     localDataSource.persistLogs(it)
+                }
+                .doOnSubscribe {
+                    val span = GlobalTracer.get()
+                        .buildSpan("Fetch recent logs")
+                        .start()
+                    GlobalTracer.get().scopeManager().activate(span)
+                }
+                .doOnTerminate {
+                    GlobalTracer.get().scopeManager().activeSpan()?.let {
+                        it.finish()
+                    }
                 }
         )
     }
