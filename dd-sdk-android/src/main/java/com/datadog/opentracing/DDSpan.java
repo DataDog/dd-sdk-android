@@ -125,6 +125,18 @@ public class DDSpan implements Span, MutableSpan {
   }
 
   /**
+   * By calling this method the span will be removed from the current active Trace without
+   * actually being persisted.
+   *
+   * Note: This method is meant for internal SDK usage. Be aware that if used this Span will
+   * be removed from the Trace and lost.
+   *
+  */
+  public final void drop() {
+    context.getTrace().dropSpan(this);
+  }
+
+    /**
    * Check if the span is the root parent. It means that the traceId is the same as the spanId. In
    * the context of distributed tracing this will return true if an only if this is the application
    * initializing the trace.
