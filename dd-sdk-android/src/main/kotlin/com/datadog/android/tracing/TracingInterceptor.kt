@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -294,6 +295,8 @@ internal constructor(
         onRequestIntercepted(request, span, response, null)
         if (canSendSpan()) {
             span?.finish()
+        } else {
+            (span as? DDSpan)?.drop()
         }
     }
 
@@ -309,6 +312,8 @@ internal constructor(
         onRequestIntercepted(request, span, null, throwable)
         if (canSendSpan()) {
             span.finish()
+        } else {
+            (span as? DDSpan)?.drop()
         }
     }
 

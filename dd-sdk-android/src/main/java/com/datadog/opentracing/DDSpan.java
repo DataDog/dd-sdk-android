@@ -131,7 +131,7 @@ public class DDSpan implements Span, MutableSpan {
    * Note: This method is meant for internal SDK usage. Be aware that if used this Span will
    * be removed from the Trace and lost.
    *
-  */
+   */
   public final void drop() {
     context.getTrace().dropSpan(this);
   }

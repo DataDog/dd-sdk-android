@@ -28,12 +28,15 @@ import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpanContext
+import com.datadog.opentracing.DDTracer
+import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -43,7 +46,9 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.SpanContext
 import io.opentracing.Tracer
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.Protocol
@@ -51,6 +56,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -96,6 +102,15 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder
+
+    @Mock
+    lateinit var mockSpanContext: DDSpanContext
+
+    @Mock
+    lateinit var mockSpan: DDSpan
+
     // endregion
 
     // region Fakes
@@ -126,6 +141,12 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var fakeResourceAttributes: Map<String, Any?>
 
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
+    lateinit var fakeSpanId: String
+
+    @StringForgery(type = StringForgeryType.HEXADECIMAL)
+    lateinit var fakeTraceId: String
+
     // endregion
 
     @BeforeEach
@@ -134,6 +155,14 @@ internal class DatadogInterceptorWithoutTracesTest {
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
         mockCoreFeature()
+
+        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withOrigin(DatadogInterceptor.ORIGIN_RUM)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.start()) doReturn mockSpan
+        whenever(mockSpan.context()) doReturn mockSpanContext
+        whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
+        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
@@ -282,6 +311,36 @@ internal class DatadogInterceptorWithoutTracesTest {
                 expectedStopAttrs
             )
         }
+    }
+
+    @Test
+    fun `𝕄 create and drop a Span with info 𝕎 intercept() for successful request`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
+        verify(mockSpan).drop()
+        Assertions.assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `𝕄 create and drop a span with info 𝕎 intercept() for failing request {4xx}`(
+        @IntForgery(min = 400, max = 500) statusCode: Int
+    ) {
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
+        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan as MutableSpan).setError(true)
+        verify(mockSpan).drop()
+        Assertions.assertThat(response).isSameAs(fakeResponse)
     }
 
     // region Internal
