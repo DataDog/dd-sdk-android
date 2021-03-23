@@ -62,7 +62,7 @@ kotlinOptions {
 }
 ```
 
-## SDK Behavior issues
+## SDK behavior issues
 
 ### Foreword
 
