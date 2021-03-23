@@ -1,20 +1,20 @@
-## Integrated Libraries
+## Integrated libraries
  
 ### Coil
  
-If you use Coil to load images in your application, take a look at Datadog's [dedicated library][1].
+If you use Coil to load images in your application, take a look at Datadog's [dedicated Coil library][1].
  
 ### Fresco
  
-If you use Fresco to load images in your application, take a look at Datadog's [dedicated library][2].
+If you use Fresco to load images in your application, take a look at Datadog's [dedicated Fresco library][2].
  
 ### Glide
  
-If you use Glide to load images in your application, take a look at our [dedicated library][3].
+If you use Glide to load images in your application, take a look at Datadog's [dedicated Glide library][3].
  
 ### Picasso
  
-If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
+If you use Picasso, let it use your `OkHttpClient` for RUM and APM information about network requests made by Picasso.
  
 ```kotlin
         val picasso = Picasso.Builder(context)
@@ -26,7 +26,7 @@ If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM i
  
 ### Retrofit
  
-If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made with Retrofit.
+If you use Retrofit, let it use your `OkHttpClient` for RUM and APM information about network requests made with Retrofit.
  
 ```kotlin
         val retrofitClient = Retrofit.Builder()
@@ -37,11 +37,11 @@ If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM 
  
 ### SQLDelight
  
-If you use SQLDelight, take a look at our [dedicated library][4].
+If you use SQLDelight, take a look at Datadog's [dedicated SQLDelight library][4].
  
 ### SQLite
  
-Following SQLiteOpenHelper's [Generated API documentation][5], you only have to provide the implementation of the
+Following SQLiteOpenHelper's [generated API documentation][5], you only have to provide the implementation of the
 DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
  
 Doing this detects whenever a database is corrupted and sends a relevant
@@ -60,7 +60,7 @@ RUM error event for it.
  
 ### Apollo (GraphQL)
  
-If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM information about all the queries performed through Apollo client.
+If you use Apollo, let it use your `OkHttpClient` for RUM and APM information about all the queries performed through Apollo client.
  
 ```kotlin
         val apolloClient =  ApolloClient.builder()
@@ -69,7 +69,7 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
                  .build()
 ```
 
-## Further Reading
+## Further reading
 
 {{< partial name="whats-next/whats-next.html" >}}
 

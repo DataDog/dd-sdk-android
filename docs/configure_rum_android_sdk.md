@@ -1,16 +1,16 @@
-#Configure Android SDK
+# Configure Android SDK
 
-If you haven't setup the SDK yet, follow the [in-app setup instructions][1] or find instructions about [Android RUM setup][2]. 
+If you have not set up the SDK, follow the [in-app setup instructions][1] or refer to the [Android RUM setup documentation][2]. 
 
 
-## Enrich User Sessions
+## Enrich user sessions
 
-Android RUM automatically tracks attributes about user activity, screens, errors and network requests etc. Refer [RUM Data Collection][3] to learn about the RUM Event datatypes and default attributes. You can further enrich user session information and gain finer control over the attributes collected by tracking custom events.
+Android RUM automatically tracks attributes about user activity, screens, errors, network requests, etc. Refer to the [RUM Data Collection][3] to learn about the RUM event datatypes and default attributes. You can further enrich user session information and gain finer control over the attributes collected by tracking custom events.
 
  {{< tabs >}}
     {{% tab "Custom Views" %}}
 
-In addition to [tracking Views automatically][4], you can track specify distinct views (activities, fragments etc.), when it becomes visible and interactive in the onResume() lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
+In addition to [tracking views automatically][4], you can also track specific distinct views (activities, fragments, etc.) when they become visible and interactive in the `onResume()` lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
 
  
    ```kotlin
@@ -23,22 +23,22 @@ In addition to [tracking Views automatically][4], you can track specify distinct
       }
    ```
 
-
+[4]: /real_user_monitoring/android/configure_android_sdk/track_view
     {{% /tab %}}
     {{% tab "Custom Actions" %}}
 
-In addition to [tracking actions automatically][5], you can track specify custom user actions (taps, clicks, scrolls etc.) with the `RumMonitor#addUserAction`. For continuous action tracking (eg. user scrolling a list), use the `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
+In addition to [tracking actions automatically][5], you can also track specific custom user actions (taps, clicks, scrolls, etc.) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
   
    ```kotlin
       fun onUserInteraction(){
         GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
       }
    ```
-
+[5]: /real_user_monitoring/android/configure_android_sdk/track_action
     {{% /tab %}}
     {{% tab "Custom Resource" %}}
 
-In addition to [tracking resources automatically][6], you can track specific custom resources (network requests, 3rd party provider APIs etc.) with methods (`GET`, `POST` etc) while loading the resource with the `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
+In addition to [tracking resources automatically][6], you can also track specific custom resources (network requests, third party provider APIs, etc.) with methods (`GET`, `POST`, etc.) while loading the resource with `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
 
   
    ```kotlin
@@ -52,25 +52,26 @@ In addition to [tracking resources automatically][6], you can track specific cus
         }
       }
    ```
-
+[6]: /real_user_monitoring/android/configure_android_sdk/track_resource
     {{% /tab %}}
     {{% tab "Custom Errors" %}}
 
-To track specific errors, notify the monitor when an error occurs with the message, source, exception and additional attributes. Refer to default [Error Attributes][3].
+To track specific errors, notify the monitor when an error occurs with the message, source, exception, and additional attributes. Refer to the [Error Attributes documentation][3].
 
 
    ```kotlin
       `addError(message, source, throwable, attributes)`
    ```
+[3]: /real_user_monitoring/android/data_collected
     {{% /tab %}}
     {{< /tabs >}}
 
 
-### Track Custom Global Attribues
+### Track custom global attributes
 
-In addition to the [default RUM attributes][3] captured by the Mobile SDK automatically, you can choose to add additional contextual information as custom attributes to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice infomation about observed user behavior (cart value, merchant-tier, ad campaign) with code-level infomation (backend services, session timeline, error logs, network health etc).
+In addition to the [default RUM attributes][3] captured by the mobile SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (cart value, merchant tier, ad campaign, etc.) with code-level information (backend services, session timeline, error logs, network health, etc).
  
-## Add User info
+## Add user info
 
 ### Identify user sessions
 Adding user information to your RUM sessions makes it easy to:
@@ -80,7 +81,7 @@ Adding user information to your RUM sessions makes it easy to:
 
 {{< img src="real_user_monitoring/browser/advanced_configuration/user-api.png" alt="User API in RUM UI"  >}}
 
-The following attributes are **optional** but it is recommended to provide **at least one** of them:
+The following attributes are **optional**, but it is recommended to provide **at least one** of them:
 
 | Attribute  | Type | Description                                                                                              |
 |------------|------|----------------------------------------------------------------------------------------------------|
@@ -93,7 +94,7 @@ To identify user sessions, use the `setUser` API:
 // TODO Add code snippet
 //Datadog.setUserInfo()
 
-## Set General Attributes
+## Set general attributes
 
    ```kotlin
       // Adds an attribute to all future RUM events
@@ -105,34 +106,34 @@ To identify user sessions, use the `setUser` API:
 
 ### Track widgets
  
-Widgets are not automatically tracked with the SDK. To send UI interactions from your widgets manually call Datadog API. [See example][7].
+Widgets are not automatically tracked with the SDK. To send UI interactions from your widgets manually, call the Datadog API. [See example][7].
 
 
-## Initialization Parameters
+## Initialization parameters
  
-The following methods in `Configuration.Builder` can be used when creating the Datadog Configuration to initialize the library:
+You can use the following methods in `Configuration.Builder` when creating the Datadog configuration to initialize the library:
  
 | Method                           | Description                                                                                                                                                                                                                                                             |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
-| `trackInteractions(Array<ViewAttributesProvider>)` | Enables tracking User interactions (such as Tap, Scroll or Swipe). The parameter also allow you to add custom attributes to the RUM Action events based on the widget with which the user interacted. |
-| `useViewTrackingStrategy(strategy)` | Defines the strategy used to track Views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][3] or implement your own. |
-| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
-| `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog UI.  |
-| `setFirstPartyHosts()` | Define hosts that will have tracing enabled and have RUM rersources categorized as `first-party` |
-| `useEUEndpoints()` | Switch target data to EU endpoints |
-| `useUSEndpoints()` | Switch target data to US endpoints |
-| `useGovEndpoints()` | Switch target data to GOV endpoints |
-| `setBatchSize([SMALL|MEDIUM|LARGE])` | Define the individual batch size for requests sent to Datadog |
-| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Define frequency for requests made to Datadog endpoints (if requests are avaialble) |
-| `sampleRumSessions(<samplingRate>)` | set the RUM sessions sampling rate (A value of 0 means no RUM event will be sent, 100 means all sessions will be kept.) |
-| `setRumXxxEventMapper()` | set the data scrubbing callbacks for Views, Actions, Resources and Errors |
+| `trackInteractions(Array<ViewAttributesProvider>)` | Enables tracking user interactions (such as tap, scroll, or swipe). The parameter also allows you to add custom attributes to the RUM Action events based on the widget with which the user interacted. |
+| `useViewTrackingStrategy(strategy)` | Defines the strategy used to track views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][3] or implement your own. |
+| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped. |
+| `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.  |
+| `setFirstPartyHosts()` | Define hosts that have tracing enabled and have RUM resources categorized as `first-party`. |
+| `useEUEndpoints()` | Switch target data to EU endpoints. |
+| `useUSEndpoints()` | Switch target data to US endpoints. |
+| `useGovEndpoints()` | Switch target data to US1-FED endpoints. |
+| `setBatchSize([SMALL|MEDIUM|LARGE])` | Define the individual batch size for requests sent to Datadog. |
+| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Define the frequency for requests made to Datadog endpoints (if requests are available). |
+| `sampleRumSessions(<samplingRate>)` | Set the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.) |
+| `setRumXxxEventMapper()` | Set the data scrubbing callbacks for views, actions, resources, and errors. |
 
 
  
-### Automatically Track Views
+### Automatically track views
 
-To automatically track your views (activities, fragments etc), provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the strategies:
+To automatically track your views (activities, fragments, etc.), provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the following strategies:
 
 | Strategy | Description                                                                                                                                                                                                                                                   |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -141,7 +142,7 @@ To automatically track your views (activities, fragments etc), provide a trackin
 | `MixedViewTrackingStrategy` | Every activity or fragment in your application is considered a distinct view.  |
 | `NavigationViewTrackingStrategy`| Recommended for Android Jetpack Navigation library users. Each Navigation destination is considered a distinct view.  |
 
-For instance to set each Fragment as a distinct view, use the following configuration in your [setup][1]:
+For instance, to set each fragment as a distinct view, use the following configuration in your [setup][1]:
    
 ```kotlin
            
@@ -152,12 +153,12 @@ For instance to set each Fragment as a distinct view, use the following configur
    
 **Tip**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
    
-**Note**: By default, the library won't track any view. If you decide not to provide a view tracking strategy you will have to manually send the views by calling the `startView` and `stopView` methods yourself.
+**Note**: By default, the library does not track any views. If you decide not to provide a view tracking strategy, you must manually send the views by calling the `startView` and `stopView` methods yourself.
 
 
-### Automatically Track Network requests
+### Automatically track network requests
 
-To get timing information in Resources (3rd party providers, network requests) such as time to first byte, DNS resolution, etc., customize the okHttpClient to add the [Event listener][8] factory:
+To get timing information in resources (third-party providers, network requests) such as time to first byte or DNS resolution, customize the `okHttpClient` to add the [EventListener][8] factory:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
@@ -166,9 +167,9 @@ To get timing information in Resources (3rd party providers, network requests) s
         .build()
     ```
 
-### Automatically Track Long Tasks
+### Automatically track long tasks
 
-To track long running operations performed on the main thread, which can impact the visual performance and reactivity of your app, you can do so by defining the duration threshold above which a task will be considerd too long.
+Long running operations performed on the main thread can impact the visual performance and reactivity of your application. To track these operations, define the duration threshold above which a task is considered too long.
 
 
     ```kotlin
@@ -177,9 +178,9 @@ To track long running operations performed on the main thread, which can impact 
                         .build()
     ```
 
-## Modify or Drop RUM Events
+## Modify or drop RUM events
 
-If you need to modify some attributes in your RUM events or to drop some of the events entirely before batching you can do so by providing an implementation of `EventMapper<T>` when initialzing the SDK:
+To modify some attributes in your RUM events, or to drop some of the events entirely before batching, provide an implementation of `EventMapper<T>` when initializing the SDK:
    ```kotlin
       val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
                         ...
@@ -191,7 +192,7 @@ If you need to modify some attributes in your RUM events or to drop some of the 
    ```
    As you will notice when implementing the `EventMapper<T>` interface, only some of the attributes are modifiable for each event type as follows:
      
-   | Event Type    | Attribute key      | Description                                     |
+   | Event type    | Attribute key      | Description                                     |
    |---------------|--------------------|-------------------------------------------------|
    | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
@@ -204,7 +205,7 @@ If you need to modify some attributes in your RUM events or to drop some of the 
    | ResourceEvent |                    |                                                 |
    |               | `resource.url`       | URL of the resource                             |
    
-   **Note**: If you return null from the `EventMapper<T>` implementation the event will be dropped.
+   **Note**: If you return null from the `EventMapper<T>` implementation, the event is dropped.
 
    ## Further Reading
 
@@ -219,4 +220,3 @@ If you need to modify some attributes in your RUM events or to drop some of the 
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
 [8]: https://square.github.io/okhttp/events/
  
-

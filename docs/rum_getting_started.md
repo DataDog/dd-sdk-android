@@ -17,11 +17,11 @@ Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real
     }
     ```
 
-2. [Specify application details in Datadog UI][2] to generate a unique Datadog Application ID, and Client Token.
+2. [Specify application details in Datadog][2] to generate a unique Datadog application ID and client token.
 
 {{< img src="docs/images/screenshot_rum.png" alt="RUM Event hierarchy" style="width:50%;border:none" >}}
 
-To ensure safety of your data, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]
+To ensure the safety of your data, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library, as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client Token documentation][4].
 
 3. Initialize the library with application context and start sending data:
 
@@ -68,9 +68,9 @@ class SampleApplication : Application() {
     {{% /tab %}}
     {{< /tabs >}}
 
-Learn more about [ViewTrackingStrategy][5] to enable auto tracking of all your views (activities, fragments etc.), [trackingConsent][6] to add GDPR compliance for your EU users and [other configuration options][7] to initialize the library.
+Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments ,etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
-Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right proguard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
+Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
 
 4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -89,11 +89,11 @@ Note that in the credentials required for initialization, your application varia
         .build()
     ```
 
-    This records each request processed by the OkHttpClient as a Resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active will be tracked. If you want to track requests when your application is in the background, you can [create a view manually][9].
+    This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][9].
 
     **Note**: If you also use multiple Interceptors, this one must be called first.
 
-You can further add an EventListener for the OkHttpClient to [automatically track resource timing][10] (3rd party providers, network requests). 
+You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][10] (third-party providers, network requests). 
 
 
 ## Further Reading

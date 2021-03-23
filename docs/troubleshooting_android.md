@@ -2,7 +2,7 @@
  
 
 ## Check if Datadog RUM is initialized
-Use the utility method isInitialized to check if the SDK is properly initialized:
+Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
 ```kotlin
     if (Datadog.isInitialized()) {
@@ -17,14 +17,14 @@ When writing your application, you can enable development logs by calling the `s
     Datadog.setVerbosity(Log.INFO)
 ```
 
-## Set Tracking Consent (GDPR compliance)
+## Set tracking consent (GDPR compliance)
 
 To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
-    The tracking consent can be one of the following values:
+    Tracking consent can be one of the following values:
     * `TrackingConsent.PENDING`: (Default) The SDK starts collecting and batching the data but does not send it to the data
      collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
     * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
-    * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You will not be able to manually send any logs, traces, or
+    * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You are not able to manually send any logs, traces, or
      RUM events.
 
     To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
@@ -34,11 +34,11 @@ To be compliant with the GDPR regulation, the SDK requires the tracking consent 
 
 ## Sample RUM sessions
 
-To control the data your application sends to Datadog RUM, you can secify a sampling rate for RUM sessions while [initializing the RumMonitor][] as a percentage between 0 and 100.
+To control the data your application sends to Datadog RUM, you can specify a sampling rate for RUM sessions while [initializing the RumMonitor][] as a percentage between 0 and 100.
 
 ```kotlin
     val monitor = RumMonitor.Builder()
-            // Here 75% of the RUM Sessions will be sent to Datadog
+            // Here 75% of the RUM sessions are sent to Datadog
             .sampleRumSessions(75.0f)
             .build()
     GlobalRum.registerIfAbsent(monitor)
@@ -48,9 +48,9 @@ To control the data your application sends to Datadog RUM, you can secify a samp
 
 RUM ensures availability of data when your user device is offline. In cases of low-network areas, or when the device battery is too low, all the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as the network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
  
-This means that even if users open your application while being offline, no data will be lost.
+This means that even if users open your application while offline, no data is lost.
  
-**Note**: The data on the disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
+**Note**: The data on the disk is automatically discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
 ## Migrating to 1.0.0
 
@@ -98,6 +98,7 @@ methods. These methods were renamed for consistency purposes, and are now `Logge
 
 
  ## Further Reading
- <Link to Android common troubleshhoting issues: https://github.com/DataDog/dd-sdk-android/blob/master/docs/TROUBLESHOOTING.md>
+- [Common Android SDK troubleshooting issues][1]
+[1]: https://github.com/DataDog/dd-sdk-android/blob/master/docs/TROUBLESHOOTING.md
 
  
