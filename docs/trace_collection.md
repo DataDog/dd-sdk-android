@@ -271,6 +271,65 @@ val request = Request.Builder()
 
 **Note**: If you use multiple Interceptors, this one must be called first.
 
+### RxJava
+
+To provide a continuous trace inside a RxJava stream you need to follow the steps below:
+1. Add the [OpenTracing for RxJava][8] dependency into your project and follow the **Readme** file 
+   for instructions. For example for a continuous trace you just have to add:
+   ```kotlin
+   TracingRxJava3Utils.enableTracing(GlobalTracer.get())
+   ```
+2. Then in your project open a scope when the Observable is subscribed and close it when it completes. Any span
+   created inside the stream operators will be displayed inside this scope (parent Span):
+   ```kotlin
+   Single.fromSupplier{}
+        .subscribeOn(Schedulers.io())
+        .map { 
+            val span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start()
+            // ...
+            span.finish()
+        }
+       .doOnSubscribe {
+           val span = GlobalTracer.get()
+               .buildSpan("<YOUR_OP_NAME>")
+               .start()
+           GlobalTracer.get().scopeManager().activate(span)
+       }
+       .doFinally {
+           GlobalTracer.get().scopeManager().activeSpan()?.let {
+               it.finish()
+           }
+       }
+   ```
+### RxJava + Retrofit
+For a continuous trace inside a RxJava stream that uses Retrofit for the network requests:
+1. Configure the [Datadog Interceptor](#okhttp)
+2. Use the [Retrofit RxJava][9] adapters to use synchronous Observables for the network requests:
+```kotlin
+Retrofit.Builder()
+   .baseUrl("<YOUR_URL>")
+   .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+   .client(okHttpClient)
+   .build()
+```
+3. Open a scope around your Rx stream as follows:
+```kotlin
+remoteDataSource.getData(query)
+   .subscribeOn(Schedulers.io())
+   .map { // ... } 
+   .doOnSuccess { 
+      localDataSource.persistData(it)
+   }
+   .doOnSubscribe { 
+      val span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start()
+      GlobalTracer.get().scopeManager().activate(span) 
+   }
+   .doFinally { 
+      GlobalTracer.get().scopeManager().activeSpan()?.let { 
+         it.finish() 
+      } 
+   }
+```
 ## Batch collection
 
 All the spans are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
@@ -290,3 +349,5 @@ The data on disk will automatically be discarded if it gets too old to ensure th
 [5]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [6]: https://square.github.io/okhttp/interceptors/
 [7]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
+[8]: https://github.com/opentracing-contrib/java-rxjava
+[9]: https://github.com/square/retrofit/tree/master/retrofit-adapters/rxjava3

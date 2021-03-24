@@ -36,7 +36,7 @@ class DataRepository(
                         .start()
                     GlobalTracer.get().scopeManager().activate(span)
                 }
-                .doOnTerminate {
+                .doFinally {
                     GlobalTracer.get().scopeManager().activeSpan()?.let {
                         it.finish()
                     }
