@@ -7,8 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider

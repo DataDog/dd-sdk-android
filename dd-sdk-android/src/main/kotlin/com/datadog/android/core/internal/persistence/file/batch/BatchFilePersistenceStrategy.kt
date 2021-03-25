@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator

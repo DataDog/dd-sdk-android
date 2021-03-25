@@ -7,8 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import android.util.Log
-import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator

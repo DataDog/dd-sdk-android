@@ -21,8 +21,7 @@ import com.google.gson.JsonObject
 
 internal class RumEventSerializer(
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) : Serializer<RumEvent>,
-    com.datadog.android.core.internal.domain.Serializer<RumEvent> {
+) : Serializer<RumEvent> {
 
     // region Serializer
 
