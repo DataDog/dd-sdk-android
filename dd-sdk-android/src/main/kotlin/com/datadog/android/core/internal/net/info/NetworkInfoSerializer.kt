@@ -6,10 +6,12 @@
 
 package com.datadog.android.core.internal.net.info
 
-import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.model.NetworkInfo
 
-internal class NetworkInfoSerializer : Serializer<NetworkInfo> {
+internal class NetworkInfoSerializer :
+    Serializer<NetworkInfo>,
+    com.datadog.android.core.internal.domain.Serializer<NetworkInfo> {
 
     override fun serialize(model: NetworkInfo): String {
         return model.toJson().asJsonObject.toString()

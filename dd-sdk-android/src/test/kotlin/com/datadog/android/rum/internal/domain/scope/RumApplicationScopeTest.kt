@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
@@ -45,7 +45,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: Writer<RumEvent>
+    lateinit var mockWriter: DataWriter<RumEvent>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector

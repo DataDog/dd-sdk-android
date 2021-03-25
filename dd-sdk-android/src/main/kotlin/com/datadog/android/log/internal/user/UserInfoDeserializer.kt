@@ -6,22 +6,24 @@
 
 package com.datadog.android.log.internal.user
 
-import com.datadog.android.core.internal.domain.Deserializer
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.Logger
 import com.google.gson.JsonParseException
 import java.util.Locale
 
-internal class UserInfoDeserializer : Deserializer<UserInfo> {
+internal class UserInfoDeserializer(
+    private val internalLogger: Logger
+) : Deserializer<UserInfo> {
 
     override fun deserialize(model: String): UserInfo? {
         return try {
             UserInfo.fromJson(model)
         } catch (e: JsonParseException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         }
     }

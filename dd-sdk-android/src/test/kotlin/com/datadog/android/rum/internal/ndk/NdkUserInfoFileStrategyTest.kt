@@ -74,7 +74,7 @@ internal class NdkUserInfoFileStrategyTest {
         assertThat(writableFile?.absolutePath).isEqualTo(
             File(
                 fakeNdkTempDir,
-                DatadogNdkCrashHandler.LAST_USER_INFORMATION_FILE_NAME
+                DatadogNdkCrashHandler.USER_INFO_FILE_NAME
             ).absolutePath
         )
     }
@@ -89,7 +89,7 @@ internal class NdkUserInfoFileStrategyTest {
         assertThat(writableFile?.absolutePath).isEqualTo(
             File(
                 fakeNdkDir,
-                DatadogNdkCrashHandler.LAST_USER_INFORMATION_FILE_NAME
+                DatadogNdkCrashHandler.USER_INFO_FILE_NAME
             ).absolutePath
         )
     }

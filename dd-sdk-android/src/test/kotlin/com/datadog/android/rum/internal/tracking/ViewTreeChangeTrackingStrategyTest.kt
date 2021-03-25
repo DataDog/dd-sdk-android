@@ -10,9 +10,9 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argumentCaptor

@@ -105,7 +105,6 @@ internal class BroadcastReceiverSystemInfoProviderTest {
             .hasBatteryStatus(SystemInfo.BatteryStatus.UNKNOWN)
     }
 
-    @Test
     @RepeatedTest(10)
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `read system info on register Lollipop`(

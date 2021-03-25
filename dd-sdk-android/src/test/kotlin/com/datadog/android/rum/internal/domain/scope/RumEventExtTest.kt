@@ -36,7 +36,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumEventExtTest {
 
-    @Test
     @RepeatedTest(12)
     fun `𝕄 return method 𝕎 toMethod() {valid name}`(
         @Forgery method: ResourceEvent.Method
@@ -62,7 +61,6 @@ internal class RumEventExtTest {
         assertThat(result).isEqualTo(ResourceEvent.Method.GET)
     }
 
-    @Test
     @RepeatedTest(12)
     fun `𝕄 return method 𝕎 toErrorMethod() {valid name}`(
         @Forgery method: ErrorEvent.Method
@@ -88,7 +86,6 @@ internal class RumEventExtTest {
         assertThat(result).isEqualTo(ErrorEvent.Method.GET)
     }
 
-    @Test
     @RepeatedTest(22)
     fun `𝕄 return resource type 𝕎 toSchemaType()`(
         @Forgery kind: RumResourceKind
@@ -104,7 +101,6 @@ internal class RumEventExtTest {
         }
     }
 
-    @Test
     @RepeatedTest(12)
     fun `𝕄 return error source 𝕎 toSchemaSource()`(
         @Forgery kind: RumErrorSource
@@ -116,7 +112,6 @@ internal class RumEventExtTest {
         assertThat(kind.name).isEqualTo(result.name)
     }
 
-    @Test
     @RepeatedTest(10)
     fun `𝕄 return action type 𝕎 toSchemaType()`(
         @Forgery type: RumActionType

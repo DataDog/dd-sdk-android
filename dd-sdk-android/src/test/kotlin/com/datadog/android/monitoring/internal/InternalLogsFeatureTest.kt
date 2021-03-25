@@ -50,7 +50,7 @@ internal class InternalLogsFeatureTest :
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(InternalLogFileStrategy::class.java)
+            .isInstanceOf(InternalLogFilePersistenceStrategy::class.java)
     }
     @Test
     fun `𝕄 rebuild the sdkLogger 𝕎 initialize()`() {

@@ -10,7 +10,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.rum.internal.domain.RumFileStrategy
+import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -59,7 +59,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(RumFileStrategy::class.java)
+            .isInstanceOf(RumFilePersistenceStrategy::class.java)
     }
 
     @Test

@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing.internal.data
 
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -16,7 +17,7 @@ import com.datadog.trace.common.writer.Writer
 import java.util.Locale
 
 internal class TraceWriter(
-    val writer: com.datadog.android.core.internal.data.Writer<DDSpan>
+    val writer: DataWriter<DDSpan>
 ) : Writer {
 
     // region Writer

@@ -10,9 +10,9 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.NoOpWriter
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
@@ -75,7 +75,7 @@ internal class RumSessionScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: Writer<RumEvent>
+    lateinit var mockWriter: DataWriter<RumEvent>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
@@ -289,12 +289,12 @@ internal class RumSessionScopeTest {
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
-        argumentCaptor<Writer<RumEvent>> {
+        argumentCaptor<DataWriter<RumEvent>> {
             verify(mockChildScope).handleEvent(same(mockEvent), capture())
 
             assertThat(firstValue)
                 .isNotSameAs(mockWriter)
-                .isInstanceOf(NoOpWriter::class.java)
+                .isInstanceOf(NoOpDataWriter::class.java)
         }
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
@@ -475,7 +475,7 @@ internal class RumSessionScopeTest {
 
     companion object {
 
-        private const val TEST_SLEEP_MS = 200L
+        private const val TEST_SLEEP_MS = 50L
         private const val TEST_INACTIVITY_MS = TEST_SLEEP_MS * 3
         private const val TEST_MAX_DURATION_MS = TEST_SLEEP_MS * 10
 

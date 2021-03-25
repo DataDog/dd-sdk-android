@@ -6,22 +6,24 @@
 
 package com.datadog.android.core.internal.net.info
 
-import com.datadog.android.core.internal.domain.Deserializer
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.log.Logger
 import com.google.gson.JsonParseException
 import java.util.Locale
 
-internal class NetworkInfoDeserializer : Deserializer<NetworkInfo> {
+internal class NetworkInfoDeserializer(
+    private val internalLogger: Logger
+) : Deserializer<NetworkInfo> {
 
     override fun deserialize(model: String): NetworkInfo? {
         return try {
             NetworkInfo.fromJson(model)
         } catch (e: JsonParseException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
             null
         }
     }

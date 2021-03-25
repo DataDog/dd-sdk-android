@@ -20,8 +20,11 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
+import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -32,19 +35,22 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.log.internal.user.UserInfoDeserializer
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
-import com.datadog.android.rum.internal.ndk.NdkNetworkInfoFileStrategy
-import com.datadog.android.rum.internal.ndk.NdkUserInfoFileStrategy
+import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
+import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
+import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
-import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -118,15 +124,8 @@ internal object CoreFeature {
         // Because all our persisting components are working asynchronously this will avoid
         // having corrupted data (data from previous process over - written in this process into the
         // ndk crash folder before the crash was actually handled)
-        val ndkCrashDirectoryTemp =
-            File(
-                appContext.filesDir,
-                DatadogNdkCrashHandler.NDK_CRASH_REPORTS_INTERMEDIARY_FOLDER_NAME
-            )
-        val ndkCrashDirectory =
-            File(appContext.filesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-        prepareNdkCrashData(ndkCrashDirectory)
-        setupInfoProviders(appContext, consent, ndkCrashDirectory, ndkCrashDirectoryTemp)
+        prepareNdkCrashData(appContext)
+        setupInfoProviders(appContext, consent)
         initialized.set(true)
     }
 
@@ -156,10 +155,10 @@ internal object CoreFeature {
 
     // region Internal
 
-    private fun prepareNdkCrashData(ndkCrashDirectory: File) {
+    private fun prepareNdkCrashData(appContext: Context) {
         if (isMainProcess) {
             ndkCrashHandler = DatadogNdkCrashHandler(
-                ndkCrashDirectory,
+                appContext,
                 persistenceExecutorService,
                 LogGenerator(
                     serviceName,
@@ -168,7 +167,12 @@ internal object CoreFeature {
                     userInfoProvider,
                     envName,
                     packageVersion
-                )
+                ),
+                NdkCrashLogDeserializer(sdkLogger),
+                RumEventDeserializer(),
+                NetworkInfoDeserializer(sdkLogger),
+                UserInfoDeserializer(sdkLogger),
+                sdkLogger
             )
             ndkCrashHandler.prepareData()
         }
@@ -212,9 +216,7 @@ internal object CoreFeature {
 
     private fun setupInfoProviders(
         appContext: Context,
-        consent: TrackingConsent,
-        ndkCrashDirectory: File,
-        ndkCrashDirectoryTemp: File
+        consent: TrackingConsent
     ) {
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
@@ -227,38 +229,47 @@ internal object CoreFeature {
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        setupNetworkInfoProviders(appContext, ndkCrashDirectory, ndkCrashDirectoryTemp)
+        setupNetworkInfoProviders(appContext)
 
         // User Info Provider
-        val ndkUserInfoFileStrategy = NdkUserInfoFileStrategy(
-            ndkCrashDirectoryTemp,
-            ndkCrashDirectory,
-            uploadExecutorService,
-            trackingConsentProvider
+        setupUserInfoProvider(appContext)
+    }
+
+    private fun setupUserInfoProvider(
+        appContext: Context
+    ) {
+        val userInfoWriter = ScheduledWriter(
+            NdkUserInfoDataWriter(
+                appContext,
+                trackingConsentProvider,
+                persistenceExecutorService,
+                BatchFileHandler(sdkLogger),
+                sdkLogger
+            ),
+            persistenceExecutorService,
+            sdkLogger
         )
-        userInfoProvider = DatadogUserInfoProvider(ndkUserInfoFileStrategy.consentAwareDataWriter)
+        userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
     }
 
     private fun setupNetworkInfoProviders(
-        appContext: Context,
-        ndkCrashDirectory: File,
-        ndkCrashDirectoryTemp: File
+        appContext: Context
     ) {
-        val ndkNetworkInfoFileStrategy = NdkNetworkInfoFileStrategy(
-            ndkCrashDirectoryTemp,
-            ndkCrashDirectory,
-            uploadExecutorService,
-            trackingConsentProvider
+        val networkInfoWriter = ScheduledWriter(
+            NdkNetworkInfoDataWriter(
+                appContext,
+                trackingConsentProvider,
+                persistenceExecutorService,
+                BatchFileHandler(sdkLogger),
+                sdkLogger
+            ),
+            persistenceExecutorService,
+            sdkLogger
         )
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-
-            CallbackNetworkInfoProvider(
-                ndkNetworkInfoFileStrategy.consentAwareDataWriter
-            )
+            CallbackNetworkInfoProvider(networkInfoWriter)
         } else {
-            BroadcastReceiverNetworkInfoProvider(
-                ndkNetworkInfoFileStrategy.consentAwareDataWriter
-            )
+            BroadcastReceiverNetworkInfoProvider(networkInfoWriter)
         }
         networkInfoProvider.register(appContext)
     }

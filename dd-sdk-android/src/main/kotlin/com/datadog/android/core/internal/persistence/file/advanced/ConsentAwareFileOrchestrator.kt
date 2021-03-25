@@ -24,6 +24,8 @@ internal open class ConsentAwareFileOrchestrator(
 
     init {
         handleConsentChange(null, consentProvider.getConsent())
+        @Suppress("LeakingThis")
+        consentProvider.registerCallback(this)
     }
 
     // region FileOrchestrator

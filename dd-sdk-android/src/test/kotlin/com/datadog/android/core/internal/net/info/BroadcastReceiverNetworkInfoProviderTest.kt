@@ -14,7 +14,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
-import com.datadog.android.core.internal.domain.batching.ConsentAwareDataWriter
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
@@ -51,7 +51,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     lateinit var testedProvider: BroadcastReceiverNetworkInfoProvider
 
     @Mock
-    lateinit var mockConsentAwareDataWriter: ConsentAwareDataWriter<NetworkInfo>
+    lateinit var mockWriter: DataWriter<NetworkInfo>
 
     @Mock
     lateinit var mockContext: Context
@@ -76,7 +76,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider(mockConsentAwareDataWriter)
+        testedProvider = BroadcastReceiverNetworkInfoProvider(mockWriter)
     }
 
     @Test
@@ -141,7 +141,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         testedProvider.register(mockContext)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        verify(mockConsentAwareDataWriter).write(networkInfo)
+        verify(mockWriter).write(networkInfo)
     }
 
     @Test
@@ -207,7 +207,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        verify(mockConsentAwareDataWriter).write(networkInfo)
+        verify(mockWriter).write(networkInfo)
     }
 
     @Test

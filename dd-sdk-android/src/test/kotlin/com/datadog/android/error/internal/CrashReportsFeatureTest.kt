@@ -64,7 +64,7 @@ internal class CrashReportsFeatureTest :
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(CrashLogFileStrategy::class.java)
+            .isInstanceOf(CrashReportFilePersistenceStrategy::class.java)
     }
 
     @Test

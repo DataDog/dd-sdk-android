@@ -6,7 +6,7 @@
 
 package com.datadog.android.tracing.internal.data
 
-import com.datadog.android.core.internal.data.Writer
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -42,7 +42,7 @@ internal class TraceWriterTest {
     lateinit var testedWriter: TraceWriter
 
     @Mock
-    lateinit var mockFilesWriter: Writer<DDSpan>
+    lateinit var mockFilesWriter: DataWriter<DDSpan>
 
     @Mock
     lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor

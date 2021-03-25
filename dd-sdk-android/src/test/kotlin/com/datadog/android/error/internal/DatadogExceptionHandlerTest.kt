@@ -15,9 +15,9 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.core.model.NetworkInfo
@@ -97,7 +97,7 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
-    lateinit var mockLogWriter: Writer<Log>
+    lateinit var mockLogWriter: DataWriter<Log>
 
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl

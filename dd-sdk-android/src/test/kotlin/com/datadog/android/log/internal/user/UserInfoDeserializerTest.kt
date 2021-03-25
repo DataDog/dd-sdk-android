@@ -7,6 +7,8 @@
 package com.datadog.android.log.internal.user
 
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -28,13 +31,15 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class UserInfoDeserializerTest {
+
     lateinit var testedDeserializer: UserInfoDeserializer
-    lateinit var serializer: UserInfoSerializer
+
+    @Mock
+    lateinit var mockLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
-        serializer = UserInfoSerializer()
-        testedDeserializer = UserInfoDeserializer()
+        testedDeserializer = UserInfoDeserializer(Logger(mockLogHandler))
     }
 
     @Test

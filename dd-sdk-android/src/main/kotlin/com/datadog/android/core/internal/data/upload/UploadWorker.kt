@@ -10,10 +10,10 @@ import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
+import com.datadog.android.core.internal.persistence.Batch
+import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -55,16 +55,16 @@ internal class UploadWorker(
     }
 
     private fun uploadAllBatches(
-        reader: Reader,
+        reader: DataReader,
         uploader: DataUploader
     ) {
         val failedBatches = mutableListOf<Batch>()
         var batch: Batch?
         do {
-            batch = reader.readNextBatch()
+            batch = reader.lockAndReadNext()
             if (batch != null) {
                 if (consumeBatch(batch, uploader)) {
-                    reader.dropBatch(batch.id)
+                    reader.drop(batch)
                 } else {
                     failedBatches.add(batch)
                 }
@@ -72,7 +72,7 @@ internal class UploadWorker(
         } while (batch != null)
 
         failedBatches.forEach {
-            reader.releaseBatch(it.id)
+            reader.release(it)
         }
     }
 

@@ -7,11 +7,11 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.data.Reader
-import com.datadog.android.core.internal.data.file.Batch
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.Batch
+import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -57,7 +57,7 @@ internal class DataUploadRunnableTest {
     lateinit var mockThreadPoolExecutor: ScheduledThreadPoolExecutor
 
     @Mock
-    lateinit var mockReader: Reader
+    lateinit var mockReader: DataReader
 
     @Mock
     lateinit var mockDataUploader: DataUploader
@@ -109,8 +109,8 @@ internal class DataUploadRunnableTest {
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader, never()).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -132,12 +132,12 @@ internal class DataUploadRunnableTest {
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(anyOrNull())
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(anyOrNull())
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader, never()).upload(anyOrNull())
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -160,12 +160,12 @@ internal class DataUploadRunnableTest {
             powerSaveMode = true
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(anyOrNull())
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(anyOrNull())
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader, never()).upload(anyOrNull())
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -184,13 +184,13 @@ internal class DataUploadRunnableTest {
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockReader).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -201,12 +201,12 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 no batch to send`() {
-        whenever(mockReader.readNextBatch()) doReturn null
+        whenever(mockReader.lockAndReadNext()) doReturn null
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(anyOrNull())
-        verify(mockReader, never()).releaseBatch(anyOrNull())
+        verify(mockReader, never()).drop(anyOrNull())
+        verify(mockReader, never()).release(anyOrNull())
         verifyZeroInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
             eq(testedRunnable),
@@ -217,13 +217,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch sent successfully`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockReader).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -234,13 +234,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch kept on Network Error`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.NETWORK_ERROR
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(batch.id)
-        verify(mockReader).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -254,15 +254,15 @@ internal class DataUploadRunnableTest {
         @Forgery batch: Batch,
         @IntForgery(min = 3, max = 42) runCount: Int
     ) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.NETWORK_ERROR
 
         for (i in 0 until runCount) {
             testedRunnable.run()
         }
         verify(mockDataUploader, times(runCount)).upload(batch.data)
-        verify(mockReader, never()).dropBatch(batch.id)
-        verify(mockReader, times(runCount)).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, times(runCount)).release(batch)
         verify(mockThreadPoolExecutor, times(runCount)).schedule(
             same(testedRunnable),
             any(),
@@ -272,13 +272,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch dropped on Redirection`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_REDIRECTION
 
         testedRunnable.run()
 
-        verify(mockReader).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -289,13 +289,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch dropped on Client Error`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_CLIENT_ERROR
 
         testedRunnable.run()
 
-        verify(mockReader).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -306,13 +306,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch kept on Server Error`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
 
         testedRunnable.run()
 
-        verify(mockReader, never()).dropBatch(batch.id)
-        verify(mockReader).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -326,7 +326,7 @@ internal class DataUploadRunnableTest {
         @Forgery batch: Batch,
         @IntForgery(min = 3, max = 42) runCount: Int
     ) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
 
         for (i in 0 until runCount) {
@@ -334,8 +334,8 @@ internal class DataUploadRunnableTest {
         }
 
         verify(mockDataUploader, times(runCount)).upload(batch.data)
-        verify(mockReader, never()).dropBatch(batch.id)
-        verify(mockReader, times(runCount)).releaseBatch(batch.id)
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, times(runCount)).release(batch)
         verify(mockThreadPoolExecutor, times(runCount)).schedule(
             same(testedRunnable),
             any(),
@@ -345,13 +345,13 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `batch dropped on Unknown error`(@Forgery batch: Batch) {
-        whenever(mockReader.readNextBatch()) doReturn batch
+        whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.UNKNOWN_ERROR
 
         testedRunnable.run()
 
-        verify(mockReader).dropBatch(batch.id)
-        verify(mockReader, never()).releaseBatch(batch.id)
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -365,7 +365,7 @@ internal class DataUploadRunnableTest {
         @Forgery batch: Batch
     ) {
         whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockReader.readNextBatch()).doReturn(batch)
+        whenever(mockReader.lockAndReadNext()).doReturn(batch)
 
         repeat(5) {
             testedRunnable.run()
@@ -387,7 +387,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockReader.readNextBatch()).doReturn(batch)
+        whenever(mockReader.lockAndReadNext()).doReturn(batch)
 
         // When
         repeat(runCount) {
@@ -426,7 +426,7 @@ internal class DataUploadRunnableTest {
                 UploadStatus.UNKNOWN_ERROR
             )
         }
-        whenever(mockReader.readNextBatch()).doReturn(batch)
+        whenever(mockReader.lockAndReadNext()).doReturn(batch)
 
         // When
         repeat(runCount) {
@@ -457,7 +457,7 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockReader.readNextBatch()) doReturn null
+        whenever(mockReader.lockAndReadNext()) doReturn null
 
         // When
         repeat(runCount) {
@@ -499,7 +499,7 @@ internal class DataUploadRunnableTest {
                 )
             )
         }
-        whenever(mockReader.readNextBatch()) doReturn null
+        whenever(mockReader.lockAndReadNext()) doReturn null
 
         // When
         repeat(runCount) {

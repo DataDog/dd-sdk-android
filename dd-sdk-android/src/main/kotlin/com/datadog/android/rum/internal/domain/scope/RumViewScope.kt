@@ -7,15 +7,15 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -79,7 +79,7 @@ internal class RumViewScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ): RumScope? {
         when (event) {
             is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
@@ -137,7 +137,7 @@ internal class RumViewScope(
 
     private fun onStartView(
         event: RumRawEvent.StartView,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (!stopped) {
             stopped = true
@@ -148,7 +148,7 @@ internal class RumViewScope(
 
     private fun onStopView(
         event: RumRawEvent.StopView,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
         val startedKey = keyRef.get()
@@ -162,7 +162,7 @@ internal class RumViewScope(
 
     private fun onStartAction(
         event: RumRawEvent.StartAction,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
 
@@ -179,7 +179,7 @@ internal class RumViewScope(
 
     private fun onStartResource(
         event: RumRawEvent.StartResource,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -197,7 +197,7 @@ internal class RumViewScope(
 
     private fun onAddError(
         event: RumRawEvent.AddError,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -244,14 +244,17 @@ internal class RumViewScope(
         pendingErrorCount++
     }
 
-    private fun onAddCustomTiming(event: RumRawEvent.AddCustomTiming, writer: Writer<RumEvent>) {
+    private fun onAddCustomTiming(
+        event: RumRawEvent.AddCustomTiming,
+        writer: DataWriter<RumEvent>
+    ) {
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
     }
 
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -261,7 +264,7 @@ internal class RumViewScope(
 
     private fun delegateEventToChildren(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         delegateEventToResources(event, writer)
         delegateEventToAction(event, writer)
@@ -269,7 +272,7 @@ internal class RumViewScope(
 
     private fun delegateEventToAction(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         val currentAction = activeActionScope
         if (currentAction != null) {
@@ -282,7 +285,7 @@ internal class RumViewScope(
 
     private fun delegateEventToResources(
         event: RumRawEvent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         val iterator = activeResourceScopes.iterator()
         while (iterator.hasNext()) {
@@ -296,7 +299,7 @@ internal class RumViewScope(
 
     private fun onResourceSent(
         event: RumRawEvent.ResourceSent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (event.viewId == viewId) {
             pendingResourceCount--
@@ -307,7 +310,7 @@ internal class RumViewScope(
 
     private fun onActionSent(
         event: RumRawEvent.ActionSent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (event.viewId == viewId) {
             pendingActionCount--
@@ -318,7 +321,7 @@ internal class RumViewScope(
 
     private fun onErrorSent(
         event: RumRawEvent.ErrorSent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (event.viewId == viewId) {
             pendingErrorCount--
@@ -330,7 +333,7 @@ internal class RumViewScope(
 
     private fun onLongTaskSent(
         event: RumRawEvent.LongTaskSent,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (event.viewId == viewId) {
             pendingLongTaskCount--
@@ -363,7 +366,7 @@ internal class RumViewScope(
         }
     }
 
-    private fun sendViewUpdate(event: RumRawEvent, writer: Writer<RumEvent>) {
+    private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<RumEvent>) {
         attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
@@ -419,7 +422,7 @@ internal class RumViewScope(
 
     private fun onUpdateViewLoadingTime(
         event: RumRawEvent.UpdateViewLoadingTime,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         val startedKey = keyRef.get()
         if (event.key != startedKey) {
@@ -432,7 +435,7 @@ internal class RumViewScope(
 
     private fun onApplicationStarted(
         event: RumRawEvent.ApplicationStarted,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         pendingActionCount++
         val context = getRumContext()
@@ -476,7 +479,7 @@ internal class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
-    private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: Writer<RumEvent>) {
+    private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<RumEvent>) {
         delegateEventToChildren(event, writer)
         if (stopped) return
 

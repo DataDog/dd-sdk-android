@@ -7,15 +7,15 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.Time
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -53,7 +53,7 @@ internal class RumResourceScope(
 
     // region RumScope
 
-    override fun handleEvent(event: RumRawEvent, writer: Writer<RumEvent>): RumScope? {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<RumEvent>): RumScope? {
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
             is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
@@ -74,7 +74,7 @@ internal class RumResourceScope(
 
     private fun onStopResource(
         event: RumRawEvent.StopResource,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (key != event.key) return
 
@@ -91,7 +91,7 @@ internal class RumResourceScope(
 
     private fun onAddResourceTiming(
         event: RumRawEvent.AddResourceTiming,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (key != event.key) return
 
@@ -103,7 +103,7 @@ internal class RumResourceScope(
 
     private fun onStopResourceWithError(
         event: RumRawEvent.StopResourceWithError,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         if (key != event.key) return
 
@@ -124,7 +124,7 @@ internal class RumResourceScope(
         statusCode: Long?,
         size: Long?,
         eventTime: Time,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
@@ -198,7 +198,7 @@ internal class RumResourceScope(
         source: RumErrorSource,
         statusCode: Long?,
         throwable: Throwable?,
-        writer: Writer<RumEvent>
+        writer: DataWriter<RumEvent>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
 

@@ -8,13 +8,13 @@ package com.datadog.android.core.internal
 
 import android.app.Application
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.domain.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.domain.PersistenceStrategy
 import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.persistence.DataReader
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
@@ -64,7 +64,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     lateinit var mockPersistenceStrategy: PersistenceStrategy<T>
 
     @Mock
-    lateinit var mockReader: Reader
+    lateinit var mockReader: DataReader
 
     @Mock
     lateinit var mockUploader: DataUploader
@@ -157,8 +157,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
                 assertThat(it.context).isEqualTo(mockAppContext)
                 assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
                 assertThat(it.envName).isEqualTo(CoreFeature.envName)
-                assertThat(it.featurePersistenceDirName)
-                    .isEqualTo(testedFeature.authorizedFolderName)
                 assertThat(it.context).isEqualTo(mockAppContext)
                 assertThat(it.trackingConsent).isEqualTo(fakeConsent)
             }
@@ -272,12 +270,12 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 clear local storage 𝕎 clearAllData()`() {
         // Given
-        testedFeature.persistenceStrategy = mock()
+        testedFeature.persistenceStrategy = mockPersistenceStrategy
 
         // When
         testedFeature.clearAllData()
 
         // Then
-        verify(testedFeature.persistenceStrategy).clearAllData()
+        verify(mockReader).dropAll()
     }
 }

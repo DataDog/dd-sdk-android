@@ -10,7 +10,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.domain.Serializer
+import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.android.log.LogAttributes
@@ -25,8 +25,8 @@ import java.util.TimeZone
  */
 internal class LogSerializer(
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) :
-    Serializer<Log> {
+) : Serializer<Log>,
+    com.datadog.android.core.internal.domain.Serializer<Log> {
 
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")

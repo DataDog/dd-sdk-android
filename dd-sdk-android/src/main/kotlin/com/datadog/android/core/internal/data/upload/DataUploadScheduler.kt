@@ -7,15 +7,15 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.data.Reader
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class DataUploadScheduler(
-    reader: Reader,
+    reader: DataReader,
     dataUploader: DataUploader,
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,

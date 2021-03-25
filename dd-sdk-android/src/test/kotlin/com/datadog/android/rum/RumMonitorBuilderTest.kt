@@ -11,10 +11,8 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -47,9 +45,6 @@ import org.mockito.quality.Strictness
 internal class RumMonitorBuilderTest {
 
     lateinit var testedBuilder: RumMonitor.Builder
-
-    @Mock
-    lateinit var mockWriter: Writer<RumEvent>
 
     @Mock
     lateinit var mockContext: Context

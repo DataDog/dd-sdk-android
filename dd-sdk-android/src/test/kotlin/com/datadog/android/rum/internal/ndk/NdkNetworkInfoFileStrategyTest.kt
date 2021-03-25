@@ -76,7 +76,7 @@ internal class NdkNetworkInfoFileStrategyTest {
         assertThat(writableFile?.absolutePath).isEqualTo(
             File(
                 fakeNdkTempDir,
-                DatadogNdkCrashHandler.LAST_NETWORK_INFORMATION_FILE_NAME
+                DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME
             ).absolutePath
         )
     }
@@ -93,7 +93,7 @@ internal class NdkNetworkInfoFileStrategyTest {
         assertThat(writableFile?.absolutePath).isEqualTo(
             File(
                 fakeNdkDir,
-                DatadogNdkCrashHandler.LAST_NETWORK_INFORMATION_FILE_NAME
+                DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME
             ).absolutePath
         )
     }

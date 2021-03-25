@@ -11,8 +11,8 @@ import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.Writer
-import com.datadog.android.core.internal.domain.PersistenceStrategy
+import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.Log
@@ -222,7 +222,7 @@ internal class LoggerBuilderTest {
     fun `M use an InternalLogs writer W setInternal() + build()`() {
         // Given
         val mockPersistenceStrategy: PersistenceStrategy<Log> = mock()
-        val mockWriter: Writer<Log> = mock()
+        val mockWriter: DataWriter<Log> = mock()
         whenever(mockPersistenceStrategy.getWriter()) doReturn mockWriter
         InternalLogsFeature.initialized.set(true)
         InternalLogsFeature.persistenceStrategy = mockPersistenceStrategy

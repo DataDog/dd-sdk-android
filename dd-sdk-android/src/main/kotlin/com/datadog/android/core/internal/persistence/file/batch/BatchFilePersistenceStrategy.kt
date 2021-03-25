@@ -12,10 +12,13 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
+import java.util.concurrent.ExecutorService
 
 internal open class BatchFilePersistenceStrategy<T : Any>(
     private val fileOrchestrator: FileOrchestrator,
+    private val executorService: ExecutorService,
     serializer: Serializer<T>,
     payloadDecoration: PayloadDecoration,
     internalLogger: Logger
@@ -26,6 +29,7 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     private val fileWriter: DataWriter<T> by lazy {
         createWriter(
             fileOrchestrator,
+            executorService,
             serializer,
             payloadDecoration,
             internalLogger
@@ -55,23 +59,22 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
 
     internal open fun createWriter(
         fileOrchestrator: FileOrchestrator,
+        executorService: ExecutorService,
         serializer: Serializer<T>,
         payloadDecoration: PayloadDecoration,
         internalLogger: Logger
     ): DataWriter<T> {
-        return BatchFileDataWriter(
-            fileOrchestrator,
-            serializer,
-            payloadDecoration,
-            fileHandler
+        return ScheduledWriter(
+            BatchFileDataWriter(
+                fileOrchestrator,
+                serializer,
+                payloadDecoration,
+                fileHandler
+            ),
+            executorService,
+            internalLogger
         )
     }
 
     //
-
-    companion object {
-        internal const val VERSION = 1
-        internal const val PENDING_DIR = "dd-%s-pending-v$VERSION"
-        internal const val AUTHORIZED_DIR = "dd-%s-v$VERSION"
-    }
 }
