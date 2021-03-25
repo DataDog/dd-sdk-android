@@ -8,8 +8,8 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -32,15 +33,35 @@ internal class SingleFileOrchestratorTest {
 
     lateinit var testedOrchestrator: SingleFileOrchestrator
 
-    @Forgery
+    @TempDir
+    lateinit var tempDir: File
+
+    @StringForgery
+    lateinit var fakeParentDirName: String
+
+    @StringForgery
+    lateinit var fakeFileName: String
+
     lateinit var fakeFile: File
 
     @BeforeEach
     fun `set up`() {
+        fakeFile = File(File(tempDir, fakeParentDirName), fakeFileName)
         testedOrchestrator = SingleFileOrchestrator(fakeFile)
     }
 
     // region getWritableFile
+
+    @Test
+    fun `𝕄 create parent dir 𝕎 getWritableFile()`(
+        @IntForgery(min = 1) dataSize: Int
+    ) {
+        // When
+        testedOrchestrator.getWritableFile(dataSize)
+
+        // Then
+        assertThat(fakeFile.parentFile).exists()
+    }
 
     @Test
     fun `𝕄 return file 𝕎 getWritableFile()`(
@@ -56,6 +77,15 @@ internal class SingleFileOrchestratorTest {
     // endregion
 
     // region getReadableFile
+
+    @Test
+    fun `𝕄 create parent dir 𝕎 getReadableFile()`() {
+        // When
+        testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(fakeFile.parentFile).exists()
+    }
 
     @Test
     fun `𝕄 return file 𝕎 getReadableFile()`() {
@@ -78,6 +108,15 @@ internal class SingleFileOrchestratorTest {
     // endregion
 
     // region getAllFiles
+
+    @Test
+    fun `𝕄 create parent dir 𝕎 getAllFiles()`() {
+        // When
+        testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(fakeFile.parentFile).exists()
+    }
 
     @Test
     fun `𝕄 return file 𝕎 getAllFiles()`() {

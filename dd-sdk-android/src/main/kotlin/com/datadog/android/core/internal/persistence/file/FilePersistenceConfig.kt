@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.domain
+package com.datadog.android.core.internal.persistence.file
 
 /**
  * Limits are defined at https://docs.datadoghq.com/api/latest/logs/#send-logs

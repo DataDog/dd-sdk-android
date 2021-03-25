@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.core.internal.domain.PayloadDecoration
+import com.datadog.android.core.internal.persistence.PayloadDecoration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

@@ -7,7 +7,7 @@
 package com.datadog.android.monitoring.internal
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.PayloadDecoration
+import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider

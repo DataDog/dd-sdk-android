@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.domain
 
 import android.content.Context
-import com.datadog.android.core.internal.domain.PayloadDecoration
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator

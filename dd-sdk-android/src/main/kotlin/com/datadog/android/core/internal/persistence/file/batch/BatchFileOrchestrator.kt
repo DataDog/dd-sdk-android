@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.domain.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
