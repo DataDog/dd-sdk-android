@@ -18,6 +18,7 @@ const val MAVEN_PUBLICATION = "artifact"
 const val BINTRAY_USER = "bintrayUser"
 const val BINTRAY_API_KEY = "bintrayApiKey"
 
+@Deprecated("Starting at v 1.9.0 and later, we only publish to Maven Central")
 fun Project.publishingConfig(
     localRepo: String,
     asAar: Boolean = true
@@ -47,7 +48,7 @@ fun Project.publishingConfig(
                     artifact(tasks.findByName("jar"))
                 }
                 artifact(tasks.findByName("sourcesJar"))
-                artifact(tasks.findByName("generateJavadoc"))
+                artifact(tasks.findByName("javadocJar"))
 
                 // publishing AAR doesn't fill the pom.xml dependencies.
                 pom.withXml {
@@ -77,13 +78,13 @@ fun Project.publishingConfig(
         tasks.withType(AbstractPublishToMaven::class.java) {
             this.dependsOn("bundleReleaseAar")
             this.dependsOn("sourcesJar")
-            this.dependsOn("generateJavadoc")
+            this.dependsOn("javadocJar")
         }
     } else {
         tasks.withType(AbstractPublishToMaven::class.java) {
             this.dependsOn("jar")
             this.dependsOn("sourcesJar")
-            this.dependsOn("generateJavadoc")
+            this.dependsOn("javadocJar")
         }
     }
 
@@ -94,6 +95,7 @@ fun Project.publishingConfig(
     }
 }
 
+@Deprecated("Starting at v 1.9.0 and later, we only publish to Maven Central")
 fun Project.bintrayConfig() {
     val projectName = name
 

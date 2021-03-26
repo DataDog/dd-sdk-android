@@ -14,7 +14,8 @@ import org.jetbrains.dokka.gradle.DokkaTask
 fun Project.javadocConfig() {
 
     @Suppress("UnstableApiUsage")
-    tasks.register("generateJavadoc", Jar::class.java) {
+    tasks.register("javadocJar", Jar::class.java) {
+        group = "documentation"
         dependsOn("dokkaJavadoc")
         archiveClassifier.convention("javadoc")
         from("${buildDir.canonicalPath}/reports/javadoc")
