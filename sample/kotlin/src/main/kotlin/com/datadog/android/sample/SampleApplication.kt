@@ -36,6 +36,7 @@ import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.opentracing.rxjava3.TracingRxJava3Utils
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -59,7 +60,7 @@ class SampleApplication : Application() {
     private val retrofitClient = Retrofit.Builder()
         .baseUrl("https://api.datadoghq.com/api/v2/")
         .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-        .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
         .client(okHttpClient)
         .build()
 
@@ -103,6 +104,7 @@ class SampleApplication : Application() {
 
         GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
     private fun createDatadogCredentials(): Credentials {

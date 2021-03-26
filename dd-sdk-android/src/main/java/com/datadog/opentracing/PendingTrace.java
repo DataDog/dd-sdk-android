@@ -100,7 +100,7 @@ public class PendingTrace extends LinkedList<DDSpan> {
     }
   }
 
-  private void expireSpan(final DDSpan span) {
+  private void expireSpan(final DDSpan span, final boolean write) {
     if (traceId == null || span.context() == null) {
       return;
     }
@@ -108,14 +108,22 @@ public class PendingTrace extends LinkedList<DDSpan> {
       return;
     }
     synchronized (span) {
-      if (null == span.ref) {
-      } else {
-        weakReferences.remove(span.ref);
-        span.ref.clear();
-        span.ref = null;
+      if (span.ref == null) {
+        return;
+      }
+      weakReferences.remove(span.ref);
+      span.ref.clear();
+      span.ref = null;
+      if (write) {
         expireReference();
+      } else {
+        pendingReferenceCount.decrementAndGet();
       }
     }
+  }
+
+  public void dropSpan(final DDSpan span) {
+    expireSpan(span, false);
   }
 
   public void addSpan(final DDSpan span) {
@@ -133,7 +141,7 @@ public class PendingTrace extends LinkedList<DDSpan> {
       addFirst(span);
     } else {
     }
-    expireSpan(span);
+    expireSpan(span, true);
   }
 
   public DDSpan getRootSpan() {
