@@ -38,7 +38,7 @@ dependencies {
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.10")
-    implementation("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4")
+    implementation("org.apache.maven:maven-model:3.6.3")
 
     // check api surface
     implementation("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm:c35b50fa44")

@@ -7,7 +7,6 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
@@ -15,22 +14,30 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.mavenConfig
 import com.datadog.gradle.testImplementation
 
 plugins {
+    // Build
     id("com.android.library")
     kotlin("android")
+
+    // Publish
     `maven-publish`
+    id("org.jetbrains.dokka")
+
+    // Analysis tools
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
+
+    // Tests
+    jacoco
+
+    // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
-    id("org.jetbrains.dokka")
-    id("com.jfrog.bintray")
-    jacoco
 }
 
 android {
@@ -124,5 +131,4 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig("${rootDir.canonicalPath}/repo")
-bintrayConfig()
+mavenConfig()

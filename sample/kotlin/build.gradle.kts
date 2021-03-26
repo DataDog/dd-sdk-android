@@ -18,13 +18,11 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
-    `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("org.jetbrains.dokka")
-    id("com.jfrog.bintray")
     jacoco
     id("realm-android")
     id("com.squareup.sqldelight")

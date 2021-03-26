@@ -18,7 +18,6 @@ buildscript {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Kotlin)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Dokka)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.Bintray)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Unmock)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Realm)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.SQLDelight)
