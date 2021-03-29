@@ -132,7 +132,7 @@ test:tools:
     - rm -rf ~/.gradle/daemon/
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon
 
-# PUBLISH ARTIFACTS ON BINTRAY
+# PUBLISH ARTIFACTS ON MAVEN
 
 publish:release:
   tags: [ "runner:main", "size:large" ]
@@ -143,8 +143,10 @@ publish:release:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android:uploadArchives --stacktrace --no-daemon
 
 publish:release-coil:
   tags: [ "runner:main", "size:large" ]
@@ -155,8 +157,10 @@ publish:release-coil:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-coil:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-coil:uploadArchives --stacktrace --no-daemon
 
 publish:release-fresco:
   tags: [ "runner:main", "size:large" ]
@@ -167,8 +171,10 @@ publish:release-fresco:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-fresco:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-fresco:uploadArchives --stacktrace --no-daemon
 
 publish:release-glide:
   tags: [ "runner:main", "size:large" ]
@@ -179,8 +185,10 @@ publish:release-glide:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-glide:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-glide:uploadArchives --stacktrace --no-daemon
 
 publish:release-ktx:
   tags: [ "runner:main", "size:large" ]
@@ -191,8 +199,10 @@ publish:release-ktx:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ktx:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-ktx:uploadArchives --stacktrace --no-daemon
 
 publish:release-ndk:
   tags: [ "runner:main", "size:large" ]
@@ -203,8 +213,10 @@ publish:release-ndk:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ndk:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-ndk:uploadArchives --stacktrace --no-daemon
 
 publish:release-rx:
   tags: [ "runner:main", "size:large" ]
@@ -215,8 +227,10 @@ publish:release-rx:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-rx:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-rx:uploadArchives --stacktrace --no-daemon
 
 publish:release-sqldelight:
   tags: [ "runner:main", "size:large" ]
@@ -227,8 +241,10 @@ publish:release-sqldelight:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-sqldelight:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-sqldelight:uploadArchives --stacktrace --no-daemon
 
 publish:release-timber:
   tags: [ "runner:main", "size:large" ]
@@ -239,8 +255,10 @@ publish:release-timber:
   timeout: 30m
   script:
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-timber:bintrayUpload --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-timber:uploadArchives --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 
@@ -252,7 +270,7 @@ notify:release:
     - tags
   script:
     - BINTRAY_URL="https://bintray.com/datadog/datadog-maven/dd-sdk-android/$CI_COMMIT_TAG"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :bintray: $BINTRAY_URL"'
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $BINTRAY_URL"'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:

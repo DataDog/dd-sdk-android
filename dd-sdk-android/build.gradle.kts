@@ -9,7 +9,6 @@ import com.datadog.gradle.api
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
-import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
@@ -17,25 +16,35 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.mavenConfig
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
 
 plugins {
+    // Build
     id("com.android.library")
     kotlin("android")
     kotlin("kapt")
+
+    // Publish
+    maven
     `maven-publish`
+    signing
+    id("org.jetbrains.dokka")
+
+    // Analysis tools
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
+
+    // Tests
+    jacoco
+    id("de.mobilej.unmock")
+
+    // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
-    id("org.jetbrains.dokka")
-    id("com.jfrog.bintray")
-    id("de.mobilej.unmock")
-    jacoco
 }
 
 fun isLogEnabledInRelease(): String {
@@ -170,5 +179,4 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig("${rootDir.canonicalPath}/repo")
-bintrayConfig()
+mavenConfig()
