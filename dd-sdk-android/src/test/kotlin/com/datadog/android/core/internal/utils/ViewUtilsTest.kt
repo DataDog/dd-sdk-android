@@ -130,4 +130,15 @@ internal class ViewUtilsTest {
         // Then
         assertThat(output).isEqualTo(UNKNOWN_DESTINATION_URL)
     }
+
+    @Test
+    fun `𝕄 return the key value 𝕎 resolveViewUrl() { destination of type String }`(
+        @StringForgery destination: String
+    ) {
+        // When
+        val output = destination.resolveViewUrl()
+
+        // Then
+        assertThat(output).isEqualTo(destination)
+    }
 }

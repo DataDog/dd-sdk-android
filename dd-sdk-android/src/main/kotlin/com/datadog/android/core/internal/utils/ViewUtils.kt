@@ -12,6 +12,7 @@ internal fun Any.resolveViewUrl(): String {
         is FragmentNavigator.Destination -> className
         is DialogFragmentNavigator.Destination -> className
         is ActivityNavigator.Destination -> component?.resolveViewUrl() ?: UNKNOWN_DESTINATION_URL
+        is String -> this
         else -> javaClass.canonicalName ?: javaClass.simpleName
     }
 }
