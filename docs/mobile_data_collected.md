@@ -2,15 +2,14 @@
 
 The Datadog Real User Monitoring SDK generates six types of events:
 
-| Event type | Description                                                                                                                                                                                                                                                   |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Session][1]    | Session represents a real user journey on your mobile application. It begins when the user launches the application, and it is kept live as long as the user stays active. During the user journey, all RUM events generated as part of the session share the same `session.id` attribute.
- |
-| [View][2]       | A view represents a unique screen (or screen segment) on your mobile application. Individual activities, fragments, navigation views, etc. are classified as distinct views. While a user stays on a view, RUM event attributes (errors, resources, actions) get attached to the view with a unique `view.id`.                                   |
-| [Resource][3]   | A resource represents network requests to first-party hosts, APIs, third-party providers, and libraries in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`.                                                      |
-| [Error][5]     | An error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
-| [Action][6]     | An action represents one instance of user activity in your mobile application (application launch, tap, swipe, back, etc.) Each action is attached with a unique `action_id` attached to the view it gets generated in.                                                                                                                                                         |
-| [Long Task][7] | A long task event is generated for any task in the browser that blocks the main thread for more than the specified duration threshold. |
+| Event Type     | Retention | Description                                                                                                                                                                                                                                                   |
+|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Session  | 30 days   | Session represents a real user journey on your mobile application. It begins when the user launches the application, and the session remains live as long as the user stays active. During the user journey, all RUM events generated as part of the session will share the same `session.id` attribute.  |
+| View     | 30 days   | iew represents a unique screen (or screen segment) on your mobile application. Individual `ViewControllers` are classified as distinct views. While a user stays on a view, RUM event attributes (Errors, Resources, Actions) get attached to the view with a unique `view.id`                     |
+| Resource  | 15 days   | Resources represents network requests to first-party hosts, APIs, 3rd party providers, and libraries in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`                                                                                           |
+| Error     | 30 days   | Error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
+| Action    | 30 days   | Action represents user activity in your mobile application (application launch, tap, swipe, back etc). Each action is attached with a unique `action.id` attached to the view it gets generated in.                                                                                                                                              |
+| Long Task | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
 
 The following diagram illustrates the RUM event hierarchy:
 
@@ -18,38 +17,135 @@ The following diagram illustrates the RUM event hierarchy:
 
 ## Default attributes
 
-RUM collects common attributes for all events and attributes specific to each event by default listed below. You can also choose to enrich your user session data with [additional events][1] or by [adding custom attributes][2] to default events specific to your application monitoring and business analytics needs.
+RUM collects common attributes for all events and attributes specific to each event by default listed below [automatically][1]. You can also choose to enrich your user session data by tracking [additional events][2] or by [adding custom attributes][3] to default events specific to your application monitoring and business analytics needs.
 
 
-### Core
+### Common core attributes
 
 | Attribute name   | Type   | Description                 |
 |------------------|--------|-----------------------------|
+| `date` | integer  | Start of the event in ms from epoch. |
 | `type`     | string | The type of the event (for example, `view` or `resource`).             |
+| `service` | string | The [unified service name][3] for this application used to corelate user sessions. |
 | `application.id` | string | The Datadog application ID. |
+
+### Device
+
+The following device-related attributes are attached automatically to all events collected by Datadog:
+
+| Attribute name                           | Type   | Description                                     |
+|------------------------------------------|--------|-------------------------------------------------|
+| `device.type`       | string | The device type as reported by the device (System User-Agent)      |
+| `device.brand`  | string | The device brand as reported by the device (System User-Agent)  |
+| `device.model`   | string | The device model as reported by the device (System User-Agent)    |
+| `device.name` | string | The device name as reported by the device (System User-Agent)  |
+| `connectivity.status` | string | Status of device network reachability (`connected`, `not connected`, `maybe`). |
+| `connectivity.interfaces` | string | The list of available network interfaces (for example, `bluetooth`, `cellular`, `ethernet`, `wifi` etc). |
+| `connectivity.cellular.technology` | string | The type of a radio technology used for cellular connection |
+| `connectivity.cellular.carrier_name` | string | The name of the SIM carrier |
+
+
+### Operating system
+
+The following OS-related attributes are attached automatically to all events collected by Datadog:
+
+| Attribute name                           | Type   | Description                                     |
+|------------------------------------------|--------|-------------------------------------------------|
+| `os.name`       | string | The OS name as reported by the by the device (System User-Agent)       |
+| `os.version`  | string | The OS version as reported by the by the device (System User-Agent)  |
+| `os.version_major`   | string | The OS version major as reported by the by the device (System User-Agent)   |
+
+
+### Geo-location
+
+The following attributes are related to the geo-location of IP addresses:
+
+| Fullname                                    | Type   | Description                                                                                                                          |
+|:--------------------------------------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------|
+| `geo.country`         | string | Name of the country                                                                                                                  |
+| `geo.country_iso_code`     | string | ISO Code of the country (for example, `US` for the United States, `FR` for France).                                                  |
+| `geo.country_subdivision`     | string | Name of the first subdivision level of the country (for example, `California` in the United States or the `Sarthe` department in France). |
+| `geo.country_subdivision_iso_code` | string | ISO Code of the first subdivision level of the country (for example, `CA` in the United States or the `SA` department in France).    |
+| `geo.continent_code`       | string | ISO code of the continent (`EU`, `AS`, `NA`, `AF`, `AN`, `SA`, `OC`).                                                                 |
+| `geo.continent`       | string | Name of the continent (`Europe`, `Australia`, `North America`, `Africa`, `Antartica`, `South America`, `Oceania`).                    |
+| `geo.city`            | string | The name of the city (example `Paris`, `New York`).                                                                                   |
+
+
+### Global user attributes
+
+You can enable [tracking user info][4] globally to collect and apply user attributes to all RUM events.
+
+| Attribute name   | Type   | Description                 |
+|------------------|--------|-----------------------------|
+| `user.id`     | string | Identifier of the user. |
+| `usr.name` | string | Name of the user. |
+| `usr.email` | string | Email of the user. |
 
 
 ## Event specific attributes 
+
+Metrics are quantifiable values that can be used for measurements related to the event. Attributes are non-quantifiable values used to slice metrics data (group by) in analytics. 
+
+{{< tabs >}}
+{{% tab "Session" %}}
+
+### Session metrics
+
+| Metric  | Type   | Description                |
+|------------|--------|----------------------------|
+| `session.time_spent` | number (ns) | Time spent on a session. |
+| `session.view.count`        | number      | Count of all views collected for this session. |
+| `session.error.count`      | number      | Count of all errors collected for this session.  |
+| `session.resource.count`         | number      | Count of all resources collected for this session. |
+| `session.action.count`      | number      | Count of all actions collected for this session. |
+| `session.long_task.count`      | number      | Count of all long tasks collected for this session. 
+
+### Session attributes
+
+| Attribute name                 | Type   | Description                                                                                                    |
+|--------------------------------|--------|----------------------------------------------------------------------------------------------------------------|
+| `session.id` | string | Unique ID of the session. |
+| `session.type` | string | Type of the session (`user`). |
+| `session.is_active` | string | Indicates if the session is currently active |
+| `session.initial_view.url` | string | URL of the initial view of the session |
+| `session.initial_view.name` | string | Name of the initial view of the session |
+| `session.last_view.url` | string | URL of the last view of the session |
+| `session.last_view.name` | string | Name of the last view of the session |
+| `session.ip` | string | IP address of the session extracted from the TCP connectiion of the intake |
+| `session.useragent` | string | System user agent info to interpret device info  |
 
 
 {{% /tab %}}
 {{% tab "View" %}}
 
+### View metrics
+
+RUM action, error, resource and long task events contain information about the active RUM view event at the time of collection:
 
 
-
-| Metric                              | Type        | Description                                                                                                                                                                                                                 |
+| Metric                              | Type        | Description                                                                                          |
 |----------------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `view.time_spent`                             | number (ns) | Time spent on the current view.                                                                                                                                                                                                  |
-| `view.loading_time`                             | number (ns) | Time until the page is ready and no network request or DOM mutation is currently occurring. For more information, refer to the [Data Collected documentation][8].|
-| `view.error.count`            | number      | Count of all errors collected for this view.                                                                                                                                                                        |
-| `view.long_task.count`        | number      | Count of all long tasks collected for this view.                                                                                                                                                                           |
-| `view.resource.count`         | number      | Count of all resources collected for this view.                                                                                                                                                                            |
-| `view.action.count`      | number      | Count of all actions collected for this view.                                                                                     
+| `view.time_spent`                             | number (ns) | Time spent on the this view.                                    |
+| `view.loading_time`                             | number (ns) |  |
+| `view.long_task.count`        | number      | Count of all long tasks collected for this view.                                |
+| `view.error.count`            | number      | Count of all errors collected for this view.                                    |
+| `view.resource.count`         | number      | Count of all resources collected for this view.                                 |
+| `view.action.count`      | number      | Count of all actions collected for this view.                                        |
+| `view.is_active`      |    boolean   | Indicates whether the view corresponding to this event is considered active            |
+
+### View attributes      
+
+| Attribute name                 | Type   | Description                                                                                                    |
+|--------------------------------|--------|----------------------------------------------------------------------------------------------------------------|
+| `view.id`                      | string | Unique ID of the initial view corresponding to the event.view.                                                                      |
+| `view.url`                     | string | URL of the `UIViewController` class corresponding to the event.                                                           |
+| `view.name` | string | Customizable name of the view corresponding to the event. |                                                                                 
 
 
 {{% /tab %}}
 {{% tab "Resource" %}}
+
+### Resource metrics
 
 
 | Metric                              | Type           | Description                                                                                                                               |
@@ -67,14 +163,14 @@ RUM collects common attributes for all events and attributes specific to each ev
 
 | Attribute                      | Type   | Description                                                                             |
 |--------------------------------|--------|-----------------------------------------------------------------------------------------|
-| `resource.type`                | string | The type of resource being collected (for example, `css`, `javascript`, `media`, `XHR`, `image`).           |
-| `resource.method`                | string | The HTTP method (for example `POST`, `GET`).           |
+| `resource.id`                | string |  Unique identifier of the resource.      |
+| `resource.type`                | string | The type of resource being collected (for example, `xhr`, `image`, `font`, `css`, `js`).          |
+| `resource.method`                | string | The HTTP method (for example `POST`, `GET` `PATCH`, `DELETE` etc).           |
 | `resource.status_code`             | number | The response status code.                                                               |
-| `resource.url`                     | string | The resource URL.                                                                       |
-| `resource.url_host`        | string | The host part of the URL.                                                          |
-| `resource.provider.name`      | string | The resource provider name. Default is `unknown`.                                            |
+| `resource.url`              | string | The resource URL.                             |
+| `resource.provider.name`      | string | The resource provider name. Default is `unknown`.                     |
 | `resource.provider.domain`      | string | The resource provider domain.                                            |
-| `resource.provider.type`      | string | The resource provider type (for example `first-party`, `cdn`, `ad`, `analytics`).                                            |
+| `resource.provider.type`  | string | The resource provider type (for example `first-party`, `cdn`, `ad`, `analytics`).              |
 
 
 
@@ -83,24 +179,18 @@ RUM collects common attributes for all events and attributes specific to each ev
 
 Front-end errors are collected with Real User Monitoring (RUM). The error message and stack trace are included when available.
 
-### Error origins
-Front-end errors are split into four different categories depending on their `error.origin`:
-
-- **network**: XHR or Fetch errors resulting from AJAX requests. Specific attributes to network errors can be found [in the documentation][1].
-- **source**: Unhandled exceptions or unhandled promise rejections (source-code related).
-- **console**: `console.error()` API calls.
-- **custom**: Errors sent with the [RUM `addError` API][2] default to `custom`.
-
 ### Error attributes
 
 | Attribute       | Type   | Description                                                       |
 |-----------------|--------|-------------------------------------------------------------------|
-| `error.source`  | string | Where the error originates from (for example, `console` or `network`).     |
+| `error.source`  | string | Where the error originates from (for example, `webview`, `logger` or `network`).     |
 | `error.type`    | string | The error type (or error code in some cases).                   |
 | `error.message` | string | A concise, human-readable, one-line message explaining the event. |
 | `error.stack`   | string | The stack trace or complementary information about the error.     |
+| `error.issue_id`   | string | The stack trace or complementary information about the error.     |
 
-#### Network errors
+
+#### Network errors 
 
 Network errors include information about failing HTTP requests. The following facets are also collected:
 
@@ -118,7 +208,6 @@ Network errors include information about failing HTTP requests. The following fa
 {{% tab "User Action" %}}
 
 
-
 ### Action timing metrics
 
 | Metric    | Type   | Description              |
@@ -133,7 +222,8 @@ Network errors include information about failing HTTP requests. The following fa
 | Attribute    | Type   | Description              |
 |--------------|--------|--------------------------|
 | `action.id` | string | UUID of the user action. |
-| `action.type` | string | Type of the user action. For [Custom User Actions][5], it is set to `custom`. |
+| `action.type` | string | Type of the user action (`tap`, `application_start`). |
+| `action.name` | string | Name of the user action. |
 | `action.target.name` | string | Element that the user interacted with. Only for automatically collected actions. |
 
 
@@ -141,9 +231,15 @@ Network errors include information about failing HTTP requests. The following fa
 {{< /tabs >}}
 
 
-## Data retention
-By default, all data collected is kept at full granularity for 15 days. 
 
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
+
+
+[1]: /real_user_monitoring/android/configure_android_sdk/track_view
+[2]:manual instrumentation
+[3]: custom attributes
+[4]: unified service name 
+[5]: tracking user info
+

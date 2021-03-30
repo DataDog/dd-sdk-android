@@ -34,7 +34,7 @@ To be compliant with the GDPR regulation, the SDK requires the tracking consent 
 
 ## Sample RUM sessions
 
-To control the data your application sends to Datadog RUM, you can specify a sampling rate for RUM sessions while [initializing the RumMonitor][] as a percentage between 0 and 100.
+To control the data your application sends to Datadog RUM, you can specify a sampling rate for RUM sessions while [initializing the RumMonitor][1] as a percentage between 0 and 100.
 
 ```kotlin
     val monitor = RumMonitor.Builder()
@@ -43,6 +43,8 @@ To control the data your application sends to Datadog RUM, you can specify a sam
             .build()
     GlobalRum.registerIfAbsent(monitor)
 ```
+
+[1]:/real_user_monitoring/android/troubleshooting_android/#setup
 
 ## Sending data when device is offline
 
@@ -54,8 +56,7 @@ This means that even if users open your application while offline, no data is lo
 
 ## Migrating to 1.0.0
 
-If you've been using the former SDK (version `0.1.x` or `0.2.x`), there are some breaking changes
-introduced in version `1.0.0`, namely:
+If you've been using the former SDK (version `0.1.x` or `0.2.x`), there are some breaking changes introduced in version `1.0.0`, namely:
 
 ### Logger.Builder
 
@@ -97,8 +98,10 @@ methods. These methods were renamed for consistency purposes, and are now `Logge
  and `Logger.removeAttribute()`. Their behavior remains the same.
 
 
- ## Further Reading
-- [Common Android SDK troubleshooting issues][1]
+## Further Reading
+{{< partial name="whats-next/whats-next.html" >}}
+
 [1]: https://github.com/DataDog/dd-sdk-android/blob/master/docs/TROUBLESHOOTING.md
+
 
  
