@@ -13,8 +13,16 @@ import java.io.File
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import org.junit.jupiter.api.Assumptions.assumeTrue
 
-internal fun Forge.exhaustiveAttributes(): Map<String, Any?> {
+/**
+ * Will generate a map with different value types with a possibility to filter out given keys,
+ * see [aFilteredMap] for details on filtering.
+ */
+internal fun Forge.exhaustiveAttributes(
+    excludedKeys: Set<String> = emptySet(),
+    filterThreshold: Float = 0.5f
+): Map<String, Any?> {
     val map = listOf(
         aBool(),
         anInt(),
@@ -34,5 +42,47 @@ internal fun Forge.exhaustiveAttributes(): Map<String, Any?> {
         .toMap().toMutableMap()
     map[""] = anHexadecimalString()
     map[aWhitespaceString()] = anHexadecimalString()
-    return map
+
+    val filtered = map.filterKeys { it !in excludedKeys }
+
+    assumeDifferenceIsNoMore(filtered.size, map.size, filterThreshold)
+
+    return filtered
+}
+
+/**
+ * Creates a map just like [Forge#aMap], but it won't include given keys.
+ * @param excludedKeys Keys to exclude from generated map.
+ * @param filterThreshold Max ratio of keys removed from originally generated map. If ratio
+ * is more than that, [Assume] mechanism will be used.
+ */
+internal fun <K, V> Forge.aFilteredMap(
+    size: Int = -1,
+    excludedKeys: Set<K>,
+    filterThreshold: Float = 0.5f,
+    forging: Forge.() -> Pair<K, V>
+): Map<K, V> {
+
+    val base = aMap(size, forging)
+
+    val filtered = base.filterKeys { it !in excludedKeys }
+
+    if (base.isNotEmpty()) {
+        assumeDifferenceIsNoMore(filtered.size, base.size, filterThreshold)
+    }
+
+    return filtered
+}
+
+private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {
+
+    check(result <= base) {
+        "Number of elements after filtering cannot exceed the number of original elements."
+    }
+
+    val diff = (base - result).toFloat() / base
+    assumeTrue(
+        diff <= maxDifference,
+        "Too many elements removed, condition cannot be satisfied."
+    )
 }
