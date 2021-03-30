@@ -526,6 +526,7 @@ class PokoDeserializerGenerator(
             JsonPrimitiveType.DOUBLE -> "asDouble"
             JsonPrimitiveType.STRING -> "asString"
             JsonPrimitiveType.INTEGER -> "asLong"
+            JsonPrimitiveType.NUMBER -> "asNumber"
         }
     }
 

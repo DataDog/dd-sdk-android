@@ -16,12 +16,12 @@ internal class DemoForgeryFactory : ForgeryFactory<Demo> {
         return Demo(
             s = forge.anAlphabeticalString(),
             i = forge.aLong(),
-            n = forge.aDouble(),
+            n = forge.aNumber(),
             b = forge.aBool(),
             l = null,
             ns = forge.aNullable { anAlphabeticalString() },
             ni = forge.aNullable { forge.aLong() },
-            nn = forge.aNullable { forge.aDouble() },
+            nn = forge.aNullable { forge.aNumber() },
             nb = forge.aNullable { forge.aBool() },
             nl = null
         )

@@ -4,8 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin.jsonschema
+package com.example.forgery
 
-enum class JsonPrimitiveType {
-    STRING, BOOLEAN, INTEGER, DOUBLE, NUMBER
+import fr.xgouchet.elmyr.Forge
+
+internal fun Forge.aNumber(): Number {
+    return anElementFrom(anInt(), aDouble(), aFloat(), aLong())
 }

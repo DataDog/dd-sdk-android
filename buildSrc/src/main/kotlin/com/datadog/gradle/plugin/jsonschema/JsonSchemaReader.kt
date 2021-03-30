@@ -138,7 +138,7 @@ class JsonSchemaReader(
         return when (type) {
             JsonType.NULL -> TypeDefinition.Null(definition.description.orEmpty())
             JsonType.BOOLEAN -> transformPrimitive(definition, JsonPrimitiveType.BOOLEAN, typeName)
-            JsonType.NUMBER -> transformPrimitive(definition, JsonPrimitiveType.DOUBLE, typeName)
+            JsonType.NUMBER -> transformPrimitive(definition, JsonPrimitiveType.NUMBER, typeName)
             JsonType.INTEGER -> transformPrimitive(definition, JsonPrimitiveType.INTEGER, typeName)
             JsonType.STRING -> transformPrimitive(definition, JsonPrimitiveType.STRING, typeName)
             JsonType.ARRAY -> transformArray(definition, typeName)

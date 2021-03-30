@@ -16,7 +16,7 @@ internal class ProductForgeryFactory : ForgeryFactory<Product> {
         return Product(
             productId = forge.aLong(),
             productName = forge.anAlphabeticalString(),
-            price = forge.aDouble(0.0)
+            price = forge.aNumber()
         )
     }
 }

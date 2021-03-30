@@ -7,9 +7,9 @@ import com.google.gson.JsonParser
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 import kotlin.Boolean
-import kotlin.Double
 import kotlin.Long
 import kotlin.Nothing
+import kotlin.Number
 import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
@@ -17,12 +17,12 @@ import kotlin.jvm.Throws
 data class Demo(
     val s: String,
     val i: Long,
-    val n: Double,
+    val n: Number,
     val b: Boolean,
     val l: Nothing? = null,
     val ns: String? = null,
     val ni: Long? = null,
-    val nn: Double? = null,
+    val nn: Number? = null,
     val nb: Boolean? = null,
     val nl: Nothing? = null
 ) {
@@ -48,12 +48,12 @@ data class Demo(
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val s = jsonObject.get("s").asString
                 val i = jsonObject.get("i").asLong
-                val n = jsonObject.get("n").asDouble
+                val n = jsonObject.get("n").asNumber
                 val b = jsonObject.get("b").asBoolean
                 val l = null
                 val ns = jsonObject.get("ns")?.asString
                 val ni = jsonObject.get("ni")?.asLong
-                val nn = jsonObject.get("nn")?.asDouble
+                val nn = jsonObject.get("nn")?.asNumber
                 val nb = jsonObject.get("nb")?.asBoolean
                 val nl = null
                 return Demo(s, i, n, b, l, ns, ni, nn, nb, nl)

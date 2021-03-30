@@ -6,8 +6,8 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
-import kotlin.Double
 import kotlin.Long
+import kotlin.Number
 import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
@@ -18,7 +18,7 @@ data class Version(
 ) {
     val version: Long = 42L
 
-    val delta: Double = 3.1415
+    val delta: Number = 3.1415
 
     fun toJson(): JsonElement {
         val json = JsonObject()
@@ -49,7 +49,7 @@ data class Version(
     }
 
     class Id {
-        val serialNumber: Double = 12112.0
+        val serialNumber: Number = 12112.0
 
         fun toJson(): JsonElement {
             val json = JsonObject()

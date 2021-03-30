@@ -16,7 +16,7 @@ internal class BikeForgeryFactory : ForgeryFactory<Bike> {
             productId = forge.aLong(),
             productName = forge.aString(),
             type = forge.aNullable { aString() },
-            price = forge.aDouble(),
+            price = forge.aNumber(),
             frameMaterial = forge.aNullable { aValueFrom(Bike.FrameMaterial::class.java) },
             inStock = forge.aBool(),
             color = forge.aValueFrom(Bike.Color::class.java)
