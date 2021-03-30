@@ -1040,4 +1040,46 @@ open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   companion object 
+class com.datadog.android.tracing.model.SpanEvent
+  constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): SpanEvent
+  class Metrics
+    constructor(kotlin.Long? = null, kotlin.collections.Map<kotlin.String, kotlin.Number> = emptyMap())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Metrics
+  class Meta
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.Map<kotlin.String, kotlin.String> = emptyMap())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Meta
+  class Dd
+    val source: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  class Span
+    val kind: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  class Tracer
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Tracer
+  class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
+  class Network
+    constructor(Client)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Network
+  class Client
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Client
 class com.datadog.tools.annotation.NoOpImplementation
