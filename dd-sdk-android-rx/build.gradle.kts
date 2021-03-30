@@ -95,4 +95,6 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig()
+publishingConfig(
+    "A RxJava integration to use with the Datadog monitoring library for Android applications."
+)

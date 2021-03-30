@@ -96,4 +96,6 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig()
+publishingConfig(
+    "A Fresco integration to use with the Datadog monitoring library for Android applications."
+)

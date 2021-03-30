@@ -96,4 +96,6 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig()
+publishingConfig(
+    "A Coil integration to use with the Datadog monitoring library for Android applications."
+)

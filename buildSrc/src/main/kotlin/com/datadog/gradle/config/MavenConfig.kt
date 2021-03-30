@@ -20,7 +20,7 @@ object MavenConfig {
 }
 
 @Suppress("UnstableApiUsage")
-fun Project.publishingConfig() {
+fun Project.publishingConfig(projectDescription: String) {
     val projectName = name
 
     afterEvaluate {
@@ -51,6 +51,37 @@ fun Project.publishingConfig() {
                 groupId = MavenConfig.GROUP_ID
                 artifactId = projectName
                 version = AndroidConfig.VERSION.name
+
+                pom {
+                    name.set(projectName)
+                    description.set(projectDescription)
+                    url.set("https://github.com/DataDog/dd-sdk-android/")
+
+                    licenses {
+                        license {
+                            name.set("Apache-2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        }
+                    }
+                    organization {
+                        name.set("Datadog")
+                        url.set("https://www.datadoghq.com/")
+                    }
+                    developers {
+                        developer {
+                            name.set("Datadog")
+                            email.set("info@datadoghq.com")
+                            organization.set("Datadog")
+                            organizationUrl.set("https://www.datadoghq.com/")
+                        }
+                    }
+
+                    scm {
+                        url.set("https://github.com/DataDog/dd-sdk-android/")
+                        connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                        developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                    }
+                }
             }
         }
 

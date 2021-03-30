@@ -98,4 +98,6 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig()
+publishingConfig(
+    "A Kotlin integration to use with the Datadog monitoring library for Android applications."
+)

@@ -132,4 +132,6 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig()
+publishingConfig(
+    "An NDK integration to use with the Datadog monitoring library for Android applications."
+)
