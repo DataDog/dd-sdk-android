@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.net
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import java.util.Locale
 import okhttp3.OkHttpClient
@@ -21,7 +22,7 @@ internal open class LogsOkHttpUploader(
     override fun buildQueryParams(): Map<String, Any> {
         return mutableMapOf(
             QP_BATCH_TIME to System.currentTimeMillis(),
-            QP_SOURCE to DD_SOURCE_ANDROID
+            QP_SOURCE to CoreFeature.sourceName
         )
     }
 
