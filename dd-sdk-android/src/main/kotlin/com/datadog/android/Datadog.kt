@@ -148,6 +148,8 @@ object Datadog {
         initializeCrashReportFeature(configuration.crashReportConfig, appContext)
         initializeInternalLogsFeature(configuration.internalLogsConfig, appContext)
 
+        applyAdditionalConfiguration(configuration.additionalConfig)
+
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),
             RumFeature.persistenceStrategy.getWriter()
@@ -211,6 +213,12 @@ object Datadog {
         if (configuration != null) {
             InternalLogsFeature.initialize(appContext, configuration)
         }
+    }
+
+    private fun applyAdditionalConfiguration(
+        @Suppress("UNUSED_PARAMETER") additionalConfiguration: Map<String, Any>
+    ) {
+        // no-op for now, will be filled later
     }
 
     /**

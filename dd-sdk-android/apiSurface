@@ -101,6 +101,7 @@ class com.datadog.android.core.configuration.Configuration
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
     fun setInternalLogsEnabled(String, String): Builder
+    fun setAdditionalConfiguration(Map<String, Any>): Builder
   companion object 
 class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)

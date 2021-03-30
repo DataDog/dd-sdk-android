@@ -118,7 +118,8 @@ private constructor(
                     longTaskTrackingStrategy = null
                 )
             },
-            internalLogsConfig = null
+            internalLogsConfig = null,
+            additionalConfig = emptyMap()
         )
     }
 
