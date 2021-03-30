@@ -13,7 +13,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.config.mavenConfig
+import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
 
@@ -25,6 +25,7 @@ plugins {
 
     // Publish
     `maven-publish`
+    signing
     id("org.jetbrains.dokka")
 
     // Analysis tools
@@ -99,4 +100,4 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-mavenConfig()
+publishingConfig()
