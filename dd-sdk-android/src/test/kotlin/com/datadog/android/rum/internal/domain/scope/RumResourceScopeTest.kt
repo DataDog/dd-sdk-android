@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
 import com.nhaarman.mockitokotlin2.any
@@ -135,7 +136,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -184,7 +185,7 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -244,7 +245,7 @@ internal class RumResourceScopeTest {
             mockDetector
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -295,7 +296,8 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes().toMutableMap()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+            .toMutableMap()
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -346,7 +348,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -509,7 +511,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -559,7 +563,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -612,7 +616,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -664,7 +668,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -727,7 +731,7 @@ internal class RumResourceScopeTest {
             mockDetector
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -783,7 +787,7 @@ internal class RumResourceScopeTest {
         // Given
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
 
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -838,7 +842,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -893,8 +897,12 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
-        val errorAttributes = forge.exhaustiveAttributes()
+        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val errorAttributes = forge.exhaustiveAttributes(
+            excludedKeys = fakeAttributes.keys + attributes.keys
+        )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -948,7 +956,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -993,7 +1001,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -1017,7 +1025,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -1063,7 +1071,7 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -1112,7 +1120,7 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
