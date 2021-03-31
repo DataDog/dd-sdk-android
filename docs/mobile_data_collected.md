@@ -26,7 +26,7 @@ RUM collects common attributes for all events and attributes specific to each ev
 |------------------|--------|-----------------------------|
 | `date` | integer  | Start of the event in ms from epoch. |
 | `type`     | string | The type of the event (for example, `view` or `resource`).             |
-| `service` | string | The [unified service name][3] for this application used to corelate user sessions. |
+| `service` | string | The [unified service name][4] for this application used to corelate user sessions. |
 | `application.id` | string | The Datadog application ID. |
 
 ### Device
@@ -73,7 +73,7 @@ The following attributes are related to the geo-location of IP addresses:
 
 ### Global user attributes
 
-You can enable [tracking user info][4] globally to collect and apply user attributes to all RUM events.
+You can enable [tracking user info][5] globally to collect and apply user attributes to all RUM events.
 
 | Attribute name   | Type   | Description                 |
 |------------------|--------|-----------------------------|
@@ -238,8 +238,8 @@ Network errors include information about failing HTTP requests. The following fa
 
 
 [1]: /real_user_monitoring/android/configure_android_sdk/track_view
-[2]:manual instrumentation
-[3]: custom attributes
-[4]: unified service name 
-[5]: tracking user info
+[2]:/real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
+[3]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
+[4]: /getting_started/tagging/unified_service_tagging/
+[5]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
 

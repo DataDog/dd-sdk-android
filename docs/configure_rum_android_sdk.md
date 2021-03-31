@@ -67,13 +67,11 @@ To track specific errors, notify the monitor when an error occurs with the messa
     {{< /tabs >}}
 
 
-### Track custom global attributes
+## Track custom global attributes
 
 In addition to the [default RUM attributes][3] captured by the mobile SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (cart value, merchant tier, ad campaign, etc.) with code-level information (backend services, session timeline, error logs, network health, etc).
- 
-## Add user info
 
-### Identify user sessions
+### Track User Sessions
 Adding user information to your RUM sessions makes it easy to:
 * Follow the journey of a given user
 * Know which users are the most impacted by errors
@@ -94,8 +92,8 @@ To identify user sessions, use the `setUser` API, for example:
 ```kotlin
 Datadog.setUserInfo('1234', 'John Doe', 'john@doe.com')
 ```
-s
-## Set general attributes
+
+### Track attributes
 
    ```kotlin
       // Adds an attribute to all future RUM events
@@ -105,7 +103,7 @@ s
       GlobalRum.removeAttribute(key)
    ```
 
-### Track widgets
+## Track widgets
  
 Widgets are not automatically tracked with the SDK. To send UI interactions from your widgets manually, call the Datadog API. [See example][7].
 
