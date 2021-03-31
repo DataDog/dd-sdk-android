@@ -4,14 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.extension
+package com.datadog.android.core.internal
 
-import java.math.BigInteger
+internal interface Mapper<R, T> {
 
-fun BigInteger.toHexString(): String {
-    return toLong().toString(16)
-}
-
-fun String.hexToBigInteger(): BigInteger {
-    return toLong(16).toBigInteger()
+    fun map(model: R): T
 }
