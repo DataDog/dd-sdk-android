@@ -210,7 +210,7 @@ internal constructor(internal val handler: LogHandler) {
 
         /**
          * Sets the service name that will appear in your logs.
-         * @param serviceName the service name (default = "android")
+         * @param serviceName the service name (default = application package name)
          */
         fun setServiceName(serviceName: String): Builder {
             this.serviceName = serviceName

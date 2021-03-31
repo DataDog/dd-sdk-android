@@ -93,7 +93,7 @@ class AndroidTracer internal constructor(
 
         /**
          * Sets the service name that will appear in your traces.
-         * @param serviceName the service name (default = "android")
+         * @param serviceName the service name (default = application package name)
          */
         fun setServiceName(serviceName: String): Builder {
             this.serviceName = serviceName

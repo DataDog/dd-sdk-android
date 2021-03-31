@@ -282,7 +282,7 @@ private constructor(
 
         /**
          * Sets the service name that will appear in your logs, traces and crash reports.
-         * @param serviceName the service name (default = "android")
+         * @param serviceName the service name (default = application package name)
          */
         fun setServiceName(serviceName: String): Builder {
             coreConfig = coreConfig.copy(serviceName = serviceName)
