@@ -10,7 +10,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 ## Setup
 
-1. Add the Gradle dependency by declaring the library as a dependency in your `build.gradle` file:
+1. Add the Gradle dependency by declaring the library as a dependency in your `build.gradle` file located in the root project directory:
 
     ```conf
     repositories {
