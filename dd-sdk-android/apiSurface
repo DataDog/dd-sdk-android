@@ -138,6 +138,8 @@ class com.datadog.android.core.model.UserInfo
     fun fromJson(kotlin.String): UserInfo
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
+interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
+  override fun map(com.datadog.android.tracing.model.SpanEvent): com.datadog.android.tracing.model.SpanEvent
 interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
   override fun map(com.datadog.android.rum.model.ViewEvent): com.datadog.android.rum.model.ViewEvent
 object com.datadog.android.log.LogAttributes
