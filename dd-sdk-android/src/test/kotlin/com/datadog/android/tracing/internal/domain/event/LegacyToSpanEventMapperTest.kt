@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.math.BigInteger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -129,7 +130,7 @@ internal class LegacyToSpanEventMapperTest {
         @Forgery fakeSpan: DDSpan
     ) {
         // GIVEN
-        fakeSpan.setFieldValue("parentId", forge.anInt(min = 1))
+        fakeSpan.context().setFieldValue("parentId", BigInteger.valueOf(forge.aLong(min = 1)))
 
         // WHEN
         val event = testedMapper.map(fakeSpan)

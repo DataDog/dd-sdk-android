@@ -40,6 +40,7 @@ internal class Configurator :
 
         // APM
         forge.addFactory(SpanForgeryFactory())
+        forge.addFactory(SpanEventForgeryFactory())
 
         // RUM
         forge.addFactory(ActionEventForgeryFactory())

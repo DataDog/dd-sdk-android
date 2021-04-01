@@ -3,11 +3,11 @@
   "$id": "span-schema.json",
   "title": "SpanEvent",
   "type": "object",
-  "description": "Schema of a Span Event",
+  "description": "Structure holding information about a Span",
   "required": [
-    "traceId",
-    "spanId",
-    "parentId",
+    "trace_id",
+    "span_id",
+    "parent_id",
     "resource",
     "name",
     "service",
@@ -19,32 +19,35 @@
     "metrics"
   ],
   "properties": {
-    "traceId": {
+    "trace_id": {
       "type": "string",
       "description": "The id of the trace this Span belongs to",
       "readOnly": true
     },
-    "spanId": {
+    "span_id": {
       "type": "string",
       "description": "The unique id of this Span",
       "readOnly": true
     },
-    "parentId": {
+    "parent_id": {
       "type": "string",
-      "description": "The id of the parent Span in this trace",
+      "description": "The id this Span's parent or 0 if this is the root Span",
       "readOnly": true
     },
     "resource": {
       "type": "string",
-      "description": "The resource name"
+      "description": "The resource name",
+      "readOnly": false
     },
     "name": {
       "type": "string",
-      "description": "The name of this Span"
+      "description": "The name of this Span",
+      "readOnly": false
     },
     "service": {
       "type": "string",
-      "description": "The service name"
+      "description": "The service name",
+      "readOnly": true
     },
     "duration": {
       "type": "integer",
@@ -65,7 +68,8 @@
     "type": {
       "type": "string",
       "description": "The type of the Span. For Mobile this will always be 'CUSTOM'",
-      "const": "custom"
+      "const": "custom",
+      "readOnly": true
     },
     "metrics": {
       "type": "object",
@@ -79,7 +83,8 @@
       },
       "additionalProperties": {
         "type": "number",
-        "description": "additional metrics"
+        "description": "additional metrics",
+        "readOnly": true
       }
     },
     "meta": {
@@ -97,9 +102,11 @@
             "source": {
               "type": "string",
               "description": "The trace source",
-              "const": "android"
+              "default": "android",
+              "readOnly": true
             }
-          }
+          },
+          "readOnly": true
         },
         "span": {
           "type": "object",
@@ -109,7 +116,8 @@
               "description": "The type of the Span",
               "const": "client"
             }
-          }
+          },
+          "readOnly": true
         },
         "tracer": {
           "type": "object",
@@ -120,6 +128,7 @@
               "readOnly": true
             }
           },
+          "readOnly": true,
           "required": [
             "version"
           ]
@@ -156,20 +165,29 @@
             "client": {
               "type": "object",
               "properties": {
-                "sim_carrier_id": {
-                  "type": "string"
-                },
-                "sim_carrier_name": {
-                  "type": "string"
+                "sim_carrier": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "readOnly": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "readOnly": true
+                    }
+                  }
                 },
                 "signal_strength": {
                   "type": "string"
                 },
                 "downlink_kbps": {
-                  "type": "string"
+                  "type": "string",
+                  "readOnly": true
                 },
                 "uplink_kbps": {
-                  "type": "string"
+                  "type": "string",
+                  "readOnly": true
                 },
                 "connectivity": {
                   "type": "string",
@@ -177,11 +195,14 @@
                   "readOnly": true
                 }
               },
+              "readOnly": true,
               "required": [
-                "connectivity"
+                "connectivity",
+                "sim_carrier"
               ]
             }
           },
+          "readOnly": true,
           "required": [
             "client"
           ]
@@ -197,8 +218,10 @@
       ],
       "additionalProperties": {
         "type": "string",
-        "description": "additional metadata attributes"
-      }
+        "description": "additional metadata attributes",
+        "readOnly": true
+      },
+      "readOnly": true
     }
   }
 }

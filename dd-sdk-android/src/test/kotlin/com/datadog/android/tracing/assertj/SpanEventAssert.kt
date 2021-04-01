@@ -180,8 +180,8 @@ internal class SpanEventAssert(actual: SpanEvent) :
     fun isNotTopSpan(): SpanEventAssert {
         assertThat(actual.metrics.topLevel).overridingErrorMessage(
             "Expected the " +
-                " metrics top level to be 0 but instead was ${actual.metrics.topLevel}"
-        ).isEqualTo(1L)
+                " metrics top level to be null but instead was ${actual.metrics.topLevel}"
+        ).isNull()
         return this
     }
 
@@ -196,36 +196,36 @@ internal class SpanEventAssert(actual: SpanEvent) :
         assertThat(actual.meta.network.client.downlinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have downlinkKbps: " +
-                    "${networkInfo.downKbps.toStringOrNull()} but " +
+                    "${networkInfo.downKbps.stringOrNullIfSmaller()} but " +
                     "instead was: ${actual.meta.network.client.downlinkKbps}"
             )
-            .isEqualTo(networkInfo.downKbps.toStringOrNull())
+            .isEqualTo(networkInfo.downKbps.stringOrNullIfSmaller())
         assertThat(actual.meta.network.client.uplinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have uplinkKbps: " +
-                    "${networkInfo.upKbps.toStringOrNull()} but " +
+                    "${networkInfo.upKbps.stringOrNullIfSmaller()} but " +
                     "instead was: ${actual.meta.network.client.uplinkKbps}"
             )
-            .isEqualTo(networkInfo.upKbps.toStringOrNull())
+            .isEqualTo(networkInfo.upKbps.stringOrNullIfSmaller())
         assertThat(actual.meta.network.client.signalStrength)
             .overridingErrorMessage(
                 "Expected SpanEvent to have signal strength: " +
-                    "${networkInfo.strength.toStringOrNull()} but " +
+                    "${networkInfo.strength.stringOrNullIfSmaller()} but " +
                     "instead was: ${actual.meta.network.client.signalStrength}"
             )
-            .isEqualTo(networkInfo.strength.toStringOrNull())
-        assertThat(actual.meta.network.client.simCarrierId)
+            .isEqualTo(networkInfo.strength.stringOrNullIfSmaller(Int.MIN_VALUE))
+        assertThat(actual.meta.network.client.simCarrier.id)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier id: " +
-                    "${networkInfo.carrierId.toStringOrNull()} but " +
-                    "instead was: ${actual.meta.network.client.simCarrierId}"
+                    "${networkInfo.carrierId.stringOrNullIfSmaller()} but " +
+                    "instead was: ${actual.meta.network.client.simCarrier.id}"
             )
-            .isEqualTo(networkInfo.carrierId.toStringOrNull())
-        assertThat(actual.meta.network.client.simCarrierName)
+            .isEqualTo(networkInfo.carrierId.stringOrNullIfSmaller())
+        assertThat(actual.meta.network.client.simCarrier.name)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier name: " +
                     "${networkInfo.carrierName} but " +
-                    "instead was: ${actual.meta.network.client.simCarrierName}"
+                    "instead was: ${actual.meta.network.client.simCarrier.name}"
             )
             .isEqualTo(networkInfo.carrierName)
         return this
@@ -263,13 +263,15 @@ internal class SpanEventAssert(actual: SpanEvent) :
 
     // region Internal
 
-    private fun Long?.toStringOrNull(): String? {
-        return if (this != null && this > 0) this.toString() else null
+    private fun Long?.stringOrNullIfSmaller(threshold: Int = 0): String? {
+        return if (this != null && this > threshold) this.toString() else null
     }
 
     // endregion
 
-    companion object {
+    companion
+
+    object {
         internal fun assertThat(actual: SpanEvent): SpanEventAssert {
             return SpanEventAssert(actual)
         }

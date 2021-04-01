@@ -1059,8 +1059,10 @@ class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Meta
   class Dd
-    val source: kotlin.String
+    constructor(kotlin.String? = "android")
     fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
   class Span
     val kind: kotlin.String
     fun toJson(): com.google.gson.JsonElement
@@ -1080,8 +1082,13 @@ class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
   class Client
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    constructor(SimCarrier, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Client
+  class SimCarrier
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SimCarrier
 class com.datadog.tools.annotation.NoOpImplementation
