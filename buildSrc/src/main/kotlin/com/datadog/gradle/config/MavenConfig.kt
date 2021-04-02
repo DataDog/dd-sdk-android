@@ -11,6 +11,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.plugins.signing.SigningExtension
 
@@ -22,6 +23,21 @@ object MavenConfig {
 @Suppress("UnstableApiUsage")
 fun Project.publishingConfig(projectDescription: String) {
     val projectName = name
+
+    @Suppress("UnstableApiUsage")
+    tasks.register("generateJavadocJar", Jar::class.java) {
+        group = "publishing"
+        dependsOn("dokkaJavadoc")
+        archiveClassifier.convention("javadoc")
+        from("${buildDir.canonicalPath}/reports/javadoc")
+    }
+
+    @Suppress("UnstableApiUsage")
+    tasks.register("generateSourcesJar", Jar::class.java) {
+        group = "publishing"
+        archiveClassifier.convention("sources")
+        from("${projectDir.canonicalPath}/src/main")
+    }
 
     afterEvaluate {
         val publishingExtension = extensions.findByType(PublishingExtension::class)
@@ -48,6 +64,9 @@ fun Project.publishingConfig(projectDescription: String) {
 
             publications.create(MavenConfig.PUBLICATION, MavenPublication::class.java) {
                 from(components.getByName("release"))
+                artifact(tasks.findByName("generateSourcesJar"))
+                artifact(tasks.findByName("generateJavadocJar"))
+
                 groupId = MavenConfig.GROUP_ID
                 artifactId = projectName
                 version = AndroidConfig.VERSION.name
