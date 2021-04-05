@@ -20,15 +20,14 @@ When writing your application, you can enable development logs by calling the `s
 ## Set tracking consent (GDPR compliance)
 
 To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
-    Tracking consent can be one of the following values:
-    * `TrackingConsent.PENDING`: (Default) The SDK starts collecting and batching the data but does not send it to the data
+Tracking consent can be one of the following values:
+    * `TrackingConsent.PENDING`: (Default) The SDK starts collecting and batching the data but does not send it to the data.
      collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
     * `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
     * `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You are not able to manually send any logs, traces, or
      RUM events.
 
-    To update the tracking consent after the SDK is initialized, call: `Datadog.setTrackingConsent(<NEW CONSENT>)`.
-    The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
+To update the tracking consent after the SDK is initialized, call `Datadog.setTrackingConsent(<NEW CONSENT>)`. The SDK changes its behavior according to the new consent. For example, if the current tracking consent is `TrackingConsent.PENDING` and you update it to:
     * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
     * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
 
