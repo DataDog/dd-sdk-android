@@ -14,6 +14,8 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpSpanEventMapper
+import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
@@ -84,7 +86,8 @@ internal constructor(
 
         internal data class Tracing(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>
+            override val plugins: List<DatadogPlugin>,
+            val spanEventMapper: SpanEventMapper
         ) : Feature()
 
         internal data class RUM(
@@ -431,6 +434,20 @@ internal constructor(
         }
 
         /**
+         * Sets the [SpanEventMapper] for the Trace [com.datadog.android.tracing.model.SpanEvent].
+         * You can use this interface implementation to modify the
+         * [com.datadog.android.tracing.model.SpanEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [SpanEventMapper] implementation.
+         */
+        fun setSpanEventMapper(eventMapper: SpanEventMapper): Builder {
+            applyIfFeatureEnabled(PluginFeature.TRACE, "setSpanEventMapper") {
+                tracesConfig = tracesConfig.copy(spanEventMapper = eventMapper)
+            }
+            return this
+        }
+
+        /**
          * Enables the internal logs to be sent to a dedicated Datadog Org.
          * @param clientToken the client token to use for internal logs
          * @param endpointUrl the endpoint url to sent the internal logs to
@@ -514,7 +531,8 @@ internal constructor(
         )
         internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
             endpointUrl = DatadogEndpoint.TRACES_US,
-            plugins = emptyList()
+            plugins = emptyList(),
+            spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
             endpointUrl = DatadogEndpoint.RUM_US,

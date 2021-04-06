@@ -11,6 +11,8 @@ import android.util.Log
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpSpanEventMapper
+import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.plugin.DatadogPlugin
@@ -104,12 +106,17 @@ internal class ConfigurationBuilderTest {
                 plugins = emptyList()
             )
         )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.Feature.Tracing(
-                endpointUrl = DatadogEndpoint.TRACES_US,
-                plugins = emptyList()
+        assertThat(config.tracesConfig)
+            .isEqualToIgnoringGivenFields(
+                Configuration.Feature.Tracing(
+                    endpointUrl = DatadogEndpoint.TRACES_US,
+                    plugins = emptyList(),
+                    spanEventMapper = NoOpSpanEventMapper()
+                ),
+                "spanEventMapper"
             )
-        )
+        assertThat(config.tracesConfig?.spanEventMapper)
+            .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
                 endpointUrl = DatadogEndpoint.LOGS_US,
@@ -1404,5 +1411,27 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+    }
+
+    @Test
+    fun `𝕄 build config with Span eventMapper 𝕎 setSpanEventMapper() and build()`() {
+        // Given
+        val eventMapper: SpanEventMapper = mock()
+
+        // When
+        val config = testedBuilder
+            .setSpanEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(
+            Configuration.DEFAULT_TRACING_CONFIG.copy(
+                spanEventMapper = eventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
     }
 }

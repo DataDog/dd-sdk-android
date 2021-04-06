@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.event.NoOpSpanEventMapper
+import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
@@ -30,7 +30,8 @@ internal class TracesFilePersistenceStrategy(
     networkInfoProvider: NetworkInfoProvider,
     userInfoProvider: UserInfoProvider,
     envName: String,
-    internalLogger: Logger
+    internalLogger: Logger,
+    spanEventMapper: SpanEventMapper
 ) : BatchFilePersistenceStrategy<DDSpan>(
     FeatureFileOrchestrator(
         consentProvider,
@@ -46,7 +47,7 @@ internal class TracesFilePersistenceStrategy(
             networkInfoProvider,
             userInfoProvider
         ),
-        NoOpSpanEventMapper(),
+        spanEventMapper,
         SpanEventSerializer(envName)
     ),
     PayloadDecoration.NEW_LINE_DECORATION,

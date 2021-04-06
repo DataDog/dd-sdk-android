@@ -16,6 +16,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -104,7 +105,8 @@ private constructor(
             tracesConfig = tracesConfig?.let {
                 Configuration.Feature.Tracing(
                     endpointUrl = it.endpointUrl,
-                    plugins = it.plugins
+                    plugins = it.plugins,
+                    spanEventMapper = NoOpSpanEventMapper()
                 )
             },
             rumConfig = rumConfig?.let {
