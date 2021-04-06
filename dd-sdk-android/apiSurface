@@ -1083,7 +1083,7 @@ class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
   class Client
-    constructor(SimCarrier, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Client

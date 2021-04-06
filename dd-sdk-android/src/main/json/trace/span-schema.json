@@ -197,8 +197,7 @@
               },
               "readOnly": true,
               "required": [
-                "connectivity",
-                "sim_carrier"
+                "connectivity"
               ]
             }
           },

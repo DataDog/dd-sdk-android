@@ -134,7 +134,7 @@ internal class CallbackNetworkInfoProvider(
 
     private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            networkCapabilities.signalStrength > NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
+            networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()
         } else {

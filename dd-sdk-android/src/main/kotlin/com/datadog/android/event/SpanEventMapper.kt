@@ -7,10 +7,12 @@
 package com.datadog.android.event
 
 import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * An interface which can be implemented to modify the writable attributes inside a SpanEvent.
  */
+@NoOpImplementation
 interface SpanEventMapper : EventMapper<SpanEvent> {
     /**
      * By implementing this method you can intercept and modify the writable

@@ -43,9 +43,9 @@ import org.mockito.quality.Strictness
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
-internal class LegacyToSpanEventMapperTest {
+internal class DdSpanToSpanEventMapperTest {
 
-    lateinit var testedMapper: LegacyToSpanEventMapper
+    lateinit var testedMapper: DdSpanToSpanEventMapper
 
     @Forgery
     lateinit var fakeUserInfo: UserInfo
@@ -75,7 +75,7 @@ internal class LegacyToSpanEventMapperTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         testedMapper =
-            LegacyToSpanEventMapper(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
+            DdSpanToSpanEventMapper(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
     }
 
     @Test

@@ -56,10 +56,12 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                 ),
                 network = SpanEvent.Network(
                     SpanEvent.Client(
-                        simCarrier = SpanEvent.SimCarrier(
-                            id = networkInfo.carrierId.toString(),
-                            name = networkInfo.carrierName
-                        ),
+                        simCarrier = forge.aNullable {
+                            SpanEvent.SimCarrier(
+                                id = networkInfo.carrierId.toString(),
+                                name = networkInfo.carrierName
+                            )
+                        },
                         signalStrength = networkInfo.strength.toString(),
                         uplinkKbps = networkInfo.upKbps.toString(),
                         downlinkKbps = networkInfo.downKbps.toString(),

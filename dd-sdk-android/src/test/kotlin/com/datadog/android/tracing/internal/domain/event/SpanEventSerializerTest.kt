@@ -187,22 +187,27 @@ internal class SpanEventSerializerTest {
             KEY_NETWORK_CONNECTIVITY,
             network.client.connectivity
         )
-        hasField(KEY_SIM_CARRIER) {
-            val simCarrierName = network.client.simCarrier.name
-            if (simCarrierName != null) {
-                hasField(KEY_NETWORK_CARRIER_NAME, simCarrierName)
-            } else {
-                doesNotHaveField(KEY_NETWORK_CARRIER_NAME)
+        val simCarrier = network.client.simCarrier
+        if (simCarrier != null) {
+            hasField(KEY_SIM_CARRIER) {
+                val simCarrierName = simCarrier.name
+                if (simCarrierName != null) {
+                    hasField(KEY_NETWORK_CARRIER_NAME, simCarrierName)
+                } else {
+                    doesNotHaveField(KEY_NETWORK_CARRIER_NAME)
+                }
+                val simCarrierId = simCarrier.id
+                if (simCarrierId != null) {
+                    hasField(
+                        KEY_NETWORK_CARRIER_ID,
+                        simCarrierId
+                    )
+                } else {
+                    doesNotHaveField(KEY_NETWORK_CARRIER_ID)
+                }
             }
-            val simCarrierId = network.client.simCarrier.id
-            if (simCarrierId != null) {
-                hasField(
-                    KEY_NETWORK_CARRIER_ID,
-                    simCarrierId
-                )
-            } else {
-                doesNotHaveField(KEY_NETWORK_CARRIER_ID)
-            }
+        } else {
+            doesNotHaveField(KEY_SIM_CARRIER)
         }
         val uplinkKbps = network.client.uplinkKbps
         if (uplinkKbps != null) {
