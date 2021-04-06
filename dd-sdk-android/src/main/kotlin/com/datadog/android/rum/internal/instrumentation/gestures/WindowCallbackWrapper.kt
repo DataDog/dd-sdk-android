@@ -30,12 +30,8 @@ internal class WindowCallbackWrapper(
         try {
             gesturesDetector.onTouchEvent(copy)
         } catch (e: Exception) {
-            sdkLogger.e(
-                "$TAG: error while processing the MotionEvent",
-                e
-            )
+            sdkLogger.e("Error processing MotionEvent", e)
         } finally {
-            sdkLogger.v("$TAG: Recycling the MotionEvent copy")
             copy.recycle()
         }
         return wrappedCallback.dispatchTouchEvent(event)
@@ -67,8 +63,4 @@ internal class WindowCallbackWrapper(
     internal fun copyEvent(event: MotionEvent?) = MotionEvent.obtain(event)
 
     // endregion
-
-    companion object {
-        const val TAG = "WindowCallbackWrapper"
-    }
 }

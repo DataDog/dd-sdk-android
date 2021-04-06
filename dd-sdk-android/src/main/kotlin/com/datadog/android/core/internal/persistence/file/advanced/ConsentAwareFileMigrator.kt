@@ -65,7 +65,7 @@ internal class ConsentAwareFileMigrator(
             }
 
             else -> {
-                sdkLogger.w("Unexpected migration from $previousConsent to $newConsent")
+                sdkLogger.w("Unexpected consent migration from $previousConsent to $newConsent")
                 NoOpDataMigrationOperation()
             }
         }

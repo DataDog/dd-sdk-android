@@ -23,7 +23,7 @@ internal fun String.toMethod(): ResourceEvent.Method {
     return try {
         ResourceEvent.Method.valueOf(this.toUpperCase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.w("Unable to convert $this to a valid method", e)
+        sdkLogger.i("Unable to convert [$this] to a valid http method", e)
         ResourceEvent.Method.GET
     }
 }
@@ -32,7 +32,7 @@ internal fun String.toErrorMethod(): ErrorEvent.Method {
     return try {
         ErrorEvent.Method.valueOf(this.toUpperCase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.w("Unable to convert $this to a valid method", e)
+        sdkLogger.i("Unable to convert [$this] to a valid http method", e)
         ErrorEvent.Method.GET
     }
 }

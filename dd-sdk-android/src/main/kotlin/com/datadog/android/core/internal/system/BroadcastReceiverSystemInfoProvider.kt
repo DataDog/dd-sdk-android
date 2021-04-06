@@ -26,14 +26,12 @@ internal class BroadcastReceiverSystemInfoProvider :
         val action = intent?.action
         when (action) {
             Intent.ACTION_BATTERY_CHANGED -> {
-                sdkLogger.d("received battery update")
                 handleBatteryIntent(intent)
             }
             PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
-                sdkLogger.d("received power save mode update")
                 handlePowerSaveIntent(context)
             }
-            else -> sdkLogger.d("received unknown update $action")
+            else -> sdkLogger.w("Received unknown broadcast intent $action")
         }
     }
 
@@ -84,6 +82,10 @@ internal class BroadcastReceiverSystemInfoProvider :
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
             val powerSaveMode = powerManager?.isPowerSaveMode ?: false
+            sdkLogger.i(
+                "Received power save mode update",
+                attributes = mapOf("power_save_enabled" to powerSaveMode)
+            )
             systemInfo = systemInfo.copy(
                 powerSaveMode = powerSaveMode
             )
