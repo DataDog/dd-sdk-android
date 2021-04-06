@@ -221,6 +221,13 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     AndroidTracer.logErrorMessage(span, message)
     ```
 
+8. If you need to modify some attributes in your Span events before batching you can do so by providing an implementation of `SpanEventMapper<T>` when initialzing the SDK:
+   ```kotlin
+      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+                        ...
+                        .setSpanEventMapper(spanEventMapper)
+                        .build()
+   ```
 ## Integrations
 
 In addition to manual tracing, the `dd-sdk-android` library provides the following integration.
