@@ -13,9 +13,7 @@ import kotlin.collections.emptyList
 import kotlin.collections.emptyMap
 import kotlin.collections.emptySet
 
-@Suppress(
-    "RedundantUnitReturnType"
-)
+@Suppress("RedundantUnitReturnType")
 internal class NoOpSimpleInterface : SimpleInterface {
 
     public override fun doSomething(): Unit {

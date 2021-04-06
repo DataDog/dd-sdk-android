@@ -36,6 +36,7 @@ import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 import javax.tools.StandardLocation
 import org.jetbrains.annotations.Nullable
+import javax.lang.model.element.VariableElement
 
 @SupportedOptions("org.gradle.annotation.processing.aggregating")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -195,11 +196,11 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
         typeElement: TypeElement
     ) {
         val interfaces = mutableListOf(typeElement)
-
+        val executableElements: MutableMap<String, ExecutableElement> = mutableMapOf()
         while (interfaces.isNotEmpty()) {
             val interfaceType = interfaces.removeAt(0)
             if (interfaceType.kind == ElementKind.INTERFACE) {
-                generateInterfaceImplementation(typeSpecBuilder, interfaceType)
+                fetchExecutableEnclosedElements(interfaceType, executableElements)
 
                 interfaceType.interfaces.forEach {
                     val element = processingEnv.typeUtils.asElement(it).toTypeElementOrNull()
@@ -209,19 +210,25 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
                 }
             }
         }
+        executableElements.values.forEach {
+            typeSpecBuilder.addFunction(generateFunctionImplementation(it))
+        }
     }
 
     /**
-     * Generates the implementation for a given interface.
+     * Updates the executable element map with the newly found enclosed executable elements
+     * in this interface avoiding the duplicates.
      */
-    private fun generateInterfaceImplementation(
-        typeSpecBuilder: TypeSpec.Builder,
-        typeElement: TypeElement
+    private fun fetchExecutableEnclosedElements(
+        typeElement: TypeElement,
+        executableElements: MutableMap<String, ExecutableElement>
     ) {
         typeElement.enclosedElements.forEach {
             // TODO RUMM-000 implement kotlin properties ?
-            if (it is ExecutableElement) {
-                typeSpecBuilder.addFunction(generateFunctionImplementation(it))
+            if (it is ExecutableElement &&
+                !executableElements.containsKey(it.id())
+            ) {
+                executableElements[it.id()] = it
             }
         }
     }
@@ -247,7 +254,7 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
         val returnType = element.returnType
         if (returnType !is NoType) {
             val isReturnNullable = element.getAnnotation(Nullable::class.java) != null
-            generateFunctionReturnStatement(funSpecBuilder, returnType, isReturnNullable)
+            generateFunctionReturnStatement(funSpecBuilder, returnType, params, isReturnNullable)
         }
 
         return funSpecBuilder.build()
@@ -268,11 +275,20 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
     private fun generateFunctionReturnStatement(
         funSpecBuilder: FunSpec.Builder,
         returnType: TypeMirror,
+        functionParams: List<VariableElement>,
         isReturnNullable: Boolean
     ) {
+
         val type = returnType.asKotlinTypeName().copy(isReturnNullable)
         funSpecBuilder.returns(type)
-
+        if (!isReturnNullable && functionParams.isNotEmpty()) {
+            functionParams.forEach {
+                if (it.asType() == returnType) {
+                    funSpecBuilder.addStatement("return %L", functionParams[0].simpleName)
+                    return
+                }
+            }
+        }
         val returnTypeDef = processingEnv.typeUtils.asElement(returnType)
         when {
             type.isNullable -> funSpecBuilder.addStatement("return null")
@@ -323,6 +339,15 @@ class NoOpFactoryAnnotationProcessor : AbstractProcessor() {
         }
     }
 
+    private fun ExecutableElement.id(): String {
+        val s = this.simpleName.toString() +
+            this.parameters
+                .map {
+                    it.simpleName
+                }
+                .joinToString(separator = ":")
+        return s
+    }
     // endregion
 
     companion object {
