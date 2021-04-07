@@ -63,6 +63,6 @@ internal class TracesFeatureTest :
         val tracesUploader = uploader as TracesOkHttpUploader
         assertThat(tracesUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(tracesUploader.url).endsWith(CoreFeature.clientToken)
-        assertThat(tracesUploader.client).isSameAs(CoreFeature.okHttpClient)
+        assertThat(tracesUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 }

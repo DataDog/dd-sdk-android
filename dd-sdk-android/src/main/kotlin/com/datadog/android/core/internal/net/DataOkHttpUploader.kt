@@ -9,13 +9,13 @@ package com.datadog.android.core.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.sdkLogger
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import okhttp3.Request
 import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploader(
     internal var url: String,
-    internal val client: OkHttpClient,
+    internal val callFactory: Call.Factory,
     internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 
@@ -26,7 +26,7 @@ internal abstract class DataOkHttpUploader(
 
         return try {
             val request = buildRequest(data)
-            val call = client.newCall(request)
+            val call = callFactory.newCall(request)
             val response = call.execute()
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
@@ -77,7 +77,11 @@ internal abstract class DataOkHttpUploader(
 
     private fun urlWithQueryParams(): String {
         val queryParams = buildQueryParams()
-        return url + queryParams.map { "${it.key}=${it.value}" }.joinToString("&", prefix = "?")
+        return if (queryParams.isEmpty()) {
+            url
+        } else {
+            url + queryParams.map { "${it.key}=${it.value}" }.joinToString("&", prefix = "?")
+        }
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {

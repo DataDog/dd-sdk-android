@@ -77,7 +77,7 @@ internal class CrashReportsFeatureTest :
         val crashUploader = uploader as LogsOkHttpUploader
         assertThat(crashUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(crashUploader.url).endsWith(CoreFeature.clientToken)
-        assertThat(crashUploader.client).isSameAs(CoreFeature.okHttpClient)
+        assertThat(crashUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test

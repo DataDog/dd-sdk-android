@@ -72,7 +72,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val rumUploader = uploader as RumOkHttpUploader
         assertThat(rumUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(rumUploader.url).endsWith(CoreFeature.clientToken)
-        assertThat(rumUploader.client).isSameAs(CoreFeature.okHttpClient)
+        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test
