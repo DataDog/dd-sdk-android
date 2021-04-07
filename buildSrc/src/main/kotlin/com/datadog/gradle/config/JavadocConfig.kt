@@ -6,20 +6,10 @@
 
 package com.datadog.gradle.config
 
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Project
-import org.gradle.jvm.tasks.Jar
 import org.jetbrains.dokka.gradle.DokkaTask
 
 fun Project.javadocConfig() {
-
-    @Suppress("UnstableApiUsage")
-    tasks.register("javadocJar", Jar::class.java) {
-        group = "documentation"
-        dependsOn("dokkaJavadoc")
-        archiveClassifier.convention("javadoc")
-        from("${buildDir.canonicalPath}/reports/javadoc")
-    }
 
     tasks.withType(DokkaTask::class.java) {
         val toOutputDirectory = file("${buildDir.canonicalPath}/reports/javadoc")
