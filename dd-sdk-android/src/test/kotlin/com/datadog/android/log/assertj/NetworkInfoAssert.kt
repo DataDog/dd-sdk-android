@@ -33,7 +33,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasCarrierId(expected: Long): NetworkInfoAssert {
+    fun hasCarrierId(expected: Long?): NetworkInfoAssert {
         assertThat(actual.carrierId)
             .overridingErrorMessage(
                 "Expected networkInfo to have carrierId $expected " +
@@ -53,7 +53,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasUpSpeed(expected: Long): NetworkInfoAssert {
+    fun hasUpSpeed(expected: Long?): NetworkInfoAssert {
         assertThat(actual.upKbps)
             .overridingErrorMessage(
                 "Expected networkInfo to have upKbps $expected " +
@@ -63,7 +63,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasDownSpeed(expected: Long): NetworkInfoAssert {
+    fun hasDownSpeed(expected: Long?): NetworkInfoAssert {
         assertThat(actual.downKbps)
             .overridingErrorMessage(
                 "Expected networkInfo to have downKbps $expected " +
@@ -73,7 +73,7 @@ internal class NetworkInfoAssert(actual: NetworkInfo) :
         return this
     }
 
-    fun hasStrength(expected: Long): NetworkInfoAssert {
+    fun hasStrength(expected: Long?): NetworkInfoAssert {
         assertThat(actual.strength)
             .overridingErrorMessage(
                 "Expected networkInfo to have strength $expected " +

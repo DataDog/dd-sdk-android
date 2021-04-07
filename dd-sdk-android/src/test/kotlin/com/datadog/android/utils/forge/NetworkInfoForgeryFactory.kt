@@ -20,10 +20,10 @@ internal class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
                 forge.aWhitespaceString(),
                 null
             ),
-            carrierId = if (forge.aBool()) forge.aLong(0, 10000) else -1,
-            upKbps = forge.aLong(0, Long.MAX_VALUE),
-            downKbps = forge.aLong(0, Long.MAX_VALUE),
-            strength = forge.aLong(-100, -30), // dBm for wifi signal
+            carrierId = forge.aNullable { forge.aLong(0, 10000) },
+            upKbps = forge.aNullable { forge.aLong(1, Long.MAX_VALUE) },
+            downKbps = forge.aNullable { forge.aLong(1, Long.MAX_VALUE) },
+            strength = forge.aNullable { forge.aLong(-100, -30) }, // dBm for wifi signal
             cellularTechnology = forge.aNullable { anAlphabeticalString() }
         )
     }

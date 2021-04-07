@@ -38,9 +38,9 @@ internal class CallbackNetworkInfoProvider(
 
         lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
-            upKbps = networkCapabilities.linkUpstreamBandwidthKbps.toLong(),
-            downKbps = networkCapabilities.linkDownstreamBandwidthKbps.toLong(),
-            strength = getStrength(networkCapabilities).toLong()
+            upKbps = resolveUpBandwidth(networkCapabilities),
+            downKbps = resolveDownBandwidth(networkCapabilities),
+            strength = resolveStrength(networkCapabilities)
         )
     }
 
@@ -116,11 +116,29 @@ internal class CallbackNetworkInfoProvider(
 
     // region Internal
 
-    private fun getStrength(networkCapabilities: NetworkCapabilities): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            networkCapabilities.signalStrength
+    private fun resolveUpBandwidth(networkCapabilities: NetworkCapabilities): Long? {
+        return if (networkCapabilities.linkUpstreamBandwidthKbps > 0) {
+            networkCapabilities.linkUpstreamBandwidthKbps.toLong()
         } else {
-            Int.MIN_VALUE
+            null
+        }
+    }
+
+    private fun resolveDownBandwidth(networkCapabilities: NetworkCapabilities): Long? {
+        return if (networkCapabilities.linkDownstreamBandwidthKbps > 0) {
+            networkCapabilities.linkDownstreamBandwidthKbps.toLong()
+        } else {
+            null
+        }
+    }
+
+    private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            networkCapabilities.signalStrength > NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
+        ) {
+            networkCapabilities.signalStrength.toLong()
+        } else {
+            null
         }
     }
 

@@ -64,6 +64,11 @@ internal class CallbackNetworkInfoProviderTest {
 
     @BeforeEach
     fun `set up`() {
+        // setup the network capabilities to return the unspecified values by default
+        whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn 0
+        whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn 0
+        whenever(mockCapabilities.signalStrength) doReturn
+            NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockCapabilities.hasTransport(any())) doReturn false
 
@@ -78,10 +83,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
-            .hasUpSpeed(-1)
-            .hasDownSpeed(-1)
-            .hasStrength(Int.MIN_VALUE.toLong())
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
@@ -102,7 +107,7 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
             .hasStrength(strength.toLong())
@@ -124,10 +129,27 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
-            .hasStrength(Int.MIN_VALUE.toLong())
+            .hasStrength(null)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `connected to wifi (no up or down bandwidth, no strength)`() {
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
+
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
@@ -149,7 +171,7 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
             .hasStrength(strength.toLong())
@@ -172,10 +194,28 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
-            .hasStrength(Int.MIN_VALUE.toLong())
+            .hasStrength(null)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `connected to wifi aware (no up or down bandwidth, no strength)`() {
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE))
+            .doReturn(true)
+
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
@@ -194,7 +234,7 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
     }
@@ -215,7 +255,7 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
     }
@@ -235,9 +275,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(null)
     }
 
     @Test
@@ -256,9 +297,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
+            .hasStrength(null)
     }
 
     @Test
@@ -277,9 +319,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
-            .hasUpSpeed(-1)
-            .hasDownSpeed(-1)
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
@@ -314,10 +357,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasUpSpeed(upSpeed.toLong())
             .hasDownSpeed(downSpeed.toLong())
-            .hasStrength(Int.MIN_VALUE.toLong())
+            .hasStrength(null)
     }
 
     @Test
@@ -446,9 +489,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
-            .hasUpSpeed(-1)
-            .hasDownSpeed(-1)
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
@@ -485,9 +529,10 @@ internal class CallbackNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
-            .hasUpSpeed(-1)
-            .hasDownSpeed(-1)
+            .hasCarrierId(null)
+            .hasUpSpeed(null)
+            .hasDownSpeed(null)
+            .hasStrength(null)
     }
 
     @Test
