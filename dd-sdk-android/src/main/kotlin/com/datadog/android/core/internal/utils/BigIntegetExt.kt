@@ -4,8 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin.jsonschema
+package com.datadog.android.core.internal.utils
 
-enum class JsonPrimitiveType {
-    STRING, BOOLEAN, INTEGER, DOUBLE, NUMBER
+import java.math.BigInteger
+
+internal fun BigInteger.toHexString(): String {
+    return toLong().toString(16)
 }

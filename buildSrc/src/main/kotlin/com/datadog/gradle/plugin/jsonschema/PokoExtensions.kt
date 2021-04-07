@@ -9,6 +9,7 @@ package com.datadog.gradle.plugin.jsonschema
 import android.databinding.tool.ext.joinToCamelCaseAsVar
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.BOOLEAN
+import com.squareup.kotlinpoet.NUMBER
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.LIST
@@ -38,7 +39,7 @@ internal fun JsonType?.asKotlinTypeName(): TypeName {
         null,
         JsonType.NULL -> NOTHING_NULLABLE
         JsonType.BOOLEAN -> BOOLEAN
-        JsonType.NUMBER -> DOUBLE
+        JsonType.NUMBER -> NUMBER
         JsonType.STRING -> STRING
         JsonType.INTEGER -> LONG
         JsonType.OBJECT,
@@ -54,6 +55,7 @@ internal fun JsonPrimitiveType?.asKotlinTypeName(): TypeName {
         JsonPrimitiveType.DOUBLE -> DOUBLE
         JsonPrimitiveType.STRING -> STRING
         JsonPrimitiveType.INTEGER -> LONG
+        JsonPrimitiveType.NUMBER -> NUMBER
         null -> NOTHING_NULLABLE
     }
 }

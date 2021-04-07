@@ -78,7 +78,17 @@ class ModelValidationTest(
                     "Deserialized model was not the same " +
                         "with the serialized for type: [$type] and test iteration: [$it]"
                 )
+                .usingComparatorForType(numberTypeComparator, Number::class.java)
                 .isEqualToComparingFieldByFieldRecursively(entity)
+        }
+    }
+
+    private val numberTypeComparator = Comparator<Number> { t1, t2 ->
+        when (t2) {
+            is Long -> t2.compareTo(t1.toLong())
+            is Double -> t2.compareTo(t1.toDouble())
+            is Float -> t2.compareTo(t1.toFloat())
+            else -> (t2 as Int).compareTo(t1.toInt())
         }
     }
 

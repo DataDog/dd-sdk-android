@@ -6,8 +6,8 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
-import kotlin.Double
 import kotlin.Long
+import kotlin.Number
 import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
@@ -15,7 +15,7 @@ import kotlin.jvm.Throws
 data class Product(
     val productId: Long,
     val productName: String,
-    val price: Double
+    val price: Number
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
@@ -33,7 +33,7 @@ data class Product(
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString
-                val price = jsonObject.get("price").asDouble
+                val price = jsonObject.get("price").asNumber
                 return Product(productId, productName, price)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)

@@ -4,8 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin.jsonschema
+package com.datadog.android.core.internal
 
-enum class JsonPrimitiveType {
-    STRING, BOOLEAN, INTEGER, DOUBLE, NUMBER
+internal interface Mapper<R, T> {
+
+    fun map(model: R): T
 }

@@ -8,8 +8,8 @@ import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 import kotlin.Boolean
-import kotlin.Double
 import kotlin.Long
+import kotlin.Number
 import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
@@ -18,7 +18,7 @@ data class Bike(
     val productId: Long = 1L,
     val productName: String,
     val type: String? = "road",
-    val price: Double = 55.5,
+    val price: Number = 55.5,
     val frameMaterial: FrameMaterial? = FrameMaterial.LIGHT_ALUMINIUM,
     val inStock: Boolean = true,
     val color: Color = Color.LIME_GREEN
@@ -44,7 +44,7 @@ data class Bike(
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString
                 val type = jsonObject.get("type")?.asString
-                val price = jsonObject.get("price").asDouble
+                val price = jsonObject.get("price").asNumber
                 val frameMaterial = jsonObject.get("frameMaterial")?.asString?.let {
                     FrameMaterial.fromJson(it)
                 }

@@ -24,6 +24,8 @@ import org.assertj.core.data.Offset
 class JsonObjectAssert(actual: JsonObject) :
     AbstractObjectAssert<JsonObjectAssert, JsonObject>(actual, JsonObjectAssert::class.java) {
 
+    // region Assertions
+
     /**
      *  Verifies that the actual jsonObject does not contain any field with the given name.
      *  @param name the field name
@@ -390,6 +392,37 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     /**
+     *  Verifies that the actual jsonObject contains a field with the given name and Number value.
+     *  @param name the field name
+     *  @param expectedValue the expected value of the field
+     */
+    fun hasField(name: String, expectedValue: Number): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive && element.isNumber)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with Number value " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        val value = (element as JsonPrimitive).asNumber
+        assertThat(value)
+            .usingComparator(numberTypeComparator)
+            .overridingErrorMessage(
+                "Expected json object to have field $name value $expectedValue " +
+                    "but was $value"
+            )
+            .isEqualTo(expectedValue)
+        return this
+    }
+
+    /**
      *  Verifies that the actual jsonObject contains a field with the given name and JsonObject value.
      *  @param name the field name
      *  @param withAssertions a lambda verifying the value of the JsonObject
@@ -488,6 +521,21 @@ class JsonObjectAssert(actual: JsonObject) :
             ).isTrue()
         }
     }
+
+    // endregion
+
+    // region Internal
+
+    private val numberTypeComparator = Comparator<Number> { t1, t2 ->
+        when (t2) {
+            is Long -> t2.compareTo(t1.toLong())
+            is Double -> t2.compareTo(t1.toDouble())
+            is Float -> t2.compareTo(t1.toFloat())
+            else -> (t2 as Int).compareTo(t1.toInt())
+        }
+    }
+
+    // endregion
 
     companion object {
 

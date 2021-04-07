@@ -12,12 +12,12 @@ import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.utils.extension.getString
-import com.datadog.android.utils.extension.toHexString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.assertj.JsonObjectAssert

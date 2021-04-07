@@ -4,14 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.extension
+package com.example.forgery
 
-import java.math.BigInteger
+import fr.xgouchet.elmyr.Forge
 
-fun BigInteger.toHexString(): String {
-    return toLong().toString(16)
-}
-
-fun String.hexToBigInteger(): BigInteger {
-    return toLong(16).toBigInteger()
+internal fun Forge.aNumber(): Number {
+    return anElementFrom(anInt(), aDouble(), aFloat(), aLong())
 }

@@ -37,7 +37,7 @@ val Book = TypeDefinition.Class(
     properties = listOf(
         TypeProperty("bookId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
         TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE), false),
+        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
         TypeProperty(
             "author", TypeDefinition.Class(
                 name = "Author",
@@ -247,12 +247,12 @@ val Demo = TypeDefinition.Class(
     properties = listOf(
         TypeProperty("s", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
         TypeProperty("i", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
-        TypeProperty("n", TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE), false),
+        TypeProperty("n", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
         TypeProperty("b", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false),
         TypeProperty("l", TypeDefinition.Null(), false),
         TypeProperty("ns", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
         TypeProperty("ni", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
-        TypeProperty("nn", TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE), true),
+        TypeProperty("nn", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), true),
         TypeProperty("nb", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), true),
         TypeProperty("nl", TypeDefinition.Null(), true)
 
@@ -411,7 +411,7 @@ val Product = TypeDefinition.Class(
     properties = listOf(
         TypeProperty("productId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
         TypeProperty("productName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE), false)
+        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false)
     )
 )
 
@@ -437,7 +437,7 @@ val Bike = TypeDefinition.Class(
         ),
         TypeProperty(
             "price",
-            TypeDefinition.Primitive(JsonPrimitiveType.DOUBLE),
+            TypeDefinition.Primitive(JsonPrimitiveType.NUMBER),
             false,
             defaultValue = 55.5
         ),
