@@ -11,13 +11,13 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.rum.RumAttributes
 import java.util.Locale
-import okhttp3.OkHttpClient
+import okhttp3.Call
 
 internal open class RumOkHttpUploader(
     endpoint: String,
     token: String,
-    client: OkHttpClient
-) : DataOkHttpUploader(buildUrl(endpoint, token), client, CONTENT_TYPE_TEXT_UTF8) {
+    callFactory: Call.Factory
+) : DataOkHttpUploader(buildUrl(endpoint, token), callFactory, CONTENT_TYPE_TEXT_UTF8) {
 
     private val tags: String by lazy {
         arrayOf(

@@ -62,6 +62,6 @@ internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs,
         val logsUploader = uploader as LogsOkHttpUploader
         assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.url).endsWith(CoreFeature.clientToken)
-        assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
+        assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 }

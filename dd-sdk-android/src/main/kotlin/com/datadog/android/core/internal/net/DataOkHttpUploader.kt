@@ -9,13 +9,13 @@ package com.datadog.android.core.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.sdkLogger
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import okhttp3.Request
 import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploader(
     internal var url: String,
-    internal val client: OkHttpClient,
+    internal val callFactory: Call.Factory,
     internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 
@@ -26,18 +26,11 @@ internal abstract class DataOkHttpUploader(
 
         return try {
             val request = buildRequest(data)
-            val call = client.newCall(request)
+            val call = callFactory.newCall(request)
             val response = call.execute()
-            sdkLogger.i(
-                "Response " +
-                    "from ${url.substring(0, 32)}… " +
-                    "code:${response.code()} " +
-                    "body:${response.body()?.string()} " +
-                    "headers:${response.headers()}"
-            )
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
-            sdkLogger.e("unable to upload data", e)
+            sdkLogger.e("Unable to upload batch data", e)
             UploadStatus.NETWORK_ERROR
         }
     }
@@ -72,35 +65,23 @@ internal abstract class DataOkHttpUploader(
     }
 
     private fun buildRequest(data: ByteArray): Request {
-        // add query params
         val urlWithQueryParams = urlWithQueryParams()
-        sdkLogger.d("Sending data to POST $urlWithQueryParams")
         val builder = Request.Builder()
             .url(urlWithQueryParams)
             .post(RequestBody.create(null, data))
         headers().forEach {
             builder.addHeader(it.key, it.value)
-            sdkLogger.d("$TAG: ${it.key}: ${it.value}")
         }
         return builder.build()
     }
 
     private fun urlWithQueryParams(): String {
-        val baseUrl = url
-        var firstAdded = false
-        return buildQueryParams()
-            .asSequence()
-            .fold(
-                baseUrl,
-                { url, entry ->
-                    if (firstAdded) {
-                        "$url&${entry.key}=${entry.value}"
-                    } else {
-                        firstAdded = true
-                        "$url?${entry.key}=${entry.value}"
-                    }
-                }
-            )
+        val queryParams = buildQueryParams()
+        return if (queryParams.isEmpty()) {
+            url
+        } else {
+            url + queryParams.map { "${it.key}=${it.value}" }.joinToString("&", prefix = "?")
+        }
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {
@@ -129,7 +110,5 @@ internal abstract class DataOkHttpUploader(
         private const val HEADER_UA = "User-Agent"
 
         const val SYSTEM_UA = "http.agent"
-
-        private const val TAG = "DataOkHttpUploader"
     }
 }

@@ -12,8 +12,7 @@ import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -28,26 +27,19 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploader>() {
 
-    override fun uploader(): LogsOkHttpUploader {
+    override fun uploader(callFactory: Call.Factory): LogsOkHttpUploader {
         return LogsOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            OkHttpClient.Builder()
-                .connectTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .readTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .build()
+            callFactory
         )
     }
 
-    override fun urlFormat(): String {
-        return LogsOkHttpUploader.UPLOAD_URL
+    override fun expectedPath(): String {
+        return "/v1/input/$fakeToken"
     }
 
-    override fun expectedPathRegex(): String {
-        return "^\\/v1\\/input/$fakeToken" +
-            "\\?${DataOkHttpUploader.QP_BATCH_TIME}=\\d+" +
-            "&${DataOkHttpUploader.QP_SOURCE}=${DataOkHttpUploader.DD_SOURCE_ANDROID}" +
-            "$"
+    override fun expectedQueryParams(): Map<String, String> {
+        return mapOf(DataOkHttpUploader.QP_SOURCE to DataOkHttpUploader.DD_SOURCE_ANDROID)
     }
 }

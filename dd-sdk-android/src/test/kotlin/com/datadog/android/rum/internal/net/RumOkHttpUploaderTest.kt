@@ -19,8 +19,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
@@ -64,32 +63,27 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
         CoreFeature.stop()
     }
 
-    override fun uploader(): RumOkHttpUploader {
+    override fun uploader(callFactory: Call.Factory): RumOkHttpUploader {
         return RumOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            OkHttpClient.Builder()
-                .connectTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .readTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .build()
+            callFactory
         )
     }
 
-    override fun urlFormat(): String {
-        return RumOkHttpUploader.UPLOAD_URL
+    override fun expectedPath(): String {
+        return "/v1/input/$fakeToken"
     }
 
-    override fun expectedPathRegex(): String {
-        return "^\\/v1\\/input/$fakeToken" +
-            "\\?${DataOkHttpUploader.QP_BATCH_TIME}=\\d+" +
-            "&${DataOkHttpUploader.QP_SOURCE}=${DataOkHttpUploader.DD_SOURCE_ANDROID}" +
-            "&${RumOkHttpUploader.QP_TAGS}=" +
-            "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
+    override fun expectedQueryParams(): Map<String, String> {
+        val tags = "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
             "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
             "${RumAttributes.ENV}:$fakeEnvName," +
-            "${RumAttributes.VARIANT}:$fakeVariant" +
-            "$"
+            "${RumAttributes.VARIANT}:$fakeVariant"
+        return mapOf(
+            DataOkHttpUploader.QP_SOURCE to DataOkHttpUploader.DD_SOURCE_ANDROID,
+            RumOkHttpUploader.QP_TAGS to tags
+        )
     }
 }

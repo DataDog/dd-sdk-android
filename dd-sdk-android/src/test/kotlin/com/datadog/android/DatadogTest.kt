@@ -199,7 +199,7 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 initialize the ConsentProvider 𝕎 initializing)`(
+    fun `𝕄 initialize the ConsentProvider 𝕎 initializing()`(
         @Forgery applicationId: UUID
     ) {
         // Given
