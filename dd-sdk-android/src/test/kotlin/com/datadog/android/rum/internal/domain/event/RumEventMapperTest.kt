@@ -34,7 +34,6 @@ import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -65,6 +64,9 @@ internal class RumEventMapperTest {
     lateinit var mockViewEventMapper: EventMapper<ViewEvent>
 
     @Mock
+    lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
+
+    @Mock
     lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Mock
@@ -91,7 +93,8 @@ internal class RumEventMapperTest {
             actionEventMapper = mockActionEventMapper,
             viewEventMapper = mockViewEventMapper,
             resourceEventMapper = mockResourceEventMapper,
-            errorEventMapper = mockErrorEventMapper
+            errorEventMapper = mockErrorEventMapper,
+            longTaskEventMapper = mockLongTaskEventMapper
         )
     }
 
@@ -154,6 +157,21 @@ internal class RumEventMapperTest {
         val fakeBundledEvent = forge.getForgery<ActionEvent>()
         fakeRumEvent = fakeRumEvent.copy(event = fakeBundledEvent)
         whenever(mockActionEventMapper.map(fakeBundledEvent)).thenReturn(fakeBundledEvent)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent?.event).isEqualTo(fakeBundledEvent)
+    }
+
+    @Test
+    fun `M map the bundled event W map { LongTaskEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<LongTaskEvent>()
+        fakeRumEvent = fakeRumEvent.copy(event = fakeBundledEvent)
+        whenever(mockLongTaskEventMapper.map(fakeBundledEvent)).thenReturn(fakeBundledEvent)
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
@@ -275,6 +293,26 @@ internal class RumEventMapperTest {
     }
 
     @Test
+    fun `M return null event W map returns null object { LongTaskEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<LongTaskEvent>()
+        fakeRumEvent = fakeRumEvent.copy(event = fakeBundledEvent)
+        whenever(mockLongTaskEventMapper.map(fakeBundledEvent))
+            .thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+
+        )
+    }
+
+    @Test
     fun `M use the original event W map returns different object { ViewEvent }`(forge: Forge) {
         // GIVEN
         val fakeBundledEvent = forge.getForgery<ViewEvent>()
@@ -353,6 +391,26 @@ internal class RumEventMapperTest {
     }
 
     @Test
+    fun `M return null event W map returns different object { LongTaskEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeBundledEvent = forge.getForgery<LongTaskEvent>()
+        fakeRumEvent = fakeRumEvent.copy(event = fakeBundledEvent)
+        whenever(mockLongTaskEventMapper.map(fakeBundledEvent))
+            .thenReturn(forge.getForgery())
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+
+        )
+    }
+
+    @Test
     fun `𝕄 warn the RUM Monitor 𝕎 map() {action dropped}`(
         @Forgery actionEvent: ActionEvent
     ) {
@@ -400,8 +458,6 @@ internal class RumEventMapperTest {
         verify(mockRumMonitor).eventDropped(errorEvent.view.id, EventType.ERROR)
     }
 
-    // TODO RUMM-1146 enable data scrubbing for long tasks
-    @Disabled
     @Test
     fun `𝕄 warn the RUM Monitor 𝕎 map() {longTask dropped}`(
         @Forgery longTaskEvent: LongTaskEvent

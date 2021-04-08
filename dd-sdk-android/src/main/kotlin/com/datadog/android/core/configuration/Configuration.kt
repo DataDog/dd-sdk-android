@@ -28,6 +28,7 @@ import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -409,6 +410,21 @@ internal constructor(
             applyIfFeatureEnabled(PluginFeature.RUM, "setRumErrorEventMapper") {
                 rumConfig = rumConfig.copy(
                     rumEventMapper = getRumEventMapper().copy(errorEventMapper = eventMapper)
+                )
+            }
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [LongTaskEvent]. You can use this interface implementation
+         * to modify the [LongTaskEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setRumLongTaskEventMapper(eventMapper: EventMapper<LongTaskEvent>): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "setRumLongTaskEventMapper") {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper().copy(longTaskEventMapper = eventMapper)
                 )
             }
             return this

@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGestures
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -352,7 +353,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!).isEqualTo(
+        assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
             )
@@ -376,7 +377,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!).isEqualTo(
+        assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
@@ -404,7 +405,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!).isEqualTo(
+        assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 samplingRate = sampling
             )
@@ -429,7 +430,107 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(viewEventMapper = eventMapper)
-        assertThat(config.rumConfig!!).isEqualTo(
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                rumEventMapper = expectedRumEventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with RUM Resource eventMapper 𝕎 setRumResourceEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<ResourceEvent> = mock()
+
+        // When
+        val config = testedBuilder
+            .setRumResourceEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        val expectedRumEventMapper = RumEventMapper(resourceEventMapper = eventMapper)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                rumEventMapper = expectedRumEventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with RUM Action eventMapper 𝕎 setRumActionEventMapper() and build()`() {
+        // Given
+        val eventMapper: EventMapper<ActionEvent> = mock()
+
+        // When
+        val config = testedBuilder
+            .setRumActionEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        val expectedRumEventMapper = RumEventMapper(actionEventMapper = eventMapper)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                rumEventMapper = expectedRumEventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with RUM Error eventMapper 𝕎 setRumErrorEventMapper() and build()`() {
+        // Given
+        val eventMapper: EventMapper<ErrorEvent> = mock()
+
+        // When
+        val config = testedBuilder
+            .setRumErrorEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        val expectedRumEventMapper = RumEventMapper(errorEventMapper = eventMapper)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                rumEventMapper = expectedRumEventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with RUM LongTask eventMapper 𝕎 setRumLongTaskEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<LongTaskEvent> = mock()
+
+        // When
+        val config = testedBuilder
+            .setRumLongTaskEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
+        assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 rumEventMapper = expectedRumEventMapper
             )
@@ -471,7 +572,7 @@ internal class ConfigurationBuilderTest {
                 plugins = listOf(crashPlugin)
             )
         )
-        assertThat(config.rumConfig!!).isEqualTo(
+        assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 plugins = listOf(rumPlugin)
             )
@@ -677,6 +778,31 @@ internal class ConfigurationBuilderTest {
                 Locale.US,
                 Feature.RUM.featureName,
                 "setRumErrorEventMapper"
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user 𝕎 setRumLongTaskEventMapper() {RUM disabled}`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+        val eventMapper: EventMapper<LongTaskEvent> = mock()
+
+        // When
+        testedBuilder.setRumLongTaskEventMapper(eventMapper)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Configuration.ERROR_FEATURE_DISABLED.format(
+                Locale.US,
+                Feature.RUM.featureName,
+                "setRumLongTaskEventMapper"
             )
         )
     }

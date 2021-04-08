@@ -36,7 +36,16 @@ internal class LongTaskEventForgeryFactory :
                 id = forge.getForgery<UUID>().toString(),
                 type = LongTaskEvent.Type.USER
             ),
-            dd = LongTaskEvent.Dd()
+            dd = LongTaskEvent.Dd(),
+            service = forge.aNullable { forge.aString() },
+            connectivity = LongTaskEvent.Connectivity(
+                status = forge.aValueFrom(LongTaskEvent.Status::class.java),
+                interfaces = forge.aSubListOf(LongTaskEvent.Interface.values().asList()),
+                cellular = LongTaskEvent.Cellular(
+                    technology = forge.aNullable { forge.aString() },
+                    carrierName = forge.aNullable { forge.aString() }
+                )
+            )
         )
     }
 }

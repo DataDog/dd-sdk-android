@@ -12,6 +12,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
@@ -249,6 +250,59 @@ internal class RumEventSerializerTest {
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
+            }
+    }
+
+    @Test
+    fun `𝕄 serialize RUM event 𝕎 serialize() with LongTaskEvent`(
+        @Forgery fakeEvent: RumEvent,
+        @Forgery event: LongTaskEvent
+    ) {
+        val rumEvent = fakeEvent.copy(event = event)
+
+        val serialized = testedSerializer.serialize(rumEvent)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
+        assertThat(jsonObject)
+            .hasField("type", "long_task")
+            .hasField("date", event.date)
+            .hasField("long_task") {
+                hasField("duration", event.longTask.duration)
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.toLowerCase())
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+            }
+            .hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+            }
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
+            .hasNullableField("service", event.service)
+            .hasField("connectivity") {
+                hasField("status", event.connectivity!!.status.name.toLowerCase())
+                hasField(
+                    "interfaces",
+                    event.connectivity!!.interfaces.fold(JsonArray()) { acc, element ->
+                        acc.add(element.toJson())
+                        acc
+                    }
+                )
+                hasField("cellular") {
+                    hasNullableField("technology", event.connectivity?.cellular?.technology)
+                    hasNullableField("carrier_name", event.connectivity?.cellular?.carrierName)
+                }
             }
     }
 
