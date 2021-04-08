@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.net
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
@@ -40,6 +41,6 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
     }
 
     override fun expectedQueryParams(): Map<String, String> {
-        return mapOf(DataOkHttpUploader.QP_SOURCE to DataOkHttpUploader.DD_SOURCE_ANDROID)
+        return mapOf(DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName)
     }
 }

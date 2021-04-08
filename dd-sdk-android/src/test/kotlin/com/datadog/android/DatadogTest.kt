@@ -503,6 +503,73 @@ internal class DatadogTest {
         )
     }
 
+    @Test
+    fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`() {
+
+        val source = "react-native"
+
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sourceName).isEqualTo(source)
+    }
+
+    @Test
+    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with empty source name }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to forge.aWhitespaceString()))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+    }
+
+    @Test
+    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(forge.aMap { anAsciiString() to aString() })
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+    }
+
     // endregion
 
     // region Internal

@@ -148,6 +148,8 @@ object Datadog {
         initializeCrashReportFeature(configuration.crashReportConfig, appContext)
         initializeInternalLogsFeature(configuration.internalLogsConfig, appContext)
 
+        applyAdditionalConfiguration(configuration.additionalConfig)
+
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),
             RumFeature.persistenceStrategy.getWriter()
@@ -210,6 +212,16 @@ object Datadog {
     ) {
         if (configuration != null) {
             InternalLogsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun applyAdditionalConfiguration(
+        @Suppress("UNUSED_PARAMETER") additionalConfiguration: Map<String, Any>
+    ) {
+        additionalConfiguration[DD_SOURCE_TAG]?.let {
+            if (it.toString().isNotBlank()) {
+                CoreFeature.sourceName = it.toString()
+            }
         }
     }
 
@@ -353,6 +365,8 @@ object Datadog {
         "The environment name should contain maximum 196 of the following allowed characters " +
             "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
             "In this case the Datadog SDK will not be initialised."
+
+    internal const val DD_SOURCE_TAG = "_dd.source"
 
     // endregion
 }

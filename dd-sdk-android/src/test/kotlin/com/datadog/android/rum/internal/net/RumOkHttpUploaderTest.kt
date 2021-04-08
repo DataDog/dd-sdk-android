@@ -82,7 +82,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "${RumAttributes.ENV}:$fakeEnvName," +
             "${RumAttributes.VARIANT}:$fakeVariant"
         return mapOf(
-            DataOkHttpUploader.QP_SOURCE to DataOkHttpUploader.DD_SOURCE_ANDROID,
+            DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName,
             RumOkHttpUploader.QP_TAGS to tags
         )
     }

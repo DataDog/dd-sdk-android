@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
@@ -319,7 +320,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -370,7 +371,7 @@ internal class RumViewScopeTest {
 
         // we limit it to 100 to avoid overflow and when we add those and end up with a positive
         // number
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -450,7 +451,9 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -612,7 +615,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -664,7 +667,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeResourceScopes.put(key, mockChildScope)
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -750,7 +753,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -771,7 +774,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -1622,7 +1625,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
         val result = testedScope.handleEvent(
@@ -1650,7 +1653,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val mockDevLogHandler = mockDevLogHandler()
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
         fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
@@ -1684,7 +1687,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.stopped = true
         fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
 
@@ -1850,7 +1853,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
         val result = testedScope.handleEvent(
@@ -1883,7 +1886,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.StartResource(key, url, method, attributes)
 
         // When
@@ -2050,7 +2053,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -2094,7 +2097,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -2138,7 +2141,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -2186,7 +2189,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(message, source, null, null, fatal, attributes)
 
         // When
@@ -2276,7 +2279,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -2325,7 +2328,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
             message,
             source,
@@ -2424,7 +2427,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(message, source, throwable, null, fatal, attributes)
         testedScope.stopped = true
 
@@ -2446,7 +2449,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(message, source, null, stacktrace, fatal, attributes)
         testedScope.stopped = true
 
@@ -2946,8 +2949,9 @@ internal class RumViewScopeTest {
         existingAttributes: Map<String, Any?>
     ): Map<String, Any?> {
         val existingKeys = existingAttributes.keys
-        return forge.aMap<String, Any?> { anHexadecimalString() to anAsciiString() }
-            .filter { it.key !in existingKeys }
+        return forge.aFilteredMap(excludedKeys = existingKeys) {
+            anHexadecimalString() to anAsciiString()
+        }
     }
 
     // endregion

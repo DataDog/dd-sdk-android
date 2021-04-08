@@ -98,7 +98,6 @@ internal abstract class DataOkHttpUploader(
     // endregion
 
     companion object {
-        internal const val DD_SOURCE_ANDROID = "android"
 
         internal const val CONTENT_TYPE_JSON = "application/json"
         internal const val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8"

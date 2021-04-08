@@ -69,6 +69,10 @@ internal object CoreFeature {
     internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
     private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
     private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+    // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
+    // possibility to override it which is useful when SDK is used via bridge, say
+    // from React Native integration
+    internal const val DEFAULT_SOURCE_NAME = "android"
 
     // endregion
 
@@ -89,6 +93,7 @@ internal object CoreFeature {
     internal var packageName: String = ""
     internal var packageVersion: String = ""
     internal var serviceName: String = ""
+    internal var sourceName: String = DEFAULT_SOURCE_NAME
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
@@ -324,6 +329,7 @@ internal object CoreFeature {
         packageName = ""
         packageVersion = ""
         serviceName = ""
+        sourceName = DEFAULT_SOURCE_NAME
         rumApplicationId = null
         isMainProcess = true
         envName = ""

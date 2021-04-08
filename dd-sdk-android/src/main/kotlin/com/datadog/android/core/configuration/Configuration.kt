@@ -50,7 +50,8 @@ internal constructor(
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
     internal val rumConfig: Feature.RUM?,
-    internal val internalLogsConfig: Feature.InternalLogs?
+    internal val internalLogsConfig: Feature.InternalLogs?,
+    internal val additionalConfig: Map<String, Any>
 ) {
 
     internal data class Core(
@@ -117,6 +118,7 @@ internal constructor(
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
         private var internalLogsConfig: Feature.InternalLogs? = null
+        private var additionalConfig: Map<String, Any> = emptyMap()
 
         private var coreConfig = DEFAULT_CORE_CONFIG
 
@@ -130,7 +132,8 @@ internal constructor(
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
                 rumConfig = if (rumEnabled) rumConfig else null,
-                internalLogsConfig = internalLogsConfig
+                internalLogsConfig = internalLogsConfig,
+                additionalConfig = additionalConfig
             )
         }
 
@@ -427,6 +430,16 @@ internal constructor(
                 emptyList()
             )
             return this
+        }
+
+        /**
+         * Allows to provide additional configuration values which can be used by the SDK.
+         * @param additionalConfig Additional configuration values.
+         */
+        fun setAdditionalConfiguration(additionalConfig: Map<String, Any>): Builder {
+            return apply {
+                this.additionalConfig = additionalConfig
+            }
         }
 
         private fun checkCustomEndpoint(endpoint: String) {

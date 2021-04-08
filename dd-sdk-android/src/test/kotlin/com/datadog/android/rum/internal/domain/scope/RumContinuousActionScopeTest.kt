@@ -18,6 +18,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockCoreFeature
 import com.nhaarman.mockitokotlin2.any
@@ -222,7 +223,7 @@ internal class RumContinuousActionScopeTest {
     ) {
         // Given
         assumeTrue { type != fakeType }
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -266,7 +267,7 @@ internal class RumContinuousActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
@@ -704,12 +705,12 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {crashCount != 0}`(
-        @LongForgery(1, 1024) nonFatalcount: Long,
-        @LongForgery(1, 1024) fatalcount: Long
+        @LongForgery(1, 1024) nonFatalCount: Long,
+        @LongForgery(1, 1024) fatalCount: Long
     ) {
         // Given
-        testedScope.errorCount = nonFatalcount + fatalcount
-        testedScope.crashCount = fatalcount
+        testedScope.errorCount = nonFatalCount + fatalCount
+        testedScope.crashCount = fatalCount
 
         // When
         fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
@@ -727,8 +728,8 @@ internal class RumContinuousActionScopeTest {
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
                     hasResourceCount(0)
-                    hasErrorCount(nonFatalcount + fatalcount)
-                    hasCrashCount(fatalcount)
+                    hasErrorCount(nonFatalCount + fatalCount)
+                    hasCrashCount(fatalCount)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -785,7 +786,9 @@ internal class RumContinuousActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aMap { anHexadecimalString() to anAsciiString() }
+        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
