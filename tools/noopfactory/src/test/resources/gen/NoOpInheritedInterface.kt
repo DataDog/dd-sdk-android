@@ -3,9 +3,7 @@ package com.example
 import kotlin.Suppress
 import kotlin.Unit
 
-@Suppress(
-    "RedundantUnitReturnType"
-)
+@Suppress("RedundantUnitReturnType")
 internal class NoOpInheritedInterface : InheritedInterface {
 
     public override fun doSomething(): Unit {

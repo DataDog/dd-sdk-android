@@ -29,22 +29,18 @@
     },
     "carrier_id": {
       "type": "integer",
-      "default": -1,
       "description": "the unique id of the mobile data carrier"
     },
     "up_kbps": {
       "type": "integer",
-      "default": -1,
       "description": "the upload speed in kilobytes per second"
     },
     "down_kbps": {
       "type": "integer",
-      "default": -1,
       "description": "the download speed in kilobytes per second"
     },
     "strength": {
       "type": "integer",
-      "default": -2147483648,
       "description": "the strength of the signal (the unit depends on the type of the signal)"
     },
     "cellular_technology": {
@@ -53,10 +49,6 @@
     }
   },
   "required": [
-    "carrier_id",
-    "up_kbps",
-    "down_kbps",
-    "strength",
     "connectivity"
   ]
 }

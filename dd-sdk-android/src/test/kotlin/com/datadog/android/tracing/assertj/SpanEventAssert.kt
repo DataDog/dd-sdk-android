@@ -196,36 +196,36 @@ internal class SpanEventAssert(actual: SpanEvent) :
         assertThat(actual.meta.network.client.downlinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have downlinkKbps: " +
-                    "${networkInfo.downKbps.stringOrNullIfSmaller()} but " +
+                    "${networkInfo.downKbps?.toString()} but " +
                     "instead was: ${actual.meta.network.client.downlinkKbps}"
             )
-            .isEqualTo(networkInfo.downKbps.stringOrNullIfSmaller())
+            .isEqualTo(networkInfo.downKbps?.toString())
         assertThat(actual.meta.network.client.uplinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have uplinkKbps: " +
-                    "${networkInfo.upKbps.stringOrNullIfSmaller()} but " +
+                    "${networkInfo.upKbps?.toString()} but " +
                     "instead was: ${actual.meta.network.client.uplinkKbps}"
             )
-            .isEqualTo(networkInfo.upKbps.stringOrNullIfSmaller())
+            .isEqualTo(networkInfo.upKbps?.toString())
         assertThat(actual.meta.network.client.signalStrength)
             .overridingErrorMessage(
                 "Expected SpanEvent to have signal strength: " +
-                    "${networkInfo.strength.stringOrNullIfSmaller()} but " +
+                    "${networkInfo.strength?.toString()} but " +
                     "instead was: ${actual.meta.network.client.signalStrength}"
             )
-            .isEqualTo(networkInfo.strength.stringOrNullIfSmaller(Int.MIN_VALUE))
-        assertThat(actual.meta.network.client.simCarrier.id)
+            .isEqualTo(networkInfo.strength?.toString())
+        assertThat(actual.meta.network.client.simCarrier?.id)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier id: " +
-                    "${networkInfo.carrierId.stringOrNullIfSmaller()} but " +
-                    "instead was: ${actual.meta.network.client.simCarrier.id}"
+                    "${networkInfo.carrierId?.toString()} but " +
+                    "instead was: ${actual.meta.network.client.simCarrier?.id}"
             )
-            .isEqualTo(networkInfo.carrierId.stringOrNullIfSmaller())
-        assertThat(actual.meta.network.client.simCarrier.name)
+            .isEqualTo(networkInfo.carrierId?.toString())
+        assertThat(actual.meta.network.client.simCarrier?.name)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier name: " +
                     "${networkInfo.carrierName} but " +
-                    "instead was: ${actual.meta.network.client.simCarrier.name}"
+                    "instead was: ${actual.meta.network.client.simCarrier?.name}"
             )
             .isEqualTo(networkInfo.carrierName)
         return this
@@ -261,17 +261,7 @@ internal class SpanEventAssert(actual: SpanEvent) :
 
     // endregion
 
-    // region Internal
-
-    private fun Long?.stringOrNullIfSmaller(threshold: Int = 0): String? {
-        return if (this != null && this > threshold) this.toString() else null
-    }
-
-    // endregion
-
-    companion
-
-    object {
+    companion object {
         internal fun assertThat(actual: SpanEvent): SpanEventAssert {
             return SpanEventAssert(actual)
         }

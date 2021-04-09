@@ -240,23 +240,27 @@ internal class LogSerializerTest {
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }
-                if (info.carrierId >= 0) {
-                    hasField(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
+                val carrierId = info.carrierId
+                if (carrierId != null) {
+                    hasField(LogAttributes.NETWORK_CARRIER_ID, carrierId)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
                 }
-                if (info.upKbps >= 0) {
-                    hasField(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
+                val upKbps = info.upKbps
+                if (upKbps != null) {
+                    hasField(LogAttributes.NETWORK_UP_KBPS, upKbps)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
                 }
-                if (info.downKbps >= 0) {
-                    hasField(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
+                val downKbps = info.downKbps
+                if (downKbps != null) {
+                    hasField(LogAttributes.NETWORK_DOWN_KBPS, downKbps)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
                 }
-                if (info.strength > Int.MIN_VALUE) {
-                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
+                val strength = info.strength
+                if (strength != null) {
+                    hasField(LogAttributes.NETWORK_SIGNAL_STRENGTH, strength)
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)
                 }

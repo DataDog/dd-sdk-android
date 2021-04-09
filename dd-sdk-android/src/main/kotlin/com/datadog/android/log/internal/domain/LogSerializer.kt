@@ -83,16 +83,16 @@ internal class LogSerializer(
             if (!info.carrierName.isNullOrBlank()) {
                 jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_NAME, info.carrierName)
             }
-            if (info.carrierId >= 0) {
+            if (info.carrierId != null) {
                 jsonLog.addProperty(LogAttributes.NETWORK_CARRIER_ID, info.carrierId)
             }
-            if (info.upKbps >= 0) {
+            if (info.upKbps != null) {
                 jsonLog.addProperty(LogAttributes.NETWORK_UP_KBPS, info.upKbps)
             }
-            if (info.downKbps >= 0) {
+            if (info.downKbps != null) {
                 jsonLog.addProperty(LogAttributes.NETWORK_DOWN_KBPS, info.downKbps)
             }
-            if (info.strength > Int.MIN_VALUE) {
+            if (info.strength != null) {
                 jsonLog.addProperty(LogAttributes.NETWORK_SIGNAL_STRENGTH, info.strength)
             }
         }

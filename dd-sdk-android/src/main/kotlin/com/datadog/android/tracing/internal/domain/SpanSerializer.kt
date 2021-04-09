@@ -114,25 +114,25 @@ internal class SpanSerializer(
                     networkInfo.carrierName
                 )
             }
-            if (networkInfo.carrierId >= 0) {
+            if (networkInfo.carrierId != null) {
                 jsonLog.addProperty(
                     LogAttributes.NETWORK_CARRIER_ID,
                     networkInfo.carrierId.toString()
                 )
             }
-            if (networkInfo.upKbps >= 0) {
+            if (networkInfo.upKbps != null) {
                 jsonLog.addProperty(
                     LogAttributes.NETWORK_UP_KBPS,
                     networkInfo.upKbps.toString()
                 )
             }
-            if (networkInfo.downKbps >= 0) {
+            if (networkInfo.downKbps != null) {
                 jsonLog.addProperty(
                     LogAttributes.NETWORK_DOWN_KBPS,
                     networkInfo.downKbps.toString()
                 )
             }
-            if (networkInfo.strength > Int.MIN_VALUE) {
+            if (networkInfo.strength != null) {
                 jsonLog.addProperty(
                     LogAttributes.NETWORK_SIGNAL_STRENGTH,
                     networkInfo.strength.toString()

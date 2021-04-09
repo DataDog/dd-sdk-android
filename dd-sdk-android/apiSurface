@@ -111,7 +111,7 @@ enum com.datadog.android.core.configuration.UploadFrequency
   - AVERAGE
   - RARE
 class com.datadog.android.core.model.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long = -1L, kotlin.Long = -1L, kotlin.Long = -1L, kotlin.Long = -2147483648L, kotlin.String? = null)
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): NetworkInfo
@@ -1083,7 +1083,7 @@ class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
   class Client
-    constructor(SimCarrier, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Client

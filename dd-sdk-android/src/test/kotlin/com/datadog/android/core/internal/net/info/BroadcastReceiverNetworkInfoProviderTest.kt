@@ -86,7 +86,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -130,7 +130,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -154,7 +154,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -168,7 +168,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -182,7 +182,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -196,7 +196,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -224,7 +224,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -261,7 +261,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -298,7 +298,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -335,7 +335,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
@@ -372,7 +372,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -424,7 +424,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
-            .hasCarrierId(-1)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 

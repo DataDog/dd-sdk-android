@@ -293,31 +293,35 @@ internal class SpanSerializerTest {
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_NAME)
                 }
-                if (networkInfo.carrierId >= 0) {
+                val carrierId = networkInfo.carrierId
+                if (carrierId != null) {
                     hasField(
                         LogAttributes.NETWORK_CARRIER_ID,
-                        networkInfo.carrierId.toString()
+                        carrierId.toString()
                     )
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_CARRIER_ID)
                 }
-                if (networkInfo.upKbps >= 0) {
-                    hasField(LogAttributes.NETWORK_UP_KBPS, networkInfo.upKbps.toString())
+                val upKbps = networkInfo.upKbps
+                if (upKbps != null) {
+                    hasField(LogAttributes.NETWORK_UP_KBPS, upKbps.toString())
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_UP_KBPS)
                 }
-                if (networkInfo.downKbps >= 0) {
+                val downKbps = networkInfo.downKbps
+                if (downKbps != null) {
                     hasField(
                         LogAttributes.NETWORK_DOWN_KBPS,
-                        networkInfo.downKbps.toString()
+                        downKbps.toString()
                     )
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_DOWN_KBPS)
                 }
-                if (networkInfo.strength > Int.MIN_VALUE) {
+                val strength = networkInfo.strength
+                if (strength != null) {
                     hasField(
                         LogAttributes.NETWORK_SIGNAL_STRENGTH,
-                        networkInfo.strength.toString()
+                        strength.toString()
                     )
                 } else {
                     doesNotHaveField(LogAttributes.NETWORK_SIGNAL_STRENGTH)

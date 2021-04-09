@@ -107,7 +107,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
             val telephonyMgr =
                 context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
-            val carrierId = telephonyMgr?.simCarrierId?.toLong() ?: -1L
+            val carrierId = telephonyMgr?.simCarrierId?.toLong()
             NetworkInfo(
                 connectivity,
                 carrierName.toString(),

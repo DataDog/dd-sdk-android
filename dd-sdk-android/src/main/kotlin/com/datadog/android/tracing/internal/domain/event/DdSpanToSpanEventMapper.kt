@@ -12,11 +12,12 @@ import com.datadog.android.core.internal.Mapper
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.opentracing.DDSpan
 
-internal class LegacyToSpanEventMapper(
+internal class DdSpanToSpanEventMapper(
     private val timeProvider: TimeProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val userInfoProvider: UserInfoProvider
@@ -54,15 +55,12 @@ internal class LegacyToSpanEventMapper(
 
     private fun resolveMeta(event: DDSpan): SpanEvent.Meta {
         val networkInfo = networkInfoProvider.getLatestNetworkInfo()
-        val simCarrier = SpanEvent.SimCarrier(
-            id = networkInfo.carrierId.stringOrNullIfSmaller(),
-            name = networkInfo.carrierName
-        )
+        val simCarrier = resolveSimCarrier(networkInfo)
         val networkInfoClient = SpanEvent.Client(
             simCarrier = simCarrier,
-            signalStrength = networkInfo.strength.stringOrNullIfSmaller(Int.MIN_VALUE),
-            downlinkKbps = networkInfo.downKbps.stringOrNullIfSmaller(),
-            uplinkKbps = networkInfo.upKbps.stringOrNullIfSmaller(),
+            signalStrength = networkInfo.strength?.toString(),
+            downlinkKbps = networkInfo.downKbps?.toString(),
+            uplinkKbps = networkInfo.upKbps?.toString(),
             connectivity = networkInfo.connectivity.toString()
         )
         val networkInfoMeta = SpanEvent.Network(networkInfoClient)
@@ -86,8 +84,15 @@ internal class LegacyToSpanEventMapper(
         )
     }
 
-    private fun Long?.stringOrNullIfSmaller(threshold: Int = 0): String? {
-        return if (this != null && this > threshold) this.toString() else null
+    private fun resolveSimCarrier(networkInfo: NetworkInfo): SpanEvent.SimCarrier? {
+        return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
+            SpanEvent.SimCarrier(
+                id = networkInfo.carrierId?.toString(),
+                name = networkInfo.carrierName
+            )
+        } else {
+            null
+        }
     }
 
     // endregion
