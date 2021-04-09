@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
@@ -156,6 +157,32 @@ internal class RumEventDeserializerTest {
         val deserializedErrorEvent = deserializedEvent.event as ErrorEvent
         assertThat(deserializedErrorEvent).isEqualToIgnoringGivenFields(
             fakeErrorEvent,
+            "dd"
+        )
+    }
+
+    @Test
+    fun `𝕄 deserialize a serialized RUM LongTaskEvent 𝕎 deserialize()`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeLongTaskEvent = forge.getForgery(LongTaskEvent::class.java)
+        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
+            .copy(event = fakeLongTaskEvent)
+        val serializedEvent = serializer.serialize(fakeEvent)
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+
+        // THEN
+        assertThat(deserializedEvent).isNotNull()
+        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+            .isEqualTo(fakeEvent.globalAttributes)
+        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+            .isEqualTo(fakeEvent.userExtraAttributes)
+        val deserializedLongTaskEvent = deserializedEvent.event as LongTaskEvent
+        assertThat(deserializedLongTaskEvent).isEqualToIgnoringGivenFields(
+            fakeLongTaskEvent,
             "dd"
         )
     }

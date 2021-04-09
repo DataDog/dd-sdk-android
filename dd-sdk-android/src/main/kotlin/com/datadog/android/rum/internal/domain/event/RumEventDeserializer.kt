@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
@@ -81,6 +82,7 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
             EVENT_TYPE_RESOURCE -> ResourceEvent.fromJson(jsonString)
             EVENT_TYPE_ACTION -> ActionEvent.fromJson(jsonString)
             EVENT_TYPE_ERROR -> ErrorEvent.fromJson(jsonString)
+            EVENT_TYPE_LONG_TASK -> LongTaskEvent.fromJson(jsonString)
             else -> throw JsonParseException(
                 "We could not deserialize the event with type: $eventType"
             )
@@ -97,6 +99,7 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
         const val EVENT_TYPE_RESOURCE = "resource"
         const val EVENT_TYPE_ACTION = "action"
         const val EVENT_TYPE_ERROR = "error"
+        const val EVENT_TYPE_LONG_TASK = "long_task"
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
             "Error while trying to deserialize the serialized RumEvent: %s"
     }

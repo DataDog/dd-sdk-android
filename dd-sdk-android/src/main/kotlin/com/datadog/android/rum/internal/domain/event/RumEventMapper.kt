@@ -24,7 +24,8 @@ internal data class RumEventMapper(
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
-    val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper()
+    val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
+    val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper()
 ) : EventMapper<RumEvent> {
 
     override fun map(event: RumEvent): RumEvent? {
@@ -43,6 +44,7 @@ internal data class RumEventMapper(
             is ActionEvent -> actionEventMapper.map(bundledEvent)
             is ErrorEvent -> errorEventMapper.map(bundledEvent)
             is ResourceEvent -> resourceEventMapper.map(bundledEvent)
+            is LongTaskEvent -> longTaskEventMapper.map(bundledEvent)
             else -> {
                 sdkLogger.w(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
