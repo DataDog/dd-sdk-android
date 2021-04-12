@@ -17,10 +17,10 @@ import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
-import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
@@ -29,6 +29,8 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.extension.asLogStatus
+import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.prepareMainLooper
@@ -86,7 +88,7 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeUserInfo: UserInfo
 
     @Mock
-    lateinit var mockWriter: DataWriter<Log>
+    lateinit var mockWriter: DataWriter<LogEvent>
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
@@ -154,16 +156,16 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(Thread.currentThread().name)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
+                .hasDate(now.toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)
@@ -173,7 +175,7 @@ internal class DatadogLogHandlerTest {
                         "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
                     )
                 )
-                .hasThrowable(null)
+                .doesNotHaveError()
         }
     }
 
@@ -189,16 +191,16 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(Thread.currentThread().name)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
+                .hasDate(now.toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)
@@ -208,7 +210,13 @@ internal class DatadogLogHandlerTest {
                         "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
                     )
                 )
-                .hasThrowable(fakeThrowable)
+                .hasError(
+                    LogEvent.Error(
+                        kind = fakeThrowable.javaClass.canonicalName,
+                        message = fakeThrowable.message,
+                        stack = fakeThrowable.stackTraceToString()
+                    )
+                )
         }
     }
 
@@ -283,16 +291,16 @@ internal class DatadogLogHandlerTest {
             customTimestamp
         )
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(Thread.currentThread().name)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(customTimestamp)
+                .hasDate(customTimestamp.toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)
@@ -327,16 +335,16 @@ internal class DatadogLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(threadName)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
+                .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)
@@ -371,17 +379,17 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(Thread.currentThread().name)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
-                .hasNetworkInfo(null)
+                .hasDate(now.toIsoFormattedTimestamp())
+                .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)
                 .hasExactlyTags(
@@ -416,17 +424,17 @@ internal class DatadogLogHandlerTest {
             emptySet()
         )
 
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
                 .hasThreadName(Thread.currentThread().name)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
-                .hasNetworkInfo(null)
+                .hasDate(now.toIsoFormattedTimestamp())
+                .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(emptyMap())
                 .hasExactlyTags(
@@ -435,7 +443,7 @@ internal class DatadogLogHandlerTest {
                         "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
                     )
                 )
-                .hasThrowable(null)
+                .doesNotHaveError()
         }
     }
 
@@ -468,10 +476,10 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue.attributes)
+            assertThat(lastValue.additionalProperties)
                 .containsEntry(LogAttributes.DD_TRACE_ID, tracer.traceId)
                 .containsEntry(LogAttributes.DD_SPAN_ID, tracer.spanId)
         }
@@ -490,10 +498,10 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue.attributes)
+            assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
                 .doesNotContainKey(LogAttributes.DD_SPAN_ID)
         }
@@ -527,10 +535,10 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue.attributes)
+            assertThat(lastValue.additionalProperties)
                 .containsEntry(
                     LogAttributes.RUM_APPLICATION_ID,
                     rumContext.applicationId
@@ -566,10 +574,10 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
-            assertThat(lastValue.attributes)
+            assertThat(lastValue.additionalProperties)
                 .doesNotContainKey(LogAttributes.DD_TRACE_ID)
                 .doesNotContainKey(LogAttributes.DD_SPAN_ID)
         }
@@ -635,15 +643,15 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<Log>().apply {
+        argumentCaptor<LogEvent>().apply {
             verify(mockWriter).write(capture())
 
             assertThat(lastValue)
                 .hasServiceName(fakeServiceName)
                 .hasLoggerName(fakeLoggerName)
-                .hasLevel(fakeLevel)
+                .hasStatus(fakeLevel.asLogStatus())
                 .hasMessage(fakeMessage)
-                .hasTimestampAround(now)
+                .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasExactlyAttributes(fakeAttributes)

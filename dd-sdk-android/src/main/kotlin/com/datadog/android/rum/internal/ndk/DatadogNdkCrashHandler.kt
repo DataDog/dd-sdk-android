@@ -15,6 +15,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -50,7 +51,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     override fun handleNdkCrash(
-        logWriter: DataWriter<Log>,
+        logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<RumEvent>
     ) {
         dataPersistenceExecutorService.submit {
@@ -83,7 +84,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     private fun checkAndHandleNdkCrashReport(
-        logWriter: DataWriter<Log>,
+        logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<RumEvent>
     ) {
         val lastSerializedRumViewEvent = lastSerializedRumViewEvent
@@ -122,7 +123,7 @@ internal class DatadogNdkCrashHandler(
 
     @SuppressWarnings("LongParameterList")
     private fun handleNdkCrashLog(
-        logWriter: DataWriter<Log>,
+        logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<RumEvent>,
         ndkCrashLog: NdkCrashLog?,
         lastRumViewEvent: RumEvent?,
@@ -189,7 +190,7 @@ internal class DatadogNdkCrashHandler(
 
     @SuppressWarnings("LongParameterList")
     private fun sendCrashLogEvent(
-        logWriter: DataWriter<Log>,
+        logWriter: DataWriter<LogEvent>,
         errorLogMessage: String,
         logAttributes: Map<String, String>,
         ndkCrashLog: NdkCrashLog,

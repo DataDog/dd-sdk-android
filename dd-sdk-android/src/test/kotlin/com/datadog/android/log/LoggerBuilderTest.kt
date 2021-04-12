@@ -15,13 +15,13 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -221,8 +221,8 @@ internal class LoggerBuilderTest {
     @Test
     fun `M use an InternalLogs writer W setInternal() + build()`() {
         // Given
-        val mockPersistenceStrategy: PersistenceStrategy<Log> = mock()
-        val mockWriter: DataWriter<Log> = mock()
+        val mockPersistenceStrategy: PersistenceStrategy<LogEvent> = mock()
+        val mockWriter: DataWriter<LogEvent> = mock()
         whenever(mockPersistenceStrategy.getWriter()) doReturn mockWriter
         InternalLogsFeature.initialized.set(true)
         InternalLogsFeature.persistenceStrategy = mockPersistenceStrategy

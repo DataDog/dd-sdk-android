@@ -6,15 +6,19 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
+import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.utils.extension.asLogStatus
+import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.forge.aThrowable
@@ -32,6 +36,7 @@ import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import java.util.UUID
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -167,7 +172,7 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).hasLevel(fakeLevel)
+        assertThat(log).hasStatus(fakeLevel.asLogStatus())
     }
 
     @Test
@@ -200,6 +205,22 @@ internal class LogGeneratorTest {
 
         // THEN
         assertThat(log).hasLoggerName(fakeLoggerName)
+    }
+
+    @Test
+    fun `M add the logger version W creating the Log`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasLoggerVersion(BuildConfig.SDK_VERSION_NAME)
     }
 
     @Test
@@ -248,7 +269,7 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).hasTimestamp(fakeTimestamp)
+        assertThat(log).hasDate(fakeTimestamp.toIsoFormattedTimestamp())
     }
 
     @Test
@@ -264,7 +285,36 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).hasThrowable(fakeThrowable)
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeThrowable.javaClass.canonicalName,
+                stack = fakeThrowable.stackTraceToString(),
+                message = fakeThrowable.message
+            )
+        )
+    }
+
+    @Test
+    fun `M add use the Throwable class simple name W creating the Log { Throwable anonymous }`() {
+        // WHEN
+        val fakeAnonymousThrowable = object : Throwable(cause = fakeThrowable) {}
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeAnonymousThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasError(
+            LogEvent.Error(
+                kind = fakeAnonymousThrowable.javaClass.simpleName,
+                stack = fakeAnonymousThrowable.stackTraceToString(),
+                message = fakeAnonymousThrowable.message
+            )
+        )
     }
 
     @Test
@@ -384,7 +434,8 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).containsTags(listOf("${LogAttributes.ENV}:$fakeEnvName"))
+        val deserializedTags = log.ddtags.split(",")
+        Assertions.assertThat(deserializedTags).contains("${LogAttributes.ENV}:$fakeEnvName")
     }
 
     @Test
@@ -427,7 +478,9 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).containsTags(listOf("${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"))
+        val deserializedTags = log.ddtags.split(",")
+        Assertions.assertThat(deserializedTags)
+            .contains("${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion")
     }
 
     @Test
@@ -470,7 +523,7 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).containsAttributes(
+        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.DD_TRACE_ID to fakeTraceId,
                 LogAttributes.DD_SPAN_ID to fakeSpanId
@@ -561,7 +614,7 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).containsAttributes(
+        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.RUM_APPLICATION_ID to fakeAppId,
                 LogAttributes.RUM_SESSION_ID to fakeSessionId,
@@ -615,5 +668,133 @@ internal class LogGeneratorTest {
             LogAttributes.DD_SPAN_ID to fakeSpanId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
+    }
+
+    @Test
+    fun `M use status CRITICAL W creating the Log { level ASSERT }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.ASSERT,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.CRITICAL)
+    }
+
+    @Test
+    fun `M use status ERROR W creating the Log { level ERROR }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.ERROR,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.ERROR)
+    }
+
+    @Test
+    fun `M use status EMERGENCY W creating the Log { level CRASH }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            Log.CRASH,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.EMERGENCY)
+    }
+
+    @Test
+    fun `M use status WARN W creating the Log { level WARN }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.WARN,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.WARN)
+    }
+
+    @Test
+    fun `M use status INFO W creating the Log { level INFO }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.INFO,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.INFO)
+    }
+
+    @Test
+    fun `M use status DEBUG W creating the Log { level DEBUG }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.DEBUG,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.DEBUG)
+    }
+
+    @Test
+    fun `M use status TRACE W creating the Log { level VERBOSE }`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            android.util.Log.VERBOSE,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.TRACE)
+    }
+
+    @Test
+    fun `M use status DEBUG W creating the Log { other level }`(forge: Forge) {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            forge.anInt(min = Log.CRASH),
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasStatus(LogEvent.Status.DEBUG)
     }
 }

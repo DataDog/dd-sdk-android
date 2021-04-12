@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -19,7 +20,7 @@ import java.util.Locale
 
 internal class DatadogExceptionHandler(
     private val logGenerator: LogGenerator,
-    private val writer: DataWriter<Log>,
+    private val writer: DataWriter<LogEvent>,
     appContext: Context?
 ) :
     Thread.UncaughtExceptionHandler {
@@ -62,7 +63,7 @@ internal class DatadogExceptionHandler(
 
     // region Internal
 
-    private fun createLog(thread: Thread, throwable: Throwable): Log {
+    private fun createLog(thread: Thread, throwable: Throwable): LogEvent {
         return logGenerator.generateLog(
             Log.CRASH,
             createCrashMessage(throwable),

@@ -9,9 +9,9 @@ package com.datadog.android.log.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
@@ -32,7 +32,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class LogsFeatureTest : SdkFeatureTest<Log, Configuration.Feature.Logs, LogsFeature>() {
+internal class LogsFeatureTest :
+    SdkFeatureTest<LogEvent, Configuration.Feature.Logs, LogsFeature>() {
 
     override fun createTestedFeature(): LogsFeature {
         return LogsFeature

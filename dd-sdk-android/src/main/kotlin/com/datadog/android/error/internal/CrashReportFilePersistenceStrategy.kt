@@ -13,8 +13,8 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersist
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.Log
-import com.datadog.android.log.internal.domain.LogSerializer
+import com.datadog.android.log.internal.domain.LogEventSerializer
+import com.datadog.android.log.model.LogEvent
 import java.util.concurrent.ExecutorService
 
 internal class CrashReportFilePersistenceStrategy(
@@ -22,7 +22,7 @@ internal class CrashReportFilePersistenceStrategy(
     context: Context,
     executorService: ExecutorService,
     internalLogger: Logger
-) : BatchFilePersistenceStrategy<Log>(
+) : BatchFilePersistenceStrategy<LogEvent>(
     FeatureFileOrchestrator(
         consentProvider,
         context,
@@ -31,7 +31,7 @@ internal class CrashReportFilePersistenceStrategy(
         internalLogger
     ),
     executorService,
-    LogSerializer(),
+    LogEventSerializer(),
     PayloadDecoration.JSON_ARRAY_DECORATION,
     sdkLogger
 )

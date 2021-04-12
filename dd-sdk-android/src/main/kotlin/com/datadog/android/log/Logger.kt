@@ -15,7 +15,6 @@ import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
@@ -23,6 +22,7 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -324,7 +324,7 @@ internal constructor(internal val handler: LogHandler) {
             )
         }
 
-        private fun buildInternalLogWriter(): DataWriter<Log>? {
+        private fun buildInternalLogWriter(): DataWriter<LogEvent>? {
             return if (InternalLogsFeature.isInitialized()) {
                 InternalLogsFeature.persistenceStrategy.getWriter()
             } else {
@@ -332,7 +332,7 @@ internal constructor(internal val handler: LogHandler) {
             }
         }
 
-        private fun buildLogWriter(): DataWriter<Log>? {
+        private fun buildLogWriter(): DataWriter<LogEvent>? {
             return if (LogsFeature.isInitialized()) {
                 LogsFeature.persistenceStrategy.getWriter()
             } else {

@@ -20,7 +20,7 @@ import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -66,13 +66,13 @@ internal class UploadWorkerTest {
     lateinit var mockContext: Context
 
     @Mock
-    lateinit var mockLogsStrategy: PersistenceStrategy<Log>
+    lateinit var mockLogsStrategy: PersistenceStrategy<LogEvent>
 
     @Mock
     lateinit var mockTracesStrategy: PersistenceStrategy<DDSpan>
 
     @Mock
-    lateinit var mockCrashReportsStrategy: PersistenceStrategy<Log>
+    lateinit var mockCrashReportsStrategy: PersistenceStrategy<LogEvent>
 
     @Mock
     lateinit var mockRumStrategy: PersistenceStrategy<RumEvent>

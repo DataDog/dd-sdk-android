@@ -15,11 +15,11 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.rebuildSdkLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.model.LogEvent
 
-internal object InternalLogsFeature : SdkFeature<Log, Configuration.Feature.InternalLogs>() {
+internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature.InternalLogs>() {
 
     internal const val SERVICE_NAME = "dd-sdk-android"
     internal const val ENV_NAME = "prod"
@@ -40,7 +40,7 @@ internal object InternalLogsFeature : SdkFeature<Log, Configuration.Feature.Inte
     override fun createPersistenceStrategy(
         context: Context,
         configuration: Configuration.Feature.InternalLogs
-    ): PersistenceStrategy<Log> {
+    ): PersistenceStrategy<LogEvent> {
         return InternalLogFilePersistenceStrategy(
             CoreFeature.trackingConsentProvider,
             context,

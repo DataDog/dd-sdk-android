@@ -10,14 +10,14 @@ import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 
 internal class DatadogLogHandler(
     internal val logGenerator: LogGenerator,
-    internal val writer: DataWriter<Log>,
+    internal val writer: DataWriter<LogEvent>,
     internal val bundleWithTraces: Boolean = true,
     internal val bundleWithRum: Boolean = true,
     internal val sampler: Sampler = RateBasedSampler(1.0f)
@@ -56,7 +56,7 @@ internal class DatadogLogHandler(
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long
-    ): Log {
+    ): LogEvent {
         return logGenerator.generateLog(
             level,
             message,

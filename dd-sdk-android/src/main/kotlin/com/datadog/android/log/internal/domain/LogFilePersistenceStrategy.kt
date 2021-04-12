@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersist
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
+import com.datadog.android.log.model.LogEvent
 import java.util.concurrent.ExecutorService
 
 internal class LogFilePersistenceStrategy(
@@ -21,7 +22,7 @@ internal class LogFilePersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger
 ) :
-    BatchFilePersistenceStrategy<Log>(
+    BatchFilePersistenceStrategy<LogEvent>(
         FeatureFileOrchestrator(
             consentProvider,
             context,
@@ -30,7 +31,7 @@ internal class LogFilePersistenceStrategy(
             internalLogger
         ),
         executorService,
-        LogSerializer(),
+        LogEventSerializer(),
         PayloadDecoration.JSON_ARRAY_DECORATION,
         sdkLogger
     )
