@@ -101,6 +101,7 @@ class com.datadog.android.core.configuration.Configuration
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
     fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+    fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
     fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
   companion object 

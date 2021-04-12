@@ -9,11 +9,16 @@ package com.datadog.android.tracing.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
+import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
+import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
+import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -51,6 +56,27 @@ internal class TracesFeatureTest :
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(TracesFilePersistenceStrategy::class.java)
+    }
+
+    @Test
+    fun `𝕄 use the eventMapper 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+
+        // Then
+        val batchFileDataWriter =
+            (testedFeature.persistenceStrategy.getWriter() as? ScheduledWriter)
+                ?.delegateWriter as? BatchFileDataWriter
+        val spanMapperSerializer = batchFileDataWriter?.serializer as? SpanMapperSerializer
+        val spanEventMapper =
+            spanMapperSerializer?.getFieldValue<SpanEventMapper, SpanMapperSerializer>(
+                "spanEventMapper"
+            )
+        assertThat(
+            spanEventMapper
+        ).isSameAs(
+            fakeConfigurationFeature.spanEventMapper
+        )
     }
 
     @Test

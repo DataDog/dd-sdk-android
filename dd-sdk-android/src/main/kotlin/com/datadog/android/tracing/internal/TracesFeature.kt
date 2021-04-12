@@ -33,7 +33,8 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
             CoreFeature.networkInfoProvider,
             CoreFeature.userInfoProvider,
             CoreFeature.envName,
-            sdkLogger
+            sdkLogger,
+            configuration.spanEventMapper
         )
     }
 

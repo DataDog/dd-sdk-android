@@ -17,7 +17,8 @@ internal class ConfigurationTracingForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Feature.Tracing {
         return Configuration.Feature.Tracing(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            plugins = forge.aList { mock<DatadogPlugin>() }
+            plugins = forge.aList { mock<DatadogPlugin>() },
+            spanEventMapper = mock()
         )
     }
 }
