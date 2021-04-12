@@ -107,7 +107,7 @@ fun Project.publishingConfig(projectDescription: String) {
         signingExtension.apply {
             val privateKey = System.getenv("GPG_PRIVATE_KEY")
             val password = System.getenv("GPG_PASSWORD")
-            isRequired = true
+            isRequired = !hasProperty("dd-skip-signing")
             useInMemoryPgpKeys(privateKey, password)
             sign(publishingExtension.publications.getByName(MavenConfig.PUBLICATION))
         }
