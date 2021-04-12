@@ -23,6 +23,7 @@ fun Project.ktLintConfig() {
             exclude("**/com/datadog/android/rum/model/**")
             exclude("**/com/datadog/android/core/model/**")
             exclude("**/com/datadog/android/tracing/model/**")
+            exclude("**/com/datadog/android/log/model/**")
             include("**/kotlin/**")
         }
     }
