@@ -9,7 +9,6 @@ import com.datadog.gradle.api
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
-import com.datadog.gradle.config.bintrayConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.jacocoConfig
@@ -20,25 +19,32 @@ import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
-import org.jetbrains.kotlin.kapt3.base.Kapt.kapt
 
 plugins {
+    // Build
     id("com.android.library")
     kotlin("android")
-    kotlin("android.extensions")
     kotlin("kapt")
+
+    // Publish
     `maven-publish`
+    signing
+    id("org.jetbrains.dokka")
+
+    // Analysis tools
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
+
+    // Tests
+    jacoco
+    id("de.mobilej.unmock")
+
+    // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")
-    id("jsonschema2poko")
     id("transitiveDependencies")
-    id("org.jetbrains.dokka")
-    id("com.jfrog.bintray")
-    id("de.mobilej.unmock")
-    jacoco
+    id("jsonschema2poko")
 }
 
 fun isLogEnabledInRelease(): String {
@@ -52,6 +58,7 @@ android {
     defaultConfig {
         minSdkVersion(AndroidConfig.MIN_SDK)
         targetSdkVersion(AndroidConfig.TARGET_SDK)
+
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
     }
@@ -149,6 +156,8 @@ unMock {
     keepStartingWith("com.android.internal.util.")
     keepStartingWith("android.util.")
     keep("android.content.ComponentName")
+    keep("android.os.Looper")
+    keep("android.os.MessageQueue")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")
@@ -167,11 +176,15 @@ jsonSchema2Poko {
 }
 
 kotlinConfig()
-detektConfig(excludes = listOf("**/com/datadog/android/rum/model/**"))
+detektConfig(
+    excludes = listOf(
+        "**/com/datadog/android/rum/model/**",
+        "**/com/datadog/android/core/model/**"
+    )
+)
 ktLintConfig()
 junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-publishingConfig("${rootDir.canonicalPath}/repo")
-bintrayConfig()
+publishingConfig("Datadog monitoring library for Android applications.")
