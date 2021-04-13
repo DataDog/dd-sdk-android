@@ -150,6 +150,7 @@ internal class LogGenerator(
         return combinedAttributes
     }
 
+    @Suppress("DEPRECATION")
     private fun resolveLogLevelStatus(level: Int): LogEvent.Status {
         return when (level) {
             android.util.Log.ASSERT -> LogEvent.Status.CRITICAL
@@ -158,7 +159,7 @@ internal class LogGenerator(
             android.util.Log.INFO -> LogEvent.Status.INFO
             android.util.Log.DEBUG -> LogEvent.Status.DEBUG
             android.util.Log.VERBOSE -> LogEvent.Status.TRACE
-            Log.CRASH -> LogEvent.Status.EMERGENCY
+            LogGenerator.CRASH -> LogEvent.Status.EMERGENCY
             else -> LogEvent.Status.DEBUG
         }
     }
@@ -176,5 +177,6 @@ internal class LogGenerator(
 
     companion object {
         internal const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        internal const val CRASH: Int = 9
     }
 }

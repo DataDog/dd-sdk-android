@@ -13,7 +13,6 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -198,7 +197,7 @@ internal class DatadogNdkCrashHandler(
         lastUserInfo: UserInfo?
     ) {
         val log = logGenerator.generateLog(
-            level = Log.CRASH,
+            level = LogGenerator.CRASH,
             errorLogMessage,
             null,
             logAttributes,

@@ -13,7 +13,6 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
@@ -409,7 +408,7 @@ internal class DatadogNdkCrashHandlerTest {
         }
         whenever(
             mockLogGenerator.generateLog(
-                Log.CRASH,
+                LogGenerator.CRASH,
                 DatadogNdkCrashHandler.LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName),
                 throwable = null,
                 attributes = attributes,

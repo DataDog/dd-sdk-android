@@ -83,7 +83,7 @@ internal class LogEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        // we generate the bad key we depth level = 9 as the `usr` prefix will add 1 extra depth
+        // we generate the bad key with depth level = 9 as the `usr` prefix will add 1 extra depth
         val fakeBadKey =
             forge.aList(size = 10) { forge.anAlphabeticalString() }.joinToString(".")
         val lastDotIndex = fakeBadKey.lastIndexOf('.')

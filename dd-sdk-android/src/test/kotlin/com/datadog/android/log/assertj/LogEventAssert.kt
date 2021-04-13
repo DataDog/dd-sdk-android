@@ -215,7 +215,7 @@ internal class LogEventAssert(actual: LogEvent) :
     }
 
     fun doesNotHaveUserInfo(): LogEventAssert {
-        assertThat(actual.network)
+        assertThat(actual.usr)
             .overridingErrorMessage(
                 "Expected log to not have an user info " +
                     "but instead it had ${actual.usr}"

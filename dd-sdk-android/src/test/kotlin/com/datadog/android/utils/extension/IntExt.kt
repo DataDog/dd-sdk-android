@@ -6,18 +6,19 @@
 
 package com.datadog.android.utils.extension
 
-import com.datadog.android.log.internal.domain.Log
+import android.util.Log
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 
 fun Int.asLogStatus(): LogEvent.Status {
     return when (this) {
-        android.util.Log.ASSERT -> LogEvent.Status.CRITICAL
-        android.util.Log.ERROR -> LogEvent.Status.ERROR
-        android.util.Log.WARN -> LogEvent.Status.WARN
-        android.util.Log.INFO -> LogEvent.Status.INFO
-        android.util.Log.DEBUG -> LogEvent.Status.DEBUG
-        android.util.Log.VERBOSE -> LogEvent.Status.TRACE
-        Log.CRASH -> LogEvent.Status.EMERGENCY
+        Log.ASSERT -> LogEvent.Status.CRITICAL
+        Log.ERROR -> LogEvent.Status.ERROR
+        Log.WARN -> LogEvent.Status.WARN
+        Log.INFO -> LogEvent.Status.INFO
+        Log.DEBUG -> LogEvent.Status.DEBUG
+        Log.VERBOSE -> LogEvent.Status.TRACE
+        LogGenerator.CRASH -> LogEvent.Status.EMERGENCY
         else -> LogEvent.Status.DEBUG
     }
 }

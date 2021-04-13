@@ -9,7 +9,6 @@ package com.datadog.android.error.internal
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
@@ -65,7 +64,7 @@ internal class DatadogExceptionHandler(
 
     private fun createLog(thread: Thread, throwable: Throwable): LogEvent {
         return logGenerator.generateLog(
-            Log.CRASH,
+            LogGenerator.CRASH,
             createCrashMessage(throwable),
             throwable,
             emptyMap(),

@@ -4,10 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.utils.forge
 
 import android.util.Log as AndroidLog
 import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.internal.domain.LogGenerator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -20,7 +23,7 @@ internal class LogForgeryFactory : ForgeryFactory<Log> {
                 AndroidLog.VERBOSE, AndroidLog.DEBUG,
                 AndroidLog.INFO, AndroidLog.WARN,
                 AndroidLog.ERROR, AndroidLog.ASSERT,
-                Log.CRASH
+                LogGenerator.CRASH
             ),
             message = forge.anAlphabeticalString(),
             timestamp = forge.aLong(),

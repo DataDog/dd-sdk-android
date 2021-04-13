@@ -23,6 +23,8 @@ import java.util.TimeZone
 /**
  * The Logging feature implementation of the [Serializer] interface.
  */
+@Suppress("DEPRECATION")
+@Deprecated(message = "This class will be removed soon. Use the LogEventSerializer instead.")
 internal class LogSerializer(
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
 ) : Serializer<Log> {
@@ -175,7 +177,7 @@ internal class LogSerializer(
                 AndroidLog.VERBOSE -> "trace"
                 // If you change these you will have to propagate the changes
                 // also into the datadog-native-lib.cpp file inside the dd-sdk-android-ndk module.
-                Log.CRASH -> "emergency"
+                LogGenerator.CRASH -> "emergency"
                 else -> "debug"
             }
         }

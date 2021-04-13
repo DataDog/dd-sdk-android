@@ -706,7 +706,7 @@ internal class LogGeneratorTest {
     fun `M use status EMERGENCY W creating the Log { level CRASH }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            Log.CRASH,
+            LogGenerator.CRASH,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -786,7 +786,7 @@ internal class LogGeneratorTest {
     fun `M use status DEBUG W creating the Log { other level }`(forge: Forge) {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            forge.anInt(min = Log.CRASH),
+            forge.anInt(min = LogGenerator.CRASH + 1),
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,

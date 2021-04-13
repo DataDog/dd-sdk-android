@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
@@ -265,8 +264,9 @@ object Datadog {
      * Messages with a priority level equal or above the given level will be sent to Android's
      * Logcat.
      *
-     * @param level one of the Android [Log] constants ([Log.VERBOSE], [Log.DEBUG], [Log.INFO],
-     * [Log.WARN], [Log.ERROR], [Log.ASSERT]).
+     * @param level one of the Android [android.util.Log] constants
+     * ([android.util.Log.VERBOSE], [android.util.Log.DEBUG], [android.util.Log.INFO],
+     * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
      */
     @JvmStatic
     fun setVerbosity(level: Int) {
