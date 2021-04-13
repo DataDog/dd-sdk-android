@@ -287,8 +287,8 @@ notify:release:
   only:
     - tags
   script:
-    - MAVEN_URL="https://ossindex.sonatype.org/component/pkg:maven/com.datadoghq/dd-sdk-android@$CI_COMMIT_TAG"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: MAVEN_URL"'
+    - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android/$CI_COMMI_TAG/aar"
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:
