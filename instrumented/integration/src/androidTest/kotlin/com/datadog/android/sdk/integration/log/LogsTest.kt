@@ -56,8 +56,10 @@ internal abstract class LogsTest {
                 .hasField(TAG_STATUS, levels[m.first])
                 .hasField(TAG_MESSAGE, m.second)
                 .hasField(TAG_SERVICE, activity.packageName)
-                .hasField(TAG_LOGGER_NAME, expectedLoggerName())
-                .hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.SDK_VERSION_NAME)
+                .hasField(TAG_LOGGER) {
+                    hasField(TAG_LOGGER_NAME, expectedLoggerName())
+                    hasField(TAG_VERSION_NAME, com.datadog.android.BuildConfig.SDK_VERSION_NAME)
+                }
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
             assertThat(tags).containsOnlyElementsOf(globalTags)
@@ -105,8 +107,9 @@ internal abstract class LogsTest {
         private const val TAG_MESSAGE = "message"
         private const val TAG_DDTAGS = "ddtags"
 
-        private const val TAG_LOGGER_NAME = "logger.name"
-        private const val TAG_VERSION_NAME = "logger.version"
+        private const val TAG_LOGGER = "logger"
+        private const val TAG_LOGGER_NAME = "name"
+        private const val TAG_VERSION_NAME = "version"
 
         internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 

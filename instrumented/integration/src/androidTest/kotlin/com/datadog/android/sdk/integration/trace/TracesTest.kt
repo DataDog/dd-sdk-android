@@ -97,7 +97,9 @@ internal abstract class TracesTest {
                 .hasField(TAG_STATUS, levels[it.first])
                 .hasField(TAG_EVENT, it.second)
                 .hasField(TAG_MESSAGE, "Span event")
-                .hasField(TAG_LOGGER_NAME, "trace")
+                .hasField(TAG_LOGGER) {
+                    hasField(TAG_LOGGER_NAME, "trace")
+                }
         }
     }
 
@@ -147,7 +149,8 @@ internal abstract class TracesTest {
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"
         private const val TAG_EVENT = "event"
-        private const val TAG_LOGGER_NAME = "logger.name"
+        private const val TAG_LOGGER = "logger"
+        private const val TAG_LOGGER_NAME = "name"
         private val levels = arrayOf(
             "debug",
             "debug",
