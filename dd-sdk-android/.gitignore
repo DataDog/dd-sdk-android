@@ -21,3 +21,4 @@ build/
 src/main/kotlin/com/datadog/android/rum/model/
 src/main/kotlin/com/datadog/android/core/model/
 src/main/kotlin/com/datadog/android/tracing/model/
+src/main/kotlin/com/datadog/android/log/model/
