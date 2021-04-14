@@ -10,11 +10,12 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
@@ -23,7 +24,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,7 +35,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -55,25 +56,13 @@ internal class ViewTreeChangeTrackingStrategyTest {
     @Mock
     lateinit var mockDecorView: View
 
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
-
     @BeforeEach
     fun `set up`() {
-
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-
         whenever(mockActivity.window) doReturn mockWindow
         whenever(mockWindow.decorView) doReturn mockDecorView
         whenever(mockDecorView.viewTreeObserver) doReturn mockViewTreeObserver
 
         testedStrategy = ViewTreeChangeTrackingStrategy()
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     @Test
@@ -133,10 +122,20 @@ internal class ViewTreeChangeTrackingStrategyTest {
 
         // Then
         argumentCaptor<Time> {
-            verify(mockRumMonitor).viewTreeChanged(capture())
+            verify(rumMonitor.mockInstance).viewTreeChanged(capture())
 
             assertThat(firstValue.timestamp).isBetween(before.timestamp, after.timestamp)
             assertThat(firstValue.nanoTime).isBetween(before.nanoTime, after.nanoTime)
+        }
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
         }
     }
 }

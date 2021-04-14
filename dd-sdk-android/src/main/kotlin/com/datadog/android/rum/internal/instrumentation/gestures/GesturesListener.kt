@@ -17,7 +17,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 import java.util.LinkedList
@@ -78,7 +77,7 @@ internal class GesturesListener(
     ): Boolean {
         val rumMonitor = GlobalRum.get()
         val decorView = windowReference.get()?.decorView
-        if (decorView == null || rumMonitor !is DatadogRumMonitor) {
+        if (decorView == null) {
             return false
         }
 
@@ -116,7 +115,6 @@ internal class GesturesListener(
         val registeredRumMonitor = GlobalRum.get()
         val scrollTarget = scrollTargetReference.get()
         if (decorView == null ||
-            registeredRumMonitor !is DatadogRumMonitor ||
             scrollTarget == null
         ) {
             return

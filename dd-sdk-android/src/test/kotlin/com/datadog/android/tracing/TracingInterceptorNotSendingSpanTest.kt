@@ -13,7 +13,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
@@ -188,7 +187,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         TracesFeature.stop()
     }

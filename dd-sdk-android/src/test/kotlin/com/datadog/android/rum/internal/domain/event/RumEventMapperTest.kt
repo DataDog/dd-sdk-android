@@ -9,19 +9,20 @@ package com.datadog.android.rum.internal.domain.event
 import android.util.Log
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
@@ -44,7 +45,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -67,9 +69,6 @@ internal class RumEventMapperTest {
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
     @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
-
-    @Mock
     lateinit var mockSdkLogHandler: LogHandler
 
     lateinit var mockDevLogHandler: LogHandler
@@ -83,9 +82,6 @@ internal class RumEventMapperTest {
     fun `set up`() {
         originalLogHandler = mockSdkLogHandler(mockSdkLogHandler)
         mockDevLogHandler = mockDevLogHandler()
-
-        GlobalRum.monitor = mockRumMonitor
-        GlobalRum.isRegistered.set(true)
 
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
 
@@ -101,9 +97,6 @@ internal class RumEventMapperTest {
     @AfterEach
     fun `tear down`() {
         restoreSdkLogHandler(originalLogHandler)
-
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -423,7 +416,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockRumMonitor).eventDropped(actionEvent.view.id, EventType.ACTION)
+        verify(rumMonitor.mockInstance).eventDropped(actionEvent.view.id, EventType.ACTION)
     }
 
     @Test
@@ -439,7 +432,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockRumMonitor).eventDropped(resourceEvent.view.id, EventType.RESOURCE)
+        verify(rumMonitor.mockInstance).eventDropped(resourceEvent.view.id, EventType.RESOURCE)
     }
 
     @Test
@@ -455,7 +448,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockRumMonitor).eventDropped(errorEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventDropped(errorEvent.view.id, EventType.ERROR)
     }
 
     @Test
@@ -471,6 +464,16 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockRumMonitor).eventDropped(longTaskEvent.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.LONG_TASK)
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

@@ -21,12 +21,14 @@ import androidx.navigation.R
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -40,8 +42,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -57,9 +59,11 @@ internal typealias NavLifecycleCallbacks =
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ApiLevelExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class NavigationViewTrackingStrategyTest {
 
     lateinit var testedStrategy: NavigationViewTrackingStrategy
@@ -85,9 +89,6 @@ internal class NavigationViewTrackingStrategyTest {
     lateinit var mockNavDestination: NavDestination
 
     @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
-
-    @Mock
     lateinit var mockViewLoadingTimer: ViewLoadingTimer
 
     @Mock
@@ -109,15 +110,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
         mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     // region ActivityLifecycleTrackingStrategy
@@ -197,21 +190,21 @@ internal class NavigationViewTrackingStrategyTest {
     fun `does nothing onActivityStarted when no NavHost present`() {
         testedStrategy.onActivityStarted(mock())
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `does nothing onActivityStopped when no NavHost present`() {
         testedStrategy.onActivityStopped(mock())
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `does nothing onActivityPaused when no NavHost present`() {
         testedStrategy.onActivityPaused(mock())
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -220,7 +213,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityStarted(mockActivity)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -229,7 +222,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityStopped(mockActivity)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -238,7 +231,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityPaused(mockActivity)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -247,7 +240,11 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, emptyMap())
+        verify(rumMonitor.mockInstance).startView(
+            mockNavDestination,
+            fakeDestinationName,
+            emptyMap()
+        )
     }
 
     @Test
@@ -256,7 +253,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -268,7 +265,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verify(mockRumMonitor).startView(mockNavDestination, customName, emptyMap())
+        verify(rumMonitor.mockInstance).startView(mockNavDestination, customName, emptyMap())
     }
 
     @Test
@@ -287,7 +284,11 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
 
-        verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, expectedAttrs)
+        verify(rumMonitor.mockInstance).startView(
+            mockNavDestination,
+            fakeDestinationName,
+            expectedAttrs
+        )
     }
 
     @Test
@@ -306,7 +307,11 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
 
-        verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, emptyMap())
+        verify(rumMonitor.mockInstance).startView(
+            mockNavDestination,
+            fakeDestinationName,
+            emptyMap()
+        )
     }
 
     @Test
@@ -323,9 +328,17 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
         testedStrategy.onDestinationChanged(mockNavController, newDestination, null)
 
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startView(mockNavDestination, fakeDestinationName, emptyMap())
-            verify(mockRumMonitor).startView(newDestination, newDestinationName, emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startView(
+                mockNavDestination,
+                fakeDestinationName,
+                emptyMap()
+            )
+            verify(rumMonitor.mockInstance).startView(
+                newDestination,
+                newDestinationName,
+                emptyMap()
+            )
         }
     }
 
@@ -334,7 +347,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
         testedStrategy.onActivityPaused(mockActivity)
 
-        verify(mockRumMonitor).stopView(mockNavDestination, emptyMap())
+        verify(rumMonitor.mockInstance).stopView(mockNavDestination, emptyMap())
     }
 
     @Test
@@ -342,7 +355,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavController.currentDestination) doReturn null
         testedStrategy.onActivityPaused(mockActivity)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -371,7 +384,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), mockFragment)
 
         // Then
-        verify(mockRumMonitor).updateViewLoadingTime(
+        verify(rumMonitor.mockInstance).updateViewLoadingTime(
             mockNavDestination,
             expectedLoadingTime,
             expectedLoadingType
@@ -395,7 +408,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), navHostFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -414,7 +427,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // region Internal
@@ -449,4 +462,14 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

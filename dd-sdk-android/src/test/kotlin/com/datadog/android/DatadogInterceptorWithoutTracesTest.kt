@@ -13,9 +13,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
@@ -23,6 +21,7 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockContext
@@ -31,6 +30,9 @@ import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -70,7 +72,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -95,9 +98,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockDevLogHandler: LogHandler
 
     lateinit var mockAppContext: Context
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
@@ -192,14 +192,11 @@ internal class DatadogInterceptorWithoutTracesTest {
                 anyOrNull()
             )
         ) doReturn fakeResourceAttributes
-
-        GlobalRum.registerIfAbsent(mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
         CoreFeature.stop()
-        GlobalRum.isRegistered.set(false)
         TracesFeature.stop()
         RumFeature.stop()
     }
@@ -224,14 +221,14 @@ internal class DatadogInterceptorWithoutTracesTest {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
                 fakeResponseBody.toByteArray().size.toLong(),
@@ -261,14 +258,14 @@ internal class DatadogInterceptorWithoutTracesTest {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
                 fakeResponseBody.toByteArray().size.toLong(),
@@ -295,14 +292,14 @@ internal class DatadogInterceptorWithoutTracesTest {
         }
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResourceWithError(
+            verify(rumMonitor.mockInstance).stopResourceWithError(
                 requestId,
                 null,
                 "OkHttp request error $fakeMethod $fakeUrl",
@@ -388,4 +385,14 @@ internal class DatadogInterceptorWithoutTracesTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

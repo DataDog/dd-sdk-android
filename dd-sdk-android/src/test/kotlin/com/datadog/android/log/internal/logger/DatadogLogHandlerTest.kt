@@ -23,17 +23,18 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.disposeMainLooper
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.prepareMainLooper
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
@@ -63,7 +64,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -89,9 +91,6 @@ internal class DatadogLogHandlerTest {
 
     @Mock
     lateinit var mockWriter: DataWriter<LogEvent>
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
@@ -139,8 +138,6 @@ internal class DatadogLogHandlerTest {
     fun `tear down`() {
         GlobalTracer.get().setFieldValue("isRegistered", false)
         GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
         disposeMainLooper()
     }
 
@@ -168,7 +165,13 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -203,7 +206,13 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -222,7 +231,6 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `doesn't forward low level log to RumMonitor`(forge: Forge) {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         fakeLevel = forge.anInt(AndroidLog.VERBOSE, AndroidLog.ERROR)
 
         testedHandler.handleLog(
@@ -233,12 +241,11 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `forward error log to RumMonitor`(forge: Forge) {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         fakeLevel = forge.anElementFrom(AndroidLog.ERROR, AndroidLog.ASSERT)
 
         testedHandler.handleLog(
@@ -249,7 +256,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             fakeMessage,
             RumErrorSource.LOGGER,
             null,
@@ -259,7 +266,6 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward error log to RumMonitor with throwable`(forge: Forge) {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         fakeLevel = forge.anElementFrom(AndroidLog.ERROR, AndroidLog.ASSERT)
 
         testedHandler.handleLog(
@@ -270,7 +276,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             fakeMessage,
             RumErrorSource.LOGGER,
             fakeThrowable,
@@ -303,7 +309,13 @@ internal class DatadogLogHandlerTest {
                 .hasDate(customTimestamp.toIsoFormattedTimestamp())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -347,7 +359,13 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -391,7 +409,13 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .doesNotHaveNetworkInfo()
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -521,9 +545,6 @@ internal class DatadogLogHandlerTest {
             ).build(),
             TrackingConsent.GRANTED
         )
-        val rumContext = forge.getForgery<RumContext>()
-        GlobalRum.updateRumContext(rumContext)
-        GlobalRum.registerIfAbsent(mockRumMonitor)
 
         // When
         testedHandler.handleLog(
@@ -541,10 +562,10 @@ internal class DatadogLogHandlerTest {
             assertThat(lastValue.additionalProperties)
                 .containsEntry(
                     LogAttributes.RUM_APPLICATION_ID,
-                    rumContext.applicationId
+                    rumMonitor.context.applicationId
                 )
-                .containsEntry(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
-                .containsEntry(LogAttributes.RUM_VIEW_ID, rumContext.viewId)
+                .containsEntry(LogAttributes.RUM_SESSION_ID, rumMonitor.context.sessionId)
+                .containsEntry(LogAttributes.RUM_VIEW_ID, rumMonitor.context.viewId)
         }
         Datadog.invokeMethod("stop")
     }
@@ -654,13 +675,29 @@ internal class DatadogLogHandlerTest {
                 .hasDateAround(now)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasExactlyAttributes(fakeAttributes)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
                         "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
                     )
                 )
+        }
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
         }
     }
 }

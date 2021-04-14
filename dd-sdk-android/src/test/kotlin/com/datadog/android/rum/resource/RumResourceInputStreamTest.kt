@@ -6,12 +6,14 @@
 
 package com.datadog.android.rum.resource
 
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -26,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.BufferedReader
 import java.io.IOException
@@ -36,7 +39,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,15 +52,14 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class RumResourceInputStreamTest {
 
     lateinit var testedInputStream: RumResourceInputStream
-
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Mock
     lateinit var mockInputStream: InputStream
@@ -71,24 +72,16 @@ internal class RumResourceInputStreamTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-
         testedInputStream = RumResourceInputStream(mockInputStream, fakeUrl)
 
         // 𝕄 start resource 𝕎 init
-        verify(mockRumMonitor).startResource(
+        verify(rumMonitor.mockInstance).startResource(
             testedInputStream.key,
             RumResourceInputStream.METHOD,
             fakeUrl,
             emptyMap()
         )
-        verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
+        verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
     }
 
     // region Atomic Methods
@@ -105,7 +98,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(byte)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -129,7 +122,7 @@ internal class RumResourceInputStreamTest {
         assertThat(count).isEqualTo(length)
         val expectedResult = input.take(length).toByteArray()
         assertThat(byteArray).isEqualTo(expectedResult)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -157,7 +150,7 @@ internal class RumResourceInputStreamTest {
         val expectedResult = ByteArray(length + offset) { 0x20 }
         System.arraycopy(input, 0, expectedResult, offset, length)
         assertThat(byteArray).isEqualTo(expectedResult)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -172,7 +165,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(available)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -188,7 +181,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(skipped)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -203,7 +196,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(markSupported)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -215,7 +208,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         verify(mockInputStream).mark(readlimit)
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -225,7 +218,7 @@ internal class RumResourceInputStreamTest {
 
         // Then
         verify(mockInputStream).reset()
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -234,11 +227,11 @@ internal class RumResourceInputStreamTest {
         testedInputStream.close()
 
         // Then
-        verify(mockRumMonitor).addResourceTiming(
+        verify(rumMonitor.mockInstance).addResourceTiming(
             eq(testedInputStream.key),
             any()
         )
-        verify(mockRumMonitor).stopResource(
+        verify(rumMonitor.mockInstance).stopResource(
             testedInputStream.key,
             null,
             0L,
@@ -246,7 +239,7 @@ internal class RumResourceInputStreamTest {
             emptyMap()
         )
         verify(mockInputStream).close()
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -264,14 +257,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -288,14 +281,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -313,14 +306,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -334,14 +327,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -357,14 +350,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_SKIP,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -378,14 +371,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -401,14 +394,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_MARK,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -422,14 +415,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_RESET,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -443,14 +436,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_CLOSE,
             RumErrorSource.SOURCE,
             throwable
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -466,14 +459,14 @@ internal class RumResourceInputStreamTest {
         }
 
         // Then
-        verify(mockRumMonitor).stopResourceWithError(
+        verify(rumMonitor.mockInstance).stopResourceWithError(
             testedInputStream.key,
             null,
             RumResourceInputStream.ERROR_READ,
             RumErrorSource.SOURCE,
             throwable1
         )
-        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -494,23 +487,23 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(content)
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 testedInputStream.key,
                 RumResourceInputStream.METHOD,
                 fakeUrl,
                 emptyMap()
             )
-            verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
-            verify(mockRumMonitor).addResourceTiming(eq(testedInputStream.key), any())
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
             )
-            verifyNoMoreInteractions(mockRumMonitor)
+            verifyNoMoreInteractions(rumMonitor.mockInstance)
         }
     }
 
@@ -540,23 +533,23 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(content)
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 testedInputStream.key,
                 RumResourceInputStream.METHOD,
                 fakeUrl,
                 emptyMap()
             )
-            verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
-            verify(mockRumMonitor).addResourceTiming(eq(testedInputStream.key), any())
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
             )
-            verifyNoMoreInteractions(mockRumMonitor)
+            verifyNoMoreInteractions(rumMonitor.mockInstance)
         }
     }
 
@@ -589,23 +582,23 @@ internal class RumResourceInputStreamTest {
         val duplicated = content.drop(len1).take(mark)
         val expectedResult = content.take(len1) + duplicated + duplicated + content.takeLast(len2)
         assertThat(result).isEqualTo(expectedResult)
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 testedInputStream.key,
                 RumResourceInputStream.METHOD,
                 fakeUrl,
                 emptyMap()
             )
-            verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
-            verify(mockRumMonitor).addResourceTiming(eq(testedInputStream.key), any())
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
                 (len1 + mark + mark + len2).toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
             )
-            verifyNoMoreInteractions(mockRumMonitor)
+            verifyNoMoreInteractions(rumMonitor.mockInstance)
         }
     }
 
@@ -634,23 +627,23 @@ internal class RumResourceInputStreamTest {
         // Then
         val expectedResult = content.take(len1) + content.takeLast(len2)
         assertThat(result).isEqualTo(expectedResult)
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 testedInputStream.key,
                 RumResourceInputStream.METHOD,
                 fakeUrl,
                 emptyMap()
             )
-            verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
-            verify(mockRumMonitor).addResourceTiming(eq(testedInputStream.key), any())
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
                 (len1 + len2).toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
             )
-            verifyNoMoreInteractions(mockRumMonitor)
+            verifyNoMoreInteractions(rumMonitor.mockInstance)
         }
     }
 
@@ -677,16 +670,19 @@ internal class RumResourceInputStreamTest {
 
         // Then
         assertThat(result).isEqualTo(content)
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 testedInputStream.key,
                 RumResourceInputStream.METHOD,
                 fakeUrl,
                 emptyMap()
             )
-            verify(mockRumMonitor).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
             argumentCaptor<ResourceTiming> {
-                verify(mockRumMonitor).addResourceTiming(eq(testedInputStream.key), capture())
+                verify(rumMonitor.mockInstance).addResourceTiming(
+                    eq(testedInputStream.key),
+                    capture()
+                )
                 assertThat(firstValue.connectDuration).isEqualTo(0L)
                 assertThat(firstValue.dnsDuration).isEqualTo(0L)
                 assertThat(firstValue.sslDuration).isEqualTo(0L)
@@ -696,16 +692,26 @@ internal class RumResourceInputStreamTest {
                 )
                 assertThat(firstValue.downloadDuration).isLessThanOrEqualTo(download)
             }
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
                 contentBytes.size.toLong(),
                 RumResourceKind.OTHER,
                 emptyMap()
             )
-            verifyNoMoreInteractions(mockRumMonitor)
+            verifyNoMoreInteractions(rumMonitor.mockInstance)
         }
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

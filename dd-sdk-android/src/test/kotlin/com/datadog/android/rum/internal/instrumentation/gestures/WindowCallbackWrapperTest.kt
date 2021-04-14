@@ -13,12 +13,13 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
@@ -45,10 +46,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(
-        MockitoExtension::class,
-        ForgeExtension::class
-    )
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -68,9 +68,6 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockResources: Resources
 
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
-
     @BeforeEach
     fun `set up`() {
         testedWrapper = WindowCallbackWrapper(
@@ -79,14 +76,11 @@ internal class WindowCallbackWrapperTest {
         )
         whenever(mockAppContext.resources).thenReturn(mockResources)
         CoreFeature.contextRef = WeakReference(mockAppContext)
-        GlobalRum.registerIfAbsent(mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
         CoreFeature.contextRef = WeakReference(null)
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -141,8 +135,8 @@ internal class WindowCallbackWrapperTest {
         assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
 
         // Then
-        inOrder(mockCallback, mockRumMonitor) {
-            verify(mockRumMonitor).addUserAction(
+        inOrder(mockCallback, rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).addUserAction(
                 eq(RumActionType.TAP),
                 eq(targetName(menuItem, itemResourceName)),
                 argThat {
@@ -167,8 +161,12 @@ internal class WindowCallbackWrapperTest {
         assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // Then
-        inOrder(mockRumMonitor, mockCallback) {
-            verify(mockRumMonitor).addUserAction(RumActionType.CUSTOM, "back", emptyMap())
+        inOrder(rumMonitor.mockInstance, mockCallback) {
+            verify(rumMonitor.mockInstance).addUserAction(
+                RumActionType.CUSTOM,
+                "back",
+                emptyMap()
+            )
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
@@ -184,8 +182,8 @@ internal class WindowCallbackWrapperTest {
         assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // Then
-        inOrder(mockRumMonitor, mockCallback) {
-            verifyZeroInteractions(mockRumMonitor)
+        inOrder(rumMonitor.mockInstance, mockCallback) {
+            verifyZeroInteractions(rumMonitor.mockInstance)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
@@ -202,8 +200,8 @@ internal class WindowCallbackWrapperTest {
         assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
 
         // Then
-        inOrder(mockRumMonitor, mockCallback) {
-            verifyZeroInteractions(mockRumMonitor)
+        inOrder(rumMonitor.mockInstance, mockCallback) {
+            verifyZeroInteractions(rumMonitor.mockInstance)
             verify(mockCallback).dispatchKeyEvent(keyEvent)
         }
     }
@@ -218,4 +216,14 @@ internal class WindowCallbackWrapperTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

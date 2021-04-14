@@ -15,13 +15,15 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -32,9 +34,9 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,9 +49,11 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 @Suppress("DEPRECATION")
 internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackingStrategy>() {
 
@@ -73,25 +77,15 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Mock
     lateinit var mockBadContext: Context
 
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
-
     // region Strategy tests
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         whenever(mockAndroidxActivity.supportFragmentManager)
             .thenReturn(mockAndroidxFragmentManager)
         whenever(mockActivity.fragmentManager)
             .thenReturn(mockDefaultFragmentManager)
         testedStrategy = FragmentViewTrackingStrategy(true)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     @Test
@@ -155,13 +149,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startView(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startView(
                 eq(mockFragment),
                 eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
-            verify(mockRumMonitor).stopView(
+            verify(rumMonitor.mockInstance).stopView(
                 mockFragment
             )
         }
@@ -203,7 +197,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -232,13 +226,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startView(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startView(
                 eq(mockFragment),
                 eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
-            verify(mockRumMonitor).stopView(
+            verify(rumMonitor.mockInstance).stopView(
                 mockFragment
             )
         }
@@ -336,13 +330,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startView(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startView(
                 eq(mockFragment),
                 eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
-            verify(mockRumMonitor).stopView(
+            verify(rumMonitor.mockInstance).stopView(
                 mockFragment
             )
         }
@@ -386,7 +380,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -417,13 +411,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startView(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startView(
                 eq(mockFragment),
                 eq(mockFragment.resolveViewUrl()),
                 eq(expectedAttrs)
             )
-            verify(mockRumMonitor).stopView(
+            verify(rumMonitor.mockInstance).stopView(
                 mockFragment
             )
         }
@@ -579,4 +573,14 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

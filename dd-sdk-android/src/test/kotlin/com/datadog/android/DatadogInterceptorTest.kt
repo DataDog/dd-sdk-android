@@ -8,24 +8,24 @@ package com.datadog.android
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -33,7 +33,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -46,14 +45,12 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
@@ -71,7 +68,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             mockAppContext,
             fakeRumConfig
         )
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         return DatadogInterceptor(
             tracedHosts,
             mockRequestListener,
@@ -98,12 +94,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         ) doReturn fakeAttributes
     }
 
-    @AfterEach
-    fun `tear down RUM`() {
-        GlobalRum.isRegistered.set(false)
-        RumFeature.stop()
-    }
-
     @Test
     fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
@@ -127,14 +117,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
                 fakeResponseBody.toByteArray().size.toLong(),
@@ -167,14 +157,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResource(
+            verify(rumMonitor.mockInstance).stopResource(
                 requestId,
                 statusCode,
                 fakeResponseBody.toByteArray().size.toLong(),
@@ -200,14 +190,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
 
         // Then
-        inOrder(mockRumMonitor) {
-            verify(mockRumMonitor).startResource(
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
                 fakeUrl,
                 expectedStartAttrs
             )
-            verify(mockRumMonitor).stopResourceWithError(
+            verify(rumMonitor.mockInstance).stopResourceWithError(
                 requestId,
                 null,
                 "OkHttp request error $fakeMethod $fakeUrl",
@@ -215,6 +205,16 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 throwable,
                 fakeAttributes
             )
+        }
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
         }
     }
 }

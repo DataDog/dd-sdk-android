@@ -9,12 +9,14 @@ package com.datadog.android.rx
 import android.database.DatabaseErrorHandler
 import android.database.DefaultDatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -22,11 +24,10 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,18 +38,15 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(
-        MockitoExtension::class,
-        ForgeExtension::class
-    )
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class DatadogDatabaseErrorHandlerTest {
+@ForgeConfiguration(Configurator::class)
+internal class DatadogDatabaseErrorHandlerTest {
 
     lateinit var testedHandler: DatadogDatabaseErrorHandler
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     lateinit var mockDefaultHandler: DatabaseErrorHandler
@@ -64,16 +62,9 @@ class DatadogDatabaseErrorHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         testedHandler = DatadogDatabaseErrorHandler(mockDefaultHandler)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
     }
 
     @Test
@@ -83,7 +74,7 @@ class DatadogDatabaseErrorHandlerTest {
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             eq(
                 String.format(
                     Locale.US,
@@ -121,5 +112,15 @@ class DatadogDatabaseErrorHandlerTest {
         // THEN
         assertThat(testedHandler.defaultErrorHandler)
             .isInstanceOf(DefaultDatabaseErrorHandler::class.java)
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

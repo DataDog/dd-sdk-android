@@ -12,7 +12,11 @@ import android.webkit.WebChromeClient
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.webview.RumWebChromeClient
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -22,7 +26,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -34,7 +37,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -44,9 +48,6 @@ internal class RumWebChromeClientTest {
 
     @Mock
     private lateinit var mockLogHandler: LogHandler
-
-    @Mock
-    private lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     private lateinit var mockConsoleMessage: ConsoleMessage
@@ -66,16 +67,9 @@ internal class RumWebChromeClientTest {
         whenever(mockConsoleMessage.sourceId()) doReturn fakeSource
         whenever(mockConsoleMessage.lineNumber()) doReturn fakeLine
 
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         testedClient = RumWebChromeClient(
             Logger(mockLogHandler)
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -95,7 +89,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -116,7 +110,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -137,7 +131,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -158,7 +152,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -169,7 +163,7 @@ internal class RumWebChromeClientTest {
         val result = testedClient.onConsoleMessage(mockConsoleMessage)
 
         verifyZeroInteractions(mockLogHandler)
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             fakeMessage,
             RumErrorSource.WEBVIEW,
             null,
@@ -185,11 +179,17 @@ internal class RumWebChromeClientTest {
     fun `onConsoleMessage with null message doesn't do anything`() {
         val result = testedClient.onConsoleMessage(null)
 
-        verifyZeroInteractions(mockLogHandler, mockRumMonitor)
+        verifyZeroInteractions(mockLogHandler, rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
-    @Test
-    fun testOnConsoleMessage() {
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

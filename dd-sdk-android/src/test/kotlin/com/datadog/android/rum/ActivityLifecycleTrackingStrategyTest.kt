@@ -11,17 +11,19 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.view.Window
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -33,7 +35,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -43,9 +46,6 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T : Any> : ObjectT
 
     @Mock
     lateinit var mockIntent: Intent
-
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Mock
     lateinit var mockActivity: Activity
@@ -61,15 +61,8 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T : Any> : ObjectT
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockActivity.window).thenReturn(mockWindow)
-    }
-
-    @AfterEach
-    open fun `tear down`() {
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -106,5 +99,15 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T : Any> : ObjectT
 
         // verify
         verifyZeroInteractions(mockBadContext)
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }
