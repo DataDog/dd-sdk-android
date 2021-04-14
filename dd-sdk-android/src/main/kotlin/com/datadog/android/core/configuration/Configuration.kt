@@ -450,6 +450,20 @@ internal constructor(
         }
 
         /**
+         * Sets the [EventMapper] for the [LogEvent].
+         * You can use this interface implementation to modify the
+         * [LogEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setLogEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
+            applyIfFeatureEnabled(PluginFeature.LOG, "setLogEventMapper") {
+                logsConfig = logsConfig.copy(logsEventMapper = eventMapper)
+            }
+            return this
+        }
+
+        /**
          * Enables the internal logs to be sent to a dedicated Datadog Org.
          * @param clientToken the client token to use for internal logs
          * @param endpointUrl the endpoint url to sent the internal logs to

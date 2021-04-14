@@ -131,6 +131,15 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
             }}
     );
     ```
+   
+6. If you need to modify some attributes in your Log events before batching you can do so by providing an implementation of `EventMapper<LogEvent>` when initializing the SDK:
+   ```kotlin
+      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+                        // ...
+                        .setLogEventMapper(logEventMapper)
+                        .build()
+   ```
+   **Note**: If you return null or a different instance from the `EventMapper<LogEvent>` implementation the event will be dropped.
 
 ## Advanced logging
 

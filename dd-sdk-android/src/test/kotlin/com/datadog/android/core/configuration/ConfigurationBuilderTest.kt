@@ -15,6 +15,7 @@ import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
@@ -1417,11 +1418,11 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `𝕄 build config with Span eventMapper 𝕎 setSpanEventMapper() and build()`() {
         // Given
-        val eventMapper: SpanEventMapper = mock()
+        val mockEventMapper: SpanEventMapper = mock()
 
         // When
         val config = testedBuilder
-            .setSpanEventMapper(eventMapper)
+            .setSpanEventMapper(mockEventMapper)
             .build()
 
         // Then
@@ -1430,7 +1431,29 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(
-                spanEventMapper = eventMapper
+                spanEventMapper = mockEventMapper
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+    }
+
+    @Test
+    fun `𝕄 build config with Log eventMapper 𝕎 setLogEventMapper() and build()`() {
+        // Given
+        val mockEventMapper: EventMapper<LogEvent> = mock()
+
+        // When
+        val config = testedBuilder
+            .setLogEventMapper(mockEventMapper)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(
+            Configuration.DEFAULT_LOGS_CONFIG.copy(
+                logsEventMapper = mockEventMapper
             )
         )
         assertThat(config.internalLogsConfig).isNull()
