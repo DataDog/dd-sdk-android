@@ -13,6 +13,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
@@ -93,7 +94,8 @@ private constructor(
             logsConfig = logsConfig?.let {
                 Configuration.Feature.Logs(
                     endpointUrl = it.endpointUrl,
-                    plugins = it.plugins
+                    plugins = it.plugins,
+                    logsEventMapper = NoOpEventMapper()
                 )
             },
             crashReportConfig = crashReportConfig?.let {

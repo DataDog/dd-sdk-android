@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWrit
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
+import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
@@ -68,9 +69,13 @@ internal class TracesFeatureTest :
             (testedFeature.persistenceStrategy.getWriter() as? ScheduledWriter)
                 ?.delegateWriter as? BatchFileDataWriter
         val spanMapperSerializer = batchFileDataWriter?.serializer as? SpanMapperSerializer
-        val spanEventMapper =
-            spanMapperSerializer?.getFieldValue<SpanEventMapper, SpanMapperSerializer>(
+        val spanEventMapperWrapper =
+            spanMapperSerializer?.getFieldValue<SpanEventMapperWrapper, SpanMapperSerializer>(
                 "spanEventMapper"
+            )
+        val spanEventMapper =
+            spanEventMapperWrapper?.getFieldValue<SpanEventMapper, SpanEventMapperWrapper>(
+                "wrappedEventMapper"
             )
         assertThat(
             spanEventMapper

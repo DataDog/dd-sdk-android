@@ -214,9 +214,7 @@ object Datadog {
         }
     }
 
-    private fun applyAdditionalConfiguration(
-        @Suppress("UNUSED_PARAMETER") additionalConfiguration: Map<String, Any>
-    ) {
+    private fun applyAdditionalConfiguration(additionalConfiguration: Map<String, Any>) {
         additionalConfiguration[DD_SOURCE_TAG]?.let {
             if (it.toString().isNotBlank()) {
                 CoreFeature.sourceName = it.toString()

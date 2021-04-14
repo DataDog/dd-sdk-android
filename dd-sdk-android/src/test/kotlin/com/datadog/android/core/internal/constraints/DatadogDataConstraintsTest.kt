@@ -304,7 +304,8 @@ internal class DatadogDataConstraintsTest {
 
         // Given
         val goodTimingPart = forge.anAlphabeticalString(case = Case.ANY)
-        val badTimingPart = forge.aStringMatching("[^a-zA-Z0-9\\-_.@$]+")
+        val badTimingPart = forge.anAsciiString()
+            .replace(Regex("[a-zA-Z0-9:\\-_.@\$]"), "%|*|!|&|")
 
         val malformedKey = (goodTimingPart + badTimingPart)
 

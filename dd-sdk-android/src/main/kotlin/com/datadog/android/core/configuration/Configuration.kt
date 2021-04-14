@@ -17,6 +17,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.RumMonitor
@@ -70,7 +71,8 @@ internal constructor(
 
         internal data class Logs(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>
+            override val plugins: List<DatadogPlugin>,
+            val logsEventMapper: EventMapper<LogEvent>
         ) : Feature()
 
         internal data class InternalLogs(
@@ -523,7 +525,8 @@ internal constructor(
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US,
-            plugins = emptyList()
+            plugins = emptyList(),
+            logsEventMapper = NoOpEventMapper()
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
             endpointUrl = DatadogEndpoint.LOGS_US,

@@ -17,6 +17,7 @@ import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
+import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.opentracing.DDSpan
@@ -47,7 +48,7 @@ internal class TracesFilePersistenceStrategy(
             networkInfoProvider,
             userInfoProvider
         ),
-        spanEventMapper,
+        SpanEventMapperWrapper(spanEventMapper),
         SpanEventSerializer(envName)
     ),
     PayloadDecoration.NEW_LINE_DECORATION,

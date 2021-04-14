@@ -103,7 +103,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(
             Configuration.Feature.Logs(
                 endpointUrl = DatadogEndpoint.LOGS_US,
-                plugins = emptyList()
+                plugins = emptyList(),
+                logsEventMapper = NoOpEventMapper()
             )
         )
         assertThat(config.tracesConfig)
