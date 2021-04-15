@@ -15,10 +15,12 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.prepareMainLooper
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -45,7 +47,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -59,7 +62,6 @@ internal class WorkManagerUtilsTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockAppContext = mockContext()
-        prepareMainLooper()
         Datadog.initialize(
             mockAppContext,
             Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
@@ -85,7 +87,6 @@ internal class WorkManagerUtilsTest {
     @AfterEach
     fun `tear down`() {
         Datadog.invokeMethod("stop")
-        disposeMainLooper()
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 
@@ -136,5 +137,15 @@ internal class WorkManagerUtilsTest {
 
         // Then
         verifyZeroInteractions(mockWorkManager)
+    }
+
+    companion object {
+        val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(mainLooper)
+        }
     }
 }

@@ -25,11 +25,13 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.tracing.internal.TracesFeature
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.prepareMainLooper
 import com.datadog.opentracing.DDSpan
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -54,7 +56,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -112,7 +115,6 @@ internal class UploadWorkerTest {
         whenever(mockRumStrategy.getReader()) doReturn mockRumReader
 
         mockContext = mockContext()
-        prepareMainLooper()
         Datadog.initialize(
             mockContext,
             Credentials("CLIENT_TOKEN", "ENVIRONMENT", "", null),
@@ -143,7 +145,6 @@ internal class UploadWorkerTest {
     @AfterEach
     fun `tear down`() {
         Datadog.invokeMethod("stop")
-        disposeMainLooper()
     }
 
     @Test
@@ -415,5 +416,15 @@ internal class UploadWorkerTest {
         verify(mockTracesReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    companion object {
+        val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(mainLooper)
+        }
     }
 }

@@ -26,12 +26,11 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -107,7 +106,6 @@ internal class DatadogLogHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        prepareMainLooper()
         fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
         fakeServiceName = forge.anAlphabeticalString()
@@ -138,7 +136,6 @@ internal class DatadogLogHandlerTest {
     fun `tear down`() {
         GlobalTracer.get().setFieldValue("isRegistered", false)
         GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
-        disposeMainLooper()
     }
 
     @Test
@@ -693,11 +690,12 @@ internal class DatadogLogHandlerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, mainLooper)
         }
     }
 }

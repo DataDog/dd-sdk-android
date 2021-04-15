@@ -32,11 +32,10 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.prepareMainLooper
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -123,7 +122,6 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         val mockContext: Application = mockContext()
-        prepareMainLooper()
         Datadog.initialize(
             mockContext,
             Credentials(fakeToken, fakeEnvName, "", null),
@@ -158,7 +156,6 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.invokeMethod("stop")
-        disposeMainLooper()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -447,11 +444,12 @@ internal class DatadogExceptionHandlerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, mainLooper)
         }
     }
 }
