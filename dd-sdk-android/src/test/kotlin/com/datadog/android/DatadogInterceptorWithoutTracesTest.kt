@@ -9,7 +9,6 @@ package com.datadog.android
 import android.content.Context
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.log.internal.logger.LogHandler
@@ -21,11 +20,11 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
@@ -154,7 +153,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
-        mockCoreFeature()
 
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.withOrigin(DatadogInterceptor.ORIGIN_RUM)) doReturn mockSpanBuilder
@@ -196,7 +194,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @AfterEach
     fun `tear down`() {
-        CoreFeature.stop()
         TracesFeature.stop()
         RumFeature.stop()
     }
@@ -388,11 +385,12 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, coreFeature)
         }
     }
 }

@@ -3,7 +3,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
@@ -14,10 +13,13 @@ import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockCoreFeature
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -49,7 +51,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -93,8 +96,7 @@ internal class RumActionScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        mockCoreFeature()
-        whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
 
         testedScope = RumActionScope(
@@ -111,7 +113,6 @@ internal class RumActionScopeTest {
 
     @AfterEach
     fun `tear down`() {
-        CoreFeature.stop()
         GlobalRum.globalAttributes.clear()
     }
 
@@ -1145,5 +1146,13 @@ internal class RumActionScopeTest {
         internal const val TEST_INACTIVITY_MS = 30L
         internal const val TEST_MAX_DURATION_MS = 500L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
+
+        val coreFeature = CoreFeatureTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(coreFeature)
+        }
     }
 }

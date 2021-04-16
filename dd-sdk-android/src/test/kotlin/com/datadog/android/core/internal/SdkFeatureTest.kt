@@ -17,10 +17,13 @@ import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -31,7 +34,6 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
@@ -50,7 +52,8 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -71,34 +74,16 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     lateinit var fakeConfigurationFeature: C
 
-    @StringForgery
-    lateinit var fakePackageName: String
-
-    @StringForgery
-    lateinit var fakeEnvName: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
-
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
     fun `set up`(forge: Forge) {
 
-        mockCoreFeature(
-            packageName = fakePackageName,
-            packageVersion = fakePackageVersion,
-            envName = fakeEnvName,
-            trackingConsent = fakeConsent
-        )
-
-        fakePackageName = forge.anAlphabeticalString()
-        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
-
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
+        mockAppContext = mockContext("fakePackageName", "fakePackageVersion")
         whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockPersistenceStrategy.getReader()) doReturn mockReader
+        whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
 
         fakeConfigurationFeature = forgeConfiguration(forge)
         testedFeature = createTestedFeature()
@@ -107,7 +92,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @AfterEach
     fun `tear down`() {
         testedFeature.stop()
-        CoreFeature.stop()
     }
 
     abstract fun createTestedFeature(): F
@@ -132,7 +116,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
         argumentCaptor<Runnable> {
-            verify(CoreFeature.uploadExecutorService).schedule(
+            verify(coreFeature.mockUploadExecutor).schedule(
                 any(),
                 any(),
                 eq(TimeUnit.MILLISECONDS)
@@ -155,8 +139,8 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             }
             allValues.forEach {
                 assertThat(it.context).isEqualTo(mockAppContext)
-                assertThat(it.serviceName).isEqualTo(CoreFeature.serviceName)
-                assertThat(it.envName).isEqualTo(CoreFeature.envName)
+                assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
+                assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
                 assertThat(it.context).isEqualTo(mockAppContext)
                 assertThat(it.trackingConsent).isEqualTo(fakeConsent)
             }
@@ -173,7 +157,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Then
         fakeConfigurationFeature.plugins.forEach {
-            verify(CoreFeature.trackingConsentProvider).registerCallback(it)
+            verify(coreFeature.mockTrackingConsentProvider).registerCallback(it)
         }
     }
 
@@ -277,5 +261,15 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Then
         verify(mockReader).dropAll()
+    }
+
+    companion object {
+        val coreFeature = CoreFeatureTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(coreFeature)
+        }
     }
 }

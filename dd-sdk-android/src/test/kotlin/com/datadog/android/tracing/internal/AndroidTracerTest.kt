@@ -10,15 +10,14 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
@@ -88,7 +87,6 @@ internal class AndroidTracerTest {
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
         mockAppContext = mockContext()
-        mockCoreFeature()
         TracesFeature.initialize(mockAppContext, Configuration.DEFAULT_TRACING_CONFIG)
         RumFeature.initialize(mockAppContext, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
@@ -300,7 +298,7 @@ internal class AndroidTracerTest {
         val properties = testedTracerBuilder.properties()
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
-        assertThat(span.serviceName).isEqualTo(CoreFeature.serviceName)
+        assertThat(span.serviceName).isEqualTo(coreFeature.fakeServiceName)
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
             .isEqualTo(AndroidTracer.DEFAULT_PARTIAL_MIN_FLUSH)
     }
@@ -406,11 +404,12 @@ internal class AndroidTracerTest {
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
+        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, mainLooper)
+            return listOf(rumMonitor, mainLooper, coreFeature)
         }
     }
 }

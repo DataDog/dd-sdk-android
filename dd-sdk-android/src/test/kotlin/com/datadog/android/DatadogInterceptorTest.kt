@@ -15,6 +15,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -83,6 +84,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
+        println("DatadogInterceptorTest.setUp()")
         super.`set up`(forge)
         fakeAttributes = forge.exhaustiveAttributes()
         whenever(
@@ -210,11 +212,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, coreFeature)
         }
     }
 }

@@ -8,20 +8,20 @@ package com.datadog.android.rum.internal.net
 
 import android.app.Application
 import com.datadog.android.BuildConfig
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -31,37 +31,19 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>() {
-
-    @StringForgery(regex = "([a-z]+\\.)+[a-z]+")
-    lateinit var fakePackageName: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
-
-    @StringForgery
-    lateinit var fakeEnvName: String
-
-    @StringForgery
-    lateinit var fakeVariant: String
 
     lateinit var mockAppContext: Application
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        mockCoreFeature(fakePackageName, fakePackageVersion, fakeEnvName, fakeVariant)
-    }
-
-    @AfterEach
-    override fun `tear down`() {
-        super.`tear down`()
-        CoreFeature.stop()
+        mockAppContext = mockContext("fakePackageName", "fakePackageVersion")
     }
 
     override fun uploader(): RumOkHttpUploader {
@@ -83,13 +65,23 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     override fun expectedPathRegex(): String {
         return "^\\/v1\\/input/$fakeToken" +
             "\\?${DataOkHttpUploader.QP_BATCH_TIME}=\\d+" +
-            "&${DataOkHttpUploader.QP_SOURCE}=${CoreFeature.sourceName}" +
+            "&${DataOkHttpUploader.QP_SOURCE}=${coreFeature.fakeSourceName}" +
             "&${RumOkHttpUploader.QP_TAGS}=" +
-            "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
-            "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
+            "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}," +
+            "${RumAttributes.APPLICATION_VERSION}:${coreFeature.fakePackageVersion}," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
-            "${RumAttributes.ENV}:$fakeEnvName," +
-            "${RumAttributes.VARIANT}:$fakeVariant" +
+            "${RumAttributes.ENV}:${coreFeature.fakeEnvName}," +
+            "${RumAttributes.VARIANT}:${coreFeature.fakeVariant}" +
             "$"
+    }
+
+    companion object {
+        val coreFeature = CoreFeatureTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(coreFeature)
+        }
     }
 }

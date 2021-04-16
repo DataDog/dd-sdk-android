@@ -14,12 +14,15 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -72,7 +75,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -157,10 +161,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
+        println("TracingInterceptorNotSendingSpanTest.setUp()")
         mockDevLogHandler = mockDevLogHandler()
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
-        mockCoreFeature()
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
@@ -715,5 +719,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
         const val IPV4_PATTERN =
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+
+        val coreFeature = CoreFeatureTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(coreFeature)
+        }
     }
 }
