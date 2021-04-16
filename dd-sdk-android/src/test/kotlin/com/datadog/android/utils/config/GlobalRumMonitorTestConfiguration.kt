@@ -30,6 +30,7 @@ internal class GlobalRumMonitorTestConfiguration :
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.isRegistered.set(false)
         GlobalRum.updateRumContext(RumContext())
+        GlobalRum.globalAttributes.clear()
         super.tearDown(forge)
     }
 }

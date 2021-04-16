@@ -14,6 +14,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -39,7 +40,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -109,11 +109,6 @@ internal class RumActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.globalAttributes.clear()
     }
 
     @Test
@@ -1147,12 +1142,13 @@ internal class RumActionScopeTest {
         internal const val TEST_MAX_DURATION_MS = 500L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(rumMonitor, coreFeature)
         }
     }
 }

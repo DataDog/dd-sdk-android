@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -49,7 +50,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.URL
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -121,11 +121,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             mockDetector
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.globalAttributes.clear()
     }
 
     @Test
@@ -1175,12 +1170,13 @@ internal class RumResourceScopeTest {
     companion object {
         private const val RESOURCE_DURATION_MS = 50L
 
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(rumMonitor, coreFeature)
         }
     }
 }
