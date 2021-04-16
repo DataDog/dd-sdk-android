@@ -110,7 +110,7 @@ test:debug:
     - rm -rf ~/.gradle/daemon/
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon
-    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
+    - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
 test:release:
   tags: [ "runner:main", "size:large" ]
