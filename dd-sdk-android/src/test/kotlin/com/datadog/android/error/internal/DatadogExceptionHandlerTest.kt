@@ -23,10 +23,10 @@ import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.assertj.LogAssert.Companion.assertThat
-import com.datadog.android.log.internal.domain.Log
+import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
@@ -35,6 +35,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.prepareMainLooper
@@ -97,7 +98,7 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
-    lateinit var mockLogWriter: DataWriter<Log>
+    lateinit var mockLogWriter: DataWriter<LogEvent>
 
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
@@ -176,16 +177,16 @@ internal class DatadogExceptionHandlerTest {
         val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
                 .hasMessage("Application crash detected: " + fakeThrowable.message)
-                .hasLevel(Log.CRASH)
-                .hasThrowable(fakeThrowable)
+                .hasStatus(LogEvent.Status.EMERGENCY)
+                .hasError(fakeThrowable.asLogError())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestampAround(now)
+                .hasDateAround(now)
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -233,16 +234,16 @@ internal class DatadogExceptionHandlerTest {
         val now = System.currentTimeMillis()
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
                 .hasMessage("Application crash detected: " + fakeThrowable.message)
-                .hasLevel(Log.CRASH)
-                .hasThrowable(fakeThrowable)
+                .hasStatus(LogEvent.Status.EMERGENCY)
+                .hasError(fakeThrowable.asLogError())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestampAround(now)
+                .hasDate(now.toIsoFormattedTimestamp())
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -264,16 +265,16 @@ internal class DatadogExceptionHandlerTest {
 
         testedHandler.uncaughtException(currentThread, throwableNoMessage)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
                 .hasMessage("Application crash detected")
-                .hasLevel(Log.CRASH)
-                .hasThrowable(throwableNoMessage)
+                .hasStatus(LogEvent.Status.EMERGENCY)
+                .hasError(throwableNoMessage.asLogError())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestampAround(now)
+                .hasDateAround(now)
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -301,16 +302,16 @@ internal class DatadogExceptionHandlerTest {
         thread.start()
         latch.await(1, TimeUnit.SECONDS)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(threadName)
                 .hasMessage("Application crash detected: " + fakeThrowable.message)
-                .hasLevel(Log.CRASH)
-                .hasThrowable(fakeThrowable)
+                .hasStatus(LogEvent.Status.EMERGENCY)
+                .hasError(fakeThrowable.asLogError())
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
-                .hasTimestampAround(now)
+                .hasDateAround(now)
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
@@ -334,7 +335,7 @@ internal class DatadogExceptionHandlerTest {
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
@@ -392,7 +393,7 @@ internal class DatadogExceptionHandlerTest {
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<Log> {
+        argumentCaptor<LogEvent> {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
@@ -427,5 +428,13 @@ internal class DatadogExceptionHandlerTest {
                 }
                 .newInstance(anElementFrom("", aWhitespaceString())) as Throwable
         }
+    }
+
+    private fun Throwable.asLogError(): LogEvent.Error {
+        return LogEvent.Error(
+            kind = this.javaClass.canonicalName ?: this.javaClass.simpleName,
+            message = this.message,
+            stack = this.stackTraceToString()
+        )
     }
 }

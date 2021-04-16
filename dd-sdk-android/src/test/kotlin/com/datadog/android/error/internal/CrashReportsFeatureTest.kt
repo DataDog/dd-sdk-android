@@ -9,8 +9,8 @@ package com.datadog.android.error.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
@@ -35,7 +35,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class CrashReportsFeatureTest :
-    SdkFeatureTest<Log, Configuration.Feature.CrashReport, CrashReportsFeature>() {
+    SdkFeatureTest<LogEvent, Configuration.Feature.CrashReport, CrashReportsFeature>() {
 
     var jvmExceptionHandler: Thread.UncaughtExceptionHandler? = null
 

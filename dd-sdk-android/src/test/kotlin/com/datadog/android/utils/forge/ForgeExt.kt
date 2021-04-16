@@ -9,7 +9,9 @@ package com.datadog.android.utils.forge
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -72,6 +74,13 @@ internal fun <K, V> Forge.aFilteredMap(
     }
 
     return filtered
+}
+
+internal fun Forge.aFormattedTimestamp(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"): String {
+    val simpleDateFormat = SimpleDateFormat(format, Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    return simpleDateFormat.format(this.aTimestamp())
 }
 
 private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {

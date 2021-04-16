@@ -12,6 +12,10 @@ import com.datadog.android.core.model.UserInfo
 /**
  * Represents a Log before it is persisted and sent to Datadog servers.
  */
+@Deprecated(
+    message = "This class is going to be removed soon. " +
+        "Use the LogEvent class instead."
+)
 internal data class Log(
     val serviceName: String,
     val level: Int,

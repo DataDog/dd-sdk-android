@@ -6,13 +6,19 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import io.opentracing.util.GlobalTracer
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 internal class LogGenerator(
     internal val serviceName: String,
@@ -22,6 +28,9 @@ internal class LogGenerator(
     envName: String,
     appVersion: String
 ) {
+    private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     internal val envTag: String? = if (envName.isNotEmpty()) {
         "${LogAttributes.ENV}:$envName"
@@ -48,21 +57,59 @@ internal class LogGenerator(
         bundleWithRum: Boolean = true,
         userInfo: UserInfo? = null,
         networkInfo: NetworkInfo? = null
-    ): Log {
+    ): LogEvent {
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
+        val formattedDate = synchronized(simpleDateFormat) {
+            simpleDateFormat.format(Date(timestamp))
+        }
         val combinedTags = resolveTags(tags)
-        return Log(
-            serviceName = serviceName,
-            level = level,
+        val error = throwable?.let {
+            val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
+            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
+        }
+        val usr = resolveUserInfo(userInfo)
+        val network = resolveNetworkInfo(networkInfo)
+        val loggerInfo = LogEvent.Logger(
+            name = loggerName,
+            threadName = threadName ?: Thread.currentThread().name,
+            version = BuildConfig.SDK_VERSION_NAME
+        )
+        return LogEvent(
+            service = serviceName,
+            status = resolveLogLevelStatus(level),
             message = message,
-            timestamp = timestamp,
-            throwable = throwable,
-            attributes = combinedAttributes,
-            tags = combinedTags.toList(),
-            networkInfo = networkInfo ?: networkInfoProvider?.getLatestNetworkInfo(),
-            userInfo = userInfo ?: userInfoProvider.getUserInfo(),
-            loggerName = loggerName,
-            threadName = threadName ?: Thread.currentThread().name
+            date = formattedDate,
+            error = error,
+            logger = loggerInfo,
+            usr = usr,
+            network = network,
+            ddtags = combinedTags.joinToString(separator = ","),
+            additionalProperties = combinedAttributes
+        )
+    }
+
+    private fun resolveNetworkInfo(networkInfo: NetworkInfo?): LogEvent.Network? {
+        val resolvedNetworkInfo = networkInfo ?: networkInfoProvider?.getLatestNetworkInfo()
+        return resolvedNetworkInfo?.let {
+            LogEvent.Network(
+                LogEvent.Client(
+                    simCarrier = resolveSimCarrier(it),
+                    signalStrength = it.strength?.toString(),
+                    downlinkKbps = it.downKbps?.toString(),
+                    uplinkKbps = it.upKbps?.toString(),
+                    connectivity = it.connectivity.toString()
+                )
+            )
+        }
+    }
+
+    private fun resolveUserInfo(userInfo: UserInfo?): LogEvent.Usr {
+        val resolvedUserInfo = userInfo ?: userInfoProvider.getUserInfo()
+        return LogEvent.Usr(
+            name = resolvedUserInfo.name,
+            email = resolvedUserInfo.email,
+            id = resolvedUserInfo.id,
+            additionalProperties = resolvedUserInfo.additionalProperties
         )
     }
 
@@ -101,5 +148,35 @@ internal class LogGenerator(
             combinedAttributes[LogAttributes.RUM_VIEW_ID] = activeContext.viewId
         }
         return combinedAttributes
+    }
+
+    @Suppress("DEPRECATION")
+    private fun resolveLogLevelStatus(level: Int): LogEvent.Status {
+        return when (level) {
+            android.util.Log.ASSERT -> LogEvent.Status.CRITICAL
+            android.util.Log.ERROR -> LogEvent.Status.ERROR
+            android.util.Log.WARN -> LogEvent.Status.WARN
+            android.util.Log.INFO -> LogEvent.Status.INFO
+            android.util.Log.DEBUG -> LogEvent.Status.DEBUG
+            android.util.Log.VERBOSE -> LogEvent.Status.TRACE
+            LogGenerator.CRASH -> LogEvent.Status.EMERGENCY
+            else -> LogEvent.Status.DEBUG
+        }
+    }
+
+    private fun resolveSimCarrier(networkInfo: NetworkInfo): LogEvent.SimCarrier? {
+        return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
+            LogEvent.SimCarrier(
+                id = networkInfo.carrierId?.toString(),
+                name = networkInfo.carrierName
+            )
+        } else {
+            null
+        }
+    }
+
+    companion object {
+        internal const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        internal const val CRASH: Int = 9
     }
 }

@@ -13,9 +13,9 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -85,7 +85,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockUserInfoDeserializer: Deserializer<UserInfo>
 
     @Mock
-    lateinit var mockLogWriter: DataWriter<Log>
+    lateinit var mockLogWriter: DataWriter<LogEvent>
 
     @Mock
     lateinit var mockRumWriter: DataWriter<RumEvent>
@@ -96,7 +96,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var fakeNdkFilesDir: File
 
     @Forgery
-    lateinit var fakeLog: Log
+    lateinit var fakeLog: LogEvent
 
     @Captor
     lateinit var captureRunnable: ArgumentCaptor<Runnable>
@@ -408,7 +408,7 @@ internal class DatadogNdkCrashHandlerTest {
         }
         whenever(
             mockLogGenerator.generateLog(
-                Log.CRASH,
+                LogGenerator.CRASH,
                 DatadogNdkCrashHandler.LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName),
                 throwable = null,
                 attributes = attributes,

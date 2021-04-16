@@ -13,18 +13,18 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.domain.Log
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.model.LogEvent
 
-internal object LogsFeature : SdkFeature<Log, Configuration.Feature.Logs>() {
+internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>() {
 
     // region SdkFeature
 
     override fun createPersistenceStrategy(
         context: Context,
         configuration: Configuration.Feature.Logs
-    ): PersistenceStrategy<Log> {
+    ): PersistenceStrategy<LogEvent> {
         return LogFilePersistenceStrategy(
             CoreFeature.trackingConsentProvider,
             context,
