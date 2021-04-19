@@ -40,6 +40,8 @@ object Datadog {
         private set
     internal var isDebug = false
 
+    // region Initialization
+
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
@@ -166,6 +168,101 @@ object Datadog {
                 Thread(Runnable { stop() }, SHUTDOWN_THREAD)
             )
     }
+    /**
+     * Checks if the Datadog SDK was already initialized.
+     * @return true if the SDK was initialized, false otherwise
+     */
+    @JvmStatic
+    fun isInitialized(): Boolean {
+        return initialized.get()
+    }
+
+    // endregion
+
+    // region Global methods
+
+    /**
+     * Clears all data that has not already been sent to Datadog servers.
+     */
+    @JvmStatic
+    fun clearAllData() {
+        LogsFeature.clearAllData()
+        CrashReportsFeature.clearAllData()
+        RumFeature.clearAllData()
+        TracesFeature.clearAllData()
+        InternalLogsFeature.clearAllData()
+    }
+
+    // Stop all Datadog work (for test purposes).
+    @Suppress("unused")
+    private fun stop() {
+        if (initialized.get()) {
+            LogsFeature.stop()
+            TracesFeature.stop()
+            RumFeature.stop()
+            CrashReportsFeature.stop()
+            CoreFeature.stop()
+            InternalLogsFeature.stop()
+            isDebug = false
+            initialized.set(false)
+        }
+    }
+
+    /**
+     * Sets the verbosity of the Datadog library.
+     *
+     * Messages with a priority level equal or above the given level will be sent to Android's
+     * Logcat.
+     *
+     * @param level one of the Android [Log] constants ([Log.VERBOSE], [Log.DEBUG], [Log.INFO],
+     * [Log.WARN], [Log.ERROR], [Log.ASSERT]).
+     */
+    @JvmStatic
+    fun setVerbosity(level: Int) {
+        libraryVerbosity = level
+    }
+
+    /**
+     * Sets the tracking consent regarding the data collection for the Datadog library.
+     *
+     * @param consent which can take one of the values
+     * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
+     */
+    @JvmStatic
+    fun setTrackingConsent(consent: TrackingConsent) {
+        CoreFeature.trackingConsentProvider.setConsent(consent)
+    }
+
+    /**
+     * Sets the user information.
+     *
+     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param name (nullable) the user name or alias
+     * @param email (nullable) the user email
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setUserInfo(
+        id: String? = null,
+        name: String? = null,
+        email: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap()
+    ) {
+        CoreFeature.userInfoProvider.setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email,
+                extraInfo
+            )
+        )
+    }
+
+    // endregion
+
+    // region Internal Initialization
 
     private fun initializeLogsFeature(
         configuration: Configuration.Feature.Logs?,
@@ -224,93 +321,6 @@ object Datadog {
             }
         }
     }
-
-    /**
-     * Checks if the Datadog SDK was already initialized.
-     * @return true if the SDK was initialized, false otherwise
-     */
-    fun isInitialized(): Boolean {
-        return initialized.get()
-    }
-
-    /**
-     * Clears all data that has not already been sent to Datadog servers.
-     */
-    fun clearAllData() {
-        LogsFeature.clearAllData()
-        CrashReportsFeature.clearAllData()
-        RumFeature.clearAllData()
-        TracesFeature.clearAllData()
-        InternalLogsFeature.clearAllData()
-    }
-
-    // Stop all Datadog work (for test purposes).
-    @Suppress("unused")
-    private fun stop() {
-        if (initialized.get()) {
-            LogsFeature.stop()
-            TracesFeature.stop()
-            RumFeature.stop()
-            CrashReportsFeature.stop()
-            CoreFeature.stop()
-            InternalLogsFeature.stop()
-            isDebug = false
-            initialized.set(false)
-        }
-    }
-
-    /**
-     * Sets the verbosity of the Datadog library.
-     *
-     * Messages with a priority level equal or above the given level will be sent to Android's
-     * Logcat.
-     *
-     * @param level one of the Android [Log] constants ([Log.VERBOSE], [Log.DEBUG], [Log.INFO],
-     * [Log.WARN], [Log.ERROR], [Log.ASSERT]).
-     */
-    @JvmStatic
-    fun setVerbosity(level: Int) {
-        libraryVerbosity = level
-    }
-
-    /**
-     * Sets the tracking consent regarding the data collection for the Datadog library.
-     *
-     * @param consent which can take one of the values
-     * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
-     */
-    fun setTrackingConsent(consent: TrackingConsent) {
-        CoreFeature.trackingConsentProvider.setConsent(consent)
-    }
-
-    /**
-     * Sets the user information.
-     *
-     * @param id (nullable) a unique user identifier (relevant to your business domain)
-     * @param name (nullable) the user name or alias
-     * @param email (nullable) the user email
-     * @param extraInfo additional information. An extra information can be
-     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
-     */
-    @JvmStatic
-    @JvmOverloads
-    fun setUserInfo(
-        id: String? = null,
-        name: String? = null,
-        email: String? = null,
-        extraInfo: Map<String, Any?> = emptyMap()
-    ) {
-        CoreFeature.userInfoProvider.setUserInfo(
-            UserInfo(
-                id,
-                name,
-                email,
-                extraInfo
-            )
-        )
-    }
-
-    // region Internal Initialization
 
     @Suppress("ThrowingInternalException")
     private fun validateEnvironmentName(envName: String): Boolean {
