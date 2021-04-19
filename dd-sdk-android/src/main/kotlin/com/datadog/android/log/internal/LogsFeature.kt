@@ -29,7 +29,8 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             CoreFeature.trackingConsentProvider,
             context,
             CoreFeature.persistenceExecutorService,
-            sdkLogger
+            sdkLogger,
+            configuration.logsEventMapper
         )
     }
 

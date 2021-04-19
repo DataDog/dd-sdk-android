@@ -12,7 +12,11 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.event.EventMapper
+import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
+import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import java.util.concurrent.ExecutorService
 
@@ -20,7 +24,8 @@ internal class LogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
-    internalLogger: Logger
+    internalLogger: Logger,
+    logEventMapper: EventMapper<LogEvent>
 ) :
     BatchFilePersistenceStrategy<LogEvent>(
         FeatureFileOrchestrator(
@@ -31,7 +36,7 @@ internal class LogFilePersistenceStrategy(
             internalLogger
         ),
         executorService,
-        LogEventSerializer(),
+        MapperSerializer(LogEventMapperWrapper(logEventMapper), LogEventSerializer()),
         PayloadDecoration.JSON_ARRAY_DECORATION,
         sdkLogger
     )

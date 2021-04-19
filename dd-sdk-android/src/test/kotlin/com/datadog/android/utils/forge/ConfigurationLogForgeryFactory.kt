@@ -17,7 +17,8 @@ internal class ConfigurationLogForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Feature.Logs {
         return Configuration.Feature.Logs(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            plugins = forge.aList { mock<DatadogPlugin>() }
+            plugins = forge.aList { mock<DatadogPlugin>() },
+            logsEventMapper = mock()
         )
     }
 }

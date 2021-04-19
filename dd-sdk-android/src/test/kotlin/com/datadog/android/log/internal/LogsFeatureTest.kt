@@ -9,11 +9,17 @@ package com.datadog.android.log.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
+import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
+import com.datadog.android.event.EventMapper
+import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
+import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -64,5 +70,30 @@ internal class LogsFeatureTest :
         assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.url).endsWith(CoreFeature.clientToken)
         assertThat(logsUploader.client).isSameAs(CoreFeature.okHttpClient)
+    }
+
+    @Test
+    fun `𝕄 use the eventMapper 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+
+        // Then
+        val batchFileDataWriter =
+            (testedFeature.persistenceStrategy.getWriter() as? ScheduledWriter)
+                ?.delegateWriter as? BatchFileDataWriter
+        val logMapperSerializer = batchFileDataWriter?.serializer as? MapperSerializer<LogEvent>
+        val logEventMapperWrapper =
+            logMapperSerializer?.getFieldValue<LogEventMapperWrapper, MapperSerializer<LogEvent>>(
+                "eventMapper"
+            )
+        val logEventMapper =
+            logEventMapperWrapper?.getFieldValue<EventMapper<LogEvent>, LogEventMapperWrapper>(
+                "wrappedEventMapper"
+            )
+        assertThat(
+            logEventMapper
+        ).isSameAs(
+            fakeConfigurationFeature.logsEventMapper
+        )
     }
 }

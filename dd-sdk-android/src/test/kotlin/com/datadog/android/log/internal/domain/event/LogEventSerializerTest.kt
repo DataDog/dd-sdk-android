@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.domain
+package com.datadog.android.log.internal.domain.event
 
 import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.model.LogEvent
