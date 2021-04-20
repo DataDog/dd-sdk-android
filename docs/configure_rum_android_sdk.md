@@ -5,7 +5,7 @@ If you have not set up the SDK, follow the [in-app setup instructions][1] or ref
 
 ## Enrich user sessions
 
-Android RUM automatically tracks attributes about user activity, screens, errors, network requests, etc. Refer to the [RUM Data Collection][3] to learn about the RUM event datatypes and default attributes. You can further enrich user session information and gain finer control over the attributes collected by tracking custom events.
+Android RUM automatically tracks attributes such as user activity, screens, errors, and network requests. See the [RUM Data Collection documentation][3] to learn about the RUM event datatypes and default attributes. You can further enrich user session information and gain finer control over the attributes collected by tracking custom events.
 
  {{< tabs >}}
     {{% tab "Custom Views" %}}
@@ -36,7 +36,7 @@ In addition to [tracking actions automatically][5], you can also track specific 
    ```
 [5]: /real_user_monitoring/android/configure_android_sdk/track_action
     {{% /tab %}}
-    {{% tab "Custom Resource" %}}
+    {{% tab "Custom Resources" %}}
 
 In addition to [tracking resources automatically][6], you can also track specific custom resources (network requests, third party provider APIs, etc.) with methods (`GET`, `POST`, etc.) while loading the resource with `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
 
@@ -69,7 +69,7 @@ To track specific errors, notify the monitor when an error occurs with the messa
 
 ## Track custom global attributes
 
-In addition to the [default RUM attributes][3] captured by the mobile SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (cart value, merchant tier, ad campaign, etc.) with code-level information (backend services, session timeline, error logs, network health, etc).
+In addition to the [default RUM attributes][3] captured by the mobile SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (such as cart value, merchant tier, or ad campaign) with code-level information (such as backend services, session timeline, error logs, and network health).
 
 ### Track User Sessions
 Adding user information to your RUM sessions makes it easy to:
@@ -79,7 +79,7 @@ Adding user information to your RUM sessions makes it easy to:
 
 {{< img src="real_user_monitoring/browser/advanced_configuration/user-api.png" alt="User API in RUM UI"  >}}
 
-The following attributes are **optional**, but it is recommended to provide **at least one** of them:
+The following attributes are **optional**, you should provide **at least one** of them:
 
 | Attribute  | Type | Description                                                                                              |
 |------------|------|----------------------------------------------------------------------------------------------------|
