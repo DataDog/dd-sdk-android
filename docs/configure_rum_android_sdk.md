@@ -119,7 +119,7 @@ You can use the following methods in `Configuration.Builder` when creating the D
 | `useViewTrackingStrategy(strategy)` | Defines the strategy used to track views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][3] or implement your own. |
 | `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped. |
 | `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.  |
-| `setFirstPartyHosts()` | Define hosts that have tracing enabled and have RUM resources categorized as `first-party`. |
+| `setFirstPartyHosts()` | Defines hosts that have tracing enabled and have RUM resources categorized as `first-party`. |
 | `useEUEndpoints()` | Switches target data to EU endpoints. |
 | `useUSEndpoints()` | Switches target data to US endpoints. |
 | `useGovEndpoints()` | Switches target data to US1-FED endpoints. |
