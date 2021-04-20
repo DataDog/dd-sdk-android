@@ -9,7 +9,7 @@ The Datadog Real User Monitoring SDK generates six types of events:
 | Resource  | 15 days   | Resources represents network requests to first-party hosts, APIs, 3rd party providers, and libraries in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`                                                                                           |
 | Error     | 30 days   | Error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
 | Action    | 30 days   | Action represents user activity in your mobile application (application launch, tap, swipe, back etc). Each action is attached with a unique `action.id` attached to the view it gets generated in.                                                                                                                                              |
-| Long Task | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
+| Long Task |  | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
 
 The following diagram illustrates the RUM event hierarchy:
 
@@ -35,14 +35,14 @@ The following device-related attributes are attached automatically to all events
 
 | Attribute name                           | Type   | Description                                     |
 |------------------------------------------|--------|-------------------------------------------------|
-| `device.type`       | string | The device type as reported by the device (System User-Agent)      |
-| `device.brand`  | string | The device brand as reported by the device (System User-Agent)  |
-| `device.model`   | string | The device model as reported by the device (System User-Agent)    |
-| `device.name` | string | The device name as reported by the device (System User-Agent)  |
+| `device.type`       | string | The device type as reported by the device (System User-Agent).      |
+| `device.brand`  | string | The device brand as reported by the device (System User-Agent).  |
+| `device.model`   | string | The device model as reported by the device (System User-Agent).    |
+| `device.name` | string | The device name as reported by the device (System User-Agent).  |
 | `connectivity.status` | string | Status of device network reachability (`connected`, `not connected`, `maybe`). |
-| `connectivity.interfaces` | string | The list of available network interfaces (for example, `bluetooth`, `cellular`, `ethernet`, `wifi` etc). |
-| `connectivity.cellular.technology` | string | The type of a radio technology used for cellular connection |
-| `connectivity.cellular.carrier_name` | string | The name of the SIM carrier |
+| `connectivity.interfaces` | string | The list of available network interfaces (for example, `bluetooth`, `cellular`, `ethernet`, `wifi`). |
+| `connectivity.cellular.technology` | string | The type of a radio technology used for cellular connection. |
+| `connectivity.cellular.carrier_name` | string | The name of the SIM carrier. |
 
 
 ### Operating system
@@ -51,9 +51,9 @@ The following OS-related attributes are attached automatically to all events col
 
 | Attribute name                           | Type   | Description                                     |
 |------------------------------------------|--------|-------------------------------------------------|
-| `os.name`       | string | The OS name as reported by the by the device (System User-Agent)       |
-| `os.version`  | string | The OS version as reported by the by the device (System User-Agent)  |
-| `os.version_major`   | string | The OS version major as reported by the by the device (System User-Agent)   |
+| `os.name`       | string | The OS name as reported by the by the device (System User-Agent).       |
+| `os.version`  | string | The OS version as reported by the by the device (System User-Agent).  |
+| `os.version_major`   | string | The OS version major as reported by the by the device (System User-Agent).   |
 
 
 ### Geo-location
@@ -62,7 +62,7 @@ The following attributes are related to the geo-location of IP addresses:
 
 | Fullname                                    | Type   | Description                                                                                                                          |
 |:--------------------------------------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------|
-| `geo.country`         | string | Name of the country                                                                                                                  |
+| `geo.country`         | string | Name of the country.                                                                                                                 |
 | `geo.country_iso_code`     | string | ISO Code of the country (for example, `US` for the United States, `FR` for France).                                                  |
 | `geo.country_subdivision`     | string | Name of the first subdivision level of the country (for example, `California` in the United States or the `Sarthe` department in France). |
 | `geo.country_subdivision_iso_code` | string | ISO Code of the first subdivision level of the country (for example, `CA` in the United States or the `SA` department in France).    |
@@ -106,13 +106,13 @@ Metrics are quantifiable values that can be used for measurements related to the
 |--------------------------------|--------|----------------------------------------------------------------------------------------------------------------|
 | `session.id` | string | Unique ID of the session. |
 | `session.type` | string | Type of the session (`user`). |
-| `session.is_active` | string | Indicates if the session is currently active |
-| `session.initial_view.url` | string | URL of the initial view of the session |
-| `session.initial_view.name` | string | Name of the initial view of the session |
-| `session.last_view.url` | string | URL of the last view of the session |
-| `session.last_view.name` | string | Name of the last view of the session |
-| `session.ip` | string | IP address of the session extracted from the TCP connectiion of the intake |
-| `session.useragent` | string | System user agent info to interpret device info  |
+| `session.is_active` | string | Indicates if the session is currently active. |
+| `session.initial_view.url` | string | URL of the initial view of the session. |
+| `session.initial_view.name` | string | Name of the initial view of the session. |
+| `session.last_view.url` | string | URL of the last view of the session. |
+| `session.last_view.name` | string | Name of the last view of the session. |
+| `session.ip` | string | IP address of the session extracted from the TCP connection of the intake. |
+| `session.useragent` | string | System user agent info to interpret device info.  |
 
 
 {{% /tab %}}
@@ -131,7 +131,7 @@ RUM action, error, resource and long task events contain information about the a
 | `view.error.count`            | number      | Count of all errors collected for this view.                                    |
 | `view.resource.count`         | number      | Count of all resources collected for this view.                                 |
 | `view.action.count`      | number      | Count of all actions collected for this view.                                        |
-| `view.is_active`      |    boolean   | Indicates whether the view corresponding to this event is considered active            |
+| `view.is_active`      |    boolean   | Indicates whether the view corresponding to this event is considered active.            |
 
 ### View attributes      
 
@@ -165,7 +165,7 @@ RUM action, error, resource and long task events contain information about the a
 |--------------------------------|--------|-----------------------------------------------------------------------------------------|
 | `resource.id`                | string |  Unique identifier of the resource.      |
 | `resource.type`                | string | The type of resource being collected (for example, `xhr`, `image`, `font`, `css`, `js`).          |
-| `resource.method`                | string | The HTTP method (for example `POST`, `GET` `PATCH`, `DELETE` etc).           |
+| `resource.method`                | string | The HTTP method (for example `POST`, `GET` `PATCH`, `DELETE`).           |
 | `resource.status_code`             | number | The response status code.                                                               |
 | `resource.url`              | string | The resource URL.                             |
 | `resource.provider.name`      | string | The resource provider name. Default is `unknown`.                     |
@@ -238,8 +238,7 @@ Network errors include information about failing HTTP requests. The following fa
 
 
 [1]: /real_user_monitoring/android/configure_android_sdk/track_view
-[2]:/real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
+[2]: /real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
 [3]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
 [4]: /getting_started/tagging/unified_service_tagging/
 [5]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
-
