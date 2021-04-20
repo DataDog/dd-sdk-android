@@ -212,7 +212,7 @@ Network errors include information about failing HTTP requests. The following fa
 
 | Metric    | Type   | Description              |
 |--------------|--------|--------------------------|
-| `action.loading_time` | number (ns) | The loading time of the action. See how it is calculated in the [User Action documentation][4]. |
+| `action.loading_time` | number (ns) | The loading time of the action. |
 | `action.long_task.count`        | number      | Count of all long tasks collected for this action. |
 | `action.resource.count`         | number      | Count of all resources collected for this action. |
 | `action.error.count`      | number      | Count of all errors collected for this action.|
