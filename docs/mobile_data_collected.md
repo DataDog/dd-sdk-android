@@ -238,7 +238,7 @@ Network errors include information about failing HTTP requests. The following fa
 
 
 [1]: /real_user_monitoring/android/configure_android_sdk/track_view
-[2]:/real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
+[2]: /real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
 [3]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
 [4]: /getting_started/tagging/unified_service_tagging/
 [5]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
