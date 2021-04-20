@@ -91,7 +91,7 @@ Note that in the credentials required for initialization, your application varia
 
     This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][9].
 
-    **Note**: If you also use multiple Interceptors, this one must be called first.
+    **Note**: If you also use multiple Interceptors, `DatadogInterceptor` must be called first.
 
 You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][10] (third-party providers, network requests). 
 

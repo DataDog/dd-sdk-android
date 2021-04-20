@@ -44,8 +44,6 @@ To control the data your application sends to Datadog RUM, you can specify a sam
     GlobalRum.registerIfAbsent(monitor)
 ```
 
-[1]:/real_user_monitoring/android/troubleshooting_android/#setup
-
 ## Sending data when device is offline
 
 RUM ensures availability of data when your user device is offline. In cases of low-network areas, or when the device battery is too low, all the RUM events are first stored on the local device in batches. Each batch follows the intake specification. They are sent as soon as the network is available, and the battery is high enough to ensure the Datadog SDK does not impact the end user's experience. If the network is not available while your application is in the foreground, or if an upload of data fails, the batch is kept until it can be sent successfully.
@@ -60,9 +58,16 @@ If you've been using the former SDK (version `0.1.x` or `0.2.x`), there are some
 
 ### Logger.Builder
 
-{{< tabs >}}
-    {{% tab "After" %}}
+Before
 
+```java
+    logger = new LoggerBuilder()
+        .withName("my-application-name") // This would set the service name
+        .withNetworkInfoLogging(this)
+        .build("my-api-key");
+```
+
+After
 
 ```java
     Datadog.initialize(context, "my-api-key");
@@ -77,19 +82,6 @@ If you've been using the former SDK (version `0.1.x` or `0.2.x`), there are some
             .build();
 ```
 
-{{% /tab %}}
-    {{% tab "Before" %}}
-
-
-```java
-    logger = new LoggerBuilder()
-        .withName("my-application-name") // This would set the service name
-        .withNetworkInfoLogging(this)
-        .build("my-api-key");
-```
-    {{% /tab %}}
-    {{< /tabs >}}
-
 
 ### Attributes
 
@@ -101,7 +93,7 @@ methods. These methods were renamed for consistency purposes, and are now `Logge
 ## Further Reading
 {{< partial name="whats-next/whats-next.html" >}}
 
-[1]: https://github.com/DataDog/dd-sdk-android/blob/master/docs/TROUBLESHOOTING.md
+[1]:/real_user_monitoring/android/troubleshooting_android/#setup
 
 
  

@@ -120,13 +120,13 @@ You can use the following methods in `Configuration.Builder` when creating the D
 | `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped. |
 | `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.  |
 | `setFirstPartyHosts()` | Define hosts that have tracing enabled and have RUM resources categorized as `first-party`. |
-| `useEUEndpoints()` | Switch target data to EU endpoints. |
-| `useUSEndpoints()` | Switch target data to US endpoints. |
-| `useGovEndpoints()` | Switch target data to US1-FED endpoints. |
-| `setBatchSize([SMALL|MEDIUM|LARGE])` | Define the individual batch size for requests sent to Datadog. |
-| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Define the frequency for requests made to Datadog endpoints (if requests are available). |
-| `sampleRumSessions(<samplingRate>)` | Set the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.) |
-| `setRumXxxEventMapper()` | Set the data scrubbing callbacks for views, actions, resources, and errors. |
+| `useEUEndpoints()` | Switches target data to EU endpoints. |
+| `useUSEndpoints()` | Switches target data to US endpoints. |
+| `useGovEndpoints()` | Switches target data to US1-FED endpoints. |
+| `setBatchSize([SMALL|MEDIUM|LARGE])` | Defines the individual batch size for requests sent to Datadog. |
+| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Defines the frequency for requests made to Datadog endpoints (if requests are available). |
+| `sampleRumSessions(<samplingRate>)` | Sets the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.) |
+| `setRumXxxEventMapper()` | Sets the data scrubbing callbacks for views, actions, resources, and errors. |
 
 
  
