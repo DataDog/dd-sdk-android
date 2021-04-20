@@ -34,7 +34,10 @@ To ensure the safety of your data, you must use a client token: you cannot use [
        override fun onCreate() {
            super.onCreate()
 
-          val configuration = Configuration.Builder()
+           val configuration = Configuration.Builder(
+            rumEnabled = true,
+            crashReportsEnabled = true
+        )
                         .trackInteractions()
                         .trackLongTasks(durationThresold)
                         .useViewTrackingStrategy(strategy)
@@ -53,7 +56,10 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val configuration = Configuration.Builder()
+         val configuration = Configuration.Builder(
+            rumEnabled = true,
+            crashReportsEnabled = true
+        )
                         .trackInteractions()
                         .trackLongTasks(durationThresold)
                         .useViewTrackingStrategy(strategy)
@@ -70,7 +76,7 @@ class SampleApplication : Application() {
 
 Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments ,etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
-Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces.
+Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces. [Guide to uploading android source mapping files][8].
 
 4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
@@ -81,7 +87,7 @@ Note that in the credentials required for initialization, your application varia
     ```
 
 
-5. To track your OkHttp requests as resources, add the provided [Interceptor][8]:
+5. To track your OkHttp requests as resources, add the provided [Interceptor][9]:
 
     ```kotlin
     val okHttpClient =  OkHttpClient.Builder()
@@ -89,11 +95,11 @@ Note that in the credentials required for initialization, your application varia
         .build()
     ```
 
-    This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][9].
+    This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][10].
 
     **Note**: If you also use multiple Interceptors, `DatadogInterceptor` must be called first.
 
-You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][10] (third-party providers, network requests). 
+You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] (third-party providers, network requests). 
 
 
 ## Further Reading
@@ -107,6 +113,7 @@ You can further add an `EventListener` for the `OkHttpClient` to [automatically 
 [5]: /real_user_monitoring/android/configure_android_sdk/track_view
 [6]: /real_user_monitoring/android/troubleshooting_android/tracking_consent
 [7]: /real_user_monitoring/android/configure_android_sdk/initialization_parameters
-[8]: https://square.github.io/okhttp/interceptors/
-[9]: https://square.github.io/okhttp/events/
-[10]: /real_user_monitoring/android/configure_android_sdk/track_resource
+[8]: https://github.com/DataDog/dd-sdk-android-gradle-plugin/blob/main/docs/upload_mapping_file.md
+[9]: https://square.github.io/okhttp/interceptors/
+[10]: https://square.github.io/okhttp/events/
+[11]: /real_user_monitoring/android/configure_android_sdk/track_resource
