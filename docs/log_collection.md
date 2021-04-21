@@ -13,10 +13,6 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 1. Add the Gradle dependency by declaring the library as a dependency in the module-level `build.gradle` file:
 
     ```conf
-    repositories {
-        maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-    }
-
     dependencies {
         implementation "com.datadoghq:dd-sdk-android:x.x.x"
     }

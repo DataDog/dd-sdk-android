@@ -9,10 +9,6 @@ Send crash report for issues rising from the C/C++ code in your application.
 ## Setup
 
 ```conf
-repositories {
-    maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-}
-
 dependencies {
     implementation "com.datadoghq:dd-sdk-android:x.x.x"
     implementation "com.datadoghq:dd-sdk-android-ndk:x.x.x"

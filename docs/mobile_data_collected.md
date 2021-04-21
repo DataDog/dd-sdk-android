@@ -1,4 +1,4 @@
-#Mobile Data Collected
+# Mobile Data Collected
 
 The Datadog Real User Monitoring SDK generates six types of events:
 
