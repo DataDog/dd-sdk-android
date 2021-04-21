@@ -6,10 +6,6 @@ To include the Datadog integration for [Coil][1] in your project, add the
 following to your application's `build.gradle` file.
 
 ```
-repositories {
-    maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-}
-
 dependencies {
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android-coil:<latest-version>"

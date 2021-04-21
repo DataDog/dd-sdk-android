@@ -6,10 +6,6 @@ Take advantage of the Kotlin syntax to improve your usage of the dd-sdk-android 
 
 ## Setup
 ```conf
-repositories {
-    maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-}
-
 dependencies {
     implementation "com.datadoghq:dd-sdk-android:x.x.x"
     implementation "com.datadoghq:dd-sdk-android-ktx:x.x.x"

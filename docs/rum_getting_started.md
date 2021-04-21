@@ -8,10 +8,6 @@ Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real
 1. Declare [dd-sdk-android][1] as a dependency in your `build.gradle` file:
 
     ```conf
-    repositories {
-        maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-    }
-
     dependencies {
         implementation "com.datadoghq:dd-sdk-android:x.x.x"
     }

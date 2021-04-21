@@ -6,10 +6,6 @@ To include the Datadog extensions for Kotlin in your project, simply add the
 following to your application's `build.gradle` file.
 
 ```
-repositories {
-    maven { url "https://dl.bintray.com/datadog/datadog-maven" }
-}
-
 dependencies {
     implementation "com.datadoghq:dd-sdk-android:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android-ktx:<latest-version>"
