@@ -9,7 +9,7 @@ The Datadog Real User Monitoring SDK generates six types of events:
 | Resource  | 15 days   | Resources represents network requests to first-party hosts, APIs, 3rd party providers, and libraries in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`                                                                                           |
 | Error     | 30 days   | Error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
 | Action    | 30 days   | Action represents user activity in your mobile application (application launch, tap, swipe, back etc). Each action is attached with a unique `action.id` attached to the view it gets generated in.                                                                                                                                              |
-| Long Task |  | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
+| Long Task | 15 days | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
 
 The following diagram illustrates the RUM event hierarchy:
 
@@ -17,7 +17,7 @@ The following diagram illustrates the RUM event hierarchy:
 
 ## Default attributes
 
-RUM collects common attributes for all events and attributes specific to each event by default listed below [automatically][1]. You can also choose to enrich your user session data by tracking [additional events][2] or by [adding custom attributes][3] to default events specific to your application monitoring and business analytics needs.
+RUM collects common attributes for all events and attributes specific to each event listed below [automatically][1]. You can also choose to enrich your user session data by tracking [additional events][2] or by [adding custom attributes][3] to default events specific to your application monitoring and business analytics needs.
 
 
 ### Common core attributes
@@ -237,8 +237,8 @@ Network errors include information about failing HTTP requests. The following fa
 {{< partial name="whats-next/whats-next.html" >}}
 
 
-[1]: /real_user_monitoring/android/configure_android_sdk/track_view
-[2]: /real_user_monitoring/android/configure_android_sdk/enrich_user_sessions
+[1]: /real_user_monitoring/android/advanced_configuration/automatically-track-views
+[2]: /real_user_monitoring/android/advanced_configuration/enrich-user-sessions
 [3]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
 [4]: /getting_started/tagging/unified_service_tagging/
-[5]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
+[5]: /real_user_monitoring/android/advanced_configuration/#track-user-sessions
