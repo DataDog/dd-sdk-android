@@ -23,6 +23,7 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
 
     internal const val SERVICE_NAME = "dd-sdk-android"
     internal const val ENV_NAME = "prod"
+    private const val APPLICATION_PACKAGE_KEY = "application.name"
 
     // region SdkFeature
 
@@ -30,7 +31,7 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
         // The sdk logger might have already been initialized
         // while the feature was not yet initialized
         rebuildSdkLogger()
-        sdkLogger.addAttribute("application", CoreFeature.packageName)
+        sdkLogger.addAttribute(APPLICATION_PACKAGE_KEY, CoreFeature.packageName)
     }
 
     override fun onPostStopped() {
