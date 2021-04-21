@@ -16,7 +16,7 @@ This folder has dedicated documentation for:
 ## Insights
 * [Mobile Data Collected](mobile_data_collected.md)
 * [SDK Benchmarks](sdk_benchmarks.md)
-* [SDK Perfomance](sdk_performance.md)
+* [SDK Performance](sdk_performance.md)
 
 ## Troublehsooting
 * [Troubleshooting FAQs](troubleshooting_android.md)
