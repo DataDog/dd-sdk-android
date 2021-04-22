@@ -134,10 +134,9 @@ To automatically track your views (activities, fragments, etc.), provide a track
 For instance, to set each fragment as a distinct view, use the following configuration in your [setup][1]:
    
 ```kotlin
-           
-          val configuration = Configuration.Builder()
-                           .useViewTrackingStrategy(FragmentViewTrackingStrategy)
-                           .build()
+val configuration = Configuration.Builder()
+                 .useViewTrackingStrategy(FragmentViewTrackingStrategy)
+                 .build()
 ```
    
 **Tip**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
@@ -149,36 +148,36 @@ For instance, to set each fragment as a distinct view, use the following configu
 
 To get timing information in resources (third-party providers, network requests) such as time to first byte or DNS resolution, customize the `okHttpClient` to add the [EventListener][8] factory:
 
-    ```kotlin
-    val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor())
-        .eventListenerFactory(DatadogEventListener.Factory())
-        .build()
-    ```
+```kotlin
+val okHttpClient =  OkHttpClient.Builder()
+    .addInterceptor(DatadogInterceptor())
+    .eventListenerFactory(DatadogEventListener.Factory())
+    .build()
+```
 
 ### Automatically track long tasks
 
 Long running operations performed on the main thread can impact the visual performance and reactivity of your application. To track these operations, define the duration threshold above which a task is considered too long.
 
 
-    ```kotlin
-    val config = Configuration.Builder(rumEnabled=true)
-                        .trackLongTasks(durationThreshold)
-                        .build()
-    ```
+```kotlin
+val config = Configuration.Builder(rumEnabled=true)
+                    .trackLongTasks(durationThreshold)
+                    .build()
+```
 
 ## Modify or drop RUM events
 
 To modify some attributes in your RUM events, or to drop some of the events entirely before batching, provide an implementation of `EventMapper<T>` when initializing the SDK:
-   ```kotlin
-      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
-                        ...
-                        .setRumErrorEventMapper(rumErrorEventMapper)
-                        .setRumActionEventMapper(rumActionEventMapper)
-                        .setRumResourceEventMapper(rumResourceEventMapper)
-                        .setRumViewEventMapper(rumViewEventMapper)
-                        .build()
-   ```
+```kotlin
+val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+              ...
+              .setRumErrorEventMapper(rumErrorEventMapper)
+              .setRumActionEventMapper(rumActionEventMapper)
+              .setRumResourceEventMapper(rumResourceEventMapper)
+              .setRumViewEventMapper(rumViewEventMapper)
+              .build()
+```
    As you will notice when implementing the `EventMapper<T>` interface, only some of the attributes are modifiable for each event type as follows:
      
    | Event type    | Attribute key      | Description                                     |

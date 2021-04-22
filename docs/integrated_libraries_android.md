@@ -17,11 +17,11 @@ If you use Glide to load images in your application, take a look at Datadog's [d
 If you use Picasso, let it use your `OkHttpClient` for RUM and APM information about network requests made by Picasso.
  
 ```kotlin
-        val picasso = Picasso.Builder(context)
-                .downloader(OkHttp3Downloader(okHttpClient))
-                // …
-                .build()
-        Picasso.setSingletonInstance(picasso)
+val picasso = Picasso.Builder(context)
+        .downloader(OkHttp3Downloader(okHttpClient))
+        // …
+        .build()
+Picasso.setSingletonInstance(picasso)
 ```
  
 ### Retrofit
@@ -29,10 +29,10 @@ If you use Picasso, let it use your `OkHttpClient` for RUM and APM information a
 If you use Retrofit, let it use your `OkHttpClient` for RUM and APM information about network requests made with Retrofit.
  
 ```kotlin
-        val retrofitClient = Retrofit.Builder()
-                .client(okHttpClient)
-                // …
-                .build()
+val retrofitClient = Retrofit.Builder()
+        .client(okHttpClient)
+        // …
+        .build()
 ```
  
 ### SQLDelight
@@ -48,14 +48,14 @@ Doing this detects whenever a database is corrupted and sends a relevant
 RUM error event for it.
  
 ```kotlint
-   class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
-                                                     <DATABASE_NAME>, 
-                                                     <CursorFactory>, 
-                                                     <DATABASE_VERSION>, 
-                                                     DatadogDatabaseErrorHandler()) {
-                                // …
-   
-   }
+class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
+                                                 <DATABASE_NAME>, 
+                                                 <CursorFactory>, 
+                                                 <DATABASE_VERSION>, 
+                                                 DatadogDatabaseErrorHandler()) {
+                            // …
+
+}
 ```
  
 ### Apollo (GraphQL)
@@ -63,10 +63,10 @@ RUM error event for it.
 If you use Apollo, let it use your `OkHttpClient` for RUM and APM information about all the queries performed through Apollo client.
  
 ```kotlin
-        val apolloClient =  ApolloClient.builder()
-                 .okHttpClient(okHttpClient)
-                 .serverUrl(<APOLLO_SERVER_URL>)
-                 .build()
+val apolloClient =  ApolloClient.builder()
+         .okHttpClient(okHttpClient)
+         .serverUrl(<APOLLO_SERVER_URL>)
+         .build()
 ```
 
 ## Further reading
