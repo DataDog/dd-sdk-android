@@ -18,8 +18,9 @@ Declare [dd-sdk-android][1] and [gradle plugin][2] as a dependency in your `buil
 plugins {
     id("dd-sdk-android-gradle-plugin")
 }
-    dependencies { implementation "com.datadoghq:dd-sdk-android:x.x.x" 
-    }
+dependencies {
+    implementation "com.datadoghq:dd-sdk-android:x.x.x" 
+}
 buildscript {
     dependencies {
         classpath("com.datadoghq:dd-sdk-android-gradle-plugin:x.x.x")
