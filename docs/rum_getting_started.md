@@ -12,7 +12,7 @@ Datadog *Real User Monitoring (RUM)* enables you to visualize and analyze the re
 
 ### Declare SDK as dependency
 
-Declare [dd-sdk-android][1] and [gradle plugin][2] as a dependency in your `build.gradle` file:
+Declare [dd-sdk-android][1] and [gradle plugin][13] as a dependency in your `build.gradle` file:
 
 ```
 plugins {
@@ -39,10 +39,8 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 
 ### Initialize the library with application context
 
-    {{< tabs >}}
-    {{% tab "US" %}}
-
-   
+{{< tabs >}}
+{{% tab "US" %}}
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -63,8 +61,8 @@ class SampleApplication : Application() {
    }
 ```
 
-    {{% /tab %}}
-    {{% tab "EU" %}}
+{{% /tab %}}
+{{% tab "EU" %}}
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -85,8 +83,8 @@ class SampleApplication : Application() {
     }
 }
 ```
-    {{% /tab %}}
-    {{< /tabs >}}
+{{% /tab %}}
+{{< /tabs >}}
 
 Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments ,etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
@@ -96,24 +94,24 @@ Note that in the credentials required for initialization, your application varia
 
 Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
-    ```kotlin
+```kotlin
     val monitor = RumMonitor.Builder()
             .build()
     GlobalRum.registerIfAbsent(monitor)
-    ```
+```
 
 
-5. To track your OkHttp requests as resources, add the provided [Interceptor][9]:
+To track your OkHttp requests as resources, add the provided [Interceptor][9]:
 
-    ```kotlin
+```kotlin
     val okHttpClient =  OkHttpClient.Builder()
         .addInterceptor(DatadogInterceptor())
         .build()
-    ```
+```
 
-    This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][10].
+This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][10].
 
-    **Note**: If you also use multiple Interceptors, `DatadogInterceptor` must be called first.
+**Note**: If you also use multiple Interceptors, `DatadogInterceptor` must be called first.
 
 You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] (third-party providers, network requests). 
 
@@ -128,9 +126,10 @@ You can further add an `EventListener` for the `OkHttpClient` to [automatically 
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
 [5]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
 [6]: /real_user_monitoring/android/troubleshooting/#set-tracking-consent-gdpr-compliance
-[7]: /real_user_monitoring/android/configure_android_sdk/initialization_parameters
-[8]: https://github.com/DataDog/dd-sdk-android-gradle-plugin/blob/main/docs/upload_mapping_file.md
+[7]: /real_user_monitoring/android/advanced_configuration/#initialization-parameters
+[8]: /real_user_monitoring/error_tracking/android/#upload-your-mapping-file
 [9]: https://square.github.io/okhttp/interceptors/
 [10]: /real_user_monitoring/android/advanced_configuration/#custom-views
-[11]: /real_user_monitoring/android/advanced_configuration/automatically-track-network-requests
+[11]: /real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
 [12]: https://raw.githubusercontent.com/DataDog/dd-sdk-android/master/docs/images/create_rum_application.png
+[13]: https://github.com/DataDog/dd-sdk-android-gradle-plugin

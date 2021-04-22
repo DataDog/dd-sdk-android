@@ -126,7 +126,7 @@ RUM action, error, resource and long task events contain information about the a
 | Metric                              | Type        | Description                                                                                          |
 |----------------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `view.time_spent`                             | number (ns) | Time spent on the this view.                                    |
-| `view.loading_time`                             | number (ns) |  |
+| `view.loading_time`                             | number (ns) |  | Loading time of the view (ns)
 | `view.long_task.count`        | number      | Count of all long tasks collected for this view.                                |
 | `view.error.count`            | number      | Count of all errors collected for this view.                                    |
 | `view.resource.count`         | number      | Count of all resources collected for this view.                                 |
@@ -237,8 +237,8 @@ Network errors include information about failing HTTP requests. The following fa
 {{< partial name="whats-next/whats-next.html" >}}
 
 
-[1]: /real_user_monitoring/android/advanced_configuration/automatically-track-views
-[2]: /real_user_monitoring/android/advanced_configuration/enrich-user-sessions
-[3]: /real_user_monitoring/android/configure_android_sdk/track_global_custom_attributes
+[1]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
+[2]: /real_user_monitoring/android/advanced_configuration/#enrich-user-sessions
+[3]: /real_user_monitoring/android/advanced_configuration/#track-custom-global-attributes
 [4]: /getting_started/tagging/unified_service_tagging/
 [5]: /real_user_monitoring/android/advanced_configuration/#track-user-sessions
