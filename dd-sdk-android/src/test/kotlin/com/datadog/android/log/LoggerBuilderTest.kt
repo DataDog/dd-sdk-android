@@ -22,9 +22,9 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -58,8 +58,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LoggerBuilderTest {
 
-    lateinit var mockContext: Context
-
     @TempDir
     lateinit var tempRootDir: File
 
@@ -68,10 +66,9 @@ internal class LoggerBuilderTest {
 
     @BeforeEach
     fun `set up`() {
-        mockContext = mockContext("fakePackageName", "")
-        whenever(mockContext.filesDir) doReturn tempRootDir
+        whenever(appContext.mockInstance.filesDir) doReturn tempRootDir
 
-        LogsFeature.initialize(mockContext, fakeConfig)
+        LogsFeature.initialize(appContext.mockInstance, fakeConfig)
     }
 
     @AfterEach
@@ -101,7 +98,7 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
-        assertThat(handler.logGenerator.loggerName).isEqualTo(coreFeature.fakePackageName)
+        assertThat(handler.logGenerator.loggerName).isEqualTo(appContext.fakePackageName)
         assertThat(handler.logGenerator.networkInfoProvider).isNull()
         assertThat(handler.writer).isSameAs(LogsFeature.persistenceStrategy.getWriter())
         assertThat(handler.bundleWithTraces).isTrue()
@@ -251,12 +248,13 @@ internal class LoggerBuilderTest {
     }
 
     companion object {
-        val coreFeature = CoreFeatureTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(appContext, coreFeature)
         }
     }
 }

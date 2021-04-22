@@ -24,9 +24,9 @@ import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -72,8 +72,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogTest {
 
-    lateinit var mockAppContext: Application
-
     lateinit var mockDevLogHandler: LogHandler
 
     @Mock
@@ -83,13 +81,7 @@ internal class DatadogTest {
     lateinit var fakeToken: String
 
     @StringForgery
-    lateinit var fakePackageName: String
-
-    @StringForgery
     lateinit var fakeVariant: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
@@ -103,10 +95,9 @@ internal class DatadogTest {
     fun `set up`(forge: Forge) {
         fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         mockDevLogHandler = mockDevLogHandler()
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.filesDir).thenReturn(tempRootDir)
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
-        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+
+        whenever(appContext.mockInstance.filesDir).thenReturn(tempRootDir)
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }
 
@@ -126,7 +117,7 @@ internal class DatadogTest {
         Datadog.invokeMethod("stop")
 
         // Then
-        verifyZeroInteractions(mockAppContext)
+        verifyZeroInteractions(appContext.mockInstance)
     }
 
     @Test
@@ -192,7 +183,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -208,7 +199,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
@@ -234,13 +225,13 @@ internal class DatadogTest {
         @Forgery applicationId: UUID
     ) {
         // Given
-        stubContextAsNotDebuggable(mockAppContext)
+        stubContextAsNotDebuggable(appContext.mockInstance)
         val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
         val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -254,7 +245,7 @@ internal class DatadogTest {
         @Forgery applicationId: UUID
     ) {
         // Given
-        stubContextAsDebuggable(mockAppContext)
+        stubContextAsDebuggable(appContext.mockInstance)
         val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
         val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
             .build()
@@ -262,7 +253,7 @@ internal class DatadogTest {
         // When
         assertThatThrownBy {
             Datadog.initialize(
-                mockAppContext,
+                appContext.mockInstance,
                 fakeConsent,
                 config
             )
@@ -287,7 +278,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -315,7 +306,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -338,7 +329,7 @@ internal class DatadogTest {
         ).build()
 
         // When
-        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -365,7 +356,7 @@ internal class DatadogTest {
         ).build()
 
         // When
-        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -397,7 +388,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, credentials, configuration, fakeConsent)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -419,7 +410,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(appContext.mockInstance, config)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -435,7 +426,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(CoreFeature.trackingConsentProvider.getConsent())
@@ -451,7 +442,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -469,7 +460,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -490,7 +481,7 @@ internal class DatadogTest {
             .build()
 
         // When
-        Datadog.initialize(mockAppContext, config)
+        Datadog.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -505,10 +496,9 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`() {
-
-        val source = "react-native"
-
+    fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
+        @StringForgery source: String
+    ) {
         // Given
         val config = Configuration.Builder(
             logsEnabled = true,
@@ -521,7 +511,7 @@ internal class DatadogTest {
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
 
         // When
-        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(source)
@@ -543,7 +533,7 @@ internal class DatadogTest {
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
 
         // When
-        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -565,7 +555,7 @@ internal class DatadogTest {
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
 
         // When
-        Datadog.initialize(mockAppContext, credentials, config, TrackingConsent.GRANTED)
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -588,12 +578,13 @@ internal class DatadogTest {
     // endregion
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(mainLooper)
+            return listOf(appContext, mainLooper)
         }
     }
 }

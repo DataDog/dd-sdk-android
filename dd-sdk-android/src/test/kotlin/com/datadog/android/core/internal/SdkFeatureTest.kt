@@ -17,9 +17,9 @@ import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -61,8 +61,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     lateinit var testedFeature: F
 
-    lateinit var mockAppContext: Application
-
     @Mock
     lateinit var mockPersistenceStrategy: PersistenceStrategy<T>
 
@@ -79,9 +77,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-
-        mockAppContext = mockContext("fakePackageName", "fakePackageVersion")
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
         whenever(mockPersistenceStrategy.getReader()) doReturn mockReader
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
 
@@ -101,7 +96,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -110,7 +105,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -130,7 +125,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         argumentCaptor<DatadogPluginConfig> {
@@ -138,10 +133,10 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
                 verify(it).register(capture())
             }
             allValues.forEach {
-                assertThat(it.context).isEqualTo(mockAppContext)
+                assertThat(it.context).isEqualTo(appContext.mockInstance)
                 assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
                 assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
-                assertThat(it.context).isEqualTo(mockAppContext)
+                assertThat(it.context).isEqualTo(appContext.mockInstance)
                 assertThat(it.trackingConsent).isEqualTo(fakeConsent)
             }
         }
@@ -153,7 +148,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         fakeConfigurationFeature.plugins.forEach {
@@ -165,7 +160,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     fun `𝕄 unregister plugins 𝕎 stop()`() {
         // Given
         assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
         fakeConfigurationFeature.plugins.forEach {
             verify(it).register(any())
         }
@@ -183,7 +178,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -197,7 +192,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -212,7 +207,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -227,12 +222,12 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     ) {
         // Given
         val otherConfig = forgeConfiguration(forge)
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
         val persistenceStrategy = testedFeature.persistenceStrategy
         val uploadScheduler = testedFeature.uploadScheduler
 
         // When
-        testedFeature.initialize(mockAppContext, otherConfig)
+        testedFeature.initialize(appContext.mockInstance, otherConfig)
 
         // Then
         assertThat(testedFeature.persistenceStrategy).isSameAs(persistenceStrategy)
@@ -245,7 +240,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         CoreFeature.isMainProcess = false
 
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
@@ -264,12 +259,13 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     companion object {
-        val coreFeature = CoreFeatureTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(appContext, coreFeature)
         }
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.config
 
+import android.content.Context
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -21,13 +22,12 @@ import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
-internal class CoreFeatureTestConfiguration() : TestConfiguration {
+internal class CoreFeatureTestConfiguration<T : Context>(
+    val appContext: ApplicationContextTestConfiguration<T>
+) : TestConfiguration {
 
     lateinit var fakeServiceName: String
-    lateinit var fakePackageName: String
-    lateinit var fakePackageVersion: String
     lateinit var fakeEnvName: String
-    lateinit var fakeVariant: String
     lateinit var fakeRumApplicationId: String
     lateinit var fakeSourceName: String
 
@@ -43,7 +43,6 @@ internal class CoreFeatureTestConfiguration() : TestConfiguration {
     // region CoreFeatureTestConfiguration
 
     override fun setUp(forge: Forge) {
-        println("CoreFeatureTestConfiguration.setUp()")
         createFakeInfo(forge)
         createMocks()
         configureCoreFeature()
@@ -60,9 +59,6 @@ internal class CoreFeatureTestConfiguration() : TestConfiguration {
     private fun createFakeInfo(forge: Forge) {
         fakeEnvName = forge.anAlphabeticalString()
         fakeServiceName = forge.anAlphabeticalString()
-        fakePackageName = forge.aStringMatching("[a-z]{2,4}(\\.[a-z]{3,8}){2,4}")
-        fakePackageVersion = forge.aStringMatching("[0-9](\\.[0-9]{1,3}){2,3}")
-        fakeVariant = forge.anElementFrom(forge.anAlphabeticalString(), "")
         fakeRumApplicationId = forge.getForgery<UUID>().toString()
         fakeSourceName = forge.anAlphabeticalString()
     }
@@ -82,9 +78,9 @@ internal class CoreFeatureTestConfiguration() : TestConfiguration {
         CoreFeature.isMainProcess = true
         CoreFeature.envName = fakeEnvName
         CoreFeature.serviceName = fakeServiceName
-        CoreFeature.packageName = fakePackageName
-        CoreFeature.packageVersion = fakePackageVersion
-        CoreFeature.variant = fakeVariant
+        CoreFeature.packageName = appContext.fakePackageName
+        CoreFeature.packageVersion = appContext.fakeVersionName
+        CoreFeature.variant = appContext.fakeVariant
         CoreFeature.rumApplicationId = fakeRumApplicationId
         CoreFeature.sourceName = fakeSourceName
 

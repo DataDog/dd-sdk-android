@@ -10,7 +10,6 @@ import android.util.Log
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -131,12 +130,11 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, coreFeature)
+            return listOf(appContext, coreFeature, rumMonitor)
         }
     }
 }

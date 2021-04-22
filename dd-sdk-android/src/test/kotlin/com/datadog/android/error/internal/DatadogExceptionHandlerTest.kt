@@ -6,11 +6,10 @@
 
 package com.datadog.android.error.internal
 
-import android.app.Application
+import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -31,11 +30,11 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -121,9 +120,8 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        val mockContext: Application = mockContext()
         Datadog.initialize(
-            mockContext,
+            appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -146,7 +144,7 @@ internal class DatadogExceptionHandlerTest {
                 CoreFeature.packageVersion
             ),
             writer = mockLogWriter,
-            appContext = mockContext
+            appContext = appContext.mockInstance
         )
         testedHandler.register()
     }
@@ -181,7 +179,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
                 .hasExactlyAttributes(
@@ -244,7 +242,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
                 .hasExactlyAttributes(
@@ -279,7 +277,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
                 .hasExactlyAttributes(
@@ -322,7 +320,7 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
                 .hasExactlyAttributes(
@@ -443,13 +441,14 @@ internal class DatadogExceptionHandlerTest {
     }
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, mainLooper)
+            return listOf(appContext, rumMonitor, mainLooper)
         }
     }
 }

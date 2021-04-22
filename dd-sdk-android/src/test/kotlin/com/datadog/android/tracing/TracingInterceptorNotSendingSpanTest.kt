@@ -14,9 +14,9 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -109,8 +109,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     lateinit var mockDevLogHandler: LogHandler
 
-    lateinit var mockAppContext: Context
-
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
@@ -136,12 +134,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.Tracing
 
-    @StringForgery
-    lateinit var fakePackageName: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -161,9 +153,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        println("TracingInterceptorNotSendingSpanTest.setUp()")
         mockDevLogHandler = mockDevLogHandler()
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -179,7 +169,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
         TracesFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeConfig
         )
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
@@ -720,12 +710,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
 
-        val coreFeature = CoreFeatureTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(appContext, coreFeature)
         }
     }
 }

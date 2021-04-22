@@ -11,18 +11,16 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -37,14 +35,6 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>() {
-
-    lateinit var mockAppContext: Application
-
-    @BeforeEach
-    override fun `set up`(forge: Forge) {
-        super.`set up`(forge)
-        mockAppContext = mockContext("fakePackageName", "fakePackageVersion")
-    }
 
     override fun uploader(): RumOkHttpUploader {
         return RumOkHttpUploader(
@@ -68,20 +58,21 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
             "&${DataOkHttpUploader.QP_SOURCE}=${coreFeature.fakeSourceName}" +
             "&${RumOkHttpUploader.QP_TAGS}=" +
             "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}," +
-            "${RumAttributes.APPLICATION_VERSION}:${coreFeature.fakePackageVersion}," +
+            "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
             "${RumAttributes.ENV}:${coreFeature.fakeEnvName}," +
-            "${RumAttributes.VARIANT}:${coreFeature.fakeVariant}" +
+            "${RumAttributes.VARIANT}:${appContext.fakeVariant}" +
             "$"
     }
 
     companion object {
-        val coreFeature = CoreFeatureTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(appContext, coreFeature)
         }
     }
 }

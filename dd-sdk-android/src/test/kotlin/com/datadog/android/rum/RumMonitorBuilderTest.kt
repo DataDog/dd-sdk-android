@@ -14,9 +14,9 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -48,9 +47,6 @@ internal class RumMonitorBuilderTest {
 
     lateinit var testedBuilder: RumMonitor.Builder
 
-    @Mock
-    lateinit var mockContext: Context
-
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.RUM
 
@@ -59,8 +55,7 @@ internal class RumMonitorBuilderTest {
     @BeforeEach
     fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
-        mockContext = mockContext()
-        RumFeature.initialize(mockContext, fakeConfig)
+        RumFeature.initialize(appContext.mockInstance, fakeConfig)
 
         testedBuilder = RumMonitor.Builder()
     }
@@ -133,12 +128,13 @@ internal class RumMonitorBuilderTest {
     }
 
     companion object {
-        val coreFeature = CoreFeatureTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(coreFeature)
+            return listOf(appContext, coreFeature)
         }
     }
 }

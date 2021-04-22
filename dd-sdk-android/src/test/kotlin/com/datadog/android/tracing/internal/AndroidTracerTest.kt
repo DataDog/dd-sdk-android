@@ -6,18 +6,18 @@
 
 package com.datadog.android.tracing.internal
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
@@ -69,8 +69,6 @@ internal class AndroidTracerTest {
 
     lateinit var testedTracerBuilder: AndroidTracer.Builder
 
-    lateinit var mockAppContext: Application
-
     lateinit var fakeToken: String
     lateinit var fakeEnvName: String
     lateinit var fakeServiceName: String
@@ -86,9 +84,8 @@ internal class AndroidTracerTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
-        mockAppContext = mockContext()
-        TracesFeature.initialize(mockAppContext, Configuration.DEFAULT_TRACING_CONFIG)
-        RumFeature.initialize(mockAppContext, Configuration.DEFAULT_RUM_CONFIG)
+        TracesFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
+        RumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
     }
@@ -402,14 +399,15 @@ internal class AndroidTracerTest {
     // endregion
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, mainLooper, coreFeature)
+            return listOf(appContext, coreFeature, rumMonitor, mainLooper)
         }
     }
 }

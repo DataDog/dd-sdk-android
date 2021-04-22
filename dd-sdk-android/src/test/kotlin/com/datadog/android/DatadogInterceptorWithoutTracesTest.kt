@@ -20,11 +20,11 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockContext
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
@@ -96,8 +96,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var mockDevLogHandler: LogHandler
 
-    lateinit var mockAppContext: Context
-
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
@@ -129,12 +127,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Forgery
     lateinit var fakeRumConfig: Configuration.Feature.RUM
 
-    @StringForgery
-    lateinit var fakePackageName: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -151,7 +143,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockDevLogHandler = mockDevLogHandler()
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -173,11 +164,11 @@ internal class DatadogInterceptorWithoutTracesTest {
             mockRumAttributesProvider
         ) { mockLocalTracer }
         TracesFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeConfig
         )
         RumFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeRumConfig
         )
 
@@ -384,13 +375,14 @@ internal class DatadogInterceptorWithoutTracesTest {
     // endregion
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, coreFeature)
+            return listOf(appContext, coreFeature, rumMonitor)
         }
     }
 }

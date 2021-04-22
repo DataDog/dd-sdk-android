@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
+import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
@@ -25,12 +26,12 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -472,7 +473,7 @@ internal class DatadogLogHandlerTest {
     fun `it will add the span id and trace id if we active an active tracer`(forge: Forge) {
         // Given
         Datadog.initialize(
-            mockContext(),
+            appContext.mockInstance,
             Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -532,7 +533,7 @@ internal class DatadogLogHandlerTest {
     fun `it will add the Rum context`(forge: Forge) {
         // Given
         Datadog.initialize(
-            mockContext(),
+            appContext.mockInstance,
             Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -689,13 +690,14 @@ internal class DatadogLogHandlerTest {
     }
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, mainLooper)
+            return listOf(appContext, rumMonitor, mainLooper)
         }
     }
 }

@@ -15,9 +15,9 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -57,13 +57,10 @@ internal class WorkManagerUtilsTest {
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
-    lateinit var mockAppContext: Application
-
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockAppContext = mockContext()
         Datadog.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -96,7 +93,7 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // When
-        cancelUploadWorker(mockContext())
+        cancelUploadWorker(appContext.mockInstance)
 
         // Then
         verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
@@ -105,7 +102,7 @@ internal class WorkManagerUtilsTest {
     @Test
     fun `it will handle the cancel exception if WorkManager was not correctly instantiated`() {
         // When
-        cancelUploadWorker(mockContext())
+        cancelUploadWorker(appContext.mockInstance)
 
         // Then
         verifyZeroInteractions(mockWorkManager)
@@ -117,7 +114,7 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // When
-        triggerUploadWorker(mockContext())
+        triggerUploadWorker(appContext.mockInstance)
 
         // Then
         verify(mockWorkManager).enqueueUniqueWork(
@@ -133,19 +130,20 @@ internal class WorkManagerUtilsTest {
     @Test
     fun `it will handle the trigger exception if WorkManager was not correctly instantiated`() {
         // When
-        triggerUploadWorker(mockContext())
+        triggerUploadWorker(appContext.mockInstance)
 
         // Then
         verifyZeroInteractions(mockWorkManager)
     }
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(mainLooper)
+            return listOf(appContext, mainLooper)
         }
     }
 }

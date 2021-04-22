@@ -15,7 +15,10 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.utils.mockContext
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -26,6 +29,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -39,14 +43,14 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ProcessLifecycleCallbackTest {
 
     lateinit var testedCallback: ProcessLifecycleCallback
-
-    lateinit var mockContext: Context
 
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
@@ -56,8 +60,7 @@ internal class ProcessLifecycleCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        mockContext = mockContext()
-        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, mockContext)
+        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, appContext.mockInstance)
     }
 
     @AfterEach
@@ -146,5 +149,15 @@ internal class ProcessLifecycleCallbackTest {
 
         // Then
         verifyZeroInteractions(mockWorkManager)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext)
+        }
     }
 }

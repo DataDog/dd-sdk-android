@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.RumAttributes
@@ -15,6 +16,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -66,7 +68,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         factory: () -> Tracer
     ): TracingInterceptor {
         RumFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeRumConfig
         )
         return DatadogInterceptor(
@@ -84,7 +86,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
-        println("DatadogInterceptorTest.setUp()")
         super.`set up`(forge)
         fakeAttributes = forge.exhaustiveAttributes()
         whenever(
@@ -211,13 +212,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, coreFeature)
+            return listOf(appContext, coreFeature, rumMonitor)
         }
     }
 }

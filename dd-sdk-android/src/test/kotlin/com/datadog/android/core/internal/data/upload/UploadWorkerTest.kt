@@ -25,9 +25,9 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -64,9 +64,6 @@ import org.mockito.quality.Strictness
 internal class UploadWorkerTest {
 
     lateinit var testedWorker: Worker
-
-    @Mock
-    lateinit var mockContext: Context
 
     @Mock
     lateinit var mockLogsStrategy: PersistenceStrategy<LogEvent>
@@ -114,9 +111,8 @@ internal class UploadWorkerTest {
         whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReportsReader
         whenever(mockRumStrategy.getReader()) doReturn mockRumReader
 
-        mockContext = mockContext()
         Datadog.initialize(
-            mockContext,
+            appContext.mockInstance,
             Credentials("CLIENT_TOKEN", "ENVIRONMENT", "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -137,7 +133,7 @@ internal class UploadWorkerTest {
         RumFeature.uploader = mockRumUploader
 
         testedWorker = UploadWorker(
-            mockContext,
+            appContext.mockInstance,
             fakeWorkerParameters
         )
     }
@@ -419,12 +415,13 @@ internal class UploadWorkerTest {
     }
 
     companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(mainLooper)
+            return listOf(appContext, mainLooper)
         }
     }
 }
