@@ -1,36 +1,54 @@
 # Getting Started with Android RUM Collection
 
-Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
+Datadog *Real User Monitoring (RUM)* enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
 
 ## Setup
 
+1. Declare SDK as a dependency.
+2. Specify application details in UI.
+3. Initialize the library with application context.
+4. Initialize RUM Monitor, Interceptor and start sending data.
 
-1. Declare [dd-sdk-android][1] as a dependency in your `build.gradle` file:
 
-    ```conf
+### Declare SDK as dependency
+
+Declare [dd-sdk-android][1] and [gradle plugin][2] as a dependency in your `build.gradle` file:
+
+```
+plugins {
+    id("dd-sdk-android-gradle-plugin")
+}
+dependencies {
+    implementation "com.datadoghq:dd-sdk-android:x.x.x" 
+}
+buildscript {
     dependencies {
-        implementation "com.datadoghq:dd-sdk-android:x.x.x"
+        classpath("com.datadoghq:dd-sdk-android-gradle-plugin:x.x.x")
     }
-    ```
+}
+```
 
-2. [Specify application details in Datadog][2] to generate a unique Datadog application ID and client token.
+### Specify application details in UI
 
-{{< img src="docs/images/screenshot_rum.png" alt="RUM Event hierarchy" style="width:50%;border:none" >}}
+1. Select UX Monitoring -> RUM Applications -> New Application
+2. Choose `android` as your Application Type in [Datadog UI][2] and provide a new application name to generate a unique Datadog application ID and client token.
 
-To ensure the safety of your data, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library, as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client Token documentation][4].
+![image][12]
 
-3. Initialize the library with application context and start sending data:
+To ensure the safety of your data, you must use a client token. You cannot use only [Datadog API keys][3] to configure the `dd-sdk-android` library, as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client Token documentation][4].
+
+### Initialize the library with application context
 
     {{< tabs >}}
     {{% tab "US" %}}
 
    
 ```kotlin
-   class SampleApplication : Application() {
-       override fun onCreate() {
-           super.onCreate()
+class SampleApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
 
-           val configuration = Configuration.Builder(
+        val configuration = Configuration.Builder(
             rumEnabled = true,
             crashReportsEnabled = true
         )
@@ -74,7 +92,9 @@ Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all
 
 Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces. For more information see the [guide to uploading Android source mapping files][8].
 
-4. Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
+### Initialize RUM Monitor and Interceptor
+
+Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
     ```kotlin
     val monitor = RumMonitor.Builder()
@@ -103,13 +123,14 @@ You can further add an `EventListener` for the `OkHttpClient` to [automatically 
 {{< partial name="whats-next/whats-next.html" >}}
 
 [1]: https://github.com/DataDog/dd-sdk-android
-[2]: https://app.datadoghq.com/rum/create
+[2]: https://app.datadoghq.com/rum/application/create
 [3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
-[5]: /real_user_monitoring/android/configure_android_sdk/track_view
-[6]: /real_user_monitoring/android/troubleshooting_android/tracking_consent
+[5]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
+[6]: /real_user_monitoring/android/troubleshooting/#set-tracking-consent-gdpr-compliance
 [7]: /real_user_monitoring/android/configure_android_sdk/initialization_parameters
 [8]: https://github.com/DataDog/dd-sdk-android-gradle-plugin/blob/main/docs/upload_mapping_file.md
 [9]: https://square.github.io/okhttp/interceptors/
-[10]: https://square.github.io/okhttp/events/
-[11]: /real_user_monitoring/android/configure_android_sdk/track_resource
+[10]: /real_user_monitoring/android/advanced_configuration/#custom-views
+[11]: /real_user_monitoring/android/advanced_configuration/automatically-track-network-requests
+[12]: https://raw.githubusercontent.com/DataDog/dd-sdk-android/master/docs/images/create_rum_application.png
