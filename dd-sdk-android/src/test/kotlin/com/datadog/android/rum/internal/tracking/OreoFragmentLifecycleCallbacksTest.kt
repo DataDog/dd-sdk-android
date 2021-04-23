@@ -16,8 +16,6 @@ import android.app.FragmentManager
 import android.os.Build
 import android.view.Window
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
@@ -38,7 +36,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -110,12 +107,6 @@ internal class OreoFragmentLifecycleCallbacksTest {
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
     }
 
     // region Track View Loading Time

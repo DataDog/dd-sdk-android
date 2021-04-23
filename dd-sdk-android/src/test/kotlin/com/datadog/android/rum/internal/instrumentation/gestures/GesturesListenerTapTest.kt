@@ -14,13 +14,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
@@ -36,23 +35,18 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(
-        MockitoExtension::class,
-        ForgeExtension::class
-    )
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     lateinit var mockDevLogHandler: LogHandler
 
@@ -60,7 +54,6 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     override fun `set up`() {
         super.`set up`()
         mockDevLogHandler = mockDevLogHandler()
-        GlobalRum.registerIfAbsent(mockRumMonitor)
     }
 
     @Test
@@ -277,7 +270,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                 Log.INFO,
                 GesturesListener.MSG_NO_TARGET_TAP
             )
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -386,7 +379,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -435,7 +428,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(mockRumMonitor).addUserAction(
+        verify(rumMonitor.mockInstance).addUserAction(
             RumActionType.TAP,
             targetName(validTarget, expectedResourceName),
             expectedAttributes
@@ -496,7 +489,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(mockRumMonitor).addUserAction(
+        verify(rumMonitor.mockInstance).addUserAction(
             RumActionType.TAP,
             targetName(validTarget, expectedResourceName),
             expectedAttributes
@@ -506,7 +499,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     // region Internal
 
     private fun verifyMonitorCalledWithUserAction(target: View, expectedResourceName: String) {
-        verify(mockRumMonitor).addUserAction(
+        verify(rumMonitor.mockInstance).addUserAction(
             eq(RumActionType.TAP),
             argThat { startsWith("${target.javaClass.simpleName}(") },
             argThat {

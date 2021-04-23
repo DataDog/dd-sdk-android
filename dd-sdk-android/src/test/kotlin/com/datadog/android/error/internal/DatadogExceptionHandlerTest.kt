@@ -6,11 +6,10 @@
 
 package com.datadog.android.error.internal
 
-import android.app.Application
+import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
-import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -29,19 +28,18 @@ import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.prepareMainLooper
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -58,7 +56,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -78,7 +75,8 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -103,9 +101,6 @@ internal class DatadogExceptionHandlerTest {
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
-
     @Forgery
     lateinit var fakeThrowable: Throwable
 
@@ -125,10 +120,8 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        val mockContext: Application = mockContext()
-        prepareMainLooper()
         Datadog.initialize(
-            mockContext,
+            appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, "", null),
             Configuration.Builder(
                 logsEnabled = true,
@@ -151,7 +144,7 @@ internal class DatadogExceptionHandlerTest {
                 CoreFeature.packageVersion
             ),
             writer = mockLogWriter,
-            appContext = mockContext
+            appContext = appContext.mockInstance
         )
         testedHandler.register()
     }
@@ -161,11 +154,7 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.invokeMethod("stop")
-        GlobalTracer.get().setFieldValue("isRegistered", false)
-        GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
-        GlobalRum.isRegistered.set(false)
-        GlobalRum.monitor = NoOpRumMonitor()
-        disposeMainLooper()
+        GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
     @Test
@@ -190,10 +179,16 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
-                .hasExactlyAttributes(emptyMap())
+                .hasExactlyAttributes(
+                    mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
         }
         verifyZeroInteractions(mockPreviousHandler)
     }
@@ -230,8 +225,8 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M log exception W caught { exception with message }`() {
         val currentThread = Thread.currentThread()
-
         val now = System.currentTimeMillis()
+
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         argumentCaptor<LogEvent> {
@@ -247,10 +242,16 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
-                .hasExactlyAttributes(emptyMap())
+                .hasExactlyAttributes(
+                    mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -258,9 +259,7 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M log exception W caught { exception without message }`(forge: Forge) {
         val currentThread = Thread.currentThread()
-
         val now = System.currentTimeMillis()
-
         val throwableNoMessage = forge.aThrowableWithoutMessage()
 
         testedHandler.uncaughtException(currentThread, throwableNoMessage)
@@ -278,10 +277,16 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
-                .hasExactlyAttributes(emptyMap())
+                .hasExactlyAttributes(
+                    mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwableNoMessage)
     }
@@ -315,10 +320,16 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
                     )
                 )
-                .hasExactlyAttributes(emptyMap())
+                .hasExactlyAttributes(
+                    mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                    )
+                )
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }
@@ -342,7 +353,10 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyAttributes(
                     mapOf(
                         LogAttributes.DD_TRACE_ID to tracer.traceId,
-                        LogAttributes.DD_SPAN_ID to tracer.spanId
+                        LogAttributes.DD_SPAN_ID to tracer.spanId,
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
                     )
                 )
         }
@@ -352,11 +366,10 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M register RUM Error with crash W RumMonitor registered { exception with message }`() {
         val currentThread = Thread.currentThread()
-        GlobalRum.registerIfAbsent(mockRumMonitor)
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        verify(mockRumMonitor).addCrash(
+        verify(rumMonitor.mockInstance).addCrash(
             "Application crash detected: " + fakeThrowable.message,
             RumErrorSource.SOURCE,
             fakeThrowable
@@ -369,13 +382,11 @@ internal class DatadogExceptionHandlerTest {
         forge: Forge
     ) {
         val currentThread = Thread.currentThread()
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-
         val throwableNoMessage = forge.aThrowableWithoutMessage()
 
         testedHandler.uncaughtException(currentThread, throwableNoMessage)
 
-        verify(mockRumMonitor).addCrash(
+        verify(rumMonitor.mockInstance).addCrash(
             "Application crash detected",
             RumErrorSource.SOURCE,
             throwableNoMessage
@@ -384,12 +395,9 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M add current RUM information W GlobalRum is active`(
-        @Forgery rumContext: RumContext
-    ) {
+    fun `M not add RUM information W no RUM Monitor registered`() {
         val currentThread = Thread.currentThread()
-        GlobalRum.updateRumContext(rumContext)
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.isRegistered.set(false)
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
@@ -397,13 +405,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
 
             assertThat(lastValue)
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumContext.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumContext.viewId
-                    )
-                )
+                .hasExactlyAttributes(emptyMap())
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
@@ -436,5 +438,17 @@ internal class DatadogExceptionHandlerTest {
             message = this.message,
             stack = this.stackTraceToString()
         )
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, rumMonitor, mainLooper)
+        }
     }
 }

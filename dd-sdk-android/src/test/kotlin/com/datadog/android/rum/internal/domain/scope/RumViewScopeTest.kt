@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.content.Context
 import android.util.Log
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -23,11 +23,16 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -48,7 +53,6 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -61,7 +65,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -119,9 +124,9 @@ internal class RumViewScopeTest {
         fakeEvent = mockEvent()
         fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
 
-        mockCoreFeature()
-        whenever(CoreFeature.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(CoreFeature.networkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
+            .doReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -137,12 +142,6 @@ internal class RumViewScopeTest {
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        CoreFeature.stop()
-        GlobalRum.globalAttributes.clear()
     }
 
     // region Context
@@ -2955,4 +2954,16 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature, rumMonitor)
+        }
+    }
 }

@@ -260,7 +260,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRumMonitor).startView(
+        verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
             emptyMap()
@@ -285,7 +285,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRumMonitor).startView(
+        verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
             attributes.map { (k, v) -> "view.arguments.$k" to v }.toMap()
@@ -310,7 +310,7 @@ internal class ActivityViewTrackingStrategyTest :
         // When
         testedStrategy.onActivityResumed(mockActivity)
 
-        verify(mockRumMonitor).startView(
+        verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
             emptyMap()
@@ -329,7 +329,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRumMonitor).startView(
+        verify(rumMonitor.mockInstance).startView(
             mockActivity,
             fakeName,
             emptyMap()
@@ -348,7 +348,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRumMonitor).startView(
+        verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
             emptyMap()
@@ -374,13 +374,13 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        inOrder(mockRumMonitor, mockViewLoadingTimer) {
-            verify(mockRumMonitor).updateViewLoadingTime(
+        inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
+            verify(rumMonitor.mockInstance).updateViewLoadingTime(
                 mockActivity,
                 loadingTime,
                 expectedLoadingType
             )
-            verify(mockRumMonitor).stopView(mockActivity, emptyMap())
+            verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
             verify(mockViewLoadingTimer).onPaused(mockActivity)
         }
     }
@@ -398,7 +398,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -410,7 +410,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockViewLoadingTimer)
     }
     // endregion
 

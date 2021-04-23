@@ -10,7 +10,6 @@ import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
@@ -23,10 +22,13 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -49,15 +51,12 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class LoggerBuilderTest {
-
-    lateinit var mockContext: Context
-
-    lateinit var fakePackageName: String
 
     @TempDir
     lateinit var tempRootDir: File
@@ -66,13 +65,10 @@ internal class LoggerBuilderTest {
     lateinit var fakeConfig: Configuration.Feature.Logs
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakePackageName = forge.anAlphabeticalString()
-        mockContext = mockContext(fakePackageName, "")
-        whenever(mockContext.filesDir) doReturn tempRootDir
+    fun `set up`() {
+        whenever(appContext.mockInstance.filesDir) doReturn tempRootDir
 
-        mockCoreFeature(packageName = fakePackageName)
-        LogsFeature.initialize(mockContext, fakeConfig)
+        LogsFeature.initialize(appContext.mockInstance, fakeConfig)
     }
 
     @AfterEach
@@ -101,8 +97,8 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.serviceName).isEqualTo(CoreFeature.serviceName)
-        assertThat(handler.logGenerator.loggerName).isEqualTo(fakePackageName)
+        assertThat(handler.logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
+        assertThat(handler.logGenerator.loggerName).isEqualTo(appContext.fakePackageName)
         assertThat(handler.logGenerator.networkInfoProvider).isNull()
         assertThat(handler.writer).isSameAs(LogsFeature.persistenceStrategy.getWriter())
         assertThat(handler.bundleWithTraces).isTrue()
@@ -249,5 +245,16 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

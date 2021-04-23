@@ -7,12 +7,14 @@
 package com.datadog.android
 
 import android.util.Log
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -24,8 +26,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,27 +37,15 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     @Mock
-    lateinit var mockRumMonitor: RumMonitor
-
-    @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
-
-    @BeforeEach
-    fun `set up RUM`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-    }
-
-    @AfterEach
-    fun `tear down RUM`() {
-        GlobalRum.isRegistered.set(false)
-    }
 
     override fun instantiateTestedInterceptor(
         tracedHosts: List<String>,
@@ -103,7 +91,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
     }
 
@@ -118,7 +106,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
     }
 
@@ -136,7 +124,17 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         }
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature, rumMonitor)
+        }
     }
 }

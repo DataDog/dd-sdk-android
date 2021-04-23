@@ -15,12 +15,14 @@ import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpanContext
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -35,7 +37,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Span
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
-import java.util.UUID
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,7 +50,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -59,9 +61,6 @@ internal class LogGeneratorTest {
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
-    lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     lateinit var mockTracer: Tracer
@@ -96,9 +95,6 @@ internal class LogGeneratorTest {
     lateinit var fakeUserInfo: UserInfo
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
-    lateinit var fakeAppId: String
-    lateinit var fakeSessionId: String
-    lateinit var fakeViewId: String
     lateinit var fakeThreadName: String
 
     @BeforeEach
@@ -113,9 +109,6 @@ internal class LogGeneratorTest {
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
         fakeThrowable = forge.aThrowable()
         fakeTimestamp = System.currentTimeMillis()
-        fakeAppId = UUID.randomUUID().toString()
-        fakeSessionId = UUID.randomUUID().toString()
-        fakeViewId = forge.anAlphabeticalString()
         fakeThreadName = forge.anAlphabeticalString()
 
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
@@ -124,8 +117,6 @@ internal class LogGeneratorTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-        GlobalRum.updateRumContext(RumContext(fakeAppId, fakeSessionId, fakeViewId))
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = LogGenerator(
             fakeServiceName,
@@ -139,7 +130,6 @@ internal class LogGeneratorTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -535,6 +525,7 @@ internal class LogGeneratorTest {
     fun `M do nothing W required to bundle the trace information {no active Span}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()).doReturn(null)
+
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -547,9 +538,9 @@ internal class LogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeAppId,
-            LogAttributes.RUM_SESSION_ID to fakeSessionId,
-            LogAttributes.RUM_VIEW_ID to fakeViewId
+            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -558,6 +549,7 @@ internal class LogGeneratorTest {
     fun `M do nothing W required to bundle the trace information {AndroidTracer not registered}`() {
         // GIVEN
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -570,9 +562,9 @@ internal class LogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeAppId,
-            LogAttributes.RUM_SESSION_ID to fakeSessionId,
-            LogAttributes.RUM_VIEW_ID to fakeViewId
+            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -581,6 +573,7 @@ internal class LogGeneratorTest {
     fun `M do nothing W not required to bundle the trace information`() {
         // GIVEN
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
+
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -594,9 +587,9 @@ internal class LogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeAppId,
-            LogAttributes.RUM_SESSION_ID to fakeSessionId,
-            LogAttributes.RUM_VIEW_ID to fakeViewId
+            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -616,9 +609,9 @@ internal class LogGeneratorTest {
         // THEN
         Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
-                LogAttributes.RUM_APPLICATION_ID to fakeAppId,
-                LogAttributes.RUM_SESSION_ID to fakeSessionId,
-                LogAttributes.RUM_VIEW_ID to fakeViewId
+                LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
             )
         )
     }
@@ -796,5 +789,15 @@ internal class LogGeneratorTest {
 
         // THEN
         assertThat(log).hasStatus(LogEvent.Status.DEBUG)
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

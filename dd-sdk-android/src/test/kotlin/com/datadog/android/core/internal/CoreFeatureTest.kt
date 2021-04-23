@@ -31,11 +31,14 @@ import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -44,9 +47,7 @@ import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -69,13 +70,12 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class CoreFeatureTest {
-
-    lateinit var mockAppContext: Application
 
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
@@ -86,12 +86,6 @@ internal class CoreFeatureTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Core
 
-    @StringForgery
-    lateinit var fakePackageName: String
-
-    @StringForgery(regex = "\\d(\\.\\d){3}")
-    lateinit var fakePackageVersion: String
-
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
@@ -99,13 +93,8 @@ internal class CoreFeatureTest {
     lateinit var fakeEnvName: String
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakePackageName = forge.anAlphabeticalString()
-        fakePackageVersion = forge.aStringMatching("\\d(\\.\\d){3}")
-
-        mockAppContext = mockContext(fakePackageName, fakePackageVersion)
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
-        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+    fun `set up`() {
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }
 
@@ -118,7 +107,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize time sync 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -132,7 +121,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize time provider 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -147,7 +136,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize system info provider 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -163,7 +152,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize network info provider 𝕎 initialize {LOLLIPOP}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -171,7 +160,7 @@ internal class CoreFeatureTest {
 
         // Then
         argumentCaptor<BroadcastReceiver> {
-            verify(mockAppContext, atLeastOnce())
+            verify(appContext.mockInstance, atLeastOnce())
                 .registerReceiver(capture(), any())
 
             assertThat(allValues)
@@ -185,7 +174,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize network info provider 𝕎 initialize {N}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -193,7 +182,7 @@ internal class CoreFeatureTest {
 
         // Then
         argumentCaptor<BroadcastReceiver> {
-            verify(mockAppContext, atLeastOnce())
+            verify(appContext.mockInstance, atLeastOnce())
                 .registerReceiver(capture(), any())
 
             assertThat(allValues)
@@ -208,7 +197,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize user info provider 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -223,7 +212,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialise the consent provider 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -240,7 +229,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -255,7 +244,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initializes app info 𝕎 initialize()`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -263,13 +252,13 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
         assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
@@ -278,7 +267,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initializes app info 𝕎 initialize() {null serviceName}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials.copy(serviceName = null),
             fakeConfig,
             fakeConsent
@@ -286,13 +275,13 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
-        assertThat(CoreFeature.serviceName).isEqualTo(fakePackageName)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.serviceName).isEqualTo(appContext.fakePackageName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
         assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
@@ -301,7 +290,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initializes app info 𝕎 initialize() {null rumApplicationId}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials.copy(rumApplicationId = null),
             fakeConfig,
             fakeConsent
@@ -309,30 +298,27 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
         assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {null versionName}`(
-        @IntForgery(min = 0) versionCode: Int
-    ) {
+    fun `𝕄 initializes app info 𝕎 initialize() {null versionName}`() {
         // Given
-        mockAppContext = mockContext(fakePackageName, null, versionCode)
-        whenever(mockAppContext.applicationContext) doReturn mockAppContext
-        whenever(mockAppContext.getSystemService(Context.CONNECTIVITY_SERVICE))
+        appContext.fakePackageInfo.versionName = null
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials.copy(rumApplicationId = null),
             fakeConfig,
             fakeConsent
@@ -340,13 +326,13 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(versionCode.toString())
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionCode.toString())
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
         assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
@@ -356,7 +342,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize() {LOLLIPOP}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig.copy(needsClearTextHttp = false),
             fakeConsent
@@ -377,7 +363,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize okhttp with compat network policy 𝕎 initialize() {KITKAT}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig.copy(needsClearTextHttp = false),
             fakeConsent
@@ -397,7 +383,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize okhttp with no network policy 𝕎 initialize() {needsClearText}`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig.copy(needsClearTextHttp = true),
             fakeConsent
@@ -417,7 +403,7 @@ internal class CoreFeatureTest {
     fun `𝕄 initialize executors 𝕎 initialize()`() {
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -434,7 +420,7 @@ internal class CoreFeatureTest {
     ) {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -442,7 +428,7 @@ internal class CoreFeatureTest {
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             otherCredentials,
             fakeConfig,
             fakeConsent
@@ -450,13 +436,13 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(fakePackageVersion)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(mockAppContext)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
         assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
@@ -467,17 +453,17 @@ internal class CoreFeatureTest {
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
-        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(Process.myPid(), fakePackageName)
+        val myProcess = forgeAppProcessInfo(Process.myPid(), appContext.fakePackageName)
         val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -493,17 +479,17 @@ internal class CoreFeatureTest {
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
-        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
         val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
-        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, fakePackageName)
+        val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, appContext.fakePackageName)
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -519,7 +505,7 @@ internal class CoreFeatureTest {
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
-        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
         val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
@@ -528,7 +514,7 @@ internal class CoreFeatureTest {
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -542,7 +528,7 @@ internal class CoreFeatureTest {
     fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -559,7 +545,7 @@ internal class CoreFeatureTest {
     fun `𝕄 cleanup app info 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -583,7 +569,7 @@ internal class CoreFeatureTest {
     fun `𝕄 cleanup providers 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -611,7 +597,7 @@ internal class CoreFeatureTest {
     fun `𝕄 shut down executors 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -633,7 +619,7 @@ internal class CoreFeatureTest {
     fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -652,7 +638,7 @@ internal class CoreFeatureTest {
     fun `𝕄 build config 𝕎 buildFilePersistenceConfig()`() {
         // Given
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -680,17 +666,17 @@ internal class CoreFeatureTest {
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
-        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(Process.myPid(), fakePackageName)
+        val myProcess = forgeAppProcessInfo(Process.myPid(), appContext.fakePackageName)
         val otherProcess = forgeAppProcessInfo(Process.myPid() + 1, otherProcessName)
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -706,7 +692,7 @@ internal class CoreFeatureTest {
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
-        whenever(mockAppContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
+        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
         val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
@@ -715,7 +701,7 @@ internal class CoreFeatureTest {
 
         // When
         CoreFeature.initialize(
-            mockAppContext,
+            appContext.mockInstance,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -742,4 +728,14 @@ internal class CoreFeatureTest {
     }
 
     // endregion
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext)
+        }
+    }
 }

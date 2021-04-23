@@ -9,8 +9,11 @@ package com.datadog.android
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -33,7 +36,6 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -45,16 +47,14 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogEventListenerTest {
 
     lateinit var testedListener: EventListener
-
-    @Mock
-    lateinit var mockMonitor: AdvancedRumMonitor
 
     @Mock
     lateinit var mockCall: Call
@@ -81,16 +81,7 @@ internal class DatadogEventListenerTest {
             .message("lorem ipsum dolor sit amet…")
             .build()
 
-        GlobalRum.monitor = mockMonitor
-        GlobalRum.isRegistered.set(true)
-
         testedListener = DatadogEventListener(fakeKey)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -99,8 +90,8 @@ internal class DatadogEventListenerTest {
         testedListener.callStart(mockCall)
 
         // Then
-        verify(mockMonitor).waitForResourceTiming(fakeKey)
-        verifyNoMoreInteractions(mockMonitor, mockCall)
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+        verifyNoMoreInteractions(rumMonitor.mockInstance, mockCall)
     }
 
     @Test
@@ -136,9 +127,9 @@ internal class DatadogEventListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
-                verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
+            inOrder(rumMonitor.mockInstance, mockCall) {
+                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
 
@@ -192,9 +183,9 @@ internal class DatadogEventListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
-                verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
+            inOrder(rumMonitor.mockInstance, mockCall) {
+                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
 
@@ -234,9 +225,9 @@ internal class DatadogEventListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
-                verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
+            inOrder(rumMonitor.mockInstance, mockCall) {
+                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
 
@@ -285,9 +276,9 @@ internal class DatadogEventListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
-                verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
+            inOrder(rumMonitor.mockInstance, mockCall) {
+                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
 
@@ -340,10 +331,18 @@ internal class DatadogEventListenerTest {
         testedListener.responseHeadersEnd(mockCall, fakeResponse)
 
         // Then
-        verifyZeroInteractions(mockMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     companion object {
         val TWENTY_MILLIS_NS = TimeUnit.MILLISECONDS.toNanos(20)
+
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

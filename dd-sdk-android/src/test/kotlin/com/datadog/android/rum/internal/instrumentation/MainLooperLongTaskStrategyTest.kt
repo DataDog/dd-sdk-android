@@ -7,10 +7,12 @@
 package com.datadog.android.rum.internal.instrumentation
 
 import android.util.Printer
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -24,19 +26,18 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset.offset
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -44,18 +45,9 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     lateinit var testedPrinter: Printer
 
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
-
     @BeforeEach
     fun `set up`() {
         testedPrinter = MainLooperLongTaskStrategy(TEST_THRESHOLD_MS)
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -74,7 +66,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
         // Then
         argumentCaptor<Long> {
-            verify(mockRumMonitor).addLongTask(capture(), eq("$target $callback: $what"))
+            verify(rumMonitor.mockInstance).addLongTask(capture(), eq("$target $callback: $what"))
             val capturedMs = TimeUnit.NANOSECONDS.toMillis(firstValue)
             assertThat(capturedMs)
                 .isCloseTo(duration, offset(10L))
@@ -96,7 +88,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
         testedPrinter.println("<<<<< Finished to $target $callback")
 
         // Then
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     override fun createInstance(forge: Forge): MainLooperLongTaskStrategy {
@@ -119,5 +111,13 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     companion object {
         const val TEST_THRESHOLD_MS = 50L
+
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

@@ -10,19 +10,20 @@ import android.content.Context
 import android.os.Looper
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -31,14 +32,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -46,23 +47,15 @@ internal class RumMonitorBuilderTest {
 
     lateinit var testedBuilder: RumMonitor.Builder
 
-    @Mock
-    lateinit var mockContext: Context
-
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.RUM
-
-    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-    lateinit var fakeApplicationId: String
 
     lateinit var mockDevLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
-        mockContext = mockContext()
-        mockCoreFeature(rumApplicationId = fakeApplicationId)
-        RumFeature.initialize(mockContext, fakeConfig)
+        RumFeature.initialize(appContext.mockInstance, fakeConfig)
 
         testedBuilder = RumMonitor.Builder()
     }
@@ -70,7 +63,6 @@ internal class RumMonitorBuilderTest {
     @AfterEach
     fun `tear down`() {
         RumFeature.stop()
-        CoreFeature.stop()
     }
 
     @Test
@@ -82,11 +74,13 @@ internal class RumMonitorBuilderTest {
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
-            .overridingErrorMessage("Expecting rootscope to have applicationId $fakeApplicationId")
+            .overridingErrorMessage(
+                "Expecting root scope to have applicationId ${coreFeature.fakeRumApplicationId}"
+            )
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == fakeApplicationId
+                    .applicationId == coreFeature.fakeRumApplicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
@@ -105,11 +99,13 @@ internal class RumMonitorBuilderTest {
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
-            .overridingErrorMessage("Expecting rootscope to have applicationId $fakeApplicationId")
+            .overridingErrorMessage(
+                "Expecting root scope to have applicationId ${coreFeature.fakeRumApplicationId}"
+            )
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == fakeApplicationId
+                    .applicationId == coreFeature.fakeRumApplicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(samplingRate)
@@ -129,5 +125,16 @@ internal class RumMonitorBuilderTest {
             RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
         )
         check(monitor is NoOpRumMonitor)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

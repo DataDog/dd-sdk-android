@@ -6,26 +6,25 @@
 
 package com.datadog.android.tracing.internal
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.utils.disposeMainLooper
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockContext
-import com.datadog.android.utils.mockCoreFeature
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.android.utils.prepareMainLooper
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ContextualScopeManager
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
@@ -61,16 +60,14 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
-
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class AndroidTracerTest {
 
     lateinit var testedTracerBuilder: AndroidTracer.Builder
-
-    lateinit var mockAppContext: Application
 
     lateinit var fakeToken: String
     lateinit var fakeEnvName: String
@@ -87,11 +84,8 @@ internal class AndroidTracerTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
-        mockAppContext = mockContext()
-        mockCoreFeature()
-        prepareMainLooper()
-        TracesFeature.initialize(mockAppContext, Configuration.DEFAULT_TRACING_CONFIG)
-        RumFeature.initialize(mockAppContext, Configuration.DEFAULT_RUM_CONFIG)
+        TracesFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
+        RumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
     }
@@ -112,7 +106,6 @@ internal class AndroidTracerTest {
             ContextualScopeManager::class.java.getStaticValue("tlsScope")
         tlsScope.remove()
         RumFeature.stop()
-        disposeMainLooper()
     }
 
     // region Tracer
@@ -194,22 +187,18 @@ internal class AndroidTracerTest {
 
     @Test
     fun `M inject RumContext W buildSpan { bundleWithRum enabled and RumFeature initialized }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
-        val rumContext = forge.getForgery<RumContext>()
-        GlobalRum.registerIfAbsent(mock<RumMonitor>())
-        GlobalRum.updateRumContext(rumContext)
         val tracer = AndroidTracer.Builder()
             .build()
 
         val span = tracer.buildSpan(operationName).start() as DDSpan
         val meta = span.meta
         assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isEqualTo(rumContext.applicationId)
+            .isEqualTo(rumMonitor.context.applicationId)
         assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isEqualTo(rumContext.sessionId)
-        val viewId = rumContext.viewId
+            .isEqualTo(rumMonitor.context.sessionId)
+        val viewId = rumMonitor.context.viewId
         if (viewId == null) {
             assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID))
                 .isFalse()
@@ -221,13 +210,9 @@ internal class AndroidTracerTest {
 
     @Test
     fun `M not inject RumContext W buildSpan { RumFeature not initialized }`(
-        forge: Forge,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
-        val rumContext = forge.getForgery<RumContext>()
-        GlobalRum.registerIfAbsent(mock<RumMonitor>())
-        GlobalRum.updateRumContext(rumContext)
         RumFeature.stop()
         val tracer = AndroidTracer.Builder()
             .build()
@@ -245,13 +230,9 @@ internal class AndroidTracerTest {
 
     @Test
     fun `M not inject RumContext W buildSpan { bundleWithRum disabled }`(
-        forge: Forge,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
-        val rumContext = forge.getForgery<RumContext>()
-        GlobalRum.registerIfAbsent(mock<RumMonitor>())
-        GlobalRum.updateRumContext(rumContext)
         val tracer = AndroidTracer.Builder()
             .setBundleWithRumEnabled(false)
             .build()
@@ -314,7 +295,7 @@ internal class AndroidTracerTest {
         val properties = testedTracerBuilder.properties()
         assertThat(tracer).isNotNull()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
-        assertThat(span.serviceName).isEqualTo(CoreFeature.serviceName)
+        assertThat(span.serviceName).isEqualTo(coreFeature.fakeServiceName)
         assertThat(properties.getProperty(Config.PARTIAL_FLUSH_MIN_SPANS).toInt())
             .isEqualTo(AndroidTracer.DEFAULT_PARTIAL_MIN_FLUSH)
     }
@@ -416,4 +397,17 @@ internal class AndroidTracerTest {
     }
 
     // endregion
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature, rumMonitor, mainLooper)
+        }
+    }
 }

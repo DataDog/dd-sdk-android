@@ -12,11 +12,10 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.ListAdapter
 import androidx.core.view.ScrollingView
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -29,35 +28,23 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(
-        MockitoExtension::class,
-        ForgeExtension::class
-    )
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() {
 
-    @Mock
-    lateinit var mockDatadogRumMonitor: DatadogRumMonitor
-
     // region Tests
-
-    @BeforeEach
-    override fun `set up`() {
-        super.`set up`()
-        GlobalRum.registerIfAbsent(mockDatadogRumMonitor)
-    }
 
     @Test
     fun `it will send an scroll rum event if fling not detected`(forge: Forge) {
@@ -112,17 +99,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -178,17 +165,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -261,25 +248,25 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -321,50 +308,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verifyZeroInteractions(mockDatadogRumMonitor)
-    }
-
-    @Test
-    fun `will do nothing if the registered monitor is not a DatadogRumMonitor`(forge: Forge) {
-        `tear down`()
-        val startDownEvent: MotionEvent = forge.getForgery()
-        val listSize = forge.anInt(1, 20)
-        val intermediaryEvents =
-            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
-        val distancesX = forge.aList(listSize) { forge.aFloat() }
-        val distancesY = forge.aList(listSize) { forge.aFloat() }
-        val targetId = forge.anInt()
-        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val scrollingTarget: ScrollableListView = mockView(
-            id = targetId,
-            forEvent = startDownEvent,
-            hitTest = true,
-            forge = forge
-        )
-        mockDecorView = mockDecorView<ViewGroup>(
-            id = forge.anInt(),
-            forEvent = startDownEvent,
-            hitTest = true,
-            forge = forge
-        ) {
-            whenever(it.childCount).thenReturn(1)
-            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
-        }
-        val expectedResourceName = forge.anAlphabeticalString()
-        mockResourcesForTarget(scrollingTarget, expectedResourceName)
-        testedListener = GesturesListener(
-            WeakReference(mockWindow)
-        )
-
-        // When
-        testedListener.onDown(startDownEvent)
-        intermediaryEvents.forEachIndexed { index, event ->
-            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
-        }
-        testedListener.onUp(endUpEvent)
-
-        // Then
-        verifyZeroInteractions(mockDatadogRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -422,17 +366,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -460,6 +404,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         // we will use a LocalViewClass to reproduce the behaviour when getCanonicalName function
         // can return a null object.
         class LocalScrollableView() : ScrollableListView()
+
         val scrollingTarget: LocalScrollableView = mockView(
             id = targetId,
             forEvent = startDownEvent,
@@ -496,17 +441,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -583,25 +528,25 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
 
-        inOrder(mockDatadogRumMonitor) {
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
-            verify(mockDatadogRumMonitor).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
-            verify(mockDatadogRumMonitor).stopUserAction(
+            verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
                 eq(targetName(scrollingTarget, expectedResourceName)),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)
         }
-        verifyNoMoreInteractions(mockDatadogRumMonitor)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -631,7 +576,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)
 
-        verifyZeroInteractions(mockDatadogRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // endregion

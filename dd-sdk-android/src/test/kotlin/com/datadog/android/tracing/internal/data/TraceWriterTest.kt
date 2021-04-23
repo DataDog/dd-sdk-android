@@ -8,19 +8,18 @@ package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.DDTags
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,8 +31,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -44,21 +43,12 @@ internal class TraceWriterTest {
     @Mock
     lateinit var mockFilesWriter: DataWriter<DDSpan>
 
-    @Mock
-    lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
-
     // region Unit Tests
 
     @BeforeEach
     fun `set up`() {
         GlobalRum.isRegistered.set(false)
-        GlobalRum.registerIfAbsent(mockAdvancedRumMonitor)
         testedWriter = TraceWriter(mockFilesWriter)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
@@ -96,7 +86,7 @@ internal class TraceWriterTest {
         testedWriter.write(spansList)
 
         // THEN
-        verifyZeroInteractions(mockAdvancedRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
         spansList.forEach {
             it.finish()
         }
@@ -114,15 +104,13 @@ internal class TraceWriterTest {
         testedWriter.write(spansList)
 
         // THEN
-        verifyZeroInteractions(mockAdvancedRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `M do nothing W onWritingErrorFreeSpan`(forge: Forge) {
         // GIVEN
         GlobalRum.isRegistered.set(false)
-        val mockRumMonitor = mock<RumMonitor>()
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         val spansList = ArrayList<DDSpan>(2).apply {
             add(forgeErrorFreeSpan(forge))
             add(forgeErrorFreeSpan(forge))
@@ -132,7 +120,7 @@ internal class TraceWriterTest {
         testedWriter.write(spansList)
 
         // THEN
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -162,4 +150,14 @@ internal class TraceWriterTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }

@@ -21,6 +21,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -38,7 +39,8 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -55,7 +57,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
@@ -78,7 +80,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 store sampling rate 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.samplingRate).isEqualTo(fakeConfigurationFeature.samplingRate)
@@ -87,34 +89,36 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.viewTrackingStrategy)
             .isEqualTo(fakeConfigurationFeature.viewTrackingStrategy)
-        verify(fakeConfigurationFeature.viewTrackingStrategy!!).register(mockAppContext)
+        verify(fakeConfigurationFeature.viewTrackingStrategy!!).register(appContext.mockInstance)
     }
 
     @Test
     fun `𝕄 store userActionTrackingStrategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.actionTrackingStrategy)
             .isEqualTo(fakeConfigurationFeature.userActionTrackingStrategy)
-        verify(fakeConfigurationFeature.userActionTrackingStrategy!!).register(mockAppContext)
+        verify(fakeConfigurationFeature.userActionTrackingStrategy!!)
+            .register(appContext.mockInstance)
     }
 
     @Test
     fun `𝕄 store longTaskTrackingStrategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.longTaskTrackingStrategy)
             .isEqualTo(fakeConfigurationFeature.longTaskTrackingStrategy)
-        verify(fakeConfigurationFeature.longTaskTrackingStrategy!!).register(mockAppContext)
+        verify(fakeConfigurationFeature.longTaskTrackingStrategy!!)
+            .register(appContext.mockInstance)
     }
 
     @Test
@@ -123,7 +127,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val config = fakeConfigurationFeature.copy(viewTrackingStrategy = null)
 
         // When
-        testedFeature.initialize(mockAppContext, config)
+        testedFeature.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(testedFeature.viewTrackingStrategy)
@@ -136,7 +140,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val config = fakeConfigurationFeature.copy(userActionTrackingStrategy = null)
 
         // When
-        testedFeature.initialize(mockAppContext, config)
+        testedFeature.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(testedFeature.actionTrackingStrategy)
@@ -149,7 +153,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val config = fakeConfigurationFeature.copy(longTaskTrackingStrategy = null)
 
         // When
-        testedFeature.initialize(mockAppContext, config)
+        testedFeature.initialize(appContext.mockInstance, config)
 
         // Then
         assertThat(testedFeature.longTaskTrackingStrategy)
@@ -161,16 +165,16 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         // When
         val mockViewTreeStrategy: TrackingStrategy = mock()
         testedFeature.viewTreeTrackingStrategy = mockViewTreeStrategy
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        verify(mockViewTreeStrategy).register(mockAppContext)
+        verify(mockViewTreeStrategy).register(appContext.mockInstance)
     }
 
     @Test
     fun `𝕄 store eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.rumEventMapper).isSameAs(fakeConfigurationFeature.rumEventMapper)
@@ -179,7 +183,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 use noop viewTrackingStrategy 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -192,7 +196,7 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 use noop userActionTrackingStrategy 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()
@@ -205,8 +209,8 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     @Test
     fun `𝕄 unregister strategies 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
-        CoreFeature.contextRef = WeakReference(mockAppContext)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        CoreFeature.contextRef = WeakReference(appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
         val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
         val mockViewTreeTrackingStrategy: TrackingStrategy = mock()
@@ -220,16 +224,16 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         testedFeature.stop()
 
         // Then
-        verify(mockActionTrackingStrategy).unregister(mockAppContext)
-        verify(mockViewTrackingStrategy).unregister(mockAppContext)
-        verify(mockViewTreeTrackingStrategy).unregister(mockAppContext)
-        verify(mockLongTaskTrackingStrategy).unregister(mockAppContext)
+        verify(mockActionTrackingStrategy).unregister(appContext.mockInstance)
+        verify(mockViewTrackingStrategy).unregister(appContext.mockInstance)
+        verify(mockViewTreeTrackingStrategy).unregister(appContext.mockInstance)
+        verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
     }
 
     @Test
     fun `𝕄 reset eventMapper 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockAppContext, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
         testedFeature.stop()

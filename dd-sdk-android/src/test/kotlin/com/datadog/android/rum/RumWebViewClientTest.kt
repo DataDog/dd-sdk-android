@@ -16,9 +16,13 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.datadog.android.rum.webview.RumWebViewClient
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -28,7 +32,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,16 +44,14 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumWebViewClientTest {
 
     private lateinit var testedClient: WebViewClient
-
-    @Mock
-    private lateinit var mockRumMonitor: RumMonitor
 
     @Mock
     private lateinit var mockWebView: WebView
@@ -63,21 +64,14 @@ internal class RumWebViewClientTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
         testedClient = RumWebViewClient()
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
     }
 
     @Test
     fun `onPageStarted starts a RUM Resource`() {
         testedClient.onPageStarted(mockWebView, fakeUrl, mockBitmap)
 
-        verify(mockRumMonitor).startResource(
+        verify(rumMonitor.mockInstance).startResource(
             fakeUrl,
             "GET",
             fakeUrl,
@@ -89,14 +83,14 @@ internal class RumWebViewClientTest {
     fun `onPageStarted with null URL does nothing`() {
         testedClient.onPageStarted(mockWebView, null, mockBitmap)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `onPageFinished stops a RUM Resource`() {
         testedClient.onPageFinished(mockWebView, fakeUrl)
 
-        verify(mockRumMonitor).stopResource(
+        verify(rumMonitor.mockInstance).stopResource(
             fakeUrl,
             200,
             null,
@@ -109,7 +103,7 @@ internal class RumWebViewClientTest {
     fun `onPageFinished with null URL does nothing`() {
         testedClient.onPageFinished(mockWebView, null)
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -120,7 +114,7 @@ internal class RumWebViewClientTest {
         @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, description, fakeUrl)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $errorCode: $description",
             RumErrorSource.WEBVIEW,
             null,
@@ -135,7 +129,7 @@ internal class RumWebViewClientTest {
         @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, null, fakeUrl)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $errorCode: null",
             RumErrorSource.WEBVIEW,
             null,
@@ -151,7 +145,7 @@ internal class RumWebViewClientTest {
         @Suppress("DEPRECATION")
         testedClient.onReceivedError(mockWebView, errorCode, description, null)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $errorCode: $description",
             RumErrorSource.WEBVIEW,
             null,
@@ -174,7 +168,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedError(mockWebView, mockRequest, mockError)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $errorCode: $description",
             RumErrorSource.WEBVIEW,
             null,
@@ -194,7 +188,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedError(mockWebView, null, mockError)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $errorCode: $description",
             RumErrorSource.WEBVIEW,
             null,
@@ -211,7 +205,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedError(mockWebView, mockRequest, null)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error null: null",
             RumErrorSource.WEBVIEW,
             null,
@@ -234,7 +228,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedHttpError(mockWebView, mockRequest, mockResponse)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $statusCode: $reasonPhrase",
             RumErrorSource.WEBVIEW,
             null,
@@ -251,7 +245,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedHttpError(mockWebView, mockRequest, null)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error null: null",
             RumErrorSource.WEBVIEW,
             null,
@@ -271,7 +265,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedHttpError(mockWebView, null, mockResponse)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "Error $statusCode: $reasonPhrase",
             RumErrorSource.WEBVIEW,
             null,
@@ -289,7 +283,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedSslError(mockWebView, mock(), mockError)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "SSL Error $primaryError",
             RumErrorSource.WEBVIEW,
             null,
@@ -307,7 +301,7 @@ internal class RumWebViewClientTest {
 
         testedClient.onReceivedSslError(mockWebView, null, mockError)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "SSL Error $primaryError",
             RumErrorSource.WEBVIEW,
             null,
@@ -319,11 +313,21 @@ internal class RumWebViewClientTest {
     fun `onReceivedSslError with null error sends a RUM Error`() {
         testedClient.onReceivedSslError(mockWebView, mock(), null)
 
-        verify(mockRumMonitor).addError(
+        verify(rumMonitor.mockInstance).addError(
             "SSL Error null",
             RumErrorSource.WEBVIEW,
             null,
             mapOf(RumAttributes.ERROR_RESOURCE_URL to null)
         )
+    }
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

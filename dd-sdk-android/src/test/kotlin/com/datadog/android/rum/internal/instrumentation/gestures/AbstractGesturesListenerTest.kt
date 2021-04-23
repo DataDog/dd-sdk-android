@@ -14,9 +14,11 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -37,10 +39,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(
-        MockitoExtension::class,
-        ForgeExtension::class
-    )
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -71,8 +72,6 @@ internal abstract class AbstractGesturesListenerTest {
     @AfterEach
     fun `tear down`() {
         Datadog.setVerbosity(Integer.MAX_VALUE)
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
         CoreFeature.contextRef = WeakReference(null)
     }
 
@@ -147,4 +146,14 @@ internal abstract class AbstractGesturesListenerTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }
