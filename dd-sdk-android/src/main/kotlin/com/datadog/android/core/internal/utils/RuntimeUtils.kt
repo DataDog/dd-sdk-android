@@ -37,6 +37,7 @@ internal fun buildSdkLogger(): Logger {
         .setLoggerName(SDK_LOGGER_NAME)
         .setBundleWithRumEnabled(false)
         .setBundleWithTraceEnabled(false)
+        .setNetworkInfoEnabled(true)
         .setInternal(true)
         .build()
 }
