@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.net
 
 import android.os.Build
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.sdkLogger
 import okhttp3.Call
 import okhttp3.Request
@@ -30,7 +31,13 @@ internal abstract class DataOkHttpUploader(
             val response = call.execute()
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
-            sdkLogger.e("Unable to upload batch data", e)
+            sdkLogger.e(
+                "Unable to upload batch data.",
+                attributes = mapOf(
+                    ACTIVE_THREADS_LOG_ATTRIBUTE_KEY
+                        to CoreFeature.uploadExecutorService.activeCount
+                )
+            )
             UploadStatus.NETWORK_ERROR
         }
     }
@@ -99,12 +106,14 @@ internal abstract class DataOkHttpUploader(
 
     companion object {
 
+        private const val ACTIVE_THREADS_LOG_ATTRIBUTE_KEY = "active_threads"
+
         internal const val CONTENT_TYPE_JSON = "application/json"
+
         internal const val CONTENT_TYPE_TEXT_UTF8 = "text/plain;charset=UTF-8"
-
         internal const val QP_BATCH_TIME = "batch_time"
-        internal const val QP_SOURCE = "ddsource"
 
+        internal const val QP_SOURCE = "ddsource"
         private const val HEADER_CT = "Content-Type"
         private const val HEADER_UA = "User-Agent"
 
