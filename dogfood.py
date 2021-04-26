@@ -22,7 +22,7 @@ TARGET_DEMO = "demo"
 REPOSITORIES = {TARGET_APP: "datadog-android", TARGET_DEMO: "shopist-android"}
 
 FILE_PATH = {
-    TARGET_APP: os.path.join("buildSrc", "src", "main", "java", "config", "dependency", "android", "Datadog.kt"),
+    TARGET_APP: os.path.join("dd-build", "dependencies", "src", "main", "java", "com", "datadog", "build", "dependency", "android", "Datadog.kt"),
     TARGET_DEMO: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt")
 }
 
