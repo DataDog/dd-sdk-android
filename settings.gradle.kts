@@ -16,6 +16,7 @@ include(":dd-sdk-android-timber")
 
 include(":instrumented:benchmark")
 include(":instrumented:integration")
+include(":instrumented:nightly-tests")
 
 include(":sample:java")
 include(":sample:kotlin")

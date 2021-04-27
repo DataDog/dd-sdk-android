@@ -130,6 +130,7 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:benchmark:ktlintCheck",
+        ":instrumented:nightly-tests:ktlintCheck",
         ":tools:detekt:ktlintCheck",
         ":tools:unit:ktlintCheck"
     )
@@ -162,6 +163,7 @@ tasks.register("detektAll") {
         ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
         ":instrumented:benchmark:detekt",
+        ":instrumented:nightly-tests:detekt",
         ":tools:unit:detekt"
     )
 }
