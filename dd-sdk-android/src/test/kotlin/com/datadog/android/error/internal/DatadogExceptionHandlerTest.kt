@@ -61,6 +61,7 @@ import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
@@ -180,7 +181,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected: " + fakeThrowable.message)
+                .hasMessage(fakeThrowable.message!!)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -237,7 +238,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected: " + fakeThrowable.message)
+                .hasMessage(fakeThrowable.message!!)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -260,17 +261,17 @@ internal class DatadogExceptionHandlerTest {
 
         val now = System.currentTimeMillis()
 
-        val throwableNoMessage = forge.aThrowableWithoutMessage()
+        val throwable = forge.aThrowableWithoutMessage()
 
-        testedHandler.uncaughtException(currentThread, throwableNoMessage)
+        testedHandler.uncaughtException(currentThread, throwable)
 
         argumentCaptor<Log> {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected")
+                .hasMessage("Application crash detected: ${throwable.javaClass.canonicalName}")
                 .hasLevel(Log.CRASH)
-                .hasThrowable(throwableNoMessage)
+                .hasThrowable(throwable)
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasUserInfo(fakeUserInfo)
                 .hasTimestampAround(now)
@@ -282,7 +283,38 @@ internal class DatadogExceptionHandlerTest {
                 )
                 .hasExactlyAttributes(emptyMap())
         }
-        verify(mockPreviousHandler).uncaughtException(currentThread, throwableNoMessage)
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
+    }
+
+    @Test
+    fun `M log exception W caught { exception without message or class }`() {
+        val currentThread = Thread.currentThread()
+
+        val now = System.currentTimeMillis()
+
+        val throwable = object : RuntimeException() {}
+
+        testedHandler.uncaughtException(currentThread, throwable)
+
+        argumentCaptor<Log> {
+            verify(mockLogWriter).write(capture())
+            assertThat(lastValue)
+                .hasThreadName(currentThread.name)
+                .hasMessage("Application crash detected: ${throwable.javaClass.simpleName}")
+                .hasLevel(Log.CRASH)
+                .hasThrowable(throwable)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasTimestampAround(now)
+                .hasExactlyTags(
+                    listOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:${BuildConfig.SDK_VERSION_NAME}"
+                    )
+                )
+                .hasExactlyAttributes(emptyMap())
+        }
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
     @Test
@@ -305,7 +337,7 @@ internal class DatadogExceptionHandlerTest {
             verify(mockLogWriter).write(capture())
             assertThat(lastValue)
                 .hasThreadName(threadName)
-                .hasMessage("Application crash detected: " + fakeThrowable.message)
+                .hasMessage(fakeThrowable.message!!)
                 .hasLevel(Log.CRASH)
                 .hasThrowable(fakeThrowable)
                 .hasNetworkInfo(fakeNetworkInfo)
@@ -349,14 +381,14 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M register RUM Error with crash W RumMonitor registered { exception with message }`() {
+    fun `M register RUM Error W RumMonitor registered { exception with message }`() {
         val currentThread = Thread.currentThread()
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         verify(mockRumMonitor).addCrash(
-            "Application crash detected: " + fakeThrowable.message,
+            fakeThrowable.message!!,
             RumErrorSource.SOURCE,
             fakeThrowable
         )
@@ -364,22 +396,39 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M register RUM Error with crash W RumMonitor registered { exception without message }`(
+    fun `M register RUM Error W RumMonitor registered { exception without message }`(
         forge: Forge
     ) {
         val currentThread = Thread.currentThread()
         GlobalRum.registerIfAbsent(mockRumMonitor)
 
-        val throwableNoMessage = forge.aThrowableWithoutMessage()
+        val throwable = forge.aThrowableWithoutMessage()
 
-        testedHandler.uncaughtException(currentThread, throwableNoMessage)
+        testedHandler.uncaughtException(currentThread, throwable)
 
         verify(mockRumMonitor).addCrash(
-            "Application crash detected",
+            "Application crash detected: ${throwable.javaClass.canonicalName}",
             RumErrorSource.SOURCE,
-            throwableNoMessage
+            throwable
         )
-        verify(mockPreviousHandler).uncaughtException(currentThread, throwableNoMessage)
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
+    }
+
+    @Test
+    fun `M register RUM Error W RumMonitor registered { exception without message or class }`() {
+        val currentThread = Thread.currentThread()
+        GlobalRum.registerIfAbsent(mockRumMonitor)
+
+        val throwable = object : RuntimeException() {}
+
+        testedHandler.uncaughtException(currentThread, throwable)
+
+        verify(mockRumMonitor).addCrash(
+            "Application crash detected: ${throwable.javaClass.simpleName}",
+            RumErrorSource.SOURCE,
+            throwable
+        )
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
     @Test
