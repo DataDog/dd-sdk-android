@@ -45,7 +45,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -215,12 +214,11 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action with updated data 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`(
-        @Forgery type: RumActionType,
         @StringForgery name: String,
         forge: Forge
     ) {
         // Given
-        assumeTrue { type != fakeType }
+        val type = forge.aValueFrom(RumActionType::class.java, listOf(fakeType))
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -985,8 +983,10 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopView) {no side effect}`() {
-        assumeTrue(testedScope.type != RumActionType.CUSTOM)
+    fun `𝕄 do nothing 𝕎 handleEvent(StopView) {no side effect}`(
+        forge: Forge
+    ) {
+        testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
 
         // Given
         testedScope.resourceCount = 0
