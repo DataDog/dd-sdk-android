@@ -301,7 +301,6 @@ internal class DatadogDataConstraintsTest {
         @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
-
         // Given
         val goodTimingPart = forge.anAlphabeticalString(case = Case.ANY)
         val badTimingPart = forge.anAsciiString()

@@ -24,6 +24,7 @@ import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -39,7 +40,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -555,27 +555,27 @@ internal class RumResourceInputStreamTest {
 
     @Test
     fun `𝕄 register resource 𝕎 read() + mark() + reset() + close() {manual}`(
-        @StringForgery content: String
+        forge: Forge
     ) {
         // Given
+        val content = forge.anAlphabeticalString(size = forge.anInt(16, 1024))
         val contentBytes = content.toByteArray()
-        assumeTrue(contentBytes.size > 6)
         val inputStream = contentBytes.inputStream()
         testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
-        val mark = max(contentBytes.size / 3, 2)
+        val mark = contentBytes.size / 3
         val len1 = mark
         val len2 = contentBytes.size - (len1 + mark)
 
         // When
         val result = testedInputStream.use {
-            val byteArray = ByteArray(1024)
+            val byteArray = ByteArray(len1 + len1 + len1 + len2)
             it.read(byteArray, 0, len1)
             it.mark(mark)
-            it.read(byteArray, len1, mark)
+            it.read(byteArray, mark, len1)
             it.reset()
-            it.read(byteArray, len1 + mark, mark)
+            it.read(byteArray, len1 + mark, len1)
             it.read(byteArray, len1 + mark + mark, len2)
-            String(byteArray.take(len1 + mark + mark + len2).toByteArray())
+            String(byteArray.take(len1 + len1 + len1 + len2).toByteArray())
         }
 
         // Then
@@ -604,20 +604,20 @@ internal class RumResourceInputStreamTest {
 
     @Test
     fun `𝕄 register resource 𝕎 read() + skip() + close() {manual}`(
-        @StringForgery content: String
+        forge: Forge
     ) {
         // Given
+        val content = forge.anAlphabeticalString(size = forge.anInt(16, 1024))
         val contentBytes = content.toByteArray()
-        assumeTrue(contentBytes.size > 6)
         val inputStream = contentBytes.inputStream()
         testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
-        val skipped = max(contentBytes.size / 3, 2)
+        val skipped = contentBytes.size / 3
         val len1 = skipped
         val len2 = contentBytes.size - (len1 + skipped)
 
         // When
         val result = testedInputStream.use {
-            val byteArray = ByteArray(1024)
+            val byteArray = ByteArray(len1 + len2)
             it.read(byteArray, 0, len1)
             it.skip(skipped.toLong())
             it.read(byteArray, len1, len2)
