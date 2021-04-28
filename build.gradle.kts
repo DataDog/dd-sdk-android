@@ -204,6 +204,11 @@ tasks.register("buildIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
+tasks.register("buildNightlyTestsArtifacts") {
+    dependsOn(":instrumented:nightly-tests:assembleDebugAndroidTest")
+    dependsOn(":instrumented:nightly-tests:assembleDebug")
+}
+
 tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":dd-sdk-android-ndk:assembleDebugAndroidTest")
     // we need this artifact to trick Bitrise
