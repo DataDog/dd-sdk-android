@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.utils.asTimingsPayload
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -1160,6 +1161,67 @@ internal class RumResourceScopeTest {
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 use explicit timings 𝕎 handleEvent { AddResourceTiming + StopResource }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+            mapOf(
+                "_dd.resource_timings"
+                    to forge.getForgery(ResourceTiming::class.java).asTimingsPayload()
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope
+            .handleEvent(RumRawEvent.AddResourceTiming(fakeKey, timing = timing), mockWriter)
+            ?.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .hasResourceData {
+                    hasTiming(timing)
+                }
+        }
+    }
+
+    @Test
+    fun `𝕄 use attributes timings 𝕎 handleEvent { StopResource without AddResourceTiming  }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+            mapOf("_dd.resource_timings" to timing.asTimingsPayload())
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .hasResourceData {
+                    hasTiming(timing)
+                }
+        }
     }
 
     // region Internal
