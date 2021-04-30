@@ -1,4 +1,9 @@
-FROM ubuntu:16.04
+FROM registry.ddbuild.io/images/mirror/ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set timezone to UTC by default
+RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
 RUN apt-get update \
     && apt-get -y install openjdk-8-jdk \
@@ -14,6 +19,8 @@ RUN set -x \
     wget \
     openssh-client \
     expect \
+    python3-distutils \
+    python3-apt \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -77,3 +84,12 @@ ENV PATH $PATH:$GRADLE_HOME/bin
 ENV PATH $PATH:$ANDROID_HOME/platform-tools
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
+# Woke
+ENV WOKE_VERSION "0.6.0"
+ENV WOKE_SHA256 "ea5605d4242b93d9586a21878264dd8abcf64ed92f0f6538ea831d9d3215b883"
+
+RUN curl -L https://github.com/get-woke/woke/releases/download/v${WOKE_VERSION}/woke-${WOKE_VERSION}-linux-amd64.tar.gz -o woke-linux-amd64.tar.gz \
+ && echo "${WOKE_SHA256} woke-linux-amd64.tar.gz" | sha256sum -c  \
+ && tar -xf woke-linux-amd64.tar.gz \
+ && mv woke-${WOKE_VERSION}-linux-amd64/woke /usr/bin/woke \
+ && rm -Rf woke-${WOKE_VERSION}-linux-amd64 woke-${WOKE_VERSION}-linux-amd64.tar.gz
