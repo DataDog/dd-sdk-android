@@ -162,7 +162,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     }
 
     @Test
-    fun `it will do nothing if fragment is not whitelisted`(
+    fun `it will do nothing if fragment is not accepted`(
         forge: Forge
     ) {
         // Given
@@ -344,7 +344,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
-    fun `it will do nothing when fragment is not whitelisted`(
+    fun `it will do nothing when fragment is not accepted`(
         forge: Forge
     ) {
         // Given

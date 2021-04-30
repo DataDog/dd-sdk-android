@@ -34,7 +34,7 @@ internal class ConditionWatcherTest {
 
         val fakeThrowable = forge.aThrowable()
 
-        // just a sanity check that we have a good throwable in case if underlying aThrowable
+        // just a coherence check that we have a good throwable in case if underlying aThrowable
         // implementation is changed and includes any sub-class of AssertionError
         assertThat(fakeThrowable).isNotInstanceOf(AssertionError::class.java)
 
