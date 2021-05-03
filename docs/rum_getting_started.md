@@ -51,10 +51,10 @@ class SampleApplication : Application() {
             crashReportsEnabled = true
         )
                         .trackInteractions()
-                        .trackLongTasks(durationThresold)
+                        .trackLongTasks(durationThreshold)
                         .useViewTrackingStrategy(strategy)
                         .build()
-          val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
           Datadog.initialize(this, credentials, configuration, trackingConsent)
 
        }
@@ -68,16 +68,16 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-         val configuration = Configuration.Builder(
+        val configuration = Configuration.Builder(
             rumEnabled = true,
             crashReportsEnabled = true
         )
                         .trackInteractions()
-                        .trackLongTasks(durationThresold)
+                        .trackLongTasks(durationThreshold)
                         .useViewTrackingStrategy(strategy)
                         .useEUEndpoints()
                         .build()
-        val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
         Datadog.initialize(this, credentials, configuration, trackingConsent)
           
     }
@@ -86,7 +86,7 @@ class SampleApplication : Application() {
 {{% /tab %}}
 {{< /tabs >}}
 
-Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments ,etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
+Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments, etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
 Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated stack traces. For more information see the [guide to uploading Android source mapping files][8].
 

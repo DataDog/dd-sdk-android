@@ -18,6 +18,6 @@ This folder has dedicated documentation for:
 * [SDK Benchmarks](sdk_benchmarks.md)
 * [SDK Performance](sdk_performance.md)
 
-## Troublehsooting
+## Troubleshooting
 * [Troubleshooting FAQs](troubleshooting_android.md)
 * [Advanced Troubleshooting](advanced_troubleshooting.md)

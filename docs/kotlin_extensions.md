@@ -31,7 +31,7 @@ span.setError(message)
 ```kotlin
 
 // Automatically creates a span around the provided lambda
-withinSpan(spanName, parentSpan){
+withinSpan(spanName, parentSpan) {
   // Your code here
 }
 
@@ -44,7 +44,7 @@ withinSpan(spanName, parentSpan){
 // Executes the given [block] function on the [Closeable] instance, intercepts any Exception and sends it in 
 // a RUM error event closing the [Closeable] instance afterwards.
 
-val closeable:Closeable
+val closeable: Closeable = ...
 closeable.useMonitored { 
     // Your code here
 }

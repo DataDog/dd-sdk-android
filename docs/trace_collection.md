@@ -14,7 +14,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     dependencies {
         implementation "com.datadoghq:dd-sdk-android:x.x.x"
     }
-   ```
+    ```
 
 2. Initialize the library with your application context, tracking consent, and the [Datadog client token][4] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][7] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
 
@@ -24,8 +24,8 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
     class SampleApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-            val configuration = Configuration.Builder().build()
-            val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+            val configuration = Configuration.Builder(tracesEnabled = true, ...).build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
             Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
@@ -36,10 +36,10 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
    class SampleApplication : Application() {
        override fun onCreate() {
           super.onCreate()
-          val configuration = Configuration.Builder()
+          val configuration = Configuration.Builder(tracesEnabled = true, ...)
              .useEUEndpoints()
              .build()
-          val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
           Datadog.initialize(this, credentials, configuration, trackingConsent)
        }
    }
@@ -65,7 +65,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
    Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
    ```kotlin
-    if(Datadog.isInitialized()){
+    if (Datadog.isInitialized()) {
         // your code here
     }
    ```
@@ -114,19 +114,15 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
             tracer.activateSpan(childSpan).use {
                // Do something ...
             }  
-          }
-          catch(e:Error){
+          } catch(e: Error) {
             childSpan.error(e)
-          }
-          finally {
+          } finally {
             childSpan.finish()
           }
       }
-   }
-   catch(e:Error){
+   } catch(e: Error) {
      span.error(e)
-   }
-   finally {
+   } finally {
      span.finish()
    }
 
@@ -138,7 +134,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
      val scope = tracer.activateSpan(span)
      scope.use {
         // Do something ...
-        doAsynWork {
+        doAsyncWork {
           // Step 2: reactivate the Span in the worker thread
            val scopeContinuation = tracer.scopeManager().activate(span)
            scopeContinuation.use {
@@ -146,11 +142,9 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
            }
         }
       }   
-   }
-   catch(e:Error){
+   } catch(e: Error) {
      span.error(e)
-   }
-   finally{
+   } finally {
      span.finish()
    }
 
@@ -170,8 +164,8 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
                tracedRequestBuilder.addHeader(key, value)
            }
    )
-    val request = tracedRequestBuilder.build()
-    // Dispatch the request and finish the span after.
+   val request = tracedRequestBuilder.build()
+   // Dispatch the request and finish the span after.
    ```
 
    * Step 2: Extract the client tracer context from headers in server code.
@@ -185,7 +179,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
                     .toMultimap()
                     .map { it.key to it.value.joinToString(";") }
                     .toMap()
-                    .toMutableMap()
+                    .entrySet()
                     .iterator()
             }
         )
@@ -219,7 +213,7 @@ Send [traces][1] to Datadog from your Android applications with [Datadog's `dd-s
 
 8. If you need to modify some attributes in your Span events before batching you can do so by providing an implementation of `SpanEventMapper` when initializing the SDK:
    ```kotlin
-      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+      val config = Configuration.Builder(tracesEnabled = true, ...)
                         // ...
                         .setSpanEventMapper(spanEventMapper)
                         .build()
