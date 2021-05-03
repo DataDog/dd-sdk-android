@@ -133,7 +133,10 @@ internal class RumResourceScope(
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
 
-        val finalTiming = timing
+        @Suppress("UNCHECKED_CAST")
+        val finalTiming = timing ?: extractResourceTiming(
+            attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
+        )
         val duration = eventTime.nanoTime - startedNanos
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
@@ -278,9 +281,8 @@ internal class RumResourceScope(
     // endregion
 
     companion object {
-        internal const val HTTP_ERROR_CODE_THRESHOLD = 400
-        internal const val ERROR_MSG_FORMAT = "Request error %s %s"
         internal const val ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT = "HTTP %d"
+
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,

@@ -85,6 +85,11 @@ object RumAttributes {
      */
     const val SPAN_ID: String = "_dd.span_id"
 
+    /**
+     * Timings coming from external sources, as object { startTime (number) + duration (number) }.
+     */
+    const val RESOURCE_TIMINGS: String = "_dd.resource_timings"
+
     // endregion
 
     // region Error
