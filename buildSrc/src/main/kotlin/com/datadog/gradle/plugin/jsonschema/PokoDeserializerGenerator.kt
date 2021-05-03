@@ -6,13 +6,10 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import com.squareup.kotlinpoet.ARRAY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.throws
@@ -28,38 +25,33 @@ class PokoDeserializerGenerator(
     private lateinit var rootTypeName: String
 
     /**
-     * Generate the companion class for a Class Type.
+     * Generate the deserializer method for a Class Type.
      * @param definition the type definition
      * @param rootTypeName the type name of the root parent class
+     * @param companionSpecBuilder the Companion object Builder where to attach this method
      */
-    fun generateCompanionForClass(
+    fun generateDeserializerForClass(
         definition: TypeDefinition.Class,
-        rootTypeName: String
-    ): TypeSpec {
-        val companionSpecBuilder = TypeSpec.companionObjectBuilder()
-
-        if (definition.additionalProperties != null) {
-            if (!definition.properties.isNullOrEmpty()) {
-                companionSpecBuilder.addProperty(generateReservedPropertyNames(definition))
-            }
-        }
-
+        rootTypeName: String,
+        companionSpecBuilder: TypeSpec.Builder
+    ): TypeSpec.Builder {
         companionSpecBuilder.addFunction(generateClassDeserializer(definition, rootTypeName))
-
-        return companionSpecBuilder.build()
+        return companionSpecBuilder
     }
 
     /**
-     * Generate the companion class for a Class Type.
+     * Generate the deserializer method for an Enum Type.
      * @param definition the type definition
      * @param rootTypeName the type name of the root parent class
+     * @param companionSpecBuilder the Companion object Builder where to attach this method
      */
-    fun generateCompanionForEnum(definition: TypeDefinition.Enum, rootTypeName: String): TypeSpec {
-        val companionSpecBuilder = TypeSpec.companionObjectBuilder()
-
+    fun generateDeserializerForEnum(
+        definition: TypeDefinition.Enum,
+        rootTypeName: String,
+        companionSpecBuilder: TypeSpec.Builder
+    ): TypeSpec.Builder {
         companionSpecBuilder.addFunction(generateEnumDeserializer(definition, rootTypeName))
-
-        return companionSpecBuilder.build()
+        return companionSpecBuilder
     }
 
     // region Internal / Class
@@ -133,7 +125,6 @@ class PokoDeserializerGenerator(
                 assignee = "val ${p.name.variableName()}",
                 getter = "$ROOT_JSON_OBJECT_PARAM_NAME.get(\"${p.name}\")",
                 nullable = p.optional,
-                isConstantParentClass = isConstantClass,
                 funBuilder = funBuilder
             )
         }
@@ -196,7 +187,10 @@ class PokoDeserializerGenerator(
         funBuilder.beginControlFlow("for (entry in %L.entrySet())", ROOT_JSON_OBJECT_PARAM_NAME)
 
         if (hasKnownProperties) {
-            funBuilder.beginControlFlow("if (entry.key !in %L)", RESERVED_PROPERTIES_NAME)
+            funBuilder.beginControlFlow(
+                "if (entry.key !in %L)",
+                PokoGenerator.RESERVED_PROPERTIES_NAME
+            )
         }
 
         if (additionalProperties is TypeDefinition.Class) {
@@ -210,7 +204,6 @@ class PokoDeserializerGenerator(
                 assignee = "${PokoGenerator.ADDITIONAL_PROPERTIES_NAME}[entry.key]",
                 getter = "entry.value",
                 nullable = false,
-                isConstantParentClass = false,
                 funBuilder = funBuilder
             )
         }
@@ -235,7 +228,6 @@ class PokoDeserializerGenerator(
         assignee: String,
         getter: String,
         nullable: Boolean,
-        isConstantParentClass: Boolean,
         funBuilder: FunSpec.Builder
     ) {
         when (propertyType) {
@@ -506,20 +498,6 @@ class PokoDeserializerGenerator(
         funBuilder.endControlFlow()
     }
 
-    private fun generateReservedPropertyNames(definition: TypeDefinition.Class): PropertySpec {
-
-        val propertyNames = definition.properties
-            .joinToString(", ") { "\"${it.name}\"" }
-
-        val propertyBuilder = PropertySpec.builder(
-            RESERVED_PROPERTIES_NAME,
-            ARRAY.parameterizedBy(STRING),
-            KModifier.PRIVATE
-        )
-            .initializer("arrayOf($propertyNames)")
-        return propertyBuilder.build()
-    }
-
     private fun TypeDefinition.Primitive.asPrimitiveType(): String {
         return when (type) {
             JsonPrimitiveType.BOOLEAN -> "asBoolean"
@@ -582,7 +560,5 @@ class PokoDeserializerGenerator(
         private val NUMBER_FORMAT_EXCEPTION = ClassName.bestGuess("java.lang.NumberFormatException")
         private val MUTABLE_LIST = ClassName.bestGuess("kotlin.collections.ArrayList")
         private val MUTABLE_SET = ClassName.bestGuess("kotlin.collections.HashSet")
-
-        private const val RESERVED_PROPERTIES_NAME = "RESERVED_PROPERTIES"
     }
 }

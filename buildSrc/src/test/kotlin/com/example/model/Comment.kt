@@ -56,7 +56,9 @@ data class Comment(
             val json = JsonObject()
             json.addProperty("global", global)
             additionalProperties.forEach { (k, v) ->
-                json.addProperty(k, v)
+                if (k !in RESERVED_PROPERTIES) {
+                    json.addProperty(k, v)
+                }
             }
             return json
         }

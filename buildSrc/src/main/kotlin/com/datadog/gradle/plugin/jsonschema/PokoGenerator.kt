@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import com.squareup.kotlinpoet.ARRAY
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -101,17 +102,38 @@ class PokoGenerator(
         )
         typeBuilder.primaryConstructor(constructorBuilder.build())
             .addKdoc(docBuilder.build())
-
-        // if the class contains only constant primitives we do not need this
-        if (!definition.isConstantClass()) {
-            val companion =
-                deserializerGenerator.generateCompanionForClass(definition, rootTypeName)
-            typeBuilder.addType(companion)
-        }
-
-
+        generateCompanionObjectForClass(typeBuilder, definition)
 
         return typeBuilder
+    }
+
+    /**
+     * Generates the Companion Object code block
+     * @param typeBuilder the class builder
+     * @param definition the class type definition
+     */
+    private fun generateCompanionObjectForClass(
+        typeBuilder: TypeSpec.Builder,
+        definition: TypeDefinition.Class
+    ) {
+        // In case the class is constant (contains constant primitives and no additionalProperties)
+        // we do not need a deserializer method or RESERVED_ATTRIBUTES for serialization
+        if (definition.isConstantClass()) {
+            return
+        }
+
+        val companionSpecBuilder: TypeSpec.Builder = TypeSpec.companionObjectBuilder()
+        // add the RESERVED_ATTRIBUTES property to Companion Object
+        if (definition.additionalProperties != null && definition.properties.isNotEmpty()) {
+            companionSpecBuilder.addProperty(generateReservedPropertyNames(definition))
+        }
+
+        deserializerGenerator.generateDeserializerForClass(
+            definition,
+            rootTypeName,
+            companionSpecBuilder
+        )
+        typeBuilder.addType(companionSpecBuilder.build())
     }
 
     /**
@@ -169,12 +191,16 @@ class PokoGenerator(
         }
 
         enumBuilder.addFunction(serializerGenerator.generateEnumSerializer())
-
-        val companion = deserializerGenerator.generateCompanionForEnum(definition, rootTypeName)
+        val companionSpecBuilder = TypeSpec.companionObjectBuilder()
+        deserializerGenerator.generateDeserializerForEnum(
+            definition,
+            rootTypeName,
+            companionSpecBuilder
+        )
 
         return enumBuilder
             .addKdoc(docBuilder.build())
-            .addType(companion)
+            .addType(companionSpecBuilder.build())
             .build()
     }
 
@@ -399,6 +425,19 @@ class PokoGenerator(
         }
     }
 
+    private fun generateReservedPropertyNames(definition: TypeDefinition.Class): PropertySpec {
+
+        val propertyNames = definition.properties
+            .joinToString(", ") { "\"${it.name}\"" }
+
+        val propertyBuilder = PropertySpec.builder(
+            RESERVED_PROPERTIES_NAME,
+            ARRAY.parameterizedBy(STRING),
+            KModifier.PRIVATE
+        ).initializer("arrayOf($propertyNames)")
+        return propertyBuilder.build()
+    }
+
     // endregion
 
     companion object {
@@ -406,5 +445,6 @@ class PokoGenerator(
         const val TO_JSON_ELEMENT_EXTENSION_FUNCTION = "toJsonElement"
         const val ENUM_CONSTRUCTOR_JSON_VALUE_NAME = "jsonValue"
         const val ADDITIONAL_PROPERTIES_NAME = "additionalProperties"
+        const val RESERVED_PROPERTIES_NAME = "RESERVED_PROPERTIES"
     }
 }

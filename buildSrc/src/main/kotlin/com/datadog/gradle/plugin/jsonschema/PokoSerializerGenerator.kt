@@ -26,7 +26,11 @@ class PokoSerializerGenerator {
         }
 
         if (definition.additionalProperties != null) {
-            appendAdditionalPropertiesSerialization(definition.additionalProperties, funBuilder)
+            appendAdditionalPropertiesSerialization(
+                definition.additionalProperties,
+                funBuilder,
+                !definition.properties.isNullOrEmpty()
+            )
         }
 
         funBuilder.addStatement("return json")
@@ -36,12 +40,20 @@ class PokoSerializerGenerator {
 
     private fun appendAdditionalPropertiesSerialization(
         additionalProperties: TypeDefinition,
-        funBuilder: FunSpec.Builder
+        funBuilder: FunSpec.Builder,
+        hasKnownProperties: Boolean
     ) {
         funBuilder.beginControlFlow(
             "%L.forEach { (k, v) ->",
             PokoGenerator.ADDITIONAL_PROPERTIES_NAME
         )
+
+        if (hasKnownProperties) {
+            funBuilder.beginControlFlow(
+                "if (k !in %L)",
+                PokoGenerator.RESERVED_PROPERTIES_NAME
+            )
+        }
 
         when (additionalProperties) {
             is TypeDefinition.Primitive -> funBuilder.addStatement("json.addProperty(k, v)")
@@ -57,6 +69,10 @@ class PokoSerializerGenerator {
             is TypeDefinition.Constant -> throw IllegalStateException(
                 "Unable to generate serialization for constant type $additionalProperties"
             )
+        }
+
+        if (hasKnownProperties) {
+            funBuilder.endControlFlow()
         }
 
         funBuilder.endControlFlow()
