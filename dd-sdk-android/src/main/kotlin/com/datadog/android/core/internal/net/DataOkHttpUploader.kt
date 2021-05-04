@@ -33,6 +33,7 @@ internal abstract class DataOkHttpUploader(
         } catch (e: Throwable) {
             sdkLogger.e(
                 "Unable to upload batch data.",
+                e,
                 attributes = mapOf(
                     ACTIVE_THREADS_LOG_ATTRIBUTE_KEY
                         to CoreFeature.uploadExecutorService.activeCount
