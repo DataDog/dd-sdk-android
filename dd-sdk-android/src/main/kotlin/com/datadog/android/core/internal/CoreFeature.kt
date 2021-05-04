@@ -322,6 +322,9 @@ internal object CoreFeature {
     private fun shutDownExecutors() {
         uploadExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
+
+        uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
     }
 
     private fun cleanupApplicationInfo() {
