@@ -213,24 +213,24 @@ val config = Configuration.Builder(rumEnabled = true, ...)
    |---------------|--------------------|-------------------------------------------------|
    | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
-   |               | `view.name           | Name of the view                                |
+   |               | `view.name`           | Name of the view                                |
    | ActionEvent   |                    |                                                 |
    |               | `action.target.name` | Target name                                     |
    |               | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
-   |               | `view.name           | Name of the view                                |
+   |               | `view.name`           | Name of the view                               |
    | ErrorEvent    |                      |                                                 |
    |               | `error.message`      | Error message                                   |
    |               | `error.stack`        | Stacktrace of the error                         |
    |               | `error.resource.url` | URL of the resource                             |
    |               | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
-   |               | `view.name           | Name of the view                                |
+   |               | `view.name`           | Name of the view                                |
    | ResourceEvent |                    |                                                 |
    |               | `resource.url`       | URL of the resource                             |
    |               | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
-   |               | `view.name           | Name of the view                                |
+   |               | `view.name`           | Name of the view                                |
    | LongTaskEvent |                    |                                                 |
    |               | `view.referrer`       | URL that linked to the initial view of the page |
    |               | `view.url`            | URL of the view                                 |
