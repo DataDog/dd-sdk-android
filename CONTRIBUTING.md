@@ -276,5 +276,36 @@ Because we sometimes need to reuse some setup or assertions in our tests, we ten
 - `fun verifyMockMatchesState(mock, [args])`: methods verifying that a mock’s interaction. These methods must be of Unit type, and only call verifications with the Mockito framework.
 - `fun setupSomething()`: method to setup a complex test (should only be used in the Given part of a test).
 
+### Nightly Tests
 
+Each public API method in the SDK is covered by a test case in the `nightly-tests` module. All test cases are executed on a Bitrise emulator by a Datadog Synthetic Test every 24 hours. Each test case
+output is measured by 2 Datadog Monitors (one for performance and one for functionality). There are some best practices when writing a nightly test as follows: 
 
+- The test method name must follow the following format: `[rootFeature]_[subFeature]_[method]_[additionalInfo]` where:
+
+    1. `rootFeature` is one of the top level features (logs, rum, apm, et)
+    
+    2. `subFeature` is the feature under test (logger, monitor, …)
+    
+    3. `method` is the method under test (not necessarily exactly the exact method name but the purpose of the feature from a customer’s PoV, e.g: DataScrubbing)
+    
+    4. `additionalInfo` is some context to distinguish multiple test on the same method (could be related to the argument, the context, a state)
+    
+- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android/apiSurface). 
+  This will be used by our test coverage tool.
+  
+
+We have created a Live Template that you can add in your development environment (Android Studio, IntelliJ IDEA) to ease your work when creating a nightly test:
+```
+/**
+ * apiMethodSignature: THE API METHOD SIGNATURE HERE
+ */
+@org.junit.Test
+fun $EXP$(){
+    val testMethodName = "$EXP$"
+    measure(testMethodName){
+        // API call here
+    }
+}
+
+```
