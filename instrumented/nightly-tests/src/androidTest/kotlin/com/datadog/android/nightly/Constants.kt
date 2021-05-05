@@ -7,3 +7,7 @@
 package com.datadog.android.nightly
 
 const val TEST_METHOD_NAME_KEY = "test_method_name"
+const val ENV_NAME = "instrumentation"
+const val INITIALIZE_SDK_TEST_METHOD_NAME = "sdk_initialize"
+const val INITIALIZE_LOGGER_TEST_METHOD_NAME = "logs_logger_initialize"
+const val SET_TRACKING_CONSENT_METHOD_NAME = "sdk_set_tracking_consent"

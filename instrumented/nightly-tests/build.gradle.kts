@@ -31,7 +31,7 @@ android {
         multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
 
-        testInstrumentationRunner = "com.datadog.android.nightly.runner.DatadogTestsRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField(
             "String",

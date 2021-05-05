@@ -8,8 +8,11 @@ package com.datadog.android.nightly.logs
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.log.Logger
+import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.defaultTestAttributes
+import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -20,15 +23,19 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class LogsE2ETests {
+class LoggerE2ETests {
 
     @get:Rule
     val forge = ForgeRule()
+
+    @get:Rule
+    val nightlyTestRule = NightlyTestRule()
 
     lateinit var logger: Logger
 
     @Before
     fun setUp() {
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
         logger = Logger.Builder()
             .setLoggerName(LOGGER_NAME)
             .build()
@@ -242,9 +249,5 @@ class LogsE2ETests {
                 attributes
             )
         }
-    }
-
-    companion object {
-        const val LOGGER_NAME = "nightly-tests"
     }
 }
