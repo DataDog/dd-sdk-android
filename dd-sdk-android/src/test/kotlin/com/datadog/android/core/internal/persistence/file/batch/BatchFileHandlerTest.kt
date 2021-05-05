@@ -610,11 +610,14 @@ internal class BatchFileHandlerTest {
 
     @Test
     fun `𝕄 create dest, move all files and return true 𝕎 moveFiles() {dest dir does not exist)`(
-        @StringForgery fileNames: List<String>
+        @StringForgery fileNamesInput: List<String>
     ) {
         // Given
         fakeSrcDir.mkdirs()
         assumeFalse(fakeDstDir.exists())
+
+        // in case of file system is not case-sensitive, we need to drop all duplicates
+        val fileNames = fileNamesInput.distinctBy { it.toLowerCase(Locale.US) }
         fileNames.forEach { name ->
             File(fakeSrcDir, name).writeText(name.reversed())
         }
