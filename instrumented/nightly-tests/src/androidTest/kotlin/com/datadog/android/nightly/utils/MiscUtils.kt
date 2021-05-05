@@ -69,11 +69,15 @@ fun flushAndShutdownExecutors() {
     Datadog.invokeMethod("flushAndShutdownExecutors")
 }
 
-fun initializeSdk(targetContext: Context, consent: TrackingConsent = TrackingConsent.GRANTED) {
+fun initializeSdk(
+    targetContext: Context,
+    consent: TrackingConsent = TrackingConsent.GRANTED,
+    config: Configuration = createDatadogDefaultConfiguration()
+) {
     Datadog.initialize(
         targetContext,
         createDatadogCredentials(),
-        createDatadogConfiguration(),
+        config,
         consent
     )
     Datadog.setVerbosity(Log.VERBOSE)
@@ -97,7 +101,7 @@ private fun createDatadogCredentials(): Credentials {
     )
 }
 
-private fun createDatadogConfiguration(): Configuration {
+private fun createDatadogDefaultConfiguration(): Configuration {
     val configBuilder = Configuration.Builder(
         logsEnabled = true,
         tracesEnabled = true,
