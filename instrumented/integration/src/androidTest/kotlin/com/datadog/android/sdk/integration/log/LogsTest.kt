@@ -62,7 +62,7 @@ internal abstract class LogsTest {
                 }
 
             val tags = log.get(TAG_DDTAGS)?.asString.orEmpty().split(',')
-            assertThat(tags).containsOnlyElementsOf(globalTags)
+            assertThat(tags).isSubsetOf(globalTags)
 
             globalAttributes.forEach { (k, v) -> log.assertHasAttribute(k, v) }
             localAttributes.forEach { (k, v) -> log.assertHasAttribute(k, v) }

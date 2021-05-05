@@ -35,10 +35,10 @@ internal class UserInfoSerializerTest {
         val deserializedUserInfo = UserInfo.fromJson(serializedObject)
 
         // THEN
-        assertThat(deserializedUserInfo).isEqualToIgnoringGivenFields(
-            fakeUserInfo,
-            "additionalProperties"
-        )
+        assertThat(deserializedUserInfo)
+            .usingRecursiveComparison()
+            .ignoringFields("additionalProperties")
+            .isEqualTo(fakeUserInfo)
 
         DatadogMapAnyValueAssert.assertThat(deserializedUserInfo.additionalProperties)
             .isEqualTo(fakeUserInfo.additionalProperties)

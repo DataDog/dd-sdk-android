@@ -50,7 +50,7 @@ dependencies {
     // Tests
     testImplementation("junit:junit:4.12")
     testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
-    testImplementation("net.wuerl.kotlin:assertj-core-kotlin:0.2.1")
+    testImplementation("org.assertj:assertj-core:3.18.1")
     testImplementation("com.github.xgouchet.Elmyr:core:1.0.0")
     testImplementation("com.github.xgouchet.Elmyr:inject:1.0.0")
     testImplementation("com.github.xgouchet.Elmyr:junit4:1.0.0")
