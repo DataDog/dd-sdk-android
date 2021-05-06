@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import com.datadog.android.core.internal.data.upload.DataFlusher
+import com.datadog.android.core.internal.data.upload.Flusher
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
@@ -20,7 +22,7 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     private val fileOrchestrator: FileOrchestrator,
     private val executorService: ExecutorService,
     serializer: Serializer<T>,
-    payloadDecoration: PayloadDecoration,
+    private val payloadDecoration: PayloadDecoration,
     internalLogger: Logger
 ) : PersistenceStrategy<T> {
 
@@ -51,6 +53,10 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
 
     override fun getReader(): DataReader {
         return fileReader
+    }
+
+    override fun getFlusher(): Flusher {
+        return DataFlusher(fileOrchestrator, payloadDecoration, fileHandler)
     }
 
     // endregion

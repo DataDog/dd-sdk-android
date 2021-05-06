@@ -43,17 +43,22 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
@@ -709,6 +714,74 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+    }
+
+    @Test
+    fun `M drain the persistence executor queue W drainAndShutdownExecutors()`(forge: Forge) {
+        // Given
+        val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
+        val persistenceExecutor =
+            ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, blockingQueue)
+        CoreFeature.persistenceExecutorService = persistenceExecutor
+
+        // When
+        CoreFeature.drainAndShutdownExecutors()
+
+        // Then
+        blockingQueue.forEach {
+            verify(it).run()
+        }
+    }
+
+    @Test
+    fun `M drain the upload executor queue W drainAndShutdownExecutors()`(forge: Forge) {
+        // Given
+        val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
+        val mockUploadExecutor: ScheduledThreadPoolExecutor = mock()
+        whenever(mockUploadExecutor.queue).thenReturn(blockingQueue)
+        CoreFeature.uploadExecutorService = mockUploadExecutor
+
+        // When
+        CoreFeature.drainAndShutdownExecutors()
+
+        // Then
+        blockingQueue.forEach {
+            verify(it).run()
+        }
+    }
+
+    @Test
+    fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
+        // Given
+        val mockPersistenceExecutorService: ExecutorService = mock()
+        CoreFeature.persistenceExecutorService = mockPersistenceExecutorService
+
+        // When
+        CoreFeature.drainAndShutdownExecutors()
+
+        // Then
+        inOrder(mockPersistenceExecutorService) {
+            verify(mockPersistenceExecutorService).shutdown()
+            verify(mockPersistenceExecutorService).awaitTermination(10, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    fun `M shutdown with wait the upload executor W drainAndShutdownExecutors()`() {
+        // Given
+        val blockingQueue = LinkedBlockingQueue<Runnable>()
+        val mockUploadService: ScheduledThreadPoolExecutor = mock()
+        whenever(mockUploadService.queue).thenReturn(blockingQueue)
+        CoreFeature.uploadExecutorService = mockUploadService
+
+        // When
+        CoreFeature.drainAndShutdownExecutors()
+
+        // Then
+        inOrder(mockUploadService) {
+            verify(mockUploadService).shutdown()
+            verify(mockUploadService).awaitTermination(10, TimeUnit.SECONDS)
+        }
     }
 
     // region Internal

@@ -256,6 +256,25 @@ object Datadog {
         }
     }
 
+    // Executes all the pending queues in the upload/persistence executors.
+    // Tries to send all the granted data for each feature and then clears the folders and shuts
+    // down the persistence and the upload executors.
+    // You should not use this method in production code. By calling this method you will basically
+    // stop the SDKs persistence - upload streams and will leave it in an inconsistent state. This
+    // method is mainly for test purposes.
+    @Suppress("unused")
+    private fun flushAndShutdownExecutors() {
+        if (initialized.get()) {
+            // We need to drain and shutdown the executors first to make sure we avoid duplicated
+            // data due to async operations.
+            CoreFeature.drainAndShutdownExecutors()
+            LogsFeature.flushStoredData()
+            TracesFeature.flushStoredData()
+            RumFeature.flushStoredData()
+            CrashReportsFeature.flushStoredData()
+        }
+    }
+
     /**
      * Sets the verbosity of the Datadog library.
      *

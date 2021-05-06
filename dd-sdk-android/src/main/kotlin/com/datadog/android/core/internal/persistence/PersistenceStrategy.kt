@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
+import com.datadog.android.core.internal.data.upload.Flusher
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -18,4 +19,6 @@ internal interface PersistenceStrategy<T : Any> {
     fun getWriter(): DataWriter<T>
 
     fun getReader(): DataReader
+
+    fun getFlusher(): Flusher
 }

@@ -69,6 +69,7 @@ internal object CoreFeature {
     internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
     private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
     private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+
     // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
     // possibility to override it which is useful when SDK is used via bridge, say
     // from React Native integration
@@ -156,6 +157,27 @@ internal object CoreFeature {
         return FilePersistenceConfig(
             recentDelayMs = batchSize.windowDurationMs
         )
+    }
+
+    fun drainAndShutdownExecutors() {
+        val tasks = arrayListOf<Runnable>()
+        (persistenceExecutorService as? ThreadPoolExecutor)
+            ?.queue
+            ?.drainTo(tasks)
+        // we make sure we upload the currently locked files
+        uploadExecutorService
+            .queue
+            .drainTo(tasks)
+        // we need to make sure we drain the runnables in both executors first
+        // then we shut them down by using the await termination method to make sure we block
+        // the thread until the active task is finished.
+        persistenceExecutorService.shutdown()
+        uploadExecutorService.shutdown()
+        persistenceExecutorService.awaitTermination(10, TimeUnit.SECONDS)
+        uploadExecutorService.awaitTermination(10, TimeUnit.SECONDS)
+        tasks.forEach {
+            it.run()
+        }
     }
 
     // region Internal

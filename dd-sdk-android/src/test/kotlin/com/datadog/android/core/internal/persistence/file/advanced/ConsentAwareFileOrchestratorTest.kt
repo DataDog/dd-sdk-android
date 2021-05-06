@@ -276,7 +276,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
     // region getReadableFile
 
-    @RepeatedTest(8)
+    @Test
     fun `𝕄 return granted file 𝕎 getReadableFile() {initial consent}`(
         @Forgery consent: TrackingConsent,
         @Forgery file: File
@@ -293,7 +293,7 @@ internal class ConsentAwareFileOrchestratorTest {
         verifyZeroInteractions(mockPendingOrchestrator)
     }
 
-    @RepeatedTest(16)
+    @Test
     fun `𝕄 return granted file 𝕎 getReadableFile() {updated consent}`(
         @Forgery initialConsent: TrackingConsent,
         @Forgery updatedConsent: TrackingConsent,
@@ -316,7 +316,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
     // region getAllFiles
 
-    @RepeatedTest(8)
+    @Test
     fun `𝕄 return all files 𝕎 getAllFiles() {initial consent}`(
         @Forgery consent: TrackingConsent,
         forge: Forge
@@ -337,7 +337,7 @@ internal class ConsentAwareFileOrchestratorTest {
             .containsAll(grantedFiles)
     }
 
-    @RepeatedTest(16)
+    @Test
     fun `𝕄 return all files 𝕎 getAllFiles() {updated consent}`(
         @Forgery initialConsent: TrackingConsent,
         @Forgery updatedConsent: TrackingConsent,
@@ -358,6 +358,30 @@ internal class ConsentAwareFileOrchestratorTest {
         assertThat(result)
             .containsAll(pendingFiles)
             .containsAll(grantedFiles)
+    }
+
+    // endregion
+
+    // region getGrantedFiles
+
+    @Test
+    fun `𝕄 return granted files 𝕎 getFlushableFiles()`(
+        @Forgery consent: TrackingConsent,
+        forge: Forge
+    ) {
+        // Given
+        instantiateTestedOrchestrator(consent)
+        val pendingFiles = forge.aList { getForgery<File>() }
+        val grantedFiles = forge.aList { getForgery<File>() }
+        whenever(mockPendingOrchestrator.getFlushableFiles()) doReturn pendingFiles
+        whenever(mockGrantedOrchestrator.getFlushableFiles()) doReturn grantedFiles
+
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result)
+            .containsExactlyElementsOf(grantedFiles)
     }
 
     // endregion

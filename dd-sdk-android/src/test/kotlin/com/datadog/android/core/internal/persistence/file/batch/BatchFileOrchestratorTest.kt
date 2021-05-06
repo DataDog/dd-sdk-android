@@ -748,6 +748,48 @@ internal class BatchFileOrchestratorTest {
 
     // endregion
 
+    // region getAllFlushableFiles
+
+    @Test
+    fun `𝕄 return all files 𝕎 getAllFlushableFiles() {dir is not empty}`(
+        @IntForgery(1, 32) count: Int
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val old = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val new = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val expectedFiles = mutableListOf<File>()
+        for (i in 1..count) {
+            // create both non readable and non writable files
+            expectedFiles.add(
+                File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
+            )
+            expectedFiles.add(
+                File(fakeRootDir, (old - i).toString()).also { it.createNewFile() }
+            )
+        }
+
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result).containsAll(expectedFiles)
+    }
+
+    @Test
+    fun `𝕄 return empty list 𝕎 getAllFlushableFiles() {dir is empty}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    // endregion
+
     // region getRootDir
 
     @Test

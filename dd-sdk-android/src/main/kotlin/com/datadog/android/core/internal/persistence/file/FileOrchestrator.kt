@@ -33,6 +33,12 @@ internal interface FileOrchestrator {
     fun getReadableFile(excludeFiles: Set<File>): File?
 
     /**
+     * @return a List of all flushable files. A flushable file is any file (readable or writable)
+     * which contains valid data and is ready to be uploaded to the events endpoint.
+     */
+    fun getFlushableFiles(): List<File>
+
+    /**
      * @return a list of files in this orchestrator (both writable and readable)
      */
     fun getAllFiles(): List<File>
