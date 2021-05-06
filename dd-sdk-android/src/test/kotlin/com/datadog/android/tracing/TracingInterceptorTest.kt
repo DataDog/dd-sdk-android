@@ -226,7 +226,7 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(firstValue.headers(key)).containsOnly(value)
         }
     }
 
@@ -251,7 +251,7 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(firstValue.headers(key)).containsOnly(value)
         }
     }
 
@@ -279,10 +279,60 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(firstValue.headers(key)).containsOnly(value)
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
+    }
+
+    @Test
+    fun `𝕄 replace existing tracing header 𝕎 intercept() {global known host}`(
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) value: String,
+        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String,
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        fakeRequest = fakeRequest.newBuilder().addHeader(key, previousValue).build()
+        stubChain(mockChain, statusCode)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(key)).containsOnly(value)
+        }
+    }
+
+    @Test
+    fun `𝕄 replace existing tracing header 𝕎 intercept() {local known host}`(
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String,
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeRequest = forgeRequest(forge).newBuilder().addHeader(key, previousValue).build()
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        stubChain(mockChain, statusCode)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(key)).containsOnly(value)
+        }
     }
 
     @Test
@@ -306,7 +356,7 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(firstValue.headers(key)).containsOnly(value)
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())

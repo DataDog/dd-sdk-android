@@ -272,6 +272,7 @@ internal constructor(
             span.context(),
             Format.Builtin.TEXT_MAP_INJECT,
             TextMapInject { key, value ->
+                tracedRequestBuilder.removeHeader(key)
                 tracedRequestBuilder.addHeader(key, value)
             }
         )
