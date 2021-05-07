@@ -272,6 +272,8 @@ internal constructor(
             span.context(),
             Format.Builtin.TEXT_MAP_INJECT,
             TextMapInject { key, value ->
+                // By default the `addHeader` method adds a value and doesn't replace it
+                // We need to remove the old trace/span info to use the one for the current span
                 tracedRequestBuilder.removeHeader(key)
                 tracedRequestBuilder.addHeader(key, value)
             }
