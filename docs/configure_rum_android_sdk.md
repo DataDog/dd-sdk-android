@@ -103,33 +103,60 @@ Widgets are not automatically tracked with the SDK. To send UI interactions from
 ## Initialization parameters
  
 You can use the following methods in `Configuration.Builder` when creating the Datadog configuration to initialize the library:
- 
-| Method                           | Description  |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `trackInteractions(Array<ViewAttributesProvider>)` | Enables tracking user interactions (such as tap, scroll, or swipe). The parameter also allows you to add custom attributes to the RUM Action events based on the widget with which the user interacted. |
-| `useViewTrackingStrategy(strategy)` | Defines the strategy used to track views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][4] or implement your own. |
-| `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped. |
-| `trackLongTasks(durationThresold)` | Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.  |
-| `setFirstPartyHosts()` | Defines hosts that have tracing enabled and have RUM resources categorized as `first-party`. |
-| `useEUEndpoints()` | Switches target data to EU endpoints. |
-| `useUSEndpoints()` | Switches target data to US endpoints. |
-| `useGovEndpoints()` | Switches target data to US1-FED endpoints. |
-| `setBatchSize([SMALL|MEDIUM|LARGE])` | Defines the individual batch size for requests sent to Datadog. |
-| `setUploadFrequency([FREQUENT|AVERAGE|RARE])` | Defines the frequency for requests made to Datadog endpoints (if requests are available). |
-| `sampleRumSessions(<samplingRate>)` | Sets the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.) |
-| `setRumXxxEventMapper()` | Sets the data scrubbing callbacks for views, actions, resources, and errors. |
+
+`trackInteractions(Array<ViewAttributesProvider>)` 
+: Enables tracking user interactions (such as tap, scroll, or swipe). The parameter also allows you to add custom attributes to the RUM Action events based on the widget with which the user interacted.
+
+`useViewTrackingStrategy(strategy)` 
+: Defines the strategy used to track views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][4] or implement your own.
+
+`addPlugin(DatadogPlugin, Feature)`
+: Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped.
+
+`trackLongTasks(durationThreshold)` 
+: Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.
+
+`setFirstPartyHosts()` 
+: Defines hosts that have tracing enabled and have RUM resources categorized as `first-party`.
+
+`useEUEndpoints()` 
+: Switches target data to EU endpoints.
+
+`useUSEndpoints()` 
+: Switches target data to US endpoints.
+
+`useGovEndpoints()` 
+: Switches target data to US1-FED endpoints.
+
+`setBatchSize([SMALL|MEDIUM|LARGE])` 
+: Defines the individual batch size for requests sent to Datadog.
+
+`setUploadFrequency([FREQUENT|AVERAGE|RARE])` 
+: Defines the frequency for requests made to Datadog endpoints (if requests are available).
+
+`sampleRumSessions(<samplingRate>)` 
+: Sets the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.)
+
+`setRumXxxEventMapper()` 
+: Sets the data scrubbing callbacks for views, actions, resources, and errors.
 
  
 ### Automatically track views
 
 To automatically track your views (activities, fragments, etc.), provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the following strategies:
 
-| Strategy | Description                                                                                                                                                                                                                                                   |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ActivityViewTrackingStrategy`   | Every activity in your application is considered a distinct view. |
-| `FragmentViewTrackingStrategy`     | Every fragment in your application is considered a distinct view.    |
-| `MixedViewTrackingStrategy` | Every activity or fragment in your application is considered a distinct view.  |
-| `NavigationViewTrackingStrategy`| Recommended for Android Jetpack Navigation library users. Each Navigation destination is considered a distinct view.  |
+`ActivityViewTrackingStrategy`
+: Every activity in your application is considered a distinct view.
+
+`FragmentViewTrackingStrategy`
+: Every fragment in your application is considered a distinct view.
+
+`MixedViewTrackingStrategy` 
+: Every activity or fragment in your application is considered a distinct view.
+
+`NavigationViewTrackingStrategy`
+: Recommended for Android Jetpack Navigation library users. Each Navigation destination is considered a distinct view.
+
 
 For instance, to set each fragment as a distinct view, use the following configuration in your [setup][1]:
    
