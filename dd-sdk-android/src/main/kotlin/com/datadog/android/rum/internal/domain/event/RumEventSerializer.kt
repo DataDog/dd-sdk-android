@@ -93,7 +93,7 @@ internal class RumEventSerializer(
         )
 
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
-        internal const val USER_ATTRIBUTE_PREFIX: String = "$GLOBAL_ATTRIBUTE_PREFIX.usr"
+        internal const val USER_ATTRIBUTE_PREFIX: String = "usr"
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
     }
 }
