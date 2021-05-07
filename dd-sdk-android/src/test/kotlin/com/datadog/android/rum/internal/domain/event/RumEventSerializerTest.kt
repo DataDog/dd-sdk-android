@@ -377,10 +377,9 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `M sanitise the user extra info keys W level deeper than 8`(forge: Forge) {
+    fun `M sanitise the user extra info keys W total level deeper than 10`(forge: Forge) {
         // GIVEN
-        val fakeBadKey =
-            forge.aList(size = 9) { forge.anAlphabeticalString() }.joinToString(".")
+        val fakeBadKey = forge.aList(size = 10) { forge.anAlphabeticalString() }.joinToString(".")
         val lastIndexOf = fakeBadKey.lastIndexOf('.')
         val expectedSanitisedKey =
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
