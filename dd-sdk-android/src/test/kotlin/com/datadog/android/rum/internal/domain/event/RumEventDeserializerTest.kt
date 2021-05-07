@@ -129,10 +129,10 @@ internal class RumEventDeserializerTest {
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedActionEvent = deserializedEvent.event as ActionEvent
-        assertThat(deserializedActionEvent).isEqualToIgnoringGivenFields(
-            fakeActionEvent,
-            "dd"
-        )
+        assertThat(deserializedActionEvent)
+            .usingRecursiveComparison()
+            .ignoringFields("dd")
+            .isEqualTo(fakeActionEvent)
     }
 
     @Test
@@ -155,10 +155,10 @@ internal class RumEventDeserializerTest {
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedErrorEvent = deserializedEvent.event as ErrorEvent
-        assertThat(deserializedErrorEvent).isEqualToIgnoringGivenFields(
-            fakeErrorEvent,
-            "dd"
-        )
+        assertThat(deserializedErrorEvent)
+            .usingRecursiveComparison()
+            .ignoringFields("dd")
+            .isEqualTo(fakeErrorEvent)
     }
 
     @Test
@@ -181,10 +181,10 @@ internal class RumEventDeserializerTest {
         DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedLongTaskEvent = deserializedEvent.event as LongTaskEvent
-        assertThat(deserializedLongTaskEvent).isEqualToIgnoringGivenFields(
-            fakeLongTaskEvent,
-            "dd"
-        )
+        assertThat(deserializedLongTaskEvent)
+            .usingRecursiveComparison()
+            .ignoringFields("dd")
+            .isEqualTo(fakeLongTaskEvent)
     }
 
     @Test

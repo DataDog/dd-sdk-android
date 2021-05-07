@@ -44,8 +44,10 @@ class ModelWithAdditionalAttributesTest {
                     "Deserialized model was not the same " +
                         "with the serialized for type: [$type] and test iteration: [$it]"
                 )
-                .usingComparatorForType(additionalPropertiesComparator, mapClass)
-                .isEqualToIgnoringGivenFields(expectedModel, "information")
+                .usingRecursiveComparison()
+                .withComparatorForType(additionalPropertiesComparator, mapClass)
+                .ignoringFields("information")
+                .isEqualTo(expectedModel)
             // Assertj does not apply the custom comparator recursively :(
             val expectedInformation: Any? = expectedModel.getFieldValue("information")
             val generatedInformation: Any? = generatedModel.getFieldValue("information")
@@ -57,8 +59,9 @@ class ModelWithAdditionalAttributesTest {
                     "Deserialized information model was not the same " +
                         "with the serialized one at test iteration: [$it]"
                 )
-                .usingComparatorForType(additionalPropertiesComparator, mapClass)
-                .isEqualToComparingFieldByField(expectedInformation)
+                .usingRecursiveComparison()
+                .withComparatorForType(additionalPropertiesComparator, mapClass)
+                .isEqualTo(expectedInformation)
         }
     }
 

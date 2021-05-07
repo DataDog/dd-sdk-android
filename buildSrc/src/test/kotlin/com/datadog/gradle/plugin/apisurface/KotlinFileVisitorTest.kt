@@ -8,7 +8,7 @@ package com.datadog.gradle.plugin.apisurface
 
 import java.io.File
 import java.lang.IllegalStateException
-import junit.framework.Assert.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

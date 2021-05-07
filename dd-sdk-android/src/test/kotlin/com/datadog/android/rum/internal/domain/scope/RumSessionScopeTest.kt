@@ -229,7 +229,7 @@ internal class RumSessionScopeTest {
         var sessions = 0
         var sessionsKept = 0
 
-        repeat(512) {
+        repeat(1024) {
             testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
             val context = testedScope.getRumContext()
             if (testedScope.keepSession) {

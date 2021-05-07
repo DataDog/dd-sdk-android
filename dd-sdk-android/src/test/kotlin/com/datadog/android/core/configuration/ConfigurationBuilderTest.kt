@@ -109,13 +109,14 @@ internal class ConfigurationBuilderTest {
             )
         )
         assertThat(config.tracesConfig)
-            .isEqualToIgnoringGivenFields(
+            .usingRecursiveComparison()
+            .ignoringFields("spanEventMapper")
+            .isEqualTo(
                 Configuration.Feature.Tracing(
                     endpointUrl = DatadogEndpoint.TRACES_US,
                     plugins = emptyList(),
                     spanEventMapper = NoOpSpanEventMapper()
-                ),
-                "spanEventMapper"
+                )
             )
         assertThat(config.tracesConfig?.spanEventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)

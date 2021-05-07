@@ -35,7 +35,7 @@ object Dependencies {
         const val JunitMockitoExt = "3.4.6"
 
         // Tests Tools
-        const val AssertJ = "0.2.1"
+        const val AssertJ = "3.18.1"
         const val Elmyr = "1.3.0"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.2.0"
@@ -87,7 +87,7 @@ object Dependencies {
         const val KotlinReflect = "org.jetbrains.kotlin:kotlin-reflect:${Versions.Kotlin}"
 
         const val Gson = "com.google.code.gson:gson:${Versions.Gson}"
-        const val AssertJ = "net.wuerl.kotlin:assertj-core-kotlin:${Versions.AssertJ}"
+        const val AssertJ = "org.assertj:assertj-core:${Versions.AssertJ}"
 
         const val OkHttp = "com.squareup.okhttp3:okhttp:${Versions.OkHttp}"
         const val KronosNTP = "com.lyft.kronos:kronos-android:${Versions.KronosNTP}"

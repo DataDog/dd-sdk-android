@@ -73,13 +73,16 @@ class ModelValidationTest(
             val json = toJson.invoke(entity).toString()
             val generatedModel =
                 generatorFunction.invoke(null, json)
+
             assertThat(generatedModel)
                 .overridingErrorMessage(
                     "Deserialized model was not the same " +
                         "with the serialized for type: [$type] and test iteration: [$it]"
                 )
-                .usingComparatorForType(numberTypeComparator, Number::class.java)
-                .isEqualToComparingFieldByFieldRecursively(entity)
+                .usingRecursiveComparison()
+                .withComparatorForType(numberTypeComparator, Number::class.java)
+                .ignoringCollectionOrder()
+                .isEqualTo(entity)
         }
     }
 
@@ -88,6 +91,7 @@ class ModelValidationTest(
             is Long -> t2.compareTo(t1.toLong())
             is Double -> t2.compareTo(t1.toDouble())
             is Float -> t2.compareTo(t1.toFloat())
+            is Byte -> t2.compareTo(t1.toByte())
             else -> (t2 as Int).compareTo(t1.toInt())
         }
     }
