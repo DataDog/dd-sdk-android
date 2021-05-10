@@ -42,12 +42,12 @@ If you use SQLDelight, take a look at Datadog's [dedicated SQLDelight library][4
 ### SQLite
  
 Following SQLiteOpenHelper's [generated API documentation][5], you only have to provide the implementation of the
-DatabaseErrorHandler -> `DatadogDatabaseErrorHandler` in the constructor.
+`DatabaseErrorHandler` -> `DatadogDatabaseErrorHandler` in the constructor.
  
 Doing this detects whenever a database is corrupted and sends a relevant
 RUM error event for it.
  
-```kotlint
+```kotlin
 class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
                                                  <DATABASE_NAME>, 
                                                  <CursorFactory>, 

@@ -22,14 +22,15 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val configuration = Configuration.Builder()
+        val configuration = Configuration.Builder(crashReportsEnabled = true, ...)
             .addPlugin(NDKCrashReporterPlugin(), Feature.CRASH)
             .build()
-        val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
         Datadog.initialize(this, credentials, configuration, trackingConsent)
     }
 }
 ```
+
 To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
 The tracking consent can be one of the following values:
 

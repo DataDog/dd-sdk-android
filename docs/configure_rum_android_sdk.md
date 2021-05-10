@@ -13,11 +13,11 @@ In addition to [tracking views automatically][4], you can also track specific di
 
  
    ```kotlin
-      fun onResume(){
+      fun onResume() {
         GlobalRum.get().startView(viewKey, viewName, viewAttributes)        
       }
       
-      fun onPause(){
+      fun onPause() {
         GlobalRum.get().stopView(viewKey, viewAttributes)        
       }
    ```
@@ -27,7 +27,7 @@ In addition to [tracking views automatically][4], you can also track specific di
 In addition to [tracking actions automatically][5], you can also track specific custom user actions (taps, clicks, scrolls, etc.) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
   
    ```kotlin
-      fun onUserInteraction(){
+      fun onUserInteraction() {
         GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
       }
    ```
@@ -38,12 +38,12 @@ In addition to [tracking resources automatically][6], you can also track specifi
 
   
    ```kotlin
-      fun loadResource(){
+      fun loadResource() {
         GlobalRum.get().startResource(resourceKey, method, url, resourceAttributes)
         try {
           // do load the resource
           GlobalRum.get().stopResource(resourceKey, resourceKind, additionalAttributes)
-        } catch (e : Exception) {
+        } catch (e: Exception) {
           GlobalRum.get().stopResourceWithError(resourceKey, message, origin, e)
         }
       }
@@ -55,7 +55,7 @@ To track specific errors, notify the monitor when an error occurs with the messa
 
 
    ```kotlin
-      addError(message, source, throwable, attributes)
+      GlobalRum.get().addError(message, source, throwable, attributes)
    ```
 
 
@@ -161,8 +161,8 @@ To automatically track your views (activities, fragments, etc.), provide a track
 For instance, to set each fragment as a distinct view, use the following configuration in your [setup][1]:
    
 ```kotlin
-val configuration = Configuration.Builder()
-                 .useViewTrackingStrategy(FragmentViewTrackingStrategy)
+val configuration = Configuration.Builder(rumEnabled = true, ...)
+                 .useViewTrackingStrategy(FragmentViewTrackingStrategy(...))
                  .build()
 ```
    
@@ -176,7 +176,7 @@ val configuration = Configuration.Builder()
 To get timing information in resources (third-party providers, network requests) such as time to first byte or DNS resolution, customize the `okHttpClient` to add the [EventListener][8] factory:
 
 ```kotlin
-val okHttpClient =  OkHttpClient.Builder()
+val okHttpClient = OkHttpClient.Builder()
     .addInterceptor(DatadogInterceptor())
     .eventListenerFactory(DatadogEventListener.Factory())
     .build()
@@ -188,7 +188,7 @@ Long running operations performed on the main thread can impact the visual perfo
 
 
 ```kotlin
-val config = Configuration.Builder(rumEnabled=true)
+val config = Configuration.Builder(rumEnabled = true, ...)
                     .trackLongTasks(durationThreshold)
                     .build()
 ```
@@ -196,13 +196,15 @@ val config = Configuration.Builder(rumEnabled=true)
 ## Modify or drop RUM events
 
 To modify some attributes in your RUM events, or to drop some of the events entirely before batching, provide an implementation of `EventMapper<T>` when initializing the SDK:
+
 ```kotlin
-val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+val config = Configuration.Builder(rumEnabled = true, ...)
               ...
               .setRumErrorEventMapper(rumErrorEventMapper)
               .setRumActionEventMapper(rumActionEventMapper)
               .setRumResourceEventMapper(rumResourceEventMapper)
               .setRumViewEventMapper(rumViewEventMapper)
+              .setRumLongTaskEventMapper(rumLongTaskEventMapper)
               .build()
 ```
    As you will notice when implementing the `EventMapper<T>` interface, only some of the attributes are modifiable for each event type as follows:
@@ -211,14 +213,28 @@ val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APP
    |---------------|--------------------|-------------------------------------------------|
    | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page |
    |               | `view.url`           | URL of the view                                 |
+   |               | `view.name`           | Name of the view                                |
    | ActionEvent   |                    |                                                 |
    |               | `action.target.name` | Target name                                     |
-   | ErrorEvent    |                    |                                                 |
+   |               | `view.referrer`      | URL that linked to the initial view of the page |
+   |               | `view.url`           | URL of the view                                 |
+   |               | `view.name`           | Name of the view                               |
+   | ErrorEvent    |                      |                                                 |
    |               | `error.message`      | Error message                                   |
    |               | `error.stack`        | Stacktrace of the error                         |
    |               | `error.resource.url` | URL of the resource                             |
+   |               | `view.referrer`      | URL that linked to the initial view of the page |
+   |               | `view.url`           | URL of the view                                 |
+   |               | `view.name`           | Name of the view                                |
    | ResourceEvent |                    |                                                 |
    |               | `resource.url`       | URL of the resource                             |
+   |               | `view.referrer`      | URL that linked to the initial view of the page |
+   |               | `view.url`           | URL of the view                                 |
+   |               | `view.name`           | Name of the view                                |
+   | LongTaskEvent |                    |                                                 |
+   |               | `view.referrer`       | URL that linked to the initial view of the page |
+   |               | `view.url`            | URL of the view                                 |
+   |               | `view.name`           | Name of the view                                |
    
    **Note**: If you return null from the `EventMapper<T>` implementation, the event is dropped.
 

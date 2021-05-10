@@ -81,7 +81,7 @@ Otherwise, if the library's logs are enabled, you should see the following messa
 
 ### RUM FragmentViewTrackingStrategy is not working correctly with the ViewPager
 
-If you have a FragmentViewPager somewhere in your activities this can produce wrong View events if you are using the RUM `FragmentViewTrackingStrategy`.
+If you have a `FragmentViewPager` somewhere in your activities this can produce wrong View events if you are using the RUM `FragmentViewTrackingStrategy`.
 The reason for this is the way the `FragmentPagerAdapter` used to work by resuming **current** and **next** fragment to be able to resolve the
 animated transition from one page to another. Please note that this behaviour is deprecated in the `FragmentPagerAdapter`. To avoid these issues please
 makes sure you switch to the new way of instantiating your `FragmentPagerAdapter` :

@@ -26,8 +26,8 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     class SampleApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-            val configuration = Configuration.Builder().build()
-            val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+            val configuration = Configuration.Builder(logsEnabled = true, ...).build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
             Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
@@ -38,10 +38,10 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
    class SampleApplication : Application() {
        override fun onCreate() {
           super.onCreate()
-          val configuration = Configuration.Builder()
+          val configuration = Configuration.Builder(logsEnabled = true, ...)
              .useEUEndpoints()
              .build()
-          val credentials = Credentials(<CLIENT_TOKEN>,<ENV_NAME>,<APP_VARIANT_NAME>,<APPLICATION_ID>)
+          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
           Datadog.initialize(this, credentials, configuration, trackingConsent)
        }
    }
@@ -67,7 +67,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
    Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
    ```kotlin
-    if(Datadog.isInitialized()){
+    if (Datadog.isInitialized()) {
         // your code here
     }
    ```
@@ -103,7 +103,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     ```kotlin
     try {
         doSomething()
-    } catch (e : IOException) {
+    } catch (e: IOException) {
         logger.e("Error while doing something", e)
     }
     ```
@@ -113,24 +113,20 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 5. (Optional) - Provide a map alongside your log message to add attributes to the emitted log. Each entry of the map is added as an attribute.
 
     ```kotlin
-    logger.i("onPageStarted", attributes = mapOf("http.url", url))
+    logger.i("onPageStarted", attributes = mapOf("http.url" to url))
     ```
 
     In Java you would have:
 
     ```java
-    Logger.d(
-            "onPageStarted",
-            null,
-            new HashMap<String, Object>() {{
-                put("http.url", url);
-            }}
-    );
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("http.url", url);
+    Logger.d("onPageStarted", null, attributes);
     ```
    
 6. If you need to modify some attributes in your Log events before batching you can do so by providing an implementation of `EventMapper<LogEvent>` when initializing the SDK:
    ```kotlin
-      val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>")
+      val config = Configuration.Builder(logsEnabled = true, ...)
                         // ...
                         .setLogEventMapper(logEventMapper)
                         .build()
@@ -141,12 +137,11 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 ### Library initialization
 
-The following methods in `DatadogConfig.Builder` can be used when creating the Datadog Configuration to initialize the library:
+The following methods in `Configuration.Builder` can be used when creating the Datadog Configuration to initialize the library:
 
 | Method                           | Description                                                                                                                                                                                                                                                             |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `setServiceName(<SERVICE_NAME>)` | Set `<SERVICE_NAME>` as default value for the `service` [standard attribute][4] attached to all logs sent to Datadog (this can be overriden in each Logger).                                                                                                                                                           |
-| `setLogsEnabled(true)`     | Set to `true` to enable sending logs to Datadog.                                                                                                                                                                                                                                  |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|                                                                                                                                                         |
+| `constructor(logsEnabled = true)`     | Set to `true` to enable sending logs to Datadog.                                                                                                                                                                                                                                  |
 | `addPlugin(DatadogPlugin, Feature)`   | Adds a plugin implementation for a specific feature (CRASH, LOG, TRACE, RUM). The plugin will be registered once the feature is initialized and unregistered when the feature is stopped. |
 
 ### Logger initialization
@@ -162,7 +157,6 @@ The following methods in `Logger.Builder` can be used when initializing the logg
 | `setBundleWithTraceEnabled(true)`| Set to `true` (default) to bundle the logs with the active trace in your application. This parameter lets you display all the logs sent during a specific trace by using the Datadog dashboard.                                                        |
 | `setBundleWithRumEnabled(true)`| Set to `true` (default) to bundle the logs with the current RUM context in your application. This parameter lets you display all the logs sent while a specific View is active by using the Datadog RUM Explorer.                                                        |
 | `setLoggerName(<LOGGER_NAME>)`   | Set `<LOGGER_NAME>` as the value for the `logger.name` attribute attached to all logs sent to Datadog.                                                                                                                                                                  |
-| `setVerbosity(Log.INFO)`         | Set the verbosity of the logger. All internal messages in the library with a priority equal to or higher than the provided level are logged to Android's Logcat.                                                                                                       |
 | `setSampleRate(<SAMPLE_RATE>)`   | Set the sampling rate for this logger. All the logs produced by the logger instance are randomly sampled according to the provided sample rate (default 1.0 = all logs). **Note**: The Logcat logs are not sampled.            |
 | `build()`                        | Build a new logger instance with all options set.                                                                                                                                                                                                                       |
 
@@ -174,7 +168,7 @@ Find below functions to add/remove tags and attributes to all logs sent by a giv
 
 ##### Add tags
 
-Use the `addTag("<TAG_KEY>","<TAG_VALUE>")` function to add tags to all logs sent by a specific logger:
+Use the `addTag("<TAG_KEY>", "<TAG_VALUE>")` function to add tags to all logs sent by a specific logger:
 
 ```kotlin
 // This adds a tag "build_type:debug" or "build_type:release" accordingly
