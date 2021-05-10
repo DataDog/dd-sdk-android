@@ -85,6 +85,10 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         return featurePlugins
     }
 
+    fun flushStoredData() {
+        persistenceStrategy.getFlusher().flush(uploader)
+    }
+
     // endregion
 
     // region Abstract
@@ -95,7 +99,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
 
     open fun onStop() {}
 
-    open fun onPostStopped() { }
+    open fun onPostStopped() {}
 
     abstract fun createPersistenceStrategy(
         context: Context,

@@ -46,6 +46,10 @@ internal open class ConsentAwareFileOrchestrator(
         return null
     }
 
+    override fun getFlushableFiles(): List<File> {
+        return grantedOrchestrator.getFlushableFiles()
+    }
+
     // endregion
 
     // region TrackingConsentProviderCallback

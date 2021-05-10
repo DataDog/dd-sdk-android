@@ -79,6 +79,10 @@ internal class BatchFileOrchestrator(
         return listSortedBatchFiles()
     }
 
+    override fun getFlushableFiles(): List<File> {
+        return getAllFiles()
+    }
+
     override fun getRootDir(): File? {
         if (!isRootDirValid()) {
             return null

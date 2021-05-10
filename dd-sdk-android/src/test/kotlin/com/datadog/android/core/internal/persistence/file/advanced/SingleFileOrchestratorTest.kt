@@ -129,6 +129,17 @@ internal class SingleFileOrchestratorTest {
             .hasSize(1)
     }
 
+    @Test
+    fun `𝕄 return file 𝕎 getAllFlushableFiles()`() {
+        // When
+        val result = testedOrchestrator.getFlushableFiles()
+
+        // Then
+        assertThat(result)
+            .contains(fakeFile)
+            .hasSize(1)
+    }
+
     // endregion
 
     // region getRootDir

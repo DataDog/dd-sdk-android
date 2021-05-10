@@ -39,5 +39,9 @@ internal class SingleFileOrchestrator(
         return null
     }
 
+    override fun getFlushableFiles(): List<File> {
+        return getAllFiles()
+    }
+
     // endregion
 }

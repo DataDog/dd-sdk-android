@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import android.app.Application
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -256,6 +257,20 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Then
         verify(mockReader).dropAll()
+    }
+
+    @Test
+    fun `M call the DataFlusher W flushData`() {
+        // Given
+        val mockDataFlusher: DataFlusher = mock()
+        whenever(mockPersistenceStrategy.getFlusher()).thenReturn(mockDataFlusher)
+        testedFeature.persistenceStrategy = mockPersistenceStrategy
+
+        // When
+        testedFeature.flushStoredData()
+
+        // Then
+        verify(mockDataFlusher).flush(testedFeature.uploader)
     }
 
     companion object {
