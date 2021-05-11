@@ -6,14 +6,20 @@
 # Required for some Kotlin-jvm implementation using reflection
 -keepnames class kotlin.jvm.** { *; }
 
-# Required because we need access to Datadog.stop() by reflection
+# Required because we need access to Datadog by reflection
 -keepnames class com.datadog.android.Datadog {
     private void stop();
+    private void flushAndShutdownExecutors();
 }
 # Required because we need access to GlobalRum.activeContext and GlobalRum.isRegistered by reflection
 -keepnames class com.datadog.android.rum.GlobalRum {
     private java.util.concurrent.atomic.AtomicReference activeContext;
     private java.util.concurrent.atomic.AtomicBoolean isRegistered;
+}
+
+# Required because we need access to GlobalTracer isRegistered property to reset it through reflection
+-keepnames class io.opentracing.util.GlobalTracer {
+    private boolean isRegistered;
 }
 
 # Required because we need access to RumContext fields by reflection
