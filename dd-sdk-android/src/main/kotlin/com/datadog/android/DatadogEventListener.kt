@@ -63,13 +63,14 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun callStart(call: Call) {
         super.callStart(call)
-        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
+        sendWaitForResourceTimingEvent()
         callStart = System.nanoTime()
     }
 
     /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
         super.dnsStart(call, domainName)
+        sendWaitForResourceTimingEvent()
         dnsStart = System.nanoTime()
     }
 
@@ -82,6 +83,7 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         super.connectStart(call, inetSocketAddress, proxy)
+        sendWaitForResourceTimingEvent()
         connStart = System.nanoTime()
     }
 
@@ -99,6 +101,7 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun secureConnectStart(call: Call) {
         super.secureConnectStart(call)
+        sendWaitForResourceTimingEvent()
         sslStart = System.nanoTime()
     }
 
@@ -111,6 +114,7 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
+        sendWaitForResourceTimingEvent()
         headersStart = System.nanoTime()
     }
 
@@ -126,6 +130,7 @@ internal constructor(val key: String) : EventListener() {
     /** @inheritdoc */
     override fun responseBodyStart(call: Call) {
         super.responseBodyStart(call)
+        sendWaitForResourceTimingEvent()
         bodyStart = System.nanoTime()
     }
 
@@ -150,6 +155,10 @@ internal constructor(val key: String) : EventListener() {
     // endregion
 
     // region Internal
+
+    private fun sendWaitForResourceTimingEvent() {
+        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
+    }
 
     private fun sendTiming() {
 

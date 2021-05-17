@@ -14,6 +14,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -137,7 +138,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
+                verify(mockMonitor, times(5)).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -193,7 +194,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
+                verify(mockMonitor, times(6)).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -235,7 +236,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
+                verify(mockMonitor, times(2)).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -286,7 +287,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(mockMonitor, mockCall) {
-                verify(mockMonitor).waitForResourceTiming(fakeKey)
+                verify(mockMonitor, times(6)).waitForResourceTiming(fakeKey)
                 verify(mockMonitor).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -341,6 +342,60 @@ internal class DatadogEventListenerTest {
 
         // Then
         verifyZeroInteractions(mockMonitor)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W callStart`() {
+        // When
+        testedListener.callStart(mockCall)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W dnsStart`() {
+        // When
+        testedListener.dnsStart(mockCall, fakeDomain)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W connectStart`() {
+        // When
+        testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming W secureConnectionStart`() {
+        // When
+        testedListener.secureConnectStart(mockCall)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W responseHeadersStart`() {
+        // When
+        testedListener.responseHeadersStart(mockCall)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W responseBodyStart`() {
+        // When
+        testedListener.responseBodyStart(mockCall)
+
+        // Then
+        verify(mockMonitor).waitForResourceTiming(fakeKey)
     }
 
     companion object {
