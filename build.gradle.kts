@@ -41,13 +41,13 @@ allprojects {
 
 nexusPublishing {
     repositories {
-        create("sonatype") {
-            val sonatypeUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            val snapshotUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+        sonatype {
+            // val sonatypeUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            // val snapshotUrl = "https://oss.sonatype.org/content/repositories/snapshots"
             val sonatypeUsername = System.getenv("OSSRH_USERNAME")
             val sonatypePassword = System.getenv("OSSRH_PASSWORD")
-            nexusUrl.set(uri(sonatypeUrl))
-            snapshotRepositoryUrl.set(uri(snapshotUrl))
+            // nexusUrl.set(uri(sonatypeUrl))
+            // snapshotRepositoryUrl.set(uri(snapshotUrl))
             stagingProfileId.set("378eecbbe2cf9")
             if (sonatypeUsername != null) username.set(sonatypeUsername)
             if (sonatypePassword != null) password.set(sonatypePassword)
