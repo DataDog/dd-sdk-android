@@ -4,6 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+plugins {
+    `maven-publish`
+    id("io.github.gradle-nexus.publish-plugin")
+}
+
 buildscript {
     repositories {
         google()
@@ -31,6 +36,18 @@ allprojects {
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
         jcenter()
         flatDir { dirs("libs") }
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            val sonatypeUsername = System.getenv("OSSRH_USERNAME")
+            val sonatypePassword = System.getenv("OSSRH_PASSWORD")
+            stagingProfileId.set("378eecbbe2cf9")
+            if (sonatypeUsername != null) username.set(sonatypeUsername)
+            if (sonatypePassword != null) password.set(sonatypePassword)
+        }
     }
 }
 

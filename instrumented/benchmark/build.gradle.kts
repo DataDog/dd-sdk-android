@@ -10,7 +10,6 @@ plugins {
     id("com.android.library")
     id("androidx.benchmark")
     kotlin("android")
-    `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")

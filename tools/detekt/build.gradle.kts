@@ -14,7 +14,6 @@ import com.datadog.gradle.testImplementation
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    `maven-publish`
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
