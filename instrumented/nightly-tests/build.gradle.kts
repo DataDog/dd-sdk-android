@@ -90,6 +90,7 @@ repositories {
 dependencies {
     implementation(project(":dd-sdk-android"))
 
+    implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidxSupportBase)
     implementation(Dependencies.Libraries.AndroidXMultidex)
