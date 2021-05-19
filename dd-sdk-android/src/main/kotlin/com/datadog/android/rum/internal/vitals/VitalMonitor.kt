@@ -9,16 +9,22 @@ package com.datadog.android.rum.internal.vitals
 import kotlin.math.max
 import kotlin.math.min
 
-internal class VitalMonitor {
+internal class VitalMonitor : VitalObserver {
 
     private var lastKnownSample: Double = Double.NaN
 
     private val listeners: MutableMap<VitalListener, VitalInfo> = mutableMapOf()
 
-    fun onNewSample(value: Double) {
+    // region VitalObserver
+
+    override fun onNewSample(value: Double) {
         lastKnownSample = value
         notifyListeners(value)
     }
+
+    // endregion
+
+    // region VitalMonitor
 
     fun getLastSample(): Double {
         return lastKnownSample
@@ -39,6 +45,10 @@ internal class VitalMonitor {
             listeners.remove(listener)
         }
     }
+
+    // endregion
+
+    // region Internal
 
     private fun notifyListeners(value: Double) {
         synchronized(listeners) {
@@ -71,4 +81,6 @@ internal class VitalMonitor {
             listeners[listener] = updatedInfo
         }
     }
+
+    // endregion
 }
