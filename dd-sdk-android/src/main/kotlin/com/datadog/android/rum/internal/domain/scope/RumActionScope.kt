@@ -210,6 +210,10 @@ internal class RumActionScope(
             )
             writer.write(rumEvent)
         } else {
+            parentScope.handleEvent(
+                RumRawEvent.ActionDropped(getRumContext().viewId.orEmpty()),
+                writer
+            )
             devLogger.i(
                 "RUM Action $actionId ($actualType on $name) was dropped " +
                     "(no side effect was registered during its scope)"
