@@ -160,6 +160,9 @@ class LoggerBuilderE2ETests {
         }
         val viewKey = forge.anAlphabeticalString()
         GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        // Give time to the View event to be propagated
+        Thread.sleep(200)
         logger.sendRandomLog(testMethodName, forge)
         GlobalRum.get().stopView(viewKey)
     }
