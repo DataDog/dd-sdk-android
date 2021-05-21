@@ -9,330 +9,275 @@ package com.datadog.android.core.internal.net
 import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import java.util.concurrent.TimeUnit
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
+import java.io.IOException
+import okhttp3.Call
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mock
 
 internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
-    lateinit var mockWebServer: MockWebServer
-
     lateinit var testedUploader: T
 
+    @Mock
+    lateinit var mockCallFactory: Call.Factory
+
+    @Mock
+    lateinit var mockCall: Call
+
+    @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpoint: String
+
+    @StringForgery
+    lateinit var fakeData: String
+
+    @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
+
     lateinit var fakeUserAgent: String
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
 
+        whenever(mockCallFactory.newCall(any())) doReturn mockCall
+
         Build.VERSION::class.java.setStaticValue("RELEASE", forge.anAlphaNumericalString())
         Build::class.java.setStaticValue("MODEL", forge.anAlphabeticalString())
         Build::class.java.setStaticValue("ID", forge.anAlphabeticalString())
 
-        mockWebServer = MockWebServer()
-        mockWebServer.start()
-        fakeEndpoint = mockWebServer.url("/").toString().removeSuffix("/")
-        fakeToken = forge.anHexadecimalString()
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
-        println("fakeUserAgent:$fakeUserAgent")
-        println("RELEASE:${Build.VERSION.RELEASE}")
-        println("MODEL:${Build.MODEL}")
-        println("ID:${Build.ID}")
         System.setProperty("http.agent", fakeUserAgent)
-        testedUploader = uploader()
+
+        testedUploader = uploader(mockCallFactory)
     }
 
-    abstract fun uploader(): T
+    abstract fun uploader(callFactory: Call.Factory): T
 
-    abstract fun urlFormat(): String
+    abstract fun expectedPath(): String
 
-    abstract fun expectedPathRegex(): String
+    abstract fun expectedQueryParams(): Map<String, String>
 
     @AfterEach
     open fun `tear down`() {
-        mockWebServer.shutdown()
-
         Build.VERSION::class.java.setStaticValue("RELEASE", null)
         Build::class.java.setStaticValue("MODEL", null)
         Build::class.java.setStaticValue("ID", null)
     }
 
     @Test
-    fun `uploads data 100-Continue (timeout)`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(100))
+    fun `𝕄 return error 𝕎 upload() {IOException}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doThrow IOException(message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.NETWORK_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 1xx-Informational`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(101, 200)))
+    fun `𝕄 return error 𝕎 upload() {any Throwable}`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        whenever(mockCall.execute()) doThrow throwable
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.UNKNOWN_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.NETWORK_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 200-OK`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(200))
+    fun `𝕄 return unknown state 𝕎 upload() {1xx status} `(
+        @IntForgery(100, 200) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.SUCCESS)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.UNKNOWN_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 204-NO CONTENT`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(204))
+    fun `𝕄 return success 𝕎 upload() {2xx status} `(
+        @IntForgery(200, 300) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 205-RESET`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(205))
+    fun `𝕄 return success 𝕎 upload() {3xx status} `(
+        @IntForgery(300, 400) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.HTTP_REDIRECTION)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 2xx-Success`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(206, 299)))
+    fun `𝕄 return success 𝕎 upload() {400-402 status} `(
+        @IntForgery(400, 403) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.SUCCESS)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 3xx-Redirection`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(300, 399)))
+    fun `𝕄 return success 𝕎 upload() {403 status} `(
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(403, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.HTTP_REDIRECTION)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 400-BadRequest`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(400))
+    fun `𝕄 return success 𝕎 upload() {404-499 status} `(
+        @IntForgery(404, 500) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 401-Unauthorized`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(401))
+    fun `𝕄 return success 𝕎 upload() {5xx status} `(
+        @IntForgery(500, 600) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
+        verifyRequest()
     }
 
     @Test
-    fun `uploads data 403-Forbidden`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(403))
+    fun `𝕄 return success 𝕎 upload() {6xx+ status} `(
+        @IntForgery(600) statusCode: Int,
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
-        val status = testedUploader.upload(data)
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
-        assertThat(status).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 404-NotFound`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(404))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 407-Proxy`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(407))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 408-Timeout`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(408))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 4xx-ClientError`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(409, 499)))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 500-InternalServerError`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(500))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data 5xx-ServerError`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(500, 599)))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads data xxx-InvalidError`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(600, 1000)))
-
-        val status = testedUploader.upload(data)
-
-        assertThat(status).isEqualTo(UploadStatus.UNKNOWN_ERROR)
-        assertRequestIsValid(mockWebServer.takeRequest(), anHexadecimalString)
-    }
-
-    @Test
-    fun `uploads with IOException (timeout)`(forge: Forge) {
-        val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(
-            MockResponse()
-                .throttleBody(
-                    THROTTLE_RATE,
-                    THROTTLE_PERIOD_MS,
-                    TimeUnit.MILLISECONDS
-                )
-                .setBody(
-                    "{ 'success': 'ok', 'message': 'Lorem ipsum dolor sit amet, " +
-                        "consectetur adipiscing elit, " +
-                        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }"
-                )
-        )
-
-        val status = testedUploader.upload(data)
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-    }
-
-    @Test
-    fun `uploads with IOException (protocol)`(forge: Forge) {
-        val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(0, 100)))
-
-        val status = testedUploader.upload(data)
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-    }
-
-    @Test
-    fun `uploads with IOException (protocol 2)`(forge: Forge) {
-        val data = forge.anHexadecimalString().toByteArray(Charsets.UTF_8)
-        mockWebServer.enqueue(forgeMockResponse(forge.anInt(1000)))
-
-        val status = testedUploader.upload(data)
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
-    }
-
-    @Test
-    fun `uploads with IOException (no server)`(forge: Forge) {
-        val anHexadecimalString = forge.anHexadecimalString()
-        val data = anHexadecimalString.toByteArray(Charsets.UTF_8)
-        mockWebServer.shutdown()
-
-        val status = testedUploader.upload(data)
-        assertThat(status).isEqualTo(UploadStatus.NETWORK_ERROR)
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.UNKNOWN_ERROR)
+        verifyRequest()
     }
 
     // region Internal
 
-    private fun assertRequestIsValid(
-        request: RecordedRequest,
-        data: String
-    ) {
-        assertRequestHasExpectedHeaders(request)
-
-        assertThat(request.path).matches(expectedPathRegex())
-        assertThat(request.body.readUtf8())
-            .isEqualTo(data)
+    private fun mockResponse(statusCode: Int, message: String): Response {
+        return Response.Builder()
+            .request(Request.Builder().url(fakeEndpoint).get().build())
+            .code(statusCode)
+            .message(message)
+            .protocol(Protocol.HTTP_2)
+            .build()
     }
 
-    private fun assertRequestHasExpectedHeaders(request: RecordedRequest) {
-        assertThat(request.getHeader("Content-Type"))
-            .isEqualTo(testedUploader.contentType)
+    private fun verifyRequest() {
+        argumentCaptor<Request> {
+            verify(mockCallFactory).newCall(capture())
+
+            verifyRequestUrl(firstValue.url())
+            verifyRequestHeaders(firstValue.headers())
+            verifyRequestBody(firstValue.body())
+        }
+    }
+
+    private fun verifyRequestUrl(url: HttpUrl) {
+        assertThat("${url.scheme()}://${url.host()}").isEqualTo(fakeEndpoint)
+        assertThat(url.encodedPath()).isEqualTo(expectedPath())
+        expectedQueryParams().forEach { (k, v) ->
+            assertThat(url.queryParameter(k)).isEqualTo(v)
+        }
+    }
+
+    private fun verifyRequestBody(body: RequestBody?) {
+        checkNotNull(body)
+        assertThat(body.contentType()).isNull()
+        assertThat(body.contentLength()).isEqualTo(fakeData.length.toLong())
+    }
+
+    private fun verifyRequestHeaders(headers: Headers) {
+        assertThat(headers.get("Content-Type")).isEqualTo(testedUploader.contentType)
+
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
             "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
                 "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
@@ -340,14 +285,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
         } else {
             fakeUserAgent
         }
-        assertThat(request.getHeader("User-Agent"))
-            .isEqualTo(expectedUserAgent)
-    }
-
-    private fun forgeMockResponse(code: Int): MockResponse {
-        return MockResponse()
-            .setResponseCode(code)
-            .setBody("{}")
+        assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgent)
     }
 
     // endregion

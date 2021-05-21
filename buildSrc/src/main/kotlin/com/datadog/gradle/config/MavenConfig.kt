@@ -6,9 +6,7 @@
 
 package com.datadog.gradle.config
 
-import java.net.URI
 import org.gradle.api.Project
-import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.jvm.tasks.Jar
@@ -48,19 +46,6 @@ fun Project.publishingConfig(projectDescription: String) {
         }
 
         publishingExtension.apply {
-            repositories.maven {
-                url = URI("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                val username = System.getenv("OSSRH_USERNAME")
-                val password = System.getenv("OSSRH_PASSWORD")
-                if ((!username.isNullOrEmpty()) && (!password.isNullOrEmpty())) {
-                    credentials(PasswordCredentials::class.java) {
-                        setUsername(username)
-                        setPassword(password)
-                    }
-                } else {
-                    System.err.println("Missing publishing credentials for $projectName")
-                }
-            }
 
             publications.create(MavenConfig.PUBLICATION, MavenPublication::class.java) {
                 from(components.getByName("release"))

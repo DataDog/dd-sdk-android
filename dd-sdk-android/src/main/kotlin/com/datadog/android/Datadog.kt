@@ -39,6 +39,8 @@ object Datadog {
         private set
     internal var isDebug = false
 
+    // region Initialization
+
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
@@ -166,73 +168,23 @@ object Datadog {
             )
     }
 
-    private fun initializeLogsFeature(
-        configuration: Configuration.Feature.Logs?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            LogsFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeCrashReportFeature(
-        configuration: Configuration.Feature.CrashReport?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            CrashReportsFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeTracingFeature(
-        configuration: Configuration.Feature.Tracing?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            TracesFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeRumFeature(
-        configuration: Configuration.Feature.RUM?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            if (CoreFeature.rumApplicationId.isNullOrBlank()) {
-                devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
-            }
-            RumFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeInternalLogsFeature(
-        configuration: Configuration.Feature.InternalLogs?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            InternalLogsFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun applyAdditionalConfiguration(additionalConfiguration: Map<String, Any>) {
-        additionalConfiguration[DD_SOURCE_TAG]?.let {
-            if (it.toString().isNotBlank()) {
-                CoreFeature.sourceName = it.toString()
-            }
-        }
-    }
-
     /**
      * Checks if the Datadog SDK was already initialized.
      * @return true if the SDK was initialized, false otherwise
      */
+    @JvmStatic
     fun isInitialized(): Boolean {
         return initialized.get()
     }
 
+    // endregion
+
+    // region Global methods
+
     /**
      * Clears all data that has not already been sent to Datadog servers.
      */
+    @JvmStatic
     fun clearAllData() {
         LogsFeature.clearAllData()
         CrashReportsFeature.clearAllData()
@@ -296,6 +248,7 @@ object Datadog {
      * @param consent which can take one of the values
      * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
      */
+    @JvmStatic
     fun setTrackingConsent(consent: TrackingConsent) {
         CoreFeature.trackingConsentProvider.setConsent(consent)
     }
@@ -327,7 +280,67 @@ object Datadog {
         )
     }
 
+    // endregion
+
     // region Internal Initialization
+
+    private fun initializeLogsFeature(
+        configuration: Configuration.Feature.Logs?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            LogsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeCrashReportFeature(
+        configuration: Configuration.Feature.CrashReport?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            CrashReportsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeTracingFeature(
+        configuration: Configuration.Feature.Tracing?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            TracesFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeRumFeature(
+        configuration: Configuration.Feature.RUM?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            if (CoreFeature.rumApplicationId.isNullOrBlank()) {
+                devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
+            }
+            RumFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeInternalLogsFeature(
+        configuration: Configuration.Feature.InternalLogs?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            InternalLogsFeature.initialize(appContext, configuration)
+        }
+    }
+
+    private fun applyAdditionalConfiguration(
+        @Suppress("UNUSED_PARAMETER") additionalConfiguration: Map<String, Any>
+    ) {
+        additionalConfiguration[DD_SOURCE_TAG]?.let {
+            if (it.toString().isNotBlank()) {
+                CoreFeature.sourceName = it.toString()
+            }
+        }
+    }
 
     @Suppress("ThrowingInternalException")
     private fun validateEnvironmentName(envName: String): Boolean {

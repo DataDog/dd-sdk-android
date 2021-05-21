@@ -17,6 +17,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -128,7 +129,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(rumMonitor.mockInstance, mockCall) {
-                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance, times(5)).waitForResourceTiming(fakeKey)
                 verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -184,7 +185,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(rumMonitor.mockInstance, mockCall) {
-                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance, times(6)).waitForResourceTiming(fakeKey)
                 verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -226,7 +227,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(rumMonitor.mockInstance, mockCall) {
-                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance, times(2)).waitForResourceTiming(fakeKey)
                 verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -277,7 +278,7 @@ internal class DatadogEventListenerTest {
         // Then
         argumentCaptor<ResourceTiming> {
             inOrder(rumMonitor.mockInstance, mockCall) {
-                verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+                verify(rumMonitor.mockInstance, times(6)).waitForResourceTiming(fakeKey)
                 verify(rumMonitor.mockInstance).addResourceTiming(eq(fakeKey), capture())
                 verifyNoMoreInteractions()
             }
@@ -332,6 +333,60 @@ internal class DatadogEventListenerTest {
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W callStart`() {
+        // When
+        testedListener.callStart(mockCall)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W dnsStart`() {
+        // When
+        testedListener.dnsStart(mockCall, fakeDomain)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W connectStart`() {
+        // When
+        testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming W secureConnectionStart`() {
+        // When
+        testedListener.secureConnectStart(mockCall)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W responseHeadersStart`() {
+        // When
+        testedListener.responseHeadersStart(mockCall)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
+    }
+
+    @Test
+    fun `M send WaitForResourceTiming event W responseBodyStart`() {
+        // When
+        testedListener.responseBodyStart(mockCall)
+
+        // Then
+        verify(rumMonitor.mockInstance).waitForResourceTiming(fakeKey)
     }
 
     companion object {

@@ -18,7 +18,6 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 
 @Suppress("DEPRECATION")
@@ -39,7 +38,6 @@ internal class BroadcastReceiverNetworkInfoProvider(
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        sdkLogger.d("received network update")
         val connectivityMgr =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val activeNetworkInfo = connectivityMgr?.activeNetworkInfo

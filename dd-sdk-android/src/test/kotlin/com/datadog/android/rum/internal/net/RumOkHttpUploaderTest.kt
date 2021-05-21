@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.net
 
 import android.app.Application
 import com.datadog.android.BuildConfig
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.rum.RumAttributes
@@ -19,8 +20,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -36,33 +36,29 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>() {
 
-    override fun uploader(): RumOkHttpUploader {
+    override fun uploader(callFactory: Call.Factory): RumOkHttpUploader {
         return RumOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            OkHttpClient.Builder()
-                .connectTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .readTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .build()
+            callFactory
         )
     }
 
-    override fun urlFormat(): String {
-        return RumOkHttpUploader.UPLOAD_URL
+    override fun expectedPath(): String {
+        return "/v1/input/$fakeToken"
     }
 
-    override fun expectedPathRegex(): String {
-        return "^\\/v1\\/input/$fakeToken" +
-            "\\?${DataOkHttpUploader.QP_BATCH_TIME}=\\d+" +
-            "&${DataOkHttpUploader.QP_SOURCE}=${coreFeature.fakeSourceName}" +
-            "&${RumOkHttpUploader.QP_TAGS}=" +
-            "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}," +
+    override fun expectedQueryParams(): Map<String, String> {
+        val tags = "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}," +
             "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
             "${RumAttributes.ENV}:${coreFeature.fakeEnvName}," +
-            "${RumAttributes.VARIANT}:${appContext.fakeVariant}" +
-            "$"
+            "${RumAttributes.VARIANT}:${appContext.fakeVariant}"
+
+        return mapOf(
+            DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName,
+            RumOkHttpUploader.QP_TAGS to tags
+        )
     }
 
     companion object {

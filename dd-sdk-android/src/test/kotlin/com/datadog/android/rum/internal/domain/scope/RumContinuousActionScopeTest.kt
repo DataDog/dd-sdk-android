@@ -29,6 +29,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -999,7 +1000,30 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send ActionDropped event 𝕎 handleEvent(StopView) {no side effect}`(
+        forge: Forge
+    ) {
+        testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
+
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.viewTreeChangeCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<RumRawEvent.ActionDropped>()
+        verify(mockParentScope).handleEvent(argumentCaptor.capture(), eq(mockWriter))
+        assertThat(argumentCaptor.firstValue.viewId).isEqualTo(fakeParentContext.viewId ?: "")
         assertThat(result).isNull()
     }
 

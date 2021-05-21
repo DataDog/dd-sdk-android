@@ -14,7 +14,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
@@ -34,8 +33,6 @@ internal class CallbackNetworkInfoProvider(
 
     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
         super.onCapabilitiesChanged(network, networkCapabilities)
-        sdkLogger.v("onCapabilitiesChanged $network $networkCapabilities")
-
         lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
             upKbps = resolveUpBandwidth(networkCapabilities),
@@ -46,7 +43,6 @@ internal class CallbackNetworkInfoProvider(
 
     override fun onLost(network: Network) {
         super.onLost(network)
-        sdkLogger.i("onLost $network")
         lastNetworkInfo = NetworkInfo(connectivity = NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
     }
 

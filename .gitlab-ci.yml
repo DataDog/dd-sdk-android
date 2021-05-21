@@ -157,7 +157,7 @@ publish:release:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android:publishToSonatype --stacktrace --no-daemon
 
 publish:release-coil:
   tags: [ "runner:main", "size:large" ]
@@ -173,7 +173,7 @@ publish:release-coil:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-coil:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
 
 publish:release-fresco:
   tags: [ "runner:main", "size:large" ]
@@ -189,7 +189,7 @@ publish:release-fresco:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-fresco:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
 
 publish:release-glide:
   tags: [ "runner:main", "size:large" ]
@@ -205,7 +205,7 @@ publish:release-glide:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-glide:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ktx:
   tags: [ "runner:main", "size:large" ]
@@ -221,7 +221,7 @@ publish:release-ktx:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ktx:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
   tags: [ "runner:main", "size:large" ]
@@ -237,7 +237,7 @@ publish:release-ndk:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-ndk:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rx:
   tags: [ "runner:main", "size:large" ]
@@ -253,7 +253,7 @@ publish:release-rx:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-rx:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-sqldelight:
   tags: [ "runner:main", "size:large" ]
@@ -269,7 +269,7 @@ publish:release-sqldelight:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-sqldelight:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
 
 publish:release-timber:
   tags: [ "runner:main", "size:large" ]
@@ -285,7 +285,7 @@ publish:release-timber:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-timber:publishReleasePublicationToMavenRepository --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 
@@ -296,8 +296,8 @@ notify:release:
   only:
     - tags
   script:
-    - MAVEN_URL="https://ossindex.sonatype.org/component/pkg:maven/com.datadoghq/dd-sdk-android@$CI_COMMIT_TAG"
-    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: MAVEN_URL"'
+    - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android/$CI_COMMIT_TAG/aar"
+    - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:failure:

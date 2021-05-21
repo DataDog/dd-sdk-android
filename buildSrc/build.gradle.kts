@@ -39,6 +39,7 @@ dependencies {
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.10")
     implementation("org.apache.maven:maven-model:3.6.3")
+    implementation("io.github.gradle-nexus:publish-plugin:1.1.0")
 
     // check api surface
     implementation("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm:c35b50fa44")

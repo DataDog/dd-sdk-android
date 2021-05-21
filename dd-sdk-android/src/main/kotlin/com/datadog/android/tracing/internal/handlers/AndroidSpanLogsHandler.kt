@@ -55,7 +55,7 @@ internal class AndroidSpanLogsHandler(
     // region Internal
 
     private fun toMilliseconds(timestampMicroseconds: Long?): Long? {
-        return timestampMicroseconds?.let { TimeUnit.MILLISECONDS.toSeconds(it) }
+        return timestampMicroseconds?.let { TimeUnit.MICROSECONDS.toMillis(it) }
     }
 
     private fun logFields(

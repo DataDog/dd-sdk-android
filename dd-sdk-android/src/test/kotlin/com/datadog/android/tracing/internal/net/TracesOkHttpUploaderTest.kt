@@ -10,8 +10,7 @@ import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
-import okhttp3.OkHttpClient
+import okhttp3.Call
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -26,23 +25,19 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TracesOkHttpUploaderTest : DataOkHttpUploaderTest<TracesOkHttpUploader>() {
 
-    override fun uploader(): TracesOkHttpUploader {
+    override fun uploader(callFactory: Call.Factory): TracesOkHttpUploader {
         return TracesOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            OkHttpClient.Builder()
-                .connectTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .readTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(TIMEOUT_TEST_MS, TimeUnit.MILLISECONDS)
-                .build()
+            callFactory
         )
     }
 
-    override fun urlFormat(): String {
-        return TracesOkHttpUploader.UPLOAD_URL
+    override fun expectedPath(): String {
+        return "/v1/input/$fakeToken"
     }
 
-    override fun expectedPathRegex(): String {
-        return "^\\/v1\\/input\\/$fakeToken$"
+    override fun expectedQueryParams(): Map<String, String> {
+        return emptyMap()
     }
 }

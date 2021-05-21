@@ -23,17 +23,16 @@ internal class BroadcastReceiverSystemInfoProvider :
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val action = intent?.action
-        when (action) {
+        when (val action = intent?.action) {
             Intent.ACTION_BATTERY_CHANGED -> {
-                sdkLogger.d("received battery update")
                 handleBatteryIntent(intent)
             }
             PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
-                sdkLogger.d("received power save mode update")
                 handlePowerSaveIntent(context)
             }
-            else -> sdkLogger.d("received unknown update $action")
+            else -> sdkLogger.d(
+                "Received unknown broadcast intent: [$action]"
+            )
         }
     }
 
@@ -74,9 +73,11 @@ internal class BroadcastReceiverSystemInfoProvider :
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
 
+        val resolvedBatteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
+        val resolvedBatteryLevel = (level * 100) / scale
         systemInfo = systemInfo.copy(
-            batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status),
-            batteryLevel = (level * 100) / scale
+            batteryStatus = resolvedBatteryStatus,
+            batteryLevel = resolvedBatteryLevel
         )
     }
 

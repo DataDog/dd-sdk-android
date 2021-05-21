@@ -15,7 +15,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.lang.ref.WeakReference
-import java.util.Locale
 
 internal class DatadogExceptionHandler(
     private val logGenerator: LogGenerator,
@@ -75,10 +74,12 @@ internal class DatadogExceptionHandler(
     }
 
     private fun createCrashMessage(throwable: Throwable): String {
-        return if (throwable.message.isNullOrBlank()) {
-            MESSAGE
+        val rawMessage = throwable.message
+        return if (rawMessage.isNullOrBlank()) {
+            val className = throwable.javaClass.canonicalName ?: throwable.javaClass.simpleName
+            "$MESSAGE: $className"
         } else {
-            MESSAGE + ": %s".format(Locale.US, throwable.message)
+            rawMessage
         }
     }
 

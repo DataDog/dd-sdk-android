@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.Logger
 
 @Suppress("StringLiteralDuplication")
 internal enum class UploadStatus {
@@ -18,37 +18,42 @@ internal enum class UploadStatus {
     HTTP_SERVER_ERROR,
     UNKNOWN_ERROR;
 
-    fun logStatus(context: String, byteSize: Int) {
+    fun logStatus(
+        context: String,
+        byteSize: Int,
+        logger: Logger,
+        ignoreInfo: Boolean
+    ) {
         when (this) {
-            NETWORK_ERROR -> devLogger.e(
+            NETWORK_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because of a network error; we will retry later."
             )
-            INVALID_TOKEN_ERROR -> devLogger.e(
+            INVALID_TOKEN_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because your token is invalid. Make sure that the" +
                     " provided token still exists."
             )
-            HTTP_REDIRECTION -> devLogger.w(
+            HTTP_REDIRECTION -> logger.w(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because of a network error; we will retry later."
             )
-            HTTP_CLIENT_ERROR -> devLogger.e(
+            HTTP_CLIENT_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because of a processing error (possibly because of invalid data); " +
                     "the batch was dropped."
             )
-            HTTP_SERVER_ERROR -> devLogger.e(
+            HTTP_SERVER_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because of a server processing error; we will retry later."
             )
-            UNKNOWN_ERROR -> devLogger.e(
+            UNKNOWN_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
                     " because of an unknown error; we will retry later."
             )
-            SUCCESS -> devLogger.v(
-                "Batch [$byteSize bytes] sent successfully ($context)."
-            )
+            SUCCESS -> if (!ignoreInfo) {
+                logger.v("Batch [$byteSize bytes] sent successfully ($context).")
+            }
         }
     }
 }
