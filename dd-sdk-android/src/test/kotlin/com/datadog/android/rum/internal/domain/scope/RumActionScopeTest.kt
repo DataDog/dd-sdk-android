@@ -21,6 +21,7 @@ import com.datadog.android.utils.mockCoreFeature
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -929,7 +930,26 @@ internal class RumActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send ActionDropped event 𝕎 handleEvent(StopView) {no side effect}`() {
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.viewTreeChangeCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<RumRawEvent.ActionDropped>()
+        verify(mockParentScope).handleEvent(argumentCaptor.capture(), eq(mockWriter))
+        assertThat(argumentCaptor.firstValue.viewId).isEqualTo(fakeParentContext.viewId ?: "")
         assertThat(result).isNull()
     }
 
@@ -947,7 +967,27 @@ internal class RumActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send ActionDropped after threshold 𝕎 handleEvent(any) {no side effect}`() {
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.viewTreeChangeCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        Thread.sleep(TEST_INACTIVITY_MS)
+        fakeEvent = mockEvent()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<RumRawEvent.ActionDropped>()
+        verify(mockParentScope).handleEvent(argumentCaptor.capture(), eq(mockWriter))
+        assertThat(argumentCaptor.firstValue.viewId).isEqualTo(fakeParentContext.viewId ?: "")
         assertThat(result).isNull()
     }
 
