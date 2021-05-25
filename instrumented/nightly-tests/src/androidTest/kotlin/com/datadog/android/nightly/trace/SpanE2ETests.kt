@@ -17,6 +17,7 @@ import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
+import com.datadog.android.nightly.utils.measure
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.tag.StringTag
 import io.opentracing.util.GlobalTracer
@@ -47,11 +48,13 @@ class SpanE2ETests {
     fun trace_span_set_operation_name() {
         // this will also test the existence of the span itself
         val testMethodName = "trace_span_set_operation_name"
-        GlobalTracer.get()
-            .buildSpan("random")
+        val tracer = GlobalTracer.get()
+        val span = tracer.buildSpan("random")
             .start()
-            .setOperationName(testMethodName)
-            .finish()
+        measure(PERF_PREFIX + testMethodName) {
+            span.setOperationName(testMethodName)
+        }
+        span.finish()
     }
 
     /**
@@ -60,11 +63,14 @@ class SpanE2ETests {
     @Test
     fun trace_span_set_tag_boolean() {
         val testMethodName = "trace_span_set_tag_boolean"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .setTag(SPECIAL_BOOLEAN_TAG_NAME, forge.aBool())
-            .finish()
+        val tagValue = forge.aBool()
+        measure(PERF_PREFIX + testMethodName) {
+            span.setTag(SPECIAL_BOOLEAN_TAG_NAME, tagValue)
+        }
+        span.finish()
     }
 
     /**
@@ -73,11 +79,14 @@ class SpanE2ETests {
     @Test
     fun trace_span_set_tag_string() {
         val testMethodName = "trace_span_set_tag_string"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .setTag(SPECIAL_STRING_TAG_NAME, "str${forge.anAlphaNumericalString()}")
-            .finish()
+        val tagValue = "str${forge.anAlphaNumericalString()}"
+        measure(PERF_PREFIX + testMethodName) {
+            span.setTag(SPECIAL_STRING_TAG_NAME, tagValue)
+        }
+        span.finish()
     }
 
     /**
@@ -86,20 +95,20 @@ class SpanE2ETests {
     @Test
     fun trace_span_set_tag_number() {
         val testMethodName = "trace_span_set_tag_number"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .setTag(
-                SPECIAL_NUMBER_TAG_NAME,
-                forge.anElementFrom(
-                    forge.aLong(1, 10),
-                    forge.anInt(1, 10),
-                    forge.aFloat(1f, 10f),
-                    forge.aDouble(1.0, 10.0),
-                    forge.anInt(1, 10).toByte()
-                )
-            )
-            .finish()
+        val tagValue = forge.anElementFrom(
+            forge.aLong(1, 10),
+            forge.anInt(1, 10),
+            forge.aFloat(1f, 10f),
+            forge.aDouble(1.0, 10.0),
+            forge.anInt(1, 10).toByte()
+        )
+        measure(PERF_PREFIX + testMethodName) {
+            span.setTag(SPECIAL_NUMBER_TAG_NAME, tagValue)
+        }
+        span.finish()
     }
 
     /**
@@ -108,11 +117,14 @@ class SpanE2ETests {
     @Test
     fun trace_span_set_tag_generic() {
         val testMethodName = "trace_span_set_tag_generic"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .setTag(StringTag(SPECIAL_GENERIC_TAG_NAME), "str${forge.anAlphaNumericalString()}")
-            .finish()
+        val tagValue = "str${forge.anAlphaNumericalString()}"
+        measure(PERF_PREFIX + testMethodName) {
+            span.setTag(StringTag(SPECIAL_GENERIC_TAG_NAME), tagValue)
+        }
+        span.finish()
     }
 
     /**
@@ -121,11 +133,14 @@ class SpanE2ETests {
     @Test
     fun trace_span_set_baggage_item() {
         val testMethodName = "trace_span_set_baggage_item"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .setBaggageItem(SPECIAL_STRING_TAG_NAME, "str${forge.anAlphaNumericalString()}")
-            .finish()
+        val baggage = "str${forge.anAlphaNumericalString()}"
+        measure(PERF_PREFIX + testMethodName) {
+            span.setBaggageItem(SPECIAL_STRING_TAG_NAME, baggage)
+        }
+        span.finish()
     }
 
     /**
@@ -134,18 +149,19 @@ class SpanE2ETests {
     @Test
     fun trace_span_log_map() {
         val testMethodName = "trace_span_log_map"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .log(
-                mapOf(
-                    "${SPECIAL_NUMBER_TAG_NAME}_positive" to forge.aSmallInt(),
-                    "${SPECIAL_NUMBER_TAG_NAME}_negative" to -forge.aSmallInt(),
-                    SPECIAL_DOUBLE_TAG_NAME to forge.aDouble(min = 1.0, max = 10.0),
-                    TEST_METHOD_NAME_KEY to testMethodName
-                )
-            )
-            .finish()
+        val logValue = mapOf(
+            "${SPECIAL_NUMBER_TAG_NAME}_positive" to forge.aSmallInt(),
+            "${SPECIAL_NUMBER_TAG_NAME}_negative" to -forge.aSmallInt(),
+            SPECIAL_DOUBLE_TAG_NAME to forge.aDouble(min = 1.0, max = 10.0),
+            TEST_METHOD_NAME_KEY to testMethodName
+        )
+        measure(PERF_PREFIX + testMethodName) {
+            span.log(logValue)
+        }
+        span.finish()
     }
 
     /**
@@ -154,11 +170,14 @@ class SpanE2ETests {
     @Test
     fun trace_span_log_string() {
         val testMethodName = "trace_span_log_string"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .log("${testMethodName}_str${forge.anAlphaNumericalString()}")
-            .finish()
+        val logValue = "${testMethodName}_str${forge.anAlphaNumericalString()}"
+        measure(PERF_PREFIX + testMethodName) {
+            span.log(logValue)
+        }
+        span.finish()
     }
 
     /**
@@ -167,19 +186,20 @@ class SpanE2ETests {
     @Test
     fun trace_span_log_timestamp_map() {
         val testMethodName = "trace_span_log_timestamp_map"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .log(
-                System.currentTimeMillis() * 1000,
-                mapOf(
-                    "${SPECIAL_NUMBER_TAG_NAME}_positive" to forge.aSmallInt(),
-                    "${SPECIAL_NUMBER_TAG_NAME}_negative" to -forge.aSmallInt(),
-                    SPECIAL_DOUBLE_TAG_NAME to forge.aDouble(min = 1.0, max = 10.0),
-                    TEST_METHOD_NAME_KEY to testMethodName
-                )
-            )
-            .finish()
+        val timestampMicros = System.currentTimeMillis() * 1000
+        val logValue = mapOf(
+            "${SPECIAL_NUMBER_TAG_NAME}_positive" to forge.aSmallInt(),
+            "${SPECIAL_NUMBER_TAG_NAME}_negative" to -forge.aSmallInt(),
+            SPECIAL_DOUBLE_TAG_NAME to forge.aDouble(min = 1.0, max = 10.0),
+            TEST_METHOD_NAME_KEY to testMethodName
+        )
+        measure(PERF_PREFIX + testMethodName) {
+            span.log(timestampMicros, logValue)
+        }
+        span.finish()
     }
 
     /**
@@ -188,13 +208,33 @@ class SpanE2ETests {
     @Test
     fun trace_span_log_timestamp_string() {
         val testMethodName = "trace_span_log_timestamp_string"
-        GlobalTracer.get()
+        val span = GlobalTracer.get()
             .buildSpan(testMethodName)
             .start()
-            .log(
-                System.currentTimeMillis() * 1000,
-                "${testMethodName}_str${forge.anAlphaNumericalString()}"
-            )
-            .finish()
+        val timestampMicros = System.currentTimeMillis() * 1000
+        val logValue = "${testMethodName}_str${forge.anAlphaNumericalString()}"
+        measure(PERF_PREFIX + testMethodName) {
+            span.log(timestampMicros, logValue)
+        }
+        span.finish()
+    }
+
+    /**
+     * apiMethodSignature: Span#finish()
+     */
+    @Test
+    fun trace_span_finish() {
+        val testMethodName = "trace_span_finish"
+        val span = GlobalTracer.get()
+            .buildSpan(testMethodName)
+            .start()
+        measure(PERF_PREFIX + testMethodName) {
+            span.finish()
+        }
+    }
+
+    private companion object {
+        // this is needed because pure test method names are reserved for the spans under test
+        const val PERF_PREFIX = "perf_"
     }
 }
