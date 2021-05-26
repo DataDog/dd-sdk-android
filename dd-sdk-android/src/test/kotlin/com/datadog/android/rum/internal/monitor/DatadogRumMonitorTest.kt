@@ -198,6 +198,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W stopUserAction()`() {
+        @Suppress("DEPRECATION")
         testedMonitor.stopUserAction(fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
