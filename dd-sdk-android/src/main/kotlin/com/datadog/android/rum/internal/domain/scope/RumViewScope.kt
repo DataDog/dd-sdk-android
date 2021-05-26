@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -169,8 +170,16 @@ internal open class RumViewScope(
         if (stopped) return
 
         if (activeActionScope != null) {
-            devLogger.w(ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name))
-            return
+            if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
+                // deliver it anyway, even if there is active action ongoing
+                val customActionScope = RumActionScope.fromEvent(this, event)
+                pendingActionCount++
+                customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
+                return
+            } else {
+                devLogger.w(ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name))
+                return
+            }
         }
 
         activeActionScope = RumActionScope.fromEvent(this, event)
