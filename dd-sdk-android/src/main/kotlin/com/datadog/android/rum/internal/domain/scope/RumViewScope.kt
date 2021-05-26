@@ -28,7 +28,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-internal class RumViewScope(
+internal open class RumViewScope(
     private val parentScope: RumScope,
     key: Any,
     internal val name: String,
@@ -537,6 +537,8 @@ internal class RumViewScope(
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"
+        internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
+        internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
         internal fun fromEvent(
             parentScope: RumScope,

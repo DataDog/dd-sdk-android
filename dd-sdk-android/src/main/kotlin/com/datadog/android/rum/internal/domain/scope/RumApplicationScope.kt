@@ -25,7 +25,7 @@ internal class RumApplicationScope(
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<RumEvent>
-    ): RumScope? {
+    ): RumScope {
         childScope.handleEvent(event, writer)
         return this
     }

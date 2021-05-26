@@ -53,7 +53,7 @@ internal class RumSessionScope(
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<RumEvent>
-    ): RumScope? {
+    ): RumScope {
         if (event is RumRawEvent.ResetSession) {
             sessionId = RumContext.NULL_UUID
             resetSessionTime = System.nanoTime()
@@ -63,7 +63,6 @@ internal class RumSessionScope(
 
         val actualWriter = if (keepSession) writer else noOpWriter
 
-        val activeChildrenCount = activeChildrenScopes.size
         val iterator = activeChildrenScopes.iterator()
         while (iterator.hasNext()) {
             val scope = iterator.next().handleEvent(event, actualWriter)
@@ -74,11 +73,10 @@ internal class RumSessionScope(
 
         if (event is RumRawEvent.StartView) {
             val viewScope = RumViewScope.fromEvent(this, event, firstPartyHostDetector)
-
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
-        } else if (activeChildrenCount == 0) {
-            devLogger.w(MESSAGE_MISSING_VIEW)
+        } else if (activeChildrenScopes.size == 0) {
+            handleOrphanEvent(event, actualWriter)
         }
 
         return this
@@ -96,6 +94,37 @@ internal class RumSessionScope(
     // endregion
 
     // region Internal
+    @Suppress("ComplexCondition")
+    private fun handleOrphanEvent(
+        event: RumRawEvent,
+        actualWriter: DataWriter<RumEvent>
+    ) {
+        if (event is RumRawEvent.AddError ||
+            event is RumRawEvent.AddLongTask ||
+            event is RumRawEvent.StartAction ||
+            event is RumRawEvent.StartResource
+        ) {
+            // there is no active ViewScope to handle this event. We will assume the application
+            // is in background and we will create a special ViewScope (background)
+            // to handle all the events.
+            val viewScope = produceRumBackgroundViewScope(event)
+            viewScope.handleEvent(event, actualWriter)
+            activeChildrenScopes.add(viewScope)
+        } else {
+            devLogger.w(MESSAGE_MISSING_VIEW)
+        }
+    }
+
+    internal fun produceRumBackgroundViewScope(event: RumRawEvent): RumViewScope {
+        return RumViewScope(
+            this,
+            RumViewScope.RUM_BACKGROUND_VIEW_URL,
+            RumViewScope.RUM_BACKGROUND_VIEW_NAME,
+            event.eventTime,
+            emptyMap(),
+            firstPartyHostDetector
+        )
+    }
 
     internal fun onApplicationDisplayed(
         event: RumRawEvent.StartView,

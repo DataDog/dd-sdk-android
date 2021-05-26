@@ -13,10 +13,15 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -33,6 +38,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -46,6 +52,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -92,6 +99,9 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeUserInfo: UserInfo
 
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
+
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
@@ -100,6 +110,8 @@ internal class RumSessionScopeTest {
         mockDevLogHandler = mockDevLogHandler()
 
         whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
+            .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         testedScope = RumSessionScope(
@@ -469,6 +481,146 @@ internal class RumSessionScopeTest {
         assertThat(testedScope.activeChildrenScopes).isNotEmpty()
         assertThat(result).isSameAs(testedScope)
         verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M start a background ViewScope W handleEvent { no active scope, event is relevant }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeEvent = forge.forgeValidRumRawEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0]).isInstanceOfSatisfying(
+            RumViewScope::class.java,
+            Consumer {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_NAME)
+            }
+        )
+    }
+
+    @Test
+    fun `M handle event in the background ViewScope W handleEvent { event is relevant }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeEvent = forge.forgeValidRumRawEvent()
+        val mockBackgroundViewScope: RumViewScope = mock()
+
+        // WHEN
+        val testedSpyScope = spy(testedScope)
+        doReturn(mockBackgroundViewScope).whenever(testedSpyScope)
+            .produceRumBackgroundViewScope(fakeEvent)
+        testedSpyScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verify(mockBackgroundViewScope).handleEvent(fakeEvent, mockWriter)
+    }
+
+    @Test
+    fun `M not start a background ViewScope W handleEvent { no active scope, event not relevant}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeEvent = forge.forgeAnInvalidRumRawEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `M send warn dev log W handleEvent { no active scope, event not relevant}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeEvent = forge.forgeAnInvalidRumRawEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    private fun Forge.forgeValidRumRawEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeName = this.anAlphabeticalString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.StartAction(
+                    this.aValueFrom(RumActionType::class.java),
+                    fakeName,
+                    this.aBool(),
+                    emptyMap(),
+                    fakeEventTime
+                ),
+                RumRawEvent.AddLongTask(System.nanoTime(), fakeName, fakeEventTime),
+                RumRawEvent.AddError(
+                    fakeName,
+                    this.aValueFrom(RumErrorSource::class.java),
+                    stacktrace = null,
+                    throwable = null,
+                    isFatal = this.aBool(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StartAction(
+                    this.aValueFrom(RumActionType::class.java),
+                    fakeName,
+                    this.aBool(),
+                    emptyMap(),
+                    fakeEventTime
+                )
+            )
+        )
+    }
+
+    private fun Forge.forgeAnInvalidRumRawEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeKey = this.anAlphabeticalString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.StopAction(
+                    this.aValueFrom(RumActionType::class.java),
+                    fakeKey,
+                    emptyMap(),
+                    fakeEventTime
+                ),
+                RumRawEvent.StopResource(
+                    fakeKey,
+                    statusCode = null,
+                    size = null,
+                    kind = this.aValueFrom(RumResourceKind::class.java),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopResourceWithError(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    throwable = this.getForgery(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopView(
+                    fakeKey,
+                    emptyMap(),
+                    fakeEventTime
+                )
+            )
+        )
     }
 
     companion object {
