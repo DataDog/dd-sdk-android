@@ -9,6 +9,8 @@ Datadog *Real User Monitoring (RUM)* enables you to visualize and analyze the re
 3. Initialize the library with application context.
 4. Initialize RUM Monitor, Interceptor and start sending data.
 
+**Minimum Android OS version**: Datadog SDK for Android supports Android OS starting from version 19.
+
 
 ### Declare SDK as dependency
 
