@@ -7,6 +7,7 @@ import com.google.gson.JsonParser
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 import kotlin.Array
+import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
 import kotlin.collections.Map
@@ -16,13 +17,15 @@ import kotlin.jvm.Throws
 data class Comment(
     val message: String? = null,
     val ratings: Ratings? = null,
-    val flags: Flags? = null
+    val flags: Flags? = null,
+    val tags: Tags? = null
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
         message?.let { json.addProperty("message", it) }
         ratings?.let { json.add("ratings", it.toJson()) }
         flags?.let { json.add("flags", it.toJson()) }
+        tags?.let { json.add("tags", it.toJson()) }
         return json
     }
 
@@ -39,7 +42,10 @@ data class Comment(
                 val flags = jsonObject.get("flags")?.toString()?.let {
                     Flags.fromJson(it)
                 }
-                return Comment(message, ratings, flags)
+                val tags = jsonObject.get("tags")?.toString()?.let {
+                    Tags.fromJson(it)
+                }
+                return Comment(message, ratings, flags, tags)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
             } catch (e: NumberFormatException) {
@@ -89,7 +95,7 @@ data class Comment(
     }
 
     data class Flags(
-        val additionalProperties: Map<String, String> = emptyMap()
+        val additionalProperties: Map<String, Boolean> = emptyMap()
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
@@ -105,11 +111,42 @@ data class Comment(
             fun fromJson(serializedObject: String): Flags {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val additionalProperties = mutableMapOf<String, Boolean>()
+                    for (entry in jsonObject.entrySet()) {
+                        additionalProperties[entry.key] = entry.value.asBoolean
+                    }
+                    return Flags(additionalProperties)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(e.message)
+                } catch (e: NumberFormatException) {
+                    throw JsonParseException(e.message)
+                }
+            }
+        }
+    }
+
+    data class Tags(
+        val additionalProperties: Map<String, String> = emptyMap()
+    ) {
+        fun toJson(): JsonElement {
+            val json = JsonObject()
+            additionalProperties.forEach { (k, v) ->
+                json.addProperty(k, v)
+            }
+            return json
+        }
+
+        companion object {
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            fun fromJson(serializedObject: String): Tags {
+                try {
+                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val additionalProperties = mutableMapOf<String, String>()
                     for (entry in jsonObject.entrySet()) {
                         additionalProperties[entry.key] = entry.value.asString
                     }
-                    return Flags(additionalProperties)
+                    return Tags(additionalProperties)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(e.message)
                 } catch (e: NumberFormatException) {

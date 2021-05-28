@@ -59,10 +59,45 @@ internal fun Any?.toJsonElement(): JsonElement {
     }
 }
 
+internal fun Any?.fromJsonElement(): Any? {
+    return when (this) {
+        is JsonNull -> null
+        is JsonPrimitive -> {
+            if (this.isBoolean) {
+                this.asBoolean
+            } else if (this.isNumber) {
+                this.asNumber
+            } else if (this.isString) {
+                this.asString
+            } else {
+                this
+            }
+        }
+        is JsonObject -> this.asMap()
+        else -> this
+    }
+}
+
 internal fun Iterable<*>.toJsonArray(): JsonElement {
     val array = JsonArray()
     forEach {
         array.add(it.toJsonElement())
     }
     return array
+}
+
+internal fun JsonObject.asMap(): Map<String, Any?> {
+    val map = mutableMapOf<String, Any?>()
+    entrySet().forEach {
+        map[it.key] = it.value.fromJsonElement()
+    }
+    return map
+}
+
+internal fun JsonElement?.asMap(): Map<String, Any?> {
+    return if (this is JsonObject) {
+        this.asMap()
+    } else {
+        emptyMap()
+    }
 }

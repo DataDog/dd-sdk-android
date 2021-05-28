@@ -31,8 +31,12 @@ class PokoGenerator(
     private val nestedClasses: MutableSet<TypeDefinition.Class> = mutableSetOf()
 
     private val nestedEnums: MutableSet<TypeDefinition.Enum> = mutableSetOf()
-    private val deserializerGenerator =
-        PokoDeserializerGenerator(packageName, knownTypes, nestedClasses, nestedEnums)
+    private val deserializerGenerator = PokoDeserializerGenerator(
+        packageName,
+        knownTypes,
+        nestedClasses,
+        nestedEnums
+    )
     private val serializerGenerator = PokoSerializerGenerator()
 
     // region PokoGenerator

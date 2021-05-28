@@ -22,6 +22,11 @@ internal class CommentForgeryFactory : ForgeryFactory<Comment> {
             },
             flags = forge.aNullable {
                 Comment.Flags(
+                    additionalProperties = aMap { anAlphabeticalString() to aBool() }
+                )
+            },
+            tags = forge.aNullable {
+                Comment.Tags(
                     additionalProperties = aMap { anAlphabeticalString() to anHexadecimalString() }
                 )
             }

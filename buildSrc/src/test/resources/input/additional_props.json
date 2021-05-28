@@ -20,8 +20,14 @@
     },
     "flags": {
       "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "tags": {
+      "additionalProperties":  {
         "type": "string"
       }
     }
-  }
+  },
+  "additionalProperties": false
 }

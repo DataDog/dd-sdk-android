@@ -7,7 +7,14 @@
 package com.datadog.gradle.plugin.jsonschema
 
 import com.example.forgery.ForgeryConfiguration
+import com.example.model.Company
+import com.example.model.fromJsonElement
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
@@ -38,7 +45,6 @@ class ModelValidationTest(
         val toJson = type.getMethod("toJson")
         val schema = loadSchema(schemaResourcePath)
         val file = javaClass.getResource("/input/").file
-        println(">> SCOPE PATH : file://$file")
         val schemaLoader = SchemaLoader.builder()
             .resolutionScope("file://$file")
             .schemaJson(schema)
@@ -66,13 +72,11 @@ class ModelValidationTest(
             // skip this test as is not relevant anymore. We are just testing a constructor.
             return
         }
-        val generatorFunction =
-            type.getMethod("fromJson", String::class.java)
+        val generatorFunction = type.getMethod("fromJson", String::class.java)
         repeat(10) {
             val entity = forge.getForgery(type)
             val json = toJson.invoke(entity).toString()
-            val generatedModel =
-                generatorFunction.invoke(null, json)
+            val generatedModel = generatorFunction.invoke(null, json)
 
             assertThat(generatedModel)
                 .overridingErrorMessage(
@@ -81,6 +85,8 @@ class ModelValidationTest(
                 )
                 .usingRecursiveComparison()
                 .withComparatorForType(numberTypeComparator, Number::class.java)
+                .withComparatorForType(mapTypeComparator, Map::class.java)
+                .withComparatorForType(informationComparator, Company.Information::class.java)
                 .ignoringCollectionOrder()
                 .isEqualTo(entity)
         }
@@ -96,10 +102,71 @@ class ModelValidationTest(
         }
     }
 
+    private val mapTypeComparator = Comparator<Map<*, *>> { t1, t2 ->
+        if (t2.size == t1.size) {
+            val mismatches = t1.filter { (k, v1) ->
+                val v2 = t2[k]
+                compareMapValues(v1, v2)
+            }
+            mismatches.size
+        } else {
+            1
+        }
+    }
+
+    private val informationComparator = Comparator<Company.Information> { t1, t2 ->
+        if (t1.date != t2.date) {
+            -1
+        } else if (t1.priority != t2.priority) {
+            -2
+        } else {
+            mapTypeComparator.compare(t1.additionalProperties, t2.additionalProperties)
+        }
+    }
+
+    private fun compareMapValues(v1: Any?, v2: Any?): Boolean {
+        return if (v1 is JsonElement) {
+            compareJsonElement(v1, v2)
+        } else if (v1 is Map<*, *> && v2 is Map<*, *>) {
+            mapTypeComparator.compare(v1, v2) == 0
+        } else {
+            v2 != v1
+        }
+    }
+
+    private fun compareJsonElement(
+        v1: JsonElement,
+        v2: Any?
+    ): Boolean {
+        return when (v2) {
+            null -> v1 != JsonNull.INSTANCE
+            is Boolean -> v1.asBoolean != v2
+            is Int -> v1.asInt != v2
+            is Long -> v1.asLong != v2
+            is Float -> v1.asFloat != v2
+            is Double -> v1.asDouble != v2
+            is String -> v1.asString != v2
+            is Date -> v1.asLong != v2.time
+            is JsonObject -> v1.asJsonObject.toString() != v2.toString()
+            is JsonArray -> v1.asJsonArray != v2
+            is Iterable<*> -> v1.asJsonArray.toList() != v2
+            is Map<*, *> -> mapTypeComparator.compare(v1.asJsonObject.asMap(), v2) == 0
+            else -> v1.asString != v2.toString()
+        }
+    }
+
     private fun loadSchema(schemaResName: String): JSONObject {
         return javaClass.getResourceAsStream("/input/$schemaResName.json").use {
             JSONObject(JSONTokener(it))
         }
+    }
+
+    internal fun JsonObject.asMap(): Map<String, Any?> {
+        val map = mutableMapOf<String, Any?>()
+        entrySet().forEach {
+            map[it.key] = it.value.fromJsonElement()
+        }
+        return map
     }
 
     companion object {
@@ -111,6 +178,7 @@ class ModelValidationTest(
                 arrayOf("arrays", OutputInfo("Article")),
                 arrayOf("nested", OutputInfo("Book")),
                 arrayOf("additional_props", OutputInfo("Comment")),
+                arrayOf("additional_props_any", OutputInfo("Company")),
                 arrayOf("definition_name_conflict", OutputInfo("Conflict")),
                 arrayOf("definition", OutputInfo("Customer")),
                 arrayOf("definition_with_id", OutputInfo("Customer")),

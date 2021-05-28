@@ -59,7 +59,7 @@ class PokoSerializerGenerator {
             is TypeDefinition.Primitive -> funBuilder.addStatement("json.addProperty(k, v)")
             is TypeDefinition.Class -> funBuilder.addStatement(
                 "json.add(k, v.%L())",
-                TO_JSON_ELEMENT
+                PokoGenerator.TO_JSON_ELEMENT_EXTENSION_FUNCTION
             )
             is TypeDefinition.Enum -> funBuilder.addStatement("json.add(k, v.%L()) }", TO_JSON)
             is TypeDefinition.Null -> funBuilder.addStatement("json.add(k, null) }")
@@ -246,7 +246,6 @@ class PokoSerializerGenerator {
     companion object {
 
         private const val TO_JSON = "toJson"
-        private const val TO_JSON_ELEMENT = "toJsonElement"
         private val JSON_ELEMENT = ClassName.bestGuess("com.google.gson.JsonElement")
         private val JSON_OBJECT = ClassName.bestGuess("com.google.gson.JsonObject")
         private val JSON_ARRAY = ClassName.bestGuess("com.google.gson.JsonArray")

@@ -11,7 +11,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
+import com.datadog.android.utils.assertj.DeserializedMapAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -77,9 +77,9 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+        assertThat(deserializedEvent!!.globalAttributes)
             .isEqualTo(fakeEvent.globalAttributes)
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+        assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedViewEvent = deserializedEvent.event as ViewEvent
         assertThat(deserializedViewEvent)
@@ -101,9 +101,9 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+        assertThat(deserializedEvent!!.globalAttributes)
             .isEqualTo(fakeEvent.globalAttributes)
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+        assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedResourceEvent = deserializedEvent.event as ResourceEvent
         assertThat(deserializedResourceEvent).isEqualTo(fakeResourceEvent)
@@ -124,9 +124,9 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+        assertThat(deserializedEvent!!.globalAttributes)
             .isEqualTo(fakeEvent.globalAttributes)
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+        assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedActionEvent = deserializedEvent.event as ActionEvent
         assertThat(deserializedActionEvent)
@@ -150,9 +150,9 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+        assertThat(deserializedEvent!!.globalAttributes)
             .isEqualTo(fakeEvent.globalAttributes)
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+        assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedErrorEvent = deserializedEvent.event as ErrorEvent
         assertThat(deserializedErrorEvent)
@@ -176,9 +176,9 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isNotNull()
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent!!.globalAttributes)
+        assertThat(deserializedEvent!!.globalAttributes)
             .isEqualTo(fakeEvent.globalAttributes)
-        DatadogMapAnyValueAssert.assertThat(deserializedEvent.userExtraAttributes)
+        assertThat(deserializedEvent.userExtraAttributes)
             .isEqualTo(fakeEvent.userExtraAttributes)
         val deserializedLongTaskEvent = deserializedEvent.event as LongTaskEvent
         assertThat(deserializedLongTaskEvent)

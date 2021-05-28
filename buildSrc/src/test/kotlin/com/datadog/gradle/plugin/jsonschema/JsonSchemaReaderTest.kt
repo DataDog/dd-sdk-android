@@ -49,6 +49,7 @@ class JsonSchemaReaderTest(
                 arrayOf("arrays", Article),
                 arrayOf("nested", Book),
                 arrayOf("additional_props", Comment),
+                arrayOf("additional_props_any", Company),
                 arrayOf("definition_name_conflict", Conflict),
                 arrayOf("definition", Customer),
                 arrayOf("definition_with_id", Customer),

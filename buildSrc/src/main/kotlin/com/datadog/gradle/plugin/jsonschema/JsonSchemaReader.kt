@@ -127,6 +127,33 @@ class JsonSchemaReader(
 
     // region Internal
 
+    private fun extractAdditionalPropertiesType(
+        definition: JsonDefinition
+    ): TypeDefinition? {
+        return when (val additional = definition.additionalProperties) {
+            null -> null
+            is Map<*, *> -> {
+                val value = additional["type"]?.toString()
+                if (value == null) {
+                    throw IllegalStateException("additionalProperties object is missing a `type`")
+                } else {
+                    val type = JsonType.values().firstOrNull { it.name.equals(value, true) }
+                    transform(JsonDefinition.EMPTY.copy(type = type), "?")
+                }
+            }
+            is Boolean -> {
+                if (additional) {
+                    transform(JsonDefinition.EMPTY.copy(type = JsonType.OBJECT), "?")
+                } else {
+                    null
+                }
+            }
+            else -> {
+                throw IllegalStateException("additionalProperties uses an unknown format")
+            }
+        }
+    }
+
     private fun transform(
         definition: JsonDefinition?,
         typeName: String
@@ -268,7 +295,7 @@ class JsonSchemaReader(
                 )
             )
         }
-        val additional = definition.additionalProperties?.let { transform(it, "?") }
+        val additional = extractAdditionalPropertiesType(definition)
 
         return TypeDefinition.Class(
             name = typeName,
