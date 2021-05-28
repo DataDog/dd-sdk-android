@@ -1644,12 +1644,17 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing and log warning 𝕎 handleEvent(StartAction) with active child ActionScope`(
-        @Forgery type: RumActionType,
+    fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+!CUSTOM)+active child ActionScope`(
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
+
+        val type = forge.aValueFrom(
+            RumActionType::class.java,
+            exclude = listOf(RumActionType.CUSTOM)
+        )
+
         // Given
         val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1676,6 +1681,88 @@ internal class RumViewScopeTest {
         )
 
         verifyNoMoreInteractions(mockDevLogHandler)
+    }
+
+    @Test
+    fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+CUSTOM+cont) + child ActionScope`(
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+
+        // Given
+        val mockDevLogHandler = mockDevLogHandler()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        testedScope.activeActionScope = mockChildScope
+        fakeEvent =
+            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes)
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
+
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumViewScope.ACTION_DROPPED_WARNING.format(
+                Locale.US,
+                (fakeEvent as RumRawEvent.StartAction).type,
+                (fakeEvent as RumRawEvent.StartAction).name
+            )
+        )
+
+        verifyNoMoreInteractions(mockDevLogHandler)
+    }
+
+    @Test
+    fun `𝕄 send action 𝕎 handleEvent(StartAction+CUSTOM+instant) + active child ActionScope`(
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockDevLogHandler = mockDevLogHandler()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        testedScope.activeActionScope = mockChildScope
+        fakeEvent =
+            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = false, attributes)
+
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter, times(1)).write(capture())
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasActionData {
+                    hasNonNullId()
+                    hasType(RumActionType.CUSTOM)
+                    hasTargetName(name)
+                    hasDuration(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    // ActionEvent doesn't record view.name currently
+                    hasView(testedScope.getRumContext().copy(viewName = null))
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        verifyZeroInteractions(mockDevLogHandler)
+
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
+        assertThat(testedScope.pendingActionCount).isEqualTo(1)
     }
 
     @Test

@@ -14,6 +14,7 @@ import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -838,12 +839,12 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(any) {crashCount != 0}`(
-        @LongForgery(1, 1024) nonFatalcount: Long,
-        @LongForgery(1, 1024) fatalcount: Long
+        @LongForgery(1, 1024) nonFatalCount: Long,
+        @LongForgery(1, 1024) fatalCount: Long
     ) {
         // Given
-        testedScope.errorCount = nonFatalcount + fatalcount
-        testedScope.crashCount = fatalcount
+        testedScope.errorCount = nonFatalCount + fatalCount
+        testedScope.crashCount = fatalCount
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
@@ -861,8 +862,8 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
-                    hasErrorCount(nonFatalcount + fatalcount)
-                    hasCrashCount(fatalcount)
+                    hasErrorCount(nonFatalCount + fatalCount)
+                    hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
@@ -1154,6 +1155,40 @@ internal class RumActionScopeTest {
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(duration)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action 𝕎 handleEvent(SendCustomActionNow)`() {
+        // When
+        testedScope.type = RumActionType.CUSTOM
+        val event = RumRawEvent.SendCustomActionNow()
+        val result = testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasActionData {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasType(ActionEvent.ActionType.CUSTOM)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)

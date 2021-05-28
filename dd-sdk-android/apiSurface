@@ -351,7 +351,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addUserAction(RumActionType, String, Map<String, Any?>)
   fun startUserAction(RumActionType, String, Map<String, Any?>)
-  fun stopUserAction(Map<String, Any?> = emptyMap())
+  DEPRECATED fun stopUserAction(Map<String, Any?> = emptyMap())
   fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)

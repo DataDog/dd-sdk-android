@@ -28,11 +28,11 @@ internal class RumActionScope(
     initialName: String,
     initialAttributes: Map<String, Any?>,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
-    maxDurationdMs: Long = ACTION_MAX_DURATION_MS
+    maxDurationMs: Long = ACTION_MAX_DURATION_MS
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
-    private val maxDurationdNs = TimeUnit.MILLISECONDS.toNanos(maxDurationdMs)
+    private val maxDurationNs = TimeUnit.MILLISECONDS.toNanos(maxDurationMs)
 
     private val eventTimestamp = eventTime.timestamp
     internal val actionId: String = UUID.randomUUID().toString()
@@ -59,7 +59,7 @@ internal class RumActionScope(
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<RumEvent>): RumScope? {
         val now = event.eventTime.nanoTime
         val isInactive = now - lastInteractionNanos > inactivityThresholdNs
-        val isLongDuration = now - startedNanos > maxDurationdNs
+        val isLongDuration = now - startedNanos > maxDurationNs
         ongoingResourceKeys.removeAll { it.get() == null }
         val isOngoing = waitForStop && !stopped
         val shouldStop = isInactive && ongoingResourceKeys.isEmpty() && !isOngoing
@@ -67,6 +67,7 @@ internal class RumActionScope(
         when {
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
+            event is RumRawEvent.SendCustomActionNow -> sendAction(lastInteractionNanos, writer)
             event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
             event is RumRawEvent.StopView -> onStopView(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now)

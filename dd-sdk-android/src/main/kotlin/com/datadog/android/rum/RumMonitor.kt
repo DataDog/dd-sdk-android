@@ -97,7 +97,12 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the action
      * @see [addUserAction]
      * @see [startUserAction]
+     * @deprecated Use [stopUserAction] with name parameter instead.
      */
+    @Deprecated(
+        "This method is deprecated. Please" +
+            " use RumMonitor#stopUserAction(type, name, attributes) instead"
+    )
     fun stopUserAction(
         attributes: Map<String, Any?> = emptyMap()
     )
